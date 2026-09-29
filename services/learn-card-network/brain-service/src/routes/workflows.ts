@@ -625,13 +625,16 @@ async function handleInboxClaimPresentation(
             // after the pending query is honored for both the refresh and legacy branches.
             // Unrelated read failures fall through to the generic failure path below; only an
             // explicit awaiting/rejected status becomes a guardian outcome.
-            const guardianStatus = (await getInboxCredentialById(inboxCredential.id))
-                ?.guardianStatus;
+            const currentInboxCredential = await getInboxCredentialById(inboxCredential.id);
+            if (!currentInboxCredential) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Inbox credential no longer exists.',
+                });
+            }
+            const guardianStatus = currentInboxCredential.guardianStatus;
 
-            if (
-                guardianStatus === 'AWAITING_GUARDIAN' ||
-                guardianStatus === 'GUARDIAN_REJECTED'
-            ) {
+            if (guardianStatus === 'AWAITING_GUARDIAN' || guardianStatus === 'GUARDIAN_REJECTED') {
                 // Never sign, deliver, or emit issuance-failure logging/webhooks for a
                 // credential that is still blocked on guardian approval.
                 return { blocked: { id: inboxCredential.id, status: guardianStatus } };

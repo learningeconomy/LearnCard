@@ -1,6 +1,7 @@
 import { vi, describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import type { UnsignedVC, VP } from '@learncard/types';
 import { LCNNotificationTypeEnumValidator } from '@learncard/types';
+import * as inboxReads from '@accesslayer/inbox-credential/read';
 
 const mocks = vi.hoisted(() => ({ sign: vi.fn(), verify: vi.fn(), sendEmail: vi.fn() }));
 
@@ -27,7 +28,7 @@ import { updateInboxCredential } from '@accesslayer/inbox-credential/update';
 import { getCredentialRefresh } from '@accesslayer/credential-refresh';
 import * as notifications from '@helpers/notifications.helpers';
 
-const SA = { endpoint: 'https://sa.example.com', name: 'inbox-claim-guardian' };
+const SA = { endpoint: 'https://sa.example.com', name: 'guardian-claim' };
 const RECIPIENT = 'guardian-claim@example.com';
 const ISSUER_DID = 'did:web:localhost%3A3000:users:lc2219-issuer';
 
@@ -121,6 +122,19 @@ beforeEach(async () => {
 });
 
 describe('guardian-gated inbox claim exchange', () => {
+    it('does not deliver a legacy credential deleted after the pending query', async () => {
+        const issued = await issue({ refresh: false });
+        const lookup = vi.spyOn(inboxReads, 'getInboxCredentialById').mockResolvedValueOnce(null);
+        try {
+            const result = await claim(issued);
+            expect(result.inboxDeliveries).toEqual([]);
+            expect(result.inboxClaimOutcomes).toBeUndefined();
+            expect(mocks.sign).not.toHaveBeenCalled();
+        } finally {
+            lookup.mockRestore();
+        }
+    });
+
     it('blocks an awaiting credential without signing, delivering, or alerting', async () => {
         const issued = await issue();
         await updateInboxCredential(issued.issuanceId, {
@@ -242,9 +256,9 @@ describe('guardian-gated inbox claim exchange', () => {
         expect(bound?.currentStatus).toBe('ISSUED');
         // The escrow payload is wiped while the holder recovery copy is retained.
         expect(bound?.credential).toBeUndefined();
-        expect(
-            (bound as { deliveryRecipientDid?: string } | null)?.deliveryRecipientDid
-        ).toBe(holder.learnCard.id.did());
+        expect((bound as { deliveryRecipientDid?: string } | null)?.deliveryRecipientDid).toBe(
+            holder.learnCard.id.did()
+        );
     });
 
     it('does not allow replaying a signed presentation after the challenge is exhausted', async () => {
