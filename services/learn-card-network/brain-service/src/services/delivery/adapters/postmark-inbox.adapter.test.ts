@@ -39,7 +39,9 @@ describe('Inbox email delivery', () => {
         // Use the real email renderer; only the external Postmark transport is mocked.
         expect(sendEmailWithTemplate).not.toHaveBeenCalled();
         expect(sendEmail).toHaveBeenCalledTimes(1);
-        const message = sendEmail.mock.calls[0][0];
+        const call = sendEmail.mock.calls[0];
+        if (!call) throw new Error('Expected a Postmark sendEmail call');
+        const message = call[0];
         expect(message.To).toBe('learner@example.com');
         expect(message.MessageStream).toBe('universal-inbox');
         expect(message.HtmlBody).toContain(`href="${claimUrl}"`);
