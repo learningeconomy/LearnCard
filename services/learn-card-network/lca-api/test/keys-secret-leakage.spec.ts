@@ -8,6 +8,7 @@
  * that redacts those sentinels from anything Sentry would capture.
  */
 import * as Sentry from '@sentry/serverless';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { redactSecretFields } from '@routes';
 import { getClient, getUser } from './helpers/getClient';
@@ -51,6 +52,10 @@ describe('redactSecretFields', () => {
             recoveryKey: SENTINEL_SHARE,
             seed: SENTINEL_SHARE,
             blob: SENTINEL_SHARE,
+            envelope: { ciphertext: SENTINEL_SHARE },
+            sealedShare: { ciphertext: SENTINEL_SHARE },
+            resumeToken: SENTINEL_TOKEN,
+            clientEphemeralPublicKey: SENTINEL_SHARE,
             credentialId: 'not-a-secret-cred-id',
             providerType: 'firebase',
             type: 'passkey',
@@ -65,6 +70,10 @@ describe('redactSecretFields', () => {
         expect(redacted.recoveryKey).toBe('[Redacted]');
         expect(redacted.seed).toBe('[Redacted]');
         expect(redacted.blob).toBe('[Redacted]');
+        expect(redacted.envelope).toBe('[Redacted]');
+        expect(redacted.sealedShare).toBe('[Redacted]');
+        expect(redacted.resumeToken).toBe('[Redacted]');
+        expect(redacted.clientEphemeralPublicKey).toBe('[Redacted]');
         // Non-secret fields survive untouched
         expect(redacted.credentialId).toBe('not-a-secret-cred-id');
         expect(redacted.providerType).toBe('firebase');
@@ -99,16 +108,52 @@ describe('redactSecretFields', () => {
     });
 });
 
-// Minimal structural stand-in for a Sentry Scope — just enough surface for
-// openRoute's middleware (setTransactionName + addEventProcessor) to run
-// against, so the test can capture exactly which processor functions get
-// registered without depending on the real SDK's global hub/scope wiring.
-interface FakeScope {
-    setTransactionName: (name: string) => void;
-    addEventProcessor: (fn: (event: Record<string, unknown>) => unknown) => void;
-}
+// Use a real isolated scope while capturing processors, without touching the hub.
+const captureScope = (
+    processors: Array<(event: Record<string, unknown>) => unknown>
+): Sentry.Scope => {
+    const scope = new Sentry.Scope();
+    vi.spyOn(scope, 'addEventProcessor').mockImplementation(processor => {
+        processors.push(event => processor(event, {}));
+        return scope;
+    });
+    return scope;
+};
 
 describe('Sentry event processor for /keys/* routes', () => {
+    it('redacts escrow inputs and outputs on the separate escrow router namespace', async () => {
+        const processors: Array<(event: Record<string, unknown>) => unknown> = [];
+        const spy = vi.spyOn(Sentry, 'configureScope').mockImplementation(callback => {
+            callback(captureScope(processors));
+        });
+        try {
+            // Even a disabled or rejected request must register the defense-in-depth processor.
+            await getClient()
+                .escrow.startRecovery({
+                    authToken: SENTINEL_TOKEN,
+                    providerType: 'firebase',
+                    clientEphemeralPublicKey: SENTINEL_SHARE,
+                })
+                .catch(() => undefined);
+        } finally {
+            spy.mockRestore();
+        }
+        expect(processors).toHaveLength(1);
+        const payload = {
+            envelope: { ciphertext: SENTINEL_SHARE },
+            sealedShare: { ciphertext: SENTINEL_SHARE },
+            resumeToken: SENTINEL_TOKEN,
+            clientEphemeralPublicKey: SENTINEL_SHARE,
+        };
+        const event = {
+            contexts: { trpc: { input: payload } },
+            extra: { output: payload },
+            request: { data: payload },
+        };
+        const serialized = JSON.stringify(processors[0]!(event));
+        expect(serialized).not.toContain(SENTINEL_SHARE);
+        expect(serialized).not.toContain(SENTINEL_TOKEN);
+    });
     it('registers a redacting event processor for every /keys/* call, using sentinel inputs', async () => {
         const email = `p04-sentry-${Date.now()}@example.com`;
         const token = makeMockToken(email, `p04-uid-${Date.now()}`);
@@ -119,11 +164,8 @@ describe('Sentry event processor for /keys/* routes', () => {
 
         const configureScopeSpy = vi
             .spyOn(Sentry, 'configureScope')
-            .mockImplementation((callback: (scope: FakeScope) => void) => {
-                callback({
-                    setTransactionName: () => undefined,
-                    addEventProcessor: fn => registeredProcessors.push(fn),
-                });
+            .mockImplementation(callback => {
+                callback(captureScope(registeredProcessors));
             });
 
         try {
@@ -208,11 +250,8 @@ describe('Sentry event processor for /keys/* routes', () => {
 
         const configureScopeSpy = vi
             .spyOn(Sentry, 'configureScope')
-            .mockImplementation((callback: (scope: FakeScope) => void) => {
-                callback({
-                    setTransactionName: () => undefined,
-                    addEventProcessor: fn => registeredProcessors.push(fn),
-                });
+            .mockImplementation(callback => {
+                callback(captureScope(registeredProcessors));
             });
 
         try {

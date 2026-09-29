@@ -88,15 +88,15 @@ const confirmationCodeMatches = (code: string, expectedHash: string): boolean =>
     return actual.length === expected.length && timingSafeEqual(actual, expected);
 };
 
-const AuthProviderTypeValidator = z.enum(['firebase', 'supertokens', 'keycloak', 'oidc']);
+export const AuthProviderTypeValidator = z.enum(['firebase', 'supertokens', 'keycloak', 'oidc']);
 
-const AuthInputValidator = z.object({
+export const AuthInputValidator = z.object({
     authToken: z.string(),
     providerType: AuthProviderTypeValidator,
 });
 
-const RecoveryMethodTypeValidator = z.enum(['passkey', 'backup', 'phrase', 'email']);
-const RecoverySessionTokenValidator = z.string().regex(/^[0-9a-f]{64}$/);
+const RecoveryMethodTypeValidator = z.enum(['passkey', 'backup', 'phrase', 'email', 'escrow']);
+export const RecoverySessionTokenValidator = z.string().regex(/^[0-9a-f]{64}$/);
 
 const RecoveryMethodResponseValidator = z.object({
     type: RecoveryMethodTypeValidator,
@@ -170,7 +170,7 @@ const sendRecoveryKeyToEscrowRelay = async (
     }
 };
 
-async function verifyAndGetContactMethod(input: {
+export async function verifyAndGetContactMethod(input: {
     authToken: string;
     providerType: AuthProviderType;
 }): Promise<{
@@ -195,7 +195,7 @@ async function verifyAndGetContactMethod(input: {
     };
 }
 
-const requireUserKey = async (
+export const requireUserKey = async (
     authProvider: AuthProviderMapping,
     message = 'User key not found. Set up SSS first.'
 ): Promise<MongoUserKeyType> => {
@@ -206,7 +206,7 @@ const requireUserKey = async (
     return userKey;
 };
 
-const assertDidOwner = (userKey: MongoUserKeyType, authenticatedDid: string): void => {
+export const assertDidOwner = (userKey: MongoUserKeyType, authenticatedDid: string): void => {
     if (!userKey.primaryDid || userKey.primaryDid !== authenticatedDid) {
         throw new TRPCError({
             code: 'FORBIDDEN',
@@ -228,7 +228,7 @@ const serializeConfirmedRecoveryMethods = (userKey: MongoUserKeyType) =>
             ...(method.shareVersion != null ? { shareVersion: method.shareVersion } : {}),
         }));
 
-const requireRecoverySession = async (
+export const requireRecoverySession = async (
     token: string,
     scope: 'recover' | 'rebind'
 ): Promise<AuthProviderMapping> => {
@@ -432,6 +432,12 @@ export const keysRouter = t.router({
                 input.recoverySessionToken,
                 'recover'
             );
+            if (input.type === 'escrow') {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Use /keys/escrow/recover for automatic recovery.',
+                });
+            }
             const userKey = await requireUserKey(authProvider, 'Recovery account not found.');
             const recoveryMethod = (userKey.recoveryMethods ?? []).find(method => {
                 if (method.type !== input.type || !isRecoveryMethodConfirmed(userKey, method)) {
@@ -611,7 +617,7 @@ export const keysRouter = t.router({
                     securityLevel: z.enum(['basic', 'enhanced', 'advanced']),
                     recoveryMethods: z.array(
                         z.object({
-                            type: z.enum(['passkey', 'backup', 'phrase', 'email']),
+                            type: RecoveryMethodTypeValidator,
                             createdAt: z.string(),
                             credentialId: z.string().optional(),
                             shareVersion: z.number().optional(),
@@ -621,6 +627,7 @@ export const keysRouter = t.router({
                     keyProvider: z.enum(['web3auth', 'sss']),
                     shareVersion: z.number(),
                     maskedRecoveryEmail: z.string().nullable(),
+                    escrowOptedOut: z.boolean(),
                     sssActivationState: z.enum(['provisional', 'active']),
                 })
                 .nullable()
@@ -693,6 +700,7 @@ export const keysRouter = t.router({
                     ? maskEmail(userKey.recoveryEmail)
                     : null,
                 sssActivationState: getSssActivationState(userKey),
+                escrowOptedOut: Boolean(userKey.escrowOptedOutAt),
             };
         }),
 
@@ -814,7 +822,7 @@ export const keysRouter = t.router({
         })
         .input(
             AuthInputValidator.extend({
-                type: z.enum(['passkey', 'backup', 'phrase', 'email']),
+                type: RecoveryMethodTypeValidator,
                 encryptedShare: EncryptedShareValidator.optional(),
                 credentialId: z.string().optional(),
                 shareVersion: z.number().optional(),
@@ -826,6 +834,13 @@ export const keysRouter = t.router({
             const userKey = await requireUserKey(authProvider);
 
             assertDidOwner(userKey, ctx.user.did);
+
+            if (input.type === 'escrow') {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Use the automatic recovery enrollment endpoint.',
+                });
+            }
 
             // Confirmation only accepts pending methods at the current version.
             const shareVersion = userKey.shareVersion ?? 1;
@@ -859,7 +874,7 @@ export const keysRouter = t.router({
         })
         .input(
             AuthInputValidator.extend({
-                type: z.enum(['passkey', 'backup', 'phrase', 'email']),
+                type: RecoveryMethodTypeValidator,
                 credentialId: z.string().optional(),
                 code: z.string().length(6).optional(),
             })
@@ -871,6 +886,12 @@ export const keysRouter = t.router({
 
             assertDidOwner(userKey, ctx.user.did);
 
+            if (input.type === 'escrow') {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Use /keys/escrow to manage automatic recovery.',
+                });
+            }
             const shareVersion = userKey.shareVersion ?? 1;
             const pendingMethod = (userKey.recoveryMethods ?? []).find(method => {
                 if (
@@ -976,7 +997,7 @@ export const keysRouter = t.router({
         })
         .input(
             AuthInputValidator.extend({
-                type: z.enum(['passkey', 'backup', 'phrase', 'email']),
+                type: RecoveryMethodTypeValidator,
                 credentialId: z.string().optional(),
             })
         )
@@ -986,6 +1007,12 @@ export const keysRouter = t.router({
             const userKey = await requireUserKey(authProvider);
 
             assertDidOwner(userKey, ctx.user.did);
+            if (input.type === 'escrow') {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Use /keys/escrow to manage automatic recovery.',
+                });
+            }
             await removeRecoveryMethodFromUserKeyByAuthProvider(
                 authProvider,
                 input.type,
@@ -1014,7 +1041,7 @@ export const keysRouter = t.router({
             z.object({
                 authToken: z.string().optional(),
                 providerType: AuthProviderTypeValidator,
-                type: z.enum(['passkey', 'backup', 'phrase', 'email']),
+                type: RecoveryMethodTypeValidator,
                 credentialId: z.string().optional(),
             })
         )
@@ -1047,6 +1074,7 @@ export const keysRouter = t.router({
             });
 
             if (!recoveryMethod) return null;
+            if (input.type === 'escrow') return { shareVersion: recoveryMethod.shareVersion };
 
             return {
                 encryptedShare: recoveryMethod.encryptedShare ?? undefined,
