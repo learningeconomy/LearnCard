@@ -481,6 +481,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                                       return {
                                           phrase: result.phrase,
                                           challengeWordIndices: result.challengeWordIndices,
+                                          challengeWordOptions: result.challengeWordOptions,
                                       };
                                   }
                                 : requireAuth

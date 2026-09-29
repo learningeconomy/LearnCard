@@ -1413,6 +1413,7 @@ const AuthSessionManager: React.FC<{
                                     return {
                                         phrase: result.phrase,
                                         challengeWordIndices: result.challengeWordIndices,
+                                        challengeWordOptions: result.challengeWordOptions,
                                     };
                                 }}
                                 onConfirmPhrase={async challengeWords => {

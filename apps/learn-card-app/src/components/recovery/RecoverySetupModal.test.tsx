@@ -49,6 +49,10 @@ const renderModal = (
         onGeneratePhrase: vi.fn().mockResolvedValue({
             phrase: 'one two three',
             challengeWordIndices: [0, 2],
+            challengeWordOptions: [
+                ['one', 'four', 'five', 'six', 'seven', 'eight'],
+                ['three', 'nine', 'ten', 'eleven', 'twelve', 'thirteen'],
+            ],
         }),
         onConfirmPhrase: vi.fn().mockResolvedValue(undefined),
         onSetupBackup: vi.fn().mockResolvedValue('{}'),
@@ -279,18 +283,16 @@ describe('RecoverySetupModal prompt integration', () => {
         fireEvent.click(
             await screen.findByRole('button', { name: "I've Saved It Somewhere Safe" })
         );
-        const inputs = screen.getAllByRole('textbox');
-        fireEvent.change(inputs[0], { target: { value: 'one' } });
-        fireEvent.change(inputs[1], { target: { value: 'three' } });
-        fireEvent.click(screen.getByRole('button', { name: 'Confirm Recovery Phrase' }));
+
+        fireEvent.click(await screen.findByRole('button', { name: 'one' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'three' }));
+
         await waitFor(() => expect(activate).toHaveBeenCalledOnce());
-        await waitFor(() =>
-            expect(
-                screen.getByRole('button', { name: 'Confirm Recovery Phrase' })
-            ).not.toBeDisabled()
-        );
         expect(onCompleted).not.toHaveBeenCalled();
-        fireEvent.click(screen.getByRole('button', { name: 'Confirm Recovery Phrase' }));
+
+        await screen.findByText('Something went wrong. Please try again.');
+
+        fireEvent.click(await screen.findByRole('button', { name: 'three' }));
         await waitFor(() => expect(onCompleted).toHaveBeenCalledWith('phrase'));
         expect(confirm).toHaveBeenCalledOnce();
         expect(activate).toHaveBeenCalledTimes(2);
@@ -315,18 +317,18 @@ describe('RecoverySetupModal prompt integration', () => {
         fireEvent.click(screen.getByRole('button', { name: "I've Saved It Somewhere Safe" }));
         expect(onCompleted).not.toHaveBeenCalled();
 
-        const challengeInputs = screen.getAllByRole('textbox');
-        expect(challengeInputs).toHaveLength(2);
+        const challengeButtons = await screen.findAllByRole('button', {
+            name: /one|four|five|six|seven|eight/,
+        });
+        expect(challengeButtons).toHaveLength(6);
 
         fireEvent.click(screen.getByRole('button', { name: 'Passkey' }));
-        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'one' })).not.toBeInTheDocument();
 
         fireEvent.click(screen.getByRole('button', { name: 'Phrase' }));
 
-        const phraseInputs = screen.getAllByRole('textbox');
-        fireEvent.change(phraseInputs[0], { target: { value: 'one' } });
-        fireEvent.change(phraseInputs[1], { target: { value: 'three' } });
-        fireEvent.click(screen.getByRole('button', { name: 'Confirm Recovery Phrase' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'one' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'three' }));
 
         await waitFor(() => expect(props.onConfirmPhrase).toHaveBeenCalledWith(['one', 'three']));
         expect(onCompleted).toHaveBeenCalledWith('phrase');
