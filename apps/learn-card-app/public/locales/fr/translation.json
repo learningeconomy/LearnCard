@@ -2744,6 +2744,30 @@
             "support": "Contacter le support",
             "claimed": "Réclamé",
             "claiming": "Réclamation du/des justificatif(s)..."
+        },
+        "accountApproval": {
+            "title": "Approbation du compte requise",
+            "description": "Votre parent ou tuteur doit approuver votre compte.",
+            "request": "Demander l'approbation du compte"
+        },
+        "pending": {
+            "title": "En attente de l'approbation du tuteur",
+            "subtitle": "Certaines attestations doivent être approuvées par un parent ou tuteur avant de pouvoir être ajoutées.",
+            "awaiting": {
+                "one": "{{count}} attestation est en attente d'approbation.",
+                "other": "{{count}} attestations sont en attente d'approbation."
+            },
+            "awaitingHint": "L'approbation peut prendre un peu de temps. Vérifiez à nouveau si elle est prête.",
+            "rejected": {
+                "one": "{{count}} attestation a été refusée par un parent ou tuteur.",
+                "other": "{{count}} attestations ont été refusées par un parent ou tuteur."
+            },
+            "checkAgain": "Vérifier à nouveau",
+            "checking": "Vérification...",
+            "checkAgainError": "Nous n'avons pas pu vérifier les mises à jour. Veuillez réessayer.",
+            "goHome": "Aller à l'accueil",
+            "rejectedTitle": "Approbation du tuteur refusée",
+            "rejectedSubtitle": "Votre parent ou tuteur n’a pas approuvé ces titres."
         }
     },
     "chapi": {

@@ -24,9 +24,20 @@ vi.mock('@learncard/react', () => ({
 }));
 vi.mock('@ionic/react', () => ({
     IonContent: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
+    IonIcon: ({ icon }: { icon: string }) => <span data-testid={`ion-icon-${icon}`} />,
     IonLoading: () => null,
     IonPage: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
 }));
+vi.mock('ionicons/icons', () => ({
+    alertCircleOutline: 'alert',
+    closeCircleOutline: 'close',
+    homeOutline: 'home',
+    refreshOutline: 'refresh',
+    timeOutline: 'time',
+}));
+// The account-level nudge is data-connected and covered in its own suite; keep
+// this suite focused on the credential-outcome summary.
+vi.mock('./InboxAccountApprovalNotice', () => ({ default: () => null }));
 vi.mock('learn-card-base', () => ({
     BoostPageViewMode: { Card: 'card' },
     CredentialCategoryEnum: { achievement: 'Achievement' },
@@ -83,7 +94,35 @@ vi.mock('../../paraglide/messages.js', () => ({
     'claim.accept.failed': () => 'Unable to claim credential',
     'claim.accept.success': () => 'Credential claimed',
     'claim.accept.exists': () => 'Credential exists',
+    'claim.accept.noneTitle': () => 'No credentials found',
+    'claim.accept.noneSub': () => 'This link contains no credentials',
+    'claim.accept.noneDesc': () => 'There are no credentials to claim',
+    'claim.accept.reason1': () => 'Already claimed',
+    'claim.accept.reason2': () => 'Link expired',
+    'claim.accept.reason3': () => 'Removed by sender',
+    'claim.accept.whatToDo': () => 'What to do',
+    'claim.accept.noneHelp': () => 'Contact the sender',
+    'claim.accept.goHome': () => 'Go to home',
+    'claim.accept.support': () => 'Contact support',
     'claim.duplicate.skippedToast': () => 'Duplicate skipped',
+    'claim.modal.credentialFallback': () => 'Credential',
+    'claim.pending.title': () => 'Waiting for guardian approval',
+    'claim.pending.rejectedTitle': () => 'Guardian approval declined',
+    'claim.pending.rejectedSubtitle': () => 'Your guardian did not approve these credentials.',
+    'claim.pending.subtitle': () => 'Some credentials need a guardian to approve them.',
+    'claim.pending.awaiting.one': ({ count }: { count: number }) =>
+        `${count} credential is waiting for approval.`,
+    'claim.pending.awaiting.other': ({ count }: { count: number }) =>
+        `${count} credentials are waiting for approval.`,
+    'claim.pending.awaitingHint': () => 'Check again soon.',
+    'claim.pending.rejected.one': ({ count }: { count: number }) =>
+        `${count} credential was declined by a guardian.`,
+    'claim.pending.rejected.other': ({ count }: { count: number }) =>
+        `${count} credentials were declined by a guardian.`,
+    'claim.pending.checkAgain': () => 'Check again',
+    'claim.pending.checking': () => 'Checking',
+    'claim.pending.checkAgainError': () => 'Could not check for updates.',
+    'claim.pending.goHome': () => 'Go to home',
     'common.accept': () => 'Claim My Credential',
     'common.loading': () => 'Loading',
     'toasts.selectCredential': () => 'Select a credential',
@@ -311,5 +350,132 @@ describe('ExchangeAcceptCredentials duplicate handling', () => {
         });
         expect(mocks.storeAndAddVCToWallet).not.toHaveBeenCalled();
         expect(mocks.onAccept).not.toHaveBeenCalled();
+    });
+});
+
+describe('ExchangeAcceptCredentials guardian outcomes', () => {
+    const awaiting = { id: 'awaiting-1', status: 'AWAITING_GUARDIAN' as const };
+    const rejected = { id: 'rejected-1', status: 'GUARDIAN_REJECTED' as const };
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mocks.initWallet.mockResolvedValue({
+            invoke: { verifyCredential: vi.fn().mockResolvedValue([]) },
+        });
+        mocks.storeAndAddVCToWallet.mockResolvedValue({
+            result: true,
+            credentialUri: 'lc:credential:new-copy',
+        });
+        mocks.requestDuplicateResolution.mockResolvedValue({ action: 'save', isDuplicate: false });
+    });
+
+    it('shows a pending summary instead of the empty state for a pending-only inbox response', () => {
+        const onCheckAgain = vi.fn();
+        const onGoHome = vi.fn();
+
+        render(
+            <ExchangeAcceptCredentials
+                verifiablePresentation={{ type: ['VerifiablePresentation'] } as VP}
+                inboxClaimOutcomes={[awaiting, rejected]}
+                onAccept={mocks.onAccept}
+                onCheckAgain={onCheckAgain}
+                onGoHome={onGoHome}
+                requestDuplicateResolution={mocks.requestDuplicateResolution}
+                isCheckingDuplicate={false}
+            />
+        );
+
+        const status = screen.getByRole('status');
+        expect(status).toHaveTextContent('Waiting for guardian approval');
+        expect(status).toHaveTextContent('1 credential is waiting for approval.');
+        expect(status).toHaveTextContent('1 credential was declined by a guardian.');
+        expect(screen.queryByText('No credentials found')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: /check again/i }));
+        fireEvent.click(screen.getByRole('button', { name: /go to home/i }));
+
+        expect(onCheckAgain).toHaveBeenCalledTimes(1);
+        expect(onGoHome).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the genuine empty state for a legacy response with no outcomes', () => {
+        render(
+            <ExchangeAcceptCredentials
+                verifiablePresentation={{ type: ['VerifiablePresentation'] } as VP}
+                onAccept={mocks.onAccept}
+                requestDuplicateResolution={mocks.requestDuplicateResolution}
+                isCheckingDuplicate={false}
+            />
+        );
+
+        expect(screen.getByText('No credentials found')).toBeInTheDocument();
+        expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    });
+
+    it('shows eligible cards and the pending summary for a mixed batch', () => {
+        render(
+            <ExchangeAcceptCredentials
+                verifiablePresentation={presentation}
+                inboxClaimOutcomes={[awaiting]}
+                onAccept={mocks.onAccept}
+                onCheckAgain={vi.fn()}
+                onGoHome={vi.fn()}
+                requestDuplicateResolution={mocks.requestDuplicateResolution}
+                isCheckingDuplicate={false}
+                sourceBoostUri={sourceBoostUri}
+            />
+        );
+
+        expect(screen.getByText('Credential card')).toBeInTheDocument();
+        expect(screen.getByRole('status')).toHaveTextContent('Waiting for guardian approval');
+    });
+
+    it('replaces eligible cards with the pending summary after local acceptance', async () => {
+        render(
+            <ExchangeAcceptCredentials
+                verifiablePresentation={presentation}
+                inboxClaimOutcomes={[awaiting]}
+                onAccept={mocks.onAccept}
+                onCheckAgain={vi.fn()}
+                onGoHome={vi.fn()}
+                requestDuplicateResolution={mocks.requestDuplicateResolution}
+                isCheckingDuplicate={false}
+                sourceBoostUri={sourceBoostUri}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Claim My Credential' }));
+
+        await waitFor(() => expect(mocks.storeAndAddVCToWallet).toHaveBeenCalledTimes(1));
+        await waitFor(() => expect(mocks.onAccept).toHaveBeenCalledWith({}, 1));
+
+        // Accepted credentials must not be offered for a second save.
+        await waitFor(() => expect(screen.queryByText('Credential card')).not.toBeInTheDocument());
+        expect(screen.getByRole('status')).toHaveTextContent('Waiting for guardian approval');
+    });
+
+    it('preserves the pending summary when every selected credential is skipped as a duplicate', async () => {
+        mocks.requestDuplicateResolution.mockResolvedValue({ action: 'skip', isDuplicate: true });
+
+        render(
+            <ExchangeAcceptCredentials
+                verifiablePresentation={presentation}
+                inboxClaimOutcomes={[awaiting]}
+                onAccept={mocks.onAccept}
+                onCheckAgain={vi.fn()}
+                onGoHome={vi.fn()}
+                requestDuplicateResolution={mocks.requestDuplicateResolution}
+                isCheckingDuplicate={false}
+                sourceBoostUri={sourceBoostUri}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Claim My Credential' }));
+
+        await waitFor(() => expect(mocks.onAccept).toHaveBeenCalledWith({}, 1));
+        expect(mocks.storeAndAddVCToWallet).not.toHaveBeenCalled();
+
+        await waitFor(() => expect(screen.queryByText('Credential card')).not.toBeInTheDocument());
+        expect(screen.getByRole('status')).toHaveTextContent('Waiting for guardian approval');
     });
 });

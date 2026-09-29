@@ -31,7 +31,10 @@ import {
 } from '@cache/claim-links';
 
 import { validateInboxClaimToken } from '@helpers/contact-method.helpers';
-import { getPendingInboxCredentialsForContactMethodId } from '@accesslayer/inbox-credential/read';
+import {
+    getInboxCredentialById,
+    getPendingInboxCredentialsForContactMethodId,
+} from '@accesslayer/inbox-credential/read';
 import { finalizeAndWipeInboxCredential } from '@accesslayer/inbox-credential/update';
 import { createClaimedRelationship } from '@accesslayer/inbox-credential/relationships/create';
 import { getContactMethodById, getProfileByContactMethod } from '@accesslayer/contact-method/read';
@@ -89,6 +92,16 @@ const VerifiablePresentationRequestValidator = z.object({
 const ParticipateInExchangeResponseValidator = z.object({
     verifiablePresentation: VPValidator.optional(),
     inboxDeliveries: z.array(z.object({ id: z.string(), credential: VCValidator })).optional(),
+    // Guardian-gated pending claims cannot be delivered yet. Surfacing the blocked
+    // ids lets the claimant UI show a waiting/rejected state instead of "no credentials".
+    inboxClaimOutcomes: z
+        .array(
+            z.object({
+                id: z.string(),
+                status: z.enum(['AWAITING_GUARDIAN', 'GUARDIAN_REJECTED']),
+            })
+        )
+        .optional(),
     verifiablePresentationRequest: VerifiablePresentationRequestValidator.optional(),
     redirectUrl: z.string().optional(),
 });
@@ -100,6 +113,8 @@ const ExchangeInfoValidator = z.object({
 });
 
 type ExchangeInfoType = z.infer<typeof ExchangeInfoValidator>;
+
+type InboxClaimOutcome = { id: string; status: 'AWAITING_GUARDIAN' | 'GUARDIAN_REJECTED' };
 
 export const workflowsRouter = t.router({
     participateInExchange: openRoute
@@ -606,6 +621,25 @@ async function handleInboxClaimPresentation(
     // Process each pending credential in parallel
     const credentialProcessingPromises = pendingCredentials.map(async inboxCredential => {
         try {
+            // Re-read the record right before processing so a guardian decision that landed
+            // after the pending query is honored for both the refresh and legacy branches.
+            // Unrelated read failures fall through to the generic failure path below; only an
+            // explicit awaiting/rejected status becomes a guardian outcome.
+            const currentInboxCredential = await getInboxCredentialById(inboxCredential.id);
+            if (!currentInboxCredential) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Inbox credential no longer exists.',
+                });
+            }
+            const guardianStatus = currentInboxCredential.guardianStatus;
+
+            if (guardianStatus === 'AWAITING_GUARDIAN' || guardianStatus === 'GUARDIAN_REJECTED') {
+                // Never sign, deliver, or emit issuance-failure logging/webhooks for a
+                // credential that is still blocked on guardian approval.
+                return { blocked: { id: inboxCredential.id, status: guardianStatus } };
+            }
+
             let finalCredential: VC;
             const credentialPayload = inboxCredential.refreshId
                 ? undefined
@@ -831,7 +865,7 @@ async function handleInboxClaimPresentation(
                 }
             }
 
-            return { id: inboxCredential.id, credential: finalCredential };
+            return { delivery: { id: inboxCredential.id, credential: finalCredential } };
         } catch (error) {
             console.error(`Failed to process inbox credential ${inboxCredential.id}:`, error);
 
@@ -908,7 +942,12 @@ async function handleInboxClaimPresentation(
     });
 
     const settledCredentials = await Promise.all(credentialProcessingPromises);
-    const inboxDeliveries = settledCredentials.filter(c => c !== null);
+    const inboxDeliveries = settledCredentials.flatMap(result =>
+        result?.delivery ? [result.delivery] : []
+    );
+    const inboxClaimOutcomes: InboxClaimOutcome[] = settledCredentials.flatMap(result =>
+        result?.blocked ? [result.blocked] : []
+    );
     if (inboxDeliveries.length === 0 && deliveryEncryptionFailed) {
         // Preserve the pending credentials and challenge so a compatible holder can retry.
         throw new TRPCError({
@@ -932,6 +971,7 @@ async function handleInboxClaimPresentation(
     return {
         verifiablePresentation: responseVP,
         inboxDeliveries,
+        ...(inboxClaimOutcomes.length > 0 ? { inboxClaimOutcomes } : {}),
     };
 }
 

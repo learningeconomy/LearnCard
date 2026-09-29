@@ -2744,6 +2744,30 @@
             "support": "Contactar soporte",
             "claimed": "Reclamada",
             "claiming": "Reclamando Credencial(es)..."
+        },
+        "accountApproval": {
+            "title": "Se necesita aprobación de la cuenta",
+            "description": "Tu padre, madre o tutor debe aprobar tu cuenta.",
+            "request": "Solicitar aprobación de la cuenta"
+        },
+        "pending": {
+            "title": "Esperando la aprobación del tutor",
+            "subtitle": "Algunas credenciales necesitan la aprobación de un padre, madre o tutor antes de poder añadirse.",
+            "awaiting": {
+                "one": "{{count}} credencial está esperando aprobación.",
+                "other": "{{count}} credenciales están esperando aprobación."
+            },
+            "awaitingHint": "La aprobación puede tardar un poco. Vuelve a comprobar si ya está lista.",
+            "rejected": {
+                "one": "{{count}} credencial fue rechazada por un padre, madre o tutor.",
+                "other": "{{count}} credenciales fueron rechazadas por un padre, madre o tutor."
+            },
+            "checkAgain": "Comprobar de nuevo",
+            "checking": "Comprobando...",
+            "checkAgainError": "No pudimos comprobar si hay novedades. Inténtalo de nuevo.",
+            "goHome": "Ir al inicio",
+            "rejectedTitle": "Aprobación del tutor rechazada",
+            "rejectedSubtitle": "Tu padre, madre o tutor no aprobó estas credenciales."
         }
     },
     "chapi": {
