@@ -106,6 +106,30 @@ describe('SA seed envelopes', () => {
         logSeedEncryptionFailure({ name: seed, code: seed, message: seed }, 'create', identity);
         expect(JSON.stringify(logger.mock.calls)).not.toContain(seed);
     });
+    it.each(['TypeError', 'RuntimeError', 'MongoNetworkError', 'MongoServerSelectionError'])(
+        'logs the safe %s name without sensitive exception details',
+        name => {
+            const logger = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+            const error = Object.assign(new Error(seed), { name, cause: { seed } });
+            logSeedEncryptionFailure(error, 'create', identity);
+            expect(logger).toHaveBeenCalledWith(
+                expect.objectContaining({ category: 'operation_failed', errorName: name })
+            );
+            expect(JSON.stringify(logger.mock.calls)).not.toContain(seed);
+        }
+    );
+
+    it('omits arbitrary names even on Error instances', () => {
+        const logger = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        logSeedEncryptionFailure(
+            Object.assign(new Error(seed), { name: seed }),
+            'create',
+            identity
+        );
+        expect(logger.mock.calls[0][0]).not.toHaveProperty('errorName');
+        expect(JSON.stringify(logger.mock.calls)).not.toContain(seed);
+    });
+
     it('round trips locally with fresh DEKs, IVs, and ciphertext for each authority', async () => {
         const encryption = createSeedEncryption(local);
         const first = await encryption.encrypt(seed, identity);

@@ -17,6 +17,27 @@ const IV_LENGTH = 12;
 const TAG_LENGTH = 16;
 const KEY_LENGTH = 32;
 const SEED_PATTERN = /^[a-fA-F0-9]{64}$/;
+// Error names are mutable and may contain secrets; only emit known diagnostic names.
+const SAFE_ERROR_NAMES = new Set([
+    'Error',
+    'TypeError',
+    'RangeError',
+    'ReferenceError',
+    'SyntaxError',
+    'URIError',
+    'EvalError',
+    'AggregateError',
+    'RuntimeError',
+    'CompileError',
+    'LinkError',
+    'MongoError',
+    'MongoNetworkError',
+    'MongoNetworkTimeoutError',
+    'MongoServerSelectionError',
+    'MongoOperationTimeoutError',
+    'MongoNotConnectedError',
+    'MongoTopologyClosedError',
+]);
 
 /** Deliberately contains no original exception/cause: SDK and Mongo errors can carry secrets. */
 export class SeedEncryptionError extends Error {
@@ -70,6 +91,9 @@ export const logSeedEncryptionFailure = (
             : 'unknown',
         category: error instanceof SeedEncryptionError ? error.category : 'operation_failed',
         awsRequestId: error instanceof SeedEncryptionError ? error.awsRequestId : undefined,
+        ...(error instanceof Error && SAFE_ERROR_NAMES.has(error.name)
+            ? { errorName: error.name }
+            : {}),
         // Mongo messages/keyValue can contain the duplicate document or seed. Only log
         // the known error class and numeric server code (e.g. 11000 for duplicate keys).
         ...(error instanceof MongoServerError
