@@ -89,7 +89,7 @@ const issuanceErrorWebhooks = () =>
 beforeAll(async () => {
     issuer = await getUser('e'.repeat(64));
     holder = await getUser('9'.repeat(64));
-    vi.spyOn(notifications, 'addNotificationToQueue').mockResolvedValue();
+    vi.spyOn(notifications, 'addNotificationToQueue').mockResolvedValue(undefined);
 });
 
 beforeEach(async () => {

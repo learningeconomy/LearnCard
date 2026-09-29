@@ -943,10 +943,10 @@ async function handleInboxClaimPresentation(
 
     const settledCredentials = await Promise.all(credentialProcessingPromises);
     const inboxDeliveries = settledCredentials.flatMap(result =>
-        result !== null && 'delivery' in result ? [result.delivery] : []
+        result?.delivery ? [result.delivery] : []
     );
     const inboxClaimOutcomes: InboxClaimOutcome[] = settledCredentials.flatMap(result =>
-        result !== null && 'blocked' in result ? [result.blocked] : []
+        result?.blocked ? [result.blocked] : []
     );
     if (inboxDeliveries.length === 0 && deliveryEncryptionFailed) {
         // Preserve the pending credentials and challenge so a compatible holder can retry.

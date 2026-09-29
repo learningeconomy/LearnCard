@@ -56,7 +56,7 @@ const STRINGS: Record<
             </>
         ),
         body2: b =>
-            `Before you can claim it, your guardian needs to review and approve it first. We\u2019ve already sent them a notification \u2014 once they approve, you\u2019ll receive a follow-up email and the credential will appear in your ${b} account.`,
+            `Before you can claim it, your guardian needs to review and approve it. After approval, return to your ${b} account to claim your credential.`,
         statusBadge: 'Awaiting Guardian Approval',
         muted: 'No action is needed from you right now.',
         sincerely: 'Sincerely,',
@@ -73,7 +73,7 @@ const STRINGS: Record<
             </>
         ),
         body2: b =>
-            `Antes de poder reclamarla, tu tutor debe revisarla y aprobarla primero. Ya le hemos enviado una notificación \u2014 cuando la apruebe, recibirás un correo de seguimiento y la credencial aparecerá en tu cuenta de ${b}.`,
+            `Antes de poder reclamarla, tu tutor debe revisarla y aprobarla. Después de la aprobación, vuelve a tu cuenta de ${b} para reclamar tu credencial.`,
         statusBadge: 'Pendiente de aprobación del tutor',
         muted: 'No necesitas realizar ninguna acción en este momento.',
         sincerely: 'Atentamente,',
@@ -90,7 +90,7 @@ const STRINGS: Record<
             </>
         ),
         body2: b =>
-            `Avant de pouvoir le réclamer, votre tuteur doit d\u2019abord le vérifier et l\u2019approuver. Nous lui avons déjà envoyé une notification \u2014 une fois qu\u2019il aura approuvé, vous recevrez un e-mail de suivi et le titre apparaîtra dans votre compte ${b}.`,
+            `Votre tuteur doit vérifier et approuver ce titre avant que vous puissiez le réclamer. Après approbation, revenez dans votre compte ${b} pour le réclamer.`,
         statusBadge: 'En attente d\u2019approbation du tuteur',
         muted: 'Aucune action n\u2019est requise de votre part pour le moment.',
         sincerely: 'Cordialement,',
@@ -107,7 +107,7 @@ const STRINGS: Record<
             </>
         ),
         body2: b =>
-            `قبل أن تتمكن من المطالبة بها، يجب على ولي أمرك مراجعتها والموافقة عليها أولاً. لقد أرسلنا إليه إشعارًا بالفعل \u2014 بمجرد موافقته، ستتلقى رسالة متابعة وستظهر الشهادة في حسابك على ${b}.`,
+            `يجب على ولي أمرك مراجعة الشهادة والموافقة عليها قبل أن تتمكن من المطالبة بها. بعد الموافقة، عُد إلى حسابك على ${b} للمطالبة بشهادتك.`,
         statusBadge: 'بانتظار موافقة ولي الأمر',
         muted: 'لا حاجة لأي إجراء منك في الوقت الحالي.',
         sincerely: 'مع التحيات،',
