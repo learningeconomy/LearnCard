@@ -35,7 +35,7 @@ vi.mock('@ionic/react', () => ({
 }));
 
 vi.mock('ionicons/icons', () => ({
-    shieldCheckmarkOutline: 'shield',
+    shieldOutline: 'shield',
     alertCircleOutline: 'alert',
     closeCircleOutline: 'close',
     homeOutline: 'home',
