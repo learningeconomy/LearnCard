@@ -77,6 +77,71 @@ export const verifyCredentialCanBeSigned = async (credential: UnsignedVC): Promi
     return true;
 };
 
+/**
+ * Minimal delivery shape needed to build the recipient-facing awaiting-guardian
+ * email. Kept structural so both guardian paths share it without widening the
+ * public `IssueInboxCredentialType` configuration type.
+ */
+type AwaitingGuardianDelivery = {
+    template?: {
+        model?: {
+            issuer?: { name?: string; logoUrl?: string };
+            credential?: { name?: string };
+            recipient?: { name?: string };
+        };
+    };
+};
+
+/**
+ * Sends the recipient-facing "credential awaiting guardian approval" notice.
+ *
+ * Both guardian paths (explicit `guardianEmail` and auto-detected managed
+ * child) must tell the recipient that approval is pending instead of inviting a
+ * claim that will be rejected. Caller-supplied delivery template overrides are
+ * merged into the issuer/credential/recipient model so branding overrides are
+ * never silently dropped. Callers decide whether `delivery.suppress` applies;
+ * the guardian approval request is dispatched separately.
+ */
+export const sendCredentialAwaitingGuardianEmail = async ({
+    recipient,
+    issuerProfile,
+    credential,
+    delivery,
+    localeProfile,
+    ctx,
+}: {
+    recipient: ContactMethodQueryType;
+    issuerProfile: ProfileType;
+    credential: VC | UnsignedVC | VP;
+    delivery?: AwaitingGuardianDelivery;
+    localeProfile?: ProfileType | null;
+    ctx: Context;
+}): Promise<void> => {
+    const deliveryService = getDeliveryService(recipient);
+
+    await deliveryService.send({
+        contactMethod: recipient,
+        templateId: 'credential-awaiting-guardian',
+        templateModel: {
+            issuer: {
+                name: issuerProfile.displayName,
+                ...(delivery?.template?.model?.issuer ?? {}),
+            },
+            credential: {
+                name: (credential as any)?.name,
+                ...(delivery?.template?.model?.credential ?? {}),
+            },
+            recipient: {
+                ...(delivery?.template?.model?.recipient ?? {}),
+                ...(recipient.type === 'email' ? { email: recipient.value } : {}),
+            },
+        },
+        branding: ctx.tenant?.emailBranding,
+        locale: resolveRecipientLocale(localeProfile),
+        messageStream: 'universal-inbox',
+    });
+};
+
 export const claimIntoInbox = async (
     issuerProfile: ProfileType,
     signingAuthorityForUser: SigningAuthorityForUserType,
@@ -622,27 +687,13 @@ export const issueToInbox = async (
         if (guardianEmail) {
             // Guardian gate: send TWO emails instead of the normal claim email
             // 1) Student: "Your guardian must approve before you can claim"
-            const studentDeliveryService = getDeliveryService(recipient);
-            await studentDeliveryService.send({
-                contactMethod: recipient,
-                templateId: 'credential-awaiting-guardian',
-                templateModel: {
-                    issuer: {
-                        name: issuerProfile.displayName,
-                        ...(delivery?.template?.model?.issuer ?? {}),
-                    },
-                    credential: {
-                        name: (credential as any)?.name,
-                        ...(delivery?.template?.model?.credential ?? {}),
-                    },
-                    recipient: {
-                        ...(delivery?.template?.model?.recipient ?? {}),
-                        ...(recipient.type === 'email' ? { email: recipient.value } : {}),
-                    },
-                },
-                branding: ctx.tenant?.emailBranding,
-                locale: resolveRecipientLocale(existingProfile),
-                messageStream: 'universal-inbox',
+            await sendCredentialAwaitingGuardianEmail({
+                recipient,
+                issuerProfile,
+                credential,
+                delivery,
+                localeProfile: existingProfile,
+                ctx,
             });
 
             // 2) Guardian: "Approval required — click to review and approve"
@@ -831,62 +882,79 @@ export const issueToInbox = async (
                 );
             }
 
-            // Still send the normal claim email to the child so they know a credential arrived
+            // Recipient-facing email. A guardian-pending credential must not
+            // invite the child to claim now: use the awaiting-guardian template
+            // by default so the child's email matches the explicit
+            // `guardianEmail` path. An explicit caller template override is kept
+            // with its claim link so custom delivery integrations still work.
             if (!delivery?.suppress) {
-                const emailClaimToken = await generateInboxClaimToken(
-                    recipientContactMethod.id,
-                    expiresInDays ? 24 * expiresInDays : 24,
-                    true
-                );
-                const emailClaimUrl = generateClaimUrl(emailClaimToken);
-                await createEmailSentRelationship(
-                    issuerProfile.did,
-                    inboxCredential?.id,
-                    recipient.value,
-                    emailClaimToken
-                );
+                const customTemplateId = delivery?.template?.id;
 
-                const deliveryService = getDeliveryService(recipient);
-                const injectedTemplateFields = {
-                    recipient: {
-                        ...(delivery?.template?.model?.recipient ?? {}),
-                        ...(recipientContactMethod
-                            ? {
-                                  ...(recipientContactMethod.type === 'email'
-                                      ? {
-                                            email: recipientContactMethod.value,
-                                        }
-                                      : {}),
-                                  ...(recipientContactMethod.type === 'phone'
-                                      ? {
-                                            phone: recipientContactMethod.value,
-                                        }
-                                      : {}),
-                              }
-                            : {}),
-                    },
-                    issuer: {
-                        name: issuerProfile.displayName,
-                        ...(delivery?.template?.model?.issuer ?? {}),
-                    },
-                    credential: {
-                        name: (credential as any)?.name,
-                        ...(delivery?.template?.model?.credential ?? {}),
-                    },
-                };
+                if (customTemplateId) {
+                    const emailClaimToken = await generateInboxClaimToken(
+                        recipientContactMethod.id,
+                        expiresInDays ? 24 * expiresInDays : 24,
+                        true
+                    );
+                    const emailClaimUrl = generateClaimUrl(emailClaimToken);
+                    await createEmailSentRelationship(
+                        issuerProfile.did,
+                        inboxCredential?.id,
+                        recipient.value,
+                        emailClaimToken
+                    );
 
-                await deliveryService.send({
-                    contactMethod: recipient,
-                    templateId: delivery?.template?.id ?? 'universal-inbox',
-                    templateModel: {
-                        emailClaimUrl,
-                        claimToken: emailClaimToken,
-                        ...injectedTemplateFields,
-                    },
-                    branding: ctx.tenant?.emailBranding,
-                    locale: resolveRecipientLocale(existingProfile),
-                    messageStream: 'universal-inbox',
-                });
+                    const deliveryService = getDeliveryService(recipient);
+                    const injectedTemplateFields = {
+                        recipient: {
+                            ...(delivery?.template?.model?.recipient ?? {}),
+                            ...(recipientContactMethod
+                                ? {
+                                      ...(recipientContactMethod.type === 'email'
+                                          ? {
+                                                email: recipientContactMethod.value,
+                                            }
+                                          : {}),
+                                      ...(recipientContactMethod.type === 'phone'
+                                          ? {
+                                                phone: recipientContactMethod.value,
+                                            }
+                                          : {}),
+                                  }
+                                : {}),
+                        },
+                        issuer: {
+                            name: issuerProfile.displayName,
+                            ...(delivery?.template?.model?.issuer ?? {}),
+                        },
+                        credential: {
+                            name: (credential as any)?.name,
+                            ...(delivery?.template?.model?.credential ?? {}),
+                        },
+                    };
+
+                    await deliveryService.send({
+                        contactMethod: recipient,
+                        templateId: customTemplateId,
+                        templateModel: {
+                            emailClaimUrl,
+                            claimToken: emailClaimToken,
+                            ...injectedTemplateFields,
+                        },
+                        branding: ctx.tenant?.emailBranding,
+                        locale: resolveRecipientLocale(existingProfile),
+                        messageStream: 'universal-inbox',
+                    });
+                } else {
+                    await sendCredentialAwaitingGuardianEmail({
+                        recipient,
+                        issuerProfile,
+                        credential,
+                        delivery,
+                        localeProfile: existingProfile,
+                        ctx,
+                    });
+                }
             }
         } else if (!delivery?.suppress) {
             const emailClaimToken = await generateInboxClaimToken(
