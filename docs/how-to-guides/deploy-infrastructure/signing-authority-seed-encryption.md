@@ -19,6 +19,8 @@ Each authority uses a separate 256-bit data-encryption key. AWS Key Management S
 
 Decryption selects the provider recorded in each envelope. An offline/test process configured with both the original local KEK and a KMS ARN can read both formats while creating new envelopes with KMS. Missing provider keys or failed decryptions remain errors; the service never retries with another provider or a retained plaintext seed. Local envelopes remain restricted to offline/test environments. The migration phases convert plaintext records, not existing encrypted envelopes: moving a local database to an online KMS deployment requires a separate explicit re-encryption of its `local-v1` records before cutover. Simply changing configuration or running `prepare` does not perform that conversion.
 
+Encryption protects seeds at rest. Temporary plaintext and data-key buffers are cleared after use, but the signing SDK accepts immutable JavaScript seed strings and retains signing keys in cached wallets. Strings and SDK-internal copies cannot be reliably zeroed; this implementation does not protect against process-memory access, heap snapshots, or crash dumps.
+
 Offline development (`IS_OFFLINE=true`, outside `NODE_ENV=test`) preserves plaintext writes and legacy reads by default. No local encryption key is needed for this mode. Encryption is opt-in: generate a local key using:
 
 ```sh

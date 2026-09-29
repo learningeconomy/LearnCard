@@ -126,14 +126,12 @@ export const getSigningAuthorityLearnCard = async (
     }
     const cacheKey = `${ownerDID}|${name}`;
     let fingerprint: string;
-    let seed: string;
     try {
         // Validate the envelope before accepting a cache hit. The database lookup remains
         // on the warm path so deletion/recreation or modification cannot reuse an old key.
         fingerprint = getSeedCacheFingerprint(sa);
         const cachedValue = saCardsCache.get(cacheKey);
         if (cachedValue?.fingerprint === fingerprint) return cachedValue.card;
-        seed = await decryptSigningAuthoritySeed(sa);
     } catch (error) {
         logSeedEncryptionFailure(error, 'decrypt', sa);
         throw error;
@@ -144,24 +142,40 @@ export const getSigningAuthorityLearnCard = async (
         ownerDID,
     });
 
-    const saLearnCard = ownerDID.startsWith('did:web:')
-        ? await initLearnCard({
-              didkit: await getDidKitInit(),
-              seed,
-              didWeb: ownerDID,
-              cloud,
-              allowRemoteContexts: true,
-          })
-        : await initLearnCard({
-              didkit: await getDidKitInit(),
-              seed,
-              cloud,
-              allowRemoteContexts: true,
-          });
+    // Finish engine setup before decrypting so the seed is only materialized when
+    // the signer is ready to initialize.
+    const options: LearnCardFromSeed['args'] | DidWebLearnCardFromSeed['args'] = {
+        didkit: await getDidKitInit(),
+        seed: '',
+        cloud,
+        allowRemoteContexts: true,
+        ...(ownerDID.startsWith('did:web:') ? { didWeb: ownerDID } : {}),
+    };
 
-    saCardsCache.add(cacheKey, { fingerprint, card: saLearnCard });
+    try {
+        try {
+            options.seed = await decryptSigningAuthoritySeed(sa);
+        } catch (error) {
+            logSeedEncryptionFailure(error, 'decrypt', sa);
+            throw error;
+        }
 
-    return saLearnCard;
+        // Select the seed initializer overload without copying the seed-bearing options.
+        const initialize: (
+            config: LearnCardFromSeed['args'] | DidWebLearnCardFromSeed['args']
+        ) => Promise<LearnCardFromSeed['returnValue'] | DidWebLearnCardFromSeed['returnValue']> =
+            initLearnCard;
+        const saLearnCard = await initialize(options);
+        saCardsCache.add(cacheKey, { fingerprint, card: saLearnCard });
+
+        return saLearnCard;
+    } finally {
+        // Release this transient reference on both success and failure. This is
+        // not zeroization: initLearnCard requires an immutable string, and its
+        // DID Key plugin retains the seed/private keys for the cached signer's
+        // lifetime. Envelope encryption protects storage, not process memory.
+        options.seed = '';
+    }
 };
 
 export const getServerDidWebDID = (): string => {

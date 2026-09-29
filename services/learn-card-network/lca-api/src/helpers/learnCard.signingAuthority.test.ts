@@ -1,10 +1,15 @@
 import { KMSClient, GenerateDataKeyCommand } from '@aws-sdk/client-kms';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ read: vi.fn(), init: vi.fn(), keys: [] as string[] }));
+const mocks = vi.hoisted(() => ({
+    read: vi.fn(),
+    init: vi.fn(),
+    nativeInit: vi.fn(async () => ({})),
+    keys: [] as string[],
+}));
 vi.mock('@accesslayer/signing-authority/read', () => ({ getSigningAuthorityForDid: mocks.read }));
 vi.mock('@learncard/init', () => ({ initLearnCard: mocks.init }));
-vi.mock('@learncard/didkit-plugin-node', () => ({ getDidKitPlugin: async () => ({}) }));
+vi.mock('@learncard/didkit-plugin-node', () => ({ getDidKitPlugin: mocks.nativeInit }));
 vi.mock('@cache/in-memory-lru', async importOriginal => {
     const actual = await importOriginal<typeof import('@cache/in-memory-lru')>();
     return {
@@ -60,6 +65,78 @@ const authority = async (id: string, ownerDid = 'did:example:owner', seed = 'a'.
 };
 
 describe('SA signing cache', () => {
+    it('waits for engine setup before decrypting the seed', async () => {
+        const sa = await authority('engine-setup', 'did:example:engine-setup');
+        mocks.read.mockResolvedValue(sa);
+        let finishEngineSetup!: () => void;
+        mocks.nativeInit.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    finishEngineSetup = () => resolve({});
+                })
+        );
+        send.mockClear();
+
+        const initialization = getSigningAuthorityLearnCard(sa.ownerDid, sa.name);
+        await vi.waitFor(() => expect(finishEngineSetup).toBeTypeOf('function'));
+        expect(send).not.toHaveBeenCalled();
+        expect(mocks.init).not.toHaveBeenCalled();
+
+        finishEngineSetup();
+        await initialization;
+        expect(send).toHaveBeenCalledTimes(1);
+    });
+
+    it.each(['did:example:seed-lifetime', 'did:web:seed-lifetime.example'])(
+        'releases initialization options after success for %s',
+        async ownerDid => {
+            const seed = 'c'.repeat(64);
+            const sa = await authority(ownerDid, ownerDid, seed);
+            mocks.read.mockResolvedValue(sa);
+            let finishInitialization!: () => void;
+            let initializationOptions: { seed: string; didWeb?: string } | undefined;
+            const card = {};
+            mocks.init.mockImplementationOnce(options => {
+                initializationOptions = options;
+                return new Promise(resolve => {
+                    finishInitialization = () => resolve(card);
+                });
+            });
+
+            const initialization = getSigningAuthorityLearnCard(sa.ownerDid, sa.name);
+            await vi.waitFor(() => expect(initializationOptions?.seed).toBe(seed));
+            expect(initializationOptions?.didWeb).toBe(
+                ownerDid.startsWith('did:web:') ? ownerDid : undefined
+            );
+            expect(mocks.keys).toEqual([]);
+
+            finishInitialization();
+            expect(await initialization).toBe(card);
+            expect(initializationOptions?.seed).toBe('');
+            expect(await getSigningAuthorityLearnCard(sa.ownerDid, sa.name)).toBe(card);
+            expect(mocks.init).toHaveBeenCalledTimes(1);
+        }
+    );
+
+    it('releases initialization options after failure and does not cache a failed signer', async () => {
+        const sa = await authority('init-failure', 'did:example:init-failure');
+        mocks.read.mockResolvedValue(sa);
+        let initializationOptions: { seed: string } | undefined;
+        const failure = new Error('Signer initialization failed');
+        mocks.init.mockImplementationOnce(async options => {
+            initializationOptions = options;
+            expect(options.seed).toBe('a'.repeat(64));
+            throw failure;
+        });
+
+        await expect(getSigningAuthorityLearnCard(sa.ownerDid, sa.name)).rejects.toBe(failure);
+        expect(initializationOptions?.seed).toBe('');
+        expect(mocks.keys).toEqual([]);
+
+        await getSigningAuthorityLearnCard(sa.ownerDid, sa.name);
+        expect(mocks.init).toHaveBeenCalledTimes(2);
+    });
+
     it('makes one KMS call when cold and zero when warm, retaining no seed in cache keys', async () => {
         const sa = await authority('warm');
         mocks.read.mockResolvedValue(sa);
