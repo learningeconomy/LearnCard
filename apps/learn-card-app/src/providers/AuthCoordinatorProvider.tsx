@@ -49,6 +49,8 @@ import {
     getAuthConfig,
     getSSSConfig,
     getLogger,
+    useToast,
+    ToastTypeEnum,
     type AuthCoordinatorContextValue,
     type AuthProvider,
     type AuthUser,
@@ -86,7 +88,11 @@ import {
     createAdaptiveStorage,
     isPublicComputerMode,
 } from '@learncard/sss-key-manager';
-import type { RecoveryInput, RecoverySetupInput } from '@learncard/sss-key-manager';
+import type {
+    RecoveryConfirmationInput,
+    RecoveryInput,
+    RecoverySetupInput,
+} from '@learncard/sss-key-manager';
 import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
 import { createNativeSSSStorage } from 'learn-card-base/security/nativeSSSStorage';
 
@@ -108,7 +114,6 @@ import '../auth/firebaseProviderInit';
 import {
     countUserConfiguredRecoveryMethods,
     mergeAuthUserIntoCurrentUser,
-    registerRecoveryMethodCompletion,
     shouldResetWalletOnStatus,
 } from './authCoordinator.helpers';
 import { getTenantHeaders, getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
@@ -335,6 +340,9 @@ export interface AppAuthContextValue extends AuthCoordinatorContextValue {
     /** Number of recovery methods configured (null = not yet checked) */
     recoveryMethodCount: number | null;
 
+    /** Migration is provisional until a recovery method is confirmed */
+    recoveryActivationPending: boolean;
+
     /** Open the recovery setup modal */
     openRecoverySetup: (options?: RecoverySetupOptions) => void;
 
@@ -398,6 +406,7 @@ const AuthSessionManager: React.FC<{
     authProvider: AuthProvider | null;
 }> = ({ children, authProvider }) => {
     const coordinator = useBaseAuthCoordinator();
+    const { presentToast } = useToast();
     const signInAdapter = useSignInAdapter();
     const authConfig = getAuthConfig();
 
@@ -450,15 +459,14 @@ const AuthSessionManager: React.FC<{
     // --- Recovery setup prompt (shown after first-time setup with no recovery methods) ---
     const [showRecoverySetup, setShowRecoverySetup] = useState(false);
     const recoverySetupOptionsRef = useRef<RecoverySetupOptions>({});
-    const completedRecoveryMethodsRef = useRef<Set<RecoverySetupType>>(new Set());
     const wasNewUserRef = useRef(false);
 
     // null = recovery method status has not been checked yet
     const [recoveryMethodCount, setRecoveryMethodCount] = useState<number | null>(null);
+    const recoveryMethodReadRef = useRef(0);
 
     const openRecoverySetup = useCallback((options: RecoverySetupOptions = {}) => {
         recoverySetupOptionsRef.current = options;
-        completedRecoveryMethodsRef.current.clear();
         setShowRecoverySetup(true);
     }, []);
 
@@ -466,16 +474,11 @@ const AuthSessionManager: React.FC<{
         const onClosed = recoverySetupOptionsRef.current.onClosed;
 
         recoverySetupOptionsRef.current = {};
-        completedRecoveryMethodsRef.current.clear();
         setShowRecoverySetup(false);
         onClosed?.();
     }, []);
 
     const completeRecoverySetup = useCallback((method: RecoverySetupType) => {
-        if (registerRecoveryMethodCompletion(completedRecoveryMethodsRef.current, method)) {
-            setRecoveryMethodCount(previousCount => (previousCount ?? 0) + 1);
-        }
-
         const onCompleted = recoverySetupOptionsRef.current.onCompleted;
 
         // Prompt-owned setup is a single-action flow, so return to the Dashboard.
@@ -991,6 +994,7 @@ const AuthSessionManager: React.FC<{
                         keyDerivation.getAvailableRecoveryMethods
                     ) {
                         wasNewUserRef.current = false;
+                        const readId = ++recoveryMethodReadRef.current;
 
                         try {
                             const token = await authProvider.getIdToken();
@@ -1010,7 +1014,8 @@ const AuthSessionManager: React.FC<{
                                 status?.maskedRecoveryEmail
                             );
 
-                            setRecoveryMethodCount(userConfiguredCount);
+                            if (readId === recoveryMethodReadRef.current)
+                                setRecoveryMethodCount(userConfiguredCount);
                         } catch {
                             // Non-critical — don't block the user
                         }
@@ -1042,6 +1047,7 @@ const AuthSessionManager: React.FC<{
             setWallet(null);
             setLcnProfile(null);
             setRecoveryMethodCount(null);
+            recoveryMethodReadRef.current += 1;
             walletInitRef.current = false;
             walletModeRef.current = null;
             walletModeStore.set.mode(null);
@@ -1073,13 +1079,15 @@ const AuthSessionManager: React.FC<{
             coordinator.state.status !== 'ready' ||
             !wallet ||
             !authProvider ||
-            recoveryMethodCount !== null ||
+            (recoveryMethodCount !== null && coordinator.recoverySetupRevision === 0) ||
             !keyDerivation.capabilities.recovery ||
             !keyDerivation.getAvailableRecoveryMethods
         )
             return;
 
         let cancelled = false;
+
+        const readId = ++recoveryMethodReadRef.current;
 
         void (async () => {
             try {
@@ -1096,7 +1104,7 @@ const AuthSessionManager: React.FC<{
                           .catch(() => null)
                     : null;
 
-                if (!cancelled) {
+                if (!cancelled && readId === recoveryMethodReadRef.current) {
                     setRecoveryMethodCount(
                         countUserConfiguredRecoveryMethods(methods, status?.maskedRecoveryEmail)
                     );
@@ -1109,7 +1117,14 @@ const AuthSessionManager: React.FC<{
         return () => {
             cancelled = true;
         };
-    }, [coordinator.state.status, wallet, authProvider, recoveryMethodCount, keyDerivation]);
+    }, [
+        coordinator.state.status,
+        coordinator.recoverySetupRevision,
+        wallet,
+        authProvider,
+        recoveryMethodCount,
+        keyDerivation,
+    ]);
 
     // --- Clear stale legacy stores when coordinator is idle ---
     // After a public-computer session, the tab close destroys the Firebase
@@ -1185,7 +1200,12 @@ const AuthSessionManager: React.FC<{
 
     // --- Derived values for the recovery modal ---
     const availableMethods = useMemo(() => {
-        if (coordinator.state.status !== 'needs_recovery') return [];
+        if (
+            coordinator.state.status !== 'needs_recovery' &&
+            coordinator.state.status !== 'identity_recovery'
+        ) {
+            return [];
+        }
 
         return coordinator.state.recoveryMethods.map(m => ({
             type: m.type,
@@ -1198,7 +1218,10 @@ const AuthSessionManager: React.FC<{
     // --- Determine which overlay (if any) to show ---
     const { status } = coordinator.state;
 
-    const showRecovery = status === 'needs_recovery' && !!authProvider;
+    const showRecovery =
+        (status === 'needs_recovery' && !!authProvider) ||
+        status === 'identity_recovery' ||
+        status === 'identity_recovery_success';
 
     const showMigrationLoading = status === 'needs_migration' && !migrationStallVisible;
 
@@ -1243,6 +1266,7 @@ const AuthSessionManager: React.FC<{
 
             // Recovery
             recoveryMethodCount,
+            recoveryActivationPending: coordinator.needsActivation,
             openRecoverySetup,
 
             // Provider-agnostic auth provider (consumers should use this
@@ -1271,7 +1295,7 @@ const AuthSessionManager: React.FC<{
             {children}
 
             {/* ── Recovery overlay ─────────────────────────────── */}
-            {showRecovery && authProvider && (
+            {showRecovery && (
                 <RecoveryFlowModal
                     availableMethods={availableMethods}
                     recoveryReason={
@@ -1284,17 +1308,79 @@ const AuthSessionManager: React.FC<{
                             ? coordinator.state.maskedRecoveryEmail
                             : null
                     }
+                    identityPhase={
+                        coordinator.state.status === 'identity_recovery'
+                            ? coordinator.state.phase
+                            : coordinator.state.status === 'identity_recovery_success'
+                              ? 'success'
+                              : undefined
+                    }
+                    identityEmail={
+                        coordinator.state.status === 'identity_recovery'
+                            ? coordinator.state.email
+                            : undefined
+                    }
+                    identityError={
+                        coordinator.state.status === 'identity_recovery'
+                            ? coordinator.state.error
+                            : undefined
+                    }
+                    onSendIdentityCode={async (email: string) => {
+                        await coordinator.sendIdentityRecoveryCode(email);
+                    }}
+                    onVerifyIdentityCode={async (code: string) => {
+                        await coordinator.verifyIdentityRecoveryCode(code);
+                    }}
+                    onContinueWithNewLogin={() => {
+                        coordinator.continueIdentityRecoveryLogin();
+                    }}
+                    onFinishIdentityRecovery={() => {
+                        coordinator.finishIdentityRecovery();
+                    }}
                     onRecoverWithPasskey={async (credentialId: string) => {
-                        await coordinator.recover({ method: 'passkey', credentialId });
+                        if (coordinator.state.status === 'identity_recovery') {
+                            await coordinator.prepareIdentityRecovery({
+                                method: 'passkey',
+                                credentialId,
+                            });
+                        } else {
+                            await coordinator.recover({ method: 'passkey', credentialId });
+                        }
                     }}
                     onRecoverWithPhrase={async (phrase: string) => {
-                        await coordinator.recover({ method: 'phrase', phrase });
+                        if (coordinator.state.status === 'identity_recovery') {
+                            await coordinator.prepareIdentityRecovery({
+                                method: 'phrase',
+                                phrase,
+                            });
+                        } else {
+                            await coordinator.recover({ method: 'phrase', phrase });
+                        }
                     }}
                     onRecoverWithBackup={async (fileContents: string, password: string) => {
-                        await coordinator.recover({ method: 'backup', fileContents, password });
+                        if (coordinator.state.status === 'identity_recovery') {
+                            await coordinator.prepareIdentityRecovery({
+                                method: 'backup',
+                                fileContents,
+                                password,
+                            });
+                        } else {
+                            await coordinator.recover({
+                                method: 'backup',
+                                fileContents,
+                                password,
+                            });
+                        }
                     }}
                     onRecoverWithEmail={async (emailShare: string) => {
-                        await coordinator.recover({ method: 'email', emailShare });
+                        if (coordinator.state.status === 'identity_recovery') {
+                            await coordinator.prepareIdentityRecovery({
+                                method: 'email',
+                                emailShare,
+                            });
+                        } else {
+                            await coordinator.recover({ method: 'email', emailShare });
+                        }
                     }}
                     onRecoverWithDevice={async (deviceShare: string, shareVersion?: number) => {
                         // Store the received device share locally, then
@@ -1312,9 +1398,22 @@ const AuthSessionManager: React.FC<{
                             );
                         }
 
-                        await coordinator.initialize();
+                        if (coordinator.state.status === 'identity_recovery') {
+                            await coordinator.prepareIdentityRecovery({ method: 'device' });
+                        } else {
+                            await coordinator.initialize();
+                        }
                     }}
-                    onCancel={handleLogout}
+                    onCancel={() => {
+                        if (
+                            coordinator.state.status === 'identity_recovery' ||
+                            coordinator.state.status === 'identity_recovery_success'
+                        ) {
+                            coordinator.cancelIdentityRecovery();
+                        } else {
+                            handleLogout();
+                        }
+                    }}
                 />
             )}
 
@@ -1435,6 +1534,10 @@ const AuthSessionManager: React.FC<{
                                 );
                             } catch (e) {
                                 log.warn('Email backup share after upgrade failed (non-fatal)', e);
+                                presentToast(m['recovery.error.default'](), {
+                                    type: ToastTypeEnum.Error,
+                                    hasDismissButton: true,
+                                });
                             }
                         }
 
@@ -1562,6 +1665,9 @@ const AuthSessionManager: React.FC<{
                             providerType,
                         });
 
+                        if (input.method !== 'passkey')
+                            coordinator.resetRecoverySetup(input.method);
+
                         return keyDerivation.setupRecoveryMethod!({
                             token,
                             providerType,
@@ -1570,6 +1676,25 @@ const AuthSessionManager: React.FC<{
                             authUser: authUser ?? undefined,
                             signDidAuthVp,
                         });
+                    };
+
+                    const confirmMethod = async (input: RecoveryConfirmationInput) => {
+                        if (!keyDerivation.confirmRecoveryMethod) {
+                            throw new Error('Recovery confirmation is unavailable.');
+                        }
+
+                        const token = await authProvider.getIdToken();
+                        const providerType = authProvider.getProviderType();
+
+                        await coordinator.runRecoverySetup(input.method, () =>
+                            keyDerivation.confirmRecoveryMethod!({
+                                token,
+                                providerType,
+                                privateKey: currentPrivateKey,
+                                input,
+                                signDidAuthVp,
+                            })
+                        );
                     };
 
                     const getTokenAndProvider = async () => {
@@ -1597,9 +1722,9 @@ const AuthSessionManager: React.FC<{
                                 onCompleted={completeRecoverySetup}
                                 onSetupPasskey={async () => {
                                     const authUser = await authProvider.getCurrentUser();
-                                    const result = await setupMethod(
-                                        { method: 'passkey' },
-                                        authUser
+                                    const result = await coordinator.runRecoverySetup(
+                                        'passkey',
+                                        () => setupMethod({ method: 'passkey' }, authUser)
                                     );
                                     return result.method === 'passkey' ? result.credentialId : '';
                                 }}
@@ -1609,7 +1734,17 @@ const AuthSessionManager: React.FC<{
                                         { method: 'phrase' },
                                         authUser
                                     );
-                                    return result.method === 'phrase' ? result.phrase : '';
+                                    if (result.method !== 'phrase') {
+                                        throw new Error('Could not generate recovery words.');
+                                    }
+
+                                    return {
+                                        phrase: result.phrase,
+                                        challengeWordIndices: result.challengeWordIndices,
+                                    };
+                                }}
+                                onConfirmPhrase={async challengeWords => {
+                                    await confirmMethod({ method: 'phrase', challengeWords });
                                 }}
                                 onSetupBackup={async (backupPw: string) => {
                                     const authUser = await authProvider.getCurrentUser();
@@ -1624,6 +1759,13 @@ const AuthSessionManager: React.FC<{
                                     return result.method === 'backup'
                                         ? JSON.stringify(result.backupFile, null, 2)
                                         : '';
+                                }}
+                                onConfirmBackup={async (fileContents, password) => {
+                                    await confirmMethod({
+                                        method: 'backup',
+                                        fileContents,
+                                        password,
+                                    });
                                 }}
                                 onAddRecoveryEmail={async (email: string) => {
                                     const { token, providerType } = await getTokenAndProvider();
@@ -1673,10 +1815,14 @@ const AuthSessionManager: React.FC<{
 
                                     return res.json();
                                 }}
-                                onSetupEmailRecovery={async () => {
+                                onSetupEmailRecovery={async email => {
                                     const authUser = await authProvider.getCurrentUser();
-                                    await setupMethod({ method: 'email' }, authUser);
+                                    await setupMethod({ method: 'email', email }, authUser);
                                 }}
+                                onConfirmEmailRecovery={async code => {
+                                    await confirmMethod({ method: 'email', code });
+                                }}
+                                isActivationPending={coordinator.needsActivation}
                                 onClose={closeRecoverySetup}
                             />
                         </Overlay>

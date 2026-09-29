@@ -18,6 +18,7 @@ const log = getLogger('auth-coordinator');
 
 import { withDeadline, withDeadlineOr, isDeadlineError } from '../helpers/withDeadline';
 import { withNetworkFault } from '../helpers/networkFault';
+import { IdentityRecoverySessionConsumedError } from '@learncard/sss-key-manager';
 
 import { AuthSessionError } from './types';
 
@@ -60,6 +61,7 @@ import type {
     KeyDerivationStrategy,
     RecoveryMethodInfo,
     RecoveryReason,
+    SssActivationState,
     UnifiedAuthState,
 } from './types';
 
@@ -91,6 +93,16 @@ export class AuthCoordinator {
         const token = await this.config.authProvider.getIdToken(true);
         const providerType = this.config.authProvider.getProviderType();
         return { token, providerType };
+    }
+
+    private async getFreshDidAuthVp(privateKey: string, did: string): Promise<string | undefined> {
+        if (!this.config.signDidAuthVp) return undefined;
+
+        if (this.keyDerivation.getFreshDidAuthVp) {
+            return this.keyDerivation.getFreshDidAuthVp(privateKey, did, this.config.signDidAuthVp);
+        }
+
+        return this.config.signDidAuthVp(privateKey);
     }
 
     /**
@@ -141,6 +153,8 @@ export class AuthCoordinator {
                             // A missing record means the key was created under a different
                             // strategy (e.g. Web3Auth) and needs to be migrated to SSS
                             // so it's protected by split shares + recovery methods.
+                            let sssActivationState: 'provisional' | 'active' | null = null;
+
                             if (authUser && this.keyDerivation.capabilities?.recovery) {
                                 try {
                                     const serverStatus = await withDeadline(
@@ -163,7 +177,13 @@ export class AuthCoordinator {
                                         }
                                     );
 
-                                    if (!serverStatus.exists || serverStatus.needsMigration) {
+                                    sssActivationState = serverStatus.sssActivationState ?? null;
+
+                                    if (
+                                        !serverStatus.exists ||
+                                        (serverStatus.needsMigration &&
+                                            sssActivationState !== 'provisional')
+                                    ) {
                                         this.setState({
                                             status: 'needs_migration',
                                             authUser,
@@ -188,6 +208,7 @@ export class AuthCoordinator {
                                 did,
                                 privateKey: cachedKey,
                                 authSessionValid: !!authUser,
+                                sssActivationState,
                             });
 
                             return this.state;
@@ -224,6 +245,47 @@ export class AuthCoordinator {
             // Scope local storage to this user so device shares don't collide
             if (this.keyDerivation.setActiveUser) {
                 this.keyDerivation.setActiveUser(authUser.id);
+            }
+
+            if (
+                this.keyDerivation.hasPendingIdentityRecovery?.() &&
+                this.keyDerivation.completeIdentityRecovery
+            ) {
+                this.setState({ status: 'deriving_key' });
+                const { token, providerType } = await this.getAuthCredentials();
+                const result = await this.keyDerivation.completeIdentityRecovery({
+                    token,
+                    providerType,
+                    signDidAuthVp: this.config.signDidAuthVp,
+                });
+
+                // Rebinding can require fresh recovery enrollment. Honor older servers that
+                // report active, but do not skip enrollment if the status refresh fails.
+                let sssActivationState: SssActivationState = 'provisional';
+                try {
+                    const serverStatus = await withDeadline(
+                        this.keyDerivation.fetchServerKeyStatus(token, providerType),
+                        {
+                            ms:
+                                this.config.serverStatusTimeoutMs ??
+                                DEFAULT_SERVER_STATUS_TIMEOUT_MS,
+                            label: 'fetchServerKeyStatus(identityRecovery)',
+                        }
+                    );
+                    sssActivationState = serverStatus.sssActivationState ?? 'provisional';
+                } catch (error) {
+                    log.warn('Unable to refresh activation state after identity recovery', error);
+                }
+
+                this.setState({
+                    status: 'identity_recovery_success',
+                    authUser,
+                    did: result.did,
+                    privateKey: result.privateKey,
+                    sssActivationState,
+                });
+
+                return this.state;
             }
 
             this.setState({ status: 'checking_key_status' });
@@ -268,7 +330,7 @@ export class AuthCoordinator {
             }
 
             // Case 2: Strategy says migration is needed
-            if (serverStatus.needsMigration) {
+            if (serverStatus.needsMigration && serverStatus.sssActivationState !== 'provisional') {
                 this.setState({ status: 'needs_migration', authUser });
                 return this.state;
             }
@@ -281,6 +343,7 @@ export class AuthCoordinator {
                     recoveryMethods,
                     recoveryReason: 'new_device',
                     maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
+                    sssActivationState: serverStatus.sssActivationState ?? null,
                 });
                 return this.state;
             }
@@ -297,11 +360,12 @@ export class AuthCoordinator {
                     recoveryMethods,
                     recoveryReason: 'missing_server_data',
                     maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
+                    sssActivationState: serverStatus.sssActivationState ?? null,
                 });
                 return this.state;
             }
 
-            const privateKey = await this.keyDerivation.reconstructKey(
+            let privateKey = await this.keyDerivation.reconstructKey(
                 localKey,
                 serverStatus.authShare
             );
@@ -311,17 +375,42 @@ export class AuthCoordinator {
                 const derivedDid = await this.config.didFromPrivateKey(privateKey);
 
                 if (derivedDid !== serverStatus.primaryDid) {
-                    log.warn('DID mismatch - stale local key detected');
-                    await this.keyDerivation.clearLocalKeys();
+                    const reconciled = this.keyDerivation.reconcileShares
+                        ? await this.keyDerivation.reconcileShares({
+                              token,
+                              providerType,
+                              expectedDid: serverStatus.primaryDid,
+                              didFromPrivateKey: this.config.didFromPrivateKey,
+                              signDidAuthVp: this.config.signDidAuthVp,
+                          })
+                        : null;
 
-                    this.setState({
-                        status: 'needs_recovery',
-                        authUser,
-                        recoveryMethods,
-                        recoveryReason: 'stale_local_key',
-                        maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
+                    if (reconciled) {
+                        privateKey = reconciled.privateKey;
+                    } else {
+                        log.warn('DID mismatch - stale local key detected');
+                        await this.keyDerivation.clearLocalKeys({ preservePending: true });
+
+                        this.setState({
+                            status: 'needs_recovery',
+                            authUser,
+                            recoveryMethods,
+                            recoveryReason: 'stale_local_key',
+                            maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
+                            sssActivationState: serverStatus.sssActivationState ?? null,
+                        });
+                        return this.state;
+                    }
+                } else if (this.keyDerivation.reconcileShares) {
+                    const reconciled = await this.keyDerivation.reconcileShares({
+                        token,
+                        providerType,
+                        expectedDid: serverStatus.primaryDid,
+                        didFromPrivateKey: this.config.didFromPrivateKey,
+                        signDidAuthVp: this.config.signDidAuthVp,
                     });
-                    return this.state;
+
+                    if (reconciled) privateKey = reconciled.privateKey;
                 }
             }
 
@@ -337,6 +426,7 @@ export class AuthCoordinator {
                 did,
                 privateKey,
                 authSessionValid: true,
+                sssActivationState: serverStatus.sssActivationState ?? null,
             });
 
             return this.state;
@@ -386,20 +476,27 @@ export class AuthCoordinator {
             this.setState({ status: 'deriving_key' });
 
             const { token, providerType } = await this.getAuthCredentials();
-            const didAuthVp = this.config.signDidAuthVp
-                ? await this.config.signDidAuthVp(privateKey)
-                : undefined;
 
-            const { localKey, remoteKey } = await this.keyDerivation.splitKey(privateKey);
+            if (this.keyDerivation.atomicUpdateShares) {
+                await this.keyDerivation.atomicUpdateShares({
+                    token,
+                    providerType,
+                    privateKey,
+                    did,
+                    signDidAuthVp: this.config.signDidAuthVp,
+                });
+            } else {
+                const didAuthVp = await this.getFreshDidAuthVp(privateKey, did);
+                const { localKey, remoteKey } = await this.keyDerivation.splitKey(privateKey);
 
-            await this.keyDerivation.storeLocalKey(localKey);
-            await this.keyDerivation.storeAuthShare(token, providerType, remoteKey, did, didAuthVp);
-
-            // Fire-and-forget: send email backup share if the strategy supports it
-            if (this.keyDerivation.sendEmailBackupShare && authUser?.email) {
-                this.keyDerivation
-                    .sendEmailBackupShare(token, providerType, privateKey, authUser.email)
-                    .catch(e => log.warn('Email backup share failed (non-fatal):', e));
+                await this.keyDerivation.storeLocalKey(localKey);
+                await this.keyDerivation.storeAuthShare(
+                    token,
+                    providerType,
+                    remoteKey,
+                    did,
+                    didAuthVp
+                );
             }
 
             this.setState({
@@ -408,6 +505,7 @@ export class AuthCoordinator {
                 did,
                 privateKey,
                 authSessionValid: true,
+                sssActivationState: 'provisional',
             });
 
             return this.state;
@@ -458,24 +556,32 @@ export class AuthCoordinator {
             this.setState({ status: 'deriving_key' });
 
             const { token, providerType } = await this.getAuthCredentials();
-            const didAuthVp = this.config.signDidAuthVp
-                ? await this.config.signDidAuthVp(privateKey)
-                : undefined;
 
-            const { localKey, remoteKey } = await this.keyDerivation.splitKey(privateKey);
+            if (this.keyDerivation.atomicUpdateShares) {
+                await this.keyDerivation.atomicUpdateShares({
+                    token,
+                    providerType,
+                    privateKey,
+                    did,
+                    signDidAuthVp: this.config.signDidAuthVp,
+                });
+            } else {
+                const didAuthVp = await this.getFreshDidAuthVp(privateKey, did);
+                const { localKey, remoteKey } = await this.keyDerivation.splitKey(privateKey);
 
-            await this.keyDerivation.storeLocalKey(localKey);
-            await this.keyDerivation.storeAuthShare(token, providerType, remoteKey, did, didAuthVp);
-
-            if (this.keyDerivation.markMigrated) {
-                await this.keyDerivation.markMigrated(token, providerType, didAuthVp);
+                await this.keyDerivation.storeLocalKey(localKey);
+                await this.keyDerivation.storeAuthShare(
+                    token,
+                    providerType,
+                    remoteKey,
+                    did,
+                    didAuthVp
+                );
             }
 
-            // Fire-and-forget: send email backup share if the strategy supports it
-            if (this.keyDerivation.sendEmailBackupShare && authUser?.email) {
-                this.keyDerivation
-                    .sendEmailBackupShare(token, providerType, privateKey, authUser.email)
-                    .catch(e => log.warn('Email backup share failed (non-fatal):', e));
+            if (this.keyDerivation.markMigrated) {
+                const didAuthVp = await this.getFreshDidAuthVp(privateKey, did);
+                await this.keyDerivation.markMigrated(token, providerType, didAuthVp);
             }
 
             this.setState({
@@ -484,6 +590,7 @@ export class AuthCoordinator {
                 did,
                 privateKey,
                 authSessionValid: true,
+                sssActivationState: 'provisional',
             });
 
             return this.state;
@@ -502,6 +609,30 @@ export class AuthCoordinator {
     }
 
     /**
+     * Commit a provisioned SSS key after recovery enrollment succeeds.
+     * The server re-checks the recovery-method invariant atomically.
+     */
+    async activate(): Promise<UnifiedAuthState> {
+        if (this.state.status !== 'ready' || this.state.sssActivationState !== 'provisional') {
+            throw new Error(`Cannot activate key in state: ${this.state.status}`);
+        }
+
+        if (!this.keyDerivation.activate) {
+            throw new Error('The active key derivation strategy does not support activation');
+        }
+
+        const readyState = this.state;
+        const { token, providerType } = await this.getAuthCredentials();
+        const didAuthVp = await this.getFreshDidAuthVp(readyState.privateKey, readyState.did);
+
+        await this.keyDerivation.activate(token, providerType, didAuthVp);
+
+        this.setState({ ...readyState, sssActivationState: 'active' });
+
+        return this.state;
+    }
+
+    /**
      * Recover account using a recovery method.
      * Only valid when state is 'needs_recovery'.
      *
@@ -516,6 +647,7 @@ export class AuthCoordinator {
         const recoveryMethods = this.state.recoveryMethods;
         const recoveryReason = this.state.recoveryReason;
         const maskedRecoveryEmail = this.state.maskedRecoveryEmail;
+        const sssActivationState = this.state.sssActivationState;
 
         try {
             this.setState({ status: 'deriving_key' });
@@ -527,6 +659,7 @@ export class AuthCoordinator {
                 providerType,
                 input,
                 didFromPrivateKey: this.config.didFromPrivateKey,
+                signDidAuthVp: this.config.signDidAuthVp,
             });
 
             this.setState({
@@ -535,6 +668,7 @@ export class AuthCoordinator {
                 did,
                 privateKey,
                 authSessionValid: true,
+                sssActivationState,
             });
 
             return this.state;
@@ -551,11 +685,160 @@ export class AuthCoordinator {
                     recoveryMethods,
                     recoveryReason,
                     maskedRecoveryEmail,
+                    sssActivationState,
                 },
             });
 
             return this.state;
         }
+    }
+
+    beginIdentityRecovery(): UnifiedAuthState {
+        if (this.state.status !== 'idle') {
+            throw new Error(`Cannot start identity recovery in state: ${this.state.status}`);
+        }
+        if (!this.keyDerivation.startIdentityRecovery) {
+            throw new Error('Identity recovery is not supported');
+        }
+
+        this.setState({
+            status: 'identity_recovery',
+            phase: 'enter_email',
+            recoveryMethods: [],
+        });
+        return this.state;
+    }
+
+    async sendIdentityRecoveryCode(email: string): Promise<UnifiedAuthState> {
+        if (
+            this.state.status !== 'identity_recovery' ||
+            !this.keyDerivation.startIdentityRecovery
+        ) {
+            throw new Error('Identity recovery has not been started');
+        }
+
+        await this.keyDerivation.startIdentityRecovery(email);
+        this.setState({
+            status: 'identity_recovery',
+            phase: 'verify_email',
+            email: email.trim().toLowerCase(),
+            recoveryMethods: [],
+        });
+        return this.state;
+    }
+
+    async verifyIdentityRecoveryCode(code: string): Promise<UnifiedAuthState> {
+        if (
+            this.state.status !== 'identity_recovery' ||
+            this.state.phase !== 'verify_email' ||
+            !this.state.email ||
+            !this.keyDerivation.verifyIdentityRecovery
+        ) {
+            throw new Error('No recovery code is waiting to be verified');
+        }
+
+        const session = await this.keyDerivation.verifyIdentityRecovery(this.state.email, code);
+        this.setState({
+            status: 'identity_recovery',
+            phase: 'choose_method',
+            email: this.state.email,
+            recoverySessionToken: session.recoverySessionToken,
+            recoveryMethods: session.recoveryMethods,
+        });
+        return this.state;
+    }
+
+    async prepareIdentityRecovery(input: unknown): Promise<UnifiedAuthState> {
+        if (
+            this.state.status !== 'identity_recovery' ||
+            this.state.phase !== 'choose_method' ||
+            !this.state.recoverySessionToken ||
+            !this.keyDerivation.prepareIdentityRecovery ||
+            !this.config.didFromPrivateKey
+        ) {
+            throw new Error('Identity recovery is not ready for a recovery method');
+        }
+
+        const email = this.state.email;
+        const recoveryMethods = this.state.recoveryMethods;
+
+        try {
+            const result = await this.keyDerivation.prepareIdentityRecovery({
+                recoverySessionToken: this.state.recoverySessionToken,
+                input,
+                didFromPrivateKey: this.config.didFromPrivateKey,
+            });
+
+            this.setState({
+                status: 'identity_recovery',
+                phase: 'new_login',
+                email,
+                recoveryMethods,
+                recoveredDid: result.did,
+            });
+        } catch (error) {
+            const errorMessage =
+                error instanceof Error ? error.message : 'Identity recovery failed';
+
+            if (error instanceof IdentityRecoverySessionConsumedError) {
+                this.keyDerivation.cancelIdentityRecovery?.();
+                this.setState({
+                    status: 'identity_recovery',
+                    phase: 'enter_email',
+                    email,
+                    recoveryMethods: [],
+                    error: errorMessage,
+                });
+            } else {
+                this.setState({
+                    status: 'identity_recovery',
+                    phase: 'choose_method',
+                    email,
+                    recoverySessionToken: this.state.recoverySessionToken,
+                    recoveryMethods,
+                    error: errorMessage,
+                });
+            }
+            // Recovery forms await this call to surface errors and release their loading state.
+            throw error;
+        }
+
+        return this.state;
+    }
+
+    continueIdentityRecoveryLogin(): UnifiedAuthState {
+        if (this.state.status !== 'identity_recovery' || this.state.phase !== 'new_login') {
+            throw new Error('Identity recovery is not waiting for a new sign-in');
+        }
+
+        this.setState({ status: 'awaiting_rebind', did: this.state.recoveredDid ?? '' });
+        return this.state;
+    }
+
+    finishIdentityRecovery(): UnifiedAuthState {
+        if (this.state.status !== 'identity_recovery_success') {
+            throw new Error('Identity recovery has not completed');
+        }
+
+        this.setState({
+            status: 'ready',
+            authUser: this.state.authUser,
+            did: this.state.did,
+            privateKey: this.state.privateKey,
+            authSessionValid: true,
+            sssActivationState: this.state.sssActivationState ?? 'provisional',
+        });
+        return this.state;
+    }
+
+    cancelIdentityRecovery(): UnifiedAuthState {
+        if (this.state.status !== 'identity_recovery' && this.state.status !== 'awaiting_rebind') {
+            return this.state;
+        }
+
+        this.keyDerivation.cancelIdentityRecovery?.();
+        this.setState({ status: 'idle' });
+        return this.state;
     }
 
     /**

@@ -16,11 +16,20 @@ export {
     type AuthProvider,
     type RecoveryMethodInfo,
     type RecoveryResult,
+    type IdentityRecoverySession,
     type ServerKeyStatus,
+    type SssActivationState,
     type KeyDerivationStrategy,
+    type DidAuthVpSigner,
 } from '@learncard/types';
 
-import type { AuthProvider, AuthProviderType, KeyDerivationStrategy, RecoveryMethodInfo } from '@learncard/types';
+import type {
+    AuthProvider,
+    AuthProviderType,
+    KeyDerivationStrategy,
+    RecoveryMethodInfo,
+    SssActivationState,
+} from '@learncard/types';
 
 // ---------------------------------------------------------------------------
 // SSS-specific: Contact & auth provider mapping
@@ -73,7 +82,8 @@ export interface RecoveryPhraseRecoveryMethod {
 }
 
 /** @deprecated Use RecoveryInput instead. Kept for legacy SSSKeyManager class. */
-export type RecoveryMethod = PasskeyRecoveryMethod | BackupFileRecoveryMethod | RecoveryPhraseRecoveryMethod;
+export type RecoveryMethod =
+    PasskeyRecoveryMethod | BackupFileRecoveryMethod | RecoveryPhraseRecoveryMethod;
 
 /**
  * SSS-specific recovery input — what the user provides to recover their key.
@@ -91,16 +101,22 @@ export type RecoverySetupInput =
     | { method: 'passkey' }
     | { method: 'phrase' }
     | { method: 'backup'; password: string; did: string }
-    | { method: 'email' };
+    | { method: 'email'; email: string };
 
 /**
  * SSS-specific recovery setup result.
  */
 export type RecoverySetupResult =
     | { method: 'passkey'; credentialId: string }
-    | { method: 'phrase'; phrase: string }
+    | { method: 'phrase'; phrase: string; challengeWordIndices: number[] }
     | { method: 'backup'; backupFile: BackupFile }
     | { method: 'email' };
+
+/** Proof supplied after a pending recovery method has been created. */
+export type RecoveryConfirmationInput =
+    | { method: 'phrase'; challengeWords: string[] }
+    | { method: 'backup'; fileContents: string; password: string }
+    | { method: 'email'; code: string };
 
 // ---------------------------------------------------------------------------
 // SSS-specific: Share & encryption types
@@ -133,6 +149,8 @@ export interface UserKeyRecord {
     recoveryMethods: RecoveryMethodInfo[];
     migratedFromWeb3Auth: boolean;
     migratedAt?: Date;
+    sssActivationState?: SssActivationState;
+    provisionalCreatedAt?: Date;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -142,6 +160,8 @@ export interface BackupFile {
     createdAt: string;
     primaryDid: string;
     shareVersion?: number;
+    /** SHA-256 checksum of the decrypted share, used to verify a just-written file. */
+    shareChecksum?: string;
     encryptedShare: {
         ciphertext: string;
         iv: string;
@@ -173,7 +193,12 @@ export interface SSSKeyManagerConfig {
  * The SSS key derivation strategy — a KeyDerivationStrategy narrowed
  * with SSS-specific recovery input/output types.
  */
-export type SSSKeyDerivationStrategy = KeyDerivationStrategy<RecoveryInput, RecoverySetupInput, RecoverySetupResult>;
+export type SSSKeyDerivationStrategy = KeyDerivationStrategy<
+    RecoveryInput,
+    RecoverySetupInput,
+    RecoverySetupResult,
+    RecoveryConfirmationInput
+>;
 
 // ---------------------------------------------------------------------------
 // Legacy types (deprecated)

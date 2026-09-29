@@ -32,6 +32,14 @@ describe('countUserConfiguredRecoveryMethods', () => {
     it('counts a verified recovery email after reload', () => {
         expect(countUserConfiguredRecoveryMethods([{ type: 'email' }], 'r***@example.com')).toBe(1);
     });
+
+    it('counts a code-confirmed email method even without a masked recovery email', () => {
+        expect(
+            countUserConfiguredRecoveryMethods([
+                { type: 'email', confirmedAt: '2026-09-03T00:00:00.000Z' },
+            ])
+        ).toBe(1);
+    });
 });
 
 describe('shouldResetWalletOnStatus', () => {

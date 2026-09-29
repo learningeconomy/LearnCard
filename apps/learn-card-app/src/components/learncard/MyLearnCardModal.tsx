@@ -99,6 +99,9 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
         showDeviceLinkModal,
         authProvider: contextAuthProvider,
         refreshAuthSession,
+        runRecoverySetup,
+        resetRecoverySetup,
+        needsActivation,
     } = useAppAuth();
 
     const description = user?.bio ?? user?.shortBio;
@@ -362,7 +365,12 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                     const setupMethod = canSetup
                         ? async (
-                              input: { method: string; password?: string; did?: string },
+                              input: {
+                                  method: string;
+                                  password?: string;
+                                  did?: string;
+                                  email?: string;
+                              },
                               authUser?: unknown
                           ) => {
                               let token: string;
@@ -377,16 +385,24 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                               const providerType = contextAuthProvider.getProviderType();
 
-                              const signVp = async (pk: string): Promise<string> => {
+                              const signVp = async (
+                                  pk: string,
+                                  challenge?: string
+                              ): Promise<string> => {
                                   const lc = await getSigningLearnCard(pk);
 
-                                  const jwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
+                                  const jwt = await lc.invoke.getDidAuthVp({
+                                      proofFormat: 'jwt',
+                                      challenge,
+                                  });
 
                                   if (!jwt || typeof jwt !== 'string')
                                       throw new Error('Failed to sign DID-Auth VP');
 
                                   return jwt;
                               };
+
+                              if (input.method !== 'passkey') resetRecoverySetup(input.method);
 
                               return keyDerivation.setupRecoveryMethod!({
                                   token,
@@ -398,6 +414,41 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                       undefined,
                                   signDidAuthVp: signVp,
                               });
+                          }
+                        : null;
+
+                    const confirmMethod = keyDerivation.confirmRecoveryMethod
+                        ? async (
+                              input: import('@learncard/sss-key-manager').RecoveryConfirmationInput
+                          ) => {
+                              const token = await contextAuthProvider.getIdToken();
+                              const providerType = contextAuthProvider.getProviderType();
+                              const signVp = async (
+                                  privateKey: string,
+                                  challenge?: string
+                              ): Promise<string> => {
+                                  const lc = await getSigningLearnCard(privateKey);
+                                  const jwt = await lc.invoke.getDidAuthVp({
+                                      proofFormat: 'jwt',
+                                      challenge,
+                                  });
+
+                                  if (!jwt || typeof jwt !== 'string') {
+                                      throw new Error('Failed to sign DID-Auth VP');
+                                  }
+
+                                  return jwt;
+                              };
+
+                              await runRecoverySetup(input.method, () =>
+                                  keyDerivation.confirmRecoveryMethod!({
+                                      token,
+                                      providerType,
+                                      privateKey: currentUser.privateKey!,
+                                      input,
+                                      signDidAuthVp: signVp,
+                                  })
+                              );
                           }
                         : null;
 
@@ -417,13 +468,34 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                     const getDidAuthHeaders = async (): Promise<Record<string, string>> => {
                         const lc = await getSigningLearnCard(currentUser.privateKey!);
-                        const vpJwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
+                        const did = lc.id.did();
+                        const signVp = async (
+                            privateKey: string,
+                            challenge?: string
+                        ): Promise<string> => {
+                            const signingLc = await getSigningLearnCard(privateKey);
+                            const jwt = await signingLc.invoke.getDidAuthVp({
+                                proofFormat: 'jwt',
+                                challenge,
+                            });
+
+                            if (!jwt || typeof jwt !== 'string') {
+                                throw new Error('Failed to sign DID-Auth VP');
+                            }
+
+                            return jwt;
+                        };
+                        const vpJwt = keyDerivation.getFreshDidAuthVp
+                            ? await keyDerivation.getFreshDidAuthVp(
+                                  currentUser.privateKey!,
+                                  did,
+                                  signVp
+                              )
+                            : await signVp(currentUser.privateKey!);
 
                         return {
                             'Content-Type': 'application/json',
-                            ...(vpJwt && typeof vpJwt === 'string'
-                                ? { Authorization: `Bearer ${vpJwt}` }
-                                : {}),
+                            Authorization: `Bearer ${vpJwt}`,
                             ...getTenantHeaders(),
                         };
                     };
@@ -438,14 +510,15 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                         : String(m.createdAt),
                             }))}
                             maskedRecoveryEmail={fetchedMaskedRecoveryEmail}
+                            isActivationPending={needsActivation}
+                            onCompleted={closeModal}
                             onSetupPasskey={
                                 setupMethod
                                     ? async () => {
                                           const authUser =
                                               await contextAuthProvider.getCurrentUser();
-                                          const result = await setupMethod(
-                                              { method: 'passkey' },
-                                              authUser
+                                          const result = await runRecoverySetup('passkey', () =>
+                                              setupMethod({ method: 'passkey' }, authUser)
                                           );
                                           return result?.method === 'passkey'
                                               ? result.credentialId
@@ -462,8 +535,21 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                               { method: 'phrase' },
                                               authUser
                                           );
-                                          return result?.method === 'phrase' ? result.phrase : '';
+                                          if (result?.method !== 'phrase') {
+                                              throw new Error('Could not generate recovery words.');
+                                          }
+
+                                          return {
+                                              phrase: result.phrase,
+                                              challengeWordIndices: result.challengeWordIndices,
+                                          };
                                       }
+                                    : requireAuth
+                            }
+                            onConfirmPhrase={
+                                confirmMethod
+                                    ? challengeWords =>
+                                          confirmMethod({ method: 'phrase', challengeWords })
                                     : requireAuth
                             }
                             onSetupBackup={
@@ -483,6 +569,16 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                               ? JSON.stringify(result.backupFile, null, 2)
                                               : '';
                                       }
+                                    : requireAuth
+                            }
+                            onConfirmBackup={
+                                confirmMethod
+                                    ? (fileContents, password) =>
+                                          confirmMethod({
+                                              method: 'backup',
+                                              fileContents,
+                                              password,
+                                          })
                                     : requireAuth
                             }
                             onAddRecoveryEmail={async (email: string) => {
@@ -521,11 +617,16 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                             }}
                             onSetupEmailRecovery={
                                 setupMethod
-                                    ? async () => {
+                                    ? async email => {
                                           const authUser =
                                               await contextAuthProvider.getCurrentUser();
-                                          await setupMethod({ method: 'email' }, authUser);
+                                          await setupMethod({ method: 'email', email }, authUser);
                                       }
+                                    : requireAuth
+                            }
+                            onConfirmEmailRecovery={
+                                confirmMethod
+                                    ? code => confirmMethod({ method: 'email', code })
                                     : requireAuth
                             }
                             onClose={closeModal}

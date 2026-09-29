@@ -1,0 +1,44 @@
+# Deploy this service separately from lca-api, preferably in a dedicated AWS account.
+# Intentionally no VPC attachment and no IAM grants: the relay must not reach MongoDB,
+# Redis, lca-api data stores, or any SEED-bearing secret.
+service: ${env:SERVERLESS_SERVICE_NAME, 'learncard-escrow-relay'}
+
+frameworkVersion: '3'
+useDotenv: true
+
+plugins:
+    - serverless-esbuild
+
+custom:
+    esbuild:
+        bundle: true
+        minify: true
+        target: node20
+        platform: node
+
+provider:
+    name: aws
+    runtime: nodejs20.x
+    stage: ${opt:stage, 'dev'}
+    region: ${opt:region, 'us-east-1'}
+    memorySize: 256
+    timeout: 15
+    logRetentionInDays: 14
+    environment:
+        # Supply only these relay-specific values from the relay account's secret store.
+        ESCROW_RELAY_PRIVATE_KEYS_JSON: ${env:ESCROW_RELAY_PRIVATE_KEYS_JSON}
+        ESCROW_RELAY_AUTH_TOKEN: ${env:ESCROW_RELAY_AUTH_TOKEN}
+        POSTMARK_SERVER_TOKEN: ${env:POSTMARK_SERVER_TOKEN}
+        POSTMARK_FROM_DOMAIN: ${env:POSTMARK_FROM_DOMAIN, 'learncard.com'}
+        ALLOWED_FROM_DOMAINS: ${env:ALLOWED_FROM_DOMAINS, 'learncard.com'}
+        POSTMARK_MESSAGE_STREAM: ${env:POSTMARK_MESSAGE_STREAM, 'outbound'}
+    httpApi:
+        cors: false
+
+functions:
+    relay:
+        handler: src/lambda.handler
+        events:
+            - httpApi:
+                  method: POST
+                  path: /email-backup
