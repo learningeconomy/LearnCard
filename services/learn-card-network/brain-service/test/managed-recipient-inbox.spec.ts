@@ -114,6 +114,7 @@ describe('Inbox send to managed recipients', () => {
         const result = await sendTo('child@example.com');
 
         expect(result.inbox?.status).toBe('PENDING');
+        expect(result.inbox?.guardianStatus).toBe('AWAITING_GUARDIAN');
 
         const credentials = await InboxCredential.findMany({ where: {} });
         expect(credentials).toHaveLength(1);
