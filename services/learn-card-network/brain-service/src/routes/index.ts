@@ -554,7 +554,8 @@ const GUARDIAN_APPROVAL_CLOCK_SKEW_SECONDS = 60;
 export const guardianGatedRoute = profileRoute.use(async ({ ctx, next }) => {
     const { profile } = ctx.user;
     const guardianApprovalToken = ctx._guardianApprovalToken;
-    const isChildAccount = await isProfileManaged(profile.profileId);
+    // Service profiles (orgs) are managed for admin purposes, not guardianship.
+    const isChildAccount = !profile.isServiceProfile && (await isProfileManaged(profile.profileId));
     let guardianIdentity: { profileId: string; did: string } | undefined;
 
     if (isChildAccount && guardianApprovalToken) {
