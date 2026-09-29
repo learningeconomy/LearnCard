@@ -832,6 +832,25 @@ describe('escrow strategy', () => {
         const reEnrollment = calls.filter(call => call.path === '/keys/escrow').at(-1);
         expect(JSON.parse(String(reEnrollment?.init?.body))).toMatchObject({ clearPin: true });
     });
+    it('lets the server carry the PIN after a non-escrow recovery', async () => {
+        await strategy.ensureEscrowEnrollment!({ ...params, options: { pin: '135790' } });
+        const setup = await strategy.setupRecoveryMethod!({
+            ...params,
+            input: { method: 'phrase' },
+        });
+        if (setup.method !== 'phrase') throw new Error('expected phrase setup');
+        calls = [];
+
+        await strategy.executeRecovery({
+            ...params,
+            input: { method: 'phrase', phrase: setup.phrase },
+            didFromPrivateKey: async key => (key === privateKey ? did : ''),
+        });
+
+        const reEnrollment = calls.filter(call => call.path === '/keys/escrow').at(-1);
+        expect(reEnrollment).toBeDefined();
+        expect(JSON.parse(String(reEnrollment?.init?.body)).clearPin).toBeUndefined();
+    });
     it('keeps the OTP-style pending state until a replacement login completes rebind', async () => {
         await strategy.ensureEscrowEnrollment!(params);
         const start = await strategy.startEscrowRecovery!({

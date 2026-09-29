@@ -2226,7 +2226,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 primaryDid,
             };
 
-            // Recovery retires the released PIN; never ask the server to carry it.
+            // Escrow recovery released the PIN (used or forgotten), so retire it. Other
+            // methods never exposed it; let the server carry it to the new version.
             await tryEnrollEscrow(
                 token,
                 providerType,
@@ -2237,7 +2238,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 signDidAuthVp,
                 undefined,
                 undefined,
-                true
+                input.method === 'escrow' || input.method === 'escrow-pin'
             );
             return { privateKey, did: primaryDid };
         },
