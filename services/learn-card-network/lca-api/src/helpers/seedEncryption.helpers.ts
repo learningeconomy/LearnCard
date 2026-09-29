@@ -191,9 +191,11 @@ export const createSeedEncryption = (
     const keyVersion = config.kmsKeyArn ? 'kms-v1' : 'local-v1';
     let client = kms;
     const getClient = (): KMSClient => {
-        // No SDK retry adds another KMS round-trip to an issuance request. Callers may retry 5xx.
+        // Recover transient failures on cache misses without relying on issuance callers to retry.
+        // Keep each attempt bounded by the existing connection/request timeouts.
         client ??= new KMSClient({
-            maxAttempts: 1,
+            maxAttempts: 3,
+            retryMode: 'standard',
             requestHandler: {
                 connectionTimeout: 2_000,
                 requestTimeout: 5_000,

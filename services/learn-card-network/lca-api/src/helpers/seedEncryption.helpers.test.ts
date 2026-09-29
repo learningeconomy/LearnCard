@@ -25,10 +25,71 @@ const originalLegacyRead = environment.SA_SEED_ALLOW_LEGACY_READ;
 
 afterEach(() => {
     environment.SA_SEED_ALLOW_LEGACY_READ = originalLegacyRead;
+    vi.unstubAllEnvs();
     vi.restoreAllMocks();
 });
 
+/** Exercise the default client's real retry middleware, replacing only the transport. */
+const mockKmsTransport = (response: () => Promise<object>): void => {
+    vi.stubEnv('AWS_REGION', 'us-east-1');
+    // Exercise real SDK retries without random backoff slowing the suite down.
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const originalSend: (command: Parameters<KMSClient['send']>[0]) => Promise<object> =
+        KMSClient.prototype.send;
+    vi.spyOn(KMSClient.prototype, 'send').mockImplementation(function (this: KMSClient, command) {
+        this.config.region = async () => 'us-east-1';
+        this.config.credentials = async () => ({ accessKeyId: 'test', secretAccessKey: 'test' });
+        this.middlewareStack.addRelativeTo(
+            () => async () => ({ response: {}, output: { $metadata: {}, ...(await response()) } }),
+            {
+                name: 'testTransport',
+                relation: 'after',
+                toMiddleware: 'retryMiddleware',
+                override: true,
+            }
+        );
+        return originalSend.call(this, command);
+    });
+};
+
 describe('SA seed envelopes', () => {
+    it.each(['ThrottlingException', 'TimeoutError'])(
+        'recovers a transient %s during encryption and decryption using SDK retries',
+        async name => {
+            const response = vi
+                .fn()
+                .mockRejectedValueOnce({ name })
+                .mockResolvedValueOnce({
+                    Plaintext: Buffer.alloc(32, 7),
+                    CiphertextBlob: Buffer.from('wrapped'),
+                    KeyId: arn,
+                })
+                .mockRejectedValueOnce({ name })
+                .mockResolvedValueOnce({ Plaintext: Buffer.alloc(32, 7), KeyId: arn });
+            mockKmsTransport(response);
+            const encryption = createSeedEncryption({ kmsKeyArn: arn, allowLocal: false });
+            const envelope = await encryption.encrypt(seed, identity);
+            expect(await encryption.decrypt(envelope, identity)).toBe(seed);
+            expect(response).toHaveBeenCalledTimes(4);
+        }
+    );
+
+    it.each([
+        ['ThrottlingException', 3, 'kms_unavailable'],
+        ['TimeoutError', 3, 'kms_unavailable'],
+        ['AccessDeniedException', 1, 'kms_access_denied'],
+        ['InvalidCiphertextException', 1, 'authentication_failed'],
+    ])('bounds attempts for %s and fails closed', async (name, attempts, category) => {
+        const response = vi.fn().mockRejectedValue({ name, message: seed });
+        mockKmsTransport(response);
+        const encryption = createSeedEncryption({ ...local, kmsKeyArn: arn });
+        const result = encryption.encrypt(seed, identity).catch(error => error);
+        expect(await result).toBeInstanceOf(SeedEncryptionError);
+        expect(await result).toMatchObject({ category });
+        expect(String(await result)).not.toContain(seed);
+        expect(response).toHaveBeenCalledTimes(attempts);
+    });
+
     it('logs Mongo error codes without messages, key values, or document contents', () => {
         const logger = vi.spyOn(console, 'error').mockImplementation(() => undefined);
         const error = new MongoServerError({ message: seed, code: 11000, keyValue: { seed } });
