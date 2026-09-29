@@ -30,7 +30,11 @@ import {
 } from './sss-strategy';
 import { reconstructFromShares } from './sss';
 import { AtomicUpdateError, splitAndVerify, verifyStoredShares } from './atomic-operations';
-import { shareToRecoveryPhrase, recoveryPhraseToShare } from './recovery-phrase';
+import {
+    shareToRecoveryPhrase,
+    recoveryPhraseToShare,
+    buildRecoveryPhraseChallengeOptions,
+} from './recovery-phrase';
 import { bufferToBase64 } from './crypto';
 import { decryptEmailRelayPayload, type EmailRelayEnvelope } from './email-relay-crypto';
 
@@ -4515,6 +4519,24 @@ describe('createSSSStrategy', () => {
     // -----------------------------------------------------------------------
     // Versioned email share format edge cases
     // -----------------------------------------------------------------------
+
+    describe('buildRecoveryPhraseChallengeOptions', () => {
+        it('offers the answer plus decoys that never appear in the phrase', async () => {
+            const phrase = await shareToRecoveryPhrase('ab'.repeat(32));
+            const words = phrase.split(' ');
+            const indices = [2, 9];
+
+            const options = await buildRecoveryPhraseChallengeOptions(phrase, indices);
+
+            expect(options).toHaveLength(2);
+            options.forEach((choices, i) => {
+                expect(choices).toHaveLength(6);
+                expect(new Set(choices).size).toBe(6);
+                expect(choices).toContain(words[indices[i]!]);
+                expect(choices.filter(word => words.includes(word))).toEqual([words[indices[i]!]]);
+            });
+        });
+    });
 
     describe('selectRecoveryPhraseChallengeIndices', () => {
         it('rejects values in the partial tail before accepting uniform-range values', () => {

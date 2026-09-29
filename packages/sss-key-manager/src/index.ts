@@ -114,6 +114,7 @@ export {
     generateRecoveryPhrase,
     validateRecoveryPhrase,
     countWords,
+    buildRecoveryPhraseChallengeOptions,
 } from './recovery-phrase';
 
 export type { RecoveryPhraseData } from './recovery-phrase';

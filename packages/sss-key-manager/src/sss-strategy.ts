@@ -86,6 +86,7 @@ import {
     shareToRecoveryPhrase,
     recoveryPhraseToShare,
     validateRecoveryPhrase,
+    buildRecoveryPhraseChallengeOptions,
 } from './recovery-phrase';
 
 const SSS_DB_NAME = 'lcb-sss-keys';
@@ -447,9 +448,12 @@ const calculateShareChecksum = async (share: string): Promise<string> => {
     return bytesToHex(new Uint8Array(digest));
 };
 
+/** Two tap-to-confirm questions with six choices each: a 1-in-36 guess. */
+export const RECOVERY_PHRASE_CHALLENGE_COUNT = 2;
+
 export const selectRecoveryPhraseChallengeIndices = (
     wordCount: number,
-    challengeCount = 3
+    challengeCount = RECOVERY_PHRASE_CHALLENGE_COUNT
 ): number[] => {
     if (wordCount < challengeCount) {
         throw new Error('Recovery phrase does not contain enough words for confirmation');
@@ -2435,6 +2439,10 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     const challengeWordIndices = selectRecoveryPhraseChallengeIndices(
                         phrase.split(/\s+/).length
                     );
+                    const challengeWordOptions = await buildRecoveryPhraseChallengeOptions(
+                        phrase,
+                        challengeWordIndices
+                    );
                     pendingPhraseConfirmation = { phrase, challengeWordIndices };
 
                     await tryEnrollEscrow(
@@ -2446,7 +2454,12 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         shareVersion,
                         signDidAuthVp
                     );
-                    return { method: 'phrase', phrase, challengeWordIndices };
+                    return {
+                        method: 'phrase',
+                        phrase,
+                        challengeWordIndices,
+                        challengeWordOptions,
+                    };
                 }
 
                 case 'backup': {
