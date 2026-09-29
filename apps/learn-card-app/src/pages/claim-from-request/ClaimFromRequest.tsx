@@ -467,6 +467,7 @@ const ClaimFromRequest: React.FC = () => {
     const [isCheckingPendingOutcomes, setIsCheckingPendingOutcomes] = useState(false);
     const [pendingOutcomeCheckError, setPendingOutcomeCheckError] = useState(false);
     const previousRequestUrlRef = useRef<unknown>(undefined);
+    const exchangeRequestIdRef = useRef(0);
 
     const { track } = useAnalytics();
     const claimAttemptRef = useRef<FlowLifecycle | null>(null);
@@ -680,6 +681,7 @@ const ClaimFromRequest: React.FC = () => {
             setPendingOutcomeCheckError(false);
         }
 
+        const requestId = ++exchangeRequestIdRef.current;
         try {
             if (!vc_request_url) {
                 log.error('Missing required parameters: vc_request_url');
@@ -697,6 +699,7 @@ const ClaimFromRequest: React.FC = () => {
             if (!response.ok) throw new Error(`${response.status}`);
 
             const responseText = await response.text();
+            if (requestId !== exchangeRequestIdRef.current) return;
             let responseData: VCAPIResponse = {};
             if (responseText) {
                 try {
@@ -787,6 +790,7 @@ const ClaimFromRequest: React.FC = () => {
                 });
             }
         } catch (error) {
+            if (requestId !== exchangeRequestIdRef.current) return;
             log.error('Error in VC-API exchange flow:', error);
 
             // A failed "Check Again" keeps the pending summary mounted and
@@ -805,7 +809,10 @@ const ClaimFromRequest: React.FC = () => {
         if (canParticipate) {
             handleRequest(); // Initiate the exchange
         }
-    }, [canParticipate]);
+        return () => {
+            exchangeRequestIdRef.current += 1;
+        };
+    }, [canParticipate, vc_request_url]);
 
     /**
      * Starts a brand-new inbox challenge. Deliberately sends an empty body so no

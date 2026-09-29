@@ -286,10 +286,13 @@ describe('ClaimFromRequest inbox claim outcomes', () => {
             expect(screen.getByTestId('outcomes')).toHaveTextContent('AWAITING_GUARDIAN')
         );
 
+        mocks.fetch.mockResolvedValueOnce(didAuthChallenge('second-link-challenge'));
         setUrl(secondInboxUrl);
         rerender(<ClaimFromRequest />);
 
-        await waitFor(() => expect(screen.getByTestId('outcomes')).toHaveTextContent('[]'));
+        await screen.findByRole('button', { name: 'did-auth' });
+        expect(screen.queryByTestId('outcomes')).not.toBeInTheDocument();
+        expect(mocks.fetch).toHaveBeenLastCalledWith(secondInboxUrl, expect.any(Object));
     });
 
     it('preserves generic VC-API post-claim navigation', async () => {
