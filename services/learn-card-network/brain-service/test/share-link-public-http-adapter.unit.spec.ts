@@ -171,8 +171,10 @@ describe('Fastify OpenAPI public share-link adapter', () => {
         const app = await buildApp(makeDependencies());
 
         const response = await app.inject({
-            method: 'GET',
+            method: 'POST',
             url: `/api/public/share-links/${SHARE_ID}`,
+            headers: { 'content-type': 'application/json' },
+            payload: '{}',
         });
 
         expect(response.statusCode).toBe(200);
@@ -184,8 +186,10 @@ describe('Fastify OpenAPI public share-link adapter', () => {
         const app = await buildApp(makeDependencies());
 
         const response = await app.inject({
-            method: 'GET',
+            method: 'POST',
             url: `/api/public/share-links/${SHARE_ID}/content`,
+            headers: { 'content-type': 'application/json' },
+            payload: '{}',
         });
 
         expect(response.statusCode).toBe(503);
@@ -205,8 +209,10 @@ describe('Fastify OpenAPI public share-link adapter', () => {
         const app = await buildApp(makeDependencies());
 
         const response = await app.inject({
-            method: 'GET',
+            method: 'POST',
             url: publicShareContentUrl(SHARE_ID),
+            headers: { 'content-type': 'application/json' },
+            payload: '{}',
         });
 
         expect(publicShareContentUrl(SHARE_ID)).toBe(`/api/public/share-links/${SHARE_ID}/content`);
@@ -220,10 +226,10 @@ describe('Fastify tRPC public share-link adapter', () => {
         const app = await buildApp(makeDependencies());
 
         const response = await app.inject({
-            method: 'GET',
-            url: `/trpc/publicShareLinks.resolve?input=${encodeURIComponent(
-                JSON.stringify({ id: SHARE_ID })
-            )}`,
+            method: 'POST',
+            url: '/trpc/publicShareLinks.resolve',
+            headers: { 'content-type': 'application/json' },
+            payload: JSON.stringify({ id: SHARE_ID }),
         });
 
         expect(response.statusCode).toBe(200);
@@ -234,10 +240,10 @@ describe('Fastify tRPC public share-link adapter', () => {
         const app = await buildApp(makeDependencies());
 
         const response = await app.inject({
-            method: 'GET',
-            url: `/trpc/publicShareLinks.content?input=${encodeURIComponent(
-                JSON.stringify({ id: SHARE_ID })
-            )}`,
+            method: 'POST',
+            url: '/trpc/publicShareLinks.content',
+            headers: { 'content-type': 'application/json' },
+            payload: JSON.stringify({ id: SHARE_ID }),
         });
 
         expect(response.headers['cache-control']).toBe('private, no-store');
@@ -273,7 +279,7 @@ const eventFor = (path: string): APIGatewayProxyEventV2 =>
         rawPath: path,
         rawQueryString: '',
         headers: {},
-        requestContext: { http: { method: 'GET' } },
+        requestContext: { http: { method: 'POST' } },
     }) as unknown as APIGatewayProxyEventV2;
 
 const headerValue = (

@@ -289,10 +289,10 @@ export const persistShareViewReceipt = async (
  * BEFORE the consume transaction; the transaction re-reads the binding under the
  * locks, so this pre-read is never authority by itself.
  */
-export const readShareViewReceiptOwner = async (
+export const readShareViewReceiptContext = async (
     receipt: string,
     namespace: string
-): Promise<string | null> => {
+): Promise<{ ownerProfileId: string; shareId: string } | null> => {
     const receiptHash = hashShareViewReceipt(receipt);
     if (!RECEIPT_HASH_RE.test(receiptHash)) return null;
 
@@ -310,9 +310,16 @@ export const readShareViewReceiptOwner = async (
     const receiptNamespace = requiredString(props.namespace);
     if (receiptNamespace === null || receiptNamespace !== trustedNamespace) return null;
 
-    const owner = requiredString(props.ownerProfileId);
-    return owner;
+    const ownerProfileId = requiredString(props.ownerProfileId);
+    const shareId = requiredString(props.shareId);
+    return ownerProfileId && shareId ? { ownerProfileId, shareId } : null;
 };
+
+export const readShareViewReceiptOwner = async (
+    receipt: string,
+    namespace: string
+): Promise<string | null> =>
+    (await readShareViewReceiptContext(receipt, namespace))?.ownerProfileId ?? null;
 
 /**
  * Atomically consumes one eligible receipt and increments the share view
