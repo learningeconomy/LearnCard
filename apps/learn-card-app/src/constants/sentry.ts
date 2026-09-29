@@ -1,3 +1,4 @@
+import { isSharePrivateSession, scrubShareTelemetry } from '../components/share-links/sharePrivacy';
 import * as Sentry from '@sentry/react';
 import { useEffect } from 'react';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
@@ -30,10 +31,15 @@ export const initSentryFromTenant = (): void => {
         ),
     ];
 
-    if (!env || env === 'development' || !dsn) return;
+    if (!env || env === 'development' || !dsn || isSharePrivateSession()) return;
 
     Sentry.init({
         dsn,
+        beforeSend: event => (isSharePrivateSession() ? null : scrubShareTelemetry(event)),
+        beforeSendTransaction: event =>
+            isSharePrivateSession() ? null : scrubShareTelemetry(event),
+        beforeBreadcrumb: breadcrumb =>
+            isSharePrivateSession() ? null : scrubShareTelemetry(breadcrumb),
         environment: env,
         tracePropagationTargets: traceDomains,
         integrations: [
@@ -99,7 +105,9 @@ export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
     const canTrustPreferences = Boolean(
         currentUser && reportingEligibility.profileId && !preferencesLoading
     );
-    const bugReportsEnabled = canTrustPreferences ? (preferences?.bugReportsEnabled ?? true) : true;
+    const bugReportsEnabled =
+        !isSharePrivateSession() &&
+        (canTrustPreferences ? (preferences?.bugReportsEnabled ?? true) : true);
 
     useEffect(() => {
         // Keep logger privacy gate in sync with user preferences

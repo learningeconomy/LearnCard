@@ -6,25 +6,32 @@ import * as m from '../../../paraglide/messages.js';
 
 type Props = {
     id?: string;
+    filters?: { id: ActivityFilterId; label: string }[];
     selected: ActivityFilterId;
     onApply: (id: ActivityFilterId) => void;
     onReset: () => void;
 };
 
-export const ActivityFilterPopover: React.FC<Props> = ({ id, selected, onApply, onReset }) => {
+export const ActivityFilterPopover: React.FC<Props> = ({
+    id,
+    selected,
+    onApply,
+    onReset,
+    filters: suppliedFilters,
+}) => {
     const { getThemedCategory } = useTheme();
     const [draft, setDraft] = useState<ActivityFilterId>(selected);
     // Apply is a no-op until the draft differs from what's already applied.
     const dirty = draft !== selected;
     // Recomputed each render so labels track the active locale.
-    const filters = getActivityFilters();
+    const filters = suppliedFilters ?? getActivityFilters();
 
     return (
         <div
             id={id}
             role="dialog"
             aria-label={m['passport.activity.filter']()}
-            className="w-[320px] flex flex-col gap-4 rounded-[24px] border border-grayscale-100 bg-white p-[18px] shadow-[0_12px_40px_rgba(24,34,78,0.18)]"
+            className="w-[320px] max-w-full flex flex-col gap-4 rounded-[24px] border border-grayscale-100 bg-white p-[18px] shadow-[0_12px_40px_rgba(24,34,78,0.18)]"
         >
             <div className="flex flex-wrap gap-[10px]">
                 {filters.map(({ id: filterId, label }) => {
@@ -34,14 +41,14 @@ export const ActivityFilterPopover: React.FC<Props> = ({ id, selected, onApply, 
                             ? null
                             : getThemedCategory(filterId as CredentialCategoryEnum);
                     const Icon = isSelected
-                        ? themed?.icons?.IconWhite ??
+                        ? (themed?.icons?.IconWhite ??
                           themed?.icons?.IconSolid ??
                           themed?.icons?.Icon ??
-                          themed?.icons?.IconWithShape
-                        : themed?.icons?.IconDark ??
+                          themed?.icons?.IconWithShape)
+                        : (themed?.icons?.IconDark ??
                           themed?.icons?.IconSolid ??
                           themed?.icons?.Icon ??
-                          themed?.icons?.IconWithShape;
+                          themed?.icons?.IconWithShape);
                     return (
                         <button
                             key={String(filterId)}

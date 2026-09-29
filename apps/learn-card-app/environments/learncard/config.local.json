@@ -12,7 +12,14 @@
     },
     "features": {
         "analytics": false,
-        "useSeededSkillFrameworks": true
+        "useSeededSkillFrameworks": true,
+        "samplePersonas": [
+            {
+                "id": "student",
+                "contractUri": "lc:network:localhost%3A4000/trpc:contract:79672d1a-fe7c-5715-95db-27586e529934"
+            }
+        ],
+        "legacySamplePersonaContractUris": []
     },
     "observability": {
         "sentryEnv": "development",
