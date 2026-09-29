@@ -439,12 +439,13 @@ describe('RecoveryFlowModal sign-in picker', () => {
         );
 
         expect(screen.queryByText('Backup File')).toBeNull();
-        const more = screen.getByRole('button', { name: 'More ways to sign in' });
+        const more = screen.getByRole('button', { name: 'Show 3 not set up' });
         expect(more.getAttribute('aria-expanded')).toBe('false');
 
         fireEvent.click(more);
 
         expect(more.getAttribute('aria-expanded')).toBe('true');
+        expect(more.textContent).toBe('Hide methods not set up');
         expect(screen.getByText('Backup File')).toBeTruthy();
     });
 
@@ -458,7 +459,8 @@ describe('RecoveryFlowModal sign-in picker', () => {
             />
         );
 
-        fireEvent.click(screen.getByRole('button', { name: "I can't use any of these" }));
+        expect(screen.getByText("Can't use any of these?")).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: 'Get back into your account' }));
 
         expect(screen.getByRole('heading', { name: 'Get back into your account' })).toBeTruthy();
         expect(screen.getByText('Sign you out on your other devices')).toBeTruthy();
@@ -469,6 +471,9 @@ describe('RecoveryFlowModal sign-in picker', () => {
 
         fireEvent.click(screen.getByRole('button', { name: "I don't have a PIN" }));
         expect(await screen.findByRole('button', { name: 'Start a 7-day recovery' })).toBeTruthy();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Use my recovery PIN instead' }));
+        expect(await screen.findByText('Enter my recovery PIN')).toBeTruthy();
 
         fireEvent.click(screen.getByRole('button', { name: /Back/ }));
         expect(screen.getByRole('heading', { name: 'Sign in on this device' })).toBeTruthy();
@@ -484,7 +489,8 @@ describe('RecoveryFlowModal sign-in picker', () => {
             />
         );
 
-        expect(screen.getByRole('button', { name: "I can't use another device" })).toBeTruthy();
+        expect(screen.getByText("Can't use another device?")).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Get back into your account' })).toBeTruthy();
     });
 
     it('opens straight on the last-resort screen when nothing else can be used', async () => {
@@ -549,7 +555,8 @@ describe('RecoveryFlowModal sign-in picker', () => {
             />
         );
 
-        expect(screen.queryByRole('button', { name: /I can't use/ })).toBeNull();
+        expect(screen.queryByText(/Can't use/)).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Get back into your account' })).toBeNull();
     });
 });
 

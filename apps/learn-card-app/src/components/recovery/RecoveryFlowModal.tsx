@@ -10,6 +10,7 @@ import {
     mailOutline,
     checkmarkCircleOutline,
     shieldOutline,
+    chevronDownOutline,
 } from 'ionicons/icons';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -591,9 +592,20 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                                         onClick={() => setShowMore(!showMore)}
                                         aria-expanded={showMore}
                                         aria-controls="unavailable-methods"
-                                        className="w-full py-3 text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                                        className="flex items-center gap-1.5 px-1 py-2 min-h-[44px] text-xs font-medium text-grayscale-500 hover:text-grayscale-800 transition-colors rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                                     >
-                                        {m['recovery.moreWaysToSignIn']()}
+                                        <IonIcon
+                                            icon={chevronDownOutline}
+                                            aria-hidden="true"
+                                            className={`text-sm transition-transform motion-reduce:transition-none ${
+                                                showMore ? 'rotate-180' : ''
+                                            }`}
+                                        />
+                                        {showMore
+                                            ? m['recovery.hideNotSetUp']()
+                                            : m['recovery.showNotSetUp']({
+                                                  count: String(unavailableMethodsList.length),
+                                              })}
                                     </button>
 
                                     {showMore && (
@@ -611,21 +623,24 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                         </div>
 
                         {canShowScreen2 && (
-                            <div className="mt-6 text-center">
-                                <button
-                                    onClick={() => setScreen(2)}
-                                    className="text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
-                                >
+                            <div className="mt-6 pt-5 border-t border-grayscale-200 text-center">
+                                <p className="text-xs text-grayscale-500 mb-3">
                                     {availableCount === 1 && availableMethodsList[0].id === 'device'
                                         ? m['recovery.cantUseAnotherDevice']()
                                         : m['recovery.cantUseAny']()}
+                                </p>
+                                <button
+                                    onClick={() => setScreen(2)}
+                                    className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                >
+                                    {m['recovery.getBackIntoAccount']()}
                                 </button>
                             </div>
                         )}
 
                         <button
                             onClick={onCancel}
-                            className="w-full mt-6 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+                            className="w-full mt-2 py-3 min-h-[44px] text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
                         >
                             {m['common.cancel']()}
                         </button>

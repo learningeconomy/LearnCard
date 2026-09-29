@@ -153,6 +153,7 @@ describe('EscrowRecoveryPanel', () => {
             ).toBeInTheDocument();
             expect(screen.getByText('Start a 7-day recovery')).toBeInTheDocument();
         });
+        expect(screen.queryByText('Use my recovery PIN instead')).not.toBeInTheDocument();
     });
 
     it('shows existing request card when onStart returns null resumeToken', async () => {

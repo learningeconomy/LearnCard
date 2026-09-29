@@ -2176,7 +2176,8 @@
             "afterHoldRecovery": {
                 "title": "Skip the wait next time",
                 "body": "You're back in. Set a 6-digit PIN so you can recover instantly next time, without waiting 7 days."
-            }
+            },
+            "useInstead": "Use my recovery PIN instead"
         },
         "addWayBackIn": "Add a way back in",
         "addAnotherMethod": "Add another method",
@@ -2202,17 +2203,18 @@
             "passkey": "Use your passkey",
             "passkeyDesc": "Sign in with Face ID, Touch ID, or your device PIN"
         },
-        "moreWaysToSignIn": "More ways to sign in",
         "notSetUp": "Not set up",
-        "cantUseAny": "I can't use any of these",
-        "cantUseAnotherDevice": "I can't use another device",
+        "cantUseAny": "Can't use any of these?",
+        "cantUseAnotherDevice": "Can't use another device?",
         "getBackIntoAccount": "Get back into your account",
         "getBackIntoAccountDesc": "We'll confirm it's you, then set up this device from scratch.",
         "thisWill": "This will:",
         "consequence": {
             "signOut": "Sign you out on your other devices",
             "turnOff": "Turn off your other sign-in methods until you set them up again"
-        }
+        },
+        "showNotSetUp": "Show {{count}} not set up",
+        "hideNotSetUp": "Hide methods not set up"
     },
     "alerts": {
         "accepted": "Accepted",

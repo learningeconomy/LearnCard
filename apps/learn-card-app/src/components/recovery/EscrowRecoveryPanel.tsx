@@ -114,6 +114,8 @@ export const EscrowRecoveryPanel = ({
     const [showPinFlow, setShowPinFlow] = useState(pinAvailable);
     const [pinInput, setPinInput] = useState('');
     const [pinError, setPinError] = useState('');
+    // Locked or unavailable PINs must not be offered again from the wait view.
+    const [pinBlocked, setPinBlocked] = useState(false);
 
     useEffect(() => {
         if (pinAvailable) setShowPinFlow(true);
@@ -181,6 +183,7 @@ export const EscrowRecoveryPanel = ({
                 setPinInput('');
             } else if (err.name === 'EscrowPinLockedError') {
                 setPinError('Too many attempts. You can still recover by waiting 7 days.');
+                setPinBlocked(true);
                 setShowPinFlow(false);
             } else {
                 if (
@@ -190,6 +193,7 @@ export const EscrowRecoveryPanel = ({
                     setPinError(
                         "PIN sign-in isn't available for this account. Start a 7-day recovery instead."
                     );
+                    setPinBlocked(true);
                     setShowPinFlow(false);
                 } else {
                     setPinError('Something went wrong. Please try again.');
@@ -636,6 +640,19 @@ export const EscrowRecoveryPanel = ({
                                           ? spinner('Starting recovery...')
                                           : 'Start a 7-day recovery'}
                                   </button>
+                                  {pinAvailable && !pinBlocked && (
+                                      <button
+                                          onClick={() => {
+                                              setPinError('');
+                                              setPinInput('');
+                                              setShowPinFlow(true);
+                                          }}
+                                          disabled={loading}
+                                          className="w-full mt-1 py-2.5 min-h-[44px] text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors disabled:opacity-40"
+                                      >
+                                          {m['recovery.pin.useInstead']()}
+                                      </button>
+                                  )}
                               </>
                           )}
                       </>

@@ -1887,7 +1887,8 @@
                 "title": "Configura un nuevo PIN de recuperación",
                 "body": "El PIN que acabas de usar ha sido retirado: cada PIN funciona una sola vez para mantener tu cuenta protegida. Elige uno nuevo para tener lista la recuperación instantánea.",
                 "hint": "Las mismas reglas: 6 dígitos, nada obvio."
-            }
+            },
+            "useInstead": "Usar mi PIN de recuperación"
         },
         "error.invalidPhrase": "Esas palabras no coinciden con tu frase de recuperación. Revísalas e inténtalo de nuevo.",
         "error.invalidPassword": "Contraseña incorrecta o no se pudo leer el archivo. Por favor, inténtalo de nuevo.",
@@ -2157,17 +2158,18 @@
             "passkey": "Usa tu llave de acceso",
             "passkeyDesc": "Inicia sesión con Face ID, Touch ID o el PIN de tu dispositivo"
         },
-        "moreWaysToSignIn": "Más formas de iniciar sesión",
         "notSetUp": "No configurado",
-        "cantUseAny": "No puedo usar ninguno de estos",
-        "cantUseAnotherDevice": "No puedo usar otro dispositivo",
+        "cantUseAny": "¿No puedes usar ninguno de estos?",
+        "cantUseAnotherDevice": "¿No puedes usar otro dispositivo?",
         "getBackIntoAccount": "Recupera el acceso a tu cuenta",
         "getBackIntoAccountDesc": "Confirmaremos que eres tú y luego configuraremos este dispositivo desde cero.",
         "thisWill": "Esto hará lo siguiente:",
         "consequence": {
             "signOut": "Cerrará tu sesión en tus otros dispositivos",
             "turnOff": "Desactivará tus otros métodos de inicio de sesión hasta que los vuelvas a configurar"
-        }
+        },
+        "showNotSetUp": "Mostrar {{count}} sin configurar",
+        "hideNotSetUp": "Ocultar métodos sin configurar"
     },
     "alerts": {
         "title": "Alertas",
