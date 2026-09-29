@@ -11,6 +11,18 @@ import {
     VP,
     SentCredentialInfo,
     JWE,
+    CreateShareLinkInput,
+    UpdateShareLinkInput,
+    ListShareLinksInput,
+    PaginatedShareLinks,
+    ShareLinkOperationKeyInput,
+    ShareLinkOwnerCommitOutput,
+    ShareLinkOwnerContentOutput,
+    ShareLinkOwnerStatusOutput,
+    ShareLinkOwnerRecoveryOutput,
+    ShareLinkPublicState,
+    ShareLinkPublicContentView,
+    AcknowledgeViewOutput,
     Boost,
     BoostQuery,
     LCNSigningAuthorityForUserType,
@@ -291,6 +303,48 @@ export type LearnCardNetworkPluginMethods = {
 
     invalidateInvite: (challenge: string) => Promise<boolean>;
 
+    /**
+     * LC-2187 authenticated owner share-link methods. All owner identity and
+     * namespace binding is derived server-side from the authenticated session;
+     * no caller-supplied owner/namespace/object authority is accepted.
+     */
+    createShareLink: (input: CreateShareLinkInput) => Promise<ShareLinkOwnerCommitOutput>;
+    updateShareLink: (input: UpdateShareLinkInput) => Promise<ShareLinkOwnerCommitOutput>;
+    revokeShareLink: (input: {
+        id: string;
+        expectedVersion?: number;
+        clientRequestId?: string;
+    }) => Promise<ShareLinkOwnerCommitOutput>;
+    getShareLink: (id: string) => Promise<ShareLinkOwnerStatusOutput>;
+    getShareLinkOperationStatus: (
+        input: ShareLinkOperationKeyInput
+    ) => Promise<ShareLinkOwnerStatusOutput>;
+    retryShareLinkOperation: (
+        input: ShareLinkOperationKeyInput
+    ) => Promise<ShareLinkOwnerStatusOutput>;
+    getShareLinkRecovery: (id: string) => Promise<ShareLinkOwnerRecoveryOutput>;
+    getShareLinkOwnerContent: (id: string) => Promise<ShareLinkOwnerContentOutput>;
+
+    /**
+     * Bounded, newest-first owner share list. Scope (namespace/owner) is derived
+     * server-side from the authenticated session; the input carries only a
+     * bounded `limit` and an opaque ordering cursor. Ineligible/unknown owners
+     * never receive `viewCount`/`lastViewedAt`.
+     */
+    listShareLinks: (input: ListShareLinksInput) => Promise<PaginatedShareLinks>;
+
+    /**
+     * LC-2187 PUBLIC (anonymous) share-link methods. These require no
+     * authentication and no profile: namespace/owner are derived server-side
+     * from trusted configuration and the committed share. `resolveShareLink`
+     * returns metadata only and never counts; `getShareLinkContent` returns the
+     * guarded ciphertext envelope plus a uniformly shaped opaque receipt;
+     * `acknowledgeShareLinkView` always resolves to `{ ok: true }`.
+     */
+    resolveShareLink: (id: string, passcode?: string) => Promise<ShareLinkPublicState>;
+    getShareLinkContent: (id: string, passcode?: string) => Promise<ShareLinkPublicContentView>;
+    acknowledgeShareLinkView: (receipt: string) => Promise<AcknowledgeViewOutput>;
+
     blockProfile: (profileId: string) => Promise<boolean>;
     unblockProfile: (profileId: string) => Promise<boolean>;
     getBlockedProfiles: () => Promise<LCNVisibleProfile[]>;
@@ -314,7 +368,12 @@ export type LearnCardNetworkPluginMethods = {
     getIncomingCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
     deleteCredential: (uri: string) => Promise<boolean>;
 
-    sendPresentation: (profileId: string, vp: VP, encrypt?: boolean) => Promise<string>;
+    sendPresentation: (
+        profileId: string,
+        vp: VP,
+        metadataOrEncrypt?: Record<string, unknown> | boolean,
+        encrypt?: boolean
+    ) => Promise<string>;
     acceptPresentation: (uri: string) => Promise<boolean>;
     getReceivedPresentations: (from?: string) => Promise<SentCredentialInfo[]>;
     getSentPresentations: (to?: string) => Promise<SentCredentialInfo[]>;

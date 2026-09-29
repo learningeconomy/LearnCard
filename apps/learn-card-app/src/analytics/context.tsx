@@ -1,3 +1,4 @@
+import { isSharePrivateSession } from '../components/share-links/sharePrivacy';
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('context');
@@ -13,6 +14,7 @@ import { setAnalyticsProvider as setSendCredentialFlowProvider } from '../helper
  * Lazily load and instantiate the analytics provider from the already validated TenantConfig.
  */
 async function loadProvider(): Promise<AnalyticsProvider> {
+    if (isSharePrivateSession()) return new NoopProvider();
     let config;
 
     try {
@@ -65,7 +67,7 @@ async function loadProvider(): Promise<AnalyticsProvider> {
 function withSharedContext(provider: AnalyticsProvider): AnalyticsProvider {
     return {
         name: provider.name,
-        init: () => provider.init(),
+        init: () => (isSharePrivateSession() ? Promise.resolve() : provider.init()),
         identify: (userId, traits) => {
             // Drop automation/e2e identify calls provider-agnostically —
             // PostHog also catches $identify in before_send, but other
@@ -74,7 +76,7 @@ function withSharedContext(provider: AnalyticsProvider): AnalyticsProvider {
             return provider.identify(userId, traits);
         },
         reset: () => provider.reset(),
-        setEnabled: enabled => provider.setEnabled(enabled),
+        setEnabled: enabled => provider.setEnabled(enabled && !isSharePrivateSession()),
         track: async (event, properties) => {
             if (shouldDropEvents()) return;
             await provider.track(event, { ...properties, ...getSharedEventContext() });
@@ -138,7 +140,7 @@ export function AnalyticsContextProvider({ children }: AnalyticsProviderProps) {
             .then(async rawProvider => {
                 if (!mounted) return;
 
-                await rawProvider.init();
+                if (!isSharePrivateSession()) await rawProvider.init();
 
                 if (!mounted) return;
 

@@ -26,6 +26,8 @@ const rubricResult = (achieved: string): ResultDisplayModel => ({
     value: mapped(achieved),
     rubricLevels: LEVELS,
     achievedLevel: LEVELS.find(level => level.name === achieved),
+    alignments: [],
+    resultDescriptionResolved: true,
 });
 
 const scoreResult = (label: string, value: number, max = '36'): ResultDisplayModel => ({
@@ -33,6 +35,8 @@ const scoreResult = (label: string, value: number, max = '36'): ResultDisplayMod
     label: mapped(label),
     valueMin: mapped('1'),
     valueMax: mapped(max),
+    alignments: [],
+    resultDescriptionResolved: true,
 });
 
 const assessment = (results: ResultDisplayModel[], isRubric: boolean): AssessmentDisplayModel => ({
@@ -97,7 +101,17 @@ describe('summarizeAssessment', () => {
 
     it('reports criteria count when no level was achieved', () => {
         const summary = summarizeAssessment(
-            assessment([{ value: mapped('n/a'), rubricLevels: LEVELS }], true)
+            assessment(
+                [
+                    {
+                        value: mapped('n/a'),
+                        rubricLevels: LEVELS,
+                        alignments: [],
+                        resultDescriptionResolved: true,
+                    },
+                ],
+                true
+            )
         );
 
         expect(summary.headline).toBe('1 criteria');

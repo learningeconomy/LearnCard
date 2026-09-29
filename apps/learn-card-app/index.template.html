@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
     <head>
         <meta charset="utf-8" />
@@ -45,7 +45,8 @@
                 var isLocalhost =
                     hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
 
-                if (isLocalhost) {
+                // Private credential links must not initialize third-party page observers.
+                if (isLocalhost || /^\/s(?:\/|$)/.test(window.location.pathname)) {
                     return;
                 }
 
