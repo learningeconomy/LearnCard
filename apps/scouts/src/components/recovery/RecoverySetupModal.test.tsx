@@ -46,6 +46,19 @@ vi.mock('../../paraglide/messages.js', () => ({
     'recovery.setup.phrase.verifyTitle': () => 'Verify your phrase',
     'recovery.setup.phrase.verifyDesc': () =>
         'Please enter the requested words from your recovery phrase to confirm you have saved it.',
+    'recovery.setup.phrase.whichWordIs': ({ number }: { number: string }) =>
+        `Which word is #${number}?`,
+    'recovery.setup.phrase.tapTheWord': () => 'Tap the word from your recovery phrase.',
+    'recovery.setup.phrase.wrongWord': ({ number }: { number: string }) =>
+        `That's not word #${number}. Check your saved phrase and try again.`,
+    'recovery.setup.phrase.showPhraseAgain': () => 'Show my phrase again',
+    'recovery.setup.phrase.challengeProgress': ({
+        current,
+        total,
+    }: {
+        current: string;
+        total: string;
+    }) => `${current} of ${total}`,
     'recovery.setup.phrase.wordNumber': ({ number }: { number: number }) => `Word #${number}`,
     'recovery.setup.backup.reenterPassword': () => 'Re-enter password',
     'recovery.setup.backup.verifyDesc': () =>
@@ -118,7 +131,8 @@ import { createRecoverySetupRunner } from '../../../../../packages/learn-card-ba
 
 const renderModal = (
     initialMethod: 'passkey' | 'phrase' | 'backup' | 'email',
-    onCompleted = vi.fn()
+    onCompleted = vi.fn(),
+    overrides: Partial<React.ComponentProps<typeof RecoverySetupModal>> = {}
 ) => {
     const props: React.ComponentProps<typeof RecoverySetupModal> = {
         initialMethod,
@@ -129,6 +143,10 @@ const renderModal = (
         onGeneratePhrase: vi.fn().mockResolvedValue({
             phrase: 'one two three',
             challengeWordIndices: [0, 2],
+            challengeWordOptions: [
+                ['one', 'four', 'five', 'six', 'seven', 'eight'],
+                ['three', 'nine', 'ten', 'eleven', 'twelve', 'thirteen'],
+            ],
         }),
         onConfirmPhrase: vi.fn().mockResolvedValue(undefined),
         onSetupBackup: vi.fn().mockResolvedValue('{}'),
@@ -138,6 +156,7 @@ const renderModal = (
         onSetupEmailRecovery: vi.fn().mockResolvedValue(undefined),
         onConfirmEmailRecovery: vi.fn().mockResolvedValue(undefined),
         onClose: vi.fn(),
+        ...overrides,
     };
 
     render(<RecoverySetupModal {...props} />);
@@ -145,6 +164,55 @@ const renderModal = (
 };
 
 describe('RecoverySetupModal prompt integration', () => {
+    const startPhraseChallenge = async (
+        overrides: Partial<React.ComponentProps<typeof RecoverySetupModal>> = {}
+    ) => {
+        const rendered = renderModal('phrase', vi.fn(), overrides);
+        fireEvent.click(screen.getByRole('button', { name: 'Generate Recovery Phrase' }));
+        await waitFor(() => expect(rendered.props.onGeneratePhrase).toHaveBeenCalledOnce());
+        fireEvent.click(await screen.findByRole('button', { name: 'Confirm Recovery Phrase' }));
+        return rendered;
+    };
+
+    it('asks one question at a time and rejects wrong words without confirming', async () => {
+        const { props } = await startPhraseChallenge();
+
+        expect(await screen.findByRole('group', { name: 'Which word is #1?' })).toBeTruthy();
+        expect(screen.getByText('1 of 2')).toBeTruthy();
+
+        fireEvent.click(screen.getByRole('button', { name: 'four' }));
+        expect(
+            await screen.findByText("That's not word #1. Check your saved phrase and try again.")
+        ).toBeTruthy();
+        expect((screen.getByRole('button', { name: 'four' }) as HTMLButtonElement).disabled).toBe(
+            true
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'five' }));
+        expect(await screen.findByRole('button', { name: 'Show my phrase again' })).toBeTruthy();
+        expect(props.onConfirmPhrase).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByRole('button', { name: 'one' }));
+        expect(await screen.findByText('2 of 2')).toBeTruthy();
+    });
+
+    it('falls back to typed words when choices are unavailable', async () => {
+        const { props } = await startPhraseChallenge({
+            onGeneratePhrase: vi.fn().mockResolvedValue({
+                phrase: 'one two three',
+                challengeWordIndices: [0, 2],
+            }),
+        });
+
+        const inputs = await screen.findAllByRole('textbox');
+        expect(inputs).toHaveLength(2);
+        fireEvent.change(inputs[0]!, { target: { value: 'one' } });
+        fireEvent.change(inputs[1]!, { target: { value: 'three' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Confirm Recovery Phrase' }));
+
+        await waitFor(() => expect(props.onConfirmPhrase).toHaveBeenCalledWith(['one', 'three']));
+    });
+
     it('keeps passkey setup open on activation failure and retries activation only', async () => {
         const { onCompleted, props } = renderModal('passkey');
         const activate = vi
@@ -188,18 +256,18 @@ describe('RecoverySetupModal prompt integration', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Confirm Recovery Phrase' }));
         expect(onCompleted).not.toHaveBeenCalled();
 
-        const challengeInputs = screen.getAllByRole('textbox');
-        expect(challengeInputs).toHaveLength(2);
+        const challengeButtons = await screen.findAllByRole('button', {
+            name: /one|four|five|six|seven|eight/,
+        });
+        expect(challengeButtons).toHaveLength(6);
 
         fireEvent.click(screen.getByRole('button', { name: 'Passkey' }));
-        expect(screen.queryByRole('textbox')).toBeNull();
+        expect(screen.queryByRole('button', { name: 'one' })).toBeNull();
 
         fireEvent.click(screen.getByRole('button', { name: 'Phrase' }));
 
-        const phraseInputs = screen.getAllByRole('textbox');
-        fireEvent.change(phraseInputs[0], { target: { value: 'one' } });
-        fireEvent.change(phraseInputs[1], { target: { value: 'three' } });
-        fireEvent.click(screen.getByRole('button', { name: 'Confirm Recovery Phrase' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'one' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'three' }));
 
         await waitFor(() => expect(props.onConfirmPhrase).toHaveBeenCalledWith(['one', 'three']));
         expect(onCompleted).toHaveBeenCalledWith('phrase');

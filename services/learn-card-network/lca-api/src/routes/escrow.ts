@@ -41,6 +41,7 @@ import {
     cancelEscrowHold,
     cancelEscrowHoldByCancelToken,
     completeEscrowHold,
+    hasCompletedEscrowHoldForVersion,
     expireStaleEscrowHolds,
     hashEscrowResumeToken,
     generateEscrowResumeToken,
@@ -375,6 +376,7 @@ export const escrowRouter = t.router({
                 shareVersion: z.number().int().positive(),
                 enclaveKeyId: EscrowBlobValidator.shape.enclaveKeyId,
                 pinSalt: EscrowPinSaltValidator.optional(),
+                clearPin: z.boolean().optional(),
             }).strict()
         )
         .output(successValidator.extend({ shareVersion: z.number() }))
@@ -413,22 +415,66 @@ export const escrowRouter = t.router({
                     }),
                 true
             );
-            if (!verification.ok || verification.hasPin !== !!input.pinSalt) {
+            if (
+                !verification.ok ||
+                verification.hasPin !== !!input.pinSalt ||
+                (input.clearPin && input.pinSalt)
+            ) {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message: 'Invalid automatic recovery material.',
                 });
             }
-            const stored = await setEscrowBlobByAuthProvider(
+            const blob = {
+                envelope: input.envelope,
+                enclaveKeyId: attestation.keyId,
+                enclaveMode: attestation.mode,
+                measurements: attestation.measurements,
+                shareVersion: input.shareVersion,
+                createdAt: new Date(),
+            };
+            let stored;
+            const oldBlob = userKey.escrowBlob;
+            const oldPin = userKey.escrowPin;
+            if (!input.pinSalt && !input.clearPin && oldPin) {
+                if (
+                    oldBlob &&
+                    !oldPin.disabledAt &&
+                    oldPin.shareVersion === oldBlob.shareVersion &&
+                    oldBlob.enclaveKeyId === attestation.keyId &&
+                    input.shareVersion > oldBlob.shareVersion &&
+                    // A released blob's PIN is retired: it was just used, or the user forgot it.
+                    !(await hasCompletedEscrowHoldForVersion(authProvider, oldBlob.shareVersion))
+                ) {
+                    try {
+                        const carried = await getEscrowEnclave().carryPinVerifier({
+                            sourceEnvelope: oldBlob.envelope,
+                            targetEnvelope: input.envelope,
+                            expectedDid: ctx.user.did,
+                            sourceShareVersion: oldBlob.shareVersion,
+                            targetShareVersion: input.shareVersion,
+                        });
+                        stored = await setEscrowBlobByAuthProvider(
+                            authProvider,
+                            { ...blob, envelope: carried.envelope },
+                            input.shareVersion,
+                            undefined,
+                            { blob: oldBlob, pin: oldPin }
+                        );
+                    } catch {
+                        // Never log enclave errors: a backend could include decrypted material.
+                        console.warn('[LCA escrow/enroll] PIN carry failed; enrolling without PIN');
+                    }
+                }
+                if (!stored) {
+                    console.warn(
+                        '[LCA escrow/enroll] PIN carry unavailable; enrolling without PIN'
+                    );
+                }
+            }
+            stored ??= await setEscrowBlobByAuthProvider(
                 authProvider,
-                {
-                    envelope: input.envelope,
-                    enclaveKeyId: attestation.keyId,
-                    enclaveMode: attestation.mode,
-                    measurements: attestation.measurements,
-                    shareVersion: input.shareVersion,
-                    createdAt: new Date(),
-                },
+                blob,
                 input.shareVersion,
                 input.pinSalt ? { salt: input.pinSalt } : undefined
             );

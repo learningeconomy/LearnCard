@@ -704,7 +704,8 @@ export const keysRouter = t.router({
                 securityLevel: userKey.securityLevel ?? 'basic',
                 recoveryMethods,
                 keyProvider: userKey.keyProvider ?? 'sss',
-                shareVersion: userKey.shareVersion ?? 1,
+                // No auth material has observable version 0, just like a missing record.
+                shareVersion: userKey.authShare ? (userKey.shareVersion ?? 1) : 0,
                 maskedRecoveryEmail: userKey.recoveryEmail
                     ? maskEmail(userKey.recoveryEmail)
                     : null,
@@ -733,9 +734,16 @@ export const keysRouter = t.router({
                 securityLevel: z.enum(['basic', 'enhanced', 'advanced']).optional(),
                 keyProvider: z.enum(['web3auth', 'sss']).optional(),
                 sssActivationState: z.literal('provisional').optional(),
+                expectedShareVersion: z.number().int().min(0).optional(),
             })
         )
-        .output(z.object({ success: z.boolean(), shareVersion: z.number() }))
+        .output(
+            z.object({
+                success: z.boolean(),
+                shareVersion: z.number(),
+                expectedShareVersionChecked: z.boolean(),
+            })
+        )
         .mutation(async ({ ctx, input }) => {
             const authenticatedDid = ctx.user.did;
 
@@ -750,6 +758,18 @@ export const keysRouter = t.router({
             const existing = await findUserKeyByAuthProvider(authProvider.type, authProvider.id);
 
             if (existing) assertDidOwner(existing, authenticatedDid);
+
+            // Match getAuthShare: null (no record) and authShare-less records mean 0.
+            const currentVersion = existing?.authShare ? (existing.shareVersion ?? 1) : 0;
+            if (
+                input.expectedShareVersion !== undefined &&
+                input.expectedShareVersion !== currentVersion
+            ) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'Key material changed; please retry',
+                });
+            }
 
             const isMigration = existing?.keyProvider === 'web3auth';
             const shouldRemainProvisional =
@@ -784,7 +804,8 @@ export const keysRouter = t.router({
                         sssActivationState: shouldRemainProvisional ? 'provisional' : 'active',
                         ...(provisionalCreatedAt ? { provisionalCreatedAt } : {}),
                     },
-                    existing ? (existing.shareVersion ?? 1) : undefined
+                    // Legacy clients keep server-observed CAS; first inserts stay unconditional.
+                    input.expectedShareVersion ?? (existing ? currentVersion : undefined)
                 );
             } catch (error) {
                 if (error instanceof UserKeyVersionConflictError) {
@@ -797,7 +818,11 @@ export const keysRouter = t.router({
                 throw error;
             }
 
-            return { success: true, shareVersion: updatedDoc.shareVersion ?? 1 };
+            return {
+                success: true,
+                shareVersion: updatedDoc.shareVersion ?? 1,
+                expectedShareVersionChecked: input.expectedShareVersion !== undefined,
+            };
         }),
 
     addRecoveryMethod: didAndChallengeRoute
@@ -830,13 +855,23 @@ export const keysRouter = t.router({
                     message: 'Use the automatic recovery enrollment endpoint.',
                 });
             }
+
+            // Confirmation only accepts pending methods at the current version.
+            const shareVersion = userKey.shareVersion ?? 1;
+            if (input.shareVersion !== undefined && input.shareVersion !== shareVersion) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'Key material changed; please retry',
+                });
+            }
+
             await addRecoveryMethodToUserKeyByAuthProvider(authProvider, {
                 type: input.type,
                 createdAt: new Date(),
                 confirmationStatus: 'pending',
                 credentialId: input.credentialId,
                 encryptedShare: input.encryptedShare,
-                shareVersion: input.shareVersion ?? userKey.shareVersion ?? 1,
+                shareVersion,
             });
 
             return { success: true };
@@ -1359,13 +1394,12 @@ export const keysRouter = t.router({
             const now = new Date();
 
             // Older clients omit the version; preserve their current-version fallback.
-            // Versioned clients must bind the metadata to the split in the envelope.
-            const shareVersion = input.shareVersion ?? userKey.shareVersion ?? 1;
-            if (!findAuthShareByVersion(userKey, shareVersion)) {
+            // Even retained historical versions cannot be confirmed for new recovery setup.
+            const shareVersion = userKey.shareVersion ?? 1;
+            if (input.shareVersion !== undefined && input.shareVersion !== shareVersion) {
                 throw new TRPCError({
-                    code: 'BAD_REQUEST',
-                    message:
-                        'Recovery share version is no longer available. Generate a new recovery key.',
+                    code: 'CONFLICT',
+                    message: 'Key material changed; please retry',
                 });
             }
 

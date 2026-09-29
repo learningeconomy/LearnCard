@@ -8,9 +8,7 @@ import CheckListUploadRawVC from './checklist-steps/CheckListUploadRawVC';
 import { useTheme } from '../../../theme/hooks/useTheme';
 import * as m from '../../../paraglide/messages.js';
 
-type UploadJsonVcBoxProps = {};
-
-const UploadJsonVcBox: React.FC<UploadJsonVcBoxProps> = ({}) => {
+const UploadJsonVcBox: React.FC = () => {
     const { newModal } = useModal();
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -24,7 +22,7 @@ const UploadJsonVcBox: React.FC<UploadJsonVcBoxProps> = ({}) => {
     };
 
     return (
-        <div className="flex flex-col gap-[20px] items-center justify-center p-[15px] rounded-[15px] bg-white shadow-bottom-2-4 mt-4">
+        <div className="flex flex-col gap-[20px] items-center justify-center p-[15px] rounded-[15px] bg-white shadow-bottom-2-4">
             <div className="flex flex-col gap-[5px]">
                 <h2 className="text-grayscale-900 font-notoSans text-[20px] flex items-center">
                     {m['passport.buildMyLearnCard.addVCs.title']()}

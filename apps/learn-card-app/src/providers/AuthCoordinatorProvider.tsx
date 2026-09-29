@@ -50,6 +50,8 @@ import {
     getSSSConfig,
     getEscrowStrategyConfig,
     getLogger,
+    useToast,
+    ToastTypeEnum,
     type AuthCoordinatorContextValue,
     type AuthProvider,
     type AuthUser,
@@ -113,9 +115,12 @@ import {
     countUserConfiguredRecoveryMethods,
     mergeAuthUserIntoCurrentUser,
     shouldResetWalletOnStatus,
+    decidePinPromptAfterReady,
+    type EscrowRecoveryKind,
 } from './authCoordinator.helpers';
 import { getTenantHeaders, getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
 import { createRecoveryPinActions } from './recoveryPinActions';
+import { runPasskeyRecoverySetup } from './passkeyRecoverySetup';
 
 import {
     emitAuthDebugEvent,
@@ -412,6 +417,7 @@ const AuthSessionManager: React.FC<{
     authProvider: AuthProvider | null;
 }> = ({ children, authProvider }) => {
     const coordinator = useBaseAuthCoordinator();
+    const { presentToast } = useToast();
     const signInAdapter = useSignInAdapter();
     const authConfig = getAuthConfig();
 
@@ -467,7 +473,7 @@ const AuthSessionManager: React.FC<{
     const wasNewUserRef = useRef(false);
     // Set when a PIN-based recovery just succeeded, proving the user had a PIN
     // even on a new/forgotten device where the local prompt flag is absent.
-    const recoveredWithPinRef = useRef(false);
+    const recoveredViaEscrowRef = useRef<EscrowRecoveryKind | null>(null);
 
     // null = recovery method status has not been checked yet
     const [recoveryMethodCount, setRecoveryMethodCount] = useState<number | null>(null);
@@ -572,6 +578,14 @@ const AuthSessionManager: React.FC<{
     const readyEnrollment =
         coordinator.state.status === 'ready' ? coordinator.state.escrowEnrollment : undefined;
 
+    // Identity recovery only completes through the escrow hold, and initialize()
+    // re-derives this status after a reload, unlike the in-memory onRecover signal.
+    useEffect(() => {
+        if (coordinator.state.status === 'identity_recovery_success') {
+            recoveredViaEscrowRef.current = 'hold';
+        }
+    }, [coordinator.state.status]);
+
     // Track whether the user went through needs_setup (new user flow)
     useEffect(() => {
         if (coordinator.state.status === 'needs_setup') {
@@ -596,16 +610,24 @@ const AuthSessionManager: React.FC<{
                 setRecoveryPinSetupReason('first-time');
             }
 
-            if (readyPinEnabled === true) {
-                recoveredWithPinRef.current = false;
-            } else if (readyPinEnabled === false) {
-                if (recoveredWithPinRef.current) {
-                    writeRecoveryPinPromptFlag(did, 'set');
-                    setRecoveryPinSetupReason('after-recovery');
-                    recoveredWithPinRef.current = false;
-                } else if (flag === 'set') {
-                    setShowRecoveryPinReset(true);
-                }
+            if (readyPinEnabled === true) recoveredViaEscrowRef.current = null;
+
+            const prompt = decidePinPromptAfterReady({
+                recoveredVia: recoveredViaEscrowRef.current,
+                pinEnabled: readyPinEnabled,
+                enrollment: readyEnrollment,
+                promptFlag: flag,
+            });
+            if (prompt.kind === 'after-recovery') {
+                writeRecoveryPinPromptFlag(did, 'set');
+                setRecoveryPinSetupReason('after-recovery');
+                recoveredViaEscrowRef.current = null;
+            } else if (prompt.kind === 'after-hold-recovery') {
+                // No flag write, so skipping never shows the "PIN was reset" banner.
+                setRecoveryPinSetupReason('after-hold-recovery');
+                recoveredViaEscrowRef.current = null;
+            } else if (prompt.kind === 'reset-banner') {
+                setShowRecoveryPinReset(true);
             }
         }
     }, [coordinator.state.status, readyDid, readyPinEnabled, readyEnrollment]);
@@ -1102,7 +1124,7 @@ const AuthSessionManager: React.FC<{
             walletInitRef.current = false;
             walletModeRef.current = null;
             walletModeStore.set.mode(null);
-            recoveredWithPinRef.current = false;
+            recoveredViaEscrowRef.current = null;
         }
     }, [coordinator.state.status, wallet]);
 
@@ -1370,11 +1392,15 @@ const AuthSessionManager: React.FC<{
         <AppAuthContext.Provider value={enrichedValue}>
             {children}
             {coordinator.state.status === 'ready' && (
-                <div className="fixed top-6 inset-x-4 z-[10000] max-w-md mx-auto space-y-2">
+                <div
+                    className="fixed inset-x-4 z-[10000] max-w-md mx-auto space-y-2"
+                    style={{ top: 'calc(1.5rem + var(--ion-safe-area-top, 0px))' }}
+                >
                     {coordinator.state.pendingEscrowHold && (
                         <EscrowRecoveryHoldBanner
                             key={coordinator.state.pendingEscrowHold.holdId}
                             requestedAt={coordinator.state.pendingEscrowHold.requestedAt}
+                            releaseAfter={coordinator.state.pendingEscrowHold.releaseAfter}
                             onCancel={coordinator.cancelEscrowRecovery}
                         />
                     )}
@@ -1415,7 +1441,9 @@ const AuthSessionManager: React.FC<{
                             await coordinator.recover(input);
 
                             if (input.method === 'escrow-pin') {
-                                recoveredWithPinRef.current = true;
+                                recoveredViaEscrowRef.current = 'pin';
+                            } else if (input.method === 'escrow') {
+                                recoveredViaEscrowRef.current = 'hold';
                             }
                         },
                         canResumeCompleted: () =>
@@ -1670,6 +1698,10 @@ const AuthSessionManager: React.FC<{
                                 );
                             } catch (e) {
                                 log.warn('Email backup share after upgrade failed (non-fatal)', e);
+                                presentToast(m['recovery.error.default'](), {
+                                    type: ToastTypeEnum.Error,
+                                    hasDismissButton: true,
+                                });
                             }
                         }
 
@@ -1886,18 +1918,10 @@ const AuthSessionManager: React.FC<{
                                 onCompleted={completeRecoverySetup}
                                 onSetupPasskey={async () => {
                                     const authUser = await authProvider.getCurrentUser();
-                                    const result = await coordinator.runRecoverySetup(
-                                        'passkey',
+                                    return runPasskeyRecoverySetup(
+                                        coordinator.runRecoverySetup,
                                         () => setupMethod({ method: 'passkey' }, authUser)
                                     );
-
-                                    // Passkey setup confirms server-side in one step, so it
-                                    // never reaches confirmMethod; activate here instead.
-                                    if (coordinator.needsActivation) {
-                                        await coordinator.activate();
-                                    }
-
-                                    return result.method === 'passkey' ? result.credentialId : '';
                                 }}
                                 onGeneratePhrase={async () => {
                                     const authUser = await authProvider.getCurrentUser();
@@ -1912,6 +1936,7 @@ const AuthSessionManager: React.FC<{
                                     return {
                                         phrase: result.phrase,
                                         challengeWordIndices: result.challengeWordIndices,
+                                        challengeWordOptions: result.challengeWordOptions,
                                     };
                                 }}
                                 onConfirmPhrase={async challengeWords => {

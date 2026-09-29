@@ -552,6 +552,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                           return {
                                               phrase: result.phrase,
                                               challengeWordIndices: result.challengeWordIndices,
+                                              challengeWordOptions: result.challengeWordOptions,
                                           };
                                       }
                                     : requireAuth

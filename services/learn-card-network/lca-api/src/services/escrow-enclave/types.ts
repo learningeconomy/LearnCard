@@ -58,11 +58,19 @@ export interface ReleaseRequest extends CancelHoldRequest {
 export interface ReleaseResult {
     sealed: EscrowEnvelope;
 }
+export interface CarryPinVerifierInput {
+    sourceEnvelope: EscrowEnvelope;
+    targetEnvelope: EscrowEnvelope;
+    expectedDid: string;
+    sourceShareVersion: number;
+    targetShareVersion: number;
+}
 export interface EscrowEnclave {
     /** `nonce` binds a nitro attestation to one client-generated challenge (64 hex chars,
      * decoded to bytes); the software backend has no freshness story and ignores it. */
     getAttestation(nonce?: Uint8Array): Promise<EnclaveAttestation>;
     verifyEscrowBlob(input: VerifyEscrowBlobInput): Promise<VerifyEscrowBlobResult>;
+    carryPinVerifier(input: CarryPinVerifierInput): Promise<{ envelope: EscrowEnvelope }>;
     releaseEscrow(input: ReleaseRequest): Promise<ReleaseResult>;
     createHold(input: EnclaveCreateHoldInput): Promise<{ holdRecord: EscrowHoldRecord }>;
     cancelHold(input: CancelHoldRequest): Promise<void>;

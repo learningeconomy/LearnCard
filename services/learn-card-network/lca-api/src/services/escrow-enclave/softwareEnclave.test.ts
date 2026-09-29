@@ -13,6 +13,91 @@ import {
 } from './types';
 
 describe('software enclave', () => {
+    it.each([
+        'success',
+        'source DID',
+        'target DID',
+        'expected DID',
+        'equal version',
+        'lower version',
+        'source version',
+        'target version',
+        'missing PIN',
+        'target PIN',
+    ])('carries the sealed verifier with strict binding: %s', async scenario => {
+        const keys = await generateEscrowKeyPair();
+        const client = await generateEscrowKeyPair();
+        const enclave = new SoftwareEnclave({
+            privateKeys: { test: keys.privateKey },
+            activeKeyId: 'test',
+        });
+        const did = 'did:key:test';
+        const pinVerifier = 'ab'.repeat(32);
+        const targetVersion =
+            scenario === 'equal version' ? 2 : scenario === 'lower version' ? 1 : 3;
+        const sourceEnvelope = await encryptEscrowBlob(
+            {
+                recoveryShare: 'ab'.repeat(33),
+                did: scenario === 'source DID' ? 'did:key:other' : did,
+                shareVersion: 2,
+                ...(scenario === 'missing PIN' ? {} : { pinVerifier }),
+            },
+            keys.publicKey,
+            'test'
+        );
+        const target = {
+            recoveryShare: 'cd'.repeat(33),
+            did: scenario === 'target DID' ? 'did:key:other' : did,
+            shareVersion: targetVersion,
+            ...(scenario === 'target PIN' ? { pinVerifier } : {}),
+        };
+        const targetEnvelope = await encryptEscrowBlob(target, keys.publicKey, 'test');
+        const result = enclave.carryPinVerifier({
+            sourceEnvelope,
+            targetEnvelope,
+            expectedDid: scenario === 'expected DID' ? 'did:key:other' : did,
+            sourceShareVersion: scenario === 'source version' ? 1 : 2,
+            targetShareVersion: scenario === 'target version' ? 4 : targetVersion,
+        });
+        if (scenario !== 'success') {
+            await expect(result).rejects.toBeInstanceOf(EscrowBlobError);
+            return;
+        }
+        const { envelope } = await result;
+        expect(envelope.ciphertext).not.toBe(targetEnvelope.ciphertext);
+        expect(
+            await enclave.verifyEscrowBlob({ envelope, expectedDid: did, expectedShareVersion: 3 })
+        ).toEqual({ ok: true, hasPin: true });
+        const { sealed } = await enclave.releaseEscrow({
+            envelope,
+            expectedDid: did,
+            pinProof: pinVerifier,
+            clientEphemeralPublicKey: client.publicKey,
+            hold: {
+                hold: {
+                    holdId: 'carry',
+                    did,
+                    shareVersion: 3,
+                    blobHash: 'ab'.repeat(32),
+                    enrollmentEpoch: 1,
+                    releasePolicy: 'pin',
+                    clientEphemeralPublicKey: client.publicKey,
+                    createdLo: 0,
+                    createdHi: 0,
+                    policyVersion: 1,
+                    signature: 'test-signature',
+                },
+                holdDurationMs: 0,
+                ledgerSeq: 0,
+            },
+        });
+        expect(await openEscrowRelease(sealed, client.privateKey)).toEqual({
+            ...target,
+            version: 1,
+            holdId: 'carry',
+        });
+    });
+
     it('derives the attestation key, verifies enrollment, and enforces release policy', async () => {
         const keys = await generateEscrowKeyPair();
         const client = await generateEscrowKeyPair();

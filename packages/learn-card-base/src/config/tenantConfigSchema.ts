@@ -240,6 +240,15 @@ export const tenantBrandingConfigSchema = z
     })
     .passthrough();
 
+export const samplePersonaConfigSchema = z
+    .object({
+        id: z.string().min(1),
+        contractUri: z.string().min(1),
+        displayName: z.string().min(1).optional(),
+        description: z.string().min(1).optional(),
+    })
+    .passthrough();
+
 export const tenantFeatureConfigSchema = z
     .object({
         aiFeatures: z.boolean().default(true),
@@ -294,6 +303,9 @@ export const tenantFeatureConfigSchema = z
         escrowRolloutAllowlist: z
             .array(z.string().regex(/^[0-9a-f]{64}$/i, 'Expected a 64-character hex SHA-256 hash'))
             .default([]),
+
+        samplePersonas: z.array(samplePersonaConfigSchema).default([]),
+        legacySamplePersonaContractUris: z.array(z.string().min(1)).default([]),
     })
     .passthrough();
 
@@ -443,6 +455,7 @@ export type TenantStorageConfig = z.infer<typeof tenantStorageConfigSchema>;
 export type TenantFilestackStorageConfig = z.infer<typeof tenantFilestackStorageConfigSchema>;
 export type TenantS3StorageConfig = z.infer<typeof tenantS3StorageConfigSchema>;
 export type TenantBrandingConfig = z.infer<typeof tenantBrandingConfigSchema>;
+export type SamplePersonaConfig = z.infer<typeof samplePersonaConfigSchema>;
 export type TenantFeatureConfig = z.infer<typeof tenantFeatureConfigSchema>;
 export type TenantObservabilityConfig = z.infer<typeof tenantObservabilityConfigSchema>;
 export type TenantLinksConfig = z.infer<typeof tenantLinksConfigSchema>;

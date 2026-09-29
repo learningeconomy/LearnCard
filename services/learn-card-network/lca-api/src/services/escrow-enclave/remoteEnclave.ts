@@ -170,6 +170,13 @@ export const createRemoteEnclave = (config: RemoteEnclaveConfig): EscrowEnclave 
                 },
                 verifyBlobResponseValidator
             ),
+        // Not yet implemented by the enclave-app wire protocol (services/escrow-enclave-app
+        // has no carry-pin-verifier method — see README.md "Nitro requirement"). Fail closed
+        // so PIN-carry-on-rotation falls back to PIN-less enrollment instead of hanging on a
+        // nonexistent endpoint or silently trusting an unattested carry.
+        carryPinVerifier: async () => {
+            throw new EscrowUnavailableError();
+        },
         createHold: async input => ({
             holdRecord: await call(
                 '/v1/create-hold',

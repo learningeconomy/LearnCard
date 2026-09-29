@@ -50,7 +50,7 @@
             "inputs": ["source", "tests"],
             "dependsOn": [
                 {
-                    "projects": ["helpers"],
+                    "projects": ["helpers", "init", "credential-library"],
                     "target": "build"
                 }
             ],

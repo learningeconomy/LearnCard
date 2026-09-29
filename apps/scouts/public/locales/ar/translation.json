@@ -527,7 +527,12 @@
                 "confirmBtn": "لقد حفظتها في مكان آمن",
                 "verifyDesc": "أدخل الكلمات المطلوبة لتأكيد حفظك للعبارة.",
                 "verifyTitle": "تأكيد عبارة الاسترداد الخاصة بك",
-                "wordNumber": "الكلمة {{number}}"
+                "wordNumber": "الكلمة {{number}}",
+                "whichWordIs": "ما هي الكلمة رقم {{number}}؟",
+                "tapTheWord": "اضغط على الكلمة من عبارة الاسترداد الخاصة بك.",
+                "wrongWord": "هذه ليست الكلمة رقم {{number}}. تحقق من العبارة المحفوظة وحاول مرة أخرى.",
+                "showPhraseAgain": "عرض العبارة مرة أخرى",
+                "challengeProgress": "{{current}} من {{total}}"
             },
             "backup": {
                 "createdRow": "تم إنشاء ملف النسخ الاحتياطي",

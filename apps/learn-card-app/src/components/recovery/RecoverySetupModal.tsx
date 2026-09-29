@@ -27,7 +27,11 @@ export type RecoverySetupType = 'passkey' | 'phrase' | 'backup' | 'email';
 
 interface RecoverySetupModalProps extends Partial<AutomaticRecoveryProps> {
     onSetupPasskey: () => Promise<string>;
-    onGeneratePhrase: () => Promise<{ phrase: string; challengeWordIndices: number[] }>;
+    onGeneratePhrase: () => Promise<{
+        phrase: string;
+        challengeWordIndices: number[];
+        challengeWordOptions?: string[][];
+    }>;
     onConfirmPhrase: (challengeWords: string[]) => Promise<void>;
     onSetupBackup: (password: string) => Promise<string>;
     onConfirmBackup: (fileContents: string, password: string) => Promise<void>;
@@ -42,6 +46,14 @@ interface RecoverySetupModalProps extends Partial<AutomaticRecoveryProps> {
     onCompleted?: (method: RecoverySetupType) => void;
     onClose: () => void;
 }
+
+const isValidChallengeOptions = (
+    options: string[][] | undefined,
+    challengeCount: number
+): options is string[][] =>
+    Array.isArray(options) &&
+    options.length === challengeCount &&
+    options.every(choices => Array.isArray(choices) && choices.length > 1);
 
 export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     onSetupPasskey,
@@ -103,6 +115,11 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     const [phraseChallengeStarted, setPhraseChallengeStarted] = useState(false);
     const [phraseChallengeWordIndices, setPhraseChallengeWordIndices] = useState<number[]>([]);
     const [phraseChallengeWords, setPhraseChallengeWords] = useState<string[]>([]);
+    const [phraseChallengeOptions, setPhraseChallengeOptions] = useState<string[][]>([]);
+    const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
+    const [wrongTaps, setWrongTaps] = useState<Set<string>>(new Set());
+    const [wrongTapsCount, setWrongTapsCount] = useState(0);
+    const [correctTap, setCorrectTap] = useState<string | null>(null);
 
     const [backupPassword, setBackupPassword] = useState('');
     const [confirmBackupPassword, setConfirmBackupPassword] = useState('');
@@ -160,7 +177,20 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             const result = await onGeneratePhrase();
             setRecoveryPhrase(result.phrase);
             setPhraseChallengeWordIndices(result.challengeWordIndices);
-            setPhraseChallengeWords(result.challengeWordIndices.map(() => ''));
+            const options = isValidChallengeOptions(
+                result.challengeWordOptions,
+                result.challengeWordIndices.length
+            )
+                ? result.challengeWordOptions
+                : [];
+            setPhraseChallengeOptions(options);
+            setPhraseChallengeWords(
+                options.length > 0 ? [] : result.challengeWordIndices.map(() => '')
+            );
+            setCurrentChallengeIndex(0);
+            setWrongTaps(new Set());
+            setWrongTapsCount(0);
+            setCorrectTap(null);
             setPhraseChallengeStarted(false);
         } catch (e) {
             log.error('handleGeneratePhrase error', e);
@@ -175,6 +205,50 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             await navigator.clipboard.writeText(recoveryPhrase);
             setPhraseCopied(true);
             setTimeout(() => setPhraseCopied(false), 2000);
+        }
+    };
+
+    const handleChipTap = async (word: string) => {
+        if (loading || correctTap) return;
+
+        const expectedWord =
+            recoveryPhrase?.split(' ')[phraseChallengeWordIndices[currentChallengeIndex]];
+
+        if (word === expectedWord) {
+            setCorrectTap(word);
+
+            setTimeout(async () => {
+                const newWords = [...phraseChallengeWords.slice(0, currentChallengeIndex), word];
+                setPhraseChallengeWords(newWords);
+
+                if (currentChallengeIndex < phraseChallengeWordIndices.length - 1) {
+                    setCurrentChallengeIndex(prev => prev + 1);
+                    setWrongTaps(new Set());
+                    setWrongTapsCount(0);
+                    setCorrectTap(null);
+                } else {
+                    setLoading(true);
+                    setError(null);
+
+                    try {
+                        await onConfirmPhrase(newWords);
+                        markConfigured('phrase');
+                        setRecoveryPhrase(null);
+                        setPhraseChallengeStarted(false);
+                        setSuccess(m['recovery.success.phraseSaved']());
+                        setShowUpdateForm(false);
+                        onCompleted?.('phrase');
+                    } catch (e) {
+                        setError(toFriendlyRecoveryError(e));
+                    } finally {
+                        setLoading(false);
+                        setCorrectTap(null);
+                    }
+                }
+            }, 250);
+        } else {
+            setWrongTaps(prev => new Set(prev).add(word));
+            setWrongTapsCount(prev => prev + 1);
         }
     };
 
@@ -631,48 +705,166 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                             !showUpdateForm &&
                             !recoveryPhrase ? null : phraseChallengeStarted ? (
                                 <>
-                                    <div>
-                                        <h3 className="text-sm font-semibold text-grayscale-900 mb-1">
-                                            {m['recovery.verifyPhraseTitle']()}
-                                        </h3>
-                                        <p className="text-sm text-grayscale-600 leading-relaxed">
-                                            {m['recovery.verifyPhraseDescription']()}
-                                        </p>
-                                    </div>
+                                    {phraseChallengeOptions.length > 0 ? (
+                                        <>
+                                            <div className="mb-4">
+                                                <h3
+                                                    id="phrase-challenge-heading"
+                                                    className="text-sm font-semibold text-grayscale-900 mb-1"
+                                                >
+                                                    {m['recovery.whichWordIs']({
+                                                        number: String(
+                                                            phraseChallengeWordIndices[
+                                                                currentChallengeIndex
+                                                            ] + 1
+                                                        ),
+                                                    })}
+                                                </h3>
+                                                <div className="flex items-center justify-between">
+                                                    <p className="text-sm text-grayscale-600 leading-relaxed">
+                                                        {m['recovery.tapTheWord']()}
+                                                    </p>
+                                                    <span className="text-xs font-medium text-grayscale-500">
+                                                        {m['recovery.challengeProgress']({
+                                                            current: String(
+                                                                currentChallengeIndex + 1
+                                                            ),
+                                                            total: String(
+                                                                phraseChallengeWordIndices.length
+                                                            ),
+                                                        })}
+                                                    </span>
+                                                </div>
+                                            </div>
 
-                                    {phraseChallengeWordIndices.map((wordIndex, challengeIndex) => (
-                                        <div key={wordIndex}>
-                                            <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
-                                                {m['recovery.wordNumber']({
-                                                    number: wordIndex + 1,
-                                                })}
-                                            </label>
-                                            <input
-                                                type="text"
-                                                autoCapitalize="none"
-                                                autoCorrect="off"
-                                                value={phraseChallengeWords[challengeIndex] ?? ''}
-                                                onChange={event =>
-                                                    setPhraseChallengeWords(words =>
-                                                        words.map((word, index) =>
-                                                            index === challengeIndex
-                                                                ? event.target.value
-                                                                      .trimStart()
-                                                                      .toLowerCase()
-                                                                : word
-                                                        )
-                                                    )
-                                                }
-                                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
-                                            />
-                                        </div>
-                                    ))}
+                                            <div
+                                                role="group"
+                                                aria-labelledby="phrase-challenge-heading"
+                                                className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6"
+                                            >
+                                                {phraseChallengeOptions[currentChallengeIndex].map(
+                                                    word => {
+                                                        const isWrong = wrongTaps.has(word);
+                                                        const isCorrect = correctTap === word;
+                                                        return (
+                                                            <button
+                                                                key={word}
+                                                                onClick={() => handleChipTap(word)}
+                                                                disabled={
+                                                                    isWrong ||
+                                                                    loading ||
+                                                                    correctTap !== null
+                                                                }
+                                                                className={`
+                                                                min-h-[44px] px-3 py-2 rounded-[20px] text-sm font-medium transition-all
+                                                                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500
+                                                                ${
+                                                                    isCorrect
+                                                                        ? 'bg-emerald-500 text-white border border-transparent'
+                                                                        : isWrong
+                                                                          ? 'bg-red-50 text-red-700 border border-red-200'
+                                                                          : 'bg-grayscale-100 text-grayscale-900 hover:bg-grayscale-200 border border-transparent'
+                                                                }
+                                                            `}
+                                                            >
+                                                                {word}
+                                                            </button>
+                                                        );
+                                                    }
+                                                )}
+                                            </div>
 
-                                    {primaryButton(
-                                        m['recovery.confirmPhrase'](),
-                                        handleConfirmPhrase,
-                                        loading || phraseChallengeWords.some(word => !word.trim()),
-                                        m['common.verifying']()
+                                            {wrongTapsCount > 0 && (
+                                                <div
+                                                    aria-live="polite"
+                                                    className="mb-4 text-sm text-red-600 text-center"
+                                                >
+                                                    {m['recovery.wrongWord']({
+                                                        number: String(
+                                                            phraseChallengeWordIndices[
+                                                                currentChallengeIndex
+                                                            ] + 1
+                                                        ),
+                                                    })}
+                                                </div>
+                                            )}
+
+                                            {wrongTapsCount >= 2 && (
+                                                <button
+                                                    onClick={() => {
+                                                        setPhraseChallengeStarted(false);
+                                                        setPhraseChallengeWords([]);
+                                                        setCurrentChallengeIndex(0);
+                                                        setWrongTaps(new Set());
+                                                        setWrongTapsCount(0);
+                                                        setCorrectTap(null);
+                                                    }}
+                                                    className="w-full py-2.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                                                >
+                                                    {m['recovery.showPhraseAgain']()}
+                                                </button>
+                                            )}
+
+                                            {loading && (
+                                                <div className="flex items-center justify-center gap-2 text-sm text-grayscale-600 mt-4">
+                                                    <span className="w-4 h-4 border-2 border-grayscale-300 border-t-grayscale-900 rounded-full animate-spin" />
+                                                    {m['common.verifying']()}
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div>
+                                                <h3 className="text-sm font-semibold text-grayscale-900 mb-1">
+                                                    {m['recovery.verifyPhraseTitle']()}
+                                                </h3>
+                                                <p className="text-sm text-grayscale-600 leading-relaxed">
+                                                    {m['recovery.verifyPhraseDescription']()}
+                                                </p>
+                                            </div>
+
+                                            {phraseChallengeWordIndices.map(
+                                                (wordIndex, challengeIndex) => (
+                                                    <div key={wordIndex}>
+                                                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                                                            {m['recovery.wordNumber']({
+                                                                number: String(wordIndex + 1),
+                                                            })}
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            autoCapitalize="none"
+                                                            autoCorrect="off"
+                                                            value={
+                                                                phraseChallengeWords[
+                                                                    challengeIndex
+                                                                ] ?? ''
+                                                            }
+                                                            onChange={event =>
+                                                                setPhraseChallengeWords(words =>
+                                                                    words.map((word, index) =>
+                                                                        index === challengeIndex
+                                                                            ? event.target.value
+                                                                                  .trimStart()
+                                                                                  .toLowerCase()
+                                                                            : word
+                                                                    )
+                                                                )
+                                                            }
+                                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                                        />
+                                                    </div>
+                                                )
+                                            )}
+
+                                            {primaryButton(
+                                                m['recovery.confirmPhrase'](),
+                                                handleConfirmPhrase,
+                                                loading ||
+                                                    phraseChallengeWords.some(word => !word.trim()),
+                                                m['common.verifying']()
+                                            )}
+                                        </>
                                     )}
                                 </>
                             ) : !recoveryPhrase ? (

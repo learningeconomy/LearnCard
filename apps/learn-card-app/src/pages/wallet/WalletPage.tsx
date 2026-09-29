@@ -1,7 +1,7 @@
-import React, { Suspense, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import * as m from '../../paraglide/messages.js';
-import { useHistory, useLocation, Link } from 'react-router-dom';
+import { useHistory, Link } from 'react-router-dom';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Capacitor } from '@capacitor/core';
 import { getLogger } from 'learn-card-base';
@@ -15,7 +15,6 @@ import {
     ModalTypes,
     CredentialCategoryEnum,
     newCredsStore,
-    lazyWithRetry,
     useAiFeatureGate,
     useToast,
     ToastTypeEnum,
@@ -24,9 +23,8 @@ import {
 } from 'learn-card-base';
 
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
-import WalletActionButton from '../../components/main-subheader/WalletActionButton';
 import CapGoUpdateModal from '../../components/capGoUpdateModal/CapGoUpdateModal';
-import { IonPage, IonContent, IonRow, IonCol, IonSpinner } from '@ionic/react';
+import { IonPage, IonContent, IonRow, IonCol } from '@ionic/react';
 import WalletPageViewModeSelector from './WalletPageViewModeSelector';
 import MainHeader from '../../components/main-header/MainHeader';
 import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland';
@@ -37,28 +35,12 @@ import Plus from 'learn-card-base/svgs/Plus';
 import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import AddToPassportMenu from '../../components/add-to-passport/AddToPassportMenu';
 import NewCredentialsPill from '../../components/main-subheader/NewCredentialsPill';
+import PassportSharingMenu from './PassportSharingMenu';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 import { chatBotStore } from '../../stores/chatBotStore';
 import { prefetchRoutes, ROUTE_PRELOAD } from '../../Routes';
 import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
-
-const ViewSharedCredentials = lazyWithRetry(
-    () => import('learn-card-base/components/sharecreds/ViewSharedCredentials')
-);
-const ShareBoostsBundleModal = lazyWithRetry(
-    () => import('../../components/creds-bundle/ShareBoostsBundleModal')
-);
-
-const SharedBundleModalFallback: React.FC = () => (
-    <IonPage>
-        <IonContent>
-            <div className="font-poppins flex items-center justify-center min-h-[360px] p-8">
-                <IonSpinner name="crescent" className="text-grayscale-700" />
-            </div>
-        </IonContent>
-    </IonPage>
-);
 
 const WalletPage: React.FC = () => {
     const flags = useFlags();
@@ -67,7 +49,6 @@ const WalletPage: React.FC = () => {
         mobile: ModalTypes.Cancel,
     });
     const history = useHistory();
-    const location = useLocation();
 
     const { theme, colors } = useTheme();
     const { isMobile } = useDeviceTypeByWidth();
@@ -113,25 +94,6 @@ const WalletPage: React.FC = () => {
             CapacitorUpdater.removeAllListeners();
         };
     }, []);
-
-    const handleShareModal = () => {
-        newModal(
-            <Suspense fallback={<SharedBundleModalFallback />}>
-                <ShareBoostsBundleModal onDismiss={() => closeModal()} />
-            </Suspense>,
-            {},
-            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-        );
-    };
-    const handleViewModal = () => {
-        newModal(
-            <Suspense fallback={<SharedBundleModalFallback />}>
-                <ViewSharedCredentials onDismiss={() => closeModal()} />
-            </Suspense>,
-            {},
-            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-        );
-    };
 
     const categoryToPath = CATEGORY_TO_ROUTE;
 
@@ -229,7 +191,7 @@ const WalletPage: React.FC = () => {
                     <div className="px-[20px] pt-[16px] pb-[32px] md:pt-[24px] md:pb-[48px]">
                         <div className="flex flex-col max-w-[840px] mx-auto">
                             <IonRow>
-                                <div className="flex justify-between items-center w-full gap-[10px]">
+                                <div className="flex flex-wrap justify-between items-center w-full gap-[10px]">
                                     <div className="flex items-center gap-[8px] min-w-0">
                                         <h1
                                             className={`${passportTextColor} font-poppins text-[30px] font-normal tracking-[0.25px]`}
@@ -240,18 +202,18 @@ const WalletPage: React.FC = () => {
                                         <WalletPageViewModeSelector />
                                     </div>
 
-                                    <div className="wallet-header-menu-options items-center flex gap-[10px] shrink-0 [@media(min-width:992px)_and_(max-width:1244px)]:pr-[90px] [@media(min-width:1245px)_and_(max-width:1350px)]:pr-[50px]">
+                                    <div className="wallet-header-menu-options items-center flex gap-[10px] shrink-0 ml-auto [@media(min-width:992px)_and_(max-width:1244px)]:pr-[90px] [@media(min-width:1245px)_and_(max-width:1350px)]:pr-[50px]">
                                         <NewCredentialsPill
                                             count={totalNewCredentialsCount}
                                             label={m['passport.wallet.new']()}
                                             tone={passportBgColor ? 'onColor' : 'light'}
                                         />
 
-                                        {flags?.boostBundleMenu && (
-                                            <WalletActionButton
-                                                location={location}
-                                                handleSelfIssue={handleViewModal}
-                                                handleShareCreds={handleShareModal}
+                                        {flags?.shareMultipleEnabled === true && (
+                                            <PassportSharingMenu
+                                                onViewShared={() =>
+                                                    history.push('/privacy-and-data')
+                                                }
                                             />
                                         )}
 

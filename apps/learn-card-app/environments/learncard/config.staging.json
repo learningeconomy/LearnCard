@@ -6,12 +6,20 @@
         "brainServiceApi": "https://staging.network.learncard.com/api",
         "cloudService": "https://staging.cloud.learncard.com/trpc",
         "lcaApi": "https://staging.api.learncard.app/trpc",
+        "notificationsEndpoint": "https://staging.api.learncard.app/api/notifications/send",
         "xapi": "https://staging.network.learncard.com/xapi",
         "aiAgentService": "https://agent-staging.learncard.ai"
     },
     "features": {
         "analytics": false,
-        "useSeededSkillFrameworks": true
+        "useSeededSkillFrameworks": true,
+        "samplePersonas": [
+            {
+                "id": "student",
+                "contractUri": "lc:network:staging.network.learncard.com/trpc:contract:79672d1a-fe7c-5715-95db-27586e529934"
+            }
+        ],
+        "legacySamplePersonaContractUris": []
     },
     "observability": {
         "sentryEnv": "staging",

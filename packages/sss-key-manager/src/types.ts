@@ -189,7 +189,13 @@ export type RecoverySetupInput =
 export type RecoverySetupResult =
     | { method: 'escrow'; shareVersion: number }
     | { method: 'passkey'; credentialId: string }
-    | { method: 'phrase'; phrase: string; challengeWordIndices: number[] }
+    | {
+          method: 'phrase';
+          phrase: string;
+          challengeWordIndices: number[];
+          /** Shuffled choices per challenged word (the answer plus decoys not in the phrase). */
+          challengeWordOptions: string[][];
+      }
     | { method: 'backup'; backupFile: BackupFile }
     | { method: 'email' };
 

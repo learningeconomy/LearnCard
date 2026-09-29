@@ -527,7 +527,12 @@
                 "confirmBtn": "Je l'ai sauvegardée dans un endroit sûr",
                 "verifyDesc": "Entrez les mots demandés pour confirmer que vous avez enregistré votre phrase.",
                 "verifyTitle": "Confirmez votre phrase de récupération",
-                "wordNumber": "Mot {{number}}"
+                "wordNumber": "Mot {{number}}",
+                "whichWordIs": "Quel est le mot nº {{number}} ?",
+                "tapTheWord": "Touchez le mot de votre phrase de récupération.",
+                "wrongWord": "Ce n'est pas le mot nº {{number}}. Vérifiez votre phrase enregistrée et réessayez.",
+                "showPhraseAgain": "Afficher à nouveau ma phrase",
+                "challengeProgress": "{{current}} sur {{total}}"
             },
             "backup": {
                 "createdRow": "Fichier de sauvegarde créé",

@@ -333,6 +333,44 @@ export const createUserKeysIndexes = async (): Promise<void> => {
     );
 };
 
+/** First writes require database-enforced provider uniqueness, not a process-local check. */
+const ensureProviderIdentityUniqueForInsert = async (): Promise<void> => {
+    const hasUniqueIndex = async (): Promise<boolean> => {
+        const indexes = await getUserKeysCollection()
+            .listIndexes()
+            .toArray()
+            .catch((error: unknown) => {
+                if (getMongoErrorCode(error) === 26) return [];
+                throw error;
+            });
+
+        return indexes.some(index => {
+            const keys = Object.keys(index.key ?? {});
+            return (
+                index.unique === true &&
+                !index.sparse &&
+                !index.partialFilterExpression &&
+                keys.length === 2 &&
+                index.key?.['authProviders.type'] === 1 &&
+                index.key?.['authProviders.id'] === 1
+            );
+        });
+    };
+
+    try {
+        if (await hasUniqueIndex()) return;
+
+        // The migration drops a legacy non-unique index before creating the unique one.
+        // It logs and tolerates legacy duplicates, so verify the index actually exists.
+        await createUserKeysIndexes();
+        if (await hasUniqueIndex()) return;
+    } catch (error) {
+        console.error('[UserKey indexes] provider uniqueness unavailable for first write.', error);
+    }
+
+    throw new UserKeyVersionConflictError();
+};
+
 let userKeysIndexesPromise: Promise<void> | undefined;
 
 /** Runs the production index migration at most once per warm process. */
@@ -541,9 +579,12 @@ export const upsertUserKeyByAuthProvider = async (
     const existing = await collection.findOne(providerFilter);
 
     if (existing) {
-        const currentVersion = existing.shareVersion ?? 1;
+        const currentVersion = existing.authShare ? (existing.shareVersion ?? 1) : 0;
 
         if (expectedVersion != null && expectedVersion !== currentVersion) {
+            throw new UserKeyVersionConflictError();
+        }
+        if (data.primaryDid !== undefined && data.primaryDid !== existing.primaryDid) {
             throw new UserKeyVersionConflictError();
         }
 
@@ -555,7 +596,8 @@ export const upsertUserKeyByAuthProvider = async (
         };
 
         if (data.authShare && existing.authShare) {
-            updateOps.$inc = { shareVersion: 1 };
+            (updateOps.$set as Record<string, unknown>).shareVersion =
+                (existing.shareVersion ?? 1) + 1;
             (updateOps.$set as Record<string, unknown>).shareUpdatedAt = now;
 
             const oldEntry: PreviousAuthShare = {
@@ -585,12 +627,26 @@ export const upsertUserKeyByAuthProvider = async (
                 };
             }
         } else if (data.authShare) {
-            updateOps.$inc = { shareVersion: 1 };
+            (updateOps.$set as Record<string, unknown>).shareVersion =
+                (existing.shareVersion ?? 1) + 1;
             (updateOps.$set as Record<string, unknown>).shareUpdatedAt = now;
         }
 
         const result = await collection.findOneAndUpdate(
-            { ...providerFilter, shareVersion: expectedVersion ?? currentVersion },
+            {
+                ...providerFilter,
+                primaryDid: existing.primaryDid,
+                shareVersion: existing.shareVersion ?? null,
+                // Version 0 is a public sentinel, not necessarily the stored counter.
+                ...(existing.authShare
+                    ? { authShare: existing.authShare }
+                    : {
+                          $or: [
+                              { authShare: { $exists: false } },
+                              { authShare: { $type: 'null' } },
+                          ],
+                      }),
+            },
             updateOps,
             {
                 returnDocument: 'after',
@@ -602,6 +658,10 @@ export const upsertUserKeyByAuthProvider = async (
         return result;
     }
 
+    if (expectedVersion !== undefined && expectedVersion !== 0) {
+        throw new UserKeyVersionConflictError();
+    }
+    await ensureProviderIdentityUniqueForInsert();
     const newDoc: MongoUserKeyType = {
         contactMethod,
         authProviders: [authProvider],
@@ -624,7 +684,15 @@ export const upsertUserKeyByAuthProvider = async (
         updatedAt: now,
     };
 
-    await collection.insertOne(newDoc);
+    try {
+        // auth_provider_identity_unique arbitrates concurrent first writes.
+        await collection.insertOne(newDoc);
+    } catch (error) {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 11000) {
+            throw new UserKeyVersionConflictError();
+        }
+        throw error;
+    }
 
     return newDoc;
 };
@@ -669,7 +737,8 @@ export const setEscrowBlobByAuthProvider = async (
     authProvider: AuthProviderMapping,
     blob: Omit<EscrowBlob, 'enrollmentEpoch' | 'blobHash'>,
     expectedShareVersion: number,
-    pin?: { salt: string }
+    pin?: { salt: string },
+    carryFrom?: { blob: EscrowBlob; pin: NonNullable<MongoUserKeyType['escrowPin']> }
 ): Promise<MongoUserKeyType | null> => {
     const now = new Date();
     const parsed = EscrowBlobValidator.omit({ enrollmentEpoch: true, blobHash: true }).safeParse(
@@ -709,6 +778,7 @@ export const setEscrowBlobByAuthProvider = async (
             ...getAuthProviderFilter(authProvider),
             shareVersion: expectedShareVersion,
             escrowOptedOutAt: { $exists: false },
+            ...(carryFrom ? { escrowBlob: carryFrom.blob, escrowPin: carryFrom.pin } : {}),
         },
         [
             {
@@ -723,16 +793,18 @@ export const setEscrowBlobByAuthProvider = async (
                             },
                         ],
                     },
-                    escrowPin: pin
-                        ? {
-                              $literal: EscrowPinValidator.parse({
-                                  salt: pin.salt,
-                                  failedAttempts: 0,
-                                  enabledAt: now,
-                                  shareVersion: expectedShareVersion,
-                              }),
-                          }
-                        : '\u0024\u0024REMOVE',
+                    escrowPin: carryFrom
+                        ? { $literal: { ...carryFrom.pin, shareVersion: expectedShareVersion } }
+                        : pin
+                          ? {
+                                $literal: EscrowPinValidator.parse({
+                                    salt: pin.salt,
+                                    failedAttempts: 0,
+                                    enabledAt: now,
+                                    shareVersion: expectedShareVersion,
+                                }),
+                            }
+                          : '$$REMOVE',
                     updatedAt: now,
                     recoveryMethods: {
                         $concatArrays: [

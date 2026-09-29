@@ -250,6 +250,20 @@ export const completeEscrowHold = async (id: string): Promise<EscrowHold | null>
         { returnDocument: 'after' }
     );
 };
+/** Whether escrow material at this share version has already been released. */
+export const hasCompletedEscrowHoldForVersion = async (
+    authProvider: AuthProviderMapping,
+    shareVersion: number
+): Promise<boolean> =>
+    (await getEscrowHoldsCollection().countDocuments(
+        {
+            'authProvider.type': authProvider.type,
+            'authProvider.id': authProvider.id,
+            shareVersion,
+            status: 'completed',
+        },
+        { limit: 1 }
+    )) > 0;
 export const expireStaleEscrowHolds = async (now: Date): Promise<number> => {
     const result = await getEscrowHoldsCollection().updateMany(
         {

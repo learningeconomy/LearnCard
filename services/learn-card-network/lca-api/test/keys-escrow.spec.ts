@@ -986,6 +986,99 @@ describe('escrow PIN release', () => {
     const completePin = (hold: Parameters<typeof resume>[0], proof = pinProof) =>
         getClient().escrow.completeRecovery({ ...resume(hold), pinProof: proof });
 
+    it.each([
+        'success',
+        'locked',
+        'key mismatch',
+        'carry failure',
+        'concurrent counter',
+        'concurrent lock',
+        'concurrent blob',
+        'clear',
+        'released',
+    ])('enrolls after rotation with safe PIN carry: %s', async scenario => {
+        await enrollPin();
+        if (scenario === 'released') await completePin(await startPin());
+        await getUserKeysCollection().updateOne(
+            { 'authProviders.id': authProvider.id },
+            {
+                $set: {
+                    'escrowPin.failedAttempts': 3,
+                    'escrowPin.verifiedFailedAttempts': 2,
+                    ...(scenario === 'locked' ? { 'escrowPin.disabledAt': new Date() } : {}),
+                    ...(scenario === 'key mismatch'
+                        ? { 'escrowBlob.enclaveKeyId': 'old-key' }
+                        : {}),
+                },
+            }
+        );
+        await owner().keys.storeAuthShare({
+            ...auth,
+            primaryDid: did,
+            authShare: { encryptedData: shares.authShare, encryptedDek: '', iv: '' },
+        });
+        const replacement = await encryptEscrowBlob(
+            { recoveryShare: shares.recoveryShare, did, shareVersion: 2 },
+            enclaveKeys.publicKey,
+            keyId
+        );
+        const enclave = getEscrowEnclave();
+        const carry = enclave.carryPinVerifier.bind(enclave);
+        const spy = vi.spyOn(enclave, 'carryPinVerifier');
+        if (scenario === 'carry failure') spy.mockRejectedValueOnce(new EscrowBlobError());
+        if (scenario.startsWith('concurrent'))
+            spy.mockImplementationOnce(async input => {
+                await getUserKeysCollection().updateOne(
+                    { 'authProviders.id': authProvider.id },
+                    {
+                        $set:
+                            scenario === 'concurrent counter'
+                                ? { 'escrowPin.failedAttempts': 4 }
+                                : scenario === 'concurrent lock'
+                                  ? { 'escrowPin.disabledAt': new Date() }
+                                  : { 'escrowBlob.envelope.ciphertext': 'changed' },
+                    }
+                );
+                return carry(input);
+            });
+        await expect(
+            owner().escrow.enroll({
+                ...auth,
+                envelope: replacement,
+                shareVersion: 2,
+                enclaveKeyId: keyId,
+                ...(scenario === 'clear' ? { clearPin: true } : {}),
+            })
+        ).resolves.toEqual({ success: true, shareVersion: 2 });
+        const stored = await record();
+        if (scenario === 'success') {
+            expect(stored?.escrowPin).toMatchObject({
+                salt: pinSalt,
+                shareVersion: 2,
+                failedAttempts: 3,
+                verifiedFailedAttempts: 2,
+            });
+            expect((await owner().keys.getAuthShare(auth))?.escrowPin?.enabled).toBe(true);
+            const hold = await startPin();
+            expect(hold.pinSalt).toBe(pinSalt);
+            const released = await completePin(hold);
+            expect(
+                await openEscrowRelease(released.sealedShare, recipient.privateKey)
+            ).toMatchObject({ recoveryShare: shares.recoveryShare, shareVersion: 2 });
+        } else {
+            expect(stored?.escrowPin).toBeUndefined();
+            expect(
+                await enclave.verifyEscrowBlob({
+                    envelope: stored!.escrowBlob!.envelope,
+                    expectedDid: did,
+                    expectedShareVersion: 2,
+                })
+            ).toEqual({ ok: true, hasPin: false });
+            if (['locked', 'key mismatch', 'clear', 'released'].includes(scenario))
+                expect(spy).not.toHaveBeenCalled();
+        }
+    });
+
     it('rejects mismatched verifier/salt enrollment and invalid salts', async () => {
         await expect(
             owner().escrow.enroll({
