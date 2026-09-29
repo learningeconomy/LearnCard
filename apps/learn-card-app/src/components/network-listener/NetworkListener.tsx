@@ -1,16 +1,19 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 
 import { useNetworkStatus } from './useNetworkStatus';
-import { connectivityStore } from 'learn-card-base';
 import { OfflineBanner } from './OfflineBanner';
 
+/**
+ * Mounts the app connectivity monitor and renders the connectivity banners.
+ *
+ * The monitor is the single owner of verified reachability: Capacitor Network
+ * events are only HINTS fed into it (see ./connectivity.ts). Everything else
+ * (React Query onlineManager, auth coordinator, banners, boot gate) reads the
+ * shared connectivity store the monitor writes to.
+ */
 export const NetworkListener = () => {
-    const isConnected = useNetworkStatus();
-
-    // Feed the shared connectivity model that boot/auth-gate logic reads.
-    useEffect(() => {
-        if (isConnected !== undefined) connectivityStore.set.report(isConnected);
-    }, [isConnected]);
+    // Attaching is ref-counted; the returned status is the verified one.
+    useNetworkStatus();
 
     return <OfflineBanner />;
 };
