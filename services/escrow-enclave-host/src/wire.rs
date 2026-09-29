@@ -66,6 +66,13 @@ pub enum Request {
         expected_did: String,
         expected_share_version: u32,
     },
+    CarryPinVerifier {
+        source_envelope: Envelope,
+        target_envelope: Envelope,
+        expected_did: String,
+        source_share_version: u32,
+        target_share_version: u32,
+    },
     Release {
         envelope: Envelope,
         hold: SignedHoldRecord,
@@ -136,6 +143,9 @@ pub enum Response {
         has_pin: bool,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         reason: Option<String>,
+    },
+    CarryPinVerifier {
+        envelope: Envelope,
     },
     Release {
         sealed: Envelope,

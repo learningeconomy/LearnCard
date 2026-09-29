@@ -161,6 +161,51 @@ impl<'a> Policy<'a> {
         })
     }
 
+    /// P8.1: transfers a PIN verifier across a share-version rotation. A pure
+    /// decrypt/validate/reseal, exactly like `verify_blob` above — no ledger,
+    /// `EnrollmentSource`, or trusted time, and it never touches the PIN attempt
+    /// budget (carrying that budget forward is P8.3, a separate change). Unlike
+    /// `create_hold`/`release`/`cancel_hold`, this is therefore NOT blocked by
+    /// BLOCKER-ENROLLMENT (see README.md and SECURITY.md): it works even while
+    /// every mutating, ledger-backed operation fails closed with `Unavailable`.
+    ///
+    /// Rejects with the single generic `Blob` error — same shape as every other
+    /// blob failure, no distinguishing detail — unless ALL hold: both plaintexts'
+    /// `did == expected_did`; `source.share_version == source_share_version` and
+    /// `target.share_version == target_share_version`; `target.share_version >
+    /// source.share_version`; `source.pin_verifier` present and
+    /// `target.pin_verifier` absent. Reseals `{ ...target, pinVerifier:
+    /// source.pinVerifier }` to the CURRENT key (`self.key_id`/`self.keys`) via
+    /// the same `encrypt_escrow_blob` every other blob uses, with a fresh
+    /// ephemeral key/salt/IV — never returns, logs, or reuses the target's
+    /// original ciphertext. Decrypted plaintexts zeroize on drop
+    /// (`EscrowBlobPlaintext`'s `ZeroizeOnDrop`); `source.pin_verifier` is moved
+    /// (not cloned) into `target`, so it is never duplicated in memory.
+    pub fn carry_pin_verifier(
+        &self,
+        source_envelope: &EscrowEnvelope,
+        target_envelope: &EscrowEnvelope,
+        expected_did: &str,
+        source_share_version: u32,
+        target_share_version: u32,
+    ) -> Result<EscrowEnvelope, ErrorCode> {
+        let mut source = self.decrypt(source_envelope)?;
+        let mut target = self.decrypt(target_envelope)?;
+        if source.did != expected_did
+            || target.did != expected_did
+            || source.share_version != f64::from(source_share_version)
+            || target.share_version != f64::from(target_share_version)
+            || target.share_version <= source.share_version
+            || source.pin_verifier.is_none()
+            || target.pin_verifier.is_some()
+        {
+            return Err(ErrorCode::Blob);
+        }
+        target.pin_verifier = source.pin_verifier.take();
+        crypto::encrypt_escrow_blob(&target, &self.keys.public_key, &self.key_id)
+            .map_err(|_| ErrorCode::Blob)
+    }
+
     async fn enrollment(
         &self,
         envelope: &EscrowEnvelope,

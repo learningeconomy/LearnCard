@@ -695,6 +695,38 @@ mod tests {
             .is_none());
     }
 
+    // P8.4: carry_pin_verifier (policy.rs) reseals `{ ...target, pinVerifier:
+    // source.pinVerifier }` through exactly this function. Assert the resulting
+    // plaintext bytes byte-for-byte: an integral shareVersion (never a trailing
+    // `.0`) and exactly the field set TS's decryptEscrowBlob
+    // (packages/sss-key-manager/src/escrow-crypto.ts) accepts.
+    #[test]
+    fn carried_plaintext_bytes_match_what_decrypt_escrow_blob_accepts() {
+        let keys = generate_escrow_key_pair().unwrap();
+        let carried = EscrowBlobPlaintext {
+            version: 1,
+            recovery_share: "cd".repeat(33),
+            did: "did:key:test".into(),
+            share_version: 3.0,
+            pin_verifier: Some("ab".repeat(32)),
+        };
+        let envelope = encrypt_escrow_blob(&carried, &keys.public_key, "test").unwrap();
+        let plaintext = decrypt(&envelope, &keys.private_key, ESCROW_BLOB_INFO).unwrap();
+        let text = std::str::from_utf8(&plaintext).unwrap();
+        assert!(text.contains("\"shareVersion\":3"));
+        assert!(!text.contains("3.0"));
+        assert_eq!(
+            serde_json::from_str::<Value>(text).unwrap(),
+            json!({
+                "version": 1,
+                "recoveryShare": "cd".repeat(33),
+                "did": "did:key:test",
+                "shareVersion": 3,
+                "pinVerifier": "ab".repeat(32),
+            })
+        );
+    }
+
     #[test]
     fn envelope_bounds_and_malformed_encodings() {
         let vector = &fixtures().blobs[0];

@@ -1,11 +1,16 @@
 import axios from 'axios';
 import { z } from 'zod';
-import { ESCROW_ALGORITHM, ESCROW_ENVELOPE_VERSION } from '@learncard/sss-key-manager';
+import {
+    ESCROW_ALGORITHM,
+    ESCROW_ENVELOPE_VERSION,
+    type EscrowEnvelope,
+} from '@learncard/sss-key-manager';
 import {
     EscrowBlobError,
     EscrowPinMismatchError,
     EscrowPolicyError,
     EscrowUnavailableError,
+    type CarryPinVerifierInput,
     type EnclaveAttestation,
     type EscrowEnclave,
     type ReleaseRequest,
@@ -46,6 +51,8 @@ const verifyBlobResponseValidator = z.union([
     z.object({ ok: z.literal(true), hasPin: z.boolean() }),
     z.object({ ok: z.literal(false), hasPin: z.boolean(), reason: z.string() }),
 ]);
+
+const carryPinVerifierResponseValidator = z.object({ envelope: envelopeValidator });
 
 // Opaque SignedHoldRecord JSON: validate shape while preserving signed extensions.
 const holdRecordValidator = z
@@ -170,13 +177,18 @@ export const createRemoteEnclave = (config: RemoteEnclaveConfig): EscrowEnclave 
                 },
                 verifyBlobResponseValidator
             ),
-        // Not yet implemented by the enclave-app wire protocol (services/escrow-enclave-app
-        // has no carry-pin-verifier method — see README.md "Nitro requirement"). Fail closed
-        // so PIN-carry-on-rotation falls back to PIN-less enrollment instead of hanging on a
-        // nonexistent endpoint or silently trusting an unattested carry.
-        carryPinVerifier: async () => {
-            throw new EscrowUnavailableError();
-        },
+        carryPinVerifier: (input: CarryPinVerifierInput): Promise<{ envelope: EscrowEnvelope }> =>
+            call(
+                '/v1/carry-pin-verifier',
+                {
+                    sourceEnvelope: input.sourceEnvelope,
+                    targetEnvelope: input.targetEnvelope,
+                    expectedDid: input.expectedDid,
+                    sourceShareVersion: input.sourceShareVersion,
+                    targetShareVersion: input.targetShareVersion,
+                },
+                carryPinVerifierResponseValidator
+            ),
         createHold: async input => ({
             holdRecord: await call(
                 '/v1/create-hold',

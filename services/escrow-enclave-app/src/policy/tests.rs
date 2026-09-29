@@ -250,6 +250,172 @@ async fn derives_the_attestation_key_verifies_enrollment_and_enforces_release_po
     assert_eq!(p.verify_blob(&bad, "did:key:test", 1), Err(ErrorCode::Blob));
 }
 
+// P8.4: mirrors softwareEnclave.test.ts's "carries the sealed verifier with
+// strict binding" cases, plus an enclave-only "undecryptable" case. Every
+// rejection shares the identical generic Blob error, so this asserts equality
+// against that one code rather than distinguishing scenarios by message/kind.
+#[test]
+fn carry_pin_verifier_rejects_every_invalid_binding() {
+    let f = Fixture::new(false);
+    let p = f.policy();
+    let pin_verifier = "ab".repeat(32);
+    for scenario in [
+        "source did",
+        "target did",
+        "expected did",
+        "equal version",
+        "lower version",
+        "source version",
+        "target version",
+        "missing pin",
+        "target pin",
+        "undecryptable",
+    ] {
+        let real_target_version = match scenario {
+            "equal version" => 2.0,
+            "lower version" => 1.0,
+            _ => 3.0,
+        };
+        let source = encrypt_escrow_blob(
+            &EscrowBlobPlaintext {
+                version: 1,
+                recovery_share: "ab".repeat(33),
+                did: if scenario == "source did" {
+                    "did:key:other".into()
+                } else {
+                    "did:key:test".into()
+                },
+                share_version: 2.0,
+                pin_verifier: (scenario != "missing pin").then(|| pin_verifier.clone()),
+            },
+            &f.keys.public_key,
+            "test",
+        )
+        .unwrap();
+        let mut target = encrypt_escrow_blob(
+            &EscrowBlobPlaintext {
+                version: 1,
+                recovery_share: "cd".repeat(33),
+                did: if scenario == "target did" {
+                    "did:key:other".into()
+                } else {
+                    "did:key:test".into()
+                },
+                share_version: real_target_version,
+                pin_verifier: (scenario == "target pin").then(|| pin_verifier.clone()),
+            },
+            &f.keys.public_key,
+            "test",
+        )
+        .unwrap();
+        if scenario == "undecryptable" {
+            target.key_id = "unknown".into();
+        }
+        let expected_did = if scenario == "expected did" {
+            "did:key:other"
+        } else {
+            "did:key:test"
+        };
+        let source_share_version = if scenario == "source version" { 1 } else { 2 };
+        let target_share_version = if scenario == "target version" {
+            4
+        } else {
+            real_target_version as u32
+        };
+        assert_eq!(
+            p.carry_pin_verifier(
+                &source,
+                &target,
+                expected_did,
+                source_share_version,
+                target_share_version
+            ),
+            Err(ErrorCode::Blob),
+            "scenario: {scenario}"
+        );
+    }
+}
+
+// Mirrors keys-escrow.spec.ts's "safe PIN carry" success path: the carried
+// envelope verifies hasPin, and a PIN release with the ORIGINAL proof still
+// works. carry_pin_verifier itself touches no ledger state (P8.1); create_hold
+// and release below exercise the ordinary ledger-backed path on the result.
+#[tokio::test]
+async fn carry_pin_verifier_succeeds_and_the_carried_pin_still_releases() {
+    let f = Fixture::new(false);
+    let mut p = f.policy();
+    let pin_verifier = "ab".repeat(32);
+    let source = encrypt_escrow_blob(
+        &EscrowBlobPlaintext {
+            version: 1,
+            recovery_share: "ab".repeat(33),
+            did: "did:key:test".into(),
+            share_version: 2.0,
+            pin_verifier: Some(pin_verifier.clone()),
+        },
+        &f.keys.public_key,
+        "test",
+    )
+    .unwrap();
+    let target = encrypt_escrow_blob(
+        &EscrowBlobPlaintext {
+            version: 1,
+            recovery_share: "cd".repeat(33),
+            did: "did:key:test".into(),
+            share_version: 3.0,
+            pin_verifier: None,
+        },
+        &f.keys.public_key,
+        "test",
+    )
+    .unwrap();
+    let carried = p
+        .carry_pin_verifier(&source, &target, "did:key:test", 2, 3)
+        .unwrap();
+    assert_ne!(carried.ciphertext, target.ciphertext);
+    assert_eq!(
+        p.verify_blob(&carried, "did:key:test", 3).unwrap(),
+        BlobVerification {
+            ok: true,
+            has_pin: true,
+        }
+    );
+    *f.authority.0.lock().unwrap() = Ok(CurrentEnrollment {
+        epoch: 1,
+        share_version: 3,
+        blob_hash: blob_hash(&carried).unwrap(),
+    });
+    let hold = p
+        .create_hold(CreateHoldRequest {
+            envelope: &carried,
+            hold_id: "carry-release",
+            request_id: "carry-release",
+            expected_did: "did:key:test",
+            expected_share_version: 3,
+            enrollment_epoch: 1,
+            release_policy: ReleasePolicy::Pin,
+            client_ephemeral_public_key: &f.client.public_key,
+        })
+        .await
+        .unwrap();
+    let sealed = p
+        .release(ReleaseRequest {
+            envelope: &carried,
+            hold: &hold,
+            request_id: "carry-release-attempt",
+            expected_did: "did:key:test",
+            client_ephemeral_public_key: &f.client.public_key,
+            pin_proof: Some(&pin_verifier),
+        })
+        .await
+        .unwrap();
+    let released = open_escrow_release(&sealed, &f.client.private_key).unwrap();
+    assert_eq!(released.blob.pin_verifier, None);
+    assert_eq!(released.blob.recovery_share, "cd".repeat(33));
+    assert_eq!(released.blob.share_version, 3.0);
+    assert_eq!(released.hold_id, "carry-release");
+}
+
 async fn proof_case(
     policy: ReleasePolicy,
     verifier: bool,

@@ -152,7 +152,7 @@ async fn policy_suite_through_loopback_and_http() {
         address,
     };
     let attestation = call(address, Request::Attest { nonce: vec![7; 32] }).await;
-    match attestation {
+    let attestation_public_key = match attestation {
         Response::Attest {
             public_key,
             document,
@@ -166,12 +166,13 @@ async fn policy_suite_through_loopback_and_http() {
             assert_eq!(claims.nonce.unwrap().as_ref(), &[7; 32]);
             assert_eq!(
                 claims.user_data.unwrap().as_ref(),
-                STANDARD.decode(public_key).unwrap()
+                STANDARD.decode(&public_key).unwrap()
             );
             assert_eq!(claims.public_key.unwrap().len(), 65);
+            public_key
         }
         other => panic!("{other:?}"),
-    }
+    };
     let verify = Request::VerifyBlob {
         envelope: fixture.envelope.clone(),
         expected_did: "did:key:test".into(),
@@ -185,6 +186,72 @@ async fn policy_suite_through_loopback_and_http() {
             ..
         }
     ));
+    // P8.2 wiring: carry_pin_verifier touches no ledger/PIN-budget state, so this
+    // is safe to run here without disturbing the budget assertions below.
+    let carry_request = Request::CarryPinVerifier {
+        source_envelope: fixture.envelope.clone(),
+        target_envelope: crypto::encrypt_escrow_blob(
+            &EscrowBlobPlaintext {
+                version: 1,
+                recovery_share: "cd".repeat(33),
+                did: "did:key:test".into(),
+                share_version: 2.0,
+                pin_verifier: None,
+            },
+            &attestation_public_key,
+            "emulate",
+        )
+        .unwrap(),
+        expected_did: "did:key:test".into(),
+        source_share_version: 1,
+        target_share_version: 2,
+    };
+    let carried_envelope = match call(address, carry_request.clone()).await {
+        Response::CarryPinVerifier { envelope } => envelope,
+        other => panic!("{other:?}"),
+    };
+    assert!(matches!(
+        call(
+            address,
+            Request::VerifyBlob {
+                envelope: carried_envelope,
+                expected_did: "did:key:test".into(),
+                expected_share_version: 2,
+            }
+        )
+        .await,
+        Response::VerifyBlob {
+            ok: true,
+            has_pin: true,
+            ..
+        }
+    ));
+    let mut mismatched = carry_request.clone();
+    if let Request::CarryPinVerifier { expected_did, .. } = &mut mismatched {
+        *expected_did = "did:key:wrong".into();
+    }
+    assert!(matches!(
+        call(address, mismatched).await,
+        Response::Error {
+            code: ErrorCode::Blob,
+            ..
+        }
+    ));
+    let mut value = serde_json::to_value(&carry_request).unwrap();
+    value.as_object_mut().unwrap().remove("method");
+    let body = value.to_string();
+    let (status, result) = http(
+        http_address,
+        "/v1/carry-pin-verifier",
+        "test-token",
+        &body,
+        body.len(),
+    )
+    .await;
+    assert_eq!(status, 200);
+    assert!(result.get("envelope").is_some());
+    assert!(result.get("method").is_none());
+
     let hold = fixture.create("delay", ReleasePolicy::Hold).await;
     let mut tampered = hold.clone();
     tampered.hold.created_hi = 0;

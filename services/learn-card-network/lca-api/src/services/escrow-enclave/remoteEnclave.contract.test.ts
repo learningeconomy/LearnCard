@@ -9,6 +9,23 @@ import {
 import { createRemoteEnclave } from './remoteEnclave';
 import { EscrowPinMismatchError, EscrowPolicyError } from './types';
 
+const blobHash = (envelope: {
+    version: number;
+    algorithm: string;
+    keyId: string;
+    ephemeralPublicKey: string;
+    salt: string;
+    iv: string;
+    ciphertext: string;
+}) => {
+    const { version, algorithm, keyId, ephemeralPublicKey, salt, iv, ciphertext } = envelope;
+    return createHash('sha256')
+        .update(
+            JSON.stringify({ version, algorithm, keyId, ephemeralPublicKey, salt, iv, ciphertext })
+        )
+        .digest('hex');
+};
+
 // Runs the HTTP contract implemented in remoteEnclave.ts against a live
 // `escrow-enclave --emulate` process (services/escrow-enclave-app, P1.8).
 //
@@ -147,6 +164,84 @@ describe.skipIf(!contractUrl)('remote enclave contract (escrow-enclave --emulate
             await expect(
                 enclave.releaseEscrow({ ...cancelled.request, pinProof })
             ).rejects.toBeInstanceOf(EscrowPolicyError);
+        } finally {
+            await replace(original);
+        }
+    });
+
+    it('carries a PIN verifier into a newer blob and releases it with the original PIN', async () => {
+        const fixturePath = process.env.ESCROW_ENCLAVE_EMULATE_FIXTURE;
+        if (!fixturePath)
+            throw new Error(
+                'Set ESCROW_ENCLAVE_EMULATE_FIXTURE for the emulator and contract test'
+            );
+        const original = await readFile(fixturePath, 'utf8');
+        const replace = async (contents: string) => {
+            const temporary = `${fixturePath}.${randomUUID()}.tmp`;
+            await writeFile(temporary, contents, { mode: 0o600 });
+            await rename(temporary, fixturePath);
+        };
+        const attestation = await enclave.getAttestation();
+        const client = await generateEscrowKeyPair();
+        const did = `did:key:contract-carry-${randomUUID()}`;
+        const pinProof = 'ab'.repeat(32);
+        const sourceEnvelope = await encryptEscrowBlob(
+            { recoveryShare: 'ab'.repeat(33), did, shareVersion: 1, pinVerifier: pinProof },
+            attestation.publicKey,
+            attestation.keyId
+        );
+        const targetPlaintext = { recoveryShare: 'cd'.repeat(33), did, shareVersion: 2 };
+        const targetEnvelope = await encryptEscrowBlob(
+            targetPlaintext,
+            attestation.publicKey,
+            attestation.keyId
+        );
+        try {
+            const { envelope: carried } = await enclave.carryPinVerifier({
+                sourceEnvelope,
+                targetEnvelope,
+                expectedDid: did,
+                sourceShareVersion: 1,
+                targetShareVersion: 2,
+            });
+            await expect(
+                enclave.verifyEscrowBlob({
+                    envelope: carried,
+                    expectedDid: did,
+                    expectedShareVersion: 2,
+                })
+            ).resolves.toEqual({ ok: true, hasPin: true });
+
+            await replace(
+                JSON.stringify({
+                    nowMs: 1_700_000_000_000,
+                    enrollments: {
+                        [did]: { epoch: 1, shareVersion: 2, blobHash: blobHash(carried) },
+                    },
+                })
+            );
+            const holdId = randomUUID();
+            const { holdRecord } = await enclave.createHold({
+                envelope: carried,
+                holdId,
+                expectedDid: did,
+                expectedShareVersion: 2,
+                enrollmentEpoch: 1,
+                releasePolicy: 'pin',
+                clientEphemeralPublicKey: client.publicKey,
+            });
+            const released = await enclave.releaseEscrow({
+                envelope: carried,
+                hold: holdRecord,
+                expectedDid: did,
+                clientEphemeralPublicKey: client.publicKey,
+                pinProof,
+            });
+            expect(await openEscrowRelease(released.sealed, client.privateKey)).toEqual({
+                ...targetPlaintext,
+                version: 1,
+                holdId,
+            });
         } finally {
             await replace(original);
         }

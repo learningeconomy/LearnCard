@@ -26,6 +26,13 @@ pub mod v1 {
             expected_did: String,
             expected_share_version: u32,
         },
+        CarryPinVerifier {
+            source_envelope: EscrowEnvelope,
+            target_envelope: EscrowEnvelope,
+            expected_did: String,
+            source_share_version: u32,
+            target_share_version: u32,
+        },
         CreateHold {
             envelope: EscrowEnvelope,
             hold_id: String,
@@ -76,6 +83,9 @@ pub mod v1 {
             has_pin: bool,
             #[serde(default, skip_serializing_if = "Option::is_none")]
             reason: Option<String>,
+        },
+        CarryPinVerifier {
+            envelope: EscrowEnvelope,
         },
         CreateHold {
             hold: SignedHoldRecord,

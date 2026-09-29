@@ -36,13 +36,14 @@ compared with `subtle` constant-time equality. The NLB is TCP passthrough: host
 TLS certificates must cover the DNS name used by lca-api and be trusted there.
 No plaintext API listener or certificate-verification bypass exists.
 
-| HTTP path         | vsock method |
-| ----------------- | ------------ |
-| `/v1/attest`      | `attest`     |
-| `/v1/verify-blob` | `verifyBlob` |
-| `/v1/create-hold` | `createHold` |
-| `/v1/release`     | `release`    |
-| `/v1/cancel-hold` | `cancel`     |
+| HTTP path                | vsock method       |
+| ------------------------ | ------------------ |
+| `/v1/attest`             | `attest`           |
+| `/v1/verify-blob`        | `verifyBlob`       |
+| `/v1/carry-pin-verifier` | `carryPinVerifier` |
+| `/v1/create-hold`        | `createHold`       |
+| `/v1/release`            | `release`          |
+| `/v1/cancel-hold`        | `cancel`           |
 
 Bodies use the corresponding independent `src/wire.rs` fields **without** the
 `method` discriminator. Responses remove it too. Attestation mode is preserved,

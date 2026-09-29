@@ -54,6 +54,7 @@ pub fn router(api: Arc<Api>) -> Router {
     Router::new()
         .route("/v1/attest", post(handle))
         .route("/v1/verify-blob", post(handle))
+        .route("/v1/carry-pin-verifier", post(handle))
         .route("/v1/release", post(handle))
         .route("/v1/create-hold", post(handle))
         .route("/v1/cancel-hold", post(handle))
@@ -88,6 +89,7 @@ async fn forward(api: &Api, request: Request) -> Response {
     let method = match request.uri().path() {
         "/v1/attest" => "attest",
         "/v1/verify-blob" => "verifyBlob",
+        "/v1/carry-pin-verifier" => "carryPinVerifier",
         "/v1/release" => "release",
         "/v1/create-hold" => "createHold",
         "/v1/cancel-hold" => "cancel",

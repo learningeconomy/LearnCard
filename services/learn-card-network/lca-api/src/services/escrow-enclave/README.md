@@ -42,8 +42,8 @@ release and cancellation forward that record rather than unsigned host fields.
 Legacy Mongo rows without a record can still be cancelled locally, but cannot
 release. Enclave cancellation is best-effort after the local cancellation commits.
 
-The real Nitro enclave application **must also implement `carryPinVerifier`** with
-the same contract before PIN carry is available in `remote` mode:
+The real Nitro enclave application **implements `carryPinVerifier`** (P8.1/P8.2)
+with the same contract described here:
 
 ```ts
 carryPinVerifier({ sourceEnvelope, targetEnvelope, expectedDid,
@@ -67,10 +67,20 @@ lost compare-and-swap falls back to normal PIN-less enrollment with a secret-fre
 Explicit new PIN enrollment is unchanged; explicit removal sends `clearPin: true`
 to bypass carry (it cannot be combined with `pinSalt`).
 
-`services/escrow-enclave-app/src/wire.rs` has no `carryPinVerifier` method yet, so
-`RemoteEnclave.carryPinVerifier` (`remoteEnclave.ts`) fails closed with
-`EscrowUnavailableError` rather than calling a nonexistent endpoint. Until the
-enclave-app implements the contract above, PIN-carry-on-rotation degrades to normal
-PIN-less enrollment in `remote` mode — see the PIN-budget note in
-`services/escrow-enclave-app/SECURITY.md` for the resulting interaction with the
-per-epoch ledger budget (D13).
+`services/escrow-enclave-app/src/wire.rs` implements `carryPinVerifier` as
+`wire::v1::Request::CarryPinVerifier`, dispatched in `src/server.rs` to
+`Policy::carry_pin_verifier` (`src/policy.rs`), and reachable over HTTP at
+`POST /v1/carry-pin-verifier` (emulator: `src/server/http.rs`; production parent:
+`services/escrow-enclave-host`). `RemoteEnclave.carryPinVerifier` (`remoteEnclave.ts`)
+calls that endpoint the same way `verifyEscrowBlob`/`releaseEscrow` do, with zod
+response validation and the same fail-closed error mapping.
+
+`carry_pin_verifier` is a pure decrypt/validate/reseal: unlike `createHold`/
+`release`/`cancelHold`, it needs no `EnrollmentSource` and no trusted time, and it
+never touches the enclave ledger or PIN attempt budget. It therefore works in
+`remote` mode today even though every other mutating operation still fails closed
+with `Unavailable` under the enclave's BLOCKER-ENROLLMENT gate (see
+`services/escrow-enclave-app/README.md`'s intro paragraph and `SECURITY.md`'s
+"Open Items / Launch Blockers"). Carrying the PIN _attempt budget itself_ across
+a rotation (so the enclave ledger doesn't hand out a fresh ten-attempt budget
+per epoch) is a separate follow-up, tracked as P8.3 — not implemented here.

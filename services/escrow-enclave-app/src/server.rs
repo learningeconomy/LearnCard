@@ -179,6 +179,22 @@ impl Service<'_> {
                     reason: (!result.ok).then(|| "Invalid escrow payload.".into()),
                 })
             }
+            Request::CarryPinVerifier {
+                source_envelope,
+                target_envelope,
+                expected_did,
+                source_share_version,
+                target_share_version,
+            } => {
+                let envelope = self.policy.carry_pin_verifier(
+                    &source_envelope,
+                    &target_envelope,
+                    &expected_did,
+                    source_share_version,
+                    target_share_version,
+                )?;
+                Ok(Response::CarryPinVerifier { envelope })
+            }
             Request::CreateHold {
                 envelope,
                 hold_id,

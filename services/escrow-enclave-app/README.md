@@ -10,7 +10,10 @@ is still blocked, however: the Nitro binary wires in a placeholder `EnrollmentSo
 so every mutating operation (create/release/cancel a hold) fails closed with
 `Unavailable` until an authenticated, fresh enrollment source is integrated — see
 SECURITY.md's Open Items / Launch Blockers for the remaining gates. Do not point
-production recovery traffic at this build yet.
+production recovery traffic at this build yet. `carryPinVerifier` (P8.1) is the one
+exception: it is a pure decrypt/validate/reseal with no ledger, `EnrollmentSource`,
+or trusted-time dependency, so it works in this build today despite
+BLOCKER-ENROLLMENT — see "Release policy" and "Wire contract" below.
 
 ## Target architecture
 
@@ -231,13 +234,14 @@ request parameter. Measurement must likewise come from verified NSM startup.
 
 ### Operations and decisions
 
-| Operation      | Required checks                                                                                                                          | Persisted result before returning                                                                                                                                   |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `verify_blob`  | Authenticated envelope/key ID, positive u32 version; compare decrypted DID/version to expectations                                       | None; `{ok, has_pin}`, or `Blob` for invalid ciphertext/key/plaintext                                                                                               |
-| `create_hold`  | Identity/version, current authenticated enrollment, valid recipient SPKI, unique hold, PIN verifier present for PIN policy, trusted time | `HoldCreated`, then authenticated full-chain readback                                                                                                               |
-| `release_hold` | All signed hold fields and current blob/epoch match; live, uncancelled/unreleased hold; trusted `lo >= createdHi + 604800000`            | `Released` + readback, **then** seal to the signed recipient                                                                                                        |
-| `release_pin`  | Same bindings/live hold; PIN policy, verifier and proof present; enrollment budget available                                             | Reserve + readback → fixed-size `subtle` comparison → success/failure + readback; success adds `Released` + readback before sealing; tenth failure adds `PinLocked` |
-| `cancel_hold`  | Same authenticated hold/current enrollment; live hold                                                                                    | `Cancelled` + readback; subsequent release refused                                                                                                                  |
+| Operation                   | Required checks                                                                                                                                                          | Persisted result before returning                                                                                                                                   |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `verify_blob`               | Authenticated envelope/key ID, positive u32 version; compare decrypted DID/version to expectations                                                                       | None; `{ok, has_pin}`, or `Blob` for invalid ciphertext/key/plaintext                                                                                               |
+| `create_hold`               | Identity/version, current authenticated enrollment, valid recipient SPKI, unique hold, PIN verifier present for PIN policy, trusted time                                 | `HoldCreated`, then authenticated full-chain readback                                                                                                               |
+| `release_hold`              | All signed hold fields and current blob/epoch match; live, uncancelled/unreleased hold; trusted `lo >= createdHi + 604800000`                                            | `Released` + readback, **then** seal to the signed recipient                                                                                                        |
+| `release_pin`               | Same bindings/live hold; PIN policy, verifier and proof present; enrollment budget available                                                                             | Reserve + readback → fixed-size `subtle` comparison → success/failure + readback; success adds `Released` + readback before sealing; tenth failure adds `PinLocked` |
+| `cancel_hold`               | Same authenticated hold/current enrollment; live hold                                                                                                                    | `Cancelled` + readback; subsequent release refused                                                                                                                  |
+| `carry_pin_verifier` (P8.1) | Both plaintexts' DID == `expected_did`; each side's version == its expected version; target version strictly greater than source; source has a verifier; target does not | None — pure decrypt/validate/reseal, no ledger/enrollment/time; returns `{ envelope }` sealed to the CURRENT key with a fresh ephemeral key, salt and IV            |
 
 `release` dispatches on the signed policy. A PIN hold never becomes a delayed
 hold, even after seven days; a delayed hold ignores any PIN proof. The duration
@@ -620,10 +624,20 @@ the HTTP bearer is not protection from other local processes.
 | `attest`                | `nonce` (JSON byte array)                                                                                                                | `mode`, `keyId`, `publicKey`, `measurements`, `document`, `issuedAt` |
 | `createHold`            | `envelope`, `holdId`, `requestId`, `expectedDid`, `expectedShareVersion`, `enrollmentEpoch`, `releasePolicy`, `clientEphemeralPublicKey` | `hold` (`SignedHoldRecord` wrapper)                                  |
 | `verifyBlob`            | `envelope`, `expectedDid`, `expectedShareVersion`                                                                                        | `ok`, `hasPin`, optional `reason` (on failure)                       |
+| `carryPinVerifier`      | `sourceEnvelope`, `targetEnvelope`, `expectedDid`, `sourceShareVersion`, `targetShareVersion`                                            | `envelope` (sealed to the current key)                               |
 | `release`               | `envelope`, `hold` (`SignedHoldRecord`), `requestId`, `clientEphemeralPublicKey`, `expectedDid`, optional `pinProof`                     | `sealed` (envelope)                                                  |
 | `cancel`                | `envelope`, `hold` (`SignedHoldRecord`), `requestId`, `clientEphemeralPublicKey`, `expectedDid`                                          | `cancelled` (boolean)                                                |
 | `health`                | none                                                                                                                                     | `ok`                                                                 |
 | `error` (response only) | —                                                                                                                                        | `code`, safe `message`                                               |
+
+`carryPinVerifier` (P8.1) takes no `requestId`: like `verifyBlob`, it is a pure
+decrypt/validate/reseal with no ledger, `EnrollmentSource`, or trusted-time
+dependency, so it never touches the PIN attempt budget and needs no idempotency
+key. All of its rejections return the single generic `blob` error, matching
+`verifyBlob`'s `Invalid escrow payload.` — the response never distinguishes which
+binding failed (DID, version, missing/present verifier, or an undecryptable
+envelope). Carrying the PIN attempt budget itself across a rotation is a separate
+follow-up (P8.3), not implemented by this method.
 
 Error codes: `policy`, `pinMismatch`, `blob`, `unavailable`, `ledger`, `time`.
 DTO deserialization is **not** signature, algorithm, range, or policy validation.
@@ -656,8 +670,9 @@ fake replies use `mode:software` and a publicly known test CA.
 
 ### HTTP translation (parent / optional emulator listener)
 
-`POST /v1/attest`, `/v1/verify-blob`, `/v1/create-hold`, `/v1/release`, `/v1/cancel-hold`,
-and `/v1/health` carry the table's fields **without `method`**. The parent adds
+`POST /v1/attest`, `/v1/verify-blob`, `/v1/carry-pin-verifier`, `/v1/create-hold`,
+`/v1/release`, `/v1/cancel-hold`, and `/v1/health` carry the table's fields
+**without `method`**. The parent adds
 the discriminator when forwarding and removes it on replies. Both HTTP adapters
 implement P4.2: create returns the bare complete `SignedHoldRecord`, cancel returns
 `{ok:true}`, and mutations receive a fresh random request ID when omitted. Explicit

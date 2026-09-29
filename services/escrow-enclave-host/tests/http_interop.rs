@@ -149,6 +149,75 @@ async fn host_http_to_real_enclave_framed_lifecycle() {
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_eq!(err["code"], "blob");
+
+    // P8.2: carry_pin_verifier through the real HTTP router -> framed vsock ->
+    // real enclave policy. It needs no enrollment/ledger setup at all (unlike
+    // every other mutation above/below), since it never touches either.
+    let carry_public_key = attestation["publicKey"].as_str().unwrap();
+    let carry_key_id = attestation["keyId"].as_str().unwrap();
+    let carry_source = crypto::encrypt_escrow_blob(
+        &EscrowBlobPlaintext {
+            version: 1,
+            recovery_share: "ab".repeat(33),
+            did: "did:key:carry".into(),
+            share_version: 5.0,
+            pin_verifier: Some("ef".repeat(32)),
+        },
+        carry_public_key,
+        carry_key_id,
+    )
+    .unwrap();
+    let carry_target = crypto::encrypt_escrow_blob(
+        &EscrowBlobPlaintext {
+            version: 1,
+            recovery_share: "cd".repeat(33),
+            did: "did:key:carry".into(),
+            share_version: 6.0,
+            pin_verifier: None,
+        },
+        carry_public_key,
+        carry_key_id,
+    )
+    .unwrap();
+    let (status, carried) = call(
+        &router,
+        "/v1/carry-pin-verifier",
+        json!({
+            "sourceEnvelope": carry_source,
+            "targetEnvelope": carry_target,
+            "expectedDid": "did:key:carry",
+            "sourceShareVersion": 5,
+            "targetShareVersion": 6,
+        }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let carried_envelope: EscrowEnvelope =
+        serde_json::from_value(carried["envelope"].clone()).unwrap();
+    assert_ne!(carried_envelope.ciphertext, carry_target.ciphertext);
+    let (status, verified) = call(
+        &router,
+        "/v1/verify-blob",
+        json!({"envelope":carried_envelope,"expectedDid":"did:key:carry","expectedShareVersion":6}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(verified, json!({"ok":true,"hasPin":true}));
+    let (status, rejected) = call(
+        &router,
+        "/v1/carry-pin-verifier",
+        json!({
+            "sourceEnvelope": carry_source,
+            "targetEnvelope": carry_target,
+            "expectedDid": "did:key:wrong",
+            "sourceShareVersion": 5,
+            "targetShareVersion": 6,
+        }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(rejected["code"], "blob");
+
     let client = crypto::generate_escrow_key_pair().unwrap();
     for (id, policy) in [("pin", "pin"), ("cancel", "pin"), ("delay", "hold")] {
         let (status,hold) = call(&router,"/v1/create-hold",json!({"envelope":envelope,"holdId":id,"expectedDid":"did:key:test","expectedShareVersion":1,"enrollmentEpoch":1,"releasePolicy":policy,"clientEphemeralPublicKey":client.public_key})).await;

@@ -63,6 +63,11 @@ fn fixtures() -> Vec<(&'static str, Value, Value)> {
             json!({"envelope":envelope(),"hold":hold(),"requestId":"request-3","clientEphemeralPublicKey":"AA==","expectedDid":"did:example:alice"}),
             json!({"cancelled":true}),
         ),
+        (
+            "carryPinVerifier",
+            json!({"sourceEnvelope":envelope(),"targetEnvelope":envelope(),"expectedDid":"did:example:alice","sourceShareVersion":1,"targetShareVersion":2}),
+            json!({"envelope":envelope()}),
+        ),
     ]
 }
 #[test]
@@ -108,6 +113,7 @@ fn path(method: &str) -> &str {
     match method {
         "attest" => "/v1/attest",
         "verifyBlob" => "/v1/verify-blob",
+        "carryPinVerifier" => "/v1/carry-pin-verifier",
         "createHold" => "/v1/create-hold",
         "release" => "/v1/release",
         _ => "/v1/cancel-hold",

@@ -143,6 +143,76 @@ describe('createRemoteEnclave', () => {
         });
     });
 
+    it('carries a PIN verifier across a share-version rotation', async () => {
+        const post = vi.fn().mockResolvedValue(respond(200, { envelope }));
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+        const input = {
+            sourceEnvelope: envelope,
+            targetEnvelope: envelope,
+            expectedDid: 'did:example:alice',
+            sourceShareVersion: 1,
+            targetShareVersion: 2,
+        };
+
+        await expect(enclave.carryPinVerifier(input)).resolves.toEqual({ envelope });
+
+        expect(post).toHaveBeenCalledWith(
+            `${baseUrl}/v1/carry-pin-verifier`,
+            {
+                sourceEnvelope: envelope,
+                targetEnvelope: envelope,
+                expectedDid: 'did:example:alice',
+                sourceShareVersion: 1,
+                targetShareVersion: 2,
+            },
+            { headers: { Authorization: `Bearer ${token}` }, timeout: timeoutMs }
+        );
+    });
+
+    it.each([
+        ['policy', EscrowPolicyError],
+        ['pinMismatch', EscrowPinMismatchError],
+        ['blob', EscrowBlobError],
+        ['unavailable', EscrowUnavailableError],
+        ['ledger', EscrowUnavailableError],
+        ['time', EscrowUnavailableError],
+    ] as const)(
+        'carryPinVerifier maps wire error code %s to the matching EscrowEnclave error',
+        async (code, ErrorClass) => {
+            const post = vi
+                .fn()
+                .mockResolvedValue(respond(400, { code, message: 'private detail' }));
+            const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+
+            await expect(
+                enclave.carryPinVerifier({
+                    sourceEnvelope: envelope,
+                    targetEnvelope: envelope,
+                    expectedDid: 'did:example:alice',
+                    sourceShareVersion: 1,
+                    targetShareVersion: 2,
+                })
+            ).rejects.toBeInstanceOf(ErrorClass);
+        }
+    );
+
+    it('carryPinVerifier fails closed on a malformed/schema-invalid response', async () => {
+        const post = vi
+            .fn()
+            .mockResolvedValue(respond(200, { envelope: { ...envelope, version: 2 } }));
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+
+        await expect(
+            enclave.carryPinVerifier({
+                sourceEnvelope: envelope,
+                targetEnvelope: envelope,
+                expectedDid: 'did:example:alice',
+                sourceShareVersion: 1,
+                targetShareVersion: 2,
+            })
+        ).rejects.toBeInstanceOf(EscrowUnavailableError);
+    });
+
     it('releases escrow, omitting host-supplied time', async () => {
         const post = vi.fn().mockResolvedValue(respond(200, { sealed: envelope }));
         const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
