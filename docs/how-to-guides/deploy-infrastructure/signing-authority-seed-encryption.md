@@ -19,7 +19,7 @@ Each authority uses a separate 256-bit data-encryption key. AWS Key Management S
 
 Decryption selects the provider recorded in each envelope. An offline/test process configured with both the original local KEK and a KMS ARN can read both formats while creating new envelopes with KMS. Missing provider keys or failed decryptions remain errors; the service never retries with another provider or a retained plaintext seed. Local envelopes remain restricted to offline/test environments. The migration phases convert plaintext records, not existing encrypted envelopes: moving a local database to an online KMS deployment requires a separate explicit re-encryption of its `local-v1` records before cutover. Simply changing configuration or running `prepare` does not perform that conversion.
 
-Encryption protects seeds at rest. Temporary plaintext and data-key buffers are cleared after use, but the signing SDK accepts immutable JavaScript seed strings and retains signing keys in cached wallets. Strings and SDK-internal copies cannot be reliably zeroed; this implementation does not protect against process-memory access, heap snapshots, or crash dumps.
+Encryption protects the migrated MongoDB records at rest. Completing the rollout also requires checking Redis for legacy `sa|*` keys and retiring plaintext backups as described below. Temporary plaintext and data-key buffers are cleared after use, but the signing SDK accepts immutable JavaScript seed strings and retains signing keys in cached wallets. Strings and SDK-internal copies cannot be reliably zeroed; this implementation does not protect against process-memory access, heap snapshots, or crash dumps.
 
 Offline development (`IS_OFFLINE=true`, outside `NODE_ENV=test`) preserves plaintext writes and legacy reads by default. No local encryption key is needed for this mode. Encryption is opt-in: generate a local key using:
 
@@ -82,17 +82,44 @@ CloudFormation outputs expose `SigningAuthoritySeedKeyArn` and `SigningAuthority
 
 KMS operations appear in CloudTrail by default. Before rollout, verify that the account's retained trail includes **read management events** and does not exclude `kms.amazonaws.com`. See [AWS KMS logging](https://docs.aws.amazon.com/kms/latest/developerguide/logging-using-cloudtrail.html). Encryption context is visible in those logs and contains no seed or data key.
 
+### Protect the GitHub Environments before running migrations
+
+In **Settings → Environments**, set **Deployment branches and tags → Protected branches only** for all four environments:
+
+- `learn-card-app-api-staging`
+- `scout-app-api-staging`
+- `learn-card-app-api-production`
+- `scout-app-api-production`
+
+Confirm that `main` is protected. Add the designated release maintainers as **Required reviewers** on both production environments before running `purge`; enable **Prevent self-review** where appropriate. Keep existing protection rules when updating these settings. AWS deployment credentials must be environment secrets, rather than repository-wide fallbacks accessible from unprotected branches.
+
+These are repository settings, not settings a workflow file can enforce against another branch. An in-workflow `refs/heads/main` check, including the preflight below, can be edited out on that branch. GitHub's environment branch policy must reject the deployment before environment secrets become available. See [GitHub environment protection](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments#deployment-branches-and-tags).
+
+The workflow's separate preflight job has no deployment environment or AWS credentials. It reads the live policy, checks that `main` is protected, and refuses to start the migration job without the branch policy above. Production `purge` additionally requires at least one configured reviewer. API errors fail the check. This detects missing configuration; it does not replace the server-side policy.
+
+With an authenticated GitHub CLI, record the live settings before rollout (the [environment API](https://docs.github.com/en/rest/deployments/environments#get-an-environment) requires Actions read permission):
+
+```sh
+gh api repos/learningeconomy/LearnCard/branches/main --jq '{name, protected}'
+for SA_ENVIRONMENT in learn-card-app-api-staging scout-app-api-staging learn-card-app-api-production scout-app-api-production; do
+  gh api "repos/learningeconomy/LearnCard/environments/$SA_ENVIRONMENT" \
+    --jq '{name, deployment_branch_policy, protection_rules}'
+done
+```
+
+Require `protected_branches: true` and `custom_branch_policies: false` on every environment. Verify a `required_reviewers` rule with a nonempty reviewer list on production. Do not run Scouts `purge` until those settings are saved and verified.
+
 ## Staged live rollout
 
 Repeat the complete process in staging before production. Run commands below from `services/learn-card-network/lca-api` and substitute the intended service/stage/region. Do not run migration while any old plaintext writer is still serving traffic.
 
 1. Deploy this encryption-capable release with `SA_SEED_ENCRYPT_WRITES=false` and `SA_SEED_ALLOW_LEGACY_READ=true`. These are the initial CloudFormation defaults. Wait for every API/tRPC function to finish updating and existing invocations to drain. Confirm ordinary creation and signing still work. This release intentionally still writes plaintext so older readers remain compatible during deployment.
 2. Set `SA_SEED_ENCRYPT_WRITES=true` and keep `SA_SEED_ALLOW_LEGACY_READ=true`; deploy again. In GitHub Actions, set these variables in **each lca-api deployment environment**. For direct deployments, use the equivalent Serverless parameters `--param="saSeedEncryptWrites=true" --param="saSeedAllowLegacyRead=true"`. Wait for deployment completion and old invocations to drain. Inspect a newly created authority: it must contain an envelope and no `seed`.
-3. Open **Actions → Migrate Signing Authority Seeds**, select the lca-api GitHub Environment, and run `dry-run`, `prepare`, `verify`, and `purge` as four separate workflow runs. The workflow discovers the migration function from the CloudFormation output. The migration Lambda refuses mutating phases unless its deployed encrypted-write flag is enabled, causing the workflow to fail. The operator must still confirm all API/tRPC writers have finished updating.
-4. After purge completes, run the direct database checks below and issue/verify a credential using both a new and a migrated authority. Set `SA_SEED_ALLOW_LEGACY_READ=false`, retain encrypted writes, and deploy again. Recheck signing after cold starts.
+3. Verify the GitHub Environment protections above. Open **Actions → Migrate Signing Authority Seeds**, select the lca-api GitHub Environment, and run `dry-run`, `prepare`, `verify`, and `purge` as four separate workflow runs. The workflow discovers the migration function from the CloudFormation output. The migration Lambda refuses mutating phases unless its deployed encrypted-write flag is enabled, causing the workflow to fail. The operator must still confirm all API/tRPC writers have finished updating.
+4. After purge completes, run the direct database and Redis checks below and issue/verify a credential using both a new and a migrated authority. Set `SA_SEED_ALLOW_LEGACY_READ=false`, retain encrypted writes, and deploy again. Recheck signing after cold starts.
 5. Only after every supported deployment has completed this process, ship the cleanup release: remove the legacy branch in `decryptSigningAuthoritySeed`, the plaintext-write branch in creation, legacy cache-fingerprint handling, and both rollout controls from runtime configuration, CI, and Serverless. Keep historical-record types and seed comparisons in migration tooling. Do not remove compatibility before the deployment evidence exists.
 
-The workflow is manual-only, runs exclusively from `main`, uses the selected protected GitHub Environment, and permits only one run per environment at a time. `dry-run` is the default phase. Configure required reviewers on production GitHub Environments before rollout. Every run writes the final sanitized reconciliation counts to the GitHub job summary and never returns plaintext.
+The workflow is manual-only, checks for `main`, uses the selected GitHub Environment, and permits only one run per environment at a time. `dry-run` is the default phase. The environment protections must be configured separately before rollout. Every migration run writes the final sanitized reconciliation counts to the GitHub job summary and never returns plaintext.
 
 Run each phase separately and review its summary before starting the next one:
 
@@ -134,7 +161,25 @@ db.signingauthorities.countDocuments({
 }); // must equal db.signingauthorities.countDocuments({})
 ```
 
-Do not export entire records for logging or verification. Existing legacy backups, snapshots, and database history are not rewritten by `$unset`; restrict and retire those artifacts under the applicable retention policy. New backups after purge contain encrypted seed fields.
+Do not export entire records for logging or verification. Existing legacy backups, snapshots, and database history are not rewritten by `$unset`; restrict and retire those artifacts under the applicable retention policy. New MongoDB backups after purge contain encrypted seed fields.
+
+### Verify the retired Redis seed cache
+
+The unused Redis signing-authority module has been removed. It previously wrote raw seeds at `sa|<did>|<name>` with no expiration; deleting the code or purging MongoDB does not remove those keys. Signing wallets now use only the process-local cache, but historical Redis keys can survive indefinitely.
+
+From a trusted host with network access to the deployment's private Redis primary endpoint, run the read-only audit from `services/learn-card-network/lca-api`:
+
+```sh
+REDIS_HOST='<deployment Redis primary endpoint>' REDIS_PORT=6379 bun run check:sa-redis
+```
+
+Use the actual deployed endpoint, never an empty local Redis instance. The script requires explicit host and port, scans the application's default database `0`, reads no values, and prints only the database number, pattern, match count, and timestamp. Set `REDIS_DB` if auditing an additional historical database, `REDIS_TLS=true` for a TLS endpoint, and `REDIS_USERNAME`/`REDIS_PASSWORD` through the trusted host's secret configuration if required. It fails on connection/scan errors or any legacy key matches. SCAN can repeat matches, so a nonzero count is diagnostic; only `legacyKeyMatches: 0` on a completed pass establishes absence.
+
+Run this separately against LearnCard staging, Scouts staging, LearnCard production, and Scouts production. Retain each sanitized result with its environment and deployed endpoint in the rollout evidence. Repository tests cannot establish that any live environment is clean.
+
+If keys remain, stop rollout completion. First confirm that the old Redis writer is no longer deployed, each authority has its durable MongoDB record, and signing succeeds from that record after a cold start. Then remove only the confirmed obsolete `sa|*` keys with targeted `UNLINK` operations in the trusted Redis session and rerun the full audit. Do not read/export seed values or flush unrelated caches. Do not delete a key that is the only surviving copy of a signing authority; recover that authority through a reviewed migration first.
+
+Check every historical Redis deployment/database that held these keys, and restrict/retire old Redis snapshots and backups as well. A zero live-key count does not rewrite backups.
 
 ## Validation and monitoring
 
