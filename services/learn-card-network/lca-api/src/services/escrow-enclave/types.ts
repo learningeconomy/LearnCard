@@ -64,6 +64,10 @@ export interface CarryPinVerifierInput {
     expectedDid: string;
     sourceShareVersion: number;
     targetShareVersion: number;
+    /** P8.3: locates the source epoch's ledger chain so its spent PIN attempt
+     * budget carries forward instead of resetting; ignored in software mode
+     * (see softwareEnclave.ts, which relies on the host Mongo counter instead). */
+    sourceEnrollmentEpoch: number;
 }
 export interface EscrowEnclave {
     /** `nonce` binds a nitro attestation to one client-generated challenge (64 hex chars,

@@ -103,6 +103,7 @@ async fn policy_suite_through_loopback_and_http() {
             did: "did:key:test".into(),
             share_version: 1.0,
             pin_verifier: Some("ab".repeat(32)),
+            pin_attempts_floor: None,
         },
         &public_key,
         "emulate",
@@ -197,6 +198,7 @@ async fn policy_suite_through_loopback_and_http() {
                 did: "did:key:test".into(),
                 share_version: 2.0,
                 pin_verifier: None,
+                pin_attempts_floor: None,
             },
             &attestation_public_key,
             "emulate",
@@ -205,6 +207,7 @@ async fn policy_suite_through_loopback_and_http() {
         expected_did: "did:key:test".into(),
         source_share_version: 1,
         target_share_version: 2,
+        source_enrollment_epoch: 1,
     };
     let carried_envelope = match call(address, carry_request.clone()).await {
         Response::CarryPinVerifier { envelope } => envelope,

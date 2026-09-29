@@ -58,6 +58,8 @@ describe('software enclave', () => {
             expectedDid: scenario === 'expected DID' ? 'did:key:other' : did,
             sourceShareVersion: scenario === 'source version' ? 1 : 2,
             targetShareVersion: scenario === 'target version' ? 4 : targetVersion,
+            // Unused in software mode (see softwareEnclave.ts); any value is fine here.
+            sourceEnrollmentEpoch: 1,
         });
         if (scenario !== 'success') {
             await expect(result).rejects.toBeInstanceOf(EscrowBlobError);

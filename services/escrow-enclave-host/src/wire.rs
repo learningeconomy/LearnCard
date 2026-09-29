@@ -72,6 +72,7 @@ pub enum Request {
         expected_did: String,
         source_share_version: u32,
         target_share_version: u32,
+        source_enrollment_epoch: u64,
     },
     Release {
         envelope: Envelope,

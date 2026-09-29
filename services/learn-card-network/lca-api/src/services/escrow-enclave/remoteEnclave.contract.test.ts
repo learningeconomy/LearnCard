@@ -203,6 +203,7 @@ describe.skipIf(!contractUrl)('remote enclave contract (escrow-enclave --emulate
                 expectedDid: did,
                 sourceShareVersion: 1,
                 targetShareVersion: 2,
+                sourceEnrollmentEpoch: 1,
             });
             await expect(
                 enclave.verifyEscrowBlob({
@@ -246,4 +247,122 @@ describe.skipIf(!contractUrl)('remote enclave contract (escrow-enclave --emulate
             await replace(original);
         }
     });
+
+    // P8.3: the enclave ledger's PIN attempt budget is keyed by (tenant,
+    // enrollment, epoch); a real blob write always bumps enrollmentEpoch
+    // (UserKey.escrowBlob.enrollmentEpoch), so carrying the PIN into a new
+    // epoch must ALSO carry however many attempts were already spent, or the
+    // new epoch's chain gets a fresh ten-attempt budget for an unchanged PIN.
+    it('carries the PIN attempt budget across a rotation: N failures then only 10-N remain', async () => {
+        const fixturePath = process.env.ESCROW_ENCLAVE_EMULATE_FIXTURE;
+        if (!fixturePath)
+            throw new Error(
+                'Set ESCROW_ENCLAVE_EMULATE_FIXTURE for the emulator and contract test'
+            );
+        const original = await readFile(fixturePath, 'utf8');
+        const replace = async (contents: string) => {
+            const temporary = `${fixturePath}.${randomUUID()}.tmp`;
+            await writeFile(temporary, contents, { mode: 0o600 });
+            await rename(temporary, fixturePath);
+        };
+        const attestation = await enclave.getAttestation();
+        const client = await generateEscrowKeyPair();
+        const did = `did:key:contract-budget-${randomUUID()}`;
+        const pinProof = 'ab'.repeat(32);
+        const wrongProof = 'cd'.repeat(32);
+        const sourceEnvelope = await encryptEscrowBlob(
+            { recoveryShare: 'ab'.repeat(33), did, shareVersion: 1, pinVerifier: pinProof },
+            attestation.publicKey,
+            attestation.keyId
+        );
+        const attempt = async (
+            envelope: typeof sourceEnvelope,
+            shareVersion: number,
+            epoch: number
+        ) => {
+            const holdId = randomUUID();
+            const { holdRecord } = await enclave.createHold({
+                envelope,
+                holdId,
+                expectedDid: did,
+                expectedShareVersion: shareVersion,
+                enrollmentEpoch: epoch,
+                releasePolicy: 'pin',
+                clientEphemeralPublicKey: client.publicKey,
+            });
+            return enclave.releaseEscrow({
+                envelope,
+                hold: holdRecord,
+                expectedDid: did,
+                clientEphemeralPublicKey: client.publicKey,
+                pinProof: wrongProof,
+            });
+        };
+        try {
+            await replace(
+                JSON.stringify({
+                    nowMs: 1_700_000_000_000,
+                    enrollments: {
+                        [did]: { epoch: 1, shareVersion: 1, blobHash: blobHash(sourceEnvelope) },
+                    },
+                })
+            );
+            const failedAttempts = 3;
+            for (let i = 0; i < failedAttempts; i += 1) {
+                await expect(attempt(sourceEnvelope, 1, 1)).rejects.toBeInstanceOf(
+                    EscrowPinMismatchError
+                );
+            }
+            const targetEnvelope = await encryptEscrowBlob(
+                { recoveryShare: 'ef'.repeat(33), did, shareVersion: 2 },
+                attestation.publicKey,
+                attestation.keyId
+            );
+            const { envelope: carried } = await enclave.carryPinVerifier({
+                sourceEnvelope,
+                targetEnvelope,
+                expectedDid: did,
+                sourceShareVersion: 1,
+                targetShareVersion: 2,
+                sourceEnrollmentEpoch: 1,
+            });
+            // Every real blob write bumps enrollmentEpoch; simulate that here.
+            await replace(
+                JSON.stringify({
+                    nowMs: 1_700_000_000_000,
+                    enrollments: {
+                        [did]: { epoch: 2, shareVersion: 2, blobHash: blobHash(carried) },
+                    },
+                })
+            );
+            const remaining = 10 - failedAttempts;
+            for (let i = 0; i < remaining; i += 1) {
+                await expect(attempt(carried, 2, 2)).rejects.toBeInstanceOf(EscrowPinMismatchError);
+            }
+            // One more than the remaining budget: refused before comparing the
+            // PIN at all (even the CORRECT PIN fails), because 3 (carried) + 7
+            // (this epoch) already equals the ten-attempt lifetime maximum.
+            const holdId = randomUUID();
+            const { holdRecord } = await enclave.createHold({
+                envelope: carried,
+                holdId,
+                expectedDid: did,
+                expectedShareVersion: 2,
+                enrollmentEpoch: 2,
+                releasePolicy: 'pin',
+                clientEphemeralPublicKey: client.publicKey,
+            });
+            await expect(
+                enclave.releaseEscrow({
+                    envelope: carried,
+                    hold: holdRecord,
+                    expectedDid: did,
+                    clientEphemeralPublicKey: client.publicKey,
+                    pinProof,
+                })
+            ).rejects.toBeInstanceOf(EscrowPolicyError);
+        } finally {
+            await replace(original);
+        }
+    }, 20_000);
 });

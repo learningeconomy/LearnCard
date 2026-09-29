@@ -64,6 +64,12 @@ pub struct EscrowBlobPlaintext {
     pub share_version: f64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pin_verifier: Option<String>,
+    /// P8.3: lifetime PIN attempts already spent in a PRIOR enrollment epoch,
+    /// carried forward by `Policy::carry_pin_verifier` so a key rotation never
+    /// hands the ledger a fresh budget. Absent/0 behaves exactly as before
+    /// P8.3 (not secret; not zeroized beyond the struct's blanket derive).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pin_attempts_floor: Option<u8>,
 }
 
 impl<'de> Deserialize<'de> for EscrowBlobPlaintext {
@@ -80,6 +86,8 @@ impl<'de> Deserialize<'de> for EscrowBlobPlaintext {
             share_version: f64,
             #[serde(default, deserialize_with = "optional_secret_string")]
             pin_verifier: Option<Zeroizing<String>>,
+            #[serde(default)]
+            pin_attempts_floor: Option<u8>,
         }
         let mut fields = Fields::deserialize(d)?;
         Ok(Self {
@@ -91,6 +99,7 @@ impl<'de> Deserialize<'de> for EscrowBlobPlaintext {
                 .pin_verifier
                 .as_mut()
                 .map(|s| std::mem::take(&mut **s)),
+            pin_attempts_floor: fields.pin_attempts_floor,
         })
     }
 }
@@ -131,6 +140,8 @@ impl<'de> Deserialize<'de> for EscrowReleasePlaintext {
             share_version: f64,
             #[serde(default, deserialize_with = "optional_secret_string")]
             pin_verifier: Option<Zeroizing<String>>,
+            #[serde(default)]
+            pin_attempts_floor: Option<u8>,
             #[serde(deserialize_with = "secret_string")]
             hold_id: Zeroizing<String>,
         }
@@ -145,6 +156,7 @@ impl<'de> Deserialize<'de> for EscrowReleasePlaintext {
                     .pin_verifier
                     .as_mut()
                     .map(|s| std::mem::take(&mut **s)),
+                pin_attempts_floor: fields.pin_attempts_floor,
             },
             hold_id: std::mem::take(&mut *fields.hold_id),
         })
@@ -207,6 +219,12 @@ impl EscrowBlobPlaintext {
                 return Err(CryptoError::Invalid("pinVerifier"));
             }
             pin.make_ascii_lowercase();
+        }
+        if self
+            .pin_attempts_floor
+            .is_some_and(|floor| floor > crate::ledger::PIN_BUDGET)
+        {
+            return Err(CryptoError::Invalid("pinAttemptsFloor"));
         }
         Ok(())
     }
@@ -709,6 +727,7 @@ mod tests {
             did: "did:key:test".into(),
             share_version: 3.0,
             pin_verifier: Some("ab".repeat(32)),
+            pin_attempts_floor: None,
         };
         let envelope = encrypt_escrow_blob(&carried, &keys.public_key, "test").unwrap();
         let plaintext = decrypt(&envelope, &keys.private_key, ESCROW_BLOB_INFO).unwrap();
@@ -725,6 +744,28 @@ mod tests {
                 "pinVerifier": "ab".repeat(32),
             })
         );
+    }
+
+    // P8.3: blobs without the field decrypt/re-encrypt byte-identically (schema
+    // compatibility); a present floor round-trips as an integer, never a float,
+    // and is bounds-checked like every other plaintext field.
+    #[test]
+    fn pin_attempts_floor_is_optional_bounded_and_integral() {
+        let keys = generate_escrow_key_pair().unwrap();
+        let mut plaintext = fixtures().blobs[0].plaintext.clone();
+        assert_eq!(plaintext.pin_attempts_floor, None);
+        plaintext.pin_attempts_floor = Some(7);
+        let envelope = encrypt_escrow_blob(&plaintext, &keys.public_key, "test").unwrap();
+        let bytes = decrypt(&envelope, &keys.private_key, ESCROW_BLOB_INFO).unwrap();
+        let text = std::str::from_utf8(&bytes).unwrap();
+        assert!(text.contains("\"pinAttemptsFloor\":7"));
+        let round_tripped = decrypt_escrow_blob(&envelope, &keys.private_key).unwrap();
+        assert_eq!(round_tripped.pin_attempts_floor, Some(7));
+        plaintext.pin_attempts_floor = Some(11);
+        assert!(matches!(
+            encrypt_escrow_blob(&plaintext, &keys.public_key, "test"),
+            Err(CryptoError::Invalid("pinAttemptsFloor"))
+        ));
     }
 
     #[test]

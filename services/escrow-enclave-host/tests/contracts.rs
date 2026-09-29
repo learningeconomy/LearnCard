@@ -65,7 +65,7 @@ fn fixtures() -> Vec<(&'static str, Value, Value)> {
         ),
         (
             "carryPinVerifier",
-            json!({"sourceEnvelope":envelope(),"targetEnvelope":envelope(),"expectedDid":"did:example:alice","sourceShareVersion":1,"targetShareVersion":2}),
+            json!({"sourceEnvelope":envelope(),"targetEnvelope":envelope(),"expectedDid":"did:example:alice","sourceShareVersion":1,"targetShareVersion":2,"sourceEnrollmentEpoch":1}),
             json!({"envelope":envelope()}),
         ),
     ]

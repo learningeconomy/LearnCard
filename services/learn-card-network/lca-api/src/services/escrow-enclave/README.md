@@ -75,12 +75,31 @@ to bypass carry (it cannot be combined with `pinSalt`).
 calls that endpoint the same way `verifyEscrowBlob`/`releaseEscrow` do, with zod
 response validation and the same fail-closed error mapping.
 
-`carry_pin_verifier` is a pure decrypt/validate/reseal: unlike `createHold`/
-`release`/`cancelHold`, it needs no `EnrollmentSource` and no trusted time, and it
-never touches the enclave ledger or PIN attempt budget. It therefore works in
-`remote` mode today even though every other mutating operation still fails closed
-with `Unavailable` under the enclave's BLOCKER-ENROLLMENT gate (see
+`carry_pin_verifier` decrypts/validates/reseals: unlike `createHold`/`release`/
+`cancelHold`, it needs no `EnrollmentSource` and no trusted time, so it still
+works in `remote` mode today even though every other mutating operation fails
+closed with `Unavailable` under the enclave's BLOCKER-ENROLLMENT gate (see
 `services/escrow-enclave-app/README.md`'s intro paragraph and `SECURITY.md`'s
-"Open Items / Launch Blockers"). Carrying the PIN _attempt budget itself_ across
-a rotation (so the enclave ledger doesn't hand out a fresh ten-attempt budget
-per epoch) is a separate follow-up, tracked as P8.3 — not implemented here.
+"Open Items / Launch Blockers").
+
+**P8.3**: it now also reads (never writes) the source epoch's ledger chain, so
+the PIN attempt budget itself carries forward across a rotation instead of
+resetting. `sourceEnrollmentEpoch` (plus the tenant and decrypted source DID)
+locates that chain the same way `release_pin` does; the chain is verified with
+the same signature/sequence/binding checks (`Ledger::verify_chain`), and a
+chain that fails that verification is a fail-closed `Ledger`/`Unavailable`
+error, not silently treated as empty. The target's `pinAttemptsFloor` becomes
+`source.pinAttemptsFloor (default 0) + source_chain.attempts_used`, capped at
+the ten-attempt lifetime maximum; a `release_pin` against a blob carrying that
+floor only permits `10 - floor` further local attempts before locking, so a
+carry — including a carry of a carry — never hands out a fresh budget and
+never lowers whatever floor the source blob already had. `pinAttemptsFloor` is
+stripped (like `pinVerifier`) before any release plaintext reaches the client:
+it is enclave/ledger bookkeeping, not client-facing data.
+
+Software mode (`softwareEnclave.ts`) accepts `sourceEnrollmentEpoch` but
+ignores it: software mode has no enclave ledger to reset in the first place,
+so there is no epoch-scoped budget to carry — its PIN attempt budget is the
+host's `escrowPin.failedAttempts`/`verifiedFailedAttempts` counters in
+MongoDB, which the enroll route already copies forward unchanged on every
+carry, independent of `enrollmentEpoch`.

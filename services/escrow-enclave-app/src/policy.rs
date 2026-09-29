@@ -14,7 +14,7 @@ use crate::{
     crypto::{self, EscrowBlobPlaintext, EscrowKeyPair, EscrowReleasePlaintext},
     ledger::{
         ChainState, Enrollment, Event, Hash, HeadStore, Ledger, LedgerError, LedgerRecord,
-        Operation, PinOutcome, MAX_CHAIN_RECORDS,
+        Operation, PinOutcome, MAX_CHAIN_RECORDS, PIN_BUDGET,
     },
     time::{TimeEvidence, TimeSource},
     wire::{ErrorCode, EscrowEnvelope, HoldRecord, ReleasePolicy},
@@ -161,33 +161,45 @@ impl<'a> Policy<'a> {
         })
     }
 
-    /// P8.1: transfers a PIN verifier across a share-version rotation. A pure
-    /// decrypt/validate/reseal, exactly like `verify_blob` above — no ledger,
-    /// `EnrollmentSource`, or trusted time, and it never touches the PIN attempt
-    /// budget (carrying that budget forward is P8.3, a separate change). Unlike
-    /// `create_hold`/`release`/`cancel_hold`, this is therefore NOT blocked by
-    /// BLOCKER-ENROLLMENT (see README.md and SECURITY.md): it works even while
-    /// every mutating, ledger-backed operation fails closed with `Unavailable`.
+    /// P8.1/P8.3: transfers a PIN verifier, AND the lifetime attempt budget
+    /// already spent against it, across a share-version rotation. Still a pure
+    /// decrypt/validate/reseal with no `EnrollmentSource` or trusted time — but
+    /// P8.3 adds a READ-ONLY ledger lookup of the source epoch's chain (the same
+    /// signature/sequence/binding verification `release_pin` uses), so it is no
+    /// longer independent of the ledger like `verify_blob`. It still never
+    /// appends/mutates a chain, so it is unaffected by BLOCKER-ENROLLMENT (see
+    /// README.md and SECURITY.md): `EnrollmentSource` is not on this path.
     ///
-    /// Rejects with the single generic `Blob` error — same shape as every other
-    /// blob failure, no distinguishing detail — unless ALL hold: both plaintexts'
-    /// `did == expected_did`; `source.share_version == source_share_version` and
+    /// Rejects with the single generic `Blob` error for every DID/version/PIN-
+    /// presence mismatch — same shape as every other blob failure, no
+    /// distinguishing detail — unless ALL hold: both plaintexts' `did ==
+    /// expected_did`; `source.share_version == source_share_version` and
     /// `target.share_version == target_share_version`; `target.share_version >
     /// source.share_version`; `source.pin_verifier` present and
-    /// `target.pin_verifier` absent. Reseals `{ ...target, pinVerifier:
-    /// source.pinVerifier }` to the CURRENT key (`self.key_id`/`self.keys`) via
-    /// the same `encrypt_escrow_blob` every other blob uses, with a fresh
-    /// ephemeral key/salt/IV — never returns, logs, or reuses the target's
-    /// original ciphertext. Decrypted plaintexts zeroize on drop
-    /// (`EscrowBlobPlaintext`'s `ZeroizeOnDrop`); `source.pin_verifier` is moved
-    /// (not cloned) into `target`, so it is never duplicated in memory.
-    pub fn carry_pin_verifier(
+    /// `target.pin_verifier` absent; `source_enrollment_epoch` in range.
+    ///
+    /// `used = source.pin_attempts_floor.unwrap_or(0) + source_chain.attempts_used`
+    /// (the source epoch's OWN floor plus however many local reservations its
+    /// chain made — never fewer, so a carry-of-a-carry accumulates and a carry
+    /// never lowers a floor the source blob already had). A source chain that
+    /// exists but fails signature/link/binding verification is a distinct
+    /// `Ledger` (or `Unavailable` on storage failure) error, per the existing
+    /// `ledger_error` mapping — fail closed rather than silently treating a
+    /// tampered chain as empty. `used` becomes the target's `pin_attempts_floor`.
+    ///
+    /// Reseals `{ ...target, pinVerifier: source.pinVerifier, pinAttemptsFloor:
+    /// used }` to the CURRENT key via `encrypt_escrow_blob`, fresh ephemeral
+    /// key/salt/IV — never returns, logs, or reuses the target's ciphertext.
+    /// Decrypted plaintexts zeroize on drop; `source.pin_verifier` is moved
+    /// (not cloned), so it is never duplicated in memory.
+    pub async fn carry_pin_verifier(
         &self,
         source_envelope: &EscrowEnvelope,
         target_envelope: &EscrowEnvelope,
         expected_did: &str,
         source_share_version: u32,
         target_share_version: u32,
+        source_enrollment_epoch: u64,
     ) -> Result<EscrowEnvelope, ErrorCode> {
         let mut source = self.decrypt(source_envelope)?;
         let mut target = self.decrypt(target_envelope)?;
@@ -198,9 +210,35 @@ impl<'a> Policy<'a> {
             || target.share_version <= source.share_version
             || source.pin_verifier.is_none()
             || target.pin_verifier.is_some()
+            || source_enrollment_epoch == 0
+            || source_enrollment_epoch > JS_MAX_INTEGER
         {
             return Err(ErrorCode::Blob);
         }
+        let source_hash = blob_hash(source_envelope)?;
+        let source_enrollment = Enrollment::new(
+            self.tenant.clone(),
+            &source.did,
+            source_enrollment_epoch,
+            source_hash,
+        );
+        let source_records = self
+            .store
+            .get_chain(&source_enrollment.chain_id())
+            .await
+            .map_err(|_| ErrorCode::Unavailable)?;
+        let source_state = Ledger::verify_chain(
+            &source_records,
+            &source_enrollment,
+            &self.ledger.public_key(),
+        )
+        .map_err(ledger_error)?;
+        let used = source
+            .pin_attempts_floor
+            .unwrap_or(0)
+            .saturating_add(source_state.attempts_used)
+            .min(PIN_BUDGET);
+        target.pin_attempts_floor = (used > 0).then_some(used);
         target.pin_verifier = source.pin_verifier.take();
         crypto::encrypt_escrow_blob(&target, &self.keys.public_key, &self.key_id)
             .map_err(|_| ErrorCode::Blob)
@@ -431,8 +469,14 @@ impl<'a> Policy<'a> {
             return Err(ErrorCode::Policy);
         }
         let proof = req.pin_proof.ok_or(ErrorCode::Policy)?;
+        // P8.3: a carried floor lowers the LOCAL budget this epoch's chain may
+        // spend (e.g. floor=3 leaves 7 local reservations before locking), so
+        // the combined total across every epoch a PIN has survived never
+        // exceeds PIN_BUDGET. floor=0 (no carry) reduces to today's behavior.
+        let floor = verified.blob.pin_attempts_floor.unwrap_or(0);
+        let used_before = verified.state.attempts_used.saturating_add(floor);
         // Oversize rejection depends only on public input, never the verifier.
-        if proof.len() > 128 || verified.state.locked {
+        if proof.len() > 128 || verified.state.locked || used_before >= PIN_BUDGET {
             return Err(ErrorCode::Policy);
         }
         let verifier = verified
@@ -467,7 +511,15 @@ impl<'a> Policy<'a> {
         match outcome {
             PinOutcome::Compared { matched: true } => self.finish(&req, verified, time).await,
             PinOutcome::Compared { matched: false } => {
-                if verified.state.attempts_used == crate::ledger::PIN_BUDGET - 1 {
+                // The explicit PinLocked audit record needs the LEDGER's own
+                // native lock (local attempt_no reaching PIN_BUDGET): with a
+                // carried floor, the combined budget is exhausted before the
+                // local count ever reaches PIN_BUDGET, so the ledger correctly
+                // has no native "locked" state to attest here. That is fine:
+                // PinLocked is an optional audit record, not the enforcement
+                // boundary (used_before >= PIN_BUDGET already refuses further
+                // attempts on the next call regardless of this event).
+                if verified.state.attempts_used == PIN_BUDGET - 1 {
                     let locked = self.operation(&req, time, "lock", Some(proof))?;
                     self.ledger
                         .transition(self.store, &verified.enrollment, &locked, Event::PinLocked)
@@ -502,6 +554,9 @@ impl<'a> Policy<'a> {
             pin.zeroize();
         }
         verified.blob.pin_verifier = None;
+        // The floor is enclave/ledger bookkeeping, not client-facing data; the
+        // client never needs it (a future carry recomputes it from the ledger).
+        verified.blob.pin_attempts_floor = None;
         crypto::seal_escrow_release(
             &EscrowReleasePlaintext {
                 blob: verified.blob,

@@ -453,6 +453,7 @@ export const escrowRouter = t.router({
                             expectedDid: ctx.user.did,
                             sourceShareVersion: oldBlob.shareVersion,
                             targetShareVersion: input.shareVersion,
+                            sourceEnrollmentEpoch: oldBlob.enrollmentEpoch,
                         });
                         stored = await setEscrowBlobByAuthProvider(
                             authProvider,

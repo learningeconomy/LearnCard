@@ -160,7 +160,17 @@ export class SoftwareEnclave implements EscrowEnclave {
         return { ok: true, hasPin: !!blob.pinVerifier };
     }
 
-    /** Transfer only the verifier; recovery material remains sealed within the enclave. */
+    /**
+     * Transfer only the verifier; recovery material remains sealed within the enclave.
+     *
+     * `input.sourceEnrollmentEpoch` is intentionally unused: software mode has no
+     * enclave ledger to reset in the first place, so there is no epoch-scoped PIN
+     * attempt budget to carry. The PIN attempt budget here is `escrowPin.failedAttempts`
+     * / `verifiedFailedAttempts` in MongoDB (see routes/escrow.ts), which the enroll
+     * route already copies forward unchanged on every carry, independent of
+     * `enrollmentEpoch` — so software mode never had the epoch-reset bug this field
+     * exists to fix in remote/nitro mode.
+     */
     async carryPinVerifier(input: CarryPinVerifierInput) {
         const source = await this.decrypt(input.sourceEnvelope);
         const target = await this.decrypt(input.targetEnvelope);

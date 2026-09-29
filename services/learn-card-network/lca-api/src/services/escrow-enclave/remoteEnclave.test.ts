@@ -152,6 +152,7 @@ describe('createRemoteEnclave', () => {
             expectedDid: 'did:example:alice',
             sourceShareVersion: 1,
             targetShareVersion: 2,
+            sourceEnrollmentEpoch: 1,
         };
 
         await expect(enclave.carryPinVerifier(input)).resolves.toEqual({ envelope });
@@ -164,6 +165,7 @@ describe('createRemoteEnclave', () => {
                 expectedDid: 'did:example:alice',
                 sourceShareVersion: 1,
                 targetShareVersion: 2,
+                sourceEnrollmentEpoch: 1,
             },
             { headers: { Authorization: `Bearer ${token}` }, timeout: timeoutMs }
         );
@@ -191,6 +193,7 @@ describe('createRemoteEnclave', () => {
                     expectedDid: 'did:example:alice',
                     sourceShareVersion: 1,
                     targetShareVersion: 2,
+                    sourceEnrollmentEpoch: 1,
                 })
             ).rejects.toBeInstanceOf(ErrorClass);
         }
@@ -209,6 +212,7 @@ describe('createRemoteEnclave', () => {
                 expectedDid: 'did:example:alice',
                 sourceShareVersion: 1,
                 targetShareVersion: 2,
+                sourceEnrollmentEpoch: 1,
             })
         ).rejects.toBeInstanceOf(EscrowUnavailableError);
     });

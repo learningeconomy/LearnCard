@@ -81,6 +81,7 @@ async fn host_http_to_real_enclave_framed_lifecycle() {
             did: "did:key:test".into(),
             share_version: 1.0,
             pin_verifier: Some("ab".repeat(32)),
+            pin_attempts_floor: None,
         },
         &public_key,
         "emulate",
@@ -150,9 +151,11 @@ async fn host_http_to_real_enclave_framed_lifecycle() {
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_eq!(err["code"], "blob");
 
-    // P8.2: carry_pin_verifier through the real HTTP router -> framed vsock ->
-    // real enclave policy. It needs no enrollment/ledger setup at all (unlike
-    // every other mutation above/below), since it never touches either.
+    // P8.2/P8.3: carry_pin_verifier through the real HTTP router -> framed
+    // vsock -> real enclave policy. It needs no `EnrollmentSource`/trusted
+    // time (unlike every other mutation above/below), but P8.3 does read the
+    // source epoch's ledger chain (empty here: this DID never made a PIN
+    // attempt), so `sourceEnrollmentEpoch` must be a valid, bounded epoch.
     let carry_public_key = attestation["publicKey"].as_str().unwrap();
     let carry_key_id = attestation["keyId"].as_str().unwrap();
     let carry_source = crypto::encrypt_escrow_blob(
@@ -162,6 +165,7 @@ async fn host_http_to_real_enclave_framed_lifecycle() {
             did: "did:key:carry".into(),
             share_version: 5.0,
             pin_verifier: Some("ef".repeat(32)),
+            pin_attempts_floor: None,
         },
         carry_public_key,
         carry_key_id,
@@ -174,6 +178,7 @@ async fn host_http_to_real_enclave_framed_lifecycle() {
             did: "did:key:carry".into(),
             share_version: 6.0,
             pin_verifier: None,
+            pin_attempts_floor: None,
         },
         carry_public_key,
         carry_key_id,
@@ -188,6 +193,7 @@ async fn host_http_to_real_enclave_framed_lifecycle() {
             "expectedDid": "did:key:carry",
             "sourceShareVersion": 5,
             "targetShareVersion": 6,
+            "sourceEnrollmentEpoch": 1,
         }),
     )
     .await;
@@ -212,6 +218,7 @@ async fn host_http_to_real_enclave_framed_lifecycle() {
             "expectedDid": "did:key:wrong",
             "sourceShareVersion": 5,
             "targetShareVersion": 6,
+            "sourceEnrollmentEpoch": 1,
         }),
     )
     .await;

@@ -185,14 +185,19 @@ impl Service<'_> {
                 expected_did,
                 source_share_version,
                 target_share_version,
+                source_enrollment_epoch,
             } => {
-                let envelope = self.policy.carry_pin_verifier(
-                    &source_envelope,
-                    &target_envelope,
-                    &expected_did,
-                    source_share_version,
-                    target_share_version,
-                )?;
+                let envelope = self
+                    .policy
+                    .carry_pin_verifier(
+                        &source_envelope,
+                        &target_envelope,
+                        &expected_did,
+                        source_share_version,
+                        target_share_version,
+                        source_enrollment_epoch,
+                    )
+                    .await?;
                 Ok(Response::CarryPinVerifier { envelope })
             }
             Request::CreateHold {

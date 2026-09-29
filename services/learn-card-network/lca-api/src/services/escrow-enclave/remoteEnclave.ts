@@ -186,6 +186,7 @@ export const createRemoteEnclave = (config: RemoteEnclaveConfig): EscrowEnclave 
                     expectedDid: input.expectedDid,
                     sourceShareVersion: input.sourceShareVersion,
                     targetShareVersion: input.targetShareVersion,
+                    sourceEnrollmentEpoch: input.sourceEnrollmentEpoch,
                 },
                 carryPinVerifierResponseValidator
             ),
