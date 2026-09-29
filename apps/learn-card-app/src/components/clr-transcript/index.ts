@@ -4,7 +4,7 @@ export { default as ClrTranscriptSummaryStats } from './ClrTranscriptSummaryStat
 export { default as ClrTranscriptTrustBadge } from './ClrTranscriptTrustBadge';
 export { default as ClrTranscriptWarningsPanel } from './ClrTranscriptWarningsPanel';
 export { default as ClrTranscriptEvidenceList } from './ClrTranscriptEvidenceList';
-export { default as ClrTranscriptResultsList } from './ClrTranscriptResultsList';
+export { default as ClrResultWithScaleList } from './ClrResultWithScaleList';
 export { default as ClrTranscriptSourceField } from './ClrTranscriptSourceField';
 export { default as ClrCourseTable } from './ClrCourseTable';
 export { default as ClrCourseDetailPanel } from './ClrCourseDetailPanel';

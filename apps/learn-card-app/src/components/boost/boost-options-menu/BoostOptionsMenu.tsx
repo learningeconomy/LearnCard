@@ -1,4 +1,6 @@
 import React from 'react';
+import { useFlags } from 'launchdarkly-react-client-sdk';
+import ShareLinkCreate from '../../share-links/ShareLinkCreate';
 
 import * as m from '../../../paraglide/messages.js';
 import TrashBin from '../../svgs/TrashBin';
@@ -50,6 +52,7 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
     isDraft,
 }) => {
     const confirm = useConfirmation();
+    const flags = useFlags();
 
     const { newModal, closeModal, closeAllModals } = useModal({
         desktop: ModalTypes.Center,
@@ -70,6 +73,21 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
                 boost={boost}
                 boostUri={boostUri || record?.uri}
                 categoryType={categoryType!}
+                onShareWithOtherCredentials={
+                    flags?.shareMultipleEnabled === true &&
+                    menuType === BoostMenuType.earned &&
+                    record?.uri
+                        ? () =>
+                              newModal(
+                                  <ShareLinkCreate
+                                      initialSelectedUri={record.uri}
+                                      onDismiss={closeModal}
+                                  />,
+                                  {},
+                                  { mobile: ModalTypes.FullScreen, desktop: ModalTypes.FullScreen }
+                              )
+                        : undefined
+                }
             />,
             {},
             { mobile: ModalTypes.FullScreen, desktop: ModalTypes.FullScreen }
