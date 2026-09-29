@@ -24,7 +24,7 @@ printf 'Running local signing-authority migration: %s\n' "$SA_PHASE"
 
 docker compose -f apps/learn-card-app/compose-local.yaml exec -T \
   -e "SA_MIGRATION_PHASE=$SA_PHASE" \
-  -w /app/services/learn-card-network/lca-api api bun -e '
+  -w /app/services/learn-card-network/lca-api api bun --conditions=development -e '
 import { environment } from "./src/config/environment";
 import { client, mongodb } from "./src/mongo";
 import { runSeedMigrationBatch, SeedMigrationError } from "./src/migrations/signingAuthoritySeeds";
