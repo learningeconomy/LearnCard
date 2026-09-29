@@ -15,6 +15,8 @@ import {
 
 import { neogma } from '@instance';
 import { appRouter, type AppRouter, createContext } from './app';
+import { publicShareLinkCacheControlHeaders } from './routes';
+import { registerPublicShareLinkNoStore } from './public-share-link-http';
 import { openApiDocument } from './openapi';
 import { inboxBatchResponseMeta } from './helpers/inbox-batch-http.helpers';
 import { didFastifyPlugin } from './dids';
@@ -23,10 +25,26 @@ import { statusListsFastifyPlugin } from './status-lists';
 import { credentialRefreshFastifyPlugin } from './credential-refresh';
 import { deliverQueuedNotification } from '@helpers/notificationQueue.helpers';
 import { startSkillEmbeddingBackfill } from '@helpers/skill-embedding.helpers';
+import {
+    createConsoleMaintenanceLogger,
+    createShareLinkMaintenanceRuntime,
+    createShareLinkMaintenanceScheduler,
+    type ShareLinkMaintenanceScheduler,
+} from '@helpers/share-link-maintenance';
 import { maybeAutoSeedSkillFrameworks } from './seed/seedSkillFrameworks';
 
 const server = Fastify({ routerOptions: { maxParamLength: 5000 } });
 
+/**
+ * The scheduled maintenance runtime is created only after the server is ready.
+ * When its config is disabled/invalid it is inert, so no interval and no
+ * graph/remote/signing dependency is initialized at all.
+ */
+let shareLinkMaintenanceScheduler: ShareLinkMaintenanceScheduler | null = null;
+
+server.addHook('onClose', async () => {
+    await shareLinkMaintenanceScheduler?.stop();
+});
 // Register before either OpenAPI or tRPC registers its wildcard route. The hook raises the
 // parser ceiling for those shared routes, then narrows it back to 4 MiB only for batch issuance.
 // Registering this later would leave the already-created adapter routes at Fastify's 1 MiB limit.
@@ -78,6 +96,9 @@ server.register(fastifyTRPCPlugin, {
         allowMethodOverride: true,
         router: appRouter,
         createContext,
+        responseMeta: ({ paths }) => ({
+            headers: publicShareLinkCacheControlHeaders(paths),
+        }),
         onError({ path, error }) {
             // report to error monitoring
             console.error(`Error in tRPC handler on path '${path}':`, error);
@@ -95,6 +116,13 @@ server.register(fastifyTRPCOpenApiPlugin, {
         console.error(`Error in API handler on path '${path}':`, error);
     },
 } satisfies CreateOpenApiFastifyPluginOptions<AppRouter>);
+
+/**
+ * LC-2187: the Fastify OpenAPI adapter has no `responseMeta` hook, so the
+ * no-store contract for the anonymous public share-link routes is applied at
+ * the adapter boundary itself. It never depends on a cache layer above.
+ */
+registerPublicShareLinkNoStore(server);
 
 server.get('/docs/openapi.json', () => openApiDocument);
 
@@ -138,11 +166,40 @@ server.register(credentialRefreshFastifyPlugin);
         } catch (error) {
             console.error('Skill embedding backfill failed', error);
         }
+
+        // Explicit startup after readiness. Disabled/invalid config stays inert.
+        const maintenanceRuntime = createShareLinkMaintenanceRuntime();
+
+        if (maintenanceRuntime.resolution.status === 'enabled') {
+            shareLinkMaintenanceScheduler = createShareLinkMaintenanceScheduler({
+                runOnce: () => maintenanceRuntime.runOnce(),
+                intervalMs: maintenanceRuntime.resolution.config.intervalMs,
+                logger: createConsoleMaintenanceLogger(),
+            });
+            shareLinkMaintenanceScheduler.start();
+        }
     } catch (err) {
         console.error(err);
         process.exit(1);
     }
 })();
+
+const shutdown = async (signal: NodeJS.Signals): Promise<void> => {
+    console.log(`Received ${signal}; closing server and draining maintenance`);
+    try {
+        await server.close();
+    } catch (error) {
+        console.error('Server shutdown failed', error);
+    }
+    process.exit(0);
+};
+
+process.once('SIGTERM', () => {
+    void shutdown('SIGTERM');
+});
+process.once('SIGINT', () => {
+    void shutdown('SIGINT');
+});
 
 const pollUrl = environment.NOTIFICATIONS_QUEUE_POLL_URL;
 

@@ -1147,6 +1147,63 @@ export async function getLearnCardNetworkPlugin(
                 return client.profile.invalidateInvite.mutate({ challenge });
             },
 
+            createShareLink: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.create.mutate(input);
+            },
+            updateShareLink: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.update.mutate(input);
+            },
+            revokeShareLink: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.revoke.mutate(input);
+            },
+            getShareLink: async (_learnCard, id) => {
+                await ensureUser();
+
+                return client.shareLinks.get.query({ id });
+            },
+            getShareLinkOperationStatus: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.getOperationStatus.query(input);
+            },
+            retryShareLinkOperation: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.retry.mutate(input);
+            },
+            getShareLinkRecovery: async (_learnCard, id) => {
+                await ensureUser();
+
+                return client.shareLinks.getRecovery.query({ id });
+            },
+            getShareLinkOwnerContent: async (_learnCard, id) => {
+                await ensureUser();
+
+                return client.shareLinks.getContent.query({ id });
+            },
+            listShareLinks: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.list.query(input);
+            },
+
+            // Anonymous public methods: deliberately NO `ensureUser()`. A viewer
+            // has no account and must not need one.
+            // POST keeps an optional passcode in the request body and out of URLs,
+            // access logs, browser history and referrers.
+            resolveShareLink: async (_learnCard, id, passcode) =>
+                client.publicShareLinks.resolve.mutate({ id, passcode }),
+            getShareLinkContent: async (_learnCard, id, passcode) =>
+                client.publicShareLinks.content.mutate({ id, passcode }),
+            acknowledgeShareLinkView: async (_learnCard, receipt) =>
+                client.publicShareLinks.acknowledgeView.mutate({ receipt }),
+
             blockProfile: async (_learnCard, profileId) => {
                 await ensureUser();
 
@@ -1291,13 +1348,19 @@ export async function getLearnCardNetworkPlugin(
                 return client.credential.deleteCredential.mutate({ uri });
             },
 
-            sendPresentation: async (_learnCard, profileId, vp, encrypt = true) => {
+            sendPresentation: async (_learnCard, profileId, vp, metadataOrEncrypt, encrypt) => {
                 await ensureUser();
 
-                if (!encrypt) {
+                const metadata =
+                    typeof metadataOrEncrypt === 'object' ? metadataOrEncrypt : undefined;
+                const shouldEncrypt =
+                    typeof metadataOrEncrypt === 'boolean' ? metadataOrEncrypt : (encrypt ?? true);
+
+                if (!shouldEncrypt) {
                     return client.presentation.sendPresentation.mutate({
                         profileId,
                         presentation: vp,
+                        metadata,
                     });
                 }
 
@@ -1311,7 +1374,11 @@ export async function getLearnCardNetworkPlugin(
                     target.did,
                 ]);
 
-                return client.presentation.sendPresentation.mutate({ profileId, presentation });
+                return client.presentation.sendPresentation.mutate({
+                    profileId,
+                    presentation,
+                    metadata,
+                });
             },
             acceptPresentation: async (_learnCard, uri) => {
                 await ensureUser();
