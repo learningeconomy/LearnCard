@@ -40,6 +40,8 @@ export const toOwnerShareLink = (
         ...(countingEnabled
             ? { lastViewedAt: record.lastViewedAt, viewCount: record.viewCount }
             : { lastViewedAt: null }),
+        passcodeProtected: record.passcodeHash != null,
+        notifyOnView: record.notifyOnView === true,
         minorPolicy: {
             isMinor: record.minorPolicyIsMinor,
             policyResolved: record.minorPolicyResolved,

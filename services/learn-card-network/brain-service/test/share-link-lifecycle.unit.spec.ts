@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -5,6 +6,7 @@ import {
     computeCleanupBackoffMs,
     computeLeaseExpiry,
     computeShareLinkRequestHash,
+    getShareLinkRequestHashSecret,
     isLeaseActive,
 } from '@helpers/share-link-lifecycle';
 
@@ -73,6 +75,41 @@ describe('share-link canonical request hash', () => {
         });
 
         expect(first).toBe(second);
+    });
+
+    it('binds different passcodes while making the stored fingerprint secret-keyed', () => {
+        const request = { id: 'share-id', title: 'Shared', passcode: '1234' };
+        const first = computeShareLinkRequestHash('create', request);
+        expect(computeShareLinkRequestHash('create', request)).toBe(first);
+        expect(computeShareLinkRequestHash('create', { ...request, passcode: '1235' })).not.toBe(
+            first
+        );
+        expect(first).not.toBe(
+            createHash('sha256')
+                .update(canonicalizeJson({ opKind: 'create', request }))
+                .digest('hex')
+        );
+    });
+
+    it('keeps the existing fingerprint for unprotected in-flight retries', () => {
+        const request = { id: 'share-id', title: 'Shared' };
+        expect(computeShareLinkRequestHash('create', request)).toBe(
+            createHash('sha256')
+                .update(canonicalizeJson({ opKind: 'create', request }))
+                .digest('hex')
+        );
+    });
+
+    it('requires an independently provisioned secret outside tests', () => {
+        vi.stubEnv('NODE_ENV', 'production');
+        vi.stubEnv('SHARE_LINK_REQUEST_HASH_SECRET', '');
+        try {
+            expect(getShareLinkRequestHashSecret).toThrow('SHARE_LINK_REQUEST_HASH_SECRET');
+            vi.stubEnv('SHARE_LINK_REQUEST_HASH_SECRET', 'x'.repeat(32));
+            expect(getShareLinkRequestHashSecret()).toBe('x'.repeat(32));
+        } finally {
+            vi.unstubAllEnvs();
+        }
     });
 
     it('rejects values that cannot be encoded unambiguously', () => {
