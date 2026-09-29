@@ -311,7 +311,7 @@ describe('guardian-gated inbox recipient email', () => {
             ISSUER,
             RECIPIENT,
             CREDENTIAL,
-            { delivery: { suppress: false, template: { id: 'universal-inbox-claim' } } },
+            { delivery: { suppress: false, template: { id: 'universal-inbox-claim', model: {} } } },
             ctx
         );
 
