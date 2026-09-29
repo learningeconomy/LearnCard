@@ -13,7 +13,7 @@ import ConsentFlowCredFrontDoor from './ConsentFlowCredFrontDoor';
 
 import {
     useWallet,
-    ProfilePicture,
+    UserProfilePicture,
     pushUtilities,
     useSQLiteStorage,
     useContract,
@@ -23,6 +23,7 @@ import {
     useToast,
     useModal,
 } from 'learn-card-base';
+import useGetCurrentLCNUser from 'learn-card-base/hooks/useGetCurrentLCNUser';
 import { useSignInAdapter } from 'learn-card-base';
 import { getLoginRedirectUrl } from '../../config/bootstrapTenantConfig';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
@@ -51,6 +52,7 @@ enum Step {
 
 const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }) => {
     const currentUser = useCurrentUser();
+    const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
     const brandingConfig = useBrandingConfig();
 
     const { colors } = useTheme();
@@ -239,6 +241,9 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
     }
 
     const hasCredentialFrontDoor = contractDetails?.frontDoorBoostUri;
+    const accountName =
+        currentLCNUser?.displayName || currentUser?.name || currentLCNUser?.profileId;
+    const accountLoading = !accountName && currentLCNUserLoading;
 
     if (hasCredentialFrontDoor && step === Step.credFrontDoor) {
         return <ConsentFlowCredFrontDoor contractDetails={contractDetails} />;
@@ -281,13 +286,17 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
 
                 {currentUser && !error && (
                     <div className="flex flex-col gap-[20px] items-center w-full">
-                        <ProfilePicture
+                        <UserProfilePicture
+                            user={{
+                                displayName: accountName,
+                                image: currentLCNUser?.image || currentUser.profileImage,
+                            }}
                             customContainerClass="flex justify-center items-center h-[80px] w-[80px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-4xl"
                             customImageClass="h-full w-full object-cover"
                         />
                         <button
                             type="button"
-                            disabled={consentedContractLoading}
+                            disabled={consentedContractLoading || accountLoading}
                             onClick={() => {
                                 acceptedRef.current = true;
                                 track(AnalyticsEvents.CONSENT_FLOW_ACCEPTED, {
@@ -333,10 +342,16 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                                 setUserClickedContinue(true);
                             }}
                             className={`bg-emerald-700 text-grayscale-50 text-[16px] font-semibold font-poppins normal w-full py-[12px] px-[10px] rounded-[40px] shadow-bottom ${
-                                consentedContractLoading ? 'opacity-50 cursor-not-allowed' : ''
+                                consentedContractLoading || accountLoading
+                                    ? 'opacity-50 cursor-not-allowed'
+                                    : ''
                             }`}
                         >
-                            Continue as {currentUser.name}
+                            {accountLoading
+                                ? 'Loading profile...'
+                                : accountName
+                                  ? `Continue as ${accountName}`
+                                  : 'Continue'}
                         </button>
                         <div className="text-grayscale-900 text-[14px]">
                             Not you?{' '}
