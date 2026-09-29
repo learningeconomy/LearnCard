@@ -2452,7 +2452,9 @@
             "checkAgain": "Check again",
             "checking": "Checking...",
             "checkAgainError": "We couldn't check for updates. Please try again.",
-            "goHome": "Go to home"
+            "goHome": "Go to home",
+            "rejectedTitle": "Guardian approval declined",
+            "rejectedSubtitle": "Your parent or guardian did not approve these credentials."
         }
     },
     "chapi": {

@@ -104,6 +104,8 @@ vi.mock('../../paraglide/messages.js', () => ({
     'claim.duplicate.skippedToast': () => 'Duplicate skipped',
     'claim.modal.credentialFallback': () => 'Credential',
     'claim.pending.title': () => 'Waiting for guardian approval',
+    'claim.pending.rejectedTitle': () => 'Guardian approval declined',
+    'claim.pending.rejectedSubtitle': () => 'Your guardian did not approve these credentials.',
     'claim.pending.subtitle': () => 'Some credentials need a guardian to approve them.',
     'claim.pending.awaiting.one': ({ count }: { count: number }) =>
         `${count} credential is waiting for approval.`,

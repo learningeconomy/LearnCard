@@ -164,11 +164,13 @@ const InboxGuardianPending: React.FC<InboxGuardianPendingProps> = ({
                         id={headingId}
                         className="text-base font-semibold leading-snug text-grayscale-900"
                     >
-                        {m['claim.pending.title']()}
+                        {rejectedOnly ? m['claim.pending.rejectedTitle']() : m['claim.pending.title']()}
                     </h2>
 
                     <p className="mt-1 text-sm leading-relaxed text-grayscale-600">
-                        {m['claim.pending.subtitle']()}
+                        {rejectedOnly
+                            ? m['claim.pending.rejectedSubtitle']()
+                            : m['claim.pending.subtitle']()}
                     </p>
                 </div>
             </div>

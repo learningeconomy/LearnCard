@@ -2760,7 +2760,9 @@
             "checkAgain": "Comprobar de nuevo",
             "checking": "Comprobando...",
             "checkAgainError": "No pudimos comprobar si hay novedades. Inténtalo de nuevo.",
-            "goHome": "Ir al inicio"
+            "goHome": "Ir al inicio",
+            "rejectedTitle": "Aprobación del tutor rechazada",
+            "rejectedSubtitle": "Tu padre, madre o tutor no aprobó estas credenciales."
         }
     },
     "chapi": {

@@ -23,6 +23,8 @@ vi.mock('ionicons/icons', () => ({
 
 vi.mock('../../paraglide/messages.js', () => ({
     'claim.pending.title': () => 'Waiting for guardian approval',
+    'claim.pending.rejectedTitle': () => 'Guardian approval declined',
+    'claim.pending.rejectedSubtitle': () => 'Your guardian did not approve these credentials.',
     'claim.pending.subtitle': () => 'Some credentials need a guardian to approve them.',
     'claim.pending.awaiting.one': ({ count }: { count: number }) =>
         `${count} credential is waiting for approval.`,
@@ -152,6 +154,8 @@ describe('InboxGuardianPending', () => {
     it('shows rejected outcomes separately and hides Check Again for a declined-only batch', () => {
         render(<InboxGuardianPending outcomes={[rejected]} onGoHome={vi.fn()} />);
 
+        expect(screen.getByRole('heading', { name: 'Guardian approval declined' })).toBeVisible();
+        expect(screen.queryByText('Waiting for guardian approval')).not.toBeInTheDocument();
         expect(screen.getByRole('status')).toHaveTextContent(
             '1 credential was declined by a guardian.'
         );

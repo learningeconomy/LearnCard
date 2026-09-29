@@ -2760,7 +2760,9 @@
             "checkAgain": "Vérifier à nouveau",
             "checking": "Vérification...",
             "checkAgainError": "Nous n'avons pas pu vérifier les mises à jour. Veuillez réessayer.",
-            "goHome": "Aller à l'accueil"
+            "goHome": "Aller à l'accueil",
+            "rejectedTitle": "Approbation du tuteur refusée",
+            "rejectedSubtitle": "Votre parent ou tuteur n’a pas approuvé ces titres."
         }
     },
     "chapi": {
