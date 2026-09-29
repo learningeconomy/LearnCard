@@ -231,9 +231,11 @@ export const EscrowRecoveryPanel = ({
         }
         return true;
     };
+    // Screen 1 only surfaces a recovery already underway; starting one lives on Screen 2.
+    if (view === 'status' && !pending && !existingHold && !error && !notice) return null;
     return (
         <section className="font-poppins space-y-4 my-5" aria-label="Account recovery request">
-            {!storageAvailable && (
+            {view === 'start' && !storageAvailable && (
                 <p role="alert" className="text-sm text-grayscale-600 leading-relaxed">
                     Use an up-to-date browser on a personal device, with public-computer mode off,
                     for a 7-day recovery.

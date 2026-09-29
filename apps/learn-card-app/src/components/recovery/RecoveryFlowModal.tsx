@@ -156,7 +156,9 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     const canShowScreen2 = !!escrowRecovery && hasEscrow;
     const initialScreen = availableCount === 0 && canShowScreen2 ? 2 : 1;
 
-    const [screen, setScreen] = useState<1 | 2>(initialScreen);
+    const [chosenScreen, setScreen] = useState<1 | 2>(initialScreen);
+    // Methods can load after mount: with nothing to pick, Screen 2 is the only useful view.
+    const screen = initialScreen === 2 ? 2 : chosenScreen;
     const [showMore, setShowMore] = useState(false);
 
     const screen2HeadingRef = useRef<HTMLHeadingElement>(null);
@@ -492,7 +494,10 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                 heroMethod = availableMethodsList[0];
             }
 
-            remainingMethods = availableMethodsList.filter(m => m.id !== heroMethod.id);
+            const secondaryOrder = ['device', 'passkey', 'phrase', 'backup', 'email'];
+            remainingMethods = availableMethodsList
+                .filter(method => method.id !== heroMethod.id)
+                .sort((a, b) => secondaryOrder.indexOf(a.id) - secondaryOrder.indexOf(b.id));
         }
 
         const getHeroCopy = (id: string) => {
