@@ -11,7 +11,7 @@
  * @vitest-environment jsdom
  */
 
-import React from 'react';
+import React, { useLayoutEffect } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { act, render, screen, waitFor } from '@testing-library/react';
 
@@ -234,5 +234,56 @@ describe('AuthCoordinatorProvider authProvider swap', () => {
         // not be knocked back synchronously (the app keeps its wallet while the
         // new coordinator re-derives in the background).
         expect(screen.getByTestId('status').textContent).toBe('ready');
+    });
+});
+
+describe('AuthCoordinatorProvider cold startup', () => {
+    it.each(['cached-private-key', null])(
+        'keeps the first paint resolving until secure storage answers (%s)',
+        async cachedKey => {
+            const paintedStates: string[] = [];
+            const PaintProbe = () => {
+                const { state } = useAuthCoordinator();
+                useLayoutEffect(() => {
+                    paintedStates.push(state.status);
+                }, [state.status]);
+                return <div data-testid="status">{state.status}</div>;
+            };
+
+            render(
+                <AuthCoordinatorProvider
+                    keyDerivation={createMockKeyDerivation()}
+                    authProvider={null}
+                    getCachedPrivateKey={slowCachedKey(cachedKey)}
+                    didFromPrivateKey={async () => 'did:key:z123'}
+                >
+                    <PaintProbe />
+                </AuthCoordinatorProvider>
+            );
+
+            expect(paintedStates[0]).toBe('authenticating');
+            expect(screen.getByTestId('status').textContent).toBe('authenticating');
+            await waitFor(() =>
+                expect(screen.getByTestId('status').textContent).toBe(cachedKey ? 'ready' : 'idle')
+            );
+            if (cachedKey) expect(paintedStates).not.toContain('idle');
+        }
+    );
+
+    it('leaves an explicitly disabled coordinator idle without reading storage', () => {
+        const readKey = vi.fn();
+        render(
+            <AuthCoordinatorProvider
+                enabled={false}
+                keyDerivation={createMockKeyDerivation()}
+                authProvider={null}
+                getCachedPrivateKey={readKey}
+                didFromPrivateKey={async () => 'did:key:z123'}
+            >
+                <StatusProbe />
+            </AuthCoordinatorProvider>
+        );
+        expect(screen.getByTestId('status').textContent).toBe('idle');
+        expect(readKey).not.toHaveBeenCalled();
     });
 });
