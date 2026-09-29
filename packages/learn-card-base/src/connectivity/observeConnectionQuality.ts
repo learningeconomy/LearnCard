@@ -26,13 +26,16 @@
  *
  * Caveats (documented, heuristic by design):
  *  - A slow SERVER can look like a slow network; copy must stay qualified.
- *  - Cross-origin entries without `Timing-Allow-Origin` still expose
- *    `duration`, but `responseStatus` reads as `0` — HTTP-error filtering
- *    then cannot apply. That is acceptable: this is advisory evidence only.
+ *  - Entries with `responseStatus === 0` are skipped: the status is hidden or
+ *    the request failed, so the entry proves neither health nor failure.
+ *  - WebKit does not implement `responseStatus`. There, only entries slower
+ *    than the slow threshold are reported (slow is slow evidence regardless
+ *    of outcome); fast entries cannot be verified healthy and are skipped.
  *  - A successful probe / healthy samples say NOTHING about brain-service
  *    endpoint health.
  */
 
+import { CONNECTION_QUALITY_THRESHOLDS } from './connectionQuality';
 import { CONNECTIVITY_PROBE_PATH } from './probeConnectivity';
 
 export interface ObservedConnectionSample {
@@ -53,6 +56,12 @@ export interface ObserveConnectionQualityOptions {
     excludePathnames?: readonly string[];
     /** Entries longer than this are treated as long streams — default 30s. */
     maxDurationMs?: number;
+    /**
+     * Slow threshold used when the engine does not expose `responseStatus`
+     * (WebKit): only entries slower than this are reported there. Defaults to
+     * the quality policy's `slowMs`.
+     */
+    slowMs?: number;
     /** Return `false` while backgrounded; those samples are dropped. */
     isForeground?: () => boolean;
     /**
@@ -111,6 +120,7 @@ export const observeConnectionQuality = (
 
     const excludedPaths = new Set(options.excludePathnames ?? [CONNECTIVITY_PROBE_PATH]);
     const maxDurationMs = options.maxDurationMs ?? DEFAULT_MAX_OBSERVED_DURATION_MS;
+    const slowMs = options.slowMs ?? CONNECTION_QUALITY_THRESHOLDS.slowMs;
     const initiatorTypes = new Set(options.initiatorTypes ?? DEFAULT_EVIDENCE_INITIATOR_TYPES);
     const now = options.now ?? (() => Date.now());
     const perfNow =
@@ -153,12 +163,18 @@ export const observeConnectionQuality = (
         if (excludedPaths.has(parsed.pathname)) return;
         // Known cache hits prove nothing about the network ("when known").
         if (entry.deliveryType === 'cache') return;
-        // HTTP errors (where the status is visible) are application-level,
-        // not network evidence — and must never be instability samples.
-        // Zero/missing status can mean either transport failure or hidden
-        // cross-origin timing data. Neither proves a healthy request.
-        if (!entry.responseStatus || entry.responseStatus < 200 || entry.responseStatus >= 400)
+        if (typeof entry.responseStatus === 'number') {
+            // HTTP errors are application-level, not network evidence. A zero
+            // status is ambiguous (transport failure or hidden cross-origin
+            // timing data) and proves neither health nor failure.
+            if (entry.responseStatus < 200 || entry.responseStatus >= 400) return;
+        } else if (entry.duration <= slowMs) {
+            // WebKit (Safari, iOS WKWebView) does not implement
+            // `responseStatus`. A fast entry there cannot be verified as a
+            // healthy success, but a slow one is slow evidence whether or not
+            // it succeeded — keep only those so iOS still surfaces the warning.
             return;
+        }
         // Long streams (uploads/downloads, AI sessions) are not latency samples.
         if (entry.duration > maxDurationMs) return;
         // Entries delivered while backgrounded may span the background — drop.
