@@ -47,9 +47,6 @@ const sharedWithYouPersona = (
     };
 };
 
-const AVATAR_DATA_URI =
-    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%234F46E5'/%3E%3Ctext x='16' y='21' font-size='14' text-anchor='middle' fill='white' font-family='sans-serif'%3EJR%3C/text%3E%3C/svg%3E";
-
 const makeCollection = (overrides: Partial<SavedCredentialCollection>): SavedCredentialCollection =>
     ({
         uri: 'lc:network:localhost%3A4000:pres:saved-collection',
@@ -116,7 +113,6 @@ export const ManyReceivedCollections: Story = {
                     sharer: {
                         profileId: 'jamie-rivera',
                         displayName: 'Jamie Rivera',
-                        avatar: AVATAR_DATA_URI,
                     },
                     receivedAt: '2026-09-23T09:00:00.000Z',
                     credentialCount: 5,

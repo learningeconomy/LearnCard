@@ -14,6 +14,7 @@ import {
     ListShell,
     MessageRow,
     QuietTextButton,
+    RetryButton,
     SectionHeader,
     SkeletonRows,
     ViewAllRow,
@@ -51,16 +52,6 @@ const useFirstRevealKeys = (keys: string[]): ReadonlySet<string> => {
     return revealed.current ?? EMPTY_KEYS;
 };
 const EMPTY_KEYS: ReadonlySet<string> = new Set();
-
-const RetryButton: React.FC<{ onClick: () => Promise<void> }> = ({ onClick }) => (
-    <button
-        type="button"
-        className="shrink-0 text-sm font-medium text-grayscale-700 underline"
-        onClick={() => void onClick()}
-    >
-        {m['shareLinks.retry']()}
-    </button>
-);
 
 const shareKey = (share: ShareLink): string => `${share.id}:${share.version}`;
 
@@ -160,7 +151,9 @@ const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?
             <section>
                 <SectionHeader
                     title={m['dataShareCenter.shared.yourLinks']()}
-                    caption={activeCount > 0 ? activeCountLabel(activeCount) : undefined}
+                    caption={
+                        activeCount > 0 ? activeCountLabel(activeCount, vm.hasMore) : undefined
+                    }
                     action={newLinkButton}
                 />
                 {nothingAtAll ? (
@@ -192,7 +185,11 @@ const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?
                                 {m['dataShareCenter.shared.loadError']()}
                             </MessageRow>
                         ) : preview.length === 0 ? (
-                            <MessageRow>{m['dataShareCenter.shared.noActive']()}</MessageRow>
+                            <MessageRow>
+                                {vm.hasMore
+                                    ? m['dataShareCenter.shared.noActiveLoaded']()
+                                    : m['dataShareCenter.shared.noActive']()}
+                            </MessageRow>
                         ) : (
                             preview.map((share, index) => (
                                 <ShareLinkRow

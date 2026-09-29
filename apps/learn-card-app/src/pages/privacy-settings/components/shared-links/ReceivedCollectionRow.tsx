@@ -10,14 +10,6 @@ import './sharedLinks.css';
 
 const SenderAvatar: React.FC<{ collection: SavedCredentialCollection }> = ({ collection }) => {
     const sharer = collection.sharer;
-    if (sharer?.avatar)
-        return (
-            <img
-                src={sharer.avatar}
-                alt=""
-                className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-grayscale-200"
-            />
-        );
     if (sharer?.displayName)
         return (
             <span

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 
 import * as m from '../../../../paraglide/messages.js';
-import { ListShell, MessageRow, SkeletonRows } from './ListCard';
+import { ListShell, MessageRow, RetryButton, SkeletonRows } from './ListCard';
 import ReceivedCollectionRow from './ReceivedCollectionRow';
 import { SheetChrome } from './SharedLinksAllSheet';
 import { useSharedLinksStore } from './sharedLinksStore';
@@ -33,18 +33,7 @@ const SharedWithYouAllSheet: React.FC<{ onClose: () => void }> = ({ onClose }) =
                 {saved.isLoading && saved.records.length === 0 ? (
                     <SkeletonRows count={5} />
                 ) : saved.error && saved.records.length === 0 ? (
-                    <MessageRow
-                        tone="error"
-                        action={
-                            <button
-                                type="button"
-                                className="text-sm font-medium text-grayscale-700 underline"
-                                onClick={() => void saved.onRefresh()}
-                            >
-                                {m['shareLinks.retry']()}
-                            </button>
-                        }
-                    >
+                    <MessageRow tone="error" action={<RetryButton onClick={saved.onRefresh} />}>
                         {m['dataShareCenter.shared.savedLoadError']()}
                     </MessageRow>
                 ) : saved.records.length === 0 ? (
@@ -62,15 +51,7 @@ const SharedWithYouAllSheet: React.FC<{ onClose: () => void }> = ({ onClose }) =
                             <MessageRow
                                 compact
                                 tone="error"
-                                action={
-                                    <button
-                                        type="button"
-                                        className="text-sm font-medium text-grayscale-700 underline"
-                                        onClick={() => void saved.onRefresh()}
-                                    >
-                                        {m['shareLinks.retry']()}
-                                    </button>
-                                }
+                                action={<RetryButton onClick={saved.onRefresh} />}
                             >
                                 {m['dataShareCenter.shared.savedLoadError']()}
                             </MessageRow>

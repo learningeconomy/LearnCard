@@ -43,10 +43,12 @@ export const credentialCountLabel = (count: number): string =>
         ? m['dataShareCenter.shared.credentialCountOne']({ count: String(count) })
         : m['dataShareCenter.shared.credentialCount']({ count: String(count) });
 
-export const activeCountLabel = (count: number): string =>
-    count === 1
-        ? m['dataShareCenter.shared.activeCountOne']({ count: String(count) })
-        : m['dataShareCenter.shared.activeCount']({ count: String(count) });
+export const activeCountLabel = (count: number, hasMore = false): string =>
+    hasMore
+        ? m['dataShareCenter.shared.activeCountMore']({ count: String(count) })
+        : count === 1
+          ? m['dataShareCenter.shared.activeCountOne']({ count: String(count) })
+          : m['dataShareCenter.shared.activeCount']({ count: String(count) });
 
 export const statusLabel = (status: SharedLinkFilter): string =>
     ({

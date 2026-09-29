@@ -452,7 +452,7 @@ describe('ShareLinkDetailSheet', () => {
         expect(screen.queryByRole('button', { name: 'Stop sharing' })).toBeNull();
     });
 
-    it('shows the expired chip and keeps Change enabled', () => {
+    it('shows the expired chip, hint, and keeps Change and View enabled without Copy or QR', () => {
         const vm = viewModel({
             records: [share({ expiresAt: '2000-01-01T00:00:00.000Z' })],
         });
@@ -466,7 +466,60 @@ describe('ShareLinkDetailSheet', () => {
         );
 
         expect(screen.getAllByText('Expired').length).toBeGreaterThan(0);
+        expect(screen.getByText(/This link has expired\. Change the expiry/)).toBeTruthy();
         expect(screen.getByRole('button', { name: 'Change expiry' })).not.toBeDisabled();
+        expect(screen.getByRole('button', { name: 'View 4 credentials' })).not.toBeDisabled();
+        expect(screen.queryByRole('button', { name: 'Copy link' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Show QR code' })).toBeNull();
+    });
+
+    it('does not show the expired hint for an active link', () => {
+        const vm = viewModel();
+        seed(vm);
+        render(
+            <ShareLinkDetailSheet
+                shareId={vm.records[0].id}
+                fallback={vm.records[0]}
+                onClose={vi.fn()}
+            />
+        );
+
+        expect(screen.queryByText(/This link has expired/)).toBeNull();
+        expect(screen.getByRole('button', { name: 'Copy link' })).not.toBeDisabled();
+    });
+
+    it('disables every mutation but still renders the snapshot when the record left the store', () => {
+        const vm = viewModel();
+        seed(vm);
+        const { rerender } = render(
+            <ShareLinkDetailSheet
+                shareId={vm.records[0].id}
+                fallback={vm.records[0]}
+                onClose={vi.fn()}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Stop sharing' }));
+        expect(
+            within(stopPanel()).getByRole('button', { name: 'Stop sharing' })
+        ).not.toBeDisabled();
+
+        act(() => {
+            useSharedLinksStore.setState({ vm: viewModel({ records: [] }) });
+        });
+        rerender(
+            <ShareLinkDetailSheet
+                shareId={vm.records[0].id}
+                fallback={vm.records[0]}
+                onClose={vi.fn()}
+            />
+        );
+
+        expect(screen.getByText('Career highlights')).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Change expiry' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Update contents' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Stop sharing', expanded: true })).toBeDisabled();
+        expect(within(stopPanel()).getByRole('button', { name: 'Stop sharing' })).toBeDisabled();
     });
 
     it('disables Copy, QR, and View for a non-finalized (staging) share', () => {

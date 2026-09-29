@@ -2,6 +2,7 @@ import React from 'react';
 import { IonIcon } from '@ionic/react';
 import { chevronForward } from 'ionicons/icons';
 
+import * as m from '../../../../paraglide/messages.js';
 import GlassCard from '../GlassCard';
 
 export const SectionHeader: React.FC<{
@@ -96,4 +97,14 @@ export const ViewAllRow: React.FC<{ label: string; onClick: () => void }> = ({
             <IonIcon icon={chevronForward} aria-hidden="true" className="rtl:-scale-x-100" />
         </button>
     </li>
+);
+
+export const RetryButton: React.FC<{ onClick: () => void | Promise<void> }> = ({ onClick }) => (
+    <button
+        type="button"
+        className="shrink-0 text-sm font-medium text-grayscale-700 underline"
+        onClick={() => void onClick()}
+    >
+        {m['shareLinks.retry']()}
+    </button>
 );

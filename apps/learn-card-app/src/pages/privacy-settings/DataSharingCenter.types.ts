@@ -58,7 +58,6 @@ export type SavedCredentialCollection = {
     sharer?: {
         profileId: string;
         displayName: string;
-        avatar?: string;
     };
     receivedAt: string;
     presentation: VP;

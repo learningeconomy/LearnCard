@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
 import type { ShareLink, ShareLinkOperationKeyInput } from '@learncard/types';
 import { ToastTypeEnum, useToast, useWallet } from 'learn-card-base';
@@ -49,6 +49,8 @@ export const useSharedLinks = (
     const walletRef = useRef(initWallet);
     walletRef.current = initWallet;
     const [records, setRecords] = useState<ShareLink[]>([]);
+    const recordsRef = useRef(records);
+    recordsRef.current = records;
     const [cursor, setCursor] = useState<string>();
     const [hasMore, setHasMore] = useState(false);
     const [isLoading, setIsLoading] = useState(enabled);
@@ -71,22 +73,36 @@ export const useSharedLinks = (
         setError(false);
         try {
             const wallet = shareWallet(await walletRef.current());
-            const page = await wallet.invoke.listShareLinks({
-                limit: PAGE_SIZE,
-                ...(pageCursor ? { cursor: pageCursor } : {}),
-            });
-            setRecords(current =>
-                append
-                    ? [
-                          ...new Map(
-                              [...current, ...page.records].map(record => [record.id, record])
-                          ).values(),
-                      ]
-                    : page.records
-            );
+            const fetchPage = (cursorValue?: string) =>
+                wallet.invoke.listShareLinks({
+                    limit: PAGE_SIZE,
+                    ...(cursorValue ? { cursor: cursorValue } : {}),
+                });
+            const fetched: ShareLink[] = [];
+            let page = await fetchPage(pageCursor);
+            fetched.push(...page.records);
+            if (!append) {
+                // A refresh must not drop pages the user already loaded: keep
+                // fetching until we cover at least as many records as before.
+                const target = recordsRef.current.length;
+                const uniqueCount = () => new Set(fetched.map(record => record.id)).size;
+                while (
+                    uniqueCount() < target &&
+                    page.hasMore &&
+                    page.cursor &&
+                    page.records.length > 0
+                ) {
+                    page = await fetchPage(page.cursor);
+                    fetched.push(...page.records);
+                }
+            }
+            const merge = (base: ShareLink[]): ShareLink[] => [
+                ...new Map([...base, ...fetched].map(record => [record.id, record])).values(),
+            ];
+            setRecords(current => (append ? merge(current) : merge([])));
             setPendingOperations(current => {
                 const next = { ...current };
-                for (const record of page.records) {
+                for (const record of fetched) {
                     const pending = next[record.id];
                     if (
                         pending &&
@@ -321,40 +337,89 @@ export const useSharedLinks = (
         [load, pendingOperations, presentToast, settleMutation]
     );
 
-    if (!enabled) return null;
+    const onRefresh = useCallback(() => load(), [load]);
+    const onLoadMore = useCallback(
+        () => (cursor ? load(cursor) : Promise.resolve()),
+        [cursor, load]
+    );
 
-    return {
-        records,
-        filter,
-        isLoading,
-        isLoadingMore,
-        hasMore,
-        error,
-        busyId,
-        pendingActions: Object.fromEntries(
-            Object.entries(pendingOperations).map(([shareId, operation]) => [
-                shareId,
-                operation.action,
-            ])
-        ),
-        showViewStats,
-        savedCollections: {
+    const pendingActions = useMemo(
+        () =>
+            Object.fromEntries(
+                Object.entries(pendingOperations).map(([shareId, operation]) => [
+                    shareId,
+                    operation.action,
+                ])
+            ),
+        [pendingOperations]
+    );
+
+    const savedCollectionsViewModel = useMemo(
+        () => ({
             records: savedCollections,
             isLoading: savedCollectionsLoading,
             error: savedCollectionsError,
             onRefresh: loadSavedCollections,
             onPreview: onPreviewSavedCollection,
-        },
-        onFilterChange: setFilter,
-        onRefresh: () => load(),
-        onLoadMore: () => (cursor ? load(cursor) : Promise.resolve()),
-        onCopy: copy,
-        onGetPrivateUrl: privateUrl,
-        onChangeExpiry: changeExpiry,
-        onStop: stop,
-        onCheckPending: checkPending,
-        onPreview,
-        onUpdate,
-        onCreateShare,
-    };
+        }),
+        [
+            savedCollections,
+            savedCollectionsLoading,
+            savedCollectionsError,
+            loadSavedCollections,
+            onPreviewSavedCollection,
+        ]
+    );
+
+    return useMemo(
+        (): DataSharingSharedLinksViewModel | null =>
+            enabled
+                ? {
+                      records,
+                      filter,
+                      isLoading,
+                      isLoadingMore,
+                      hasMore,
+                      error,
+                      busyId,
+                      pendingActions,
+                      showViewStats,
+                      savedCollections: savedCollectionsViewModel,
+                      onFilterChange: setFilter,
+                      onRefresh,
+                      onLoadMore,
+                      onCopy: copy,
+                      onGetPrivateUrl: privateUrl,
+                      onChangeExpiry: changeExpiry,
+                      onStop: stop,
+                      onCheckPending: checkPending,
+                      onPreview,
+                      onUpdate,
+                      onCreateShare,
+                  }
+                : null,
+        [
+            enabled,
+            records,
+            filter,
+            isLoading,
+            isLoadingMore,
+            hasMore,
+            error,
+            busyId,
+            pendingActions,
+            showViewStats,
+            savedCollectionsViewModel,
+            onRefresh,
+            onLoadMore,
+            copy,
+            privateUrl,
+            changeExpiry,
+            stop,
+            checkPending,
+            onPreview,
+            onUpdate,
+            onCreateShare,
+        ]
+    );
 };

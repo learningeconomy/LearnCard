@@ -6,7 +6,7 @@ import type { ShareLink } from '@learncard/types';
 import * as m from '../../../../paraglide/messages.js';
 import '../../dataSharingCenter.scss';
 import type { SharedLinkFilter } from '../../DataSharingCenter.types';
-import { ListShell, MessageRow, SkeletonRows } from './ListCard';
+import { ListShell, MessageRow, RetryButton, SkeletonRows } from './ListCard';
 import ShareLinkRow from './ShareLinkRow';
 import { useSharedLinksStore } from './sharedLinksStore';
 import { getSharedLinkViewStatus, sortNewestFirst, statusLabel } from './sharedLinkFormat';
@@ -160,18 +160,7 @@ const SharedLinksAllSheet: React.FC<{
                 {vm.isLoading && vm.records.length === 0 ? (
                     <SkeletonRows count={5} />
                 ) : vm.error && vm.records.length === 0 ? (
-                    <MessageRow
-                        tone="error"
-                        action={
-                            <button
-                                type="button"
-                                className="text-sm font-medium text-grayscale-700 underline"
-                                onClick={() => void vm.onRefresh()}
-                            >
-                                {m['shareLinks.retry']()}
-                            </button>
-                        }
-                    >
+                    <MessageRow tone="error" action={<RetryButton onClick={vm.onRefresh} />}>
                         {m['dataShareCenter.shared.loadError']()}
                     </MessageRow>
                 ) : filtered.length === 0 ? (
@@ -201,13 +190,7 @@ const SharedLinksAllSheet: React.FC<{
                     className="mt-3 flex items-center justify-between gap-2 text-sm text-red-700"
                 >
                     <span>{m['dataShareCenter.shared.loadError']()}</span>
-                    <button
-                        type="button"
-                        className="shrink-0 font-medium underline"
-                        onClick={() => void vm.onRefresh()}
-                    >
-                        {m['shareLinks.retry']()}
-                    </button>
+                    <RetryButton onClick={vm.onRefresh} />
                 </p>
             )}
 

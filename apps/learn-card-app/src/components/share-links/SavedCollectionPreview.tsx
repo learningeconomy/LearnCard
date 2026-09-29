@@ -58,7 +58,6 @@ export const SavedCollectionPreview = ({ collection, onDismiss }: SavedCollectio
                         }
                         note={collection.note}
                         sharerName={collection.sharer?.displayName}
-                        sharerAvatar={collection.sharer?.avatar}
                         sharedAt={collection.receivedAt}
                         showExpiry={false}
                         countLabel={credentialCountLabel(collection.credentialCount)}

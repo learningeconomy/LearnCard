@@ -63,6 +63,9 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
     // the initial `fallback`) is preserved when the record drops out of view.
     if (live) lastKnown.current = live;
     const share = lastKnown.current;
+    // When the record has dropped out of the live store we only have a stale
+    // snapshot: keep rendering it, but never let it drive a mutation.
+    const isStale = !live;
 
     const [panel, setPanel] = useState<Panel | null>(null);
     const [privateUrl, setPrivateUrl] = useState('');
@@ -137,7 +140,8 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
 
     const finalized = share.contentState === 'finalized';
     const canEdit = status !== 'stopped' && finalized;
-    const mutationsDisabled = !canEdit || busy || pending;
+    const mutationsDisabled = !canEdit || isStale || busy || pending;
+    const canShare = status === 'active' && finalized;
     const minimumExpiry = minimumExpiryDateValue();
     const expiringSoon =
         status === 'active' && Boolean(share.expiresAt) && expiryHint(share.expiresAt!).soon;
@@ -257,26 +261,37 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                 </div>
             ) : (
                 <>
-                    <div className="mt-5 flex items-center gap-2">
-                        <CopyIconButton
-                            variant="primary"
-                            label={m['dataShareCenter.shared.copy']()}
-                            text={m['dataShareCenter.shared.copy']()}
-                            copiedText={m['dataShareCenter.shared.copied']()}
-                            disabled={!canEdit || busy}
-                            onCopy={() => vm.onCopy(share)}
-                        />
-                        <button
-                            type="button"
-                            aria-label={m['dataShareCenter.shared.showQrLabel']()}
-                            aria-pressed={panel === 'qr'}
-                            aria-controls={qrPanelId}
-                            disabled={!canEdit || busy}
-                            onClick={() => void toggleQr()}
-                            className={squareButton}
-                        >
-                            <IonIcon icon={qrCodeOutline} aria-hidden="true" />
-                        </button>
+                    {status === 'expired' && (
+                        <p className="mt-5 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-900">
+                            {m['dataShareCenter.shared.expiredHint']()}
+                        </p>
+                    )}
+                    <div
+                        className={`${status === 'expired' ? 'mt-3' : 'mt-5'} flex items-center gap-2`}
+                    >
+                        {status === 'active' && (
+                            <>
+                                <CopyIconButton
+                                    variant="primary"
+                                    label={m['dataShareCenter.shared.copy']()}
+                                    text={m['dataShareCenter.shared.copy']()}
+                                    copiedText={m['dataShareCenter.shared.copied']()}
+                                    disabled={!canShare || busy}
+                                    onCopy={() => vm.onCopy(share)}
+                                />
+                                <button
+                                    type="button"
+                                    aria-label={m['dataShareCenter.shared.showQrLabel']()}
+                                    aria-pressed={panel === 'qr'}
+                                    aria-controls={qrPanelId}
+                                    disabled={!canShare || busy}
+                                    onClick={() => void toggleQr()}
+                                    className={squareButton}
+                                >
+                                    <IonIcon icon={qrCodeOutline} aria-hidden="true" />
+                                </button>
+                            </>
+                        )}
                         <button
                             type="button"
                             aria-label={m['dataShareCenter.shared.viewCredentials']({
@@ -289,7 +304,7 @@ const ShareLinkDetailSheet: React.FC<ShareLinkDetailSheetProps> = ({
                             <IonIcon icon={eyeOutline} aria-hidden="true" />
                         </button>
                     </div>
-                    {panel === 'qr' && (
+                    {panel === 'qr' && status === 'active' && (
                         <div
                             id={qrPanelId}
                             className="mt-3 flex justify-center rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4"

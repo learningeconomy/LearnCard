@@ -202,6 +202,12 @@ describe('activeCountLabel', () => {
         expect(activeCountLabel(0)).toBe('0 active');
         expect(activeCountLabel(3)).toBe('3 active');
     });
+
+    it('shows a plus when more links remain unloaded', () => {
+        expect(activeCountLabel(3, true)).toBe('3+ active');
+        expect(activeCountLabel(1, true)).toBe('1+ active');
+        expect(activeCountLabel(3, false)).toBe('3 active');
+    });
 });
 
 describe('preview selection', () => {
