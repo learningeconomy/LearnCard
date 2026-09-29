@@ -71,6 +71,7 @@ import { vcV2LicenseCredential } from './vc-v2/license-credential';
 import { clrGreatPlainsFull } from './clr/great-plains-full';
 import { clrWestbridgeFull } from './clr/westbridge-full';
 import { clrCompetencyAligned } from './clr/competency-aligned';
+import { clrAchievementIdAssociations } from './clr/achievement-id-associations';
 import {
     clrProvisionalTranscript,
     buildFinalTranscriptVariant,
@@ -153,6 +154,7 @@ export const ALL_FIXTURES: LibraryFixture[] = [
     clrGreatPlainsFull,
     clrWestbridgeFull,
     clrCompetencyAligned,
+    clrAchievementIdAssociations,
     clrProvisionalTranscript,
     clrDemoIsdDiplomaAssessments,
 
@@ -214,6 +216,7 @@ export {
     clrGreatPlainsFull,
     clrWestbridgeFull,
     clrCompetencyAligned,
+    clrAchievementIdAssociations,
     clrProvisionalTranscript,
     buildFinalTranscriptVariant,
     REFRESH_SERVICE_INLINE_CONTEXT,

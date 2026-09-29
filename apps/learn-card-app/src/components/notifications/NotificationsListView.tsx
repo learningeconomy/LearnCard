@@ -4,6 +4,7 @@ import { Badge } from '@capawesome/capacitor-badge';
 import { getLogger } from 'learn-card-base';
 
 import NewNotificationsList from './notificationsV2/NewNotificationsList';
+import { shouldUpdateNotificationsWebhook } from './notificationWebhook.helpers';
 
 import {
     DEFAULT_ACTIVE_OPTIONS,
@@ -36,17 +37,14 @@ export const NotificationsListView: React.FC<{
     const { mutate: markAllNotificationsRead } = useMarkAllNotificationsRead();
 
     const checkUserNotificationsEndpoint = async () => {
-        // Check a users' profile to see if their notifications webhook endpoint is set
-        // If not, then attempt to update the user's notifications webhook endpoint value
+        // Fill missing endpoints and repair the known staging production-default leak.
         try {
             const wallet = await initWallet();
             const myProfile = await wallet.invoke.getProfile();
 
-            if (
-                !myProfile?.notificationsWebhook ||
-                myProfile?.notificationsWebhook?.trim?.() === ''
-            ) {
-                const notificationsEndpoint = getNotificationsEndpoint();
+            const notificationsEndpoint = getNotificationsEndpoint();
+
+            if (shouldUpdateNotificationsWebhook(myProfile, notificationsEndpoint)) {
                 await wallet.invoke.updateProfile({
                     notificationsWebhook: notificationsEndpoint,
                 });
