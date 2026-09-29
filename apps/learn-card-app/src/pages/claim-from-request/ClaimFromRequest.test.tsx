@@ -313,4 +313,19 @@ describe('ClaimFromRequest inbox claim outcomes', () => {
 
         await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/achievements'));
     });
+
+    it('never renders raw server error text that could contain names or emails', async () => {
+        setUrl(inboxUrl);
+
+        mocks.fetch.mockResolvedValueOnce(
+            jsonResponse({ message: 'Failed to issue to Jane Doe <jane.doe@example.com>' })
+        );
+
+        render(<ClaimFromRequest />);
+
+        await screen.findByText(/We couldn't complete your request/i);
+
+        expect(screen.queryByText(/jane\.doe@example\.com/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Jane Doe/)).not.toBeInTheDocument();
+    });
 });
