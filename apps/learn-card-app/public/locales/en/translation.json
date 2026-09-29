@@ -2038,6 +2038,7 @@
         "tapTheWord": "Tap the word from your recovery phrase.",
         "wrongWord": "That's not word #{{number}}. Check your saved phrase and try again.",
         "showPhraseAgain": "Show my phrase again",
+        "challengeProgress": "{{current}} of {{total}}",
         "verifyPhraseDescription": "Enter the requested words to confirm you saved your phrase.",
         "wordNumber": "Word {{number}}",
         "confirmPhrase": "Confirm Recovery Phrase",

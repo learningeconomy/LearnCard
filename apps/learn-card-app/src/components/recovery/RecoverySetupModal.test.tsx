@@ -296,6 +296,77 @@ describe('RecoverySetupModal prompt integration', () => {
         await waitFor(() => expect(onCompleted).toHaveBeenCalledWith('phrase'));
         expect(confirm).toHaveBeenCalledOnce();
         expect(activate).toHaveBeenCalledTimes(2);
+        expect(vi.mocked(props.onConfirmPhrase).mock.calls).toEqual([
+            [['one', 'three']],
+            [['one', 'three']],
+        ]);
+    });
+
+    const startPhraseChallenge = async (
+        overrides: Partial<React.ComponentProps<typeof RecoverySetupModal>> = {}
+    ) => {
+        const rendered = renderModal('phrase', vi.fn(), overrides);
+        fireEvent.click(screen.getByRole('button', { name: 'Generate Recovery Phrase' }));
+        fireEvent.click(
+            await screen.findByRole('button', { name: "I've Saved It Somewhere Safe" })
+        );
+        return rendered;
+    };
+
+    it('asks one tap-to-confirm question at a time with localized progress', async () => {
+        await startPhraseChallenge();
+
+        expect(await screen.findByRole('heading', { name: 'Which word is #1?' })).toBeVisible();
+        expect(screen.getByText('1 of 2')).toBeInTheDocument();
+        expect(screen.getByRole('group', { name: 'Which word is #1?' })).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'one' }));
+
+        expect(await screen.findByRole('heading', { name: 'Which word is #3?' })).toBeVisible();
+        expect(screen.getByText('2 of 2')).toBeInTheDocument();
+    });
+
+    it('disables a wrong word and explains without confirming', async () => {
+        const { props } = await startPhraseChallenge();
+
+        fireEvent.click(await screen.findByRole('button', { name: 'four' }));
+
+        expect(
+            await screen.findByText("That's not word #1. Check your saved phrase and try again.")
+        ).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'four' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'one' })).toBeEnabled();
+        expect(screen.queryByRole('button', { name: 'Show my phrase again' })).toBeNull();
+        expect(props.onConfirmPhrase).not.toHaveBeenCalled();
+    });
+
+    it('offers to show the phrase again after two wrong taps', async () => {
+        await startPhraseChallenge();
+
+        fireEvent.click(await screen.findByRole('button', { name: 'four' }));
+        fireEvent.click(screen.getByRole('button', { name: 'five' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'Show my phrase again' }));
+
+        expect(
+            await screen.findByRole('button', { name: "I've Saved It Somewhere Safe" })
+        ).toBeInTheDocument();
+    });
+
+    it('falls back to typed words when choices are unavailable', async () => {
+        const { props } = await startPhraseChallenge({
+            onGeneratePhrase: vi.fn().mockResolvedValue({
+                phrase: 'one two three',
+                challengeWordIndices: [0, 2],
+            }),
+        });
+
+        const inputs = await screen.findAllByRole('textbox');
+        expect(inputs).toHaveLength(2);
+        fireEvent.change(inputs[0]!, { target: { value: 'one' } });
+        fireEvent.change(inputs[1]!, { target: { value: 'three' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Confirm Recovery Phrase' }));
+
+        await waitFor(() => expect(props.onConfirmPhrase).toHaveBeenCalledWith(['one', 'three']));
     });
 
     it('opens on the requested passkey method and reports terminal completion', async () => {

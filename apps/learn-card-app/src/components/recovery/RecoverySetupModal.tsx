@@ -47,6 +47,14 @@ interface RecoverySetupModalProps extends Partial<AutomaticRecoveryProps> {
     onClose: () => void;
 }
 
+const isValidChallengeOptions = (
+    options: string[][] | undefined,
+    challengeCount: number
+): options is string[][] =>
+    Array.isArray(options) &&
+    options.length === challengeCount &&
+    options.every(choices => Array.isArray(choices) && choices.length > 1);
+
 export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     onSetupPasskey,
     onGeneratePhrase,
@@ -169,8 +177,16 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             const result = await onGeneratePhrase();
             setRecoveryPhrase(result.phrase);
             setPhraseChallengeWordIndices(result.challengeWordIndices);
-            setPhraseChallengeOptions(result.challengeWordOptions || []);
-            setPhraseChallengeWords([]);
+            const options = isValidChallengeOptions(
+                result.challengeWordOptions,
+                result.challengeWordIndices.length
+            )
+                ? result.challengeWordOptions
+                : [];
+            setPhraseChallengeOptions(options);
+            setPhraseChallengeWords(
+                options.length > 0 ? [] : result.challengeWordIndices.map(() => '')
+            );
             setCurrentChallengeIndex(0);
             setWrongTaps(new Set());
             setWrongTapsCount(0);
@@ -202,7 +218,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             setCorrectTap(word);
 
             setTimeout(async () => {
-                const newWords = [...phraseChallengeWords, word];
+                const newWords = [...phraseChallengeWords.slice(0, currentChallengeIndex), word];
                 setPhraseChallengeWords(newWords);
 
                 if (currentChallengeIndex < phraseChallengeWordIndices.length - 1) {
@@ -692,7 +708,10 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                     {phraseChallengeOptions.length > 0 ? (
                                         <>
                                             <div className="mb-4">
-                                                <h3 className="text-sm font-semibold text-grayscale-900 mb-1">
+                                                <h3
+                                                    id="phrase-challenge-heading"
+                                                    className="text-sm font-semibold text-grayscale-900 mb-1"
+                                                >
                                                     {m['recovery.whichWordIs']({
                                                         number: String(
                                                             phraseChallengeWordIndices[
@@ -706,15 +725,21 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                                         {m['recovery.tapTheWord']()}
                                                     </p>
                                                     <span className="text-xs font-medium text-grayscale-500">
-                                                        {currentChallengeIndex + 1} of{' '}
-                                                        {phraseChallengeWordIndices.length}
+                                                        {m['recovery.challengeProgress']({
+                                                            current: String(
+                                                                currentChallengeIndex + 1
+                                                            ),
+                                                            total: String(
+                                                                phraseChallengeWordIndices.length
+                                                            ),
+                                                        })}
                                                     </span>
                                                 </div>
                                             </div>
 
                                             <div
                                                 role="group"
-                                                aria-labelledby="challenge-heading"
+                                                aria-labelledby="phrase-challenge-heading"
                                                 className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6"
                                             >
                                                 {phraseChallengeOptions[currentChallengeIndex].map(
@@ -737,7 +762,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                                                     isCorrect
                                                                         ? 'bg-emerald-500 text-white border border-transparent'
                                                                         : isWrong
-                                                                          ? 'bg-red-50 text-red-700 border border-red-200 opacity-50 motion-safe:animate-[shake_0.4s_ease-in-out]'
+                                                                          ? 'bg-red-50 text-red-700 border border-red-200'
                                                                           : 'bg-grayscale-100 text-grayscale-900 hover:bg-grayscale-200 border border-transparent'
                                                                 }
                                                             `}

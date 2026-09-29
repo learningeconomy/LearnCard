@@ -2141,7 +2141,12 @@
         "addWayBackIn": "Ajoutez un moyen de vous reconnecter",
         "addAnotherMethod": "Ajouter une autre méthode",
         "fullyProtected": "Votre compte est entièrement protégé.",
-        "added": "Ajouté"
+        "added": "Ajouté",
+        "whichWordIs": "Quel est le mot nº {{number}} ?",
+        "tapTheWord": "Touchez le mot de votre phrase de récupération.",
+        "wrongWord": "Ce n'est pas le mot nº {{number}}. Vérifiez votre phrase enregistrée et réessayez.",
+        "showPhraseAgain": "Afficher à nouveau ma phrase",
+        "challengeProgress": "{{current}} sur {{total}}"
     },
     "alerts": {
         "title": "Alertes",
