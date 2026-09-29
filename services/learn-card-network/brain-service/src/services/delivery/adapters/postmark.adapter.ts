@@ -31,6 +31,7 @@ const buildFromAddress = (brandName: string, rawAddress: string): string => {
 
 /** Template IDs that the email-templates package can render locally. */
 const LOCAL_TEMPLATE_MAP: Record<string, TemplateId> = {
+    'universal-inbox': 'inbox-claim',
     'universal-inbox-claim': 'inbox-claim',
     'guardian-approval': 'guardian-approval',
     'account-approved-email': 'account-approved',
@@ -146,7 +147,8 @@ export class PostmarkAdapter implements DeliveryService {
         switch (templateId) {
             case 'inbox-claim':
                 return {
-                    claimUrl: model.claimUrl,
+                    // Older Inbox callers use emailClaimUrl with the universal-inbox alias.
+                    claimUrl: model.claimUrl ?? model.emailClaimUrl,
                     recipient: model.recipient,
                     issuer: model.issuer,
                     credential: model.credential,

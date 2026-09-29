@@ -10,6 +10,7 @@ const brainServicePreset = {
 export default createVitestConfig(brainServicePreset, {
     test: {
         include: [
+            'src/services/delivery/adapters/postmark-inbox.adapter.test.ts',
             'test/uri-helpers.spec.ts',
             'test/oidc-jwt.spec.ts',
             'test/notificationMessages.spec.ts',
