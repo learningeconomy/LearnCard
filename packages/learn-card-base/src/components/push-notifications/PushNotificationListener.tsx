@@ -3,7 +3,7 @@ import { useHistory } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { PushNotificationSchema } from '@capacitor/push-notifications';
 
-import { useWallet, useToast, ToastTypeEnum, useIsLoggedIn } from 'learn-card-base';
+import { useWallet, useToast, useIsLoggedIn } from 'learn-card-base';
 
 import { pushUtilities } from '../../utils/pushUtilities';
 import {
@@ -24,13 +24,6 @@ export const PushNotificationListener = () => {
     const queryClient = useQueryClient();
 
     const { presentToast, dismissToast } = useToast();
-
-    const handleNotificationRegistrationError = (text: string) => {
-        presentToast(text, {
-            type: ToastTypeEnum.Success,
-            hasDismissButton: true,
-        });
-    };
 
     const handleForegroundNotification = useCallback(
         (payload: PushNotificationSchema) => {
@@ -68,7 +61,9 @@ export const PushNotificationListener = () => {
             initWallet,
             history,
             isLoggedIn,
-            handleNotificationRegistrationError,
+            // Background registration failures are logged by pushUtilities.
+            // They should not interrupt startup with an account-like error toast.
+            undefined,
             handleForegroundNotification
         );
     }, [history, isLoggedIn, handleForegroundNotification]);

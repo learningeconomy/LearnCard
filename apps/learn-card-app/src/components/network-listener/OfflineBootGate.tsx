@@ -2,11 +2,20 @@ import React, { useState } from 'react';
 import { Overlay } from 'learn-card-base';
 import { IonIcon } from '@ionic/react';
 import { cloudOfflineOutline } from 'ionicons/icons';
-import { Network } from '@capacitor/network';
-import { connectivityStore } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
+
+import { requestConnectivityCheck } from './connectivity';
 
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 
+/**
+ * Boot gate shown when the auth coordinator cannot proceed because the app is
+ * verified offline. "Try Again" runs a coalesced check through the singleton
+ * monitor — never a bare `Network.getStatus` — and then re-runs boot: that
+ * re-attempts the private-key-first path, which reads the cached key from disk
+ * and can land the user in the app even while still offline (no network needed
+ * once we have the key). Auth/wallet recovery itself is untouched.
+ */
 export const OfflineBootGate: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const { initialize } = useAuthCoordinator();
@@ -14,11 +23,7 @@ export const OfflineBootGate: React.FC = () => {
     const handleTryAgain = async () => {
         setIsLoading(true);
         try {
-            const status = await Network.getStatus();
-            connectivityStore.set.report(status.connected);
-            // Re-run boot: this re-attempts the private-key-first path, which
-            // reads the cached key from disk and can land the user in the app
-            // even while still offline (no network needed once we have the key).
+            await requestConnectivityCheck();
             await initialize();
         } finally {
             setIsLoading(false);
@@ -33,9 +38,11 @@ export const OfflineBootGate: React.FC = () => {
                 </div>
 
                 <div className="space-y-1 mb-6">
-                    <h2 className="text-xl font-semibold text-grayscale-900">You're offline</h2>
+                    <h2 className="text-xl font-semibold text-grayscale-900">
+                        {m['connectivity.offlineTitle']()}
+                    </h2>
                     <p className="text-sm text-grayscale-600 leading-relaxed">
-                        Sign in works once you're back online.
+                        {m['connectivity.offlineBody']()}
                     </p>
                 </div>
 
@@ -47,10 +54,10 @@ export const OfflineBootGate: React.FC = () => {
                     {isLoading ? (
                         <span className="flex items-center justify-center gap-2">
                             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            Checking...
+                            {m['connectivity.checking']()}
                         </span>
                     ) : (
-                        'Try Again'
+                        m['connectivity.tryAgain']()
                     )}
                 </button>
             </div>
