@@ -2437,6 +2437,11 @@
             "claimed": "Claimed",
             "claiming": "Claiming Credential(s)..."
         },
+        "accountApproval": {
+            "title": "Account approval needed",
+            "description": "Your parent or guardian needs to approve your account.",
+            "request": "Request Account Approval"
+        },
         "pending": {
             "title": "Waiting for guardian approval",
             "subtitle": "Some credentials need a parent or guardian to approve them before they can be added.",

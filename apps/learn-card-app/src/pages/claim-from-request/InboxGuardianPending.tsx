@@ -11,6 +11,7 @@ import {
 import * as m from '../../paraglide/messages.js';
 import type { InboxClaimOutcome, InboxClaimOutcomeStatus } from './exchange.types';
 import { shouldCompleteInboxClaimLocally } from './claimRequest.helpers';
+import InboxAccountApprovalNotice from './InboxAccountApprovalNotice';
 
 const OUTCOME_STATUSES: ReadonlySet<string> = new Set<InboxClaimOutcomeStatus>([
     'AWAITING_GUARDIAN',
@@ -133,147 +134,161 @@ const InboxGuardianPending: React.FC<InboxGuardianPendingProps> = ({
         'rounded-[20px] border p-5 font-poppins',
         rejectedOnly ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50',
         isPage ? 'w-full max-w-md shadow-xl' : '',
-        className,
     ]
         .filter(Boolean)
         .join(' ');
 
     return (
-        <section
-            role="status"
-            aria-live="polite"
-            aria-labelledby={headingId}
-            aria-busy={isCheckingAgain || undefined}
-            className={cardClassName}
-        >
-            <div className="flex items-start gap-3">
-                <div
-                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
-                        rejectedOnly ? 'bg-red-100' : 'bg-amber-100'
-                    }`}
-                >
-                    <IonIcon
-                        icon={rejectedOnly ? closeCircleOutline : timeOutline}
-                        aria-hidden="true"
-                        className={`text-2xl ${rejectedOnly ? 'text-red-500' : 'text-amber-600'}`}
-                    />
-                </div>
+        <div className={`w-full space-y-4 ${isPage ? 'max-w-md' : ''} ${className}`}>
+            {/*
+             * Account approval is a separate concern from the credential
+             * outcomes below: a profile can be unapproved while credentials are
+             * pending, and vice versa. Keep them as distinct surfaces.
+             */}
+            <InboxAccountApprovalNotice variant={variant} />
 
-                <div className="min-w-0 flex-1">
-                    <h2
-                        id={headingId}
-                        className="text-base font-semibold leading-snug text-grayscale-900"
+            <section
+                role="status"
+                aria-live="polite"
+                aria-labelledby={headingId}
+                aria-busy={isCheckingAgain || undefined}
+                className={cardClassName}
+            >
+                <div className="flex items-start gap-3">
+                    <div
+                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
+                            rejectedOnly ? 'bg-red-100' : 'bg-amber-100'
+                        }`}
                     >
-                        {rejectedOnly ? m['claim.pending.rejectedTitle']() : m['claim.pending.title']()}
-                    </h2>
-
-                    <p className="mt-1 text-sm leading-relaxed text-grayscale-600">
-                        {rejectedOnly
-                            ? m['claim.pending.rejectedSubtitle']()
-                            : m['claim.pending.subtitle']()}
-                    </p>
-                </div>
-            </div>
-
-            <div className="mt-4 space-y-3">
-                {summary.awaiting > 0 && (
-                    <div className="flex items-start gap-2.5">
                         <IonIcon
-                            icon={timeOutline}
+                            icon={rejectedOnly ? closeCircleOutline : timeOutline}
                             aria-hidden="true"
-                            className="mt-0.5 shrink-0 text-amber-600"
+                            className={`text-2xl ${rejectedOnly ? 'text-red-500' : 'text-amber-600'}`}
                         />
+                    </div>
 
-                        <div>
+                    <div className="min-w-0 flex-1">
+                        <h2
+                            id={headingId}
+                            className="text-base font-semibold leading-snug text-grayscale-900"
+                        >
+                            {rejectedOnly
+                                ? m['claim.pending.rejectedTitle']()
+                                : m['claim.pending.title']()}
+                        </h2>
+
+                        <p className="mt-1 text-sm leading-relaxed text-grayscale-600">
+                            {rejectedOnly
+                                ? m['claim.pending.rejectedSubtitle']()
+                                : m['claim.pending.subtitle']()}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                    {summary.awaiting > 0 && (
+                        <div className="flex items-start gap-2.5">
+                            <IonIcon
+                                icon={timeOutline}
+                                aria-hidden="true"
+                                className="mt-0.5 shrink-0 text-amber-600"
+                            />
+
+                            <div>
+                                <p className="text-sm font-medium text-grayscale-900">
+                                    {summary.awaiting === 1
+                                        ? m['claim.pending.awaiting.one']({
+                                              count: summary.awaiting,
+                                          })
+                                        : m['claim.pending.awaiting.other']({
+                                              count: summary.awaiting,
+                                          })}
+                                </p>
+
+                                <p className="mt-0.5 text-xs leading-relaxed text-grayscale-600">
+                                    {m['claim.pending.awaitingHint']()}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {summary.rejected > 0 && (
+                        <div className="flex items-start gap-2.5">
+                            <IonIcon
+                                icon={closeCircleOutline}
+                                aria-hidden="true"
+                                className="mt-0.5 shrink-0 text-red-500"
+                            />
+
                             <p className="text-sm font-medium text-grayscale-900">
-                                {summary.awaiting === 1
-                                    ? m['claim.pending.awaiting.one']({ count: summary.awaiting })
-                                    : m['claim.pending.awaiting.other']({
-                                          count: summary.awaiting,
+                                {summary.rejected === 1
+                                    ? m['claim.pending.rejected.one']({ count: summary.rejected })
+                                    : m['claim.pending.rejected.other']({
+                                          count: summary.rejected,
                                       })}
                             </p>
-
-                            <p className="mt-0.5 text-xs leading-relaxed text-grayscale-600">
-                                {m['claim.pending.awaitingHint']()}
-                            </p>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
 
-                {summary.rejected > 0 && (
-                    <div className="flex items-start gap-2.5">
+                {checkAgainError && (
+                    <div
+                        role="alert"
+                        className="mt-4 flex items-start gap-2.5 rounded-2xl border border-red-100 bg-red-50 p-3"
+                    >
                         <IonIcon
-                            icon={closeCircleOutline}
+                            icon={alertCircleOutline}
                             aria-hidden="true"
                             className="mt-0.5 shrink-0 text-red-500"
                         />
 
-                        <p className="text-sm font-medium text-grayscale-900">
-                            {summary.rejected === 1
-                                ? m['claim.pending.rejected.one']({ count: summary.rejected })
-                                : m['claim.pending.rejected.other']({ count: summary.rejected })}
+                        <p className="text-sm leading-relaxed text-red-700">
+                            {m['claim.pending.checkAgainError']()}
                         </p>
                     </div>
                 )}
-            </div>
 
-            {checkAgainError && (
-                <div
-                    role="alert"
-                    className="mt-4 flex items-start gap-2.5 rounded-2xl border border-red-100 bg-red-50 p-3"
-                >
-                    <IonIcon
-                        icon={alertCircleOutline}
-                        aria-hidden="true"
-                        className="mt-0.5 shrink-0 text-red-500"
-                    />
+                <div className="mt-5 space-y-2.5">
+                    {canCheckAgain && (
+                        <button
+                            type="button"
+                            onClick={onCheckAgain}
+                            disabled={isCheckingAgain}
+                            aria-busy={isCheckingAgain || undefined}
+                            className="flex w-full items-center justify-center gap-2 rounded-[20px] bg-grayscale-900 px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            {isCheckingAgain ? (
+                                <>
+                                    <span
+                                        aria-hidden
+                                        className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                                    />
+                                    {m['claim.pending.checking']()}
+                                </>
+                            ) : (
+                                <>
+                                    <IonIcon
+                                        icon={refreshOutline}
+                                        aria-hidden="true"
+                                        className="text-base"
+                                    />
+                                    {m['claim.pending.checkAgain']()}
+                                </>
+                            )}
+                        </button>
+                    )}
 
-                    <p className="text-sm leading-relaxed text-red-700">
-                        {m['claim.pending.checkAgainError']()}
-                    </p>
-                </div>
-            )}
-
-            <div className="mt-5 space-y-2.5">
-                {canCheckAgain && (
                     <button
                         type="button"
-                        onClick={onCheckAgain}
-                        disabled={isCheckingAgain}
-                        aria-busy={isCheckingAgain || undefined}
-                        className="flex w-full items-center justify-center gap-2 rounded-[20px] bg-grayscale-900 px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                        onClick={onGoHome}
+                        className="flex w-full items-center justify-center gap-2 rounded-[20px] border border-grayscale-300 px-4 py-3 text-sm font-medium text-grayscale-700 transition-colors hover:bg-grayscale-10"
                     >
-                        {isCheckingAgain ? (
-                            <>
-                                <span
-                                    aria-hidden
-                                    className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
-                                />
-                                {m['claim.pending.checking']()}
-                            </>
-                        ) : (
-                            <>
-                                <IonIcon
-                                    icon={refreshOutline}
-                                    aria-hidden="true"
-                                    className="text-base"
-                                />
-                                {m['claim.pending.checkAgain']()}
-                            </>
-                        )}
+                        <IonIcon icon={homeOutline} aria-hidden="true" className="text-base" />
+                        {m['claim.pending.goHome']()}
                     </button>
-                )}
-
-                <button
-                    type="button"
-                    onClick={onGoHome}
-                    className="flex w-full items-center justify-center gap-2 rounded-[20px] border border-grayscale-300 px-4 py-3 text-sm font-medium text-grayscale-700 transition-colors hover:bg-grayscale-10"
-                >
-                    <IonIcon icon={homeOutline} aria-hidden="true" className="text-base" />
-                    {m['claim.pending.goHome']()}
-                </button>
-            </div>
-        </section>
+                </div>
+            </section>
+        </div>
     );
 };
 

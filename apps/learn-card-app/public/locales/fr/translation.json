@@ -2745,6 +2745,11 @@
             "claimed": "Réclamé",
             "claiming": "Réclamation du/des justificatif(s)..."
         },
+        "accountApproval": {
+            "title": "Approbation du compte requise",
+            "description": "Votre parent ou tuteur doit approuver votre compte.",
+            "request": "Demander l'approbation du compte"
+        },
         "pending": {
             "title": "En attente de l'approbation du tuteur",
             "subtitle": "Certaines attestations doivent être approuvées par un parent ou tuteur avant de pouvoir être ajoutées.",

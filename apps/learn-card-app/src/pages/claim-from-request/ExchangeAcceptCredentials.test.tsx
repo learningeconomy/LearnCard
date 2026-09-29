@@ -35,6 +35,9 @@ vi.mock('ionicons/icons', () => ({
     refreshOutline: 'refresh',
     timeOutline: 'time',
 }));
+// The account-level nudge is data-connected and covered in its own suite; keep
+// this suite focused on the credential-outcome summary.
+vi.mock('./InboxAccountApprovalNotice', () => ({ default: () => null }));
 vi.mock('learn-card-base', () => ({
     BoostPageViewMode: { Card: 'card' },
     CredentialCategoryEnum: { achievement: 'Achievement' },

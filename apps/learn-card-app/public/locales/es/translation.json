@@ -2745,6 +2745,11 @@
             "claimed": "Reclamada",
             "claiming": "Reclamando Credencial(es)..."
         },
+        "accountApproval": {
+            "title": "Se necesita aprobación de la cuenta",
+            "description": "Tu padre, madre o tutor debe aprobar tu cuenta.",
+            "request": "Solicitar aprobación de la cuenta"
+        },
         "pending": {
             "title": "Esperando la aprobación del tutor",
             "subtitle": "Algunas credenciales necesitan la aprobación de un padre, madre o tutor antes de poder añadirse.",

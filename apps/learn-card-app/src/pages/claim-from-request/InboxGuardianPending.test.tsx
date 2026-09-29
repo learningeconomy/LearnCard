@@ -21,6 +21,10 @@ vi.mock('ionicons/icons', () => ({
     timeOutline: 'time',
 }));
 
+// The account-level nudge is data-connected and covered in its own suite; keep
+// this suite focused on the credential-outcome summary.
+vi.mock('./InboxAccountApprovalNotice', () => ({ default: () => null }));
+
 vi.mock('../../paraglide/messages.js', () => ({
     'claim.pending.title': () => 'Waiting for guardian approval',
     'claim.pending.rejectedTitle': () => 'Guardian approval declined',
