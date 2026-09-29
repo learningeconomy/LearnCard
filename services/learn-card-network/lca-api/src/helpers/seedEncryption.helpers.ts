@@ -180,7 +180,10 @@ export const parseSeedEnvelope = (record: object): EncryptedSigningAuthoritySeed
     };
 };
 
-/** Create an envelope provider. A configured KMS key always wins; failures never select local mode. */
+/**
+ * KMS takes precedence for new writes. Reads dispatch by envelope version and require the
+ * original provider's key; KMS failures never trigger a local or plaintext fallback.
+ */
 export const createSeedEncryption = (
     config: SeedEncryptionConfig,
     kms?: KMSClient
@@ -260,7 +263,6 @@ export const createSeedEncryption = (
         identity: SigningAuthoritySeedIdentity
     ): Promise<string> => {
         parseSeedEnvelope(envelope);
-        if (envelope.keyVersion !== keyVersion) throw new SeedEncryptionError('configuration');
         const context = getContext(identity, envelope.keyVersion);
         const aad = Buffer.from(JSON.stringify(context));
         let dek: Buffer | undefined;
@@ -268,7 +270,8 @@ export const createSeedEncryption = (
         let plaintext: Buffer | undefined;
         let kek: Buffer | undefined;
         try {
-            if (config.kmsKeyArn) {
+            if (envelope.keyVersion === 'kms-v1') {
+                if (!config.kmsKeyArn) throw new SeedEncryptionError('configuration');
                 const result = await getClient()
                     .send(
                         new DecryptCommand({

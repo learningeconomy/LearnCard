@@ -1,8 +1,10 @@
 import { Collection, ObjectId } from 'mongodb';
+import { GenerateDataKeyCommand, KMSClient } from '@aws-sdk/client-kms';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { client, mongodb } from '@mongo';
 import { SIGNING_AUTHORITIES_COLLECTION } from '@models';
 import {
+    createSeedEncryption,
     seedEncryption,
     getSeedIdentity,
     SeedEncryptionError,
@@ -62,6 +64,49 @@ beforeEach(async () => {
 afterEach(() => vi.restoreAllMocks());
 
 describe('signing-authority seed migration', () => {
+    it('verifies and purges mixed provider records after offline KMS opt-in', async () => {
+        const localConfig = { allowLocal: true, localKek: 'f'.repeat(64) };
+        const localRecord = legacy('local');
+        await authorities.insertOne({
+            ...localRecord,
+            ...(await createSeedEncryption(localConfig).encrypt(
+                seed,
+                getSeedIdentity(localRecord)
+            )),
+        });
+        await authorities.insertOne(legacy());
+
+        const kmsKeyArn = 'arn:aws:kms:us-east-1:123456789012:key/test';
+        const kms = new KMSClient({ region: 'us-east-1' });
+        vi.spyOn(kms, 'send').mockImplementation(async command => ({
+            Plaintext: new Uint8Array(32).fill(1),
+            KeyId: kmsKeyArn,
+            ...(command instanceof GenerateDataKeyCommand
+                ? { CiphertextBlob: Buffer.from('wrapped') }
+                : {}),
+        }));
+        const dualProvider = createSeedEncryption({ ...localConfig, kmsKeyArn }, kms);
+        vi.spyOn(seedEncryption, 'encrypt').mockImplementation(dualProvider.encrypt);
+        vi.spyOn(seedEncryption, 'decrypt').mockImplementation(dualProvider.decrypt);
+        await insertEncrypted('new-kms');
+
+        await finish('prepare');
+        await finish('verify');
+        await finish('purge');
+
+        expect(await countSeedMigrationDocuments(mongodb)).toEqual({
+            total: 3,
+            encrypted: 3,
+            legacyOnly: 0,
+            malformed: 0,
+            plaintextRemaining: 0,
+        });
+        // Prepare migrates plaintext; it does not rotate already-encrypted records.
+        expect((await authorities.findOne({ _id: 'local' }))?.keyVersion).toBe('local-v1');
+        expect((await authorities.findOne({ _id: 'legacy' }))?.keyVersion).toBe('kms-v1');
+        expect((await authorities.findOne({ _id: 'new-kms' }))?.keyVersion).toBe('kms-v1');
+    });
+
     it('dry-runs without writes and rejects migration while plaintext writers are enabled', async () => {
         await authorities.insertOne(legacy());
         expect(await batch('dry-run')).toMatchObject({

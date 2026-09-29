@@ -94,6 +94,85 @@ describe('SA seed envelopes', () => {
         }
     );
 
+    it('reads both envelope versions after enabling KMS while retaining the local key', async () => {
+        const localEnvelope = await createSeedEncryption(local).encrypt(seed, identity);
+        const kms = new KMSClient({ region: 'us-east-1' });
+        const key = randomBytes(32);
+        const send = vi.spyOn(kms, 'send').mockImplementation(async command => {
+            if (command instanceof GenerateDataKeyCommand) {
+                return {
+                    Plaintext: Uint8Array.from(key),
+                    CiphertextBlob: Buffer.from('wrapped'),
+                    KeyId: arn,
+                };
+            }
+            return { Plaintext: Uint8Array.from(key), KeyId: arn };
+        });
+        const encryption = createSeedEncryption({ ...local, kmsKeyArn: arn }, kms);
+
+        await expect(encryption.decrypt(localEnvelope, identity)).resolves.toBe(seed);
+        expect(send).not.toHaveBeenCalled();
+
+        const kmsEnvelope = await encryption.encrypt(seed, identity);
+        expect(kmsEnvelope.keyVersion).toBe('kms-v1');
+        await expect(encryption.decrypt(kmsEnvelope, identity)).resolves.toBe(seed);
+        expect(send).toHaveBeenCalledTimes(2);
+        expect(send.mock.calls[1]![0]).toBeInstanceOf(DecryptCommand);
+
+        // Removing KMS configuration still permits local reads, but cannot unlock KMS data.
+        const localOnly = createSeedEncryption(local, kms);
+        await expect(localOnly.decrypt(localEnvelope, identity)).resolves.toBe(seed);
+        await expect(localOnly.decrypt(kmsEnvelope, identity)).rejects.toMatchObject({
+            category: 'configuration',
+        });
+        expect(send).toHaveBeenCalledTimes(2);
+    });
+
+    it.each([
+        { allowLocal: false, localKek: local.localKek },
+        { allowLocal: true },
+        { allowLocal: true, localKek: 'short' },
+    ])('rejects local reads without an allowed, configured local key: %j', async config => {
+        const envelope = await createSeedEncryption(local).encrypt(seed, identity);
+        const kms = new KMSClient({ region: 'us-east-1' });
+        const send = vi.spyOn(kms, 'send');
+        await expect(
+            createSeedEncryption({ ...config, kmsKeyArn: arn }, kms).decrypt(envelope, identity)
+        ).rejects.toMatchObject({ category: 'configuration' });
+        expect(send).not.toHaveBeenCalled();
+    });
+
+    it('does not try KMS if a local envelope fails authentication', async () => {
+        const envelope = await createSeedEncryption(local).encrypt(seed, identity);
+        const kms = new KMSClient({ region: 'us-east-1' });
+        const send = vi.spyOn(kms, 'send');
+        await expect(
+            createSeedEncryption(
+                { ...local, localKek: 'e'.repeat(64), kmsKeyArn: arn },
+                kms
+            ).decrypt(envelope, identity)
+        ).rejects.toMatchObject({ category: 'authentication_failed' });
+        expect(send).not.toHaveBeenCalled();
+    });
+
+    it('authenticates the envelope version even when both providers are configured', async () => {
+        const envelope = await createSeedEncryption(local).encrypt(seed, identity);
+        const kms = new KMSClient({ region: 'us-east-1' });
+        const send = vi
+            .spyOn(kms, 'send')
+            .mockRejectedValue({ name: 'InvalidCiphertextException' });
+        await expect(
+            createSeedEncryption({ ...local, kmsKeyArn: arn }, kms).decrypt(
+                { ...envelope, keyVersion: 'kms-v1' },
+                identity
+            )
+        ).rejects.toMatchObject({ category: 'authentication_failed' });
+        expect(send).toHaveBeenCalledTimes(1);
+        expect((send.mock.calls[0]![0] as DecryptCommand).input.EncryptionContext).toMatchObject({
+            keyVersion: 'kms-v1',
+        });
+    });
+
     it('binds ciphertext to the record ID, owner, name, and DID', async () => {
         const encryption = createSeedEncryption(local);
         const envelope = await encryption.encrypt(seed, identity);
