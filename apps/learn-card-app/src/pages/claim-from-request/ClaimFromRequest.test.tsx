@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { VC } from '@learncard/types';
 
@@ -293,6 +293,37 @@ describe('ClaimFromRequest inbox claim outcomes', () => {
         await screen.findByRole('button', { name: 'did-auth' });
         expect(screen.queryByTestId('outcomes')).not.toBeInTheDocument();
         expect(mocks.fetch).toHaveBeenLastCalledWith(secondInboxUrl, expect.any(Object));
+    });
+
+    it('ignores a late response from the previous claim URL', async () => {
+        let resolvePrevious!: (response: ReturnType<typeof jsonResponse>) => void;
+        const previousResponse = new Promise<ReturnType<typeof jsonResponse>>(resolve => {
+            resolvePrevious = resolve;
+        });
+        mocks.fetch
+            .mockReturnValueOnce(previousResponse)
+            .mockResolvedValueOnce(didAuthChallenge('new-link-challenge'));
+
+        const { rerender } = render(<ClaimFromRequest />);
+        await waitFor(() => expect(mocks.fetch).toHaveBeenCalledTimes(1));
+        setUrl(secondInboxUrl);
+        rerender(<ClaimFromRequest />);
+        await screen.findByRole('button', { name: 'did-auth' });
+
+        await act(async () => {
+            resolvePrevious(
+                jsonResponse({
+                    verifiablePresentation: {
+                        type: ['VerifiablePresentation'],
+                        verifiableCredential: [],
+                    },
+                    inboxClaimOutcomes: [{ id: 'old-link', status: 'AWAITING_GUARDIAN' }],
+                })
+            );
+            await previousResponse;
+        });
+        expect(screen.getByRole('button', { name: 'did-auth' })).toBeVisible();
+        expect(screen.queryByTestId('outcomes')).not.toBeInTheDocument();
     });
 
     it('preserves generic VC-API post-claim navigation', async () => {
