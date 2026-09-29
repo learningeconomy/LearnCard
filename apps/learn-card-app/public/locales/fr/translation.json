@@ -9080,6 +9080,17 @@
             "generic": "Une erreur s'est produite lors de l'émission de votre justificatif. Veuillez réessayer."
         }
     },
+    "connectivity": {
+        "offlineTitle": "Vous êtes hors ligne",
+        "offlineBody": "La connexion sera possible dès votre retour en ligne.",
+        "limitedTitle": "Certaines fonctionnalités sont indisponibles",
+        "reconnect": "Reconnecter",
+        "reconnecting": "Reconnexion…",
+        "backOnline": "De nouveau en ligne",
+        "slowUnstable": "La connexion semble lente ou instable. Certaines actions peuvent prendre plus de temps.",
+        "tryAgain": "Réessayer",
+        "checking": "Vérification..."
+    },
     "shareLinks": {
         "qrLabel": "Code QR du lien privé",
         "qrHint": "Scannez pour ouvrir ces justificatifs.",
