@@ -126,7 +126,8 @@ describe('SA seed envelopes', () => {
             'create',
             identity
         );
-        expect(logger.mock.calls[0][0]).not.toHaveProperty('errorName');
+        expect(logger).toHaveBeenCalledOnce();
+        expect(logger.mock.calls[0]?.[0]).not.toHaveProperty('errorName');
         expect(JSON.stringify(logger.mock.calls)).not.toContain(seed);
     });
 
