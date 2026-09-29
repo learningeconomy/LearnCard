@@ -17,9 +17,11 @@ export const handler = async (event: unknown, context: Context): Promise<SeedMig
     const parsed = requestValidator.safeParse(event);
     if (!parsed.success) throw new SeedMigrationError('invalid_request');
     context.callbackWaitsForEmptyEventLoop = false;
+    let result: SeedMigrationResult;
+    let cleanupFailed = false;
     try {
         await client.connect();
-        return await runSeedMigrationBatch(mongodb, parsed.data, {
+        result = await runSeedMigrationBatch(mongodb, parsed.data, {
             encryptedWritesEnabled: environment.SA_SEED_ENCRYPT_WRITES,
             remainingTime: () => context.getRemainingTimeInMillis(),
         });
@@ -28,5 +30,21 @@ export const handler = async (event: unknown, context: Context): Promise<SeedMig
         throw new SeedMigrationError(
             error instanceof SeedMigrationError ? error.category : 'operation_failed'
         );
+    } finally {
+        // This private worker releases its pool between batches, including failed connections.
+        // The module-level client reconnects when a warm invocation starts its next batch.
+        try {
+            await client.close();
+        } catch {
+            cleanupFailed = true;
+            console.error({
+                event: 'signing_authority_seed_migration_failure',
+                operation: 'migration_connection_cleanup',
+                category: 'operation_failed',
+            });
+        }
     }
+    // Reached only after a successful batch; never mask its original failure in finally.
+    if (cleanupFailed) throw new SeedMigrationError('operation_failed');
+    return result;
 };
