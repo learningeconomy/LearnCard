@@ -7,6 +7,7 @@ export interface PendingEscrowRecovery {
     resumeToken: string;
     clientEphemeralPrivateKey: string;
     releaseAfter: string;
+    requestedAt?: string;
 }
 
 const KEY = 'escrow-recovery-pending';
@@ -26,6 +27,7 @@ const storedRequestSchema = z.object({
     resumeToken: z.string().min(1),
     clientEphemeralPrivateKey: z.string().min(1),
     releaseAfter: z.string().refine(value => Number.isFinite(Date.parse(value))),
+    requestedAt: z.string().optional(),
 });
 
 const loadRequests = async () => {
@@ -47,6 +49,7 @@ export const loadPendingEscrowRecovery = async (
         resumeToken: value.resumeToken,
         clientEphemeralPrivateKey: value.clientEphemeralPrivateKey,
         releaseAfter: value.releaseAfter,
+        requestedAt: value.requestedAt,
     };
 };
 

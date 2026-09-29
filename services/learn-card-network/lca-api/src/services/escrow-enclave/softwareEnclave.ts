@@ -1,5 +1,7 @@
+import { timingSafeEqual } from 'crypto';
 import {
     decryptEscrowBlob,
+    encryptEscrowBlob,
     sealEscrowRelease,
     parseEscrowEnvelope,
     type EscrowBlobPlaintext,
@@ -7,6 +9,7 @@ import {
 import {
     EscrowBlobError,
     EscrowPolicyError,
+    EscrowPinMismatchError,
     EscrowUnavailableError,
     type EscrowEnclave,
     type EnclaveAttestation,
@@ -14,6 +17,7 @@ import {
     type VerifyEscrowBlobResult,
     type ReleaseRequest,
     type ReleaseResult,
+    type CarryPinVerifierInput,
 } from './types';
 
 export interface SoftwareEnclaveConfig {
@@ -85,9 +89,37 @@ export class SoftwareEnclave implements EscrowEnclave {
     async verifyEscrowBlob(input: VerifyEscrowBlobInput): Promise<VerifyEscrowBlobResult> {
         const blob = await this.decrypt(input.envelope);
         if (blob.did !== input.expectedDid || blob.shareVersion !== input.expectedShareVersion) {
-            return { ok: false, reason: 'Escrow recovery is not permitted.' };
+            return {
+                ok: false,
+                hasPin: !!blob.pinVerifier,
+                reason: 'Escrow recovery is not permitted.',
+            };
         }
-        return { ok: true };
+        return { ok: true, hasPin: !!blob.pinVerifier };
+    }
+
+    /** Transfer only the verifier; recovery material remains sealed within the enclave. */
+    async carryPinVerifier(input: CarryPinVerifierInput) {
+        const source = await this.decrypt(input.sourceEnvelope);
+        const target = await this.decrypt(input.targetEnvelope);
+        if (
+            source.did !== input.expectedDid ||
+            target.did !== input.expectedDid ||
+            source.shareVersion !== input.sourceShareVersion ||
+            target.shareVersion !== input.targetShareVersion ||
+            target.shareVersion <= source.shareVersion ||
+            !source.pinVerifier ||
+            target.pinVerifier
+        )
+            throw new EscrowBlobError();
+        const attestation = await this.getAttestation();
+        return {
+            envelope: await encryptEscrowBlob(
+                { ...target, pinVerifier: source.pinVerifier },
+                attestation.publicKey,
+                attestation.keyId
+            ),
+        };
     }
 
     async releaseEscrow(input: ReleaseRequest): Promise<ReleaseResult> {
@@ -106,10 +138,26 @@ export class SoftwareEnclave implements EscrowEnclave {
             blob.shareVersion !== hold.shareVersion
         )
             throw new EscrowPolicyError();
+        if (hold.releasePolicy === 'pin') {
+            if (!blob.pinVerifier || !input.pinProof) throw new EscrowPolicyError();
+            const expected = Buffer.from(blob.pinVerifier, 'hex');
+            const actual = Buffer.from(input.pinProof, 'hex');
+            if (
+                !/^[0-9a-f]{64}$/i.test(input.pinProof) ||
+                actual.length !== expected.length ||
+                !timingSafeEqual(actual, expected)
+            )
+                throw new EscrowPinMismatchError();
+        }
         try {
             return {
                 sealed: await sealEscrowRelease(
-                    { ...blob, holdId: hold._id },
+                    {
+                        recoveryShare: blob.recoveryShare,
+                        did: blob.did,
+                        shareVersion: blob.shareVersion,
+                        holdId: hold._id,
+                    },
                     input.clientEphemeralPublicKey
                 ),
             };

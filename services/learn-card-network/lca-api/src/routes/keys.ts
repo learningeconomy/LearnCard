@@ -46,6 +46,8 @@ import {
     deleteUserKeyByAuthProvider,
     completeIdentityRebind,
     ServerEncryptedShareValidator,
+    EscrowPinStatusValidator,
+    getEscrowPinStatus,
     EncryptedShareValidator,
     UserKeyVersionConflictError,
     type ContactMethod,
@@ -345,6 +347,7 @@ export const keysRouter = t.router({
             z.object({
                 recoverySessionToken: RecoverySessionTokenValidator,
                 recoveryMethods: z.array(RecoveryMethodResponseValidator),
+                escrowPin: EscrowPinStatusValidator,
             })
         )
         .mutation(async ({ input }) => {
@@ -399,7 +402,11 @@ export const keysRouter = t.router({
                 authProvider: verification.record.authProvider,
             });
 
-            return { recoverySessionToken, recoveryMethods };
+            return {
+                recoverySessionToken,
+                recoveryMethods,
+                escrowPin: getEscrowPinStatus(userKey),
+            };
         }),
 
     useRecoverySession: openRoute
@@ -628,6 +635,7 @@ export const keysRouter = t.router({
                     shareVersion: z.number(),
                     maskedRecoveryEmail: z.string().nullable(),
                     escrowOptedOut: z.boolean(),
+                    escrowPin: EscrowPinStatusValidator,
                     sssActivationState: z.enum(['provisional', 'active']),
                 })
                 .nullable()
@@ -701,6 +709,7 @@ export const keysRouter = t.router({
                     : null,
                 sssActivationState: getSssActivationState(userKey),
                 escrowOptedOut: Boolean(userKey.escrowOptedOutAt),
+                escrowPin: getEscrowPinStatus(userKey),
             };
         }),
 
@@ -1099,17 +1108,28 @@ export const keysRouter = t.router({
 
             assertDidOwner(userKey, ctx.user.did);
 
-            if (userKey.keyProvider !== 'web3auth') {
+            // storeAuthShare creates a provisional SSS record when a legacy user
+            // has no prior UserKey. Record migration provenance for that case too.
+            if (
+                userKey.keyProvider !== 'web3auth' &&
+                userKey.sssActivationState !== 'provisional'
+            ) {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message: 'This key record is not eligible for migration.',
                 });
             }
 
-            await markUserKeyMigrationProvisionalByAuthProvider(
+            const marked = await markUserKeyMigrationProvisionalByAuthProvider(
                 authProvider,
                 userKey.provisionalCreatedAt ?? new Date()
             );
+            if (!marked) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'The key record changed before migration. Please try again.',
+                });
+            }
 
             return { success: true };
         }),

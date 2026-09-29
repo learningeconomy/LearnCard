@@ -81,3 +81,34 @@ export const mergeAuthUserIntoCurrentUser = <
 
     return { ...currentUser, uid, email, phoneNumber };
 };
+
+export type EscrowRecoveryKind = 'pin' | 'hold';
+
+export type PinPromptAfterReady =
+    | { kind: 'after-recovery' }
+    | { kind: 'after-hold-recovery' }
+    | { kind: 'reset-banner' }
+    | { kind: 'none' };
+
+/**
+ * Decides which PIN prompt (if any) to show once the account is ready without a
+ * working PIN. PIN prompts only make sense while escrow recovery is enrolled.
+ */
+export const decidePinPromptAfterReady = ({
+    recoveredVia,
+    pinEnabled,
+    enrollment,
+    promptFlag,
+}: {
+    recoveredVia: EscrowRecoveryKind | null;
+    pinEnabled: boolean | undefined;
+    enrollment: string | undefined;
+    promptFlag: string | null | undefined;
+}): PinPromptAfterReady => {
+    if (pinEnabled !== false) return { kind: 'none' };
+    if (recoveredVia === 'pin') return { kind: 'after-recovery' };
+    if (recoveredVia === 'hold') {
+        return enrollment === 'enrolled' ? { kind: 'after-hold-recovery' } : { kind: 'none' };
+    }
+    return promptFlag === 'set' ? { kind: 'reset-banner' } : { kind: 'none' };
+};

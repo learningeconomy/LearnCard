@@ -240,3 +240,11 @@ export const isEmailBackupShareEnabled = (): boolean => {
 };
 
 export default getAuthConfig;
+
+/**
+ * Whether emailed recovery keys can be sent: the client must encrypt them to the
+ * relay's pinned public key, so without one the Email method cannot work.
+ */
+export const isEmailRelayConfigured = (sss: SSSConfig = getSSSConfig()): boolean =>
+    sss.escrowRelayPublicKey.trim().length > 0 &&
+    /^[A-Za-z0-9._-]{1,128}$/.test(sss.escrowRelayKeyId.trim());

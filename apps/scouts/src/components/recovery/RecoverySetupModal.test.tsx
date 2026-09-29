@@ -41,11 +41,47 @@ vi.mock('../../paraglide/messages.js', () => ({
     'recovery.setup.backup.confirmBtn': () => 'Verify Backup File',
     'recovery.setup.email.sendCodeBtn': () => 'Send Verification Code',
     'recovery.setup.email.verifyCodeBtn': () => 'Verify Code',
+
+    'recovery.stepOf': ({ current, total }: { current: string; total: string }) =>
+        `Step ${current} of ${total}`,
+    'recovery.setup.notFinished': () => 'Not finished',
+    'recovery.setup.phrase.nextCheckIt': () => 'Next: check it',
+    'recovery.setup.backup.oneMoreStep': () => 'One more step: check your file.',
+    'recovery.step.save': () => 'Save',
+    'recovery.step.check': () => 'Check',
+    'recovery.step.send': () => 'Send',
+    'recovery.action.nextCheckIt': () => 'Next: check it',
+    'recovery.action.nextCheckFile': () => 'Next: check your file',
+    'recovery.hint.oneMoreStep': () => 'One more step: check your file.',
+    'recovery.guard.phraseTitle': () => 'Finish setting up your recovery phrase?',
+    'recovery.guard.backupTitle': () => 'Finish setting up your backup file?',
+    'recovery.guard.emailTitle': () => 'Finish setting up your recovery email?',
+    'recovery.guard.body': () => "It won't work until you check it. This only takes a few seconds.",
+    'recovery.guard.finish': () => 'Finish setup',
+    'recovery.guard.discardPhrase': () => 'Discard phrase',
+    'recovery.guard.discardBackup': () => 'Discard backup',
+    'recovery.guard.discardEmail': () => 'Discard',
+    'recovery.guard.discardNote': () =>
+        "The one you saved won't work. You can make a new one anytime.",
+
     'recovery.setup.email.sendKeyBtn': () => 'Send Recovery Key',
     'recovery.setup.email.confirmKeyBtn': () => 'Confirm Recovery Key',
     'recovery.setup.phrase.verifyTitle': () => 'Verify your phrase',
     'recovery.setup.phrase.verifyDesc': () =>
         'Please enter the requested words from your recovery phrase to confirm you have saved it.',
+    'recovery.setup.phrase.whichWordIs': ({ number }: { number: string }) =>
+        `Which word is #${number}?`,
+    'recovery.setup.phrase.tapTheWord': () => 'Tap the word from your recovery phrase.',
+    'recovery.setup.phrase.wrongWord': ({ number }: { number: string }) =>
+        `That's not word #${number}. Check your saved phrase and try again.`,
+    'recovery.setup.phrase.showPhraseAgain': () => 'Show my phrase again',
+    'recovery.setup.phrase.challengeProgress': ({
+        current,
+        total,
+    }: {
+        current: string;
+        total: string;
+    }) => `${current} of ${total}`,
     'recovery.setup.phrase.wordNumber': ({ number }: { number: number }) => `Word #${number}`,
     'recovery.setup.backup.reenterPassword': () => 'Re-enter password',
     'recovery.setup.backup.verifyDesc': () =>
@@ -118,7 +154,8 @@ import { createRecoverySetupRunner } from '../../../../../packages/learn-card-ba
 
 const renderModal = (
     initialMethod: 'passkey' | 'phrase' | 'backup' | 'email',
-    onCompleted = vi.fn()
+    onCompleted = vi.fn(),
+    overrides: Partial<React.ComponentProps<typeof RecoverySetupModal>> = {}
 ) => {
     const props: React.ComponentProps<typeof RecoverySetupModal> = {
         initialMethod,
@@ -129,6 +166,10 @@ const renderModal = (
         onGeneratePhrase: vi.fn().mockResolvedValue({
             phrase: 'one two three',
             challengeWordIndices: [0, 2],
+            challengeWordOptions: [
+                ['one', 'four', 'five', 'six', 'seven', 'eight'],
+                ['three', 'nine', 'ten', 'eleven', 'twelve', 'thirteen'],
+            ],
         }),
         onConfirmPhrase: vi.fn().mockResolvedValue(undefined),
         onSetupBackup: vi.fn().mockResolvedValue('{}'),
@@ -138,6 +179,7 @@ const renderModal = (
         onSetupEmailRecovery: vi.fn().mockResolvedValue(undefined),
         onConfirmEmailRecovery: vi.fn().mockResolvedValue(undefined),
         onClose: vi.fn(),
+        ...overrides,
     };
 
     render(<RecoverySetupModal {...props} />);
@@ -145,6 +187,55 @@ const renderModal = (
 };
 
 describe('RecoverySetupModal prompt integration', () => {
+    const startPhraseChallenge = async (
+        overrides: Partial<React.ComponentProps<typeof RecoverySetupModal>> = {}
+    ) => {
+        const rendered = renderModal('phrase', vi.fn(), overrides);
+        fireEvent.click(screen.getByRole('button', { name: 'Generate Recovery Phrase' }));
+        await waitFor(() => expect(rendered.props.onGeneratePhrase).toHaveBeenCalledOnce());
+        fireEvent.click(await screen.findByRole('button', { name: 'Next: check it' }));
+        return rendered;
+    };
+
+    it('asks one question at a time and rejects wrong words without confirming', async () => {
+        const { props } = await startPhraseChallenge();
+
+        expect(await screen.findByRole('group', { name: 'Which word is #1?' })).toBeTruthy();
+        expect(screen.getByText('1 of 2')).toBeTruthy();
+
+        fireEvent.click(screen.getByRole('button', { name: 'four' }));
+        expect(
+            await screen.findByText("That's not word #1. Check your saved phrase and try again.")
+        ).toBeTruthy();
+        expect((screen.getByRole('button', { name: 'four' }) as HTMLButtonElement).disabled).toBe(
+            true
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'five' }));
+        expect(await screen.findByRole('button', { name: 'Show my phrase again' })).toBeTruthy();
+        expect(props.onConfirmPhrase).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByRole('button', { name: 'one' }));
+        expect(await screen.findByText('2 of 2')).toBeTruthy();
+    });
+
+    it('falls back to typed words when choices are unavailable', async () => {
+        const { props } = await startPhraseChallenge({
+            onGeneratePhrase: vi.fn().mockResolvedValue({
+                phrase: 'one two three',
+                challengeWordIndices: [0, 2],
+            }),
+        });
+
+        const inputs = await screen.findAllByRole('textbox');
+        expect(inputs).toHaveLength(2);
+        fireEvent.change(inputs[0]!, { target: { value: 'one' } });
+        fireEvent.change(inputs[1]!, { target: { value: 'three' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Confirm Recovery Phrase' }));
+
+        await waitFor(() => expect(props.onConfirmPhrase).toHaveBeenCalledWith(['one', 'three']));
+    });
+
     it('keeps passkey setup open on activation failure and retries activation only', async () => {
         const { onCompleted, props } = renderModal('passkey');
         const activate = vi
@@ -169,6 +260,13 @@ describe('RecoverySetupModal prompt integration', () => {
     });
 
     afterEach(cleanup);
+    it('hides email when recovery keys cannot be sent', () => {
+        renderModal('email', vi.fn(), { emailAvailable: false });
+
+        expect(screen.queryByRole('button', { name: 'Email' })).toBeNull();
+        expect(screen.getByRole('button', { name: 'Generate Recovery Phrase' })).toBeTruthy();
+    });
+
     it('opens on the requested passkey method and reports terminal completion', async () => {
         const { onCompleted, props } = renderModal('passkey');
 
@@ -185,21 +283,16 @@ describe('RecoverySetupModal prompt integration', () => {
         await waitFor(() => expect(props.onGeneratePhrase).toHaveBeenCalledOnce());
         expect(onCompleted).not.toHaveBeenCalled();
 
-        fireEvent.click(screen.getByRole('button', { name: 'Confirm Recovery Phrase' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Next: check it' }));
         expect(onCompleted).not.toHaveBeenCalled();
 
-        const challengeInputs = screen.getAllByRole('textbox');
-        expect(challengeInputs).toHaveLength(2);
+        const challengeButtons = await screen.findAllByRole('button', {
+            name: /one|four|five|six|seven|eight/,
+        });
+        expect(challengeButtons).toHaveLength(6);
 
-        fireEvent.click(screen.getByRole('button', { name: 'Passkey' }));
-        expect(screen.queryByRole('textbox')).toBeNull();
-
-        fireEvent.click(screen.getByRole('button', { name: 'Phrase' }));
-
-        const phraseInputs = screen.getAllByRole('textbox');
-        fireEvent.change(phraseInputs[0], { target: { value: 'one' } });
-        fireEvent.change(phraseInputs[1], { target: { value: 'three' } });
-        fireEvent.click(screen.getByRole('button', { name: 'Confirm Recovery Phrase' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'one' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'three' }));
 
         await waitFor(() => expect(props.onConfirmPhrase).toHaveBeenCalledWith(['one', 'three']));
         expect(onCompleted).toHaveBeenCalledWith('phrase');
@@ -270,5 +363,62 @@ describe('RecoverySetupModal prompt integration', () => {
 
         await waitFor(() => expect(props.onConfirmEmailRecovery).toHaveBeenCalledWith('654321'));
         expect(onCompleted).toHaveBeenCalledWith('email');
+    });
+});
+
+describe('RecoverySetupModal unfinished-check guard', () => {
+    const guardTitle = 'Finish setting up your recovery phrase?';
+
+    const startPhraseCheck = async (
+        overrides: Partial<React.ComponentProps<typeof RecoverySetupModal>> = {}
+    ) => {
+        const rendered = renderModal('phrase', vi.fn(), overrides);
+        fireEvent.click(screen.getByRole('button', { name: 'Generate Recovery Phrase' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'Next: check it' }));
+        await screen.findByText('Step 2 of 2 · Check');
+        return rendered;
+    };
+
+    it('asks before leaving mid-check, then closes only on a deliberate discard', async () => {
+        const { props } = await startPhraseCheck();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Skip for Now' }));
+        expect(screen.getByRole('alertdialog', { name: guardTitle })).toBeTruthy();
+        expect(props.onClose).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Finish setup' }));
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Skip for Now' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Discard phrase' }));
+        expect(props.onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('guards tab switches and host dismissals, and marks the tab', async () => {
+        let requestClose: (() => void) | undefined;
+        const { props } = await startPhraseCheck({
+            registerCloseRequest: fn => {
+                requestClose = fn;
+            },
+        });
+
+        expect(screen.getByRole('button', { name: /Phrase.*Not finished/ })).toBeTruthy();
+
+        requestClose?.();
+        expect(await screen.findByRole('alertdialog', { name: guardTitle })).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: 'Finish setup' }));
+
+        fireEvent.click(screen.getByRole('button', { name: /Backup/ }));
+        expect(screen.getByRole('alertdialog', { name: guardTitle })).toBeTruthy();
+        expect(props.onClose).not.toHaveBeenCalled();
+    });
+
+    it('closes immediately when nothing is unfinished', () => {
+        const { props } = renderModal('phrase');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Skip for Now' }));
+
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+        expect(props.onClose).toHaveBeenCalledTimes(1);
     });
 });

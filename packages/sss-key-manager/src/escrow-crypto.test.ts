@@ -93,6 +93,33 @@ describe('escrow encryption', () => {
         }
     });
 
+    it('round-trips a PIN verifier through the blob and release without changing version', async (): Promise<void> => {
+        const pinVerifier = 'AB'.repeat(32);
+        const envelope = await encryptEscrowBlob({ ...blob, pinVerifier }, publicKey, 'enclave-1');
+        expect(envelope.version).toBe(1);
+        expect(JSON.stringify(envelope)).not.toContain(pinVerifier.toLowerCase());
+        const decrypted = await decryptEscrowBlob(envelope, privateKey);
+        expect(decrypted).toEqual({ ...plaintext, pinVerifier: pinVerifier.toLowerCase() });
+        const sealed = await sealEscrowRelease({ ...decrypted, holdId: release.holdId }, publicKey);
+        expect(sealed.version).toBe(1);
+        await expect(openEscrowRelease(sealed, privateKey)).resolves.toEqual({
+            ...releasePlaintext,
+            pinVerifier: pinVerifier.toLowerCase(),
+        });
+    });
+
+    it.each(['', 'a'.repeat(63), 'a'.repeat(65), 'g'.repeat(64)])(
+        'rejects invalid PIN verifier before encryption %j',
+        async (pinVerifier): Promise<void> => {
+            await expect(
+                encryptEscrowBlob({ ...blob, pinVerifier }, publicKey, 'enclave-1')
+            ).rejects.toThrow('pinVerifier');
+            await expect(sealEscrowRelease({ ...release, pinVerifier }, publicKey)).rejects.toThrow(
+                'pinVerifier'
+            );
+        }
+    );
+
     it.each(['blob', 'release'] as const)(
         'rejects wrong keys and tampered %s envelopes',
         async (kind): Promise<void> => {
@@ -159,6 +186,18 @@ describe('escrow encryption', () => {
             input: { ...plaintext, shareVersion: 0 },
             decrypt: decryptEscrowBlob,
             error: 'shareVersion',
+        },
+        {
+            info: ESCROW_BLOB_INFO,
+            input: { ...plaintext, pinVerifier: 'a'.repeat(63) },
+            decrypt: decryptEscrowBlob,
+            error: 'pinVerifier',
+        },
+        {
+            info: ESCROW_RELEASE_INFO,
+            input: { ...releasePlaintext, pinVerifier: 'a'.repeat(65) },
+            decrypt: openEscrowRelease,
+            error: 'pinVerifier',
         },
         {
             info: ESCROW_RELEASE_INFO,
@@ -229,6 +268,12 @@ describe('escrow encryption', () => {
 });
 
 describe('escrow parsing', () => {
+    it('accepts legacy plaintext without a PIN verifier', (): void => {
+        expect(parseEscrowBlobPlaintext(plaintext)).toEqual(plaintext);
+        expect(parseEscrowBlobPlaintext(plaintext)).not.toHaveProperty('pinVerifier');
+        expect(parseEscrowReleasePlaintext(releasePlaintext)).toEqual(releasePlaintext);
+    });
+
     const envelope = {
         version: 1,
         algorithm: ESCROW_ALGORITHM,
@@ -299,6 +344,12 @@ describe('escrow parsing', () => {
         ['shareVersion', '1'],
         ['shareVersion', NaN],
         ['shareVersion', Infinity],
+        ['pinVerifier', null],
+        ['pinVerifier', 123],
+        ['pinVerifier', ''],
+        ['pinVerifier', 'a'.repeat(63)],
+        ['pinVerifier', 'a'.repeat(65)],
+        ['pinVerifier', 'g'.repeat(64)],
     ])('rejects invalid plaintext %s = %j', (field, value): void => {
         expect(() => parseEscrowBlobPlaintext({ ...plaintext, [field]: value })).toThrow(field);
         expect(() => parseEscrowReleasePlaintext({ ...releasePlaintext, [field]: value })).toThrow(

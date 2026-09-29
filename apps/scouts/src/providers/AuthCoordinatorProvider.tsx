@@ -55,6 +55,7 @@ import {
     type AuthUser,
     type DebugEventLevel,
     type KeyDerivationStrategy,
+    isEmailRelayConfigured,
 } from 'learn-card-base';
 import currentUserStore from 'learn-card-base/stores/currentUserStore';
 import { walletStore } from 'learn-card-base/stores/walletStore';
@@ -399,6 +400,8 @@ const AuthSessionManager: React.FC<{
 
     // --- Recovery setup prompt (shown after first-time setup with no recovery methods) ---
     const [showRecoverySetup, setShowRecoverySetup] = useState(false);
+    // The open setup modal registers its guarded close so the backdrop can't skip a check.
+    const recoveryRequestCloseRef = useRef<(() => void) | null>(null);
     const wasNewUserRef = useRef(false);
 
     // --- Proactive auth session check state (effect is below, after authProvider) ---
@@ -1386,8 +1389,18 @@ const AuthSessionManager: React.FC<{
                     };
 
                     return (
-                        <Overlay onDismiss={() => setShowRecoverySetup(false)}>
+                        <Overlay
+                            onDismiss={() =>
+                                recoveryRequestCloseRef.current
+                                    ? recoveryRequestCloseRef.current()
+                                    : setShowRecoverySetup(false)
+                            }
+                        >
                             <RecoverySetupModal
+                                registerCloseRequest={fn => {
+                                    recoveryRequestCloseRef.current = fn;
+                                }}
+                                emailAvailable={isEmailRelayConfigured()}
                                 existingMethods={[]}
                                 maskedRecoveryEmail={null}
                                 isActivationPending={coordinator.needsActivation}
@@ -1413,6 +1426,7 @@ const AuthSessionManager: React.FC<{
                                     return {
                                         phrase: result.phrase,
                                         challengeWordIndices: result.challengeWordIndices,
+                                        challengeWordOptions: result.challengeWordOptions,
                                     };
                                 }}
                                 onConfirmPhrase={async challengeWords => {

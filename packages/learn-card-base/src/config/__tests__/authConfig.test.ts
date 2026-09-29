@@ -5,6 +5,7 @@ import {
     getAuthConfig,
     getConfigCapabilities,
     getSSSConfig,
+    isEmailRelayConfigured,
     getEscrowStrategyConfig,
     isEmailBackupShareEnabled,
     setAuthConfigFromTenant,
@@ -59,6 +60,20 @@ describe('authConfig', () => {
             escrowRelayPublicKey: 'relay-public-key',
             escrowRelayKeyId: '2026-09',
         });
+    });
+
+    it('reports whether emailed recovery keys can be sent', () => {
+        expect(isEmailRelayConfigured()).toBe(false);
+        setAuthConfigOverrides({
+            providerConfig: {
+                sss: { escrowRelayPublicKey: 'relay-public-key', escrowRelayKeyId: '2026-09' },
+            },
+        });
+        expect(isEmailRelayConfigured()).toBe(true);
+        setAuthConfigOverrides({
+            providerConfig: { sss: { escrowRelayPublicKey: 'relay-public-key' } },
+        });
+        expect(isEmailRelayConfigured()).toBe(false);
     });
 
     it('maps explicit enclave policies and leaves escrow disabled by default', () => {
