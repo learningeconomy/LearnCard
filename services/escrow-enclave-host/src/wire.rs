@@ -131,6 +131,7 @@ pub enum Response {
     Attest {
         mode: Mode,
         key_id: String,
+        previous_key_ids: Vec<String>,
         public_key: String,
         measurements: Measurements,
         document: String,

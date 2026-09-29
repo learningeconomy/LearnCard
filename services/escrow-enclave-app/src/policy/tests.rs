@@ -80,6 +80,7 @@ struct Fixture {
     clock: Clock,
     authority: Authority,
     store: Store,
+    previous_keys: Vec<(String, EscrowKeyPair)>,
 }
 impl Fixture {
     fn new(pin: bool) -> Self {
@@ -112,6 +113,7 @@ impl Fixture {
             clock,
             authority: Authority(Mutex::new(Ok(current))),
             store: Store::default(),
+            previous_keys: Vec::new(),
         }
     }
     fn policy(&self) -> Policy<'_> {
@@ -121,6 +123,18 @@ impl Fixture {
                 private_key: self.keys.private_key.clone(),
             },
             "test".into(),
+            self.previous_keys
+                .iter()
+                .map(|(id, k)| {
+                    (
+                        id.clone(),
+                        EscrowKeyPair {
+                            public_key: k.public_key.clone(),
+                            private_key: k.private_key.clone(),
+                        },
+                    )
+                })
+                .collect(),
             "tenant".into(),
             [0; 32],
             &self.store,
@@ -128,6 +142,31 @@ impl Fixture {
             &self.authority,
         )
         .unwrap()
+    }
+    /// P9.1: registers a decrypt-only previous key `id` and returns an
+    /// envelope for `did:key:test` sealed under it (never the current key).
+    fn previous_envelope(
+        &mut self,
+        id: &str,
+        share_version: f64,
+        pin_verifier: Option<String>,
+    ) -> EscrowEnvelope {
+        let keys = generate_escrow_key_pair().unwrap();
+        let envelope = encrypt_escrow_blob(
+            &EscrowBlobPlaintext {
+                version: 1,
+                recovery_share: "ef".repeat(33),
+                did: "did:key:test".into(),
+                share_version,
+                pin_verifier,
+                pin_attempts_floor: None,
+            },
+            &keys.public_key,
+            id,
+        )
+        .unwrap();
+        self.previous_keys.push((id.to_string(), keys));
+        envelope
     }
     fn create<'a>(&'a self, id: &'a str, policy: ReleasePolicy) -> CreateHoldRequest<'a> {
         CreateHoldRequest {
@@ -579,6 +618,274 @@ async fn carry_rejects_a_tampered_source_chain() {
         p.carry_pin_verifier(&f.envelope, &target, "did:key:test", 1, 2, 1)
             .await,
         Err(ErrorCode::Ledger)
+    );
+}
+
+// P9.1: a blob still sealed under a retired ("previous") keyId is neither
+// stuck nor silently trusted — it decrypts, creates a hold and releases
+// exactly like a current-key blob, restoring release for pre-rotation blobs.
+#[tokio::test]
+async fn previous_key_blob_verifies_creates_hold_and_releases() {
+    let mut f = Fixture::new(false);
+    let previous = f.previous_envelope("previous-1", 1.0, None);
+    *f.authority.0.lock().unwrap() = Ok(CurrentEnrollment {
+        epoch: 1,
+        share_version: 1,
+        blob_hash: blob_hash(&previous).unwrap(),
+    });
+    let mut p = f.policy();
+    assert_eq!(
+        p.verify_blob(&previous, "did:key:test", 1).unwrap(),
+        BlobVerification {
+            ok: true,
+            has_pin: false,
+        }
+    );
+    let hold = p
+        .create_hold(CreateHoldRequest {
+            envelope: &previous,
+            hold_id: "previous-hold",
+            request_id: "previous-hold",
+            expected_did: "did:key:test",
+            expected_share_version: 1,
+            enrollment_epoch: 1,
+            release_policy: ReleasePolicy::Hold,
+            client_ephemeral_public_key: &f.client.public_key,
+        })
+        .await
+        .unwrap();
+    f.elapsed();
+    let sealed = p
+        .release(ReleaseRequest {
+            envelope: &previous,
+            hold: &hold,
+            request_id: "previous-release",
+            expected_did: "did:key:test",
+            client_ephemeral_public_key: &f.client.public_key,
+            pin_proof: None,
+        })
+        .await
+        .unwrap();
+    let release = open_escrow_release(&sealed, &f.client.private_key).unwrap();
+    assert_eq!(release.blob.did, "did:key:test");
+    assert_eq!(release.blob.recovery_share, "ef".repeat(33));
+    assert_eq!(release.hold_id, "previous-hold");
+}
+
+// P9.1: an unrecognised keyId (neither current nor a configured previous key)
+// is indistinguishable from any other malformed/undecryptable envelope: the
+// existing generic Blob error, across every operation that opens an envelope,
+// never naming or otherwise leaking which keyId was rejected.
+#[tokio::test]
+async fn unknown_key_id_is_the_generic_blob_error() {
+    let f = Fixture::new(false);
+    let mut p = f.policy();
+    let mut unknown = f.envelope.clone();
+    unknown.key_id = "retired-and-removed".into();
+    assert_eq!(
+        p.verify_blob(&unknown, "did:key:test", 1),
+        Err(ErrorCode::Blob)
+    );
+    assert_eq!(
+        p.create_hold(CreateHoldRequest {
+            envelope: &unknown,
+            hold_id: "unknown",
+            request_id: "unknown",
+            expected_did: "did:key:test",
+            expected_share_version: 1,
+            enrollment_epoch: 1,
+            release_policy: ReleasePolicy::Hold,
+            client_ephemeral_public_key: &f.client.public_key,
+        })
+        .await,
+        Err(ErrorCode::Blob)
+    );
+    assert_eq!(
+        p.carry_pin_verifier(&unknown, &f.envelope, "did:key:test", 1, 2, 1)
+            .await,
+        Err(ErrorCode::Blob)
+    );
+    let mut unknown_target = f.envelope.clone();
+    unknown_target.key_id = "retired-and-removed".into();
+    assert_eq!(
+        p.carry_pin_verifier(&f.envelope, &unknown_target, "did:key:test", 1, 2, 1)
+            .await,
+        Err(ErrorCode::Blob)
+    );
+}
+
+// P9.2: the ledger enrollment chain is keyed by (tenant, did, epoch, blobHash)
+// never by which key encrypted the blob, so P8.3's accumulated-attempts
+// accounting applies identically when the SOURCE of a carry is a previous
+// key. The carried result is always resealed under the CURRENT key/keyId,
+// and the original PIN proof still releases it in the new epoch.
+#[tokio::test]
+async fn carry_pin_verifier_from_a_previous_key_reseals_under_the_current_key_and_preserves_pin_and_attempts(
+) {
+    let mut f = Fixture::new(false);
+    let pin_verifier = "ab".repeat(32);
+    let source = f.previous_envelope("previous-1", 2.0, Some(pin_verifier.clone()));
+    *f.authority.0.lock().unwrap() = Ok(CurrentEnrollment {
+        epoch: 1,
+        share_version: 2,
+        blob_hash: blob_hash(&source).unwrap(),
+    });
+    let mut p = f.policy();
+    let hold = p
+        .create_hold(CreateHoldRequest {
+            envelope: &source,
+            hold_id: "pin",
+            request_id: "pin",
+            expected_did: "did:key:test",
+            expected_share_version: 2,
+            enrollment_epoch: 1,
+            release_policy: ReleasePolicy::Pin,
+            client_ephemeral_public_key: &f.client.public_key,
+        })
+        .await
+        .unwrap();
+    for attempt in 0..3 {
+        assert_eq!(
+            p.release(ReleaseRequest {
+                envelope: &source,
+                hold: &hold,
+                request_id: Box::leak(format!("wrong{attempt}").into_boxed_str()),
+                expected_did: "did:key:test",
+                client_ephemeral_public_key: &f.client.public_key,
+                pin_proof: Some("cd"),
+            })
+            .await,
+            Err(ErrorCode::PinMismatch)
+        );
+    }
+    let target = encrypt_escrow_blob(
+        &EscrowBlobPlaintext {
+            version: 1,
+            recovery_share: "cd".repeat(33),
+            did: "did:key:test".into(),
+            share_version: 3.0,
+            pin_verifier: None,
+            pin_attempts_floor: None,
+        },
+        &f.keys.public_key,
+        "test",
+    )
+    .unwrap();
+    let carried = p
+        .carry_pin_verifier(&source, &target, "did:key:test", 2, 3, 1)
+        .await
+        .unwrap();
+    assert_eq!(carried.key_id, "test");
+    let decrypted = p.decrypt(&carried).unwrap();
+    assert_eq!(
+        decrypted.pin_verifier.as_deref(),
+        Some(pin_verifier.as_str())
+    );
+    assert_eq!(decrypted.pin_attempts_floor, Some(3));
+    *f.authority.0.lock().unwrap() = Ok(CurrentEnrollment {
+        epoch: 2,
+        share_version: 3,
+        blob_hash: blob_hash(&carried).unwrap(),
+    });
+    let new_hold = p
+        .create_hold(CreateHoldRequest {
+            envelope: &carried,
+            hold_id: "carried-pin",
+            request_id: "carried-pin",
+            expected_did: "did:key:test",
+            expected_share_version: 3,
+            enrollment_epoch: 2,
+            release_policy: ReleasePolicy::Pin,
+            client_ephemeral_public_key: &f.client.public_key,
+        })
+        .await
+        .unwrap();
+    let sealed = p
+        .release(ReleaseRequest {
+            envelope: &carried,
+            hold: &new_hold,
+            request_id: "carried-release",
+            expected_did: "did:key:test",
+            client_ephemeral_public_key: &f.client.public_key,
+            pin_proof: Some(&pin_verifier),
+        })
+        .await
+        .unwrap();
+    let release = open_escrow_release(&sealed, &f.client.private_key).unwrap();
+    assert_eq!(release.blob.pin_verifier, None);
+    assert_eq!(release.blob.pin_attempts_floor, None);
+    assert_eq!(release.blob.recovery_share, "cd".repeat(33));
+    assert_eq!(release.hold_id, "carried-pin");
+}
+
+// P9.1: boot-time bounds on previous keys are enforced, not silently ignored —
+// too many, a duplicate id, or an id colliding with the current key all
+// refuse construction; exactly `MAX_PREVIOUS_KEYS` distinct ids succeeds.
+#[tokio::test]
+async fn policy_new_rejects_too_many_duplicate_or_overlapping_previous_keys() {
+    let f = Fixture::new(false);
+    let current = || EscrowKeyPair {
+        public_key: f.keys.public_key.clone(),
+        private_key: f.keys.private_key.clone(),
+    };
+    let build = |previous: Vec<(String, EscrowKeyPair)>| {
+        Policy::new(
+            current(),
+            "test".into(),
+            previous,
+            "tenant".into(),
+            [0; 32],
+            &f.store,
+            &f.clock,
+            &f.authority,
+        )
+    };
+    let too_many = (0..4)
+        .map(|i| (format!("previous-{i}"), generate_escrow_key_pair().unwrap()))
+        .collect();
+    assert_eq!(build(too_many).err(), Some(ErrorCode::Policy));
+    let duplicate = vec![
+        ("previous-a".into(), generate_escrow_key_pair().unwrap()),
+        ("previous-a".into(), generate_escrow_key_pair().unwrap()),
+    ];
+    assert_eq!(build(duplicate).err(), Some(ErrorCode::Policy));
+    let overlaps_current = vec![("test".into(), generate_escrow_key_pair().unwrap())];
+    assert_eq!(build(overlaps_current).err(), Some(ErrorCode::Policy));
+    let exactly_max = (0..MAX_PREVIOUS_KEYS)
+        .map(|i| (format!("previous-{i}"), generate_escrow_key_pair().unwrap()))
+        .collect();
+    assert!(build(exactly_max).is_ok());
+}
+
+// P9.1: boot with 2 previous keys — each decrypts only its OWN blob. A
+// keyId/ciphertext mismatch fails exactly like any other undecryptable
+// envelope, proving real per-key isolation, not just a recognised-id
+// short-circuit that would trust any envelope claiming a known keyId.
+#[tokio::test]
+async fn two_previous_keys_each_decrypt_only_their_own_blob() {
+    let mut f = Fixture::new(false);
+    let envelope_a = f.previous_envelope("previous-a", 1.0, None);
+    let envelope_b = f.previous_envelope("previous-b", 1.0, None);
+    let p = f.policy();
+    assert_eq!(
+        p.verify_blob(&envelope_a, "did:key:test", 1).unwrap(),
+        BlobVerification {
+            ok: true,
+            has_pin: false,
+        }
+    );
+    assert_eq!(
+        p.verify_blob(&envelope_b, "did:key:test", 1).unwrap(),
+        BlobVerification {
+            ok: true,
+            has_pin: false,
+        }
+    );
+    let mut swapped = envelope_a.clone();
+    swapped.key_id = "previous-b".into();
+    assert_eq!(
+        p.verify_blob(&swapped, "did:key:test", 1),
+        Err(ErrorCode::Blob)
     );
 }
 

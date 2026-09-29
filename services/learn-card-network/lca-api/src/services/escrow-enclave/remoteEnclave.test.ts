@@ -44,6 +44,7 @@ const hold: EscrowHoldRecord = {
 const attestationBody = {
     mode: 'nitro' as const,
     keyId: 'key-1',
+    previousKeyIds: ['key-0'],
     publicKey: 'CC==',
     measurements: { pcr0: '00', pcr1: '11', pcr2: '22' },
     document: 'ZG9j',

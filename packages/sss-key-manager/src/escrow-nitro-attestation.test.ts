@@ -53,6 +53,10 @@ describe('FakeNsm Nitro attestation', () => {
                     escrowPublicKeySpkiB64: manifest.userDataBase64,
                     timestamp: manifest.timestamp,
                     pcrs: manifest.pcrs,
+                    previousKeyIds:
+                        'previousKeyIds' in testCase
+                            ? testCase.previousKeyIds
+                            : manifest.previousKeyIds,
                 });
             } else if ('reason' in testCase) {
                 await expect(result).rejects.toMatchObject({
@@ -140,7 +144,8 @@ describe('FakeNsm Nitro attestation', () => {
         vi.spyOn(Date, 'now').mockReturnValue(manifest.nowMs);
         const attestation = {
             mode: 'nitro',
-            keyId: 'test-key',
+            keyId: manifest.keyId,
+            previousKeyIds: manifest.previousKeyIds,
             publicKey: manifest.userDataBase64,
             document: fixture('valid'),
             measurements: { pcr0: 'untrusted' },
@@ -148,7 +153,8 @@ describe('FakeNsm Nitro attestation', () => {
         };
         await expect(verifyEnclaveAttestation(attestation, policy, nonce)).resolves.toEqual({
             mode: 'nitro',
-            keyId: 'test-key',
+            keyId: manifest.keyId,
+            previousKeyIds: manifest.previousKeyIds,
             publicKey: manifest.userDataBase64,
         });
         await expect(
@@ -156,6 +162,43 @@ describe('FakeNsm Nitro attestation', () => {
         ).rejects.toMatchObject({ reason: 'user-data' });
         await expect(verifyEnclaveAttestation(attestation, policy)).rejects.toMatchObject({
             reason: 'nonce',
+        });
+    });
+    // P9.2: the plaintext wire `keyId` — what a client actually seals new
+    // envelopes to — must exactly match what is bound inside the signed
+    // document; a divergent (tampered, or simply stale) plaintext keyId is
+    // rejected the same way a wrong public key is.
+    it('rejects a keyId that diverges from the signed document', async () => {
+        vi.spyOn(Date, 'now').mockReturnValue(manifest.nowMs);
+        const attestation = {
+            mode: 'nitro',
+            keyId: 'not-the-attested-key',
+            previousKeyIds: manifest.previousKeyIds,
+            publicKey: manifest.userDataBase64,
+            document: fixture('valid'),
+            measurements: {},
+            issuedAt: new Date(manifest.nowMs).toISOString(),
+        };
+        await expect(verifyEnclaveAttestation(attestation, policy, nonce)).rejects.toMatchObject({
+            reason: 'user-data',
+        });
+    });
+    // P9.2: the plaintext wire field must exactly match what is bound inside
+    // the signed document — a divergent (tampered, or simply stale) plaintext
+    // previousKeyIds is rejected the same way a wrong public key is.
+    it('rejects a previousKeyIds that diverges from the signed document', async () => {
+        vi.spyOn(Date, 'now').mockReturnValue(manifest.nowMs);
+        const attestation = {
+            mode: 'nitro',
+            keyId: manifest.keyId,
+            previousKeyIds: ['not-the-attested-list'],
+            publicKey: manifest.userDataBase64,
+            document: fixture('valid'),
+            measurements: {},
+            issuedAt: new Date(manifest.nowMs).toISOString(),
+        };
+        await expect(verifyEnclaveAttestation(attestation, policy, nonce)).rejects.toMatchObject({
+            reason: 'user-data',
         });
     });
 });

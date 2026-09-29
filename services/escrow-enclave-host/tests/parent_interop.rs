@@ -1,4 +1,5 @@
 use aws_credential_types::{Credentials, provider::SharedCredentialsProvider};
+use base64::{Engine, engine::general_purpose::STANDARD};
 use escrow_enclave::{
     ledger::{AppendError as ClientError, Event, LedgerRecord},
     server::parent,
@@ -90,6 +91,12 @@ impl SealedStorage for Sealed {
     }
 }
 fn services(memory: Arc<Memory>) -> Arc<Services<Sealed>> {
+    services_with_previous(memory, Vec::new())
+}
+fn services_with_previous(
+    memory: Arc<Memory>,
+    previous: Vec<(String, Sealed)>,
+) -> Arc<Services<Sealed>> {
     Arc::new(Services {
         store: memory,
         boot: Arc::new(Boot {
@@ -103,6 +110,7 @@ fn services(memory: Arc<Memory>) -> Arc<Services<Sealed>> {
             sealed: Sealed::default(),
             key_id: "key".into(),
             allow_first_boot: true,
+            previous,
         }),
     })
 }
@@ -182,6 +190,84 @@ async fn first_boot_persist_reload_and_credentials() {
     let (mut client, task) = connect(&services);
     assert!(parent::boot(&mut client, "wrong-key").await.is_err());
     assert!(task.await.unwrap().is_err());
+}
+
+// P9.1: the "boot" wire message is unchanged (already keyId-generic) — only
+// `Boot`'s config gains read-only, decrypt-only previous keys. A previous
+// key's blob is already-sealed configuration, never generated at boot.
+#[tokio::test]
+async fn boot_serves_a_previously_sealed_key_for_a_configured_previous_keyid() {
+    let previous = Sealed(Mutex::new(Some(b"previously-sealed".to_vec())));
+    let services = services_with_previous(
+        Arc::new(Memory::default()),
+        vec![("previous-key".into(), previous)],
+    );
+    let (mut client, task) = connect(&services);
+    let boot = parent::boot(&mut client, "previous-key").await.unwrap();
+    assert_eq!(
+        boot.sealed.as_deref(),
+        Some(STANDARD.encode(b"previously-sealed")).as_deref()
+    );
+    assert_eq!(boot.access_key_id, "test-access");
+    task.await.unwrap().unwrap();
+}
+
+#[tokio::test]
+async fn boot_rejects_an_unconfigured_keyid_that_looks_like_a_previous_key() {
+    let previous = Sealed(Mutex::new(Some(b"previously-sealed".to_vec())));
+    let services = services_with_previous(
+        Arc::new(Memory::default()),
+        vec![("previous-key".into(), previous)],
+    );
+    let (mut client, task) = connect(&services);
+    assert!(
+        parent::boot(&mut client, "not-configured-at-all")
+            .await
+            .is_err()
+    );
+    assert!(task.await.unwrap().is_err());
+}
+
+#[tokio::test]
+async fn boot_never_first_boot_generates_for_a_previous_key_with_no_sealed_data() {
+    let services = services_with_previous(
+        Arc::new(Memory::default()),
+        vec![("previous-key".into(), Sealed::default())],
+    );
+    let (mut client, task) = connect(&services);
+    assert!(parent::boot(&mut client, "previous-key").await.is_err());
+    assert!(task.await.unwrap().is_err());
+}
+
+#[tokio::test]
+async fn two_previous_keys_each_return_their_own_blob_and_persist_key_still_refuses_them() {
+    let previous_a = Sealed(Mutex::new(Some(b"sealed-a".to_vec())));
+    let previous_b = Sealed(Mutex::new(Some(b"sealed-b".to_vec())));
+    let services = services_with_previous(
+        Arc::new(Memory::default()),
+        vec![
+            ("previous-a".into(), previous_a),
+            ("previous-b".into(), previous_b),
+        ],
+    );
+    for (id, expected) in [("previous-a", "sealed-a"), ("previous-b", "sealed-b")] {
+        let (mut client, task) = connect(&services);
+        let boot = parent::boot(&mut client, id).await.unwrap();
+        assert_eq!(
+            boot.sealed.as_deref(),
+            Some(STANDARD.encode(expected.as_bytes())).as_deref()
+        );
+        task.await.unwrap().unwrap();
+    }
+    for id in ["previous-a", "previous-b"] {
+        let (mut client, task) = connect(&services);
+        assert!(
+            parent::persist_key(&mut client, id, b"attempted-overwrite")
+                .await
+                .is_err()
+        );
+        assert!(task.await.unwrap().is_err());
+    }
 }
 
 #[tokio::test]

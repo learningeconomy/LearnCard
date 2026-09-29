@@ -160,8 +160,29 @@ fn client_fixtures() {
                 .public_key
                 .clone()
         };
+        // P9.1: canonical CBOR `{0: spki, 1: keyId, 2: previousKeyIds}`, matching
+        // server::attest_user_data's format (ciborium here purely for test-fixture
+        // convenience; production uses a hand-rolled encoder to avoid a new
+        // always-compiled dependency — both produce valid canonical CBOR maps,
+        // and the TS verifier only requires the latter, not byte-identical output).
+        let fixture_key_id = "fixture-key";
+        let fixture_previous_key_ids = ["fixture-previous-key".to_string()];
+        let user_data_bytes = encode(&Value::Map(vec![
+            (0.into(), Value::Bytes(STANDARD.decode(&spki).unwrap())),
+            (1.into(), Value::Text(fixture_key_id.into())),
+            (
+                2.into(),
+                Value::Array(
+                    fixture_previous_key_ids
+                        .iter()
+                        .map(|id| Value::Text(id.clone()))
+                        .collect(),
+                ),
+            ),
+        ]))
+        .unwrap();
         let req = AttestationRequest {
-            user_data: STANDARD.decode(&spki).unwrap(),
+            user_data: user_data_bytes.clone(),
             ..request()
         };
         let valid = fake.attest(req.clone()).unwrap();
@@ -173,6 +194,23 @@ fn client_fixtures() {
         stale.timestamp -= 600_000;
         let mut truncated = fake.document(req.clone());
         truncated.cabundle.pop();
+        // The signature covers the whole payload, so corrupting ONLY the
+        // embedded previousKeyIds bytes post-signing (not re-signing) must be
+        // caught the same way any other payload tamper is: as a signature
+        // failure, never a silently-accepted "different" previousKeyIds list.
+        let position = valid
+            .windows(user_data_bytes.len())
+            .position(|window| window == user_data_bytes.as_slice())
+            .unwrap();
+        let mut tampered_previous_key_ids = valid.clone();
+        tampered_previous_key_ids[position + user_data_bytes.len() - 1] ^= 1;
+        // Legacy user_data (bare SPKI DER, no CBOR wrapper) must still verify:
+        // an updated verifier accepts both formats during the rollout transition.
+        let legacy_req = AttestationRequest {
+            user_data: STANDARD.decode(&spki).unwrap(),
+            ..request()
+        };
+        let legacy_user_data = fake.attest(legacy_req).unwrap();
         let variants = [
             ("valid", valid.clone()),
             ("bad-signature", bad_signature),
@@ -194,6 +232,8 @@ fn client_fixtures() {
                     .attest(req)
                     .unwrap(),
             ),
+            ("tampered-previous-key-ids", tampered_previous_key_ids),
+            ("legacy-user-data", legacy_user_data),
         ];
         for (name, bytes) in variants {
             std::fs::write(
@@ -204,10 +244,11 @@ fn client_fixtures() {
         }
         std::fs::write(path.join("root.pem"), fake.root_pem().unwrap()).unwrap();
         let manifest = serde_json::json!({
-            "testOnly": true, "description": "Public fake CA, never trust in production. Freeze verifier clock to nowMs. Certificates valid 2020-2050. userDataBase64 was generated once by crypto::generate_escrow_key_pair; regeneration reuses it.",
+            "testOnly": true, "description": "Public fake CA, never trust in production. Freeze verifier clock to nowMs. Certificates valid 2020-2050. userDataBase64 was generated once by crypto::generate_escrow_key_pair; regeneration reuses it. keyId/previousKeyIds (P9.1) are fixture-only labels bound into the canonical-CBOR user_data wrapper, distinct from userDataBase64 (the escrow SPKI itself, still extracted identically from either user_data format).",
             "timestamp": TIMESTAMP, "nowMs": TIMESTAMP + 1000, "maxAgeMs": 300_000,
             "nonceHex": hex::encode(request().nonce), "pcrs": {"0": hex::encode(PCRS[0]), "1": hex::encode(PCRS[1]), "2": hex::encode(PCRS[2])},
             "userDataBase64": spki, "publicKeyBase64": null,
+            "keyId": fixture_key_id, "previousKeyIds": fixture_previous_key_ids,
             "rootSha256": hex::encode(Sha256::digest(&fake.document(request()).cabundle[0])),
             "cases": {
                 "valid": {"accept": true}, "bad-signature": {"accept": false, "reason": "signature"},
@@ -216,7 +257,9 @@ fn client_fixtures() {
                 "stale-timestamp": {"accept": false, "reason": "freshness"},
                 "wrong-root": {"accept": false, "reason": "root pin"},
                 "truncated-chain": {"accept": false, "reason": "missing intermediate"},
-                "debug-zero-pcrs": {"accept": false, "reason": "debug PCRs"}
+                "debug-zero-pcrs": {"accept": false, "reason": "debug PCRs"},
+                "tampered-previous-key-ids": {"accept": false, "reason": "signature"},
+                "legacy-user-data": {"accept": true, "previousKeyIds": Vec::<String>::new()}
             }
         });
         std::fs::write(
@@ -237,12 +280,40 @@ fn client_fixtures() {
     verify(&bytes);
     let doc = parse_attestation_document(&bytes).unwrap();
     assert_eq!(doc.timestamp, TIMESTAMP);
+    // "valid"'s user_data is the P9.1 canonical-CBOR wrapper, not a bare SPKI;
+    // decode it the same way the TS verifier does to recover the SPKI/keyId/
+    // previousKeyIds fields for comparison against the manifest.
+    let Value::Map(entries) = decode::<Value>(doc.user_data.as_ref().unwrap()).unwrap() else {
+        panic!("user_data must decode as a CBOR map")
+    };
+    let field = |key: i128| {
+        entries
+            .iter()
+            .find(|(k, _)| *k == Value::from(key))
+            .unwrap()
+            .1
+            .clone()
+    };
+    let spki = field(0).into_bytes().unwrap();
+    assert_eq!(STANDARD.encode(&spki), manifest["userDataBase64"]);
+    assert_eq!(field(1).into_text().unwrap(), manifest["keyId"]);
+    let Value::Array(previous) = field(2) else {
+        panic!("previousKeyIds must be a CBOR array")
+    };
     assert_eq!(
-        STANDARD.encode(doc.user_data.as_ref().unwrap()),
-        manifest["userDataBase64"]
+        previous
+            .into_iter()
+            .map(|v| v.into_text().unwrap())
+            .collect::<Vec<_>>(),
+        manifest["previousKeyIds"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| v.as_str().unwrap())
+            .collect::<Vec<_>>()
     );
     use p256::pkcs8::DecodePublicKey;
-    p256::PublicKey::from_public_key_der(doc.user_data.as_ref().unwrap()).unwrap();
+    p256::PublicKey::from_public_key_der(&spki).unwrap();
     assert_eq!(
         hex::encode(Sha256::digest(&doc.cabundle[0])),
         manifest["rootSha256"]

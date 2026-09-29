@@ -125,6 +125,7 @@ async fn policy_suite_through_loopback_and_http() {
         let policy = Policy::new(
             keys,
             "emulate".into(),
+            Vec::new(),
             "emulate".into(),
             measurement(&nsm).unwrap(),
             &store,
@@ -156,6 +157,7 @@ async fn policy_suite_through_loopback_and_http() {
     let attestation_public_key = match attestation {
         Response::Attest {
             public_key,
+            previous_key_ids,
             document,
             mode,
             issued_at,
@@ -163,11 +165,12 @@ async fn policy_suite_through_loopback_and_http() {
         } => {
             assert_eq!(mode, AttestationMode::Software);
             assert_eq!(issued_at, "2023-11-14T22:13:20.000Z");
+            assert!(previous_key_ids.is_empty());
             let claims = parse_attestation_document(&STANDARD.decode(document).unwrap()).unwrap();
             assert_eq!(claims.nonce.unwrap().as_ref(), &[7; 32]);
             assert_eq!(
                 claims.user_data.unwrap().as_ref(),
-                STANDARD.decode(&public_key).unwrap()
+                attest_user_data(&STANDARD.decode(&public_key).unwrap(), "emulate", &[])
             );
             assert_eq!(claims.public_key.unwrap().len(), 65);
             public_key
@@ -453,6 +456,153 @@ async fn policy_suite_through_loopback_and_http() {
     );
     task.abort();
     assert!(task.await.unwrap_err().is_cancelled());
+}
+
+// P9.1: boot with 2 previous keys — the attest response and the NSM-signed
+// user_data both advertise them, and a blob sealed under one of them still
+// verifies/creates a hold/releases through the real wire dispatch, not just
+// the policy layer directly (server::tests's other test already covers 0
+// previous keys, the default configuration every other test in this file
+// exercises unchanged).
+#[tokio::test]
+async fn boot_with_two_previous_keys_advertises_them_and_releases_a_previous_key_blob() {
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let address = listener.local_addr().unwrap();
+    let clock = Arc::new(Clock(AtomicU64::new(1_700_000_000_000)));
+    let keys = crypto::generate_escrow_key_pair().unwrap();
+    let previous_a = crypto::generate_escrow_key_pair().unwrap();
+    let previous_b = crypto::generate_escrow_key_pair().unwrap();
+    let client = crypto::generate_escrow_key_pair().unwrap();
+    let previous_envelope = crypto::encrypt_escrow_blob(
+        &EscrowBlobPlaintext {
+            version: 1,
+            recovery_share: "ab".repeat(33),
+            did: "did:key:test".into(),
+            share_version: 1.0,
+            pin_verifier: None,
+            pin_attempts_floor: None,
+        },
+        &previous_a.public_key,
+        "previous-a",
+    )
+    .unwrap();
+    let authority = Enrollments::default();
+    authority.0.lock().unwrap().insert(
+        "did:key:test".into(),
+        CurrentEnrollment {
+            epoch: 1,
+            share_version: 1,
+            blob_hash: Sha256::digest(serde_json::to_vec(&previous_envelope).unwrap()).into(),
+        },
+    );
+    let server_clock = clock.clone();
+    let task = tokio::spawn(async move {
+        let nsm = FakeNsm::new(1_700_000_000_000, [[1; 48], [2; 48], [3; 48]]).unwrap();
+        let store = FakeHeadStore::default();
+        let policy = Policy::new(
+            keys,
+            "emulate".into(),
+            vec![
+                ("previous-a".into(), previous_a),
+                ("previous-b".into(), previous_b),
+            ],
+            "emulate".into(),
+            measurement(&nsm).unwrap(),
+            &store,
+            &*server_clock,
+            &authority,
+        )
+        .unwrap();
+        serve(
+            Service {
+                policy,
+                nsm: &nsm,
+                key_id: "emulate".into(),
+                public_key: String::new(),
+                mode: AttestationMode::Software,
+            },
+            Listener::Tcp(listener),
+            None,
+            String::new(),
+        )
+        .await
+        .unwrap();
+    });
+    match call(address, Request::Attest { nonce: vec![9; 32] }).await {
+        Response::Attest {
+            public_key,
+            previous_key_ids,
+            document,
+            ..
+        } => {
+            assert_eq!(previous_key_ids, vec!["previous-a", "previous-b"]);
+            let claims = parse_attestation_document(&STANDARD.decode(&document).unwrap()).unwrap();
+            assert_eq!(
+                claims.user_data.unwrap().as_ref(),
+                attest_user_data(
+                    &STANDARD.decode(&public_key).unwrap(),
+                    "emulate",
+                    &previous_key_ids
+                )
+            );
+        }
+        other => panic!("{other:?}"),
+    }
+    assert!(matches!(
+        call(
+            address,
+            Request::VerifyBlob {
+                envelope: previous_envelope.clone(),
+                expected_did: "did:key:test".into(),
+                expected_share_version: 1,
+            },
+        )
+        .await,
+        Response::VerifyBlob {
+            ok: true,
+            has_pin: false,
+            ..
+        }
+    ));
+    let hold = match call(
+        address,
+        Request::CreateHold {
+            envelope: previous_envelope.clone(),
+            hold_id: "previous-hold".into(),
+            request_id: "previous-hold".into(),
+            expected_did: "did:key:test".into(),
+            expected_share_version: 1,
+            enrollment_epoch: 1,
+            release_policy: ReleasePolicy::Hold,
+            client_ephemeral_public_key: client.public_key.clone(),
+        },
+    )
+    .await
+    {
+        Response::CreateHold { hold } => hold,
+        other => panic!("{other:?}"),
+    };
+    clock.0.fetch_add(HOLD_DURATION_MS, Ordering::SeqCst);
+    let sealed = match call(
+        address,
+        Request::Release {
+            envelope: previous_envelope,
+            hold,
+            request_id: "previous-release".into(),
+            client_ephemeral_public_key: client.public_key.clone(),
+            expected_did: "did:key:test".into(),
+            pin_proof: None,
+        },
+    )
+    .await
+    {
+        Response::Release { sealed } => sealed,
+        other => panic!("{other:?}"),
+    };
+    let release = crypto::open_escrow_release(&sealed, &client.private_key).unwrap();
+    assert_eq!(release.blob.did, "did:key:test");
+    assert_eq!(release.hold_id, "previous-hold");
+    task.abort();
 }
 
 #[test]

@@ -57,6 +57,55 @@ const decodeCbor = (value: Uint8Array): unknown => {
     }
 };
 
+/**
+ * P9.1: `user_data` is either the legacy raw SPKI DER (older enclave builds,
+ * accepted during the rollout transition), or a canonical CBOR map
+ * `{0: spki bytes, 1: keyId text, 2: previousKeyIds array<text>}` produced by
+ * `server::attest_user_data` in the enclave. Real P-256 SPKI DER always
+ * starts with the SEQUENCE tag `0x30`, which CBOR decodes as a bare negative
+ * integer (major type 1), never a 3-entry map — so requiring BOTH "decodes as
+ * CBOR" AND "is a map with exactly these three well-typed entries" safely
+ * disambiguates without any separate version marker. A non-throwing probe
+ * (unlike `decodeCbor`/`fail`, whose failure IS the production error path
+ * elsewhere in this file): failing to match either check here means "legacy
+ * format", not "malformed attestation".
+ */
+const decodeUserData = (
+    userData: Uint8Array
+): { spki: Uint8Array; keyId: string; previousKeyIds: string[] } | undefined => {
+    let decoded: unknown;
+    try {
+        decoded = decode(userData, {
+            useMaps: true,
+            rejectDuplicateMapKeys: true,
+            allowIndefinite: false,
+            allowUndefined: false,
+            allowNaN: false,
+            allowInfinity: false,
+            allowBigInt: false,
+        });
+    } catch {
+        return undefined;
+    }
+    if (!(decoded instanceof Map) || decoded.size !== 3) return undefined;
+    const spki = decoded.get(0);
+    const keyId = decoded.get(1);
+    const previousKeyIds = decoded.get(2);
+    const isKeyId = (value: unknown): value is string =>
+        typeof value === 'string' && /^[A-Za-z0-9._-]{1,128}$/.test(value);
+    if (
+        !(spki instanceof Uint8Array) ||
+        spki.length === 0 ||
+        !isKeyId(keyId) ||
+        !Array.isArray(previousKeyIds) ||
+        previousKeyIds.length > 3 ||
+        !previousKeyIds.every(isKeyId)
+    ) {
+        return undefined;
+    }
+    return { spki, keyId, previousKeyIds };
+};
+
 /** Verify signed NSM evidence before trusting its P-256 escrow key (not public_key/KMS key). */
 export const verifyNitroAttestationDocument = async (
     documentB64: string,
@@ -71,6 +120,14 @@ export const verifyNitroAttestationDocument = async (
     }
 ): Promise<{
     escrowPublicKeySpkiB64: string;
+    /** P9.1: the enclave's own current keyId, bound inside this same signed
+     * document. `undefined` for the legacy user_data format, which never
+     * carried a keyId — callers must not silently trust a plaintext keyId in
+     * that case any more than they did before this field existed. */
+    keyId: string | undefined;
+    /** P9.1: retired keyIds the enclave still accepts for decrypt only, bound
+     * inside this same signed document. Empty for the legacy user_data format. */
+    previousKeyIds: string[];
     pcrs: Record<number, string>;
     timestamp: number;
     moduleId: string;
@@ -205,10 +262,12 @@ export const verifyNitroAttestationDocument = async (
     )
         fail('freshness');
     const userData = bytes(payload.get('user_data'), 'user-data');
+    const newFormat = decodeUserData(new Uint8Array(userData));
+    const spki = newFormat ? newFormat.spki : userData;
     try {
         await crypto.subtle.importKey(
             'spki',
-            new Uint8Array(userData),
+            new Uint8Array(spki),
             { name: 'ECDH', namedCurve: 'P-256' },
             false,
             []
@@ -217,7 +276,9 @@ export const verifyNitroAttestationDocument = async (
         return fail('user-data');
     }
     return {
-        escrowPublicKeySpkiB64: bufferToBase64(new Uint8Array(userData).buffer),
+        escrowPublicKeySpkiB64: bufferToBase64(new Uint8Array(spki).buffer),
+        keyId: newFormat?.keyId,
+        previousKeyIds: newFormat?.previousKeyIds ?? [],
         pcrs,
         timestamp,
         moduleId,

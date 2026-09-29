@@ -94,7 +94,14 @@ Parent CID3:5002 accepts one u32-BE length-prefixed JSON request, <=32 KiB,
 - Other failures close the connection; they are never encoded as zero record count.
 
 Boot is enclave-initiated, before its port 5000 binds. The configured key ID must
-match. Missing ciphertext fails closed by default; an operator must explicitly
+match the CURRENT key, or one of the configured `ESCROW_PREVIOUS_KEY_IDS` (P9.1:
+deliberate rotation or a lost-sealed-key recovery) — the wire message itself is
+unchanged either way, since it already carried an arbitrary `keyId`; the enclave
+just calls `boot` once more per previous key, against its own `SealedStore`.
+Previous keys are read-only: `allow_first_boot` never applies to them (a missing
+blob is always fatal, unlike the current key's provisioning path), and
+`persistKey` continues to accept only the current key ID. Missing ciphertext
+fails closed by default; an operator must explicitly
 enable `ESCROW_ALLOW_FIRST_BOOT=true` on host AND enclave for provisioning. Even
 then only S3's specific NoSuchKey result permits a null blob; access/transport
 errors never permit regeneration. `persistKey` is allowed only with that flag and
@@ -155,23 +162,25 @@ use a root-owned token file or systemd credentials rather than embedding tokens
 in the unit. No secrets or whole SDK errors are logged. Do not enable SDK tracing,
 HTTP access-body logging, core dumps or request capture in production.
 
-| Variable                                                 | Meaning/default                                                     |
-| -------------------------------------------------------- | ------------------------------------------------------------------- |
-| `AWS_REGION`                                             | Required region                                                     |
-| `ESCROW_ENCLAVE_EIF_PATH`                                | Required; user-data sets `/opt/escrow-enclave-host/eif/current.eif` |
-| `ESCROW_ENCLAVE_CPU_COUNT` / `ESCROW_ENCLAVE_MEMORY_MIB` | 2 / 2048                                                            |
-| `ESCROW_ENCLAVE_CID`                                     | 16, >=4, not u32::MAX                                               |
-| `ESCROW_ENCLAVE_HEALTH_PORT`                             | 8444                                                                |
-| `ESCROW_ENCLAVE_TLS_CERT` / `ESCROW_ENCLAVE_TLS_KEY`     | Required PEM paths; restart host to reload                          |
-| `ESCROW_ENCLAVE_TOKEN_FILE`                              | Preferred bearer token source; whitespace trimmed                   |
-| `ESCROW_ENCLAVE_REMOTE_TOKEN`                            | Fallback bearer; 32–4096 bytes                                      |
-| `ESCROW_LEDGER_RECORDS_TABLE`                            | `escrow-ledger-records-<env>` required                              |
-| `ESCROW_LEDGER_HEADS_TABLE`                              | `escrow-ledger-heads-<env>` required                                |
-| `ESCROW_AUDIT_BUCKET` / `ESCROW_ARTIFACTS_BUCKET`        | Required bucket names                                               |
-| `ESCROW_SEALED_KEY_OBJECT`                               | Required fixed artifacts object key                                 |
-| `ESCROW_KEY_ID`                                          | Required logical key ID, must match measured enclave configuration  |
-| `ESCROW_ALLOW_FIRST_BOOT`                                | `false`; explicit `true` enables create-only provisioning           |
-| `ESCROW_ROUGHTIME_ALLOWLIST_JSON`                        | Optional operator-owned server ID -> host:port map                  |
+| Variable                                                 | Meaning/default                                                            |
+| -------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `AWS_REGION`                                             | Required region                                                            |
+| `ESCROW_ENCLAVE_EIF_PATH`                                | Required; user-data sets `/opt/escrow-enclave-host/eif/current.eif`        |
+| `ESCROW_ENCLAVE_CPU_COUNT` / `ESCROW_ENCLAVE_MEMORY_MIB` | 2 / 2048                                                                   |
+| `ESCROW_ENCLAVE_CID`                                     | 16, >=4, not u32::MAX                                                      |
+| `ESCROW_ENCLAVE_HEALTH_PORT`                             | 8444                                                                       |
+| `ESCROW_ENCLAVE_TLS_CERT` / `ESCROW_ENCLAVE_TLS_KEY`     | Required PEM paths; restart host to reload                                 |
+| `ESCROW_ENCLAVE_TOKEN_FILE`                              | Preferred bearer token source; whitespace trimmed                          |
+| `ESCROW_ENCLAVE_REMOTE_TOKEN`                            | Fallback bearer; 32–4096 bytes                                             |
+| `ESCROW_LEDGER_RECORDS_TABLE`                            | `escrow-ledger-records-<env>` required                                     |
+| `ESCROW_LEDGER_HEADS_TABLE`                              | `escrow-ledger-heads-<env>` required                                       |
+| `ESCROW_AUDIT_BUCKET` / `ESCROW_ARTIFACTS_BUCKET`        | Required bucket names                                                      |
+| `ESCROW_SEALED_KEY_OBJECT`                               | Required fixed artifacts object key                                        |
+| `ESCROW_KEY_ID`                                          | Required logical key ID, must match measured enclave configuration         |
+| `ESCROW_PREVIOUS_KEY_IDS`                                | Optional, comma-separated, <=3 (P9.1 rotation/lost-key recovery)           |
+| `ESCROW_PREVIOUS_KEY_OBJECTS`                            | Optional, comma-separated artifacts object keys, same order/count as above |
+| `ESCROW_ALLOW_FIRST_BOOT`                                | `false`; explicit `true` enables create-only provisioning                  |
+| `ESCROW_ROUGHTIME_ALLOWLIST_JSON`                        | Optional operator-owned server ID -> host:port map                         |
 
 Roughtime defaults: `cloudflare` -> `roughtime.cloudflare.com:2003`, `google` ->
 `roughtime.sandbox.google.com:2002`. User-data's endpoint-only

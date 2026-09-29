@@ -22,7 +22,12 @@ describe('verifyEnclaveAttestation', () => {
                 { ...attestation(), publicKey: ` ${publicKey}\n` },
                 { mode: 'software', pinnedPublicKeys: [`\n${publicKey} `] }
             )
-        ).resolves.toEqual({ mode: 'software', keyId: 'test-key', publicKey });
+        ).resolves.toEqual({
+            mode: 'software',
+            keyId: 'test-key',
+            previousKeyIds: [],
+            publicKey,
+        });
     });
     it('rejects an unknown key', async () => {
         await expect(

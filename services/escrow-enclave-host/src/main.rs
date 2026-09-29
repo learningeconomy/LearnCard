@@ -24,6 +24,15 @@ fn required(key: &str) -> io::Result<String> {
 fn number(key: &str, default: u32) -> io::Result<u32> {
     env::var(key).map_or(Ok(default), |v| v.parse().map_err(|_| invalid()))
 }
+fn previous_list(key: &str) -> Vec<String> {
+    env::var(key)
+        .unwrap_or_default()
+        .split(',')
+        .map(str::trim)
+        .filter(|entry| !entry.is_empty())
+        .map(String::from)
+        .collect()
+}
 #[tokio::main]
 async fn main() {
     // Do not install an SDK tracing subscriber: request/response diagnostics can contain secrets.
@@ -60,15 +69,47 @@ async fn start() -> io::Result<()> {
         .load()
         .await;
     let s3 = aws_sdk_s3::Client::new(&config);
+    let artifacts_bucket = required("ESCROW_ARTIFACTS_BUCKET")?;
+    let key_id = required("ESCROW_KEY_ID")?;
+    // P9.1: bounded (<= enclave crate's policy::MAX_PREVIOUS_KEYS, currently 3),
+    // comma-separated, read-only decrypt-only keys. Empty when unset, matching
+    // today's behaviour exactly (zero previous keys configured).
+    let previous_key_ids = previous_list("ESCROW_PREVIOUS_KEY_IDS");
+    let previous_key_objects = previous_list("ESCROW_PREVIOUS_KEY_OBJECTS");
+    if previous_key_ids.len() > 3
+        || previous_key_ids.len() != previous_key_objects.len()
+        || previous_key_ids.contains(&key_id)
+        || previous_key_ids
+            .iter()
+            .enumerate()
+            .any(|(i, id)| previous_key_ids[..i].contains(id))
+    {
+        return Err(invalid());
+    }
+    let previous = previous_key_ids
+        .into_iter()
+        .zip(previous_key_objects)
+        .map(|(id, object)| {
+            (
+                id,
+                SealedStore {
+                    s3: s3.clone(),
+                    bucket: artifacts_bucket.clone(),
+                    key: object,
+                },
+            )
+        })
+        .collect();
     let boot = Arc::new(Boot {
         credentials: config.credentials_provider().ok_or_else(invalid)?,
         sealed: SealedStore {
             s3: s3.clone(),
-            bucket: required("ESCROW_ARTIFACTS_BUCKET")?,
+            bucket: artifacts_bucket,
             key: required("ESCROW_SEALED_KEY_OBJECT")?,
         },
-        key_id: required("ESCROW_KEY_ID")?,
+        key_id,
         allow_first_boot: env::var("ESCROW_ALLOW_FIRST_BOOT").as_deref() == Ok("true"),
+        previous,
     });
     let store = Arc::new(AwsStore {
         db: aws_sdk_dynamodb::Client::new(&config),

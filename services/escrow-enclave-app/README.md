@@ -566,12 +566,67 @@ Production startup defaults to vsock port 5000 on Linux. It supervises the KMS
 TLS byte forwarder, reads NSM measurements, constructs production Roughtime,
 fetches boot material from CID 3:5002, seals/unseals, derives the policy ledger
 key, and only then binds. Startup configuration is `ESCROW_TENANT`,
-`ESCROW_KEY_ID`, `ESCROW_KMS_REGION`, `ESCROW_KMS_KEY_ARN`. Missing sealed material
+`ESCROW_KEY_ID`, `ESCROW_KMS_REGION`, `ESCROW_KMS_KEY_ARN`, optional
+`ESCROW_PREVIOUS_KEY_IDS` (see "Previous keys / key rotation" below). Missing sealed material
 fails closed unless the measured launch configuration explicitly permits first
 boot with `ESCROW_ALLOW_FIRST_BOOT=true`; disable it after provisioning.
 Production remains **blocked** on independently authenticated fresh enrollment
 (D14) and the existing `verified-roughtime-keys` review gate. The default Docker
 feature set cannot pass that time gate. No parent enrollment claims are trusted.
+
+## Previous keys / key rotation (P9.1)
+
+**Design A**: the escrow P-256 key is generated once and KMS-sealed under
+encryption context `{purpose: "escrow-enclave-key", keyId: ESCROW_KEY_ID}`.
+Every build/redeploy whose PCRs remain in the KMS key policy unseals the SAME
+key, so `ESCROW_KEY_ID` and the sealed blob are stable across ordinary
+releases — `keyId` changes only on a **deliberate rotation** (a new
+`ESCROW_KEY_ID`, with the old sealed blob provisioned as a previous key below)
+or if the host **loses the sealed key** and a fresh one is generated on first
+boot under a new id. Rotation is intentionally a two-key state, not an N-key
+history: `ESCROW_PREVIOUS_KEY_IDS` (comma-separated, capped at
+`policy::MAX_PREVIOUS_KEYS = 3`) names read-only decrypt-only keys the current
+boot also unseals (each via the identical attested-KMS path, its own
+`keyId` encryption context) — this is `Policy::decrypt`'s only change:
+select key material by the envelope's own `keyId` (current, or a match in
+`previous_keys`), else the existing generic `Blob` error. Every _seal_ still
+always targets the CURRENT key (`carry_pin_verifier`'s reseal;
+`release`/`cancel` never re-seal a blob at all — see "Release policy" above).
+Boot is unaffected when zero previous keys are configured: the parent's
+`boot` wire message already took an arbitrary `keyId`, so previous keys are
+served through the exact same message, one extra call per key — no wire
+protocol change either enclave- or host-side.
+
+`attest`'s response gains `previousKeyIds: string[]` (always present, empty
+when none are configured) and — since a client verifying only the raw JSON
+response would be trusting an unauthenticated relay — the SAME list is bound
+inside NSM `user_data` alongside the escrow SPKI: canonical CBOR
+`{0: spki bytes, 1: keyId text, 2: previousKeyIds array<text>}` (hand-rolled
+in `server::attest_user_data`, matching `ledger/codec.rs`'s canonical-CBOR
+conventions rather than adding a CBOR crate dependency to this
+always-compiled module). This deliberately replaces the legacy raw-SPKI
+`user_data`; the two are byte-distinguishable (real SPKI DER always starts
+with the SEQUENCE tag `0x30`, which decodes as a bare CBOR integer, never a
+3-entry map), so `packages/sss-key-manager/src/escrow-nitro-attestation.ts`
+tries the new format first and falls back to the legacy interpretation
+during the rollout transition. lca-api's enroll route (P9.2) relaxes its PIN
+carry eligibility from "old keyId equals current" to "old keyId is current
+OR in the attested `previousKeyIds`", and its stale-blob logic reports a
+recognised-previous-key blob as stale (`key-rotated`, prompting re-enrollment)
+but still **usable** — unlike a truly unrecognised keyId, which stays stale
+AND unusable.
+
+`infra/escrow-enclave/kms.tf` needs **no change**: `kms:Decrypt` is
+authorized purely by `kms:RecipientAttestation:PCR0/1/2` (never by `keyId`),
+and `kms:Encrypt`'s only condition is `kms:EncryptionContext:purpose` — so
+accepting additional keyIds for Decrypt was already within the existing
+policy. `services/escrow-enclave-host` extends `Boot` with a `previous: Vec<(String,
+S)>` of additional `SealedStore`s (`ESCROW_PREVIOUS_KEY_IDS` +
+`ESCROW_PREVIOUS_KEY_OBJECTS`, same bucket, parallel comma-separated lists,
+bounded/deduplicated/disjoint-from-current at startup) — read-only: a
+previous key's sealed blob is never regenerated on a missing object (unlike
+the current key's `ESCROW_ALLOW_FIRST_BOOT` path) and is never accepted by
+`PersistKey`.
 
 Rust is pinned to 1.93.0, including rustfmt, clippy, and the Linux musl target.
 Default features include `enclave-runtime`, preserving KMS/CMS and server support.

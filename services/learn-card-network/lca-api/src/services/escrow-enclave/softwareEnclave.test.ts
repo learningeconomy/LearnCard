@@ -112,6 +112,7 @@ describe('software enclave', () => {
         expect(JSON.parse(Buffer.from(attestation.document, 'base64').toString())).toEqual({
             mode: 'software',
             keyId: 'test',
+            previousKeyIds: [],
             publicKey: keys.publicKey,
             issuedAt: attestation.issuedAt,
         });
@@ -318,4 +319,53 @@ describe('software enclave', () => {
             }
         }
     );
+
+    // P9.1 software-enclave equivalent: every configured key other than
+    // activeKeyId is already usable for decrypt (verifyEscrowBlob/createHold/
+    // releaseEscrow key the plaintext lookup by the envelope's own keyId, not
+    // by activeKeyId) — this test asserts the attestation now ADVERTISES that
+    // existing capability, and that a blob still sealed under a retired key
+    // decrypts/creates a hold/releases exactly like a current-key blob.
+    it('advertises other configured keys as previousKeyIds and still releases a blob sealed under one', async () => {
+        const active = await generateEscrowKeyPair();
+        const retired = await generateEscrowKeyPair();
+        const client = await generateEscrowKeyPair();
+        const enclave = new SoftwareEnclave({
+            privateKeys: { active: active.privateKey, retired: retired.privateKey },
+            activeKeyId: 'active',
+        });
+        const attestation = await enclave.getAttestation();
+        expect(attestation.keyId).toBe('active');
+        expect(attestation.previousKeyIds).toEqual(['retired']);
+        const plaintext = { recoveryShare: 'cd'.repeat(33), did: 'did:key:test', shareVersion: 1 };
+        const envelope = await encryptEscrowBlob(plaintext, retired.publicKey, 'retired');
+        expect(
+            await enclave.verifyEscrowBlob({
+                envelope,
+                expectedDid: plaintext.did,
+                expectedShareVersion: 1,
+            })
+        ).toEqual({ ok: true, hasPin: false });
+        const { holdRecord } = await enclave.createHold({
+            envelope,
+            holdId: 'retired-key-hold',
+            expectedDid: plaintext.did,
+            expectedShareVersion: 1,
+            enrollmentEpoch: 1,
+            releasePolicy: 'hold',
+            clientEphemeralPublicKey: client.publicKey,
+        });
+        const result = await enclave.releaseEscrow({
+            envelope,
+            hold: holdRecord,
+            expectedDid: plaintext.did,
+            clientEphemeralPublicKey: client.publicKey,
+            now: new Date(holdRecord.hold.createdHi + holdRecord.holdDurationMs),
+        });
+        expect(await openEscrowRelease(result.sealed, client.privateKey)).toEqual({
+            ...plaintext,
+            version: 1,
+            holdId: 'retired-key-hold',
+        });
+    });
 });

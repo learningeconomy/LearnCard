@@ -31,6 +31,9 @@ const measurementsValidator = z.object({
 const attestResponseValidator = z.object({
     mode: z.enum(['software', 'nitro']),
     keyId: z.string(),
+    // Optional/defaulted (not required, unlike the host's own wire.rs field) so
+    // a not-yet-upgraded host during a rolling deploy still parses; P9.1.
+    previousKeyIds: z.array(z.string()).optional().default([]),
     publicKey: z.string(),
     measurements: measurementsValidator,
     document: z.string(),

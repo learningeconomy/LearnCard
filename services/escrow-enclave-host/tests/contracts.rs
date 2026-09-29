@@ -41,7 +41,7 @@ fn fixtures() -> Vec<(&'static str, Value, Value)> {
         (
             "attest",
             json!({"nonce":[0,1,255]}),
-            json!({"mode":"nitro","keyId":"key-1","publicKey":"AA==","measurements":{},"document":"AA==","issuedAt":"2026-09-25T00:00:00Z"}),
+            json!({"mode":"nitro","keyId":"key-1","previousKeyIds":[],"publicKey":"AA==","measurements":{},"document":"AA==","issuedAt":"2026-09-25T00:00:00Z"}),
         ),
         (
             "verifyBlob",

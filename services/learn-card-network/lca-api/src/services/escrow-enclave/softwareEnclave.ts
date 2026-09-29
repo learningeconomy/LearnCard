@@ -124,6 +124,12 @@ export class SoftwareEnclave implements EscrowEnclave {
             const description = {
                 mode: 'software' as const,
                 keyId: this.activeKeyId,
+                // P9.1 software-enclave equivalent: every OTHER configured key is
+                // already decrypt-eligible in `decrypt()` below (keyed lookup by
+                // envelope keyId, not restricted to `activeKeyId`) — this just
+                // advertises that existing behaviour the same way the Nitro
+                // backend advertises its `ESCROW_PREVIOUS_KEY_IDS`.
+                previousKeyIds: [...this.privateKeys.keys()].filter(id => id !== this.activeKeyId),
                 publicKey,
                 issuedAt: new Date().toISOString(),
             };

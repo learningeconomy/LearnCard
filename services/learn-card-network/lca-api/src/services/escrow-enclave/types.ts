@@ -4,6 +4,9 @@ import type { EscrowEnvelope } from '@learncard/sss-key-manager';
 export interface EnclaveAttestation {
     mode: 'software' | 'nitro';
     keyId: string;
+    /** P9.1: retired keyIds the enclave still accepts for decrypt only (never
+     * for sealing output). Empty/absent means no previous key is configured. */
+    previousKeyIds?: string[];
     publicKey: string;
     measurements: { imageSha384?: string; pcr0?: string; pcr1?: string; pcr2?: string };
     document: string;

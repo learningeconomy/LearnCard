@@ -1079,6 +1079,91 @@ describe('escrow PIN release', () => {
         }
     });
 
+    // P9.2: the enroll route's carry gate accepts the CURRENT keyId OR any of
+    // the attested previousKeyIds (deliberate rotation / lost-sealed-key
+    // recovery) — "key mismatch" above already proves a truly UNRECOGNISED
+    // keyId still drops the PIN; this proves a RECOGNISED previous keyId
+    // carries it, preserving the exact host-owned attempt counters, and that
+    // the carried PIN still releases with the ORIGINAL proof afterward.
+    it('carries the PIN from a still-accepted previous key and preserves its attempt counters', async () => {
+        const previousKeyId = 'retired-key';
+        const previousKeys = await generateEscrowKeyPair();
+        const bothKeys = JSON.stringify({
+            [keyId]: enclaveKeys.privateKey,
+            [previousKeyId]: previousKeys.privateKey,
+        });
+        // Enroll while `previousKeyId` is still the ACTIVE key (as it genuinely
+        // would have been before a rotation) — the route always requires a
+        // freshly-enrolled envelope to match the CURRENT attestation key; only
+        // an already-stored blob may later be carried from a previous one.
+        process.env.ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON = bothKeys;
+        process.env.ESCROW_ENCLAVE_ACTIVE_KEY_ID = previousKeyId;
+        __setEscrowEnclaveForTests(undefined);
+        try {
+            const oldEnvelope = await encryptEscrowBlob(
+                {
+                    recoveryShare: shares.recoveryShare,
+                    did,
+                    shareVersion: 1,
+                    pinVerifier: pinProof,
+                },
+                previousKeys.publicKey,
+                previousKeyId
+            );
+            await owner().escrow.enroll({
+                ...auth,
+                envelope: oldEnvelope,
+                shareVersion: 1,
+                enclaveKeyId: previousKeyId,
+                pinSalt,
+            });
+            // Rotate: `keyId` becomes the current key, `previousKeyId` becomes a
+            // recognised-but-retired previous key (P9.1).
+            process.env.ESCROW_ENCLAVE_ACTIVE_KEY_ID = keyId;
+            __setEscrowEnclaveForTests(undefined);
+            await getUserKeysCollection().updateOne(
+                { 'authProviders.id': authProvider.id },
+                { $set: { 'escrowPin.failedAttempts': 3, 'escrowPin.verifiedFailedAttempts': 2 } }
+            );
+            await owner().keys.storeAuthShare({
+                ...auth,
+                primaryDid: did,
+                authShare: { encryptedData: shares.authShare, encryptedDek: '', iv: '' },
+            });
+            const replacement = await encryptEscrowBlob(
+                { recoveryShare: shares.recoveryShare, did, shareVersion: 2 },
+                enclaveKeys.publicKey,
+                keyId
+            );
+            await expect(
+                owner().escrow.enroll({
+                    ...auth,
+                    envelope: replacement,
+                    shareVersion: 2,
+                    enclaveKeyId: keyId,
+                })
+            ).resolves.toEqual({ success: true, shareVersion: 2 });
+            const stored = await record();
+            expect(stored?.escrowPin).toMatchObject({
+                shareVersion: 2,
+                failedAttempts: 3,
+                verifiedFailedAttempts: 2,
+            });
+            const hold = await startPin();
+            expect(hold.pinSalt).toBe(pinSalt);
+            const released = await completePin(hold);
+            expect(
+                await openEscrowRelease(released.sealedShare, recipient.privateKey)
+            ).toMatchObject({ recoveryShare: shares.recoveryShare, shareVersion: 2 });
+        } finally {
+            process.env.ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON = JSON.stringify({
+                [keyId]: enclaveKeys.privateKey,
+            });
+            process.env.ESCROW_ENCLAVE_ACTIVE_KEY_ID = keyId;
+            __setEscrowEnclaveForTests(undefined);
+        }
+    });
+
     it('rejects mismatched verifier/salt enrollment and invalid salts', async () => {
         await expect(
             owner().escrow.enroll({
@@ -1924,6 +2009,29 @@ describe('P6.1 escrow enclave-mode staleness', () => {
         });
         expect((await owner().keys.getAuthShare(auth))?.escrowStale).toBe('key-rotated');
         expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    // P9.2: unlike a fully unknown/retired key (above), a blob sealed under a
+    // keyId the attestation still lists in `previousKeyIds` stays STALE
+    // (prompts re-enrollment) but remains USABLE — completeRecovery must not
+    // refuse it, since the enclave itself can still decrypt/release it (P9.1).
+    it('reports key-rotated but still permits releasing a blob sealed under a recognised previous key', async () => {
+        setDuration(1);
+        await enroll();
+        const started = await start();
+        await new Promise(resolve => setTimeout(resolve, 5));
+        const base = getEscrowEnclave();
+        __setEscrowEnclaveForTests(
+            withAttestationOverrides(base, {
+                keyId: 'rotated-software-key',
+                previousKeyIds: [keyId],
+            })
+        );
+        expect((await owner().keys.getAuthShare(auth))?.escrowStale).toBe('key-rotated');
+        const released = await getClient().escrow.completeRecovery(resume(started));
+        expect(await openEscrowRelease(released.sealedShare, recipient.privateKey)).toMatchObject({
+            recoveryShare: shares.recoveryShare,
+        });
     });
 
     it('reports no staleness and completes recovery normally for a blob matching the active enclave', async () => {

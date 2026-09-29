@@ -121,12 +121,14 @@ impl Service<'_> {
         match request {
             Request::Health => Ok(Response::Health { ok: true }),
             Request::Attest { nonce } => {
+                let spki = STANDARD
+                    .decode(&self.public_key)
+                    .map_err(|_| ErrorCode::Unavailable)?;
+                let previous_key_ids = self.policy.previous_key_ids();
                 let document = self
                     .nsm
                     .attest(AttestationRequest {
-                        user_data: STANDARD
-                            .decode(&self.public_key)
-                            .map_err(|_| ErrorCode::Unavailable)?,
+                        user_data: attest_user_data(&spki, &self.key_id, &previous_key_ids),
                         nonce,
                         public_key: Some(
                             self.policy
@@ -151,6 +153,7 @@ impl Service<'_> {
                 Ok(Response::Attest {
                     mode: self.mode,
                     key_id: self.key_id.clone(),
+                    previous_key_ids,
                     public_key: self.public_key.clone(),
                     measurements: Measurements {
                         image_sha384: None,
@@ -317,6 +320,47 @@ pub fn measurement(nsm: &dyn NsmDriver) -> io::Result<[u8; 32]> {
         hash.update(pcr);
     }
     Ok(hash.finalize().into())
+}
+
+/// Canonical CBOR `{0: spki bytes, 1: keyId text, 2: previousKeyIds array<text>}`
+/// replacing the legacy raw-SPKI `user_data` (P9.1), so an updated client
+/// verifier can extract the accepted previous keyIds from the SAME NSM-signed
+/// material as the escrow key, not an unsigned side channel. Byte-distinguishable
+/// from the legacy format: real P-256 SPKI DER always starts with the SEQUENCE
+/// tag 0x30, which CBOR decodes as a bare negative integer (major type 1), never
+/// a map — so a verifier that requires "valid CBOR AND a 3-key map" before
+/// trusting this shape safely falls back to treating legacy bytes as raw SPKI.
+/// All three field lengths here are always under 256 bytes (128-byte keyId cap,
+/// <=3 previous keys, ~100-byte SPKI), so only the one/two-byte-argument cases
+/// of canonical CBOR are needed; hand-rolled to match ledger/codec.rs's style
+/// rather than adding a CBOR crate dependency to this always-compiled module.
+fn attest_user_data(spki: &[u8], key_id: &str, previous_key_ids: &[String]) -> Vec<u8> {
+    fn arg(out: &mut Vec<u8>, major: u8, value: usize) {
+        let prefix = major << 5;
+        match u8::try_from(value) {
+            Ok(value @ 0..=23) => out.push(prefix | value),
+            Ok(value) => out.extend_from_slice(&[prefix | 24, value]),
+            Err(_) => {
+                out.push(prefix | 25);
+                out.extend_from_slice(&(value as u16).to_be_bytes());
+            }
+        }
+    }
+    let mut out = Vec::new();
+    arg(&mut out, 5, 3);
+    arg(&mut out, 0, 0);
+    arg(&mut out, 2, spki.len());
+    out.extend_from_slice(spki);
+    arg(&mut out, 0, 1);
+    arg(&mut out, 3, key_id.len());
+    out.extend_from_slice(key_id.as_bytes());
+    arg(&mut out, 0, 2);
+    arg(&mut out, 4, previous_key_ids.len());
+    for id in previous_key_ids {
+        arg(&mut out, 3, id.len());
+        out.extend_from_slice(id.as_bytes());
+    }
+    out
 }
 
 trait Socket: AsyncRead + AsyncWrite + Unpin + Send {}

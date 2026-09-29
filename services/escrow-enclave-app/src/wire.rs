@@ -74,6 +74,11 @@ pub mod v1 {
         Attest {
             mode: AttestationMode,
             key_id: String,
+            /// Recognised previous keyIds accepted for DECRYPT ONLY (P9.1); output
+            /// is always sealed under `key_id`. Also bound inside `document`'s
+            /// NSM `user_data` (see server::attest_user_data) so a client that
+            /// verifies the attestation, not just this JSON, can trust the list.
+            previous_key_ids: Vec<String>,
             public_key: String,
             measurements: Measurements,
             document: String,

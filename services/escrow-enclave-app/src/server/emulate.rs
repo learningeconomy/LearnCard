@@ -181,12 +181,31 @@ pub(super) async fn run(address: SocketAddr, http_address: Option<SocketAddr>) -
         .await
         .map_err(|_| unavailable())?;
     let public_key = keys.public_key.clone();
+    // Same fake KMS instance/recipient seal every configured previous keyId
+    // (bounded, comma-separated) with a fresh fake key each, contract-testing
+    // P9.1's decrypt-by-keyId without any real prior-rotation history to load.
+    let mut previous_keys = Vec::new();
+    for id in std::env::var("ESCROW_ENCLAVE_EMULATE_PREVIOUS_KEY_IDS")
+        .unwrap_or_default()
+        .split(',')
+        .map(str::trim)
+        .filter(|id| !id.is_empty())
+    {
+        let (_, sealed) = unseal_or_generate_escrow_key(&kms, &nsm, &recipient, None, id)
+            .await
+            .map_err(|_| unavailable())?;
+        let (previous, _) = unseal_or_generate_escrow_key(&kms, &nsm, &recipient, sealed, id)
+            .await
+            .map_err(|_| unavailable())?;
+        previous_keys.push((id.to_string(), previous));
+    }
     let store = FakeHeadStore::default();
     let fixture = FixtureSource(std::env::var("ESCROW_ENCLAVE_EMULATE_FIXTURE").ok());
     fixture.load()?;
     let policy = Policy::new(
         keys,
         "emulate".into(),
+        previous_keys,
         "emulate".into(),
         measurement(&nsm)?,
         &store,

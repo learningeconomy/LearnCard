@@ -66,6 +66,8 @@ export type { EscrowBlobStaleReason };
 
 interface EscrowAttestationIdentity {
     keyId: string;
+    /** P9.1: retired keyIds the enclave still accepts for decrypt only. */
+    previousKeyIds: string[];
     mode: 'software' | 'nitro';
 }
 interface EscrowAttestationCacheEntry extends EscrowAttestationIdentity {
@@ -96,6 +98,7 @@ const refreshAttestationCache = (): Promise<EscrowAttestationIdentity> => {
             const attestation = await getEscrowEnclave().getAttestation();
             const identity: EscrowAttestationIdentity = {
                 keyId: attestation.keyId,
+                previousKeyIds: attestation.previousKeyIds ?? [],
                 mode: attestation.mode,
             };
             attestationCache = { ...identity, fetchedAt: Date.now() };

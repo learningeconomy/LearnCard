@@ -264,7 +264,9 @@ const enclaveOperation = async <T>(
 
 // A stored blob is stale when it was sealed for a different enclave backend
 // (P6 software<->nitro migration/rollback) or a since-rotated enclave key
-// (measurement rotation). Never forward a stale blob to createHold/releaseEscrow.
+// (measurement rotation). Never forward a stale blob to createHold/releaseEscrow
+// UNLESS the blob's keyId is a recognised previous key (P9.1/P9.2): the enclave
+// can still decrypt/release it, so only an UNKNOWN keyId blocks the operation.
 const assertFreshEscrowBlob = (blob: {
     enclaveMode: 'software' | 'nitro';
     enclaveKeyId: string;
@@ -276,7 +278,12 @@ const assertFreshEscrowBlob = (blob: {
             // otherwise makes a real (normally-timed-out) enclave call and lets
             // failure propagate — never treats an unreachable enclave as fresh.
             const identity = await getEnclaveAttestationIdentity();
-            if (blob.enclaveKeyId !== identity.keyId) throw new EscrowPolicyError();
+            if (
+                blob.enclaveKeyId !== identity.keyId &&
+                !identity.previousKeyIds.includes(blob.enclaveKeyId)
+            ) {
+                throw new EscrowPolicyError();
+            }
         },
         false,
         staleEscrowMessage
@@ -441,7 +448,11 @@ export const escrowRouter = t.router({
                     oldBlob &&
                     !oldPin.disabledAt &&
                     oldPin.shareVersion === oldBlob.shareVersion &&
-                    oldBlob.enclaveKeyId === attestation.keyId &&
+                    // P9.2: carry from the current key OR a still-accepted previous
+                    // key (deliberate rotation / lost-sealed-key recovery) — only a
+                    // fully unrecognised keyId drops the PIN (see assertFreshEscrowBlob).
+                    (oldBlob.enclaveKeyId === attestation.keyId ||
+                        attestation.previousKeyIds.includes(oldBlob.enclaveKeyId)) &&
                     input.shareVersion > oldBlob.shareVersion &&
                     // A released blob's PIN is retired: it was just used, or the user forgot it.
                     !(await hasCompletedEscrowHoldForVersion(authProvider, oldBlob.shareVersion))

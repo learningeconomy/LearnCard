@@ -86,9 +86,18 @@ pub struct BlobVerification {
     pub has_pin: bool,
 }
 
+/// Bounded to 3 (P9.1): each entry adds a KMS Decrypt-for-recipient call at
+/// boot and a linear scan per blob decrypt; wide enough for one in-flight
+/// rotation plus a lost-sealed-key recovery, never a general key history.
+pub const MAX_PREVIOUS_KEYS: usize = 3;
+
 pub struct Policy<'a> {
     keys: EscrowKeyPair,
     key_id: String,
+    /// Unseal-only (P9.1): `decrypt` accepts an envelope keyed to any of
+    /// these, but every seal (`carry_pin_verifier`'s reseal; `release`/`cancel`
+    /// verify a signed hold, never re-seal a blob) always targets `keys`/`key_id`.
+    previous_keys: Vec<(String, EscrowKeyPair)>,
     tenant: String,
     ledger: Ledger,
     store: &'a dyn HeadStore,
@@ -106,10 +115,16 @@ struct VerifiedHold {
 }
 
 impl<'a> Policy<'a> {
-    /// Tenant and measurement are enclave startup configuration, never request fields.
+    /// Tenant and measurement are enclave startup configuration, never request
+    /// fields. `previous_keys` are boot-supplied, already-unsealed decrypt-only
+    /// keys (P9.1: deliberate rotation or a lost-sealed-key recovery); each
+    /// keyId must be distinct from every other previous keyId and from the
+    /// current `key_id`, and the list is capped at `MAX_PREVIOUS_KEYS`.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         keys: EscrowKeyPair,
         key_id: String,
+        previous_keys: Vec<(String, EscrowKeyPair)>,
         tenant: String,
         measurement: Hash,
         store: &'a dyn HeadStore,
@@ -117,10 +132,21 @@ impl<'a> Policy<'a> {
         enrollments: &'a dyn EnrollmentSource,
     ) -> Result<Self, ErrorCode> {
         identifier(&tenant)?;
+        if previous_keys.len() > MAX_PREVIOUS_KEYS {
+            return Err(ErrorCode::Policy);
+        }
+        let mut seen = std::collections::BTreeSet::new();
+        seen.insert(key_id.clone());
+        for (id, _) in &previous_keys {
+            if !valid_key_id(id) || !seen.insert(id.clone()) {
+                return Err(ErrorCode::Policy);
+            }
+        }
         let ledger = Ledger::new(&keys, key_id.clone(), measurement).map_err(ledger_error)?;
         Ok(Self {
             keys,
             key_id,
+            previous_keys,
             tenant,
             ledger,
             store,
@@ -135,12 +161,36 @@ impl<'a> Policy<'a> {
         self.ledger.public_key()
     }
 
+    /// Advertised in the attest response and bound into NSM `user_data`
+    /// (server::attest_user_data) so both lca-api and the client-side
+    /// attestation verifier can learn which retired keys still decrypt.
+    pub fn previous_key_ids(&self) -> Vec<String> {
+        self.previous_keys
+            .iter()
+            .map(|(id, _)| id.clone())
+            .collect()
+    }
+
+    /// Selects decrypt key material by the envelope's own `keyId`: the
+    /// current key, or a recognised previous key (P9.1, unseal-only — every
+    /// caller that re-seals a blob, i.e. `carry_pin_verifier`, always targets
+    /// `self.keys`/`self.key_id`, never a previous key). An unrecognised
+    /// keyId is indistinguishable from any other malformed/undecryptable
+    /// envelope: the generic `Blob` error, never naming the rejected keyId.
     fn decrypt(&self, envelope: &EscrowEnvelope) -> Result<EscrowBlobPlaintext, ErrorCode> {
-        if envelope.key_id != self.key_id {
+        let private_key = if envelope.key_id == self.key_id {
+            &self.keys.private_key
+        } else if let Some((_, previous)) = self
+            .previous_keys
+            .iter()
+            .find(|(id, _)| *id == envelope.key_id)
+        {
+            &previous.private_key
+        } else {
             return Err(ErrorCode::Blob);
-        }
-        let blob = crypto::decrypt_escrow_blob(envelope, &self.keys.private_key)
-            .map_err(|_| ErrorCode::Blob)?;
+        };
+        let blob =
+            crypto::decrypt_escrow_blob(envelope, private_key).map_err(|_| ErrorCode::Blob)?;
         if blob.share_version > f64::from(u32::MAX) {
             return Err(ErrorCode::Blob);
         }
@@ -604,6 +654,16 @@ fn identifier(value: &str) -> Result<(), ErrorCode> {
         return Err(ErrorCode::Policy);
     }
     Ok(())
+}
+
+/// Mirrors kms.rs's boot-time keyId format check; duplicated rather than
+/// shared because `policy` (unlike `kms`) compiles without `enclave-runtime`.
+fn valid_key_id(id: &str) -> bool {
+    !id.is_empty()
+        && id.len() <= 128
+        && id
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b"._-".contains(&b))
 }
 
 fn validate_client_key(key: &str) -> Result<(), ErrorCode> {

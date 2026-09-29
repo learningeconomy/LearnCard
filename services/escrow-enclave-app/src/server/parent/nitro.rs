@@ -65,6 +65,24 @@ async fn boot_and_serve(port: u32) -> io::Result<()> {
     let time = RoughtimeTimeSource::production(Arc::new(VsockRoughtimeTransport))
         .map_err(|_| unavailable())?;
     let key_id = configured("ESCROW_KEY_ID")?;
+    // Comma-separated, bounded (P9.1): read-only decrypt keys accepted alongside
+    // the current key, for deliberate rotation or a lost-sealed-key recovery.
+    let previous_key_ids: Vec<String> = std::env::var("ESCROW_PREVIOUS_KEY_IDS")
+        .unwrap_or_default()
+        .split(',')
+        .map(str::trim)
+        .filter(|id| !id.is_empty())
+        .map(String::from)
+        .collect();
+    if previous_key_ids.len() > crate::policy::MAX_PREVIOUS_KEYS
+        || previous_key_ids.contains(&key_id)
+        || previous_key_ids
+            .iter()
+            .enumerate()
+            .any(|(i, id)| previous_key_ids[..i].contains(id))
+    {
+        return Err(unavailable());
+    }
     let tenant = configured("ESCROW_TENANT")?;
     let region = configured("ESCROW_KMS_REGION")?;
     let arn = configured("ESCROW_KMS_KEY_ARN")?;
@@ -95,16 +113,43 @@ async fn boot_and_serve(port: u32) -> io::Result<()> {
         if let Some(blob) = new_blob {
             persist_key(&mut connect().await?, &key_id, &blob).await?;
         }
-        Ok::<_, io::Error>(keys)
+        // Deliberate rotation or a lost-sealed-key recovery (P9.1): the host's
+        // `boot` handler is already keyId-generic, so each previous keyId reuses
+        // the exact same wire call/codec, just against that key's own sealed
+        // blob. Unlike the current key, a missing blob is ALWAYS fatal here —
+        // ESCROW_ALLOW_FIRST_BOOT never applies to a previous key, since
+        // "generating" one would silently fabricate a key with no real history
+        // sealed under it. The same recipient/KMS client is reused: KMS's
+        // Decrypt authorization is PCR-attestation-based, not keyId-based (see
+        // infra/escrow-enclave/kms.tf), so nothing narrows by reusing them.
+        let mut previous_keys = Vec::new();
+        for previous_id in &previous_key_ids {
+            let mut previous_boot = boot(&mut connect().await?, previous_id).await?;
+            let Some(sealed) = previous_boot.sealed.take() else {
+                return Err(unavailable());
+            };
+            let sealed = STANDARD.decode(sealed).map_err(|_| invalid())?;
+            let (previous, new_blob) =
+                unseal_or_generate_escrow_key(&kms, &nsm, &recipient, Some(sealed), previous_id)
+                    .await
+                    .map_err(|_| unavailable())?;
+            if new_blob.is_some() {
+                return Err(unavailable());
+            }
+            previous_keys.push((previous_id.clone(), previous));
+        }
+        Ok::<_, io::Error>((keys, previous_keys))
     })
     .await
     .map_err(|_| unavailable())??;
+    let (keys, previous_keys) = keys;
     let public_key = keys.public_key.clone();
     let store = ParentStore;
     let authority = UnavailableEnrollment;
     let policy = Policy::new(
         keys,
         key_id.clone(),
+        previous_keys,
         tenant,
         measurement,
         &store,

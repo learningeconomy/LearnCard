@@ -20,12 +20,20 @@ pub struct Boot<S = SealedStore> {
     pub sealed: S,
     pub key_id: String,
     pub allow_first_boot: bool,
+    /// P9.1: read-only decrypt-only keys (deliberate rotation or a lost-sealed-
+    /// key recovery). Never eligible for first-boot generation regardless of
+    /// `allow_first_boot`, and never writable via `PersistKey` (see below).
+    pub previous: Vec<(String, S)>,
 }
 impl<S: SealedStorage> Boot<S> {
     async fn response(&self, key_id: &str) -> io::Result<Vec<u8>> {
-        if key_id != self.key_id {
+        let (sealed_store, allow_first_boot) = if key_id == self.key_id {
+            (&self.sealed, self.allow_first_boot)
+        } else if let Some((_, sealed)) = self.previous.iter().find(|(id, _)| id == key_id) {
+            (sealed, false)
+        } else {
             return Err(invalid());
-        }
+        };
         let creds = self
             .credentials
             .provide_credentials()
@@ -40,9 +48,8 @@ impl<S: SealedStorage> Boot<S> {
             return Err(invalid());
         }
         let session = creds.session_token().ok_or_else(invalid)?;
-        let sealed = self
-            .sealed
-            .load_for_boot(self.allow_first_boot)
+        let sealed = sealed_store
+            .load_for_boot(allow_first_boot)
             .await
             .map_err(|_| invalid())?;
         serde_json::to_vec(&json!({"sealed":sealed.map(|b|STANDARD.encode(b)),"accessKeyId":creds.access_key_id(),"secretAccessKey":creds.secret_access_key(),"sessionToken":session})).map_err(|_|invalid())
@@ -187,6 +194,7 @@ mod tests {
                 },
                 key_id: "key".into(),
                 allow_first_boot: false,
+                previous: Vec::new(),
             }),
         }
     }

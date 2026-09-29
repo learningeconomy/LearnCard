@@ -103,6 +103,7 @@ async fn host_http_to_real_enclave_framed_lifecycle() {
         let policy = Policy::new(
             keys,
             "emulate".into(),
+            Vec::new(),
             "emulate".into(),
             server::measurement(&nsm).unwrap(),
             &store,
