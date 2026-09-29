@@ -341,7 +341,8 @@ export type ShareLinkCoordinator = {
     ) => Promise<CurrentShareContentResult>;
     fetchShareContent: (
         shareId: string,
-        context: ShareOwnerContext
+        context: ShareOwnerContext,
+        options?: { allowExpired?: boolean }
     ) => Promise<ShareContentClientResult<ShareContentContentProjection>>;
     readOwnerRecovery: (
         shareId: string,

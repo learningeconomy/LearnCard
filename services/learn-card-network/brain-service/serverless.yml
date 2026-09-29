@@ -193,6 +193,8 @@ provider:
         CREDENTIAL_REFRESH_ENABLED: ${env:CREDENTIAL_REFRESH_ENABLED, "false"}
         CREDENTIAL_REFRESH_DIGEST_SECRET: ${env:CREDENTIAL_REFRESH_DIGEST_SECRET, ""}
         CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS: ${env:CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS, "24"}
+        # Stable HMAC key for passcode-bearing share-link request fingerprints.
+        SHARE_LINK_REQUEST_HASH_SECRET: ${env:SHARE_LINK_REQUEST_HASH_SECRET, ""}
         # LC-2187 share-link service wiring and automatic maintenance. Every value is
         # bounded and re-validated fail-closed at runtime. Never read from the
         # scheduled event payload.

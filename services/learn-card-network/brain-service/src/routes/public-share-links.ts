@@ -11,6 +11,7 @@ import {
     ShareLinkPublicContentViewValidator,
     ShareLinkPublicStateValidator,
 } from '@learncard/types';
+import { LCNNotificationTypeEnumValidator } from '@learncard/types';
 
 import { openRouteWithoutInputCapture, t } from '@routes';
 import type { ShareLinkPolicyResolver } from '@helpers/share-link-policy/types';
@@ -71,17 +72,32 @@ export type PublicShareLinkRouterDependencies = {
         persist: (input: PersistShareViewReceiptInput) => Promise<boolean>;
         /** Owner for a receipt that belongs to `namespace`; null otherwise. */
         lookupOwner: (receipt: string, namespace: string) => Promise<string | null>;
+        lookupContext?: (
+            receipt: string,
+            namespace: string
+        ) => Promise<{ ownerProfileId: string; shareId: string } | null>;
         consume: (input: ConsumeShareViewReceiptInput) => Promise<ConsumeShareViewReceiptOutcome>;
     };
     readonly policyResolver: ShareLinkPolicyResolver;
     /**
      * Optional transaction-compatible trusted eligibility source. Production
-     * omits it (no authoritative age source), so no receipt is issued or
-     * consumed. A caller that supplies one grants no authority beyond the
-     * source's own under-lock checks.
+     * rechecks persisted profile state under the share lock. An absent source
+     * remains fail-closed for tests and other compositions.
      */
     readonly eligibilitySource?: ShareViewEligibilitySource;
     readonly getSharer: (ownerProfileId: string) => Promise<PublicShareLinkSharer | null>;
+    readonly verifyPasscode?: (passcodeHash: string, passcode: string) => Promise<boolean>;
+    readonly passcodeAttempts?: {
+        reserve: (shareId: string, sourceIp?: string) => Promise<boolean>;
+    };
+    readonly notifyView?: (input: {
+        shareId: string;
+        ownerProfileId: string;
+        title: string;
+        selectedCount: number;
+        viewCount: number;
+        viewedAt: string;
+    }) => Promise<void>;
     readonly enforceRateLimit: (window: {
         key: string;
         limit: number;
@@ -148,6 +164,29 @@ const PUBLIC_RESOLVE_PATH = '/public/share-links/{id}' as const;
 const PUBLIC_CONTENT_PATH = '/public/share-links/{id}/content' as const;
 const PUBLIC_ACK_PATH = '/public/share-links/acknowledge-view' as const;
 
+const passcodeAccepted = async (
+    record: ShareLinkRecord,
+    passcode: string | undefined,
+    dependencies: PublicShareLinkRouterDependencies,
+    sourceIp?: string
+): Promise<'accepted' | 'rejected' | 'try_later'> => {
+    if (record.passcodeHash == null) return 'accepted';
+    if (!passcode) return 'rejected';
+    if (!dependencies.verifyPasscode || !dependencies.passcodeAttempts) return 'try_later';
+    try {
+        if (!(await dependencies.passcodeAttempts.reserve(record.id, sourceIp))) return 'try_later';
+        const accepted = await dependencies.verifyPasscode(record.passcodeHash, passcode);
+        return accepted ? 'accepted' : 'rejected';
+    } catch (error) {
+        dependencies.reportFailure(
+            error instanceof Error && error.name === 'SharePasscodeCapacityError'
+                ? 'passcode_capacity'
+                : 'passcode_guard'
+        );
+        return 'try_later';
+    }
+};
+
 /**
  * Trusted relative content route mounted under the OpenAPI adapter's `/api`
  * base path. Never a LearnCloud object URL or a Host; a returned URL can be
@@ -182,11 +221,11 @@ export const createPublicShareLinksRouter = (
     return t.router({
         resolve: openRouteWithoutInputCapture
             .meta({
-                openapi: openapi('GET', PUBLIC_RESOLVE_PATH, 'Resolve public share metadata'),
+                openapi: openapi('POST', PUBLIC_RESOLVE_PATH, 'Resolve public share metadata'),
             })
             .input(ResolveShareLinkInputValidator)
             .output(ShareLinkPublicStateValidator)
-            .query(async ({ ctx, input }) => {
+            .mutation(async ({ ctx, input }) => {
                 let dependencies: PublicShareLinkRouterDependencies | null;
                 try {
                     dependencies = await getDependencies();
@@ -225,6 +264,24 @@ export const createPublicShareLinksRouter = (
                 }
                 const classification = classifyPublicShare(record, dependencies.now());
 
+                if (classification.state === 'not_found') {
+                    return { state: 'not_found' as const, id: input.id };
+                }
+                // Even lifecycle timestamps are private until a protected link
+                // has been unlocked. Missing records never enter Argon2.
+                if (record) {
+                    const access = await passcodeAccepted(
+                        record,
+                        input.passcode,
+                        dependencies,
+                        ctx.sourceIp
+                    );
+                    if (access === 'rejected')
+                        return { state: 'passcode_required' as const, id: input.id };
+                    if (access === 'try_later')
+                        return { state: 'try_later' as const, id: input.id };
+                }
+
                 if (classification.state === 'expired') {
                     return {
                         state: 'expired' as const,
@@ -239,10 +296,6 @@ export const createPublicShareLinksRouter = (
                         stoppedAt: classification.stoppedAt,
                     };
                 }
-                if (classification.state === 'not_found') {
-                    return { state: 'not_found' as const, id: input.id };
-                }
-
                 let sharer: PublicShareLinkSharer | null;
                 try {
                     sharer = await dependencies.getSharer(classification.record.ownerProfileId);
@@ -295,11 +348,11 @@ export const createPublicShareLinksRouter = (
 
         content: openRouteWithoutInputCapture
             .meta({
-                openapi: openapi('GET', PUBLIC_CONTENT_PATH, 'Fetch guarded share content'),
+                openapi: openapi('POST', PUBLIC_CONTENT_PATH, 'Fetch guarded share content'),
             })
             .input(ResolveShareLinkInputValidator)
             .output(ShareLinkPublicContentViewValidator)
-            .query(async ({ ctx, input }) => {
+            .mutation(async ({ ctx, input }) => {
                 const dependencies = await resolve();
 
                 // The content response is large; a rate-limit/dependency failure
@@ -360,6 +413,22 @@ export const createPublicShareLinksRouter = (
                         projection.payloadHash === candidate.activeContentHash);
 
                 const first = await readActiveShare();
+
+                const access = await passcodeAccepted(
+                    first,
+                    input.passcode,
+                    dependencies,
+                    ctx.sourceIp
+                );
+                if (access === 'try_later') {
+                    throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'try again later' });
+                }
+                if (access === 'rejected') {
+                    throw new TRPCError({
+                        code: 'UNAUTHORIZED',
+                        message: 'share-link passcode required',
+                    });
+                }
 
                 let fetched: Awaited<
                     ReturnType<PublicShareLinkRouterDependencies['repository']['fetchContent']>
@@ -511,10 +580,18 @@ export const createPublicShareLinksRouter = (
                     // Owner is discovered from persisted receipt state, never from
                     // the caller. Unknown/padding tokens and tokens minted in
                     // another namespace simply return early.
-                    const ownerProfileId = await dependencies.receipts.lookupOwner(
-                        input.receipt,
-                        dependencies.namespace
-                    );
+                    const context = dependencies.receipts.lookupContext
+                        ? await dependencies.receipts.lookupContext(
+                              input.receipt,
+                              dependencies.namespace
+                          )
+                        : null;
+                    const ownerProfileId =
+                        context?.ownerProfileId ??
+                        (await dependencies.receipts.lookupOwner(
+                            input.receipt,
+                            dependencies.namespace
+                        ));
                     if (ownerProfileId === null) return { ok: true as const };
 
                     const policy = await dependencies.policyResolver.resolve(ownerProfileId);
@@ -524,11 +601,36 @@ export const createPublicShareLinksRouter = (
                     // and the transaction-compatible source under both locks.
                     if (!policy.viewCountingEnabled) return { ok: true as const };
 
-                    await dependencies.receipts.consume({
+                    const outcome = await dependencies.receipts.consume({
                         receipt: input.receipt,
                         namespace: dependencies.namespace,
                         eligibilitySource: dependencies.eligibilitySource,
                     });
+
+                    if (outcome === 'consumed' && context && dependencies.notifyView) {
+                        const share = await dependencies.repository.getShareLink({
+                            shareId: context.shareId,
+                            namespace: dependencies.namespace,
+                        });
+                        if (
+                            share &&
+                            share.ownerProfileId === context.ownerProfileId &&
+                            share.notifyOnView === true &&
+                            share.minorPolicyResolved === true &&
+                            share.minorPolicyIsMinor === false &&
+                            share.minorPolicyViewCountingEnabled === true &&
+                            share.lastViewedAt
+                        ) {
+                            await dependencies.notifyView({
+                                shareId: share.id,
+                                ownerProfileId: share.ownerProfileId,
+                                title: share.title,
+                                selectedCount: share.selectedCount,
+                                viewCount: share.viewCount,
+                                viewedAt: share.lastViewedAt,
+                            });
+                        }
+                    }
                 } catch {
                     dependencies.reportFailure('ack_consume');
                 }
@@ -577,10 +679,16 @@ const buildProductionDependencies = async (
         clientModule,
         runtimeModule,
         { ensureShareLinkConstraints },
-        { createProductionShareLinkPolicySource },
+        { createProductionShareLinkPolicySource, productionShareViewEligibilitySource },
         { getProfileByProfileId },
+        { verifySharePasscode },
+        passcodeAbuse,
+        { addNotificationToQueue },
         receiptModule,
         { getShareLink },
+        { claimShareViewNotification },
+        { getNotificationMessage },
+        { resolveRecipientLocale },
     ] = await Promise.all([
         import('@helpers/learnCard.helpers'),
         import('@helpers/share-content-client/adapters'),
@@ -589,8 +697,14 @@ const buildProductionDependencies = async (
         import('../models/share-link-constraints'),
         import('@helpers/share-link-policy/production'),
         import('@accesslayer/profile/read'),
+        import('@helpers/share-link-passcode'),
+        import('@helpers/share-link-passcode-abuse'),
+        import('@helpers/notifications.helpers'),
         import('@accesslayer/share-link/receipt'),
         import('@accesslayer/share-link/read'),
+        import('@helpers/share-link-view-notification'),
+        import('@helpers/notificationMessages'),
+        import('@helpers/getRecipientLocale.helpers'),
     ]);
 
     const clientConfig = clientModule.resolveShareContentClientConfig({
@@ -637,9 +751,43 @@ const buildProductionDependencies = async (
                 const owner = await receiptModule.readShareViewReceiptOwner(receipt, namespace);
                 return owner;
             },
+            lookupContext: receiptModule.readShareViewReceiptContext,
             consume: receiptModule.consumeShareViewReceipt,
         },
         policyResolver,
+        eligibilitySource: productionShareViewEligibilitySource,
+        verifyPasscode: verifySharePasscode,
+        passcodeAttempts: {
+            reserve: (shareId, sourceIp) =>
+                passcodeAbuse.reserveSharePasscodeAttempt(config.namespace, shareId, sourceIp),
+        },
+        notifyView: async notification => {
+            // Best effort: claim before enqueue to avoid duplicate alerts under
+            // concurrent views. A queue outage may suppress one window.
+            if (!(await claimShareViewNotification(config.namespace, notification.shareId))) return;
+            const profile = await getProfileByProfileId(notification.ownerProfileId);
+            if (!profile) return;
+            await addNotificationToQueue({
+                type: LCNNotificationTypeEnumValidator.enum.APP_NOTIFICATION,
+                to: profile,
+                from: {
+                    did: getServerDidWebDID(),
+                    displayName: 'LearnCard',
+                },
+                message: getNotificationMessage('shareViewed', resolveRecipientLocale(profile), {
+                    title: notification.title,
+                    count: String(notification.selectedCount),
+                }),
+                data: {
+                    metadata: {
+                        shareView: {
+                            count: notification.viewCount,
+                            viewedAt: notification.viewedAt,
+                        },
+                    },
+                },
+            });
+        },
         getSharer: async ownerProfileId => {
             const profile = await getProfileByProfileId(ownerProfileId);
             if (!profile) return null;
