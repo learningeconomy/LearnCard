@@ -155,7 +155,10 @@ export const observeConnectionQuality = (
         if (entry.deliveryType === 'cache') return;
         // HTTP errors (where the status is visible) are application-level,
         // not network evidence — and must never be instability samples.
-        if (typeof entry.responseStatus === 'number' && entry.responseStatus >= 400) return;
+        // Zero/missing status can mean either transport failure or hidden
+        // cross-origin timing data. Neither proves a healthy request.
+        if (!entry.responseStatus || entry.responseStatus < 200 || entry.responseStatus >= 400)
+            return;
         // Long streams (uploads/downloads, AI sessions) are not latency samples.
         if (entry.duration > maxDurationMs) return;
         // Entries delivered while backgrounded may span the background — drop.

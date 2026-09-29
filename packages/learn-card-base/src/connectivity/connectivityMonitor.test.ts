@@ -178,7 +178,7 @@ describe('connectivityMonitor', () => {
             monitor.start();
             await flush();
             expect(probeCalls).toHaveLength(2);
-            await settleProbe(probeCalls[1], unreachable('timeout'));
+            await settleProbe(probeCalls[1], unreachable('network-error'));
             expect(monitor.getState().status).toBe('offline');
         });
 
@@ -233,10 +233,10 @@ describe('connectivityMonitor', () => {
             await settleProbe(probeCalls[0], reachable());
 
             monitor.reportTransport(false);
-            await settleProbe(probeCalls[1], unreachable('timeout'));
+            await settleProbe(probeCalls[1], unreachable('network-error'));
 
             expect(monitor.getState().status).toBe('offline');
-            expect(monitor.getState().lastDiagnosticReason).toContain('unreachable: timeout');
+            expect(monitor.getState().lastDiagnosticReason).toContain('unreachable: network-error');
         });
 
         it('restores online optimistically on a positive hint and verifies once', async () => {
@@ -624,7 +624,7 @@ describe('connectivityMonitor', () => {
             monitor.start();
             await flush();
             await settleProbe(probeCalls[0], unreachable('timeout'));
-            expect(monitor.getState().status).toBe('offline');
+            expect(monitor.getState().status).toBe('unknown');
 
             // Two more failed retries on the backoff schedule.
             for (let i = 0; i < 2; i += 1) {
@@ -870,4 +870,22 @@ describe('review regressions', () => {
         expect(states).toHaveLength(before + 1);
         monitor.stop();
     });
+});
+
+it('requires consecutive timeouts and resets the evidence after success', async () => {
+    const { monitor, timers, probeCalls } = createHarness();
+    monitor.start();
+    await settleProbe(probeCalls[0], reachable());
+    monitor.reportTransport(false);
+    await settleProbe(probeCalls[1], unreachable('timeout'));
+    expect(monitor.getState().status).toBe('unknown');
+    timers.advance(5000);
+    await settleProbe(probeCalls[2], reachable());
+    monitor.reportTransport(false);
+    await settleProbe(probeCalls[3], unreachable('timeout'));
+    expect(monitor.getState().status).toBe('unknown');
+    timers.advance(5000);
+    await settleProbe(probeCalls[4], unreachable('timeout'));
+    expect(monitor.getState().status).toBe('offline');
+    monitor.stop();
 });

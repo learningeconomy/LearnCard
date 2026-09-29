@@ -363,3 +363,15 @@ describe('redirects and deadline fallback', () => {
         }
     });
 });
+
+it('aborts unread HTTP error response bodies after classifying the response', async () => {
+    let signal: AbortSignal | undefined;
+    const outcome = await probeConnectivity('https://learncard.app/connectivity.txt', {
+        fetchFn: async (_url, options) => {
+            signal = options?.signal as AbortSignal;
+            return new Response(new ReadableStream({ start() {} }), { status: 503 });
+        },
+    });
+    expect(outcome).toMatchObject({ kind: 'inconclusive', reason: 'http-error' });
+    expect(signal?.aborted).toBe(true);
+});

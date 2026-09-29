@@ -419,6 +419,7 @@ describe('createAppConnectivityAdapter', () => {
             })
         );
         onActivity(false);
+        await vi.waitFor(() => expect(resolveActivity).toBeDefined());
         resolveActivity(true);
         await vi.waitFor(() => expect(monitor.started).toBe(1));
         expect(monitor.active).toEqual([false]);
@@ -636,4 +637,31 @@ describe('store bridge', () => {
             connectivityStore.set.status('unknown');
         }
     });
+});
+
+it('registers activity before taking the snapshot and retains early transport hints', async () => {
+    const monitor = makeFakeMonitor();
+    let finishRegistration!: (handle: { remove: () => void }) => void;
+    let onActivity!: (active: boolean) => void;
+    const getInitialActivity = vi.fn(async () => true);
+    const adapter = createAppConnectivityAdapter(
+        makeDeps({
+            monitor,
+            getInitialActivity,
+            addAppStateListener: handler => {
+                onActivity = handler;
+                return new Promise(resolve => {
+                    finishRegistration = resolve;
+                });
+            },
+        })
+    );
+    expect(getInitialActivity).not.toHaveBeenCalled();
+    expect(monitor.started).toBe(0);
+    onActivity(false);
+    finishRegistration({ remove: vi.fn() });
+    await vi.waitFor(() => expect(monitor.started).toBe(1));
+    expect(getInitialActivity).toHaveBeenCalledTimes(1);
+    expect(monitor.active).toEqual([false]);
+    adapter.dispose();
 });

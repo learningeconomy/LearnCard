@@ -275,6 +275,8 @@ const FullApp: React.FC = () => {
     // STARTED before the current foreground stretch (i.e. spanning a
     // background period) are excluded instead of faking slow samples.
     useEffect(() => {
+        // Tenant bootstrap finishes before mount. Runtime dev endpoint switches
+        // require a reload to refresh these advisory observation origins.
         const origins = firstPartyApiOrigins();
         if (origins.length === 0) return;
 

@@ -41,13 +41,13 @@ export const OfflineBanner: React.FC = () => {
         if (isLimited) {
             wasLimited.current = true;
             setShowReconnected(false);
-        } else if (wasLimited.current) {
+        } else if (wasLimited.current && status === 'online') {
             wasLimited.current = false;
             setShowReconnected(true);
             const timer = setTimeout(() => setShowReconnected(false), 2500);
             return () => clearTimeout(timer);
         }
-    }, [isLimited]);
+    }, [isLimited, status]);
 
     const handleReconnect = async () => {
         if (reconnecting) return;

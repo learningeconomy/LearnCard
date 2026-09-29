@@ -25,6 +25,7 @@ const makeEntry = (overrides: EntryOverrides) =>
         duration: 400,
         startTime: 1000,
         initiatorType: 'fetch',
+        responseStatus: 200,
         ...overrides,
     }) as PerformanceResourceTiming;
 
@@ -557,4 +558,18 @@ describe('isLikelyTransportError', () => {
         expect(isLikelyTransportError(null)).toBe(false);
         expect(isLikelyTransportError(undefined)).toBe(false);
     });
+});
+
+it.each([0, undefined])('ignores ambiguous response status %s', responseStatus => {
+    const onSample = vi.fn();
+    const Fake = makeFakeObserverCtor();
+    const observer = observeConnectionQuality(
+        makeOptions({
+            onSample,
+            PerformanceObserverCtor: Fake as unknown as typeof PerformanceObserver,
+        })
+    );
+    emit(Fake, [makeEntry({ responseStatus, duration: 10 })]);
+    expect(onSample).not.toHaveBeenCalled();
+    observer?.disconnect();
 });

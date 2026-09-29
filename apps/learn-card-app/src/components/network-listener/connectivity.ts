@@ -157,6 +157,12 @@ export const createAppConnectivityAdapter = (
     /** True once ANY transport hint arrived — an in-flight snapshot is then stale. */
     let receivedListenerHint = false;
     let receivedActivityHint = false;
+    let monitorStarted = false;
+    let pendingTransport: boolean | undefined;
+    const reportTransport = (connected: boolean): void => {
+        if (monitorStarted) deps.monitor.reportTransport(connected);
+        else pendingTransport = connected;
+    };
     /** Handles successfully registered by THIS adapter (owned removals only). */
     const ownedHandles: RemovableHandle[] = [];
     const windowDisposers: (() => void)[] = [];
@@ -169,23 +175,6 @@ export const createAppConnectivityAdapter = (
         }
     };
 
-    // 0. Initialize activity from the CURRENT hidden/inactive state BEFORE the
-    // monitor starts: a mount that happens in the background must not launch
-    // the initial probe. If activity is unknowable, assume foreground.
-    void (async () => {
-        let active = true;
-        if (deps.getInitialActivity) {
-            try {
-                active = await deps.getInitialActivity();
-            } catch {
-                active = true;
-            }
-        }
-        if (disposed) return;
-        if (!receivedActivityHint && deps.getInitialActivity) deps.monitor.setActive(active);
-        deps.monitor.start();
-    })();
-
     // 1. Transport hints. The listener is registered FIRST so no event can
     // fall between registration and the initial snapshot; the snapshot result
     // is guarded so a late `getStatus` can never override a newer event (the
@@ -195,7 +184,7 @@ export const createAppConnectivityAdapter = (
             const handle = await deps.addNetworkStatusListener(connected => {
                 if (!disposed) {
                     receivedListenerHint = true;
-                    deps.monitor.reportTransport(connected);
+                    reportTransport(connected);
                 }
             });
 
@@ -213,7 +202,7 @@ export const createAppConnectivityAdapter = (
             // definition — and a stale initial getStatus must never override
             // a newer event. Report only when the snapshot is still the
             // freshest signal we have.
-            if (!disposed && !receivedListenerHint) deps.monitor.reportTransport(connected);
+            if (!disposed && !receivedListenerHint) reportTransport(connected);
         } catch (error) {
             // Setup failure must never reject globally: connectivity simply
             // stays permissive until the next lifecycle event.
@@ -224,22 +213,37 @@ export const createAppConnectivityAdapter = (
     // 2. Foreground/background. Background pauses automatic retries; resume
     // checks immediately (the monitor's setActive does the immediate check).
     void (async () => {
-        if (!deps.addAppStateListener) return;
         try {
-            const handle = await deps.addAppStateListener(active => {
-                if (!disposed) {
-                    receivedActivityHint = true;
-                    deps.monitor.setActive(active);
+            if (deps.addAppStateListener) {
+                const handle = await deps.addAppStateListener(active => {
+                    if (!disposed) {
+                        receivedActivityHint = true;
+                        deps.monitor.setActive(active);
+                    }
+                });
+                if (disposed) {
+                    removeHandleQuietly(handle);
+                    return;
                 }
-            });
-            if (disposed) {
-                removeHandleQuietly(handle);
-                return;
+                ownedHandles.push(handle);
             }
-            ownedHandles.push(handle);
         } catch (error) {
             log.warn('connectivity: app-state listener setup failed', error);
         }
+        // Register first, then snapshot; newer events override a stale lookup.
+        let active = true;
+        if (deps.getInitialActivity) {
+            try {
+                active = await deps.getInitialActivity();
+            } catch {
+                active = true;
+            }
+        }
+        if (disposed) return;
+        if (!receivedActivityHint && deps.getInitialActivity) deps.monitor.setActive(active);
+        deps.monitor.start();
+        monitorStarted = true;
+        if (pendingTransport !== undefined) deps.monitor.reportTransport(pendingTransport);
     })();
 
     // 3. Web lifecycle: visibility pauses/resumes, focus coalesces a check.

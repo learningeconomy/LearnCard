@@ -124,6 +124,7 @@ export const createConnectivityMonitor = (
     let retryTimer: unknown = null;
     let backoffIndex = 0;
     let inconclusiveCount = 0;
+    let consecutiveTimeouts = 0;
     let cycleCount = 0;
 
     /**
@@ -239,6 +240,7 @@ export const createConnectivityMonitor = (
     const applyOutcome = (outcome: ProbeOutcome): void => {
         switch (outcome.kind) {
             case 'reachable':
+                consecutiveTimeouts = 0;
                 if (status === 'offline') quality.reset();
                 inconclusiveCount = 0;
                 backoffIndex = 0;
@@ -255,12 +257,19 @@ export const createConnectivityMonitor = (
                 break;
             case 'unreachable':
                 inconclusiveCount = 0;
-                status = 'offline';
+                // One slow handshake is insufficient evidence to block all queries.
+                consecutiveTimeouts = outcome.reason === 'timeout' ? consecutiveTimeouts + 1 : 0;
+                if (outcome.reason !== 'timeout' || consecutiveTimeouts >= 2) {
+                    status = 'offline';
+                } else if (status !== 'offline') {
+                    status = 'unknown';
+                }
                 lastDiagnosticReason = `unreachable: ${outcome.reason}`;
                 quality.reportSample({ at: now(), ok: false, source: 'probe' });
                 scheduleRetry();
                 break;
             case 'inconclusive':
+                consecutiveTimeouts = 0;
                 // Something answered or the config is wrong — never claim
                 // offline. Drop to permissive `unknown`, keep the reason, and
                 // retry at most twice, then wait for an external trigger.
@@ -347,6 +356,7 @@ export const createConnectivityMonitor = (
         start: () => {
             if (running) return;
             running = true;
+            consecutiveTimeouts = 0;
             generation += 1; // anything in flight from a previous run is stale
             inconclusiveCount = 0;
             backoffIndex = 0; // a fresh lifecycle starts a fresh retry schedule
@@ -375,6 +385,7 @@ export const createConnectivityMonitor = (
 
             inconclusiveCount = 0;
             if (connected) {
+                consecutiveTimeouts = 0;
                 // Positive hint: restore service optimistically (native
                 // Wi-Fi-without-WAN must not stay locked out), cancel stale
                 // work, and verify exactly once asynchronously.
@@ -420,6 +431,7 @@ export const createConnectivityMonitor = (
             if (foreground === active) return;
             foreground = active;
             if (!active) {
+                consecutiveTimeouts = 0;
                 // Pause automatic work; results spanning the background are
                 // superseded so nothing stale lands on resume. Queued
                 // coalesced follow-ups are dropped (never launched from the

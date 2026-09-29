@@ -287,5 +287,7 @@ export const probeConnectivity = async (
         return { kind: 'unreachable', reason: 'network-error', durationMs: duration() };
     } finally {
         clearTimeoutFn(handle);
+        // Release even HTTP-error/redirect responses whose body was never read.
+        controller?.abort();
     }
 };

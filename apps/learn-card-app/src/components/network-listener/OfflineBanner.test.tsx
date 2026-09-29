@@ -182,3 +182,12 @@ describe('OfflineBanner', () => {
         expect(screen.queryByText('Back online')).not.toBeInTheDocument();
     });
 });
+
+it('waits through unknown before announcing a confirmed recovery', () => {
+    setStores('offline', 'unknown', 'full');
+    render(<OfflineBanner />);
+    setStores('unknown', 'unknown', 'full');
+    expect(screen.queryByText('Back online')).toBeNull();
+    setStores('online', 'good', 'full');
+    expect(screen.getByText('Back online')).toBeTruthy();
+});
