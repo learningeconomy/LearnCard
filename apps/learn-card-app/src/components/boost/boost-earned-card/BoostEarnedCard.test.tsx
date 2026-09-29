@@ -121,6 +121,7 @@ vi.mock('../boostCMS/BoostPreview/NonBoostPreview', () => ({
     default: mocks.nonBoostPreview,
 }));
 vi.mock('../boost-options-menu/ShareBoostLink', () => ({ default: () => null }));
+vi.mock('../../share-links/ShareLinkCreate', () => ({ default: () => null }));
 vi.mock('../../familyCMS/FamilyCard/FamilyCard', () => ({ default: () => null }));
 vi.mock('./helpers/CustomIssuerName', () => ({ default: () => null }));
 vi.mock('./helpers/CustomBoostTitleDisplay', () => ({ default: () => null }));

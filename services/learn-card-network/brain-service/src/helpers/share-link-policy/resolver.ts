@@ -82,9 +82,8 @@ export const resolveShareLinkExpiry = (
  *   unknown (never inferred adult);
  * - the default expiry is the shorter of the two.
  *
- * The production age source currently reports `unknown`, so in that deployment
- * the merge is a no-op for ordinary mutations; it exists to keep any future
- * restricted transition monotonic across replay/recovery.
+ * Production finalization also rechecks current graph policy under the share
+ * lock before an explicit update can replace an old unknown snapshot.
  */
 export const mergeShareLinkPolicyConservatively = (
     current: ShareLinkPolicySnapshot,

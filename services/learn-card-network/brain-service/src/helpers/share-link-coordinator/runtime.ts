@@ -13,6 +13,7 @@ import {
     reserveReplacement,
     revokeShareLink,
 } from '@accesslayer/share-link';
+import { resolveCurrentShareLinkPolicy } from '@helpers/share-link-policy/production';
 
 import { createShareLinkCoordinator } from './coordinator';
 import type {
@@ -34,7 +35,8 @@ import type {
 const runtimeRepository: ShareLinkLifecycleRepository = {
     reserveCreate,
     reserveReplacement,
-    finalizeReservation,
+    finalizeReservation: input =>
+        finalizeReservation({ ...input, resolveCurrentPolicy: resolveCurrentShareLinkPolicy }),
     abandonReservation,
     revokeShareLink,
     getShareLink,
@@ -53,7 +55,8 @@ const runtimeRecoveryRepository: ShareLinkRecoveryRepository = {
     readShareLinkRecoveryTarget,
     claimRecoverableReservation,
     abandonRecoveredReservation,
-    finalizeReservation,
+    finalizeReservation: input =>
+        finalizeReservation({ ...input, resolveCurrentPolicy: resolveCurrentShareLinkPolicy }),
 };
 
 export const createRuntimeShareLinkCoordinator = (
