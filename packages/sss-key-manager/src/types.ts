@@ -63,7 +63,28 @@ export const SecurityLevels: readonly SecurityLevel[] = ['basic', 'enhanced', 'a
  * SSS recovery method type identifiers.
  * These are the specific recovery methods supported by the SSS strategy.
  */
-export type RecoveryMethodType = 'passkey' | 'backup' | 'phrase' | 'email';
+export type RecoveryMethodType = 'passkey' | 'backup' | 'phrase' | 'email' | 'escrow';
+
+/** Trust policy for the enclave that receives recovery material. */
+export type EscrowAttestationPolicy =
+    | { mode: 'software'; pinnedPublicKeys: string[] }
+    | { mode: 'nitro'; pinnedMeasurements: { imageSha384: string }[]; rootCertificatePem?: string };
+
+/** Public status of an escrow recovery waiting period. */
+export interface EscrowHoldStatus {
+    holdId: string;
+    status: 'pending' | 'cancelled' | 'completed' | 'expired';
+    requestedAt: string;
+    releaseAfter: string;
+    cancelledAt?: string;
+    completedAt?: string;
+}
+
+/** Persist these secrets securely until completion; a null token means an existing hold. */
+export type EscrowRecoveryStart = EscrowHoldStatus & {
+    resumeToken: string | null;
+    clientEphemeralPrivateKey: string;
+};
 
 export interface PasskeyRecoveryMethod {
     type: 'passkey';
@@ -89,6 +110,7 @@ export type RecoveryMethod =
  * SSS-specific recovery input — what the user provides to recover their key.
  */
 export type RecoveryInput =
+    | { method: 'escrow'; holdId: string; resumeToken: string; clientEphemeralPrivateKey: string }
     | { method: 'passkey'; credentialId: string }
     | { method: 'phrase'; phrase: string }
     | { method: 'backup'; fileContents: string; password: string }
@@ -98,6 +120,7 @@ export type RecoveryInput =
  * SSS-specific recovery setup input — what the user provides to set up a method.
  */
 export type RecoverySetupInput =
+    | { method: 'escrow' }
     | { method: 'passkey' }
     | { method: 'phrase' }
     | { method: 'backup'; password: string; did: string }
@@ -107,6 +130,7 @@ export type RecoverySetupInput =
  * SSS-specific recovery setup result.
  */
 export type RecoverySetupResult =
+    | { method: 'escrow'; shareVersion: number }
     | { method: 'passkey'; credentialId: string }
     | { method: 'phrase'; phrase: string; challengeWordIndices: number[] }
     | { method: 'backup'; backupFile: BackupFile }

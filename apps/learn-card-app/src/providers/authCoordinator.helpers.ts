@@ -31,7 +31,7 @@ export const shouldResetWalletOnStatus = (status: AuthStatus): boolean =>
  * can synthesize an email entry for the primary sign-in address; only a verified
  * secondary recovery email (identified by its masked value) counts here.
  */
-export { countConfiguredRecoveryMethods as countUserConfiguredRecoveryMethods } from '../../../../packages/learn-card-base/src/auth-coordinator/recoverySetup';
+export { countConfiguredRecoveryMethods as countUserConfiguredRecoveryMethods } from 'learn-card-base/auth-coordinator/recoverySetup';
 
 /**
  * Records a recovery method completed during the current setup session.

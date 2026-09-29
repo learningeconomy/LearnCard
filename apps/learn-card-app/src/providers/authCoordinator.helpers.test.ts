@@ -19,6 +19,12 @@ describe('registerRecoveryMethodCompletion', () => {
 });
 
 describe('countUserConfiguredRecoveryMethods', () => {
+    it('does not count automatic recovery as a user-configured method', () => {
+        expect(countUserConfiguredRecoveryMethods([{ type: 'escrow' }])).toBe(0);
+        expect(countUserConfiguredRecoveryMethods([{ type: 'escrow' }, { type: 'phrase' }])).toBe(
+            1
+        );
+    });
     it('counts durable methods and ignores a synthetic primary-email entry', () => {
         expect(
             countUserConfiguredRecoveryMethods([

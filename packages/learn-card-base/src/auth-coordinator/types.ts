@@ -95,6 +95,7 @@ export type UnifiedAuthState =
     | { status: 'deriving_key' }
     | {
           status: 'ready';
+          pendingEscrowHold?: { holdId: string; requestedAt: string; releaseAfter: string };
           authUser?: AuthUser;
           did: string;
           privateKey: string;
@@ -137,6 +138,13 @@ export interface AuthCoordinatorConfig {
      * stores, databases, and redirecting.
      */
     onLogout?: () => Promise<void>;
+
+    /**
+     * Optional: wipe any pending escrow recovery request from the storage the
+     * app actually uses for device secrets. Called by `forgetDevice()`. When
+     * omitted the coordinator clears the web (IndexedDB / sessionStorage) copy.
+     */
+    clearPendingEscrowRecovery?: () => Promise<void>;
 
     /**
      * Optional: threshold (in ms) for detecting legacy accounts that need migration.
