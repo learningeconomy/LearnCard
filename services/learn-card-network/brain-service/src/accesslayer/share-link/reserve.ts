@@ -79,6 +79,8 @@ type ReservationProps = {
     note: string | null;
     expiresAt: string | null;
     selectedCount: number;
+    passcodeHash: string | null;
+    notifyOnView: boolean;
     policyIsMinor: boolean | null;
     policyResolved: boolean;
     policyDefaultExpiryDays: number;
@@ -267,6 +269,8 @@ export const reserveCreate = async (input: ReserveCreateInput): Promise<ReserveS
                 note: input.note ?? null,
                 expiresAt:
                     supersededExpiresAt !== null ? supersededExpiresAt.value : share.expiresAt,
+                passcodeHash: share.passcodeHash ?? input.passcodeHash ?? null,
+                notifyOnView: share.notifyOnView ?? input.notifyOnView ?? false,
                 policy: input.policy ?? DEFAULT_SHARE_LINK_POLICY,
                 leaseOwner: input.leaseOwner,
                 leaseExpiresAt,
@@ -315,6 +319,8 @@ export const reserveCreate = async (input: ReserveCreateInput): Promise<ReserveS
             stoppedAt: null,
             viewCount: 0,
             lastViewedAt: null,
+            passcodeHash: input.passcodeHash ?? null,
+            notifyOnView: input.notifyOnView ?? false,
             minorPolicyIsMinor: policy.isMinor,
             minorPolicyResolved: policy.policyResolved,
             minorPolicyDefaultExpiryDays: policy.defaultExpiryDays,
@@ -352,6 +358,8 @@ export const reserveCreate = async (input: ReserveCreateInput): Promise<ReserveS
             note: input.note ?? null,
             expiresAt: input.expiresAt ?? null,
             selectedCount: input.selectedCount,
+            passcodeHash: input.passcodeHash ?? null,
+            notifyOnView: input.notifyOnView ?? false,
             policyIsMinor: policy.isMinor,
             policyResolved: policy.policyResolved,
             policyDefaultExpiryDays: policy.defaultExpiryDays,
@@ -392,6 +400,8 @@ type CreateReservationForShareInput = {
     title: string;
     note: string | null;
     expiresAt: string | null;
+    passcodeHash: string | null;
+    notifyOnView: boolean;
     policy: ShareLinkPolicySnapshot;
     leaseOwner: string;
     leaseExpiresAt: string;
@@ -434,6 +444,8 @@ const createReservationForShare = async (
         note: input.note,
         expiresAt: input.expiresAt,
         selectedCount: input.selectedCount,
+        passcodeHash: input.passcodeHash,
+        notifyOnView: input.notifyOnView,
         policyIsMinor: input.policy.isMinor,
         policyResolved: input.policy.policyResolved,
         policyDefaultExpiryDays: input.policy.defaultExpiryDays,
@@ -651,6 +663,11 @@ const reserveReplacementForLockedShare = async (
         title: input.title ?? share.title,
         note: input.note !== undefined ? input.note : share.note,
         expiresAt: input.expiresAt !== undefined ? input.expiresAt : share.expiresAt,
+        passcodeHash:
+            input.passcodeHash !== undefined ? input.passcodeHash : (share.passcodeHash ?? null),
+        notifyOnView:
+            (input.notifyOnView !== undefined ? input.notifyOnView : share.notifyOnView === true) &&
+            (input.policy?.viewCountingEnabled ?? share.minorPolicyViewCountingEnabled),
         policy:
             input.policy ??
             ({

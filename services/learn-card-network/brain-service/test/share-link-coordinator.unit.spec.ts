@@ -45,6 +45,7 @@ const createRequest = () => ({
     clientRequestId: CLIENT_REQUEST_ID,
     title: 'Shared credentials',
     selectedCount: 1,
+    notifyOnView: false,
     contentVersion: 1,
     envelope,
     ownerEncryptedRecovery: recovery,
@@ -104,6 +105,8 @@ const makeReservation = (
     note: null,
     expiresAt: null,
     selectedCount: 1,
+    passcodeHash: null,
+    notifyOnView: false,
     generation: 1,
     leaseOwner: 'worker-1',
     leaseExpiresAt: '2099-01-01T00:00:00.000Z',
@@ -230,6 +233,61 @@ describe('share-link coordinator create', () => {
             .calls[0][0];
         expect(finalizeArgs.verifiedContentHash).toBe(payloadHash);
         expect(finalizeArgs.objectRef).toBe(OBJECT_REF);
+    });
+
+    it('hashes a passcode before persistence and keeps notification opt-in explicit', async () => {
+        (repository.reserveCreate as ReturnType<typeof vi.fn>).mockResolvedValue({
+            outcome: 'reserved',
+            state: 'created',
+            share: makeShare(),
+            reservation: makeReservation(),
+        });
+
+        const coordinator = makeCoordinator(repository, client, {
+            policyResolver: {
+                resolve: vi.fn(async () => ({
+                    isMinor: false,
+                    policyResolved: true,
+                    defaultExpiryDays: 365,
+                    viewCountingEnabled: true,
+                })),
+            },
+        });
+        await coordinator.createShareLink(
+            { ...createRequest(), passcode: '24682468', notifyOnView: true },
+            context
+        );
+
+        const reserveArgs = (repository.reserveCreate as ReturnType<typeof vi.fn>).mock.calls[0][0];
+        expect(reserveArgs.passcodeHash).toMatch(/^\$argon2id\$/);
+        expect(reserveArgs.passcodeHash).not.toContain('24682468');
+        expect(reserveArgs).not.toHaveProperty('passcode');
+        expect(reserveArgs.notifyOnView).toBe(true);
+    });
+
+    it('suppresses view notifications when the trusted policy disables view counting', async () => {
+        (repository.reserveCreate as ReturnType<typeof vi.fn>).mockResolvedValue({
+            outcome: 'reserved',
+            state: 'created',
+            share: makeShare(),
+            reservation: makeReservation(),
+        });
+
+        const coordinator = makeCoordinator(repository, client, {
+            policyResolver: {
+                resolve: vi.fn(async () => ({
+                    isMinor: true,
+                    policyResolved: true,
+                    defaultExpiryDays: 30,
+                    viewCountingEnabled: false,
+                })),
+            },
+        });
+        await coordinator.createShareLink({ ...createRequest(), notifyOnView: true }, context);
+
+        const reserveArgs = (repository.reserveCreate as ReturnType<typeof vi.fn>).mock.calls[0][0];
+        expect(reserveArgs.notifyOnView).toBe(false);
+        expect(reserveArgs.policy.defaultExpiryDays).toBe(30);
     });
 
     it('drives a resumed in-flight create to the same reserved object', async () => {
@@ -445,6 +503,108 @@ describe('share-link coordinator update', () => {
         expect(finalizeArgs.verifiedContentHash).toBeUndefined();
     });
 
+    it('hashes, replaces, and removes passcode protection without persisting plaintext', async () => {
+        (repository.reserveReplacement as ReturnType<typeof vi.fn>).mockResolvedValue({
+            outcome: 'reserved',
+            state: 'created',
+            share: makeShare({ status: 'active', contentState: 'finalized', version: 2 }),
+            reservation: makeReservation({
+                opKind: 'update',
+                objectRef: null,
+                contentVersion: null,
+                contentHash: null,
+                contentBytes: null,
+                recoveryHash: null,
+                recoveryBytes: null,
+            }),
+        });
+
+        const coordinator = makeCoordinator(repository, client, {
+            policyResolver: {
+                resolve: vi.fn(async () => ({
+                    isMinor: false,
+                    policyResolved: true,
+                    defaultExpiryDays: 365,
+                    viewCountingEnabled: true,
+                })),
+            },
+        });
+        await coordinator.updateShareLink(
+            {
+                id: SHARE_ID,
+                expectedVersion: 2,
+                clientRequestId: CLIENT_REQUEST_ID,
+                passcode: '86428642',
+                notifyOnView: true,
+            },
+            context
+        );
+
+        const protectedArgs = (repository.reserveReplacement as ReturnType<typeof vi.fn>).mock
+            .calls[0][0];
+        expect(protectedArgs.passcodeHash).toMatch(/^\$argon2id\$/);
+        expect(protectedArgs.passcodeHash).not.toContain('86428642');
+        expect(protectedArgs).not.toHaveProperty('passcode');
+        expect(protectedArgs.notifyOnView).toBe(true);
+
+        await coordinator.updateShareLink(
+            {
+                id: SHARE_ID,
+                expectedVersion: 2,
+                clientRequestId: '22222222-2222-4222-8222-222222222222',
+                passcode: null,
+                notifyOnView: false,
+            },
+            context
+        );
+
+        const unprotectedArgs = (repository.reserveReplacement as ReturnType<typeof vi.fn>).mock
+            .calls[1][0];
+        expect(unprotectedArgs.passcodeHash).toBeNull();
+        expect(unprotectedArgs.notifyOnView).toBe(false);
+    });
+
+    it('suppresses an update that enables notifications under restrictive policy', async () => {
+        (repository.reserveReplacement as ReturnType<typeof vi.fn>).mockResolvedValue({
+            outcome: 'reserved',
+            state: 'created',
+            share: makeShare({ status: 'active', contentState: 'finalized', version: 2 }),
+            reservation: makeReservation({
+                opKind: 'update',
+                objectRef: null,
+                contentVersion: null,
+                contentHash: null,
+                contentBytes: null,
+                recoveryHash: null,
+                recoveryBytes: null,
+            }),
+        });
+
+        const coordinator = makeCoordinator(repository, client, {
+            policyResolver: {
+                resolve: vi.fn(async () => ({
+                    isMinor: true,
+                    policyResolved: true,
+                    defaultExpiryDays: 30,
+                    viewCountingEnabled: false,
+                })),
+            },
+        });
+        await coordinator.updateShareLink(
+            {
+                id: SHARE_ID,
+                expectedVersion: 2,
+                clientRequestId: CLIENT_REQUEST_ID,
+                notifyOnView: true,
+            },
+            context
+        );
+
+        const reserveArgs = (repository.reserveReplacement as ReturnType<typeof vi.fn>).mock
+            .calls[0][0];
+        expect(reserveArgs.notifyOnView).toBe(false);
+    });
+
     it('content update uploads and finalizes the replacement', async () => {
         (repository.reserveReplacement as ReturnType<typeof vi.fn>).mockResolvedValue({
             outcome: 'reserved',
@@ -587,6 +747,37 @@ describe('share-link coordinator revoke and reads', () => {
         expect(getArgs.operationId).toBe(OPERATION_ID);
         expect(getArgs.objectId).toBe(OBJECT_REF);
         expect(getArgs.contentVersion).toBe(2);
+    });
+
+    it('allows an authenticated owner read to retain expired content semantics', async () => {
+        const repository = makeRepository();
+        const client = makeClient();
+        const current = {
+            state: 'active',
+            shareId: SHARE_ID,
+            namespace: NAMESPACE,
+            ownerProfileId: OWNER,
+            version: 5,
+            contentVersion: 2,
+            objectRef: OBJECT_REF,
+            operationId: OPERATION_ID,
+        };
+        (repository.getCurrentShareContent as ReturnType<typeof vi.fn>).mockResolvedValue(current);
+        (client.get as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, value: {} });
+
+        await makeCoordinator(repository, client).fetchShareContent(SHARE_ID, context, {
+            allowExpired: true,
+        });
+
+        expect(repository.getCurrentShareContent).toHaveBeenCalledTimes(2);
+        expect(repository.getCurrentShareContent).toHaveBeenNthCalledWith(
+            1,
+            expect.objectContaining({ allowExpired: true })
+        );
+        expect(repository.getCurrentShareContent).toHaveBeenNthCalledWith(
+            2,
+            expect.objectContaining({ allowExpired: true })
+        );
     });
 });
 

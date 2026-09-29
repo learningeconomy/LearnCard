@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ShareLinkPolicyResolver } from '@helpers/share-link-policy/types';
 import type { ShareLinkRecord } from '../src/models/ShareLink';
+import { SharePasscodeCapacityError } from '../src/helpers/share-link-passcode';
 import type {
     PublicShareLinkRouterDependencies,
     PublicShareLinkSharer,
@@ -132,7 +133,11 @@ const makeDependencies = (
         policyResolver?: ShareLinkPolicyResolver;
         persist?: PublicShareLinkRouterDependencies['receipts']['persist'];
         lookupOwner?: PublicShareLinkRouterDependencies['receipts']['lookupOwner'];
+        lookupContext?: NonNullable<PublicShareLinkRouterDependencies['receipts']['lookupContext']>;
         consume?: PublicShareLinkRouterDependencies['receipts']['consume'];
+        verifyPasscode?: NonNullable<PublicShareLinkRouterDependencies['verifyPasscode']>;
+        passcodeAttempts?: NonNullable<PublicShareLinkRouterDependencies['passcodeAttempts']>;
+        notifyView?: NonNullable<PublicShareLinkRouterDependencies['notifyView']>;
         getSharer?: (ownerProfileId: string) => Promise<PublicShareLinkSharer | null>;
         enforceRateLimit?: PublicShareLinkRouterDependencies['enforceRateLimit'];
         newReceipt?: () => string;
@@ -155,6 +160,9 @@ const makeDependencies = (
         },
         policyResolver: ineligiblePolicy,
         getSharer: vi.fn(async () => sharer),
+        passcodeAttempts: {
+            reserve: vi.fn(async () => true),
+        },
         enforceRateLimit: vi.fn(async () => undefined),
         contentUrlFor: (shareId: string) => `/share-links/${shareId}/content`,
         newReceipt: () => RECEIPT,
@@ -174,18 +182,22 @@ const makeDependencies = (
             ...base.receipts,
             ...(overrides.persist ? { persist: overrides.persist } : {}),
             ...(overrides.lookupOwner ? { lookupOwner: overrides.lookupOwner } : {}),
+            ...(overrides.lookupContext ? { lookupContext: overrides.lookupContext } : {}),
             ...(overrides.consume ? { consume: overrides.consume } : {}),
         },
         ...(overrides.policyResolver ? { policyResolver: overrides.policyResolver } : {}),
         ...(overrides.getSharer ? { getSharer: overrides.getSharer } : {}),
         ...(overrides.enforceRateLimit ? { enforceRateLimit: overrides.enforceRateLimit } : {}),
         ...(overrides.newReceipt ? { newReceipt: overrides.newReceipt } : {}),
+        ...(overrides.verifyPasscode ? { verifyPasscode: overrides.verifyPasscode } : {}),
+        ...(overrides.passcodeAttempts ? { passcodeAttempts: overrides.passcodeAttempts } : {}),
+        ...(overrides.notifyView ? { notifyView: overrides.notifyView } : {}),
     };
 };
 
 const makeCaller = (
     dependencies: PublicShareLinkRouterDependencies | null,
-    options: { getDependenciesError?: Error } = {}
+    options: { getDependenciesError?: Error; sourceIp?: string } = {}
 ) => {
     const router = createPublicShareLinksRouter(async () => {
         if (options.getDependenciesError) throw options.getDependenciesError;
@@ -195,7 +207,7 @@ const makeCaller = (
     return router.createCaller({
         domain: 'network.example.com',
         tenant: { id: 'default' },
-        sourceIp: '203.0.113.7',
+        sourceIp: options.sourceIp ?? '203.0.113.7',
     } as never);
 };
 
@@ -254,6 +266,135 @@ describe('public share-link resolve', () => {
 
         expect(dependencies.receipts.persist).not.toHaveBeenCalled();
         expect(dependencies.receipts.consume).not.toHaveBeenCalled();
+    });
+
+    it('requires and verifies a passcode without exposing the stored hash', async () => {
+        const verifyPasscode = vi.fn(
+            async (_hash: string, passcode: string) => passcode === '2468'
+        );
+        const dependencies = makeDependencies({
+            getShareLink: async () => shareRecord({ passcodeHash: '$argon2id$stored' }),
+            verifyPasscode,
+        });
+        const caller = makeCaller(dependencies);
+
+        await expect(caller.resolve({ id: SHARE_ID })).resolves.toEqual({
+            state: 'passcode_required',
+            id: SHARE_ID,
+        });
+        await expect(caller.resolve({ id: SHARE_ID, passcode: '1111' })).resolves.toEqual({
+            state: 'passcode_required',
+            id: SHARE_ID,
+        });
+        await expect(caller.resolve({ id: SHARE_ID, passcode: '2468' })).resolves.toMatchObject({
+            state: 'active',
+            id: SHARE_ID,
+        });
+        expect(verifyPasscode).toHaveBeenCalledWith('$argon2id$stored', '2468');
+    });
+
+    it('reports local capacity separately from a passcode guard failure', async () => {
+        const dependencies = makeDependencies({
+            getShareLink: async () => shareRecord({ passcodeHash: '$argon2id$stored' }),
+            verifyPasscode: async () => {
+                throw new SharePasscodeCapacityError();
+            },
+        });
+        await expect(
+            makeCaller(dependencies).resolve({ id: SHARE_ID, passcode: '2468' })
+        ).resolves.toEqual({ state: 'try_later', id: SHARE_ID });
+        expect(dependencies.reportFailure).toHaveBeenCalledWith('passcode_capacity');
+        expect(dependencies.reportFailure).not.toHaveBeenCalledWith('passcode_guard');
+    });
+
+    it('skips Argon2 for unprotected shares', async () => {
+        const verifyPasscode = vi.fn(async () => false);
+        const dependencies = makeDependencies({ verifyPasscode });
+        await expect(makeCaller(dependencies).resolve({ id: SHARE_ID })).resolves.toMatchObject({
+            state: 'active',
+        });
+        await expect(makeCaller(dependencies).content({ id: SHARE_ID })).resolves.toHaveProperty(
+            'envelope'
+        );
+        expect(verifyPasscode).not.toHaveBeenCalled();
+    });
+
+    it('requires a passcode before revealing protected lifecycle state', async () => {
+        const verifyPasscode = vi.fn(async (_hash: string, value: string) => value === '2468');
+        for (const record of [
+            shareRecord({ passcodeHash: 'stored' }),
+            shareRecord({ passcodeHash: 'stored', expiresAt: '2026-09-20T00:00:00.000Z' }),
+            shareRecord({
+                passcodeHash: 'stored',
+                status: 'stopped',
+                stoppedAt: '2026-09-20T00:00:00.000Z',
+            }),
+        ]) {
+            const caller = makeCaller(
+                makeDependencies({ getShareLink: async () => record, verifyPasscode })
+            );
+            await expect(caller.resolve({ id: SHARE_ID })).resolves.toEqual({
+                state: 'passcode_required',
+                id: SHARE_ID,
+            });
+            await expect(caller.resolve({ id: SHARE_ID, passcode: 'wrong' })).resolves.toEqual({
+                state: 'passcode_required',
+                id: SHARE_ID,
+            });
+            await expect(caller.resolve({ id: SHARE_ID, passcode: '2468' })).resolves.toMatchObject(
+                {
+                    state:
+                        record.status === 'stopped'
+                            ? 'stopped'
+                            : record.expiresAt
+                              ? 'expired'
+                              : 'active',
+                }
+            );
+        }
+        const missing = makeCaller(
+            makeDependencies({ getShareLink: async () => null, verifyPasscode })
+        );
+        verifyPasscode.mockClear();
+        await expect(missing.resolve({ id: SHARE_ID, passcode: '2468' })).resolves.toEqual({
+            state: 'not_found',
+            id: SHARE_ID,
+        });
+        expect(verifyPasscode).not.toHaveBeenCalled();
+    });
+
+    it('shares the failed-attempt budget across source addresses and both endpoints', async () => {
+        let attempts = 0;
+        const passcodeAttempts = {
+            reserve: vi.fn(async () => ++attempts <= 2),
+        };
+        const verifyPasscode = vi.fn(async (_hash: string, value: string) => value === '2468');
+        const dependencies = makeDependencies({
+            getShareLink: async () => shareRecord({ passcodeHash: 'stored' }),
+            passcodeAttempts,
+            verifyPasscode,
+        });
+        await makeCaller(dependencies, { sourceIp: '203.0.113.1' }).resolve({
+            id: SHARE_ID,
+            passcode: 'wrong',
+        });
+        await expect(
+            makeCaller(dependencies, { sourceIp: '203.0.113.2' }).content({
+                id: SHARE_ID,
+                passcode: 'wrong',
+            })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        await expect(
+            makeCaller(dependencies, { sourceIp: '203.0.113.3' }).resolve({
+                id: SHARE_ID,
+                passcode: '2468',
+            })
+        ).resolves.toEqual({ state: 'try_later', id: SHARE_ID });
+        expect(verifyPasscode).toHaveBeenCalledTimes(2);
+        attempts = 0; // the short window has elapsed
+        await expect(
+            makeCaller(dependencies).resolve({ id: SHARE_ID, passcode: '2468' })
+        ).resolves.toMatchObject({ state: 'active' });
     });
 
     it('reports stopped and expired without exposing internals', async () => {
@@ -347,6 +488,28 @@ describe('public share-link resolve', () => {
 });
 
 describe('public share-link content', () => {
+    it('enforces the passcode before fetching protected content', async () => {
+        const fetchContent = vi.fn(async () => ({
+            ok: true as const,
+            value: contentProjection(shareRecord()),
+        }));
+        const dependencies = makeDependencies({
+            getShareLink: async () => shareRecord({ passcodeHash: '$argon2id$stored' }),
+            fetchContent,
+            verifyPasscode: async (_hash, passcode) => passcode === '2468',
+        });
+        const caller = makeCaller(dependencies);
+
+        await expect(caller.content({ id: SHARE_ID })).rejects.toMatchObject({
+            code: 'UNAUTHORIZED',
+        });
+        expect(fetchContent).not.toHaveBeenCalled();
+
+        await expect(caller.content({ id: SHARE_ID, passcode: '2468' })).resolves.toMatchObject({
+            id: SHARE_ID,
+            envelope,
+        });
+    });
     it('withholds content when revoked during the awaited policy lookup', async () => {
         let revoked = false;
         const dependencies = makeDependencies({
@@ -497,6 +660,38 @@ describe('public share-link content', () => {
 });
 
 describe('public share-link acknowledgeView', () => {
+    it('sends an opted-in adult notification with count and time only', async () => {
+        const notifyView = vi.fn(async () => undefined);
+        const viewedAt = '2026-09-21T00:00:02.000Z';
+        const dependencies = makeDependencies({
+            policyResolver: eligiblePolicy,
+            lookupContext: vi.fn(async () => ({ ownerProfileId: 'owner-1', shareId: SHARE_ID })),
+            getShareLink: async () =>
+                shareRecord({
+                    notifyOnView: true,
+                    viewCount: 4,
+                    lastViewedAt: viewedAt,
+                    minorPolicyIsMinor: false,
+                    minorPolicyResolved: true,
+                    minorPolicyViewCountingEnabled: true,
+                }),
+            notifyView,
+        });
+
+        await makeCaller(dependencies).acknowledgeView({ receipt: RECEIPT });
+
+        expect(notifyView).toHaveBeenCalledWith({
+            shareId: SHARE_ID,
+            ownerProfileId: 'owner-1',
+            title: 'Shared credentials',
+            selectedCount: 2,
+            viewCount: 4,
+            viewedAt,
+        });
+        expect(notifyView.mock.calls[0][0]).not.toHaveProperty('ip');
+        expect(notifyView.mock.calls[0][0]).not.toHaveProperty('device');
+        expect(notifyView.mock.calls[0][0]).not.toHaveProperty('location');
+    });
     it('always returns the uniform { ok: true } and never exposes eligibility', async () => {
         const consumed = makeDependencies({ consume: vi.fn(async () => 'consumed') });
         await expect(makeCaller(consumed).acknowledgeView({ receipt: RECEIPT })).resolves.toEqual({

@@ -18,6 +18,7 @@ import {
     resolveShareLinkExpiry,
 } from '@helpers/share-link-policy/resolver';
 import type { ShareLinkPolicyResolver } from '@helpers/share-link-policy/types';
+import { hashSharePasscode } from '@helpers/share-link-passcode';
 
 import { isShareLinkRepositoryError } from '../../accesslayer/share-link/errors';
 import type { ShareLinkReservationRecord } from '../../accesslayer/share-link';
@@ -316,6 +317,7 @@ export const createShareLinkCoordinator = (
             );
             const policy = await policyResolver.resolve(owner.ownerProfileId);
             const effectiveExpiresAt = resolveShareLinkExpiry(policy, value.expiresAt, now());
+            const passcodeHash = value.passcode ? await hashSharePasscode(value.passcode) : null;
 
             let reserved;
 
@@ -329,6 +331,10 @@ export const createShareLinkCoordinator = (
                     note: value.note ?? null,
                     expiresAt: effectiveExpiresAt,
                     selectedCount: value.selectedCount,
+                    passcodeHash,
+                    // Notification consent cannot override the same trusted
+                    // policy that disables view counting for minors/unknown age.
+                    notifyOnView: value.notifyOnView && policy.viewCountingEnabled,
                     content,
                     requestHash,
                     policy,
@@ -362,6 +368,12 @@ export const createShareLinkCoordinator = (
             // so a profile that became managed stops accumulating views going
             // forward. An omitted `expiresAt` leaves the existing expiry intact.
             const policy = await policyResolver.resolve(owner.ownerProfileId);
+            const passcodeHash =
+                value.passcode === undefined
+                    ? undefined
+                    : value.passcode === null
+                      ? null
+                      : await hashSharePasscode(value.passcode);
 
             let reserved;
 
@@ -391,6 +403,10 @@ export const createShareLinkCoordinator = (
                     ...(value.title !== undefined ? { title: value.title } : {}),
                     ...(value.note !== undefined ? { note: value.note } : {}),
                     ...(value.expiresAt !== undefined ? { expiresAt: value.expiresAt } : {}),
+                    ...(passcodeHash !== undefined ? { passcodeHash } : {}),
+                    ...(value.notifyOnView !== undefined
+                        ? { notifyOnView: value.notifyOnView && policy.viewCountingEnabled }
+                        : {}),
                     policy,
                 });
             } catch (error) {
@@ -593,13 +609,14 @@ export const createShareLinkCoordinator = (
             });
         },
 
-        fetchShareContent: async (shareId, context) => {
+        fetchShareContent: async (shareId, context, options = {}) => {
             const owner = parseOwnerContext(context);
             const current = await repository.getCurrentShareContent({
                 shareId,
                 namespace: owner.namespace,
                 ownerProfileId: owner.ownerProfileId,
                 now: now(),
+                allowExpired: options.allowExpired,
             });
 
             if (current.state !== 'active') {
@@ -628,6 +645,7 @@ export const createShareLinkCoordinator = (
                 namespace: owner.namespace,
                 ownerProfileId: owner.ownerProfileId,
                 now: now(),
+                allowExpired: options.allowExpired,
             });
             if (
                 latest.state !== 'active' ||
