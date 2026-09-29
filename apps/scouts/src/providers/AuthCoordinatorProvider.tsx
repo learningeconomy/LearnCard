@@ -55,6 +55,7 @@ import {
     type AuthUser,
     type DebugEventLevel,
     type KeyDerivationStrategy,
+    isEmailRelayConfigured,
 } from 'learn-card-base';
 import currentUserStore from 'learn-card-base/stores/currentUserStore';
 import { walletStore } from 'learn-card-base/stores/walletStore';
@@ -1388,6 +1389,7 @@ const AuthSessionManager: React.FC<{
                     return (
                         <Overlay onDismiss={() => setShowRecoverySetup(false)}>
                             <RecoverySetupModal
+                                emailAvailable={isEmailRelayConfigured()}
                                 existingMethods={[]}
                                 maskedRecoveryEmail={null}
                                 isActivationPending={coordinator.needsActivation}

@@ -462,7 +462,8 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     if (!activeMethod) {
         const getTitle = () => {
             if (recoveryReason === 'new_device') return m['recovery.signInOnThisDevice']();
-            if (recoveryReason === 'stale_local_key')
+            // Both mean this device's key no longer works; users just need to sign in again.
+            if (recoveryReason === 'stale_local_key' || recoveryReason === 'missing_server_data')
                 return m['recovery.signInAgainOnThisDevice']();
             if (identityPhase === 'choose_method') return m['recovery.identity.chooseMethod']();
             return getDefaultCopy().title;
@@ -470,7 +471,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
 
         const getDesc = () => {
             if (recoveryReason === 'new_device') return m['recovery.signInOnThisDeviceDesc']();
-            if (recoveryReason === 'stale_local_key')
+            if (recoveryReason === 'stale_local_key' || recoveryReason === 'missing_server_data')
                 return m['recovery.signInAgainOnThisDeviceDesc']();
             if (identityPhase === 'choose_method')
                 return m['recovery.identity.chooseMethodDescription']();

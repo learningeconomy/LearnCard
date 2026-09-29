@@ -40,6 +40,7 @@ import {
     useCurrentUser,
     useWallet,
     getAuthConfig,
+    isEmailRelayConfigured,
 } from 'learn-card-base';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 import useLogout from '../../hooks/useLogout';
@@ -507,6 +508,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                     newModal(
                         <RecoverySetupModal
+                            emailAvailable={isEmailRelayConfigured()}
                             onGetEscrowEnrollmentState={getEscrowEnrollmentState}
                             onDisableEscrowRecovery={disableEscrowRecovery}
                             onEnableEscrowRecovery={enableEscrowRecovery}

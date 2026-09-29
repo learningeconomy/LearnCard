@@ -57,6 +57,7 @@ import {
     type AuthUser,
     type DebugEventLevel,
     type KeyDerivationStrategy,
+    isEmailRelayConfigured,
 } from 'learn-card-base';
 
 import currentUserStore from 'learn-card-base/stores/currentUserStore';
@@ -1907,6 +1908,7 @@ const AuthSessionManager: React.FC<{
                     return (
                         <Overlay onDismiss={closeRecoverySetup}>
                             <RecoverySetupModal
+                                emailAvailable={isEmailRelayConfigured()}
                                 onGetEscrowEnrollmentState={coordinator.getEscrowEnrollmentState}
                                 onDisableEscrowRecovery={coordinator.disableEscrowRecovery}
                                 onEnableEscrowRecovery={coordinator.enableEscrowRecovery}

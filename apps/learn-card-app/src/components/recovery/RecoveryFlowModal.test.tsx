@@ -415,6 +415,20 @@ describe('RecoveryFlowModal sign-in picker', () => {
         expect(screen.queryByText('Enter my recovery PIN')).toBeNull();
     });
 
+    it('treats unreadable local key material like a stale device', () => {
+        render(
+            <RecoveryFlowModal
+                {...base}
+                recoveryReason="missing_server_data"
+                availableMethods={methods('phrase', 'escrow')}
+                onRecoverWithDevice={vi.fn()}
+                escrowRecovery={escrowRecovery}
+            />
+        );
+
+        expect(screen.getByRole('heading', { name: 'Sign in again on this device' })).toBeTruthy();
+    });
+
     it('leads with another device when no passkey is set up', () => {
         render(
             <RecoveryFlowModal

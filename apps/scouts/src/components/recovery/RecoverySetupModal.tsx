@@ -61,6 +61,8 @@ interface RecoverySetupModalProps {
     maskedRecoveryEmail?: string | null;
     isActivationPending?: boolean;
     initialMethod?: RecoverySetupType;
+    /** False when emailed recovery keys cannot be sent (no relay key configured). */
+    emailAvailable?: boolean;
     onCompleted?: (method: RecoverySetupType) => void;
     onClose: () => void;
 }
@@ -87,6 +89,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     maskedRecoveryEmail,
     isActivationPending = false,
     initialMethod,
+    emailAvailable = true,
     onCompleted,
     onClose,
 }) => {
@@ -107,8 +110,13 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     // Default to the first unconfigured method in priority order:
     // email > phrase > backup > passkey
     const [activeTab, setActiveTab] = useState<RecoverySetupType>(() => {
-        if (initialMethod && !isConfigured(initialMethod)) return initialMethod;
-        if (!isConfigured('email')) return 'email';
+        if (
+            initialMethod &&
+            !isConfigured(initialMethod) &&
+            (initialMethod !== 'email' || emailAvailable)
+        )
+            return initialMethod;
+        if (emailAvailable && !isConfigured('email')) return 'email';
         if (!isConfigured('phrase')) return 'phrase';
         if (!isConfigured('backup')) return 'backup';
         if (!isNative && webAuthnSupported && !isConfigured('passkey')) return 'passkey';
@@ -481,7 +489,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     ];
 
     // Hide passkey tab entirely on native platforms (WebAuthn unavailable in WKWebView / Android WebView)
-    const tabs = isNative ? allTabs.filter(t => t.id !== 'passkey') : allTabs;
+    const tabs = allTabs.filter(
+        t => !(isNative && t.id === 'passkey') && !(!emailAvailable && t.id === 'email')
+    );
 
     const configuredCount = tabs.filter(t => isConfigured(t.id)).length;
 

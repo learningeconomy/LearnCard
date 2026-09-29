@@ -369,6 +369,13 @@ describe('RecoverySetupModal prompt integration', () => {
         await waitFor(() => expect(props.onConfirmPhrase).toHaveBeenCalledWith(['one', 'three']));
     });
 
+    it('hides email when recovery keys cannot be sent', () => {
+        renderModal('email', vi.fn(), { emailAvailable: false });
+
+        expect(screen.queryByRole('button', { name: 'Email' })).toBeNull();
+        expect(screen.getByRole('button', { name: 'Generate Recovery Phrase' })).toBeTruthy();
+    });
+
     it('opens on the requested passkey method and reports terminal completion', async () => {
         const { onCompleted, props } = renderModal('passkey');
 

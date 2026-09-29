@@ -35,6 +35,7 @@ import {
     useCurrentUser,
     useWallet,
     getAuthConfig,
+    isEmailRelayConfigured,
 } from 'learn-card-base';
 import useLogout from '../../hooks/useLogout';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
@@ -444,6 +445,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
 
                 newModal(
                     <RecoverySetupModal
+                        emailAvailable={isEmailRelayConfigured()}
                         existingMethods={existingMethods.map(m => ({
                             type: m.type,
                             createdAt:
