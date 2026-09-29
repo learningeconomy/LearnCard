@@ -532,7 +532,8 @@
                 "wrongWord": "That's not word #{{number}}. Check your saved phrase and try again.",
                 "showPhraseAgain": "Show my phrase again",
                 "challengeProgress": "{{current}} of {{total}}",
-                "wordNumber": "Word {{number}}"
+                "wordNumber": "Word {{number}}",
+                "nextCheckIt": "Next: check it"
             },
             "backup": {
                 "createdRow": "Backup file created",
@@ -552,7 +553,8 @@
                 "confirmBtn": "I've Saved It Somewhere Safe",
                 "shareTitle": "ScoutPass Backup",
                 "reenterPassword": "Re-enter Backup Password",
-                "verifyDesc": "We'll check the downloaded file before confirming this recovery method."
+                "verifyDesc": "We'll check the downloaded file before confirming this recovery method.",
+                "oneMoreStep": "One more step: check your file."
             },
             "email": {
                 "recoveryRow": "Recovery email: {{email}}",
@@ -592,7 +594,8 @@
                 "phrase": "Recovery phrase saved! Keep it somewhere safe.",
                 "backup": "Backup file saved! Keep it and your password somewhere safe.",
                 "email": "Recovery key sent to your email!"
-            }
+            },
+            "notFinished": "Not finished"
         },
         "banner": {
             "titlePublic": "Set up recovery before you leave",
@@ -600,7 +603,7 @@
             "descPublic": "This is a temporary session. Closing the tab will sign you out permanently unless you set up a recovery method.",
             "descPrivate": "Set up recovery so you can get back in if you lose this device."
         },
-        "stepOf": "Step {current} of {total}",
+        "stepOf": "Step {{current}} of {{total}}",
         "step": {
             "save": "Save",
             "check": "Check",

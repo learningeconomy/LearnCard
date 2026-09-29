@@ -532,7 +532,8 @@
                 "tapTheWord": "Toca la palabra de tu frase de recuperación.",
                 "wrongWord": "Esa no es la palabra n.º {{number}}. Revisa tu frase guardada e inténtalo de nuevo.",
                 "showPhraseAgain": "Mostrar mi frase de nuevo",
-                "challengeProgress": "{{current}} de {{total}}"
+                "challengeProgress": "{{current}} de {{total}}",
+                "nextCheckIt": "Siguiente: compruébala"
             },
             "backup": {
                 "createdRow": "Archivo de respaldo creado",
@@ -552,7 +553,8 @@
                 "confirmBtn": "Lo He Guardado en un Lugar Seguro",
                 "shareTitle": "Copia de seguridad de ScoutPass",
                 "reenterPassword": "Vuelva a introducir la contraseña de la copia de seguridad",
-                "verifyDesc": "Comprobaremos el archivo descargado antes de confirmar este método de recuperación."
+                "verifyDesc": "Comprobaremos el archivo descargado antes de confirmar este método de recuperación.",
+                "oneMoreStep": "Un paso más: comprueba tu archivo."
             },
             "email": {
                 "recoveryRow": "Correo de recuperación: {{email}}",
@@ -592,7 +594,8 @@
                 "phrase": "¡Frase de recuperación guardada! Mantenla en un lugar seguro.",
                 "backup": "¡Archivo de respaldo guardado! Mantenlo y tu contraseña en un lugar seguro.",
                 "email": "¡Clave de recuperación enviada a tu correo!"
-            }
+            },
+            "notFinished": "Sin terminar"
         },
         "banner": {
             "titlePublic": "Configura la recuperación antes de irte",
@@ -600,7 +603,7 @@
             "descPublic": "Esta es una sesión temporal. Cerrar la pestaña cerrará tu sesión permanentemente a menos que configures un método de recuperación.",
             "descPrivate": "Configura la recuperación para poder volver a entrar si pierdes este dispositivo."
         },
-        "stepOf": "Paso {current} de {total}",
+        "stepOf": "Paso {{current}} de {{total}}",
         "step": {
             "save": "Guardar",
             "check": "Comprobar",

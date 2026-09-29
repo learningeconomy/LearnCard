@@ -160,14 +160,17 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     const [emailVerified, setEmailVerified] = useState(!!maskedRecoveryEmail);
     const [emailMasked, setEmailMasked] = useState(maskedRecoveryEmail ?? '');
     const [emailShareSent, setEmailShareSent] = useState(false);
+    const [emailCheckPending, setEmailCheckPending] = useState(false);
     const [emailRecoveryCode, setEmailRecoveryCode] = useState('');
 
+    // A method is unfinished from the moment it is saved until its check passes,
+    // including when it replaces one that already works.
     const unfinished: RecoverySetupType | null =
-        recoveryPhrase && !isConfigured('phrase')
+        recoveryPhrase !== null
             ? 'phrase'
             : backupDownloaded && !backupConfirmed
               ? 'backup'
-              : emailShareSent && !isConfigured('email')
+              : emailShareSent && emailCheckPending
                 ? 'email'
                 : null;
 
@@ -201,6 +204,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
         } else if (unfinished === 'email') {
             setEmailShareSent(false);
             setEmailRecoveryCode('');
+            setEmailCheckPending(false);
         }
         setShowLeaveGuard(false);
         if (pendingAction === 'close') {
@@ -404,6 +408,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                 });
 
                 setBackupDownloaded(true);
+                setBackupConfirmed(false);
             } catch (e) {
                 log.error('Native file download failed', e);
                 setError(m['recovery.setup.errors.downloadFailed']());
@@ -421,6 +426,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
             URL.revokeObjectURL(url);
             setBackupDownloaded(true);
+            setBackupConfirmed(false);
         }
     };
 
@@ -494,6 +500,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
         try {
             await onSetupEmailRecovery(emailInput);
             setEmailShareSent(true);
+            setEmailCheckPending(true);
         } catch (e) {
             log.error('handleSetupEmailRecovery error', e);
             setError(e instanceof Error ? e.message : m['error.generic']());
@@ -511,6 +518,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
         try {
             await onConfirmEmailRecovery(emailRecoveryCode);
             markConfigured('email');
+            setEmailCheckPending(false);
             setSuccess(m['recovery.setup.success.email']());
             setShowUpdateForm(false);
             onCompleted?.('email');
@@ -737,11 +745,21 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         <IonIcon icon={tab.icon} className={tab.iconClass} />
                         {tab.label}
 
-                        {isConfigured(tab.id) && (
-                            <IonIcon
-                                icon={checkmarkCircleOutline}
-                                className="text-emerald-400 text-sm"
-                            />
+                        {unfinished === tab.id ? (
+                            <>
+                                <span
+                                    aria-hidden="true"
+                                    className="w-1.5 h-1.5 rounded-full bg-amber-500 ms-1"
+                                />
+                                <span className="sr-only">{m['recovery.setup.notFinished']()}</span>
+                            </>
+                        ) : (
+                            isConfigured(tab.id) && (
+                                <IonIcon
+                                    icon={checkmarkCircleOutline}
+                                    className="text-emerald-400 text-sm"
+                                />
+                            )
                         )}
                     </button>
                 ))}
@@ -847,6 +865,11 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                     ) : phraseChallengeStarted ? (
                         phraseChallengeOptions.length > 0 ? (
                             <>
+                                <StepIndicator
+                                    step={2}
+                                    label1={m['recovery.step.save']()}
+                                    label2={m['recovery.step.check']()}
+                                />
                                 <div className="mb-4">
                                     <h3
                                         id="phrase-challenge-heading"
@@ -942,6 +965,11 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                             </>
                         ) : (
                             <>
+                                <StepIndicator
+                                    step={2}
+                                    label1={m['recovery.step.save']()}
+                                    label2={m['recovery.step.check']()}
+                                />
                                 <div>
                                     <h3 className="text-sm font-semibold text-grayscale-900 mb-1">
                                         {m['recovery.setup.phrase.verifyTitle']()}
@@ -1030,6 +1058,11 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         </>
                     ) : (
                         <>
+                            <StepIndicator
+                                step={1}
+                                label1={m['recovery.step.save']()}
+                                label2={m['recovery.step.check']()}
+                            />
                             <div className="p-4 bg-grayscale-900 rounded-2xl">
                                 <p className="text-xs text-grayscale-400 mb-2 font-medium">
                                     {m['recovery.setup.phrase.yourPhrase']()}
@@ -1057,7 +1090,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                 onClick={() => setPhraseChallengeStarted(true)}
                                 className="w-full py-3 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors"
                             >
-                                {m['recovery.setup.phrase.confirmBtn']()}
+                                {m['recovery.setup.phrase.nextCheckIt']()}
                             </button>
                         </>
                     )}
@@ -1124,6 +1157,11 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         </>
                     ) : (
                         <>
+                            <StepIndicator
+                                step={backupDownloaded ? 2 : 1}
+                                label1={m['recovery.step.save']()}
+                                label2={m['recovery.step.check']()}
+                            />
                             <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
                                 <div className="flex items-start gap-2.5">
                                     <IonIcon
@@ -1155,6 +1193,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
                             {backupDownloaded && !backupConfirmed && (
                                 <div className="space-y-4">
+                                    <p className="text-xs text-grayscale-600">
+                                        {m['recovery.setup.backup.oneMoreStep']()}
+                                    </p>
                                     <div>
                                         <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
                                             {m['recovery.setup.backup.reenterPassword']()}
@@ -1312,7 +1353,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         // Step 3: Email verified, send recovery share
                         <>
                             <StepIndicator
-                                step={2}
+                                step={1}
                                 label1={m['recovery.step.send']()}
                                 label2={m['recovery.step.check']()}
                             />
@@ -1347,6 +1388,11 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                     ) : (
                         // Step 4: Confirm receipt of the recovery key
                         <>
+                            <StepIndicator
+                                step={2}
+                                label1={m['recovery.step.send']()}
+                                label2={m['recovery.step.check']()}
+                            />
                             <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl">
                                 <p className="text-sm text-emerald-700 leading-relaxed">
                                     {m['recovery.setup.email.confirmationCodeSent']({

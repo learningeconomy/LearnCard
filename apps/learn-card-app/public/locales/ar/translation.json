@@ -2175,7 +2175,7 @@
         },
         "showNotSetUp": "عرض {{count}} غير مُعدّة",
         "hideNotSetUp": "إخفاء الطرق غير المُعدّة",
-        "stepOf": "الخطوة {current} من {total}",
+        "stepOf": "الخطوة {{current}} من {{total}}",
         "hint": {
             "oneMoreStep": "خطوة واحدة أخرى: تحقق من ملفك."
         },
@@ -2189,7 +2189,8 @@
             "discardBackup": "تجاهل النسخة الاحتياطية",
             "discardEmail": "تجاهل",
             "discardNote": "الذي حفظته لن يعمل. يمكنك إنشاء واحد جديد في أي وقت."
-        }
+        },
+        "notFinished": "غير مكتمل"
     },
     "alerts": {
         "title": "التنبيهات",

@@ -532,7 +532,8 @@
                 "tapTheWord": "Touchez le mot de votre phrase de récupération.",
                 "wrongWord": "Ce n'est pas le mot nº {{number}}. Vérifiez votre phrase enregistrée et réessayez.",
                 "showPhraseAgain": "Afficher à nouveau ma phrase",
-                "challengeProgress": "{{current}} sur {{total}}"
+                "challengeProgress": "{{current}} sur {{total}}",
+                "nextCheckIt": "Suivant : la vérifier"
             },
             "backup": {
                 "createdRow": "Fichier de sauvegarde créé",
@@ -552,7 +553,8 @@
                 "confirmBtn": "Je l'ai sauvegardé dans un endroit sûr",
                 "shareTitle": "Sauvegarde ScoutPass",
                 "reenterPassword": "Entrez à nouveau le mot de passe de sauvegarde",
-                "verifyDesc": "Nous vérifierons le fichier téléchargé avant de confirmer cette méthode de récupération."
+                "verifyDesc": "Nous vérifierons le fichier téléchargé avant de confirmer cette méthode de récupération.",
+                "oneMoreStep": "Encore une étape : vérifiez votre fichier."
             },
             "email": {
                 "recoveryRow": "E-mail de récupération : {{email}}",
@@ -592,7 +594,8 @@
                 "phrase": "Phrase de récupération sauvegardée ! Conservez-la dans un endroit sûr.",
                 "backup": "Fichier de sauvegarde sauvegardé ! Conservez-le ainsi que votre mot de passe dans un endroit sûr.",
                 "email": "Clé de récupération envoyée à votre e-mail !"
-            }
+            },
+            "notFinished": "Non terminé"
         },
         "banner": {
             "titlePublic": "Configurez la récupération avant de partir",
@@ -600,7 +603,7 @@
             "descPublic": "Ceci est une session temporaire. Fermer l'onglet vous déconnectera définitivement, sauf si vous configurez une méthode de récupération.",
             "descPrivate": "Configurez la récupération pour pouvoir revenir si vous perdez cet appareil."
         },
-        "stepOf": "Étape {current} sur {total}",
+        "stepOf": "Étape {{current}} sur {{total}}",
         "step": {
             "save": "Sauvegarder",
             "check": "Vérifier",

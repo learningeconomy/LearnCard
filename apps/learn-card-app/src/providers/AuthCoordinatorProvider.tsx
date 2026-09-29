@@ -1804,13 +1804,7 @@ const AuthSessionManager: React.FC<{
                     // Session expired — show in-place re-auth overlay
                     if (recoverySessionValid === false) {
                         return (
-                            <Overlay
-                                onDismiss={() => {
-                                    if (recoveryRequestCloseRef.current)
-                                        recoveryRequestCloseRef.current();
-                                    else closeRecoverySetup();
-                                }}
-                            >
+                            <Overlay onDismiss={closeRecoverySetup}>
                                 <ReAuthOverlay
                                     onSuccess={() => setRecoverySessionValid(true)}
                                     onCancel={closeRecoverySetup}
@@ -1913,7 +1907,11 @@ const AuthSessionManager: React.FC<{
                     };
 
                     return (
-                        <Overlay onDismiss={closeRecoverySetup}>
+                        <Overlay
+                            onDismiss={() =>
+                                (recoveryRequestCloseRef.current ?? closeRecoverySetup)()
+                            }
+                        >
                             <RecoverySetupModal
                                 registerCloseRequest={fn => {
                                     recoveryRequestCloseRef.current = fn;

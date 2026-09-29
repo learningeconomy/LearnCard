@@ -504,3 +504,123 @@ describe('RecoverySetupModal prompt integration', () => {
         expect(screen.getByRole('button', { name: 'Generate New Backup' })).toBeInTheDocument();
     });
 });
+
+describe('RecoverySetupModal unfinished-check guard', () => {
+    const guardTitle = 'Finish setting up your recovery phrase?';
+
+    const startPhraseCheck = async (
+        overrides: Partial<React.ComponentProps<typeof RecoverySetupModal>> = {}
+    ) => {
+        const rendered = renderModal('phrase', vi.fn(), overrides);
+        fireEvent.click(screen.getByRole('button', { name: 'Generate Recovery Phrase' }));
+        await screen.findByRole('button', { name: 'Next: check it' });
+        expect(await screen.findByText('Step 1 of 2 · Save')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Next: check it' }));
+        expect(await screen.findByText('Step 2 of 2 · Check')).toBeInTheDocument();
+        return rendered;
+    };
+
+    it('asks before closing mid-check and returns to the question on Finish setup', async () => {
+        const { props } = await startPhraseCheck();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+        expect(screen.getByRole('alertdialog', { name: guardTitle })).toBeInTheDocument();
+        expect(props.onClose).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Finish setup' }));
+
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+        expect(screen.getByRole('heading', { name: 'Which word is #1?' })).toBeInTheDocument();
+    });
+
+    it('closes once when the user deliberately discards', async () => {
+        const { props } = await startPhraseCheck();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Discard phrase' }));
+
+        expect(props.onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('guards the bottom Skip button and tab switches too', async () => {
+        const { props } = await startPhraseCheck();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Skip for Now' }));
+        expect(screen.getByRole('alertdialog', { name: guardTitle })).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Finish setup' }));
+
+        fireEvent.click(screen.getByRole('button', { name: /Backup/ }));
+        expect(screen.getByRole('alertdialog', { name: guardTitle })).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Discard phrase' }));
+
+        expect(props.onClose).not.toHaveBeenCalled();
+        expect(screen.getByRole('button', { name: 'Generate Backup File' })).toBeInTheDocument();
+    });
+
+    it('marks the unfinished method on its tab', async () => {
+        await startPhraseCheck();
+
+        expect(screen.getByRole('button', { name: /Phrase.*Not finished/ })).toBeInTheDocument();
+    });
+
+    it('lets the host backdrop go through the same guard', async () => {
+        let requestClose: (() => void) | undefined;
+        const { props } = await startPhraseCheck({
+            registerCloseRequest: fn => {
+                requestClose = fn;
+            },
+        });
+
+        requestClose?.();
+
+        expect(await screen.findByRole('alertdialog', { name: guardTitle })).toBeInTheDocument();
+        expect(props.onClose).not.toHaveBeenCalled();
+    });
+
+    it('closes immediately when nothing is unfinished', () => {
+        const { props } = renderModal('phrase');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+        expect(props.onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('closes immediately after the check passes', async () => {
+        const { props } = await startPhraseCheck();
+
+        fireEvent.click(screen.getByRole('button', { name: 'one' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'three' }));
+        await waitFor(() => expect(props.onConfirmPhrase).toHaveBeenCalled());
+        await waitFor(() => expect(screen.queryByText('Step 2 of 2 · Check')).toBeNull());
+
+        fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+        expect(props.onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('asks before closing after a backup download that has not been checked', async () => {
+        vi.stubGlobal('URL', { createObjectURL: vi.fn(() => 'blob:x'), revokeObjectURL: vi.fn() });
+        const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+        const { props } = renderModal('backup');
+
+        fireEvent.change(screen.getByPlaceholderText('At least 8 characters'), {
+            target: { value: 'secure-password' },
+        });
+        fireEvent.change(screen.getByPlaceholderText('Type it again'), {
+            target: { value: 'secure-password' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Generate Backup File' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'Download Backup File' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+        expect(
+            screen.getByRole('alertdialog', { name: 'Finish setting up your backup file?' })
+        ).toBeInTheDocument();
+        expect(props.onClose).not.toHaveBeenCalled();
+        vi.unstubAllGlobals();
+        click.mockRestore();
+    });
+});

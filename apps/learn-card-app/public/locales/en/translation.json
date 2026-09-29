@@ -2220,7 +2220,7 @@
         },
         "showNotSetUp": "Show {{count}} not set up",
         "hideNotSetUp": "Hide methods not set up",
-        "stepOf": "Step {current} of {total}",
+        "stepOf": "Step {{current}} of {{total}}",
         "hint": {
             "oneMoreStep": "One more step: check your file."
         },
@@ -2234,7 +2234,8 @@
             "discardBackup": "Discard backup",
             "discardEmail": "Discard",
             "discardNote": "The one you saved won't work. You can make a new one anytime."
-        }
+        },
+        "notFinished": "Not finished"
     },
     "alerts": {
         "accepted": "Accepted",

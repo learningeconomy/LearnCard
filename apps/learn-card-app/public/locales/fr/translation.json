@@ -2175,7 +2175,7 @@
         },
         "showNotSetUp": "Afficher {{count}} non configurés",
         "hideNotSetUp": "Masquer les méthodes non configurées",
-        "stepOf": "Étape {current} sur {total}",
+        "stepOf": "Étape {{current}} sur {{total}}",
         "hint": {
             "oneMoreStep": "Encore une étape : vérifiez votre fichier."
         },
@@ -2189,7 +2189,8 @@
             "discardBackup": "Ignorer la sauvegarde",
             "discardEmail": "Ignorer",
             "discardNote": "Celui que vous avez sauvegardé ne fonctionnera pas. Vous pouvez en créer un nouveau à tout moment."
-        }
+        },
+        "notFinished": "Non terminé"
     },
     "alerts": {
         "title": "Alertes",

@@ -2175,7 +2175,7 @@
         },
         "showNotSetUp": "Mostrar {{count}} sin configurar",
         "hideNotSetUp": "Ocultar métodos sin configurar",
-        "stepOf": "Paso {current} de {total}",
+        "stepOf": "Paso {{current}} de {{total}}",
         "hint": {
             "oneMoreStep": "Un paso más: comprueba tu archivo."
         },
@@ -2189,7 +2189,8 @@
             "discardBackup": "Descartar copia de seguridad",
             "discardEmail": "Descartar",
             "discardNote": "El que guardaste no funcionará. Puedes crear uno nuevo en cualquier momento."
-        }
+        },
+        "notFinished": "Sin terminar"
     },
     "alerts": {
         "title": "Alertas",

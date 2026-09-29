@@ -42,7 +42,11 @@ vi.mock('../../paraglide/messages.js', () => ({
     'recovery.setup.email.sendCodeBtn': () => 'Send Verification Code',
     'recovery.setup.email.verifyCodeBtn': () => 'Verify Code',
 
-    'recovery.stepOf': () => 'Step 1 of 2',
+    'recovery.stepOf': ({ current, total }: { current: string; total: string }) =>
+        `Step ${current} of ${total}`,
+    'recovery.setup.notFinished': () => 'Not finished',
+    'recovery.setup.phrase.nextCheckIt': () => 'Next: check it',
+    'recovery.setup.backup.oneMoreStep': () => 'One more step: check your file.',
     'recovery.step.save': () => 'Save',
     'recovery.step.check': () => 'Check',
     'recovery.step.send': () => 'Send',
@@ -189,7 +193,7 @@ describe('RecoverySetupModal prompt integration', () => {
         const rendered = renderModal('phrase', vi.fn(), overrides);
         fireEvent.click(screen.getByRole('button', { name: 'Generate Recovery Phrase' }));
         await waitFor(() => expect(rendered.props.onGeneratePhrase).toHaveBeenCalledOnce());
-        fireEvent.click(await screen.findByRole('button', { name: 'Confirm Recovery Phrase' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'Next: check it' }));
         return rendered;
     };
 
@@ -279,7 +283,7 @@ describe('RecoverySetupModal prompt integration', () => {
         await waitFor(() => expect(props.onGeneratePhrase).toHaveBeenCalledOnce());
         expect(onCompleted).not.toHaveBeenCalled();
 
-        fireEvent.click(screen.getByRole('button', { name: 'Confirm Recovery Phrase' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Next: check it' }));
         expect(onCompleted).not.toHaveBeenCalled();
 
         const challengeButtons = await screen.findAllByRole('button', {
@@ -359,5 +363,62 @@ describe('RecoverySetupModal prompt integration', () => {
 
         await waitFor(() => expect(props.onConfirmEmailRecovery).toHaveBeenCalledWith('654321'));
         expect(onCompleted).toHaveBeenCalledWith('email');
+    });
+});
+
+describe('RecoverySetupModal unfinished-check guard', () => {
+    const guardTitle = 'Finish setting up your recovery phrase?';
+
+    const startPhraseCheck = async (
+        overrides: Partial<React.ComponentProps<typeof RecoverySetupModal>> = {}
+    ) => {
+        const rendered = renderModal('phrase', vi.fn(), overrides);
+        fireEvent.click(screen.getByRole('button', { name: 'Generate Recovery Phrase' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'Next: check it' }));
+        await screen.findByText('Step 2 of 2 · Check');
+        return rendered;
+    };
+
+    it('asks before leaving mid-check, then closes only on a deliberate discard', async () => {
+        const { props } = await startPhraseCheck();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Skip for Now' }));
+        expect(screen.getByRole('alertdialog', { name: guardTitle })).toBeTruthy();
+        expect(props.onClose).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Finish setup' }));
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Skip for Now' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Discard phrase' }));
+        expect(props.onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('guards tab switches and host dismissals, and marks the tab', async () => {
+        let requestClose: (() => void) | undefined;
+        const { props } = await startPhraseCheck({
+            registerCloseRequest: fn => {
+                requestClose = fn;
+            },
+        });
+
+        expect(screen.getByRole('button', { name: /Phrase.*Not finished/ })).toBeTruthy();
+
+        requestClose?.();
+        expect(await screen.findByRole('alertdialog', { name: guardTitle })).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: 'Finish setup' }));
+
+        fireEvent.click(screen.getByRole('button', { name: /Backup/ }));
+        expect(screen.getByRole('alertdialog', { name: guardTitle })).toBeTruthy();
+        expect(props.onClose).not.toHaveBeenCalled();
+    });
+
+    it('closes immediately when nothing is unfinished', () => {
+        const { props } = renderModal('phrase');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Skip for Now' }));
+
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+        expect(props.onClose).toHaveBeenCalledTimes(1);
     });
 });
