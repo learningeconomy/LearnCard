@@ -316,7 +316,7 @@ describe('RecoveryFlowModal', () => {
             />
         );
 
-        expect(screen.queryByRole('button', { name: /sign in from another device/i })).toBeNull();
+        expect(screen.queryByRole('button', { name: /approve from another device/i })).toBeNull();
         expect(screen.getByRole('button', { name: /phrase/i })).toBeEnabled();
         expect(screen.queryByText('QrLoginRequester')).toBeNull();
     });
@@ -324,7 +324,7 @@ describe('RecoveryFlowModal', () => {
     it('keeps device linking available in ordinary recovery', () => {
         render(<RecoveryFlowModal {...defaultProps} onRecoverWithDevice={vi.fn()} />);
 
-        const deviceButton = screen.getByRole('button', { name: /sign in from another device/i });
+        const deviceButton = screen.getByRole('button', { name: /approve from another device/i });
         expect(deviceButton).toBeEnabled();
         fireEvent.click(deviceButton);
         expect(screen.getByText('QrLoginRequester')).toBeInTheDocument();

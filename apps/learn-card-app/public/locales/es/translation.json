@@ -1878,7 +1878,7 @@
     },
     "recovery": {
         "pin": {
-            "throttled": "Demasiados intentos por ahora. Espera un minuto y vuelve a intentarlo.",
+            "throttled": "Demasiados intentos. Por favor, inténtalo de nuevo más tarde.",
             "title": "PIN de recuperación",
             "instantRecoveryOn": "Recuperación instantánea: activada",
             "notSet": "Sin configurar",
@@ -2146,7 +2146,28 @@
         "tapTheWord": "Toca la palabra de tu frase de recuperación.",
         "wrongWord": "Esa no es la palabra n.º {{number}}. Revisa tu frase guardada e inténtalo de nuevo.",
         "showPhraseAgain": "Mostrar mi frase de nuevo",
-        "challengeProgress": "{{current}} de {{total}}"
+        "challengeProgress": "{{current}} de {{total}}",
+        "signInOnThisDevice": "Iniciar sesión en este dispositivo",
+        "signInOnThisDeviceDesc": "Usa un método que ya hayas configurado para terminar de iniciar sesión.",
+        "signInAgainOnThisDevice": "Vuelve a iniciar sesión en este dispositivo",
+        "signInAgainOnThisDeviceDesc": "Usa un método que ya hayas configurado para continuar.",
+        "hero": {
+            "device": "Aprobar desde otro dispositivo",
+            "deviceDesc": "Escanea un código con un teléfono o computadora donde hayas iniciado sesión",
+            "passkey": "Usa tu llave de acceso",
+            "passkeyDesc": "Inicia sesión con Face ID, Touch ID o el PIN de tu dispositivo"
+        },
+        "moreWaysToSignIn": "Más formas de iniciar sesión",
+        "notSetUp": "No configurado",
+        "cantUseAny": "No puedo usar ninguno de estos",
+        "cantUseAnotherDevice": "No puedo usar otro dispositivo",
+        "getBackIntoAccount": "Recupera el acceso a tu cuenta",
+        "getBackIntoAccountDesc": "Confirmaremos que eres tú y luego configuraremos este dispositivo desde cero.",
+        "thisWill": "Esto hará lo siguiente:",
+        "consequence": {
+            "signOut": "Cerrará tu sesión en tus otros dispositivos",
+            "turnOff": "Desactivará tus otros métodos de inicio de sesión hasta que los vuelvas a configurar"
+        }
     },
     "alerts": {
         "title": "Alertas",

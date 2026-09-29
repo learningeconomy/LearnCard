@@ -1878,7 +1878,7 @@
     },
     "recovery": {
         "pin": {
-            "throttled": "Trop de tentatives pour le moment. Attendez une minute et réessayez.",
+            "throttled": "Trop de tentatives. Veuillez réessayer plus tard.",
             "title": "PIN de récupération",
             "instantRecoveryOn": "Récupération instantanée : activée",
             "notSet": "Non défini",
@@ -2146,7 +2146,28 @@
         "tapTheWord": "Touchez le mot de votre phrase de récupération.",
         "wrongWord": "Ce n'est pas le mot nº {{number}}. Vérifiez votre phrase enregistrée et réessayez.",
         "showPhraseAgain": "Afficher à nouveau ma phrase",
-        "challengeProgress": "{{current}} sur {{total}}"
+        "challengeProgress": "{{current}} sur {{total}}",
+        "signInOnThisDevice": "Se connecter sur cet appareil",
+        "signInOnThisDeviceDesc": "Utilisez une méthode que vous avez déjà configurée pour terminer la connexion.",
+        "signInAgainOnThisDevice": "Se reconnecter sur cet appareil",
+        "signInAgainOnThisDeviceDesc": "Utilisez une méthode que vous avez déjà configurée pour continuer.",
+        "hero": {
+            "device": "Approuver depuis un autre appareil",
+            "deviceDesc": "Scannez un code avec un téléphone ou un ordinateur où vous êtes connecté",
+            "passkey": "Utiliser votre clé d'accès",
+            "passkeyDesc": "Connectez-vous avec Face ID, Touch ID ou le code PIN de votre appareil"
+        },
+        "moreWaysToSignIn": "Plus de moyens de se connecter",
+        "notSetUp": "Non configuré",
+        "cantUseAny": "Je ne peux utiliser aucun de ceux-ci",
+        "cantUseAnotherDevice": "Je ne peux pas utiliser un autre appareil",
+        "getBackIntoAccount": "Récupérer l'accès à votre compte",
+        "getBackIntoAccountDesc": "Nous confirmerons que c'est bien vous, puis nous configurerons cet appareil à partir de zéro.",
+        "thisWill": "Ceci va :",
+        "consequence": {
+            "signOut": "Vous déconnecter de vos autres appareils",
+            "turnOff": "Désactiver vos autres méthodes de connexion jusqu'à ce que vous les reconfiguriez"
+        }
     },
     "alerts": {
         "title": "Alertes",

@@ -1878,7 +1878,7 @@
     },
     "recovery": {
         "pin": {
-            "throttled": "محاولات كثيرة الآن. انتظر دقيقة ثم حاول مرة أخرى.",
+            "throttled": "محاولات كثيرة جدًا. يرجى المحاولة مرة أخرى لاحقًا.",
             "title": "رمز PIN للاسترداد",
             "instantRecoveryOn": "الاسترداد الفوري: مفعّل",
             "notSet": "غير معيّن",
@@ -2146,7 +2146,28 @@
         "tapTheWord": "اضغط على الكلمة من عبارة الاسترداد الخاصة بك.",
         "wrongWord": "هذه ليست الكلمة رقم {{number}}. تحقق من العبارة المحفوظة وحاول مرة أخرى.",
         "showPhraseAgain": "عرض العبارة مرة أخرى",
-        "challengeProgress": "{{current}} من {{total}}"
+        "challengeProgress": "{{current}} من {{total}}",
+        "signInOnThisDevice": "تسجيل الدخول على هذا الجهاز",
+        "signInOnThisDeviceDesc": "استخدم طريقة قمت بإعدادها بالفعل لإنهاء تسجيل الدخول.",
+        "signInAgainOnThisDevice": "تسجيل الدخول مرة أخرى على هذا الجهاز",
+        "signInAgainOnThisDeviceDesc": "استخدم طريقة قمت بإعدادها بالفعل للمتابعة.",
+        "hero": {
+            "device": "الموافقة من جهاز آخر",
+            "deviceDesc": "امسح رمزًا ضوئيًا باستخدام هاتف أو كمبيوتر قمت بتسجيل الدخول إليه",
+            "passkey": "استخدم مفتاح المرور الخاص بك",
+            "passkeyDesc": "تسجيل الدخول باستخدام Face ID أو Touch ID أو رقم التعريف الشخصي لجهازك"
+        },
+        "moreWaysToSignIn": "المزيد من طرق تسجيل الدخول",
+        "notSetUp": "لم يتم الإعداد",
+        "cantUseAny": "لا يمكنني استخدام أي من هذه",
+        "cantUseAnotherDevice": "لا يمكنني استخدام جهاز آخر",
+        "getBackIntoAccount": "العودة إلى حسابك",
+        "getBackIntoAccountDesc": "سنتأكد من هويتك، ثم نقوم بإعداد هذا الجهاز من الصفر.",
+        "thisWill": "سيؤدي هذا إلى:",
+        "consequence": {
+            "signOut": "تسجيل خروجك من أجهزتك الأخرى",
+            "turnOff": "إيقاف طرق تسجيل الدخول الأخرى حتى تقوم بإعدادها مرة أخرى"
+        }
     },
     "alerts": {
         "title": "التنبيهات",

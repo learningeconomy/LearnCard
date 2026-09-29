@@ -36,6 +36,7 @@ export const formatTimeRemaining = (ms: number): string => {
 };
 
 export interface EscrowRecoveryPanelProps {
+    view: 'status' | 'start';
     scope?: string;
     available: boolean;
     pinAvailable?: boolean;
@@ -60,6 +61,7 @@ export const EscrowRecoveryPanel = ({
     onStatus,
     onRecover,
     canResumeCompleted,
+    view,
 }: EscrowRecoveryPanelProps) => {
     const active = useRef(true);
     const [pending, setPending] = useState<PendingEscrowRecovery>();
@@ -553,12 +555,13 @@ export const EscrowRecoveryPanel = ({
                       );
                   })()
                 : available &&
-                  !existingHold && (
+                  !existingHold &&
+                  view === 'start' && (
                       <>
                           {showPinFlow ? (
                               <div className="space-y-4">
                                   <h3 className="text-xl font-semibold text-grayscale-900">
-                                      Do you have a recovery PIN?
+                                      Enter my recovery PIN
                                   </h3>
                                   <p className="text-sm text-grayscale-600 leading-relaxed">
                                       Enter your 6-digit PIN for instant recovery.

@@ -2163,7 +2163,7 @@
             "dontHave": "I don't have a PIN",
             "incorrect": "Incorrect PIN. {{attempts}} attempts left.",
             "locked": "Too many attempts. You can still recover by waiting 7 days.",
-            "throttled": "Too many tries right now. Wait a minute and try again.",
+            "throttled": "Too many attempts. Please try again later.",
             "title": "Recovery PIN",
             "instantRecoveryOn": "Instant recovery: On",
             "notSet": "Not set",
@@ -2191,6 +2191,27 @@
             "stopping": "Stopping…",
             "success": "Recovery stopped. Your account is safe.",
             "dismiss": "It was me"
+        },
+        "signInOnThisDevice": "Sign in on this device",
+        "signInOnThisDeviceDesc": "Use a way you've already set up to finish signing in.",
+        "signInAgainOnThisDevice": "Sign in again on this device",
+        "signInAgainOnThisDeviceDesc": "Use a way you've already set up to continue.",
+        "hero": {
+            "device": "Approve from another device",
+            "deviceDesc": "Scan a code with a phone or computer where you're signed in",
+            "passkey": "Use your passkey",
+            "passkeyDesc": "Sign in with Face ID, Touch ID, or your device PIN"
+        },
+        "moreWaysToSignIn": "More ways to sign in",
+        "notSetUp": "Not set up",
+        "cantUseAny": "I can't use any of these",
+        "cantUseAnotherDevice": "I can't use another device",
+        "getBackIntoAccount": "Get back into your account",
+        "getBackIntoAccountDesc": "We'll confirm it's you, then set up this device from scratch.",
+        "thisWill": "This will:",
+        "consequence": {
+            "signOut": "Sign you out on your other devices",
+            "turnOff": "Turn off your other sign-in methods until you set them up again"
         }
     },
     "alerts": {
