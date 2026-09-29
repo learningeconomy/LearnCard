@@ -56,11 +56,20 @@ import type { DuplicateCredentialResolution } from '../../components/credentials
 
 import { VCAPIRequestStrategy } from './ClaimFromRequest';
 import { getInboxDeliveryId, type InboxDelivery } from './inboxDelivery';
+import InboxGuardianPending, { normalizeInboxClaimOutcomes } from './InboxGuardianPending';
+import type { InboxClaimOutcome } from './exchange.types';
 
 interface ExchangeAcceptCredentialsProps {
     inboxDeliveries?: InboxDelivery[];
+    /** Optional guardian-gated outcomes; absent on older VC-API responses. */
+    inboxClaimOutcomes?: InboxClaimOutcome[];
     verifiablePresentation: VP; // Contains the verifiablePresentation from the server
     onAccept: (body: Record<string, unknown>, credentialClaimCount: number) => void; // Callback to continue the exchange
+    /** Starts a fresh exchange challenge; never reuses a previously signed VP. */
+    onCheckAgain?: () => void;
+    isCheckingOutcomes?: boolean;
+    outcomeCheckError?: boolean;
+    onGoHome?: () => void;
     requestDuplicateResolution: (
         credential: VC,
         lookup?: DuplicateCredentialLookup
@@ -73,7 +82,12 @@ interface ExchangeAcceptCredentialsProps {
 const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     verifiablePresentation,
     inboxDeliveries,
+    inboxClaimOutcomes,
     onAccept,
+    onCheckAgain,
+    isCheckingOutcomes = false,
+    outcomeCheckError = false,
+    onGoHome,
     requestDuplicateResolution,
     isCheckingDuplicate,
     sourceBoostUri,
@@ -81,6 +95,12 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 }) => {
     const [claiming, setClaiming] = useState(false);
     const [isClaimed, setIsClaimed] = useState(false);
+
+    // Guardian-gated outcomes are kept separate from an empty/`no credentials`
+    // response: presence (even with no eligible credentials) means "waiting",
+    // not "nothing to claim".
+    const pendingOutcomes = normalizeInboxClaimOutcomes(inboxClaimOutcomes);
+    const hasPendingOutcomes = pendingOutcomes.length > 0;
 
     // Normalize credential(s) to always be an array
     const getCredentials = () => {
@@ -119,6 +139,38 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     const flowStartedAt = useRef(Date.now());
     const claimAttemptRef = useRef<FlowLifecycle | null>(null);
     const presentedBatchKeyRef = useRef<string | null>(null);
+
+    const handleGoHome = () => {
+        if (onGoHome) {
+            onGoHome();
+            return;
+        }
+
+        history.push('/');
+    };
+
+    const renderPendingSummary = (variant: 'inline' | 'page') => (
+        <InboxGuardianPending
+            outcomes={pendingOutcomes}
+            variant={variant}
+            onCheckAgain={onCheckAgain}
+            isCheckingAgain={isCheckingOutcomes}
+            checkAgainError={outcomeCheckError}
+            onGoHome={handleGoHome}
+        />
+    );
+
+    const renderPendingPage = () => (
+        <IonPage>
+            <IonContent fullscreen className="ion-padding">
+                <div className="min-h-full bg-grayscale-100 flex items-center justify-center p-4 font-poppins">
+                    <div className="w-full max-w-md safe-area-top-margin animate-fade-in-up">
+                        {renderPendingSummary('page')}
+                    </div>
+                </div>
+            </IonContent>
+        </IonPage>
+    );
 
     const resolvePartnerId = (issuerId?: string) => {
         const profileId = getUserHandleFromDid(issuerId ?? '');
@@ -426,7 +478,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     };
 
     const renderSingleCredentialCard = (credential: VC) => {
-        const name = credential.name || 'Credential';
+        const name = credential.name || m['claim.modal.credentialFallback']();
 
         return (
             <AccessibleCredentialCard label={name}>
@@ -466,6 +518,9 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                         {m['claim.accept.tapHint']()}
                     </p>
                 </div>
+
+                {/* Mixed batch: eligible cards plus the guardian-gated waiting summary. */}
+                {hasPendingOutcomes && <div className="mb-6">{renderPendingSummary('inline')}</div>}
 
                 {/* Credentials Grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 justify-items-center">
@@ -555,6 +610,10 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     );
 
     if (credentials.length === 0) {
+        // Pending/rejected guardian outcomes are a distinct state from a
+        // genuine "no credentials" response — never show the empty-state advice.
+        if (hasPendingOutcomes) return renderPendingPage();
+
         return (
             <IonPage>
                 <IonContent fullscreen className="ion-padding">
@@ -639,6 +698,10 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
         );
     }
 
+    // Eligible credentials have already been saved locally; showing the accept
+    // grid again would invite a duplicate re-save. Keep the pending summary.
+    if (isClaimed && hasPendingOutcomes) return renderPendingPage();
+
     const claimBtnText = isClaimed
         ? m['claim.accept.claimed']()
         : isCheckingDuplicate || claiming
@@ -704,6 +767,12 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                 } ${Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'}`}
                             >
                                 <div className="pb-4 vc-preview-modal-safe-area h-full w-full">
+                                    {hasPendingOutcomes && (
+                                        <div className="mx-auto w-full max-w-md px-4 pt-4">
+                                            {renderPendingSummary('inline')}
+                                        </div>
+                                    )}
+
                                     {renderSingleCredentialCard(credential)}
                                 </div>
                             </section>

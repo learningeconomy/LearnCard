@@ -2436,6 +2436,23 @@
             "support": "Contact support",
             "claimed": "Claimed",
             "claiming": "Claiming Credential(s)..."
+        },
+        "pending": {
+            "title": "Waiting for guardian approval",
+            "subtitle": "Some credentials need a parent or guardian to approve them before they can be added.",
+            "awaiting": {
+                "one": "{{count}} credential is waiting for approval.",
+                "other": "{{count}} credentials are waiting for approval."
+            },
+            "awaitingHint": "Approval can take a little while. Check again to see if it's ready.",
+            "rejected": {
+                "one": "{{count}} credential was declined by a parent or guardian.",
+                "other": "{{count}} credentials were declined by a parent or guardian."
+            },
+            "checkAgain": "Check again",
+            "checking": "Checking...",
+            "checkAgainError": "We couldn't check for updates. Please try again.",
+            "goHome": "Go to home"
         }
     },
     "chapi": {

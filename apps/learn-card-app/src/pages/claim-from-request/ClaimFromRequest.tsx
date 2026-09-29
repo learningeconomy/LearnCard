@@ -54,10 +54,12 @@ import ExchangeAcceptCredentials from './ExchangeAcceptCredentials';
 import type {
     ExchangeResponse,
     ExchangePresentationRequestData,
+    InboxClaimOutcome,
     NormalizedExchangeResponse,
     VCAPIResponse,
 } from './exchange.types';
 export type { ExchangeResponse } from './exchange.types';
+import { normalizeInboxClaimOutcomes, resolveInboxClaimCompletion } from './InboxGuardianPending';
 import { getInboxDeliveryId, type InboxDelivery } from './inboxDelivery';
 import ExchangeInitiate from './ExchangeInitiate';
 import ExchangeDidAuth from './ExchangeDidAuth';
@@ -72,7 +74,6 @@ import {
     getClaimInteractionBoostUri,
     getClaimInteractionDuplicateLookup,
     isInboxClaimInteraction,
-    shouldCompleteInboxClaimLocally,
 } from './claimRequest.helpers';
 import { canParticipateInExchange, deriveInboxClaimProfileState } from './inboxClaimGate';
 
@@ -378,21 +379,6 @@ const ExchangeErrorDisplay: React.FC<{
                                 {friendlyError.suggestion}
                             </p>
                         </div>
-
-                        {/* Technical details (collapsed by default feeling) */}
-                        {Boolean(errorData) && rawErrorMessage !== friendlyError.description && (
-                            <details className="group">
-                                <summary className="text-xs text-grayscale-600 cursor-pointer hover:text-grayscale-900 transition-colors">
-                                    Show technical details
-                                </summary>
-
-                                <div className="mt-3 bg-grayscale-100 rounded-xl p-4">
-                                    <p className="text-xs text-grayscale-600 font-mono break-words">
-                                        {rawErrorMessage}
-                                    </p>
-                                </div>
-                            </details>
-                        )}
                     </div>
 
                     {/* Action buttons */}
@@ -471,6 +457,16 @@ const ClaimFromRequest: React.FC = () => {
     // (e.g. /achievements) instead of the generic passport (all categories).
     const inboxDeliveriesRef = useRef<InboxDelivery[]>([]);
     const claimedCredentialRef = useRef<VC | undefined>(undefined);
+
+    // Guardian-gated deliveries that could not be finalized yet. Optional on
+    // the wire, so this stays [] for older wrapped/unwrapped responses.
+    const [inboxClaimOutcomes, setInboxClaimOutcomes] = useState<InboxClaimOutcome[]>([]);
+    // Bumped whenever a fresh accept batch arrives so the accept screen remounts
+    // with the new VP instead of reusing stale credentials/handlers.
+    const [acceptBatchId, setAcceptBatchId] = useState(0);
+    const [isCheckingPendingOutcomes, setIsCheckingPendingOutcomes] = useState(false);
+    const [pendingOutcomeCheckError, setPendingOutcomeCheckError] = useState(false);
+    const previousRequestUrlRef = useRef<unknown>(undefined);
 
     const { track } = useAnalytics();
     const claimAttemptRef = useRef<FlowLifecycle | null>(null);
@@ -629,9 +625,25 @@ const ClaimFromRequest: React.FC = () => {
         handleRedirectTo: handleRedirectTo,
     });
 
+    // A changed exchange URL is a different claim: drop any outcomes, batch
+    // identity, and refs from the previous target so a stale pending summary
+    // can't bleed into the new one.
+    useEffect(() => {
+        if (previousRequestUrlRef.current === vc_request_url) return;
+
+        previousRequestUrlRef.current = vc_request_url;
+        setInboxClaimOutcomes([]);
+        setPendingOutcomeCheckError(false);
+        setIsCheckingPendingOutcomes(false);
+        setAcceptBatchId(id => id + 1);
+        inboxDeliveriesRef.current = [];
+        claimedCredentialRef.current = undefined;
+    }, [vc_request_url]);
+
     const handleRequest = async (
         body: Record<string, unknown> = {},
-        credentialClaimCount?: number
+        credentialClaimCount?: number,
+        options: { keepPendingSummary?: boolean } = {}
     ) => {
         // Hard stop: never contact the exchange endpoint (or locally complete an
         // inbox batch) until a Universal Inbox recipient has a confirmed LCN
@@ -645,13 +657,29 @@ const ClaimFromRequest: React.FC = () => {
         // Inbox credentials are finalized before the returned VCs are shown to the learner.
         // Once the learner saves that batch locally, there is no server-side completion request
         // left to make: posting an empty body would be interpreted as a new claim initiation and
-        // incorrectly return "No pending credentials found".
-        if (shouldCompleteInboxClaimLocally(vc_request_url, credentialClaimCount, body)) {
+        // incorrectly return "No pending credentials found". When guardian outcomes remain,
+        // retain the pending summary instead of navigating away so the waiting state survives.
+        const completion = resolveInboxClaimCompletion({
+            requestUrl: vc_request_url,
+            credentialClaimCount,
+            body,
+            outcomes: inboxClaimOutcomes,
+        });
+
+        if (completion === 'retain-pending') return;
+
+        if (completion === 'complete-locally') {
             void handleAfterCredentialClaim();
             return;
         }
 
-        setExchangeState({ state: ExchangeState.Loading });
+        if (!options.keepPendingSummary) {
+            setExchangeState({ state: ExchangeState.Loading });
+            // A fresh exchange must not surface a previous challenge's outcomes.
+            setInboxClaimOutcomes([]);
+            setPendingOutcomeCheckError(false);
+        }
+
         try {
             if (!vc_request_url) {
                 log.error('Missing required parameters: vc_request_url');
@@ -682,6 +710,9 @@ const ClaimFromRequest: React.FC = () => {
 
             // Server sent a Verifiable Presentation Request
             if (type === RequestResponseDataType.VerifiablePresentationRequest) {
+                // A new challenge supersedes any previously reported outcomes.
+                setInboxClaimOutcomes([]);
+
                 // Check if it's for specific credentials or general DID Auth
                 // This logic might need refinement based on your VPR structure
 
@@ -713,17 +744,28 @@ const ClaimFromRequest: React.FC = () => {
             } else if (type === RequestResponseDataType.VerifiablePresentation) {
                 // Remember the (first) credential being claimed for post-claim routing.
                 inboxDeliveriesRef.current = responseData?.inboxDeliveries ?? [];
+                // Awaiting/rejected guardian outcomes are separate from a genuine
+                // empty response; every VP replaces whatever was shown before.
+                setInboxClaimOutcomes(
+                    normalizeInboxClaimOutcomes(responseData?.inboxClaimOutcomes)
+                );
                 const vpCreds = data?.verifiableCredential;
                 claimedCredentialRef.current = Array.isArray(vpCreds) ? vpCreds[0] : vpCreds;
                 // Warm the destination category chunk while the user reviews the
                 // card so the post-claim navigation is instant.
                 warmPostClaimRoute(claimedCredentialRef.current);
+                // Remount the accept screen for the new VP so it can't reuse the
+                // previous batch's credentials or claimed state.
+                setAcceptBatchId(id => id + 1);
                 setExchangeState({ state: ExchangeState.AcceptCredentials, data, strategy });
                 // Server sent a redirect URL
             } else if (type === RequestResponseDataType.RedirectUrl) {
+                setInboxClaimOutcomes([]);
                 setExchangeState({ state: ExchangeState.Redirect, data, strategy });
                 // Server sent something else: https://w3c-ccg.github.io/vc-api/#participate-in-an-exchange
             } else {
+                setInboxClaimOutcomes([]);
+
                 const submittedPresentation =
                     !!body?.verifiablePresentation ||
                     Object.prototype.hasOwnProperty.call(body ?? {}, '@context');
@@ -746,6 +788,15 @@ const ClaimFromRequest: React.FC = () => {
             }
         } catch (error) {
             log.error('Error in VC-API exchange flow:', error);
+
+            // A failed "Check Again" keeps the pending summary mounted and
+            // surfaces an inline retry instead of replacing it with the error screen.
+            if (options.keepPendingSummary) {
+                setPendingOutcomeCheckError(true);
+                return;
+            }
+
+            setInboxClaimOutcomes([]);
             setExchangeState({ state: ExchangeState.Error, data: error });
         }
     };
@@ -755,6 +806,20 @@ const ClaimFromRequest: React.FC = () => {
             handleRequest(); // Initiate the exchange
         }
     }, [canParticipate]);
+
+    /**
+     * Starts a brand-new inbox challenge. Deliberately sends an empty body so no
+     * previously signed VP is reused — the server answers with a fresh DID-auth
+     * challenge that the learner must re-sign.
+     */
+    const handleCheckInboxOutcomesAgain = () => {
+        setPendingOutcomeCheckError(false);
+        setIsCheckingPendingOutcomes(true);
+
+        void handleRequest({}, undefined, { keepPendingSummary: true }).finally(() => {
+            setIsCheckingPendingOutcomes(false);
+        });
+    };
 
     const handleAfterCredentialClaim = async (claimedCredential?: VC) => {
         setExchangeState({ state: ExchangeState.Finished });
@@ -896,9 +961,15 @@ const ClaimFromRequest: React.FC = () => {
             case ExchangeState.AcceptCredentials:
                 return (
                     <ExchangeAcceptCredentials
+                        key={`exchange-accept-${acceptBatchId}`}
                         verifiablePresentation={exchangeState.data}
                         inboxDeliveries={inboxDeliveriesRef.current}
+                        inboxClaimOutcomes={inboxClaimOutcomes}
                         onAccept={handleRequest}
+                        onCheckAgain={handleCheckInboxOutcomesAgain}
+                        isCheckingOutcomes={isCheckingPendingOutcomes}
+                        outcomeCheckError={pendingOutcomeCheckError}
+                        onGoHome={() => history.push('/')}
                         strategy={exchangeState.strategy}
                         requestDuplicateResolution={requestDuplicateResolution}
                         isCheckingDuplicate={isCheckingDuplicate}
@@ -929,7 +1000,7 @@ const ClaimFromRequest: React.FC = () => {
                 return (
                     <ExchangeErrorDisplay
                         errorData={exchangeState.data}
-                        onRetry={handleRequest}
+                        onRetry={() => handleRequest()}
                         onCancel={() => history.push('/')}
                     />
                 );

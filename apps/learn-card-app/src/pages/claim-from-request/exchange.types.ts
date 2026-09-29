@@ -12,6 +12,19 @@ export interface ExchangePresentationRequestData {
     domain: string;
 }
 
+/**
+ * Guardian-gated inbox credentials that could not be delivered yet. The brain
+ * service short-circuits these instead of signing/delivering them, so the
+ * claimant can be shown a waiting (or declined) state instead of a genuine
+ * "no credentials" empty response.
+ */
+export type InboxClaimOutcomeStatus = 'AWAITING_GUARDIAN' | 'GUARDIAN_REJECTED';
+
+export interface InboxClaimOutcome {
+    id: string;
+    status: InboxClaimOutcomeStatus;
+}
+
 /** The wrapped and legacy unwrapped responses supported by the VC-API exchange. */
 export type VCAPIResponse = Partial<VP> &
     Partial<ExchangePresentationRequestData> & {
@@ -19,6 +32,8 @@ export type VCAPIResponse = Partial<VP> &
         verifiablePresentation?: VP;
         redirectUrl?: string;
         inboxDeliveries?: InboxDelivery[];
+        /** Optional so older wrapped/unwrapped responses stay valid. */
+        inboxClaimOutcomes?: InboxClaimOutcome[];
         message?: string;
     };
 
