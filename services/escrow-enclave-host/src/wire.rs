@@ -74,6 +74,12 @@ pub enum Request {
         target_share_version: u32,
         source_enrollment_epoch: u64,
     },
+    RewrapEscrowBlob {
+        envelope: Envelope,
+        expected_did: String,
+        expected_share_version: u32,
+        source_enrollment_epoch: u64,
+    },
     Release {
         envelope: Envelope,
         hold: SignedHoldRecord,
@@ -147,6 +153,9 @@ pub enum Response {
         reason: Option<String>,
     },
     CarryPinVerifier {
+        envelope: Envelope,
+    },
+    RewrapEscrowBlob {
         envelope: Envelope,
     },
     Release {

@@ -72,12 +72,30 @@ export interface CarryPinVerifierInput {
      * (see softwareEnclave.ts, which relies on the host Mongo counter instead). */
     sourceEnrollmentEpoch: number;
 }
+export interface RewrapEscrowBlobInput {
+    envelope: EscrowEnvelope;
+    expectedDid: string;
+    expectedShareVersion: number;
+    /** P9.3: locates the source epoch's ledger chain, exactly like
+     * `CarryPinVerifierInput.sourceEnrollmentEpoch`, so the migrated copy's
+     * spent PIN attempt budget carries forward instead of resetting;
+     * ignored in software mode (no enclave ledger to reset in the first
+     * place — see softwareEnclave.ts). */
+    sourceEnrollmentEpoch: number;
+}
 export interface EscrowEnclave {
     /** `nonce` binds a nitro attestation to one client-generated challenge (64 hex chars,
      * decoded to bytes); the software backend has no freshness story and ignores it. */
     getAttestation(nonce?: Uint8Array): Promise<EnclaveAttestation>;
     verifyEscrowBlob(input: VerifyEscrowBlobInput): Promise<VerifyEscrowBlobResult>;
     carryPinVerifier(input: CarryPinVerifierInput): Promise<{ envelope: EscrowEnvelope }>;
+    /** P9.3: migrates a copy sealed under a recognised PREVIOUS key onto the
+     * CURRENT key (same did/shareVersion/recoveryShare/pinVerifier), so a
+     * previous key can eventually be retired. Refuses (generic
+     * `EscrowBlobError`) unless the envelope's own keyId is a recognised
+     * previous key — never the current key (nothing to migrate) or an
+     * unknown one. */
+    rewrapEscrowBlob(input: RewrapEscrowBlobInput): Promise<{ envelope: EscrowEnvelope }>;
     releaseEscrow(input: ReleaseRequest): Promise<ReleaseResult>;
     createHold(input: EnclaveCreateHoldInput): Promise<{ holdRecord: EscrowHoldRecord }>;
     cancelHold(input: CancelHoldRequest): Promise<void>;

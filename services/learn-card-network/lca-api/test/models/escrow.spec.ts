@@ -29,6 +29,8 @@ import {
     rotateEscrowCancelToken,
     reserveEscrowPinAttempt,
     refundEscrowPinAttempt,
+    rewrapEscrowBlobByAuthProvider,
+    findUserKeysWithEscrowBlobKeyId,
     type EscrowBlob,
     type AuthProviderMapping,
 } from '@models';
@@ -233,6 +235,100 @@ describe('escrow model invariants', () => {
         expect(
             await setEscrowBlobByAuthProvider(provider, { ...blob, shareVersion: 2 }, 2)
         ).toBeNull();
+    });
+    it('rewraps a previous-key blob onto the current key (P9.3): epoch+1, same version, escrowPin untouched', async () => {
+        const stored = await setEscrowBlobByAuthProvider(provider, blob, 1, {
+            salt: Buffer.alloc(16).toString('base64'),
+        });
+        const oldBlob = stored!.escrowBlob!;
+        const oldPin = stored!.escrowPin!;
+        const newEnvelope: EscrowBlob['envelope'] = {
+            ...blob.envelope,
+            keyId: 'current',
+            ciphertext: '$rewrapped-data',
+        };
+        const rewrapped = await rewrapEscrowBlobByAuthProvider(
+            provider,
+            oldBlob,
+            oldPin,
+            newEnvelope,
+            {
+                enclaveKeyId: 'current',
+                enclaveMode: 'software',
+                measurements: {},
+            }
+        );
+        expect(rewrapped?.escrowBlob).toEqual({
+            envelope: newEnvelope,
+            enclaveKeyId: 'current',
+            enclaveMode: 'software',
+            measurements: {},
+            shareVersion: oldBlob.shareVersion,
+            enrollmentEpoch: oldBlob.enrollmentEpoch + 1,
+            blobHash: expect.stringMatching(/^[0-9a-f]{64}$/),
+            createdAt: expect.any(Date),
+        });
+        expect(rewrapped?.escrowBlob?.blobHash).not.toBe(oldBlob.blobHash);
+        // escrowPin is byte-identical to what was read before the rewrap — the
+        // model never touches it, and the CAS filter proves it wasn't touched
+        // by anything else concurrently either.
+        expect(rewrapped?.escrowPin).toEqual(oldPin);
+        // Lost race: presenting the now-stale oldBlob/oldPin again is a no-op,
+        // not an error — a later job run should simply re-observe and retry.
+        expect(
+            await rewrapEscrowBlobByAuthProvider(provider, oldBlob, oldPin, newEnvelope, {
+                enclaveKeyId: 'current',
+                enclaveMode: 'software',
+                measurements: {},
+            })
+        ).toBeNull();
+    });
+    it('rewrapEscrowBlobByAuthProvider: concurrent runs never double-write; a mid-run re-enroll wins the race', async () => {
+        const stored = await setEscrowBlobByAuthProvider(provider, blob, 1, {
+            salt: Buffer.alloc(16).toString('base64'),
+        });
+        const oldBlob = stored!.escrowBlob!;
+        const oldPin = stored!.escrowPin!;
+        const attempt = (ciphertext: string): ReturnType<typeof rewrapEscrowBlobByAuthProvider> =>
+            rewrapEscrowBlobByAuthProvider(
+                provider,
+                oldBlob,
+                oldPin,
+                { ...blob.envelope, keyId: 'current', ciphertext },
+                { enclaveKeyId: 'current', enclaveMode: 'software', measurements: {} }
+            );
+        const [first, second] = await Promise.all([attempt('$race-a'), attempt('$race-b')]);
+        expect([first, second].filter(result => result !== null)).toHaveLength(1);
+        // A concurrent re-enrollment (a NEW escrowBlob, different from oldBlob)
+        // between read and write also wins the race against a stale rewrap.
+        const reenrolled = await setEscrowBlobByAuthProvider(provider, blob, 1);
+        expect(reenrolled?.escrowBlob?.envelope.keyId).toBe('test');
+        expect(
+            await rewrapEscrowBlobByAuthProvider(
+                provider,
+                oldBlob,
+                oldPin,
+                { ...blob.envelope, keyId: 'current', ciphertext: '$stale' },
+                { enclaveKeyId: 'current', enclaveMode: 'software', measurements: {} }
+            )
+        ).toBeNull();
+    });
+    it('findUserKeysWithEscrowBlobKeyId: matches given keyIds, excludes opted-out accounts', async () => {
+        await setEscrowBlobByAuthProvider(provider, blob, 1);
+        expect(
+            (await findUserKeysWithEscrowBlobKeyId(['test'], 10)).map(u => u.authProviders[0]?.id)
+        ).toContain(provider.id);
+        expect(await findUserKeysWithEscrowBlobKeyId(['nonexistent-key'], 10)).toEqual([]);
+        await clearEscrowByAuthProvider(provider, { optOut: true });
+        await getUserKeysCollection().updateOne(
+            { 'authProviders.id': provider.id },
+            { $set: { escrowBlob: blob } }
+        );
+        expect(
+            (await findUserKeysWithEscrowBlobKeyId(['test'], 10)).some(
+                u => u.authProviders[0]?.id === provider.id
+            )
+        ).toBe(false);
     });
     it('clears with and without opting out; explicit opt-in permits enrollment again', async () => {
         await setEscrowBlobByAuthProvider(provider, blob, 1);

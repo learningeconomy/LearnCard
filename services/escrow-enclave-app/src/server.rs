@@ -203,6 +203,26 @@ impl Service<'_> {
                     .await?;
                 Ok(Response::CarryPinVerifier { envelope })
             }
+            Request::RewrapEscrowBlob {
+                envelope,
+                expected_did,
+                expected_share_version,
+                source_enrollment_epoch,
+            } => {
+                if expected_share_version == 0 {
+                    return Err(ErrorCode::Blob);
+                }
+                let envelope = self
+                    .policy
+                    .rewrap_escrow_blob(
+                        &envelope,
+                        &expected_did,
+                        expected_share_version,
+                        source_enrollment_epoch,
+                    )
+                    .await?;
+                Ok(Response::RewrapEscrowBlob { envelope })
+            }
             Request::CreateHold {
                 envelope,
                 hold_id,

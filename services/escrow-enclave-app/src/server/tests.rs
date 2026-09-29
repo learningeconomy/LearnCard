@@ -586,7 +586,7 @@ async fn boot_with_two_previous_keys_advertises_them_and_releases_a_previous_key
     let sealed = match call(
         address,
         Request::Release {
-            envelope: previous_envelope,
+            envelope: previous_envelope.clone(),
             hold,
             request_id: "previous-release".into(),
             client_ephemeral_public_key: client.public_key.clone(),
@@ -602,6 +602,56 @@ async fn boot_with_two_previous_keys_advertises_them_and_releases_a_previous_key
     let release = crypto::open_escrow_release(&sealed, &client.private_key).unwrap();
     assert_eq!(release.blob.did, "did:key:test");
     assert_eq!(release.hold_id, "previous-hold");
+    // P9.3: the same previous-key blob migrates onto the current key through
+    // the real wire dispatch (not just the policy layer). Refuses a second
+    // attempt against the already-current-key result (nothing left to migrate).
+    let rewrapped = match call(
+        address,
+        Request::RewrapEscrowBlob {
+            envelope: previous_envelope,
+            expected_did: "did:key:test".into(),
+            expected_share_version: 1,
+            source_enrollment_epoch: 1,
+        },
+    )
+    .await
+    {
+        Response::RewrapEscrowBlob { envelope } => envelope,
+        other => panic!("{other:?}"),
+    };
+    assert_eq!(rewrapped.key_id, "emulate");
+    assert!(matches!(
+        call(
+            address,
+            Request::VerifyBlob {
+                envelope: rewrapped.clone(),
+                expected_did: "did:key:test".into(),
+                expected_share_version: 1,
+            },
+        )
+        .await,
+        Response::VerifyBlob {
+            ok: true,
+            has_pin: false,
+            ..
+        }
+    ));
+    assert!(matches!(
+        call(
+            address,
+            Request::RewrapEscrowBlob {
+                envelope: rewrapped,
+                expected_did: "did:key:test".into(),
+                expected_share_version: 1,
+                source_enrollment_epoch: 1,
+            },
+        )
+        .await,
+        Response::Error {
+            code: ErrorCode::Blob,
+            ..
+        }
+    ));
     task.abort();
 }
 

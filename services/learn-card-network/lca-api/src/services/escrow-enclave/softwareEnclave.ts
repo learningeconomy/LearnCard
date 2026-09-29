@@ -19,6 +19,7 @@ import {
     type ReleaseRequest,
     type ReleaseResult,
     type CarryPinVerifierInput,
+    type RewrapEscrowBlobInput,
 } from './types';
 
 export interface SoftwareEnclaveConfig {
@@ -197,6 +198,29 @@ export class SoftwareEnclave implements EscrowEnclave {
                 attestation.publicKey,
                 attestation.keyId
             ),
+        };
+    }
+
+    /**
+     * Software-mode equivalent of the Nitro enclave's `rewrap_escrow_blob`
+     * (P9.3): moves a blob sealed under any OTHER configured key onto the
+     * active key, unchanged otherwise. Mirrors its refusal shape — an
+     * envelope already under `activeKeyId` has nothing to migrate, and
+     * `decrypt()` already throws `EscrowBlobError` for a keyId this backend
+     * was never configured with, so both collapse into the same generic
+     * error. `sourceEnrollmentEpoch` is unused for the same reason
+     * `carryPinVerifier` ignores it above: no enclave ledger here, so no
+     * epoch-scoped PIN attempt budget to carry.
+     */
+    async rewrapEscrowBlob(input: RewrapEscrowBlobInput) {
+        const parsed = parseEscrowEnvelope(input.envelope);
+        if (parsed.keyId === this.activeKeyId) throw new EscrowBlobError();
+        const blob = await this.decrypt(input.envelope);
+        if (blob.did !== input.expectedDid || blob.shareVersion !== input.expectedShareVersion)
+            throw new EscrowBlobError();
+        const attestation = await this.getAttestation();
+        return {
+            envelope: await encryptEscrowBlob(blob, attestation.publicKey, attestation.keyId),
         };
     }
 

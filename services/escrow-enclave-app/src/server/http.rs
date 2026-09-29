@@ -50,6 +50,7 @@ pub(super) async fn read(stream: &mut dyn Socket, token: &str) -> io::Result<Req
         Some("/v1/attest") => "attest",
         Some("/v1/verify-blob") => "verifyBlob",
         Some("/v1/carry-pin-verifier") => "carryPinVerifier",
+        Some("/v1/rewrap-escrow-blob") => "rewrapEscrowBlob",
         Some("/v1/create-hold") => "createHold",
         Some("/v1/release") => "release",
         Some("/v1/cancel" | "/v1/cancel-hold") => "cancel",

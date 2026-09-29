@@ -95,8 +95,9 @@ pub struct Policy<'a> {
     keys: EscrowKeyPair,
     key_id: String,
     /// Unseal-only (P9.1): `decrypt` accepts an envelope keyed to any of
-    /// these, but every seal (`carry_pin_verifier`'s reseal; `release`/`cancel`
-    /// verify a signed hold, never re-seal a blob) always targets `keys`/`key_id`.
+    /// these, but every seal (`carry_pin_verifier`'s and
+    /// `rewrap_escrow_blob`'s reseal; `release`/`cancel` verify a signed
+    /// hold, never re-seal a blob) always targets `keys`/`key_id`.
     previous_keys: Vec<(String, EscrowKeyPair)>,
     tenant: String,
     ledger: Ledger,
@@ -173,10 +174,11 @@ impl<'a> Policy<'a> {
 
     /// Selects decrypt key material by the envelope's own `keyId`: the
     /// current key, or a recognised previous key (P9.1, unseal-only — every
-    /// caller that re-seals a blob, i.e. `carry_pin_verifier`, always targets
-    /// `self.keys`/`self.key_id`, never a previous key). An unrecognised
-    /// keyId is indistinguishable from any other malformed/undecryptable
-    /// envelope: the generic `Blob` error, never naming the rejected keyId.
+    /// caller that re-seals a blob, i.e. `carry_pin_verifier`/
+    /// `rewrap_escrow_blob`, always targets `self.keys`/`self.key_id`, never
+    /// a previous key). An unrecognised keyId is indistinguishable from any
+    /// other malformed/undecryptable envelope: the generic `Blob` error,
+    /// never naming the rejected keyId.
     fn decrypt(&self, envelope: &EscrowEnvelope) -> Result<EscrowBlobPlaintext, ErrorCode> {
         let private_key = if envelope.key_id == self.key_id {
             &self.keys.private_key
@@ -266,31 +268,104 @@ impl<'a> Policy<'a> {
             return Err(ErrorCode::Blob);
         }
         let source_hash = blob_hash(source_envelope)?;
-        let source_enrollment = Enrollment::new(
-            self.tenant.clone(),
-            &source.did,
-            source_enrollment_epoch,
-            source_hash,
-        );
-        let source_records = self
-            .store
-            .get_chain(&source_enrollment.chain_id())
-            .await
-            .map_err(|_| ErrorCode::Unavailable)?;
-        let source_state = Ledger::verify_chain(
-            &source_records,
-            &source_enrollment,
-            &self.ledger.public_key(),
-        )
-        .map_err(ledger_error)?;
-        let used = source
-            .pin_attempts_floor
-            .unwrap_or(0)
-            .saturating_add(source_state.attempts_used)
-            .min(PIN_BUDGET);
-        target.pin_attempts_floor = (used > 0).then_some(used);
+        target.pin_attempts_floor = self
+            .carried_attempts_floor(
+                &source.did,
+                source_enrollment_epoch,
+                source_hash,
+                source.pin_attempts_floor,
+            )
+            .await?;
         target.pin_verifier = source.pin_verifier.take();
         crypto::encrypt_escrow_blob(&target, &self.keys.public_key, &self.key_id)
+            .map_err(|_| ErrorCode::Blob)
+    }
+
+    /// Shared by `carry_pin_verifier` (P8.3) and `rewrap_escrow_blob` (P9.3):
+    /// loads and authenticates `did`'s ledger chain at `epoch`/`blob_hash`
+    /// and returns `min(PIN_BUDGET, floor.unwrap_or(0) + chain.attempts_used)`
+    /// as `Some(_)` (or `None` when zero) — the combined PIN-attempt budget
+    /// already spent, so a reseal (which changes the blob hash, and
+    /// therefore the enrollment chain identity, per D13/README "Identity and
+    /// schema") never resets the ten-attempt lifetime budget. A chain that
+    /// exists but fails signature/link/binding verification is a distinct
+    /// `Ledger`/`Unavailable` error, never silently treated as empty.
+    async fn carried_attempts_floor(
+        &self,
+        did: &str,
+        epoch: u64,
+        blob_hash: Hash,
+        floor: Option<u8>,
+    ) -> Result<Option<u8>, ErrorCode> {
+        let enrollment = Enrollment::new(self.tenant.clone(), did, epoch, blob_hash);
+        let records = self
+            .store
+            .get_chain(&enrollment.chain_id())
+            .await
+            .map_err(|_| ErrorCode::Unavailable)?;
+        let state = Ledger::verify_chain(&records, &enrollment, &self.ledger.public_key())
+            .map_err(ledger_error)?;
+        let used = floor
+            .unwrap_or(0)
+            .saturating_add(state.attempts_used)
+            .min(PIN_BUDGET);
+        Ok((used > 0).then_some(used))
+    }
+
+    /// P9.3: migrates an escrow copy sealed under a recognised PREVIOUS key
+    /// onto the CURRENT key, so a previous key can eventually be retired
+    /// (README "Previous keys / key rotation"). Same generic-`Blob`-error
+    /// shape as `carry_pin_verifier`/`verify_blob` (no distinguishing detail
+    /// on any rejection reason), and reuses `carried_attempts_floor` (P8.3)
+    /// so re-sealing — which changes `blob_hash`, and therefore the
+    /// enrollment chain identity — never resets the PIN attempt budget; see
+    /// that method's doc comment for the full rationale.
+    ///
+    /// Refuses (`Blob`) unless: the envelope's own `keyId` is a recognised
+    /// PREVIOUS key (the current key has nothing to migrate; an unknown key
+    /// is indistinguishable from any other undecryptable envelope); it
+    /// decrypts; `blob.did == expected_did`;
+    /// `blob.share_version == expected_share_version`; `source_enrollment_epoch`
+    /// is in range (same bound as `carry_pin_verifier`).
+    ///
+    /// Output: the identical plaintext (did, shareVersion, recoveryShare,
+    /// pinVerifier) re-sealed under the CURRENT key with a fresh
+    /// ephemeral/salt/IV, and `pinAttemptsFloor` recomputed via
+    /// `carried_attempts_floor`. No plaintext ever leaves in an error or
+    /// log; the decrypted value zeroizes on drop.
+    pub async fn rewrap_escrow_blob(
+        &self,
+        envelope: &EscrowEnvelope,
+        expected_did: &str,
+        expected_share_version: u32,
+        source_enrollment_epoch: u64,
+    ) -> Result<EscrowEnvelope, ErrorCode> {
+        if envelope.key_id == self.key_id
+            || !self
+                .previous_keys
+                .iter()
+                .any(|(id, _)| *id == envelope.key_id)
+        {
+            return Err(ErrorCode::Blob);
+        }
+        let mut blob = self.decrypt(envelope)?;
+        if blob.did != expected_did
+            || blob.share_version != f64::from(expected_share_version)
+            || source_enrollment_epoch == 0
+            || source_enrollment_epoch > JS_MAX_INTEGER
+        {
+            return Err(ErrorCode::Blob);
+        }
+        let hash = blob_hash(envelope)?;
+        blob.pin_attempts_floor = self
+            .carried_attempts_floor(
+                &blob.did,
+                source_enrollment_epoch,
+                hash,
+                blob.pin_attempts_floor,
+            )
+            .await?;
+        crypto::encrypt_escrow_blob(&blob, &self.keys.public_key, &self.key_id)
             .map_err(|_| ErrorCode::Blob)
     }
 

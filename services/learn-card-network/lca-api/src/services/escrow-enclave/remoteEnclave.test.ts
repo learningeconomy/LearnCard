@@ -218,6 +218,72 @@ describe('createRemoteEnclave', () => {
         ).rejects.toBeInstanceOf(EscrowUnavailableError);
     });
 
+    it('rewraps an escrow blob sealed under a previous key onto the current key', async () => {
+        const post = vi.fn().mockResolvedValue(respond(200, { envelope }));
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+        const input = {
+            envelope,
+            expectedDid: 'did:example:alice',
+            expectedShareVersion: 1,
+            sourceEnrollmentEpoch: 1,
+        };
+
+        await expect(enclave.rewrapEscrowBlob(input)).resolves.toEqual({ envelope });
+
+        expect(post).toHaveBeenCalledWith(
+            `${baseUrl}/v1/rewrap-escrow-blob`,
+            {
+                envelope,
+                expectedDid: 'did:example:alice',
+                expectedShareVersion: 1,
+                sourceEnrollmentEpoch: 1,
+            },
+            { headers: { Authorization: `Bearer ${token}` }, timeout: timeoutMs }
+        );
+    });
+
+    it.each([
+        ['policy', EscrowPolicyError],
+        ['pinMismatch', EscrowPinMismatchError],
+        ['blob', EscrowBlobError],
+        ['unavailable', EscrowUnavailableError],
+        ['ledger', EscrowUnavailableError],
+        ['time', EscrowUnavailableError],
+    ] as const)(
+        'rewrapEscrowBlob maps wire error code %s to the matching EscrowEnclave error',
+        async (code, ErrorClass) => {
+            const post = vi
+                .fn()
+                .mockResolvedValue(respond(400, { code, message: 'private detail' }));
+            const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+
+            await expect(
+                enclave.rewrapEscrowBlob({
+                    envelope,
+                    expectedDid: 'did:example:alice',
+                    expectedShareVersion: 1,
+                    sourceEnrollmentEpoch: 1,
+                })
+            ).rejects.toBeInstanceOf(ErrorClass);
+        }
+    );
+
+    it('rewrapEscrowBlob fails closed on a malformed/schema-invalid response', async () => {
+        const post = vi
+            .fn()
+            .mockResolvedValue(respond(200, { envelope: { ...envelope, version: 2 } }));
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+
+        await expect(
+            enclave.rewrapEscrowBlob({
+                envelope,
+                expectedDid: 'did:example:alice',
+                expectedShareVersion: 1,
+                sourceEnrollmentEpoch: 1,
+            })
+        ).rejects.toBeInstanceOf(EscrowUnavailableError);
+    });
+
     it('releases escrow, omitting host-supplied time', async () => {
         const post = vi.fn().mockResolvedValue(respond(200, { sealed: envelope }));
         const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });

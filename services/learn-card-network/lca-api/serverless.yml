@@ -227,6 +227,20 @@ functions:
         events:
             - schedule: rate(1 hour)
 
+    # Same always-deployed/no-op-when-disabled shape as escrowHoldReminders
+    # above; a bounded batch each run, so an hourly rate is generous relative
+    # to how quickly a key rotation's previous-key backlog should drain.
+    escrowBlobRewrap:
+        handler: lambda.escrowBlobRewrapHandler
+        timeout: 120
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - schedule: rate(1 hour)
+
 resources:
     Resources:
         VPC:

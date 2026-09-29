@@ -818,6 +818,154 @@ async fn carry_pin_verifier_from_a_previous_key_reseals_under_the_current_key_an
     assert_eq!(release.hold_id, "carried-pin");
 }
 
+// P9.3: a previous-key copy migrates onto the current key, keeps its share
+// version, and the PIN still releases with the original proof afterward.
+#[tokio::test]
+async fn rewrap_escrow_blob_succeeds_and_the_pin_still_releases() {
+    let mut f = Fixture::new(false);
+    let pin_verifier = "ab".repeat(32);
+    let source = f.previous_envelope("previous-1", 1.0, Some(pin_verifier.clone()));
+    *f.authority.0.lock().unwrap() = Ok(CurrentEnrollment {
+        epoch: 1,
+        share_version: 1,
+        blob_hash: blob_hash(&source).unwrap(),
+    });
+    let mut p = f.policy();
+    let rewrapped = p
+        .rewrap_escrow_blob(&source, "did:key:test", 1, 1)
+        .await
+        .unwrap();
+    assert_ne!(rewrapped.ciphertext, source.ciphertext);
+    assert_eq!(rewrapped.key_id, "test");
+    let decrypted = p.decrypt(&rewrapped).unwrap();
+    assert_eq!(decrypted.did, "did:key:test");
+    assert_eq!(decrypted.share_version, 1.0);
+    assert_eq!(
+        decrypted.pin_verifier.as_deref(),
+        Some(pin_verifier.as_str())
+    );
+    assert_eq!(decrypted.pin_attempts_floor, None);
+    // Same epoch/version as the source, but a NEW blob_hash (fresh ciphertext):
+    // the lca-api model write bumps enrollmentEpoch on every rewrap (see
+    // UserKey.rewrapEscrowBlobByAuthProvider); the enclave itself only cares
+    // that the presented envelope's hash matches whatever the authenticated
+    // EnrollmentSource currently reports, so this test simulates exactly that
+    // real production write before authenticating a hold against the result.
+    *f.authority.0.lock().unwrap() = Ok(CurrentEnrollment {
+        epoch: 1,
+        share_version: 1,
+        blob_hash: blob_hash(&rewrapped).unwrap(),
+    });
+    let hold = p
+        .create_hold(CreateHoldRequest {
+            envelope: &rewrapped,
+            hold_id: "rewrap-pin",
+            request_id: "rewrap-pin",
+            expected_did: "did:key:test",
+            expected_share_version: 1,
+            enrollment_epoch: 1,
+            release_policy: ReleasePolicy::Pin,
+            client_ephemeral_public_key: &f.client.public_key,
+        })
+        .await
+        .unwrap();
+    let sealed = p
+        .release(ReleaseRequest {
+            envelope: &rewrapped,
+            hold: &hold,
+            request_id: "rewrap-release",
+            expected_did: "did:key:test",
+            client_ephemeral_public_key: &f.client.public_key,
+            pin_proof: Some(&pin_verifier),
+        })
+        .await
+        .unwrap();
+    let release = open_escrow_release(&sealed, &f.client.private_key).unwrap();
+    assert_eq!(release.blob.recovery_share, "ef".repeat(33));
+    assert_eq!(release.hold_id, "rewrap-pin");
+}
+
+// P9.3: floor = prior attempts against the SAME (tenant, did, epoch) chain,
+// exactly like carry_pin_verifier's P8.3 accounting — re-sealing changes the
+// blob hash (and so, per D13, nothing about chain identity) but must not
+// reset the ten-attempt lifetime budget.
+#[tokio::test]
+async fn rewrap_escrow_blob_carries_the_accumulated_attempts_floor() {
+    let mut f = Fixture::new(true);
+    let source = f.previous_envelope("previous-2", 1.0, Some("ab".repeat(32)));
+    *f.authority.0.lock().unwrap() = Ok(CurrentEnrollment {
+        epoch: 1,
+        share_version: 1,
+        blob_hash: blob_hash(&source).unwrap(),
+    });
+    let mut p = f.policy();
+    let hold = p
+        .create_hold(CreateHoldRequest {
+            envelope: &source,
+            hold_id: "pre-rewrap",
+            request_id: "pre-rewrap",
+            expected_did: "did:key:test",
+            expected_share_version: 1,
+            enrollment_epoch: 1,
+            release_policy: ReleasePolicy::Pin,
+            client_ephemeral_public_key: &f.client.public_key,
+        })
+        .await
+        .unwrap();
+    for attempt in 0..3 {
+        assert_eq!(
+            p.release(ReleaseRequest {
+                envelope: &source,
+                hold: &hold,
+                request_id: Box::leak(format!("wrong{attempt}").into_boxed_str()),
+                expected_did: "did:key:test",
+                client_ephemeral_public_key: &f.client.public_key,
+                pin_proof: Some("cd"),
+            })
+            .await,
+            Err(ErrorCode::PinMismatch)
+        );
+    }
+    let rewrapped = p
+        .rewrap_escrow_blob(&source, "did:key:test", 1, 1)
+        .await
+        .unwrap();
+    assert_eq!(p.decrypt(&rewrapped).unwrap().pin_attempts_floor, Some(3));
+}
+
+// P9.3: refuses a current-key envelope (nothing to migrate), an unknown/
+// retired keyId, a wrong DID and a wrong share version — every rejection
+// shares the identical generic Blob error, matching carry_pin_verifier.
+#[tokio::test]
+async fn rewrap_escrow_blob_refuses_current_unknown_wrong_did_and_wrong_version() {
+    let mut f = Fixture::new(false);
+    let source = f.previous_envelope("previous-3", 1.0, None);
+    let mut unknown = f.envelope.clone();
+    unknown.key_id = "retired-and-removed".into();
+    let p = f.policy();
+    assert_eq!(
+        p.rewrap_escrow_blob(&f.envelope, "did:key:test", 1, 1)
+            .await,
+        Err(ErrorCode::Blob)
+    );
+    assert_eq!(
+        p.rewrap_escrow_blob(&unknown, "did:key:test", 1, 1).await,
+        Err(ErrorCode::Blob)
+    );
+    assert_eq!(
+        p.rewrap_escrow_blob(&source, "did:key:wrong", 1, 1).await,
+        Err(ErrorCode::Blob)
+    );
+    assert_eq!(
+        p.rewrap_escrow_blob(&source, "did:key:test", 2, 1).await,
+        Err(ErrorCode::Blob)
+    );
+    assert_eq!(
+        p.rewrap_escrow_blob(&source, "did:key:test", 1, 0).await,
+        Err(ErrorCode::Blob)
+    );
+}
+
 // P9.1: boot-time bounds on previous keys are enforced, not silently ignored —
 // too many, a duplicate id, or an id colliding with the current key all
 // refuse construction; exactly `MAX_PREVIOUS_KEYS` distinct ids succeeds.

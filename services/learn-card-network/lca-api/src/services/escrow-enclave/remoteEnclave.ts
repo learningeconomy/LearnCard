@@ -15,6 +15,7 @@ import {
     type EscrowEnclave,
     type ReleaseRequest,
     type ReleaseResult,
+    type RewrapEscrowBlobInput,
     type VerifyEscrowBlobInput,
     type VerifyEscrowBlobResult,
 } from './types';
@@ -56,6 +57,7 @@ const verifyBlobResponseValidator = z.union([
 ]);
 
 const carryPinVerifierResponseValidator = z.object({ envelope: envelopeValidator });
+const rewrapEscrowBlobResponseValidator = z.object({ envelope: envelopeValidator });
 
 // Opaque SignedHoldRecord JSON: validate shape while preserving signed extensions.
 const holdRecordValidator = z
@@ -192,6 +194,17 @@ export const createRemoteEnclave = (config: RemoteEnclaveConfig): EscrowEnclave 
                     sourceEnrollmentEpoch: input.sourceEnrollmentEpoch,
                 },
                 carryPinVerifierResponseValidator
+            ),
+        rewrapEscrowBlob: (input: RewrapEscrowBlobInput): Promise<{ envelope: EscrowEnvelope }> =>
+            call(
+                '/v1/rewrap-escrow-blob',
+                {
+                    envelope: input.envelope,
+                    expectedDid: input.expectedDid,
+                    expectedShareVersion: input.expectedShareVersion,
+                    sourceEnrollmentEpoch: input.sourceEnrollmentEpoch,
+                },
+                rewrapEscrowBlobResponseValidator
             ),
         createHold: async input => ({
             holdRecord: await call(

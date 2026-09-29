@@ -14,6 +14,7 @@ import {
     buildCloudWatchMetricPayload,
     buildReport,
     activeModeFromEnv,
+    classifyEnclaveKeyIds,
     CLOUDWATCH_NAMESPACE,
     type RawEscrowCounts,
 } from './escrow-blob-mode-report';
@@ -187,5 +188,40 @@ describe('buildCloudWatchMetricPayload', () => {
 
         const stale = payload.MetricData.find(datum => datum.MetricName === 'EscrowBlobsStale');
         expect(stale?.Value).toBe(0);
+    });
+});
+
+describe('classifyEnclaveKeyIds (P9.3)', () => {
+    it('splits counts into current/previous/unknown, listing unknown keyIds sorted', () => {
+        const classification = classifyEnclaveKeyIds(
+            { 'key-2': 10, 'key-1': 4, 'key-0': 1, unknown: 1 },
+            'key-2',
+            ['key-1', 'key-0']
+        );
+
+        expect(classification).toEqual({
+            current: 10,
+            previous: 5,
+            unknown: 1,
+            unknownKeyIds: ['unknown'],
+        });
+    });
+
+    it('reports zero previous/unknown when every blob is already on the current key', () => {
+        const classification = classifyEnclaveKeyIds({ 'key-2': 3 }, 'key-2', ['key-1']);
+
+        expect(classification).toEqual({ current: 3, previous: 0, unknown: 0, unknownKeyIds: [] });
+    });
+
+    it('treats an empty previous-key list as everything non-current being unknown', () => {
+        const classification = classifyEnclaveKeyIds(
+            { 'key-2': 2, 'retired-1': 1, 'retired-2': 1 },
+            'key-2',
+            []
+        );
+
+        expect(classification.previous).toBe(0);
+        expect(classification.unknown).toBe(2);
+        expect(classification.unknownKeyIds).toEqual(['retired-1', 'retired-2']);
     });
 });

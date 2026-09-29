@@ -34,6 +34,12 @@ pub mod v1 {
             target_share_version: u32,
             source_enrollment_epoch: u64,
         },
+        RewrapEscrowBlob {
+            envelope: EscrowEnvelope,
+            expected_did: String,
+            expected_share_version: u32,
+            source_enrollment_epoch: u64,
+        },
         CreateHold {
             envelope: EscrowEnvelope,
             hold_id: String,
@@ -91,6 +97,9 @@ pub mod v1 {
             reason: Option<String>,
         },
         CarryPinVerifier {
+            envelope: EscrowEnvelope,
+        },
+        RewrapEscrowBlob {
             envelope: EscrowEnvelope,
         },
         CreateHold {

@@ -17,6 +17,7 @@
  *
  * Usage:
  *   bun scripts/escrow-blob-mode-report.ts [--json] [--publish-metrics]
+ *       [--current-key-id=<id>] [--previous-key-ids=<id1,id2,...>]
  *
  * Flags:
  *   --json              Print a single JSON object instead of a human-readable table.
@@ -24,6 +25,23 @@
  *                        `LearnCard/Escrow`, metrics `EscrowBlobs` dimensioned by
  *                        `EnclaveMode` and `EscrowBlobsStale`) that a caller with AWS
  *                        SDK access should forward to CloudWatch.
+ *   --current-key-id=<id>          (P9.3) Classifies `byEnclaveKeyId` into
+ *                                    current/previous/unknown buckets — how many
+ *                                    escrow blob copies remain under each previous
+ *                                    key, ready for the escrowBlobRewrap job/runbook.
+ *   --previous-key-ids=<a,b,c>      Required together with --current-key-id.
+ *
+ *   This script deliberately makes NO live enclave call (see "Known limitations"
+ *   below), so it cannot discover the current/previous key IDs itself — fetch
+ *   them once from `GET /keys/escrow/attestation` (`keyId`/`previousKeyIds`) and
+ *   pass them in explicitly:
+ *
+ *     bun scripts/escrow-blob-mode-report.ts --current-key-id=key-2 \
+ *       --previous-key-ids=key-1
+ *
+ *   Without these two flags, `byEnclaveKeyId` is still printed/returned as
+ *   before; only the extra classification section is omitted — compare it
+ *   manually against the enclave's own attestation response.
  *
  *                        lca-api does not depend on `@aws-sdk/client-cloudwatch`
  *                        (only `services/learn-card-network/ai-agent` does in this
@@ -186,6 +204,64 @@ export interface CloudWatchMetricPayload {
 
 export const CLOUDWATCH_NAMESPACE = 'LearnCard/Escrow';
 
+export interface EnclaveKeyIdClassification {
+    current: number;
+    previous: number;
+    unknown: number;
+    /** Sorted for stable output; empty when every counted keyId is current or previous. */
+    unknownKeyIds: string[];
+}
+
+/**
+ * Pure: classifies `byEnclaveKeyId` counts against an explicitly-provided
+ * current/previous key list (see script header "P9.3" flags — this script
+ * makes no live enclave call, so it cannot discover these itself). "Unknown"
+ * means neither current nor previous: a truly retired/lost key, never a
+ * candidate for `escrowBlobRewrap`, which only ever asks the enclave about
+ * keyIds in its OWN attestation's `previousKeyIds`.
+ */
+export const classifyEnclaveKeyIds = (
+    byEnclaveKeyId: Record<string, number>,
+    currentKeyId: string,
+    previousKeyIds: string[]
+): EnclaveKeyIdClassification => {
+    const previousSet = new Set(previousKeyIds);
+    let current = 0;
+    let previous = 0;
+    let unknown = 0;
+    const unknownKeyIds: string[] = [];
+    for (const [keyId, count] of Object.entries(byEnclaveKeyId)) {
+        if (keyId === currentKeyId) current += count;
+        else if (previousSet.has(keyId)) previous += count;
+        else {
+            unknown += count;
+            unknownKeyIds.push(keyId);
+        }
+    }
+    return { current, previous, unknown, unknownKeyIds: unknownKeyIds.sort() };
+};
+
+export const formatKeyIdClassification = (
+    classification: EnclaveKeyIdClassification,
+    currentKeyId: string,
+    previousKeyIds: string[]
+): string => {
+    const lines: string[] = [];
+    lines.push('');
+    lines.push(
+        `Enclave key classification (current=${currentKeyId}, previous=[${previousKeyIds.join(', ')}]):`
+    );
+    lines.push(`  Current:  ${classification.current}`);
+    lines.push(`  Previous: ${classification.previous}  (candidates for escrowBlobRewrap)`);
+    lines.push(
+        `  Unknown:  ${classification.unknown}` +
+            (classification.unknownKeyIds.length
+                ? ` [${classification.unknownKeyIds.join(', ')}] — retired/lost keys, never rewrapped`
+                : '')
+    );
+    return lines.join('\n');
+};
+
 /** Pure: shapes a report into a CloudWatch `PutMetricData` payload. Never
  * imports an AWS SDK — see the script header's "CloudWatch metric emission". */
 export const buildCloudWatchMetricPayload = (
@@ -330,20 +406,40 @@ export const queryEscrowCounts = async (
 };
 
 const main = async (): Promise<void> => {
-    const args = new Set(process.argv.slice(2));
+    const argv = process.argv.slice(2);
+    const args = new Set(argv);
     const jsonOutput = args.has('--json');
     const publishMetrics = args.has('--publish-metrics');
+    const currentKeyId = argv
+        .find(arg => arg.startsWith('--current-key-id='))
+        ?.slice('--current-key-id='.length);
+    const previousKeyIds = (
+        argv
+            .find(arg => arg.startsWith('--previous-key-ids='))
+            ?.slice('--previous-key-ids='.length) ?? ''
+    )
+        .split(',')
+        .map(id => id.trim())
+        .filter(Boolean);
 
     try {
         const raw = await queryEscrowCounts(getUserKeysCollection(), getEscrowHoldsCollection());
         const activeEnclaveMode = activeModeFromEnv(environment.ESCROW_ENCLAVE_MODE);
         const report = buildReport(raw, activeEnclaveMode);
         const metricsPayload = publishMetrics ? buildCloudWatchMetricPayload(report) : undefined;
+        const classification = currentKeyId
+            ? classifyEnclaveKeyIds(report.byEnclaveKeyId, currentKeyId, previousKeyIds)
+            : undefined;
 
         if (jsonOutput) {
-            console.log(JSON.stringify({ report, metricsPayload }, null, 2));
+            console.log(JSON.stringify({ report, metricsPayload, classification }, null, 2));
         } else {
             console.log(formatReportTable(report));
+            if (classification) {
+                console.log(
+                    formatKeyIdClassification(classification, currentKeyId, previousKeyIds)
+                );
+            }
         }
 
         if (publishMetrics && !jsonOutput) {

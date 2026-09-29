@@ -41,6 +41,7 @@ No plaintext API listener or certificate-verification bypass exists.
 | `/v1/attest`             | `attest`           |
 | `/v1/verify-blob`        | `verifyBlob`       |
 | `/v1/carry-pin-verifier` | `carryPinVerifier` |
+| `/v1/rewrap-escrow-blob` | `rewrapEscrowBlob` |
 | `/v1/create-hold`        | `createHold`       |
 | `/v1/release`            | `release`          |
 | `/v1/cancel-hold`        | `cancel`           |

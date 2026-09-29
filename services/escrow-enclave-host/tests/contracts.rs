@@ -68,6 +68,11 @@ fn fixtures() -> Vec<(&'static str, Value, Value)> {
             json!({"sourceEnvelope":envelope(),"targetEnvelope":envelope(),"expectedDid":"did:example:alice","sourceShareVersion":1,"targetShareVersion":2,"sourceEnrollmentEpoch":1}),
             json!({"envelope":envelope()}),
         ),
+        (
+            "rewrapEscrowBlob",
+            json!({"envelope":envelope(),"expectedDid":"did:example:alice","expectedShareVersion":1,"sourceEnrollmentEpoch":1}),
+            json!({"envelope":envelope()}),
+        ),
     ]
 }
 #[test]
@@ -114,6 +119,7 @@ fn path(method: &str) -> &str {
         "attest" => "/v1/attest",
         "verifyBlob" => "/v1/verify-blob",
         "carryPinVerifier" => "/v1/carry-pin-verifier",
+        "rewrapEscrowBlob" => "/v1/rewrap-escrow-blob",
         "createHold" => "/v1/create-hold",
         "release" => "/v1/release",
         _ => "/v1/cancel-hold",
