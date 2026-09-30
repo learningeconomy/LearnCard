@@ -21,11 +21,11 @@ grep -Fq 'docker buildx bake --file "$BAKE_FILE" browser --load --progress=plain
     || { echo 'browser runner must not bypass the GHA-backed Bake build' >&2; exit 1; }
 grep -Fq 'docker compose up -d --no-build' "$BROWSER_SCRIPT"
 grep -Fq 'E2E_EXTERNAL_STACK=true' "$BROWSER_SCRIPT"
-[[ "$(grep -Ec '^[[:space:]]*E2E_EXTERNAL_STACK=true[[:space:]]+bunx playwright test' "$BROWSER_SCRIPT")" -eq 1 ]] \
+[[ "$(grep -Ec '^[[:space:]]*playwright_command test.*test_files' "$BROWSER_SCRIPT")" -eq 1 ]] \
     || { echo 'browser runner must invoke Playwright exactly once' >&2; exit 1; }
-perl -0ne 'exit !/run_playwright\(\).*?read -r -a test_files <<< "\$E2E_TEST_FILES".*?bunx playwright test "\$\{test_files\[@\]\}"/s' "$BROWSER_SCRIPT" \
+perl -0ne 'exit !/run_playwright\(\).*?read -r -a test_files <<< "\$E2E_TEST_FILES".*?playwright_command test "\$\{test_files\[@\]\}"/s' "$BROWSER_SCRIPT" \
     || { echo 'Playwright must run only the selected browser specs' >&2; exit 1; }
-perl -0ne 'exit !/run_accessibility\(\).*?bun run test:a11y/s' "$BROWSER_SCRIPT" \
+perl -0ne 'exit !/run_accessibility\(\).*?playwright_command test accessibility.spec.ts --config=playwright.a11y.config.ts/s' "$BROWSER_SCRIPT" \
     || { echo 'accessibility suite invocation missing' >&2; exit 1; }
 grep -Fq 'docker compose down --remove-orphans -v' "$BROWSER_SCRIPT"
 

@@ -52,6 +52,20 @@ This avoids uploading source layers that change on each commit. The new cache
 scope starts cold on its first CI run. Keep dependency versions aligned across
 stages when upgrading Bun.
 
+## Browser runtime
+
+The hosted launcher derives the official Playwright `-noble` image tag from the
+installed package version. Browsers and OS dependencies are already in that image;
+there is no per-run apt installation. Tests mount the installed workspace at its
+original absolute path and run as the runner user, preserving workspace links and
+artifact ownership. Linux host networking preserves the existing localhost URLs.
+Both functional tests and accessibility/global setup run inside this image.
+
+The app Dockerfile builds with the monorepo image, then copies only the generated
+`build/` directory into Nginx. The runtime listens on port 3000, serves SPA routes
+through index.html, and returns 404 for missing assets. Backend containers continue
+to use the monorepo image.
+
 ## Measuring changes
 
 Artifacts contain `timings.tsv`, capacity snapshots, Docker build logs, and
@@ -78,6 +92,7 @@ should be considered only after measuring this version.
 bash .github/tests/test-hosted-e2e-script-contract.test.sh
 bash .github/tests/test-hosted-e2e-playwright.test.sh
 bash .github/tests/test-hosted-e2e-concurrency.test.sh
+bash .github/tests/test-hosted-e2e-browser-runtime.test.sh
 bash .github/tests/test-hosted-e2e-readiness.test.sh
 
 cd apps/learn-card-app

@@ -61,9 +61,25 @@ build_test_dependencies() {
     NX_DAEMON=false bunx nx run-many -t build -p types,init,lca-api-plugin --verbose
 }
 
-install_firefox() {
+prepare_browser_runner() {
     cd "$REPO_ROOT"
-    bunx playwright install --with-deps firefox
+    local version
+    version=$(node -p 'require("playwright/package.json").version')
+    PLAYWRIGHT_RUNNER_IMAGE="mcr.microsoft.com/playwright:v${version}-noble"
+    PLAYWRIGHT_CLI=$(node -p 'require("path").join(require("path").dirname(require.resolve("playwright/package.json")), "cli.js")')
+    echo "Using preinstalled browsers from $PLAYWRIGHT_RUNNER_IMAGE"
+    docker pull "$PLAYWRIGHT_RUNNER_IMAGE"
+}
+
+playwright_command() {
+    # Same absolute workspace path preserves Bun's workspace links. Host networking
+    # keeps localhost URLs working for browser requests and SDK/global setup calls.
+    docker run --rm --init --network host --ipc host \
+        --user "$(id -u):$(id -g)" --env HOME=/tmp \
+        --env CI --env GITHUB_ACTIONS --env GITHUB_WORKSPACE \
+        --env E2E_EXTERNAL_STACK=true \
+        --volume "$REPO_ROOT:$REPO_ROOT" --workdir "$APP_DIR" \
+        "$PLAYWRIGHT_RUNNER_IMAGE" node "$PLAYWRIGHT_CLI" "$@"
 }
 
 wait_for_stack() {
@@ -93,12 +109,12 @@ run_playwright() {
         esac
     done
     echo "Running browser suites with $config"
-    E2E_EXTERNAL_STACK=true bunx playwright test "${test_files[@]}" --config="$config"
+    playwright_command test "${test_files[@]}" --config="$config"
 }
 
 run_accessibility() {
     cd "$APP_DIR"
-    E2E_EXTERNAL_STACK=true bun run test:a11y
+    playwright_command test accessibility.spec.ts --config=playwright.a11y.config.ts
 }
 
 e2e_snapshot startup
@@ -106,7 +122,7 @@ e2e_timed docker_buildx_bake build_images
 e2e_snapshot after-image-build
 e2e_timed compose_start start_compose
 e2e_timed host_dependency_build build_test_dependencies
-e2e_timed playwright_firefox_install install_firefox
+e2e_timed playwright_runner_prepare prepare_browser_runner
 e2e_snapshot stack-running
 e2e_timed service_readiness wait_for_stack
 e2e_timed playwright run_playwright
