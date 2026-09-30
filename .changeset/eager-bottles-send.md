@@ -15,3 +15,5 @@ Preserve indexed categories in sharing and classify preselected credentials once
 Give Qualifications a distinct navigation identity so it does not reuse another menu item's React key.
 
 Retry truncated category scans on the next session and refresh open sharing lists after reclassification.
+
+Keep available credentials selectable when another indexed credential cannot be loaded.

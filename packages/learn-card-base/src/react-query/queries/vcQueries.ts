@@ -611,14 +611,17 @@ export const useGetCredentialsPaginated = (
 
                 const resolvedCredentials = (
                     await Promise.all(
-                        credentialsList?.records?.map(async record => {
-                            const vc = (await wallet.read.get(record?.uri)) as VC;
-                            const uri = record?.uri;
+                        credentialsList?.records?.map(
+                            async (record): Promise<VC_WITH_URI | undefined> => {
+                                const vc = (await wallet.read.get(record?.uri)) as VC | undefined;
+                                if (!vc) return undefined;
+                                const uri = record?.uri;
 
-                            return { vc, uri, category: record.category };
-                        })
+                                return { vc, uri, category: record.category };
+                            }
+                        )
                     )
-                ).filter(Boolean);
+                ).filter((entry): entry is VC_WITH_URI => Boolean(entry));
 
                 return resolvedCredentials.sort((a, b) => {
                     const aDate = getIssuanceDate(a.vc) ?? '';

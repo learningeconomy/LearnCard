@@ -70,6 +70,12 @@ describe('sharing category precedence', () => {
             },
             { id: 'boost-one', uri: 'stored:boost-one', vc: firstBoost },
             { id: 'boost-two', uri: 'stored:boost-two', vc: secondBoost },
+            {
+                id: 'unavailable',
+                uri: 'stored:unavailable',
+                category: 'Qualifications',
+                vc: undefined,
+            },
         ];
         const getBoost = vi.fn().mockResolvedValue({ category: 'ID' });
         walletStore.set.wallet({
