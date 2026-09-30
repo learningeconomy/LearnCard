@@ -15,3 +15,18 @@ export const getDel = async (key: string): Promise<string | null> => {
     const redis = cache.redis ?? cache.node;
     return redis.getdel(key);
 };
+
+/** Consume a code only when its value matches, atomically preventing replay. */
+export const consumeMatchingCode = async (key: string, code: string): Promise<boolean> => {
+    const redis = cache.redis ?? cache.node;
+    const consumed = await redis.eval(
+        `if redis.call('GET', KEYS[1]) == ARGV[1] then
+            return redis.call('DEL', KEYS[1])
+        end
+        return 0`,
+        1,
+        key,
+        code
+    );
+    return consumed === 1;
+};

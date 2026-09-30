@@ -54,6 +54,11 @@ vi.mock('@cache', () => ({
             keys.forEach(key => store.delete(key));
         },
         node: {
+            eval: async (_script: string, _count: number, key: string, code: string) => {
+                if (store.get(key) !== code) return 0;
+                store.delete(key);
+                return 1;
+            },
             getdel: async (key: string) => {
                 const value = store.get(key) ?? null;
                 store.delete(key);
@@ -91,7 +96,7 @@ const sign = (claims: JWTPayload = {}) =>
 const payload = (ticket: string | undefined): Record<string, unknown> =>
     JSON.parse(store.get(`login-ticket:${ticket}`)!);
 const emailLogin = async (email = 'test@example.com') => {
-    store.set(`login-code:${email.trim()}:123456`, '1');
+    store.set(`login-code:${email.trim()}`, '123456');
     return caller().requestLoginTicket({ email, code: '123456' });
 };
 beforeAll(async () => {
@@ -118,7 +123,7 @@ describe('auth login tickets', () => {
         const result = await emailLogin();
         expect(result.success).toBe(true);
         expect(result.ticket).toMatch(/^[A-Za-z0-9_-]{43}$/);
-        expect(store.has('login-code:test@example.com:123456')).toBe(false);
+        expect(store.has('login-code:test@example.com')).toBe(false);
         expect(payload(result.ticket)).toMatchObject({
             identityKey: 'email:test@example.com',
             emailVerified: true,
@@ -128,6 +133,18 @@ describe('auth login tickets', () => {
         expect(
             await caller().requestLoginTicket({ email: 'test@example.com', code: '000000' })
         ).toEqual({ success: false, error: 'Invalid or expired code.' });
+    });
+    it('rejects a wrong code without consuming the valid code', async () => {
+        store.set('login-code:test@example.com', '123456');
+        expect(
+            (await caller().requestLoginTicket({ email: 'test@example.com', code: '000000' }))
+                .success
+        ).toBe(false);
+        expect(store.get('login-code:test@example.com')).toBe('123456');
+        expect(
+            (await caller().requestLoginTicket({ email: 'test@example.com', code: '123456' }))
+                .success
+        ).toBe(true);
     });
     it('rejects code replay', async () => {
         await emailLogin();
@@ -149,7 +166,7 @@ describe('auth login tickets', () => {
         expect(second.subject).toBe(first.subject);
     });
     it('does not accept a differently-cased code cache key', async () => {
-        store.set('login-code:test@example.com:123456', '1');
+        store.set('login-code:test@example.com', '123456');
         expect(
             (await caller().requestLoginTicket({ email: 'Test@Example.com', code: '123456' }))
                 .success
@@ -227,7 +244,7 @@ describe('auth login tickets', () => {
             success: false,
             error: 'Something went wrong. Please request a new code.',
         });
-        expect(store.has('login-code:test@example.com:123456')).toBe(false);
+        expect(store.has('login-code:test@example.com')).toBe(false);
         expect(console.error).toHaveBeenCalledWith(
             'Error issuing login ticket after consuming code:',
             expect.any(Error)
@@ -263,7 +280,7 @@ describe('auth login tickets', () => {
                 expect((await failEmail()).success).toBe(false);
             }
             await expect(emailLogin()).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
-            expect(store.has('login-code:test@example.com:123456')).toBe(true);
+            expect(store.has('login-code:test@example.com')).toBe(true);
             expect((await emailLogin('other@example.com')).success).toBe(true);
         });
         it('keys the per-email limit on the normalized address', async () => {
