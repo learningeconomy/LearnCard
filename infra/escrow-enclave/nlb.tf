@@ -16,11 +16,19 @@ resource "aws_lb_target_group" "enclave_host" {
   target_type = "instance"
 
   # Separate health port (8444) per plan — the API port (8443) is reserved
-  # for actual client traffic, and TCP NLB health checks require
-  # healthy_threshold == unhealthy_threshold.
+  # for actual client traffic. HTTP (not HTTPS): services/escrow-enclave-host
+  # serves GET /health on this port as plain HTTP, returning 200 {"ok":true}
+  # once the supervised enclave is ready and 503 {"ok":false} otherwise (M11
+  # fix — a bare TCP check only proved the listener socket was open, not
+  # that the enclave behind it was actually up, so a down enclave with a
+  # merely-open port never failed the health check). NLB target groups
+  # require healthy_threshold == unhealthy_threshold regardless of health
+  # check protocol.
   health_check {
-    protocol            = "TCP"
+    protocol            = "HTTP"
     port                = "8444"
+    path                = "/health"
+    matcher             = "200"
     healthy_threshold   = 3
     unhealthy_threshold = 3
     interval            = 10

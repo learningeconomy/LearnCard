@@ -27,12 +27,16 @@ network, plus the CMK that gates the enclave's escrow-key material.
   IMDSv2-only, encrypted EBS, no public IP, no SSH key) with user-data that
   installs `aws-nitro-enclaves-cli`, configures the allocator
   (`cpu_count`/`memory_mib`), configures a `vsock-proxy` allowlisted to KMS
-  only, fetches the `.eif` from S3, and wires up (but does not start) a
-  placeholder `escrow-enclave-host.service` for the P3.3 parent binary.
+  only, fetches the `.eif` from S3, downloads and SHA-256-verifies the
+  `services/escrow-enclave-host` parent binary, fetches its TLS
+  certificate/key and bearer token from SSM Parameter Store, and installs +
+  starts (`systemctl enable --now`) the real `escrow-enclave-host.service`.
 - `aws_autoscaling_group` (min 2, across the subnets you pass in) with
   `health_check_type = "ELB"` and a rolling `instance_refresh`.
-- Internal `aws_lb` (Network Load Balancer, TCP :8443) + target group with a
-  TCP health check on a **separate** port (:8444).
+- Internal `aws_lb` (Network Load Balancer, TCP :8443) + target group with an
+  HTTP health check (GET /health, matcher 200) on a **separate** port
+  (:8444) — matching the plain-HTTP `/health` endpoint
+  `services/escrow-enclave-host` actually serves.
 - One security group: ingress 8443 only from `lca_api_security_group_id`,
   ingress 8444 only from the VPC CIDR (NLB health-check source), egress 443
   (KMS/S3/DynamoDB) and UDP to the configured Roughtime ports.
@@ -43,22 +47,31 @@ network, plus the CMK that gates the enclave's escrow-key material.
 
 - `kms.tf` — the escrow CMK: symmetric, automatic key rotation, 30-day
   deletion window, alias `alias/learncard-escrow-enclave-<environment>`.
-  Its key policy grants `kms:Decrypt` in one statement **per pinned
-  measurement tuple** (`var.enclave_measurements`), each conditioned on
-  `StringEqualsIgnoreCase kms:RecipientAttestation:PCR0/1/2` all matching
-  simultaneously (decisions.md D7), plus a separate attestation-free
-  `kms:Encrypt` statement for first-boot key sealing, a universal Deny of
-  `kms:Decrypt` when no attestation is present at all, and a Deny of
-  `kms:PutKeyPolicy` without an MFA-authenticated session. Administration
-  (not Decrypt/Encrypt) is scoped to `var.kms_admin_role_arn` and a narrow
-  root break-glass statement. **lca-api is never named anywhere in this
-  policy.**
-- `iam.tf` — the `enclave-host` EC2 role/instance profile (Decrypt/Encrypt
-  on the escrow CMK, scoped S3/DynamoDB/Logs access, explicit Deny of
-  `UpdateItem`/`DeleteItem` on the records ledger table, optional SSM core
-  access) and the separate `escrow-ledger-monitor` role (read-only on both
-  ledger tables + the records stream, read on the audit bucket, no
-  escrow-CMK access at all).
+  Its key policy grants `kms:Decrypt` AND `kms:GenerateDataKey` together in
+  one statement **per pinned measurement tuple** (`var.enclave_measurements`),
+  each conditioned on `StringEqualsIgnoreCase
+kms:RecipientAttestation:PCR0/1/2` all matching simultaneously
+  (decisions.md D7) plus the `escrow-enclave-key` encryption-context marker
+  — first boot calls `GenerateDataKey` (with Recipient attestation) to mint
+  a fresh, attested-only sealed key; every later boot calls `Decrypt` (also
+  with Recipient) against that same ciphertext. `kms:Encrypt` is **never**
+  granted to any principal, and is explicitly, unconditionally Denied
+  (alongside `ReEncryptFrom`/`ReEncryptTo`/`GenerateDataKeyWithoutPlaintext`/
+  `GenerateDataKeyPair(WithoutPlaintext)`) — see kms.tf's header comment for
+  the full provenance model (C1 fix). The policy also carries a universal
+  Deny of `Decrypt`/`GenerateDataKey` when no attestation is present at all,
+  and a Deny of `kms:PutKeyPolicy` without an MFA-authenticated session.
+  Administration (not Decrypt/GenerateDataKey) is scoped to
+  `var.kms_admin_role_arn` and a narrow root break-glass statement.
+  **lca-api is never named anywhere in this policy.** A Terraform native
+  test (`tests/kms_key_policy.tftest.hcl`) asserts this contract offline —
+  see "Testing the KMS key policy" below.
+- `iam.tf` — the `enclave-host` EC2 role/instance profile (Decrypt +
+  GenerateDataKey — never Encrypt — on the escrow CMK, scoped
+  S3/DynamoDB/Logs/SSM access, explicit Deny of `UpdateItem`/`DeleteItem` on
+  the records ledger table, optional SSM core access) and the separate
+  `escrow-ledger-monitor` role (read-only on both ledger tables + the
+  records stream, read on the audit bucket, no escrow-CMK access at all).
 - `storage.tf` — two S3 buckets encrypted with their own (non-escrow) CMK:
   `...-audit` (Object Lock COMPLIANCE mode, `var.audit_retention_days`
   default retention, audit-only) and `...-artifacts` (versioned, not
@@ -69,10 +82,12 @@ network, plus the CMK that gates the enclave's escrow-key material.
   protection). Implements decisions.md D3's option A — **detection** of
   ledger rollback, not prevention; see D3 and `ledger.tf`'s header comment.
 
-## What this does NOT provision (P3.3, separate)
+## What this does NOT provision
 
-- The `escrow-enclave-host` parent binary itself (the placeholder systemd
-  unit user-data installs has no `ExecStart` target until P3.3 ships it).
+- Building the `escrow-enclave-host` parent binary or the enclave `.eif`
+  themselves — this module only downloads, verifies, installs, and runs
+  whatever object `host_binary_s3_uri`/`eif_s3_uri` point at. Producing
+  those artifacts is the P2/P3.3 build pipelines' job, not Terraform's.
 - The `escrow-kms-admin` IAM role/user — pass its ARN in via
   `kms_admin_role_arn`. Owned by a security-team-controlled process, not
   this module.
@@ -84,14 +99,20 @@ network, plus the CMK that gates the enclave's escrow-key material.
 
 See `variables.tf` for full descriptions/validation. Notable ones:
 
-| Variable                | Notes                                                                                                                                               |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `instance_type`         | Default `m6i.xlarge`. Validation rejects `*.large` and smaller — a 2-vCPU instance cannot host a 2-vCPU enclave (decisions.md D1).                  |
-| `private_subnet_ids`    | >= 2 required by variable validation; a `check` block (plan/apply only) also asserts they span >= 2 distinct AZs and have no public IP on launch.   |
-| `enclave_measurements`  | 1–3 pinned `{label, pcr0, pcr1, pcr2}` tuples (each PCR = 96 hex chars). See `escrow-measurements.tfvars.example` and "Measurement rotation" below. |
-| `kms_admin_role_arn`    | ARN of the `escrow-kms-admin` role, created **outside** this module. Never grant this to lca-api's role.                                            |
-| `instance_profile_name` | Optional override (default `null`) — normally leave unset so `iam.tf`'s created profile is used.                                                    |
-| `roughtime_servers`     | Defaults to Cloudflare + Google per decisions.md D2. Must have >= 2 entries.                                                                        |
+| Variable                                                                                                           | Notes                                                                                                                                                                       |
+| ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `instance_type`                                                                                                    | Default `m6i.xlarge`. Validation rejects `*.large` and smaller — a 2-vCPU instance cannot host a 2-vCPU enclave (decisions.md D1).                                          |
+| `private_subnet_ids`                                                                                               | >= 2 required by variable validation; a `check` block (plan/apply only) also asserts they span >= 2 distinct AZs and have no public IP on launch.                           |
+| `enclave_measurements`                                                                                             | 1–3 pinned `{label, pcr0, pcr1, pcr2}` tuples (each PCR = 96 hex chars). See `escrow-measurements.tfvars.example` and "Measurement rotation" below.                         |
+| `kms_admin_role_arn`                                                                                               | ARN of the `escrow-kms-admin` role, created **outside** this module. Never grant this to lca-api's role.                                                                    |
+| `instance_profile_name`                                                                                            | Optional override (default `null`) — normally leave unset so `iam.tf`'s created profile is used.                                                                            |
+| `roughtime_servers`                                                                                                | Defaults to Cloudflare + Google per decisions.md D2. Must have >= 2 entries.                                                                                                |
+| `host_binary_s3_uri`                                                                                               | `s3://` URI of the built `escrow-enclave-host` parent binary, in the same artifacts bucket as `eif_s3_uri`.                                                                 |
+| `host_binary_sha256`                                                                                               | Required 64-hex-char SHA-256 of `host_binary_s3_uri`. user-data verifies it and refuses to install/start the service on mismatch.                                           |
+| `escrow_key_id`                                                                                                    | Logical `ESCROW_KEY_ID` the host passes to the parent binary (decisions.md D18 — stable across measurement rotations).                                                      |
+| `escrow_previous_key_ids` / `escrow_previous_key_objects`                                                          | Up to 3 previous key IDs + their sealed-key S3 objects, paired by index, for P9.1 rotation/recovery. Both empty outside an active rotation.                                 |
+| `escrow_allow_first_boot`                                                                                          | `true` only for the one boot that provisions the first sealed key; flip back to `false` and roll the ASG immediately after (see the variable's own description for why).    |
+| `host_bearer_token_parameter_name` / `host_tls_certificate_parameter_name` / `host_tls_private_key_parameter_name` | Absolute SSM Parameter Store (SecureString) names for the host's bearer token and TLS cert/key. Provisioned outside this module; only read-only IAM access is granted here. |
 
 ## Apply procedure (manual/CI — not run by this task)
 
@@ -108,11 +129,10 @@ terraform apply -var-file=<environment>.tfvars
 
 `terraform apply` and the resulting staging attestation check (confirming the
 enclave-host actually serves a real Nitro attestation document, not the
-software-mode stub) are **manual/CI verification steps** — this task does
-not and cannot run them (no AWS credentials available in this environment,
-and per the plan's Accept criteria for P3, that verification belongs to a
-later step once P3.2/P3.3 exist to make the ASG's instances actually pass
-their health check).
+software-mode stub) are **manual/CI verification steps** — no AWS
+credentials are available in this local-development/CI-lint context, and
+real infrastructure verification belongs to a deploy pipeline, not this
+repo checkout.
 
 ## Local verification (what this task DOES do)
 
@@ -122,7 +142,52 @@ No AWS credentials required:
 terraform fmt -check -recursive
 terraform init -backend=false
 terraform validate
+terraform test
 ```
+
+`terraform test` runs `tests/kms_key_policy.tftest.hcl` — see "Testing the
+KMS key policy" below for how it exercises the real (unmocked) policy
+computation entirely offline.
+
+## Testing the KMS key policy
+
+`tests/kms_key_policy.tftest.hcl` asserts, against the real rendered
+`data.aws_iam_policy_document.escrow_kms_key_policy.json`, that:
+
+- no `Allow` statement grants `kms:Encrypt`, `kms:ReEncryptFrom`,
+  `kms:ReEncryptTo`, `kms:GenerateDataKeyWithoutPlaintext`,
+  `kms:GenerateDataKeyPair`, or `kms:GenerateDataKeyPairWithoutPlaintext`;
+- every `Allow` of `kms:Decrypt`/`kms:GenerateDataKey` carries
+  `StringEqualsIgnoreCase` conditions on all three
+  `kms:RecipientAttestation:PCR0/1/2` variables, plus the
+  `escrow-enclave-key` encryption-context marker;
+- there is exactly one such `Allow` per pinned measurement tuple;
+- explicit `Deny` statements exist for every prohibited action, for the
+  no-attestation-present case, and for both debug-mode-PCR cases (all
+  covering `GenerateDataKey` as well as `Decrypt`); and
+- `kms:CreateGrant` is still unconditionally denied.
+
+This intentionally does **not** use a single `mock_provider "aws" {}`:
+`aws_iam_policy_document`'s `json` output is pure local computation (no AWS
+API call ever), but a full mock replaces it with a random placeholder
+string like every other provider resource, which would make the test
+assert against garbage rather than the real policy. Instead, the test file
+declares a real (unmocked) `aws` provider with fake static credentials and
+`skip_*` flags (so `terraform test` never needs real AWS access to
+"configure" it), and uses `override_data`/`override_resource` on every
+OTHER resource/data source in this module that would otherwise make a real
+AWS call — S3, DynamoDB, the escrow/S3 KMS keys themselves, Lambda, the
+NLB/ASG, CloudWatch, SNS/SQS, and the account/VPC/AMI lookups. Every
+`aws_iam_policy_document` data source (and `aws_partition`, confirmed to
+need no API call) is deliberately left un-overridden so it computes its
+real JSON. The run uses `command = apply`, not `plan`: the policy's
+principal (`aws_iam_role.enclave_host.arn`) is a managed-resource attribute
+that Terraform always defers reading dependent data sources against until
+apply time, regardless of mocking; overriding that one role gives it a
+concrete (fake, but known) arn once applied, which is what lets the real
+policy document resolve to a known JSON string instead of staying unknown.
+No resource is ever really created in AWS — every managed resource is
+overridden, so `apply` never reaches a real provider call.
 
 ## Measurement rotation (N / N+1)
 
@@ -230,8 +295,9 @@ policy update remove the caller's own ability to manage the key. Under
 that model there is no living principal who can ever change the trust
 boundary again — a measurement rotation (or any other policy change)
 instead requires provisioning a **brand-new CMK** and re-sealing the
-escrow private key to it (the enclave already regenerates/reseals this
-material at boot per kms.tf's `AllowEncryptForBootSealing` statement, so
+escrow private key to it (the enclave already re-seals this material via
+attested `kms:GenerateDataKey` on first boot against whichever CMK it is
+pointed at, per kms.tf's per-measurement Allow statement, so
 this is less disruptive than it sounds, but it does turn every rotation
 into a new-key operation with its own alias cutover instead of an in-place
 policy edit). Not adopted by default: it would make the N/N+1 rotation
@@ -280,7 +346,11 @@ implementation, not an optional enhancement.
   pin, so UDP egress to their ports is `0.0.0.0/0`. The enclave verifies each
   response's signature itself (decisions.md D2), so the relay path being
   network-open is an accepted, documented tradeoff, not an oversight.
-- **The ASG will not pass its health check until P3.3 ships.** The
-  `escrow-enclave-host.service` placeholder unit is enabled but not started
-  by user-data (its `ExecStart` binary doesn't exist yet), so nothing listens
-  on 8444 out of the box. That's expected for this infra-only change.
+- **First boot requires `escrow_allow_first_boot = true`.** Every other boot
+  should run with it `false` — see that variable's description for why
+  leaving it `true` is dangerous after the first sealed key exists.
+- **Secrets never touch Terraform state or the repo.** `host_bearer_token_parameter_name`/
+  `host_tls_certificate_parameter_name`/`host_tls_private_key_parameter_name`
+  are SSM parameter _names_ only; user-data fetches their values at boot
+  with `--with-decryption` and writes them straight to root-only
+  (0600) local files, never through a Terraform resource.

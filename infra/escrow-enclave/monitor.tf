@@ -15,7 +15,7 @@ variable "monitor_tenant" {
 
 variable "monitor_public_key_parameter_name" {
   type        = string
-  description = "Absolute SSM String parameter name containing 130 hex characters (attestation-verified uncompressed SEC1 ledger public key). Owned outside this module."
+  description = "Absolute SSM String parameter name containing the attestation-verified ledger public key. Value is a JSON object mapping keyId to a 130-hex-character uncompressed SEC1 public key, e.g. {\"<keyId>\":\"<130-hex>\"} — supports looking up the correct key across an escrow key rotation (decisions.md D18). A legacy bare 130-hex-character value (no JSON wrapper, no keyId) is still accepted by the monitor for backward compatibility. Owned outside this module."
   validation {
     condition     = startswith(var.monitor_public_key_parameter_name, "/")
     error_message = "Use an absolute SSM parameter path."

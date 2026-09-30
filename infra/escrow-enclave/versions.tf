@@ -11,7 +11,11 @@
 # =============================================================================
 
 terraform {
-  required_version = ">= 1.6"
+  # >= 1.9, not 1.6: variables.tf's asg_max_size validation condition
+  # references var.asg_min_size (a cross-variable validation reference),
+  # which Terraform only supports from 1.9 onward — 1.6-1.8 would fail to
+  # parse that validation block at all.
+  required_version = ">= 1.9"
 
   required_providers {
     aws = {

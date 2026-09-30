@@ -54,9 +54,23 @@ resource "aws_launch_template" "enclave_host" {
     enclave_memory_mib    = var.enclave_memory_mib
     eif_s3_uri            = var.eif_s3_uri
     enclave_image_version = var.enclave_image_version
-    roughtime_servers_csv = join(",", [for s in var.roughtime_servers : "${s.host}:${s.port}"])
-    artifacts_bucket      = aws_s3_bucket.artifacts.bucket
-    sealed_key_object     = var.sealed_key_object
+    roughtime_allowlist_json = jsonencode({
+      for s in var.roughtime_servers : s.host => "${s.host}:${s.port}"
+    })
+    artifacts_bucket                    = aws_s3_bucket.artifacts.bucket
+    sealed_key_object                   = var.sealed_key_object
+    host_binary_s3_uri                  = var.host_binary_s3_uri
+    host_binary_sha256                  = var.host_binary_sha256
+    escrow_key_id                       = var.escrow_key_id
+    escrow_previous_key_ids_csv         = join(",", var.escrow_previous_key_ids)
+    escrow_previous_key_objects_csv     = join(",", var.escrow_previous_key_objects)
+    escrow_allow_first_boot             = var.escrow_allow_first_boot ? "true" : "false"
+    ledger_records_table                = aws_dynamodb_table.records.name
+    ledger_heads_table                  = aws_dynamodb_table.heads.name
+    audit_bucket                        = aws_s3_bucket.audit.bucket
+    host_bearer_token_parameter_name    = var.host_bearer_token_parameter_name
+    host_tls_certificate_parameter_name = var.host_tls_certificate_parameter_name
+    host_tls_private_key_parameter_name = var.host_tls_private_key_parameter_name
   }))
 
   tag_specifications {

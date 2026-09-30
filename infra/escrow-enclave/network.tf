@@ -50,7 +50,7 @@ resource "aws_security_group" "enclave_host" {
   }
 
   egress {
-    description = "HTTPS egress for KMS/S3/DynamoDB (VPC endpoints recommended — see README)"
+    description = "HTTPS egress for KMS/S3/DynamoDB (VPC endpoints recommended, see README)"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"

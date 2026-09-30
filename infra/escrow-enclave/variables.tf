@@ -275,6 +275,122 @@ variable "cloudwatch_log_kms_key_arn" {
   default     = null
 }
 
+# -----------------------------------------------------------------------
+# M2: escrow-enclave-host parent binary deployment (host_binary_*) and its
+# runtime configuration (escrow_*, host_bearer_token_*, host_tls_*) —
+# templates/user-data.sh.tftpl downloads, verifies, installs, and launches
+# the actual services/escrow-enclave-host binary instead of the old
+# placeholder unit.
+# -----------------------------------------------------------------------
+
+variable "host_binary_s3_uri" {
+  description = <<-EOT
+    s3:// URI of the built escrow-enclave-host parent binary, e.g.
+    s3://learncard-escrow-eif/escrow-enclave-host-v1.2.3. Must live in the
+    same artifacts bucket this module creates (storage.tf) — iam.tf's
+    ReadEifArtifacts statement grants s3:GetObject bucket-wide on that
+    bucket, which already covers this object.
+  EOT
+  type        = string
+
+  validation {
+    condition     = can(regex("^s3://[a-zA-Z0-9.\\-]{3,63}/.+$", var.host_binary_s3_uri))
+    error_message = "host_binary_s3_uri must look like s3://<bucket>/<key>."
+  }
+}
+
+variable "host_binary_sha256" {
+  description = "Required SHA-256 digest (64 lowercase/uppercase hex characters) of the host_binary_s3_uri object. user-data verifies the downloaded binary against this digest with `sha256sum -c` and aborts the boot (never starts the service) on any mismatch — this is the only integrity check on the parent binary before it runs as root."
+  type        = string
+
+  validation {
+    condition     = can(regex("^[0-9a-fA-F]{64}$", var.host_binary_sha256))
+    error_message = "host_binary_sha256 must be exactly 64 hex characters (a SHA-256 digest)."
+  }
+}
+
+variable "escrow_key_id" {
+  description = "Logical escrow key identifier (services/escrow-enclave-host's ESCROW_KEY_ID / services/escrow-enclave-app's KMS encryption-context \"keyId\"). Stable across measurement rotations (decisions.md D18) — changes only via deliberate key rotation or lost-sealed-key recovery, never on a routine enclave image update."
+  type        = string
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9._-]{1,128}$", var.escrow_key_id))
+    error_message = "escrow_key_id must be 1-128 characters of letters, digits, '.', '_', or '-'."
+  }
+}
+
+variable "escrow_previous_key_ids" {
+  description = "Up to 3 previous ESCROW_KEY_ID values the host will still accept during a deliberate key rotation or lost-sealed-key recovery (P9.1). Must be the same length as escrow_previous_key_objects (paired by index). Leave empty outside an active rotation window."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = length(var.escrow_previous_key_ids) <= 3
+    error_message = "escrow_previous_key_ids must contain at most 3 entries."
+  }
+}
+
+variable "escrow_previous_key_objects" {
+  description = "S3 object keys (within the artifacts bucket) holding the sealed key material for each entry in escrow_previous_key_ids, in the same order. Each must start with 'sealed-keys/' — the only prefix granted read/list access (iam.tf) — matching sealed_key_object's own requirement."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = length(var.escrow_previous_key_objects) == length(var.escrow_previous_key_ids)
+    error_message = "escrow_previous_key_objects must have exactly as many entries as escrow_previous_key_ids (paired by index)."
+  }
+
+  validation {
+    condition     = alltrue([for o in var.escrow_previous_key_objects : startswith(o, "sealed-keys/")])
+    error_message = "Every escrow_previous_key_objects entry must start with 'sealed-keys/'."
+  }
+}
+
+variable "escrow_allow_first_boot" {
+  description = <<-EOT
+    Sets ESCROW_ALLOW_FIRST_BOOT on the host. Must be `true` only during the
+    initial provisioning boot (the one time no sealed key object exists yet
+    at sealed_key_object) — the host README is explicit that even then only
+    S3's specific NoSuchKey result permits generating a new key; any other
+    error (including access/transport errors) still fails closed. Flip back
+    to `false` and roll the ASG once the first sealed-key object exists, so
+    a later accidental deletion of that object can never silently trigger
+    regeneration of a NEW escrow key under the same alias.
+  EOT
+  type        = bool
+  default     = false
+}
+
+variable "host_bearer_token_parameter_name" {
+  description = "Absolute SSM Parameter Store name (SecureString) holding the bearer token lca-api must present to the host's 8443 API (ESCROW_ENCLAVE_TOKEN_FILE, fetched by user-data and written to a root-only local file — never passed as a plain environment variable). Provisioned outside this module; only referenced here by name for the read-only IAM grant (iam.tf) and user-data's `aws ssm get-parameter --with-decryption` call."
+  type        = string
+
+  validation {
+    condition     = startswith(var.host_bearer_token_parameter_name, "/")
+    error_message = "host_bearer_token_parameter_name must be an absolute SSM parameter path."
+  }
+}
+
+variable "host_tls_certificate_parameter_name" {
+  description = "Absolute SSM Parameter Store name (SecureString) holding the PEM-encoded TLS certificate the host serves on 8443 (ESCROW_ENCLAVE_TLS_CERT). Provisioned outside this module; only referenced here by name."
+  type        = string
+
+  validation {
+    condition     = startswith(var.host_tls_certificate_parameter_name, "/")
+    error_message = "host_tls_certificate_parameter_name must be an absolute SSM parameter path."
+  }
+}
+
+variable "host_tls_private_key_parameter_name" {
+  description = "Absolute SSM Parameter Store name (SecureString) holding the PEM-encoded TLS private key paired with host_tls_certificate_parameter_name (ESCROW_ENCLAVE_TLS_KEY). Provisioned outside this module; only referenced here by name."
+  type        = string
+
+  validation {
+    condition     = startswith(var.host_tls_private_key_parameter_name, "/")
+    error_message = "host_tls_private_key_parameter_name must be an absolute SSM parameter path."
+  }
+}
+
 variable "tags" {
   description = "Extra tags merged onto every resource, on top of the fixed Project/ManagedBy/Environment tags this module always sets."
   type        = map(string)

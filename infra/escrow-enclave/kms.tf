@@ -2,15 +2,40 @@
 # escrow-enclave — KMS CMK for the escrow private key (P3.2)
 #
 # This is THE security boundary of the whole design (decisions.md D7): the
-# enclave-host EC2 role can call kms:Decrypt, but AWS KMS itself refuses the
-# call unless it carries a signed Nitro attestation document whose
-# PCR0/PCR1/PCR2 match one of the pinned measurement tuples below. There is
-# no path — not the admin role, not lca-api (never named in this policy at
-# all), not even the account root — to plaintext Decrypt without a matching
-# attestation. See statements 5–8 (DenyCreateGrant,
-# DenyDecryptWithoutAttestation, and the two debug-mode-PCR denies) — a
-# present-but-all-zero (debug-mode) attestation document is NOT the same
-# thing as "no attestation", which is why there are four denies, not one.
+# enclave-host EC2 role can call kms:Decrypt and kms:GenerateDataKey, but AWS
+# KMS itself refuses either call unless it carries a signed Nitro attestation
+# document whose PCR0/PCR1/PCR2 match one of the pinned measurement tuples
+# below. There is no path — not the admin role, not lca-api (never named in
+# this policy at all), not even the account root — to plaintext key material
+# without a matching attestation. See the explicit Deny statements below
+# (DenyCreateGrant, DenyProhibitedKeyMaterialActions,
+# DenyKeyMaterialAccessWithoutAttestation, and the two debug-mode-PCR denies)
+# — a present-but-all-zero (debug-mode) attestation document is NOT the same
+# thing as "no attestation", which is why there are separate denies for each.
+#
+# Provenance model (C1 fix, supersedes the historical Encrypt-based sealing):
+# the host role is NEVER granted kms:Encrypt. Instead, first boot calls
+# kms:GenerateDataKey (AES_256) WITH Recipient attestation and the encryption
+# context {purpose:"escrow-enclave-key", keyId}; the enclave receives the
+# CMS-wrapped plaintext data key (decryptable only inside an attested
+# enclave, per KMS's Recipient/CMS envelope semantics) and seals its
+# escrow key with it, while the accompanying ciphertext blob is what gets
+# persisted to S3. Later boots call kms:Decrypt (also WITH Recipient and the
+# same encryption context) against that stored ciphertext blob. Because
+# GenerateDataKey — like Decrypt — is gated by the Recipient attestation
+# conditions below, a compromised host can no longer manufacture a
+# ciphertext blob of its own choosing: EVERY ciphertext blob this key policy
+# will ever produce is minted only in response to an attested
+# GenerateDataKey call, so a host observed presenting a sealed key to the
+# enclave is provably a case of "this exact key policy issued this exact
+# blob to an attested caller", not "the host encrypted arbitrary data itself
+# and is now replaying it". kms:Encrypt (and every other action that could
+# mint or duplicate key material outside that attested path — ReEncryptFrom/
+# ReEncryptTo, GenerateDataKeyWithoutPlaintext, GenerateDataKeyPair(WithoutPlaintext))
+# is explicitly, unconditionally Denied for every principal (see
+# DenyProhibitedKeyMaterialActions) — there is no Allow anywhere in this
+# policy for any of them, and the Deny is defense-in-depth against a future
+# edit accidentally reintroducing one.
 #
 # Deliberately NOT done here: creating the escrow-kms-admin IAM role/user
 # itself. That role is expected to be owned by a separate,
@@ -33,14 +58,15 @@ locals {
   #   2. kms:Create* included kms:CreateGrant, which was a REAL bypass of
   #      the attestation gate, not a hypothetical one (caught in review):
   #      a grant can Allow kms:Decrypt with NO PCR condition at all, and a
-  #      caller could satisfy DenyDecryptWithoutAttestation (statement 6)
-  #      trivially by presenting a debug-mode enclave's attestation
-  #      document — debug mode DOES produce a real, present attestation
-  #      document, just one whose PCR0/PCR1/PCR2/ImageSha384 are all-zero.
-  #      "an attestation was provided" is therefore NOT a sufficient gate
-  #      by itself. kms:CreateGrant is excluded from this list entirely AND
-  #      explicitly denied for every principal, unconditionally (statement
-  #      5, DenyCreateGrant) — belt AND suspenders, so a future edit that
+  #      caller could satisfy DenyKeyMaterialAccessWithoutAttestation
+  #      (statement 7) trivially by presenting a debug-mode enclave's
+  #      attestation document — debug mode DOES produce a real, present
+  #      attestation document, just one whose PCR0/PCR1/PCR2/ImageSha384
+  #      are all-zero. "an attestation was provided" is therefore NOT a
+  #      sufficient gate by itself. kms:CreateGrant is excluded from this
+  #      list entirely AND explicitly denied for every principal,
+  #      unconditionally (statement 6, DenyCreateGrant) — belt AND
+  #      suspenders, so a future edit that
   #      accidentally re-added it here would still be blocked by the Deny.
   #   kms:RevokeGrant/kms:RetireGrant/kms:ListGrants are kept ("for
   #   cleanup"): they only ever remove or enumerate existing grants, never
@@ -72,9 +98,9 @@ locals {
 
   # The exact PCR0/PCR1/PCR2/ImageSha384 value AWS Nitro Enclaves reports
   # for a DEBUG-mode enclave (96 hex chars = SHA384-digest width, all
-  # zero) — see statements 7/8. A debug attestation document is real and
+  # zero) — see statements 8/9. A debug attestation document is real and
   # signed, so it is NOT caught by the "no attestation at all" Null check
-  # in statement 6; it must be rejected by matching this specific value.
+  # in statement 7; it must be rejected by matching this specific value.
   debug_enclave_zero_measurement = "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 
   # Keyed by label (uniqueness enforced by variables.tf's validation) so the
@@ -140,7 +166,15 @@ data "aws_iam_policy_document" "escrow_kms_key_policy" {
   }
 
   # ---------------------------------------------------------------------
-  # 3. Decrypt — ONE statement PER measurement tuple (decisions.md D7).
+  # 3. Decrypt + GenerateDataKey — ONE statement PER measurement tuple
+  #    (decisions.md D7), folded together because both actions must be
+  #    gated identically: GenerateDataKey (AES_256, WITH Recipient) is how
+  #    first boot obtains a fresh, attested-only sealed key; Decrypt (also
+  #    WITH Recipient) is how every later boot unseals the same blob. Both
+  #    calls carry the SAME encryption context ({purpose, keyId}), so both
+  #    belong in the same PCR-gated statement rather than duplicating the
+  #    three PCR conditions across two near-identical statements.
+  #
   #    Three separate `condition` blocks inside a single `statement` are
   #    ANDed together by IAM, so a request must match THIS tuple's PCR0
   #    AND PCR1 AND PCR2 simultaneously. Using one array-valued condition
@@ -150,12 +184,21 @@ data "aws_iam_policy_document" "escrow_kms_key_policy" {
   #    tuple A with PCR1 from tuple B — a measurement combination that was
   #    never actually built or published. Debug-mode enclaves report
   #    all-zero PCRs and can never match a real (non-zero) pinned tuple.
+  #
+  #    The fourth condition (EncryptionContext:purpose) is ANDed on top of
+  #    the three PCR conditions: AWS KMS itself separately enforces that
+  #    Decrypt's supplied encryption context byte-for-byte matches what
+  #    GenerateDataKey used to produce that ciphertext (a built-in KMS
+  #    invariant, not something this policy has to arrange) — this
+  #    condition is the IAM-policy-level mirror of that same requirement,
+  #    so a request missing or misstating the marker is denied here too,
+  #    before KMS's own encryption-context check would otherwise catch it.
   # ---------------------------------------------------------------------
   dynamic "statement" {
     for_each = local.enclave_measurements_by_label
 
     content {
-      sid    = "AllowDecryptForMeasurement${replace(statement.value.label, "/[^a-zA-Z0-9]/", "")}"
+      sid    = "AllowKeyMaterialAccessForMeasurement${replace(statement.value.label, "/[^a-zA-Z0-9]/", "")}"
       effect = "Allow"
 
       principals {
@@ -163,7 +206,7 @@ data "aws_iam_policy_document" "escrow_kms_key_policy" {
         identifiers = [aws_iam_role.enclave_host.arn]
       }
 
-      actions   = ["kms:Decrypt"]
+      actions   = ["kms:Decrypt", "kms:GenerateDataKey"]
       resources = ["*"]
 
       condition {
@@ -183,53 +226,68 @@ data "aws_iam_policy_document" "escrow_kms_key_policy" {
         variable = "kms:RecipientAttestation:PCR2"
         values   = [statement.value.pcr2]
       }
+
+      condition {
+        test     = "StringEquals"
+        variable = "kms:EncryptionContext:purpose"
+        values   = ["escrow-enclave-key"]
+      }
     }
   }
 
   # ---------------------------------------------------------------------
-  # 4. Encrypt — first-boot sealing of the freshly generated escrow private
-  #    key, BEFORE any attestation-conditioned Decrypt grant is even
-  #    relevant (the enclave has no sealed key to decrypt yet). AWS KMS's
-  #    Encrypt API has no `Recipient` parameter at all — attestation
-  #    conditions (kms:RecipientAttestation:*) are only ever evaluated for
-  #    Decrypt, DeriveSharedSecret, GenerateDataKey, GenerateDataKeyPair,
-  #    and GenerateRandom (confirmed against AWS's Nitro Enclaves KMS
-  #    documentation) — so PCR conditions cannot gate Encrypt. Instead we
-  #    condition on an encryption-context marker the enclave must supply.
-  #    Net effect: the host role can always CREATE a ciphertext blob under
-  #    this key (even a compromised host), but per statement 3 it can only
-  #    ever DECRYPT one back out while presenting a valid attestation for a
-  #    pinned measurement — a host that encrypts garbage, or replays a
-  #    captured ciphertext, gains nothing without also running the real,
-  #    attested enclave image.
+  # 4. Unconditional Deny, for every principal, of every KMS action that
+  #    could mint or duplicate key material OUTSIDE the attested
+  #    GenerateDataKey/Decrypt path above:
+  #      - kms:Encrypt — the historical first-boot sealing path (C1): a
+  #        compromised host could previously call this with NO attestation
+  #        requirement at all (Encrypt has no Recipient parameter — AWS
+  #        Nitro attestation conditions are only ever evaluated for
+  #        Decrypt, DeriveSharedSecret, GenerateDataKey, GenerateDataKeyPair,
+  #        and GenerateRandom) and manufacture a ciphertext blob of data it
+  #        already knew, for the enclave to unwittingly adopt. Removed
+  #        entirely — see this file's header comment for the replacement
+  #        provenance model.
+  #      - kms:ReEncryptFrom / kms:ReEncryptTo — would let a caller re-wrap
+  #        existing ciphertext (or ciphertext from ANOTHER key) under this
+  #        CMK without ever presenting an attestation for the OUTPUT side.
+  #      - kms:GenerateDataKeyWithoutPlaintext / kms:GenerateDataKeyPair /
+  #        kms:GenerateDataKeyPairWithoutPlaintext — alternate key-material
+  #        generation APIs not used anywhere in this design; leaving them
+  #        un-Denied would be an unused, unreviewed door into "mint key
+  #        material under this CMK" that nobody is watching.
+  #    None of these six actions has an Allow anywhere in this policy —
+  #    this Deny is defense-in-depth against a future edit accidentally
+  #    introducing one, exactly like statement 5 (DenyCreateGrant) below.
   # ---------------------------------------------------------------------
   statement {
-    sid    = "AllowEncryptForBootSealing"
-    effect = "Allow"
+    sid    = "DenyProhibitedKeyMaterialActions"
+    effect = "Deny"
 
     principals {
       type        = "AWS"
-      identifiers = [aws_iam_role.enclave_host.arn]
+      identifiers = ["*"]
     }
 
-    actions   = ["kms:Encrypt"]
+    actions = [
+      "kms:Encrypt",
+      "kms:ReEncryptFrom",
+      "kms:ReEncryptTo",
+      "kms:GenerateDataKeyWithoutPlaintext",
+      "kms:GenerateDataKeyPair",
+      "kms:GenerateDataKeyPairWithoutPlaintext",
+    ]
     resources = ["*"]
-
-    condition {
-      test     = "StringEquals"
-      variable = "kms:EncryptionContext:purpose"
-      values   = ["escrow-enclave-key"]
-    }
   }
 
   # ---------------------------------------------------------------------
-  # 5. Unconditional Deny of kms:CreateGrant for every principal —
+  # 6. Unconditional Deny of kms:CreateGrant for every principal —
   #    including escrow-kms-admin and root. Grants are a SEPARATE
   #    authorization mechanism from this key policy's statements; a grant
   #    can Allow kms:Decrypt to any principal with NO PCR condition at
   #    all, which would let an admin (or a root break-glass session)
   #    silently reopen unattested Decrypt without ever touching
-  #    kms:PutKeyPolicy — i.e. without the MFA gate (statement 9) and
+  #    kms:PutKeyPolicy — i.e. without the MFA gate (statement 10) and
   #    without a reviewable key-policy diff (README's two-person
   #    procedure). Since local.kms_admin_actions no longer includes
   #    kms:CreateGrant at all, this Deny is currently redundant with that
@@ -252,23 +310,27 @@ data "aws_iam_policy_document" "escrow_kms_key_policy" {
   }
 
   # ---------------------------------------------------------------------
-  # 6. Universal fail-closed Deny: if the request carries no attestation
+  # 7. Universal fail-closed Deny: if the request carries no attestation
   #    document at all (kms:RecipientAttestation:ImageSha384 is absent —
-  #    Null test = true), Decrypt is denied for EVERY principal, including
-  #    the admin role and root. An explicit Deny always overrides any
-  #    Allow — from another key-policy statement, an IAM identity policy,
-  #    OR a grant — so this is the real enforcement backstop for statement
-  #    3, not just documentation of intent.
+  #    Null test = true), Decrypt AND GenerateDataKey are denied for EVERY
+  #    principal, including the admin role and root. An explicit Deny
+  #    always overrides any Allow — from another key-policy statement, an
+  #    IAM identity policy, OR a grant — so this is the real enforcement
+  #    backstop for statement 3, not just documentation of intent.
+  #    GenerateDataKey is covered here for the same reason it is folded
+  #    into statement 3's Allow: it is the first-boot half of the same
+  #    attested key-material path Decrypt serves on every later boot, so
+  #    it must fail closed identically.
   #
-  #    IMPORTANT limitation (caught in review, fixed by statements 7/8):
+  #    IMPORTANT limitation (caught in review, fixed by statements 8/9):
   #    a DEBUG-mode enclave's attestation document is real and present —
   #    "no attestation at all" is Null/absent, which is NOT the same
   #    condition as "an attestation whose PCRs are trivially all-zero".
   #    This statement alone does not reject a debug-mode attestation;
-  #    statements 7 and 8 close that gap explicitly.
+  #    statements 8 and 9 close that gap explicitly.
   # ---------------------------------------------------------------------
   statement {
-    sid    = "DenyDecryptWithoutAttestation"
+    sid    = "DenyKeyMaterialAccessWithoutAttestation"
     effect = "Deny"
 
     principals {
@@ -276,7 +338,7 @@ data "aws_iam_policy_document" "escrow_kms_key_policy" {
       identifiers = ["*"]
     }
 
-    actions   = ["kms:Decrypt"]
+    actions   = ["kms:Decrypt", "kms:GenerateDataKey"]
     resources = ["*"]
 
     condition {
@@ -287,27 +349,28 @@ data "aws_iam_policy_document" "escrow_kms_key_policy" {
   }
 
   # ---------------------------------------------------------------------
-  # 7/8. Deny Decrypt outright for a DEBUG-mode enclave's attestation —
-  #    matched on PCR0 (7) and, independently, on ImageSha384 (8), since
-  #    ImageSha384 is documented to correspond to PCR0 but is a distinct
-  #    condition key that a future statement could theoretically be
-  #    conditioned on instead. Two separate Deny statements (rather than
-  #    two conditions on one statement) so EITHER one matching is
-  #    sufficient to deny — conditions within a single statement are
-  #    ANDed, which would require BOTH to be zero simultaneously and could
-  #    be trivially avoided.
+  # 8/9. Deny Decrypt AND GenerateDataKey outright for a DEBUG-mode
+  #    enclave's attestation — matched on PCR0 (8) and, independently, on
+  #    ImageSha384 (9), since ImageSha384 is documented to correspond to
+  #    PCR0 but is a distinct condition key that a future statement could
+  #    theoretically be conditioned on instead. Two separate Deny
+  #    statements (rather than two conditions on one statement) so EITHER
+  #    one matching is sufficient to deny — conditions within a single
+  #    statement are ANDed, which would require BOTH to be zero
+  #    simultaneously and could be trivially avoided. Both actions are
+  #    covered in each statement for the same reason as statement 7.
   #
   #    Why this matters even though no Allow statement above grants
-  #    unconditional Decrypt: statement 3's per-measurement Allows already
-  #    require a match against real, non-zero pinned PCR values, so a
-  #    debug attestation (all-zero) cannot satisfy them today. This is
-  #    deliberate defense-in-depth against a DIFFERENT future mistake —
-  #    e.g. a careless edit that adds a new Allow statement, or a grant
-  #    (see statement 5) that a future policy change might Allow — rather
-  #    than a gap in the current Allow set.
+  #    unconditional Decrypt/GenerateDataKey: statement 3's per-measurement
+  #    Allows already require a match against real, non-zero pinned PCR
+  #    values, so a debug attestation (all-zero) cannot satisfy them
+  #    today. This is deliberate defense-in-depth against a DIFFERENT
+  #    future mistake — e.g. a careless edit that adds a new Allow
+  #    statement, or a grant (see statement 6) that a future policy change
+  #    might Allow — rather than a gap in the current Allow set.
   # ---------------------------------------------------------------------
   statement {
-    sid    = "DenyDecryptForDebugModeEnclavePCR0"
+    sid    = "DenyKeyMaterialAccessForDebugModeEnclavePCR0"
     effect = "Deny"
 
     principals {
@@ -315,7 +378,7 @@ data "aws_iam_policy_document" "escrow_kms_key_policy" {
       identifiers = ["*"]
     }
 
-    actions   = ["kms:Decrypt"]
+    actions   = ["kms:Decrypt", "kms:GenerateDataKey"]
     resources = ["*"]
 
     condition {
@@ -326,7 +389,7 @@ data "aws_iam_policy_document" "escrow_kms_key_policy" {
   }
 
   statement {
-    sid    = "DenyDecryptForDebugModeEnclaveImageSha384"
+    sid    = "DenyKeyMaterialAccessForDebugModeEnclaveImageSha384"
     effect = "Deny"
 
     principals {
@@ -334,7 +397,7 @@ data "aws_iam_policy_document" "escrow_kms_key_policy" {
       identifiers = ["*"]
     }
 
-    actions   = ["kms:Decrypt"]
+    actions   = ["kms:Decrypt", "kms:GenerateDataKey"]
     resources = ["*"]
 
     condition {
@@ -345,7 +408,7 @@ data "aws_iam_policy_document" "escrow_kms_key_policy" {
   }
 
   # ---------------------------------------------------------------------
-  # 9. Deny PutKeyPolicy unless the caller's session is MFA-authenticated.
+  # 10. Deny PutKeyPolicy unless the caller's session is MFA-authenticated.
   #    Terraform/AWS cannot enforce true two-person approval by itself —
   #    this condition only proves ONE authenticated human with an MFA
   #    device pressed "apply". The second person is enforced by process:

@@ -1,8 +1,9 @@
-# Example values for the `enclave_measurements` variable (variables.tf has
-# the full validation rules). Copy this to a real, environment-specific
-# *.tfvars file — it will be gitignored automatically (.gitignore excludes
-# *.tfvars except *.tfvars.example) — and replace every PCR value below
-# with the REAL output for that build:
+# Example values for the `enclave_measurements` variable, plus (further down)
+# the M2 escrow-enclave-host deploy variables (variables.tf has the full
+# validation rules for all of these). Copy this to a real,
+# environment-specific *.tfvars file — it will be gitignored automatically
+# (.gitignore excludes *.tfvars except *.tfvars.example) — and replace every
+# PCR value below with the REAL output for that build:
 #
 #   nitro-cli build-enclave  --docker-uri <image> --output-file out.eif
 #   nitro-cli describe-eif   --eif-path out.eif        # PCR0/1/2 pre-run
@@ -40,3 +41,21 @@ enclave_measurements = [
   #   pcr2  = "555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555"
   # },
 ]
+
+# -----------------------------------------------------------------------
+# M2: escrow-enclave-host deploy variables (see variables.tf and README.md's
+# Inputs table for full descriptions/validation). Example values only —
+# replace every one of these before applying to a real environment.
+# -----------------------------------------------------------------------
+
+# host_binary_s3_uri = "s3://learncard-escrow-enclave-staging-123456789012-artifacts/escrow-enclave-host-v1.2.3"
+# host_binary_sha256 = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd"
+#
+# escrow_key_id               = "escrow-key-v1"
+# escrow_previous_key_ids     = []
+# escrow_previous_key_objects = []
+# escrow_allow_first_boot     = false # true only for the single provisioning boot
+#
+# host_bearer_token_parameter_name    = "/learncard/escrow-enclave/staging/bearer-token"
+# host_tls_certificate_parameter_name = "/learncard/escrow-enclave/staging/tls-cert"
+# host_tls_private_key_parameter_name = "/learncard/escrow-enclave/staging/tls-key"

@@ -3,10 +3,12 @@
 #
 # Two roles, two different trust boundaries:
 #   - enclave_host: EC2 instance role for the ASG (compute.tf). Its escrow-CMK
-#     grant here (kms:Decrypt/kms:Encrypt) is necessary but NOT sufficient —
-#     the CMK's own key policy (kms.tf) is what actually gates Decrypt behind
-#     a matching Nitro attestation. This role also holds the S3/DynamoDB
-#     permissions the P3.3 parent binary needs.
+#     grant here (kms:Decrypt/kms:GenerateDataKey — NEVER kms:Encrypt, see
+#     kms.tf's header comment for the C1 provenance model) is necessary but
+#     NOT sufficient — the CMK's own key policy (kms.tf) is what actually
+#     gates both actions behind a matching Nitro attestation. This role also
+#     holds the S3/DynamoDB/SSM permissions the escrow-enclave-host parent
+#     binary needs.
 #   - ledger_monitor: role for the P7.1 monitor Lambda (the function itself
 #     is not created by this module; only a stable role ARN is). Read-only
 #     on the ledger tables + audit bucket, NO escrow-CMK grant at all.
@@ -48,12 +50,16 @@ resource "aws_iam_instance_profile" "enclave_host" {
 }
 
 data "aws_iam_policy_document" "enclave_host_permissions" {
-  # Escrow CMK: Decrypt/Encrypt only. The attestation gate lives entirely in
-  # kms.tf's key policy, not here.
+  # Escrow CMK: Decrypt + GenerateDataKey only — NEVER kms:Encrypt (C1 fix;
+  # see kms.tf's header comment for the replacement provenance model: first
+  # boot uses GenerateDataKey WITH Recipient attestation, later boots use
+  # Decrypt WITH Recipient, against the same attested-only ciphertext). The
+  # attestation gate itself lives entirely in kms.tf's key policy, not here
+  # — this identity-policy statement is necessary but not sufficient.
   statement {
-    sid       = "EscrowCmkDecryptEncrypt"
+    sid       = "EscrowCmkDecryptAndGenerateDataKey"
     effect    = "Allow"
-    actions   = ["kms:Decrypt", "kms:Encrypt"]
+    actions   = ["kms:Decrypt", "kms:GenerateDataKey"]
     resources = [aws_kms_key.escrow.arn]
   }
 
@@ -67,17 +73,48 @@ data "aws_iam_policy_document" "enclave_host_permissions" {
     resources = [aws_kms_key.s3.arn]
   }
 
-  # Artifacts bucket holds both EIFs (top-level, no fixed sub-prefix —
-  # eif_s3_uri's own documented example in variables.tf uses a top-level
-  # key, so restricting to an "eif/*" pattern here would reject that
-  # example) AND sealed escrow-key objects (sealed-keys/* — see
-  # WriteSealedKey below). GetObject stays bucket-wide so the host can
-  # read either at boot; PutObject is scoped narrower, below.
+  # Artifacts bucket holds EIFs, the escrow-enclave-host parent binary
+  # (host_binary_s3_uri — M2 fix), and previous sealed-key objects
+  # (escrow_previous_key_objects), all top-level/mixed-prefix — no fixed
+  # sub-prefix, since eif_s3_uri's and host_binary_s3_uri's own documented
+  # examples in variables.tf use top-level keys, so restricting to an
+  # "eif/*" pattern here would reject those examples. The CURRENT sealed
+  # escrow key (sealed-keys/* — see WriteSealedKey below) is also covered
+  # by this bucket-wide grant. GetObject stays bucket-wide so the host can
+  # read any of these at boot; PutObject is scoped narrower, below.
   statement {
     sid       = "ReadEifArtifacts"
     effect    = "Allow"
     actions   = ["s3:GetObject"]
     resources = ["${aws_s3_bucket.artifacts.arn}/*"]
+  }
+
+  # H3 fix: ListBucket, scoped to the sealed-keys/ prefix via the s3:prefix
+  # condition. Without this, storage.rs's SealedStore::load_for_boot (P3.2's
+  # first-boot detection) calls s3:GetObject on an object that does not yet
+  # exist — S3 itself would normally answer that with 404 NoSuchKey, which
+  # the host's own `error.as_service_error().is_some_and(|e|
+  # e.is_no_such_key())` check treats as "first boot, safe to proceed" — but
+  # without ListBucket, IAM's evaluation for a GetObject on a nonexistent key
+  # can instead return 403 AccessDenied (IAM cannot distinguish "you may
+  # GetObject this key if it existed" from "you may not know whether this
+  # key exists at all" without some List-level permission on the bucket),
+  # which the host does NOT special-case and treats as a hard failure — so
+  # first boot could never complete. Scoped to sealed-keys/* only (matching
+  # WriteSealedKey below and var.sealed_key_object's own prefix
+  # requirement), not bucket-wide: this role still has no way to enumerate
+  # EIF objects it wasn't already granted GetObject on above.
+  statement {
+    sid       = "ListSealedKeyPrefix"
+    effect    = "Allow"
+    actions   = ["s3:ListBucket"]
+    resources = [aws_s3_bucket.artifacts.arn]
+
+    condition {
+      test     = "StringLike"
+      variable = "s3:prefix"
+      values   = ["sealed-keys/*"]
+    }
   }
 
   # Sealed escrow key: PutObject scoped ONLY to the sealed-keys/ prefix.
@@ -178,6 +215,26 @@ data "aws_iam_policy_document" "enclave_host_permissions" {
     effect    = "Deny"
     actions   = ["dynamodb:DeleteItem", "dynamodb:UpdateItem"]
     resources = [aws_dynamodb_table.records.arn]
+  }
+
+  # M2 fix: read-only access to the three SSM parameters user-data fetches
+  # at boot (bearer token, TLS certificate, TLS private key — see
+  # templates/user-data.sh.tftpl) so the host can authenticate lca-api's
+  # calls and terminate TLS on 8443 without any secret ever being
+  # hardcoded in this repo or baked into an AMI/EIF. Scoped to exactly
+  # these three parameter ARNs, never a wildcard path — a compromised host
+  # gains no ability to read any OTHER parameter in this account.
+  statement {
+    sid    = "ReadHostSecretParameters"
+    effect = "Allow"
+    actions = [
+      "ssm:GetParameter",
+    ]
+    resources = [
+      "arn:${data.aws_partition.current.partition}:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.host_bearer_token_parameter_name}",
+      "arn:${data.aws_partition.current.partition}:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.host_tls_certificate_parameter_name}",
+      "arn:${data.aws_partition.current.partition}:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.host_tls_private_key_parameter_name}",
+    ]
   }
 
   # CloudWatch Logs: write-only to the P3.1 log group. The modern
