@@ -17,6 +17,7 @@ import { encryptAuthShare, decryptAuthShare } from '@helpers/shareEncryption.hel
 import { maskEmail } from '@helpers/maskEmail';
 import cache from '@cache';
 import { setValidChallengeForDid } from '@cache/challenges';
+import { checkRateLimit, clearRateLimit } from '@helpers/rateLimit.helpers';
 import {
     MAX_RECOVERY_OTP_ATTEMPTS,
     claimRecoveryOtpSendWindow,
@@ -63,6 +64,9 @@ const RECOVERY_METHOD_CONFIRMATION_TTL_MS = 15 * 60 * 1000;
 const MAX_RECOVERY_METHOD_CONFIRMATION_ATTEMPTS = 5;
 const EMAIL_RELAY_ALGORITHM = 'P-256-HKDF-SHA256-AES-256-GCM' as const;
 const ESCROW_RELAY_TIMEOUT_MS = 15_000;
+
+// Rate limiting for recovery email verification (brute-force protection)
+const RECOVERY_VERIFY_MAX_ATTEMPTS = 5; // max failed attempts per auth provider identity
 
 const generate6DigitCode = (): string => randomInt(100000, 1000000).toString();
 
@@ -698,7 +702,8 @@ export const keysRouter = t.router({
                 securityLevel: userKey.securityLevel ?? 'basic',
                 recoveryMethods,
                 keyProvider: userKey.keyProvider ?? 'sss',
-                shareVersion: userKey.shareVersion ?? 1,
+                // No auth material has observable version 0, just like a missing record.
+                shareVersion: userKey.authShare ? (userKey.shareVersion ?? 1) : 0,
                 maskedRecoveryEmail: userKey.recoveryEmail
                     ? maskEmail(userKey.recoveryEmail)
                     : null,
@@ -724,9 +729,16 @@ export const keysRouter = t.router({
                 securityLevel: z.enum(['basic', 'enhanced', 'advanced']).optional(),
                 keyProvider: z.enum(['web3auth', 'sss']).optional(),
                 sssActivationState: z.literal('provisional').optional(),
+                expectedShareVersion: z.number().int().min(0).optional(),
             })
         )
-        .output(z.object({ success: z.boolean(), shareVersion: z.number() }))
+        .output(
+            z.object({
+                success: z.boolean(),
+                shareVersion: z.number(),
+                expectedShareVersionChecked: z.boolean(),
+            })
+        )
         .mutation(async ({ ctx, input }) => {
             const authenticatedDid = ctx.user.did;
 
@@ -741,6 +753,18 @@ export const keysRouter = t.router({
             const existing = await findUserKeyByAuthProvider(authProvider.type, authProvider.id);
 
             if (existing) assertDidOwner(existing, authenticatedDid);
+
+            // Match getAuthShare: null (no record) and authShare-less records mean 0.
+            const currentVersion = existing?.authShare ? (existing.shareVersion ?? 1) : 0;
+            if (
+                input.expectedShareVersion !== undefined &&
+                input.expectedShareVersion !== currentVersion
+            ) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'Key material changed; please retry',
+                });
+            }
 
             const isMigration = existing?.keyProvider === 'web3auth';
             const shouldRemainProvisional =
@@ -775,7 +799,8 @@ export const keysRouter = t.router({
                         sssActivationState: shouldRemainProvisional ? 'provisional' : 'active',
                         ...(provisionalCreatedAt ? { provisionalCreatedAt } : {}),
                     },
-                    existing ? (existing.shareVersion ?? 1) : undefined
+                    // Legacy clients keep server-observed CAS; first inserts stay unconditional.
+                    input.expectedShareVersion ?? (existing ? currentVersion : undefined)
                 );
             } catch (error) {
                 if (error instanceof UserKeyVersionConflictError) {
@@ -788,7 +813,11 @@ export const keysRouter = t.router({
                 throw error;
             }
 
-            return { success: true, shareVersion: updatedDoc.shareVersion ?? 1 };
+            return {
+                success: true,
+                shareVersion: updatedDoc.shareVersion ?? 1,
+                expectedShareVersionChecked: input.expectedShareVersion !== undefined,
+            };
         }),
 
     addRecoveryMethod: didAndChallengeRoute
@@ -821,13 +850,23 @@ export const keysRouter = t.router({
                     message: 'Use the automatic recovery enrollment endpoint.',
                 });
             }
+
+            // Confirmation only accepts pending methods at the current version.
+            const shareVersion = userKey.shareVersion ?? 1;
+            if (input.shareVersion !== undefined && input.shareVersion !== shareVersion) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'Key material changed; please retry',
+                });
+            }
+
             await addRecoveryMethodToUserKeyByAuthProvider(authProvider, {
                 type: input.type,
                 createdAt: new Date(),
                 confirmationStatus: 'pending',
                 credentialId: input.credentialId,
                 encryptedShare: input.encryptedShare,
-                shareVersion: input.shareVersion ?? userKey.shareVersion ?? 1,
+                shareVersion,
             });
 
             return { success: true };
@@ -1069,20 +1108,28 @@ export const keysRouter = t.router({
 
             assertDidOwner(userKey, ctx.user.did);
 
-            // Legacy accounts with no prior record are created by storeAuthShare as a
-            // provisional 'sss' key; treat markMigrated as an idempotent no-op for them.
-            if (userKey.keyProvider !== 'web3auth') {
-                if (userKey.sssActivationState === 'provisional') return { success: true };
+            // storeAuthShare creates a provisional SSS record when a legacy user
+            // has no prior UserKey. Record migration provenance for that case too.
+            if (
+                userKey.keyProvider !== 'web3auth' &&
+                userKey.sssActivationState !== 'provisional'
+            ) {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message: 'This key record is not eligible for migration.',
                 });
             }
 
-            await markUserKeyMigrationProvisionalByAuthProvider(
+            const marked = await markUserKeyMigrationProvisionalByAuthProvider(
                 authProvider,
                 userKey.provisionalCreatedAt ?? new Date()
             );
+            if (!marked) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'The key record changed before migration. Please try again.',
+                });
+            }
 
             return { success: true };
         }),
@@ -1174,6 +1221,11 @@ export const keysRouter = t.router({
                 RECOVERY_EMAIL_CODE_TTL_SECS
             );
 
+            // Clear the verification attempt counter so user can try the new code
+            await clearRateLimit(
+                `recovery-verify-attempts:${authProvider.type}:${authProvider.id}`
+            );
+
             try {
                 // Always render locally via @learncard/email-templates for
                 // tenant-branded output. Falls back to the 'recovery-email-code'
@@ -1222,6 +1274,24 @@ export const keysRouter = t.router({
             assertDidOwner(userKey, ctx.user.did);
 
             const cacheKey = `${RECOVERY_EMAIL_CODE_PREFIX}${authProvider.type}:${authProvider.id}`;
+            const attemptKey = `recovery-verify-attempts:${authProvider.type}:${authProvider.id}`;
+
+            // Check rate limit (5 failed attempts per auth provider identity within code TTL)
+            const allowed = await checkRateLimit(
+                attemptKey,
+                RECOVERY_VERIFY_MAX_ATTEMPTS,
+                RECOVERY_EMAIL_CODE_TTL_SECS
+            );
+
+            if (!allowed) {
+                // On exceeding limit, delete the pending recovery code
+                await cache.delete([cacheKey]);
+                throw new TRPCError({
+                    code: 'TOO_MANY_REQUESTS',
+                    message: 'Too many attempts. Please resend code.',
+                });
+            }
+
             const raw = await cache.get(cacheKey);
 
             if (!raw) {
@@ -1234,6 +1304,7 @@ export const keysRouter = t.router({
             const { code: storedCode, email } = JSON.parse(raw) as { code: string; email: string };
 
             if (input.code !== storedCode) {
+                // Failed attempt — rate limit counter already incremented above
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message: 'Incorrect code. Please try again.',
@@ -1242,6 +1313,7 @@ export const keysRouter = t.router({
 
             // Code is valid — consume it and store the verified recovery email
             await cache.delete([cacheKey]);
+            await clearRateLimit(attemptKey);
             await setRecoveryEmailByAuthProvider(authProvider, email);
 
             return { success: true, maskedEmail: maskEmail(email) };
@@ -1284,6 +1356,7 @@ export const keysRouter = t.router({
                 relayPayload: EmailRelayEnvelopeValidator,
                 confirmationCode: z.string().regex(/^\d{6}$/),
                 email: z.string().email(),
+                shareVersion: z.number().int().positive().optional(),
             }).strict()
         )
         .output(z.object({ success: z.boolean() }))
@@ -1315,6 +1388,16 @@ export const keysRouter = t.router({
 
             const now = new Date();
 
+            // Older clients omit the version; preserve their current-version fallback.
+            // Even retained historical versions cannot be confirmed for new recovery setup.
+            const shareVersion = userKey.shareVersion ?? 1;
+            if (input.shareVersion !== undefined && input.shareVersion !== shareVersion) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'Key material changed; please retry',
+                });
+            }
+
             // lca-api deliberately cannot decrypt this payload. The isolated
             // relay verifies that its encrypted recipient matches this
             // server-verified address before sending.
@@ -1324,7 +1407,7 @@ export const keysRouter = t.router({
                 type: 'email',
                 createdAt: now,
                 confirmationStatus: 'pending',
-                shareVersion: userKey.shareVersion ?? 1,
+                shareVersion,
                 confirmationCodeHash: hashRecoveryConfirmationCode(input.confirmationCode),
                 confirmationCodeExpiresAt: new Date(
                     now.getTime() + RECOVERY_METHOD_CONFIRMATION_TTL_MS

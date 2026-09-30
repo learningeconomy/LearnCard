@@ -40,6 +40,7 @@ import {
     useCurrentUser,
     useWallet,
     getAuthConfig,
+    isEmailRelayConfigured,
 } from 'learn-card-base';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 import useLogout from '../../hooks/useLogout';
@@ -89,7 +90,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
     const { gate } = useLCNGatedAction();
 
-    const { newModal, closeModal } = useModal();
+    const { newModal, newModalWithToken, closeModal, forceCloseModalByToken } = useModal();
     const { handleLogout, isLoggingOut } = useLogout();
 
     const { data: isNetworkUser, isLoading: isNetworkUserLoading } = useIsCurrentUserLCNUser();
@@ -107,6 +108,9 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
         getEscrowEnrollmentState,
         setEscrowPin,
         clearEscrowPin,
+        runRecoverySetup,
+        resetRecoverySetup,
+        needsActivation,
     } = useAppAuth();
 
     const description = user?.bio ?? user?.shortBio;
@@ -413,6 +417,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                   return jwt;
                               };
 
+                              if (input.method !== 'passkey') resetRecoverySetup(input.method);
+
                               return keyDerivation.setupRecoveryMethod!({
                                   token,
                                   providerType,
@@ -449,13 +455,15 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                   return jwt;
                               };
 
-                              await keyDerivation.confirmRecoveryMethod!({
-                                  token,
-                                  providerType,
-                                  privateKey: currentUser.privateKey!,
-                                  input,
-                                  signDidAuthVp: signVp,
-                              });
+                              await runRecoverySetup(input.method, () =>
+                                  keyDerivation.confirmRecoveryMethod!({
+                                      token,
+                                      providerType,
+                                      privateKey: currentUser.privateKey!,
+                                      input,
+                                      signDidAuthVp: signVp,
+                                  })
+                              );
                           }
                         : null;
 
@@ -507,8 +515,18 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         };
                     };
 
-                    newModal(
+                    let requestClose: (() => void) | undefined;
+                    const modalRef: { token?: ReturnType<typeof newModalWithToken> } = {};
+                    // Close exactly this instance; a no-op if it already closed.
+                    const closeRecoveryModal = () => {
+                        if (modalRef.token) forceCloseModalByToken(modalRef.token);
+                    };
+                    modalRef.token = newModalWithToken(
                         <RecoverySetupModal
+                            registerCloseRequest={fn => {
+                                requestClose = fn;
+                            }}
+                            emailAvailable={isEmailRelayConfigured()}
                             onGetEscrowEnrollmentState={getEscrowEnrollmentState}
                             onDisableEscrowRecovery={disableEscrowRecovery}
                             onEnableEscrowRecovery={enableEscrowRecovery}
@@ -522,14 +540,15 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                         : String(m.createdAt),
                             }))}
                             maskedRecoveryEmail={fetchedMaskedRecoveryEmail}
+                            isActivationPending={needsActivation}
+                            onCompleted={closeRecoveryModal}
                             onSetupPasskey={
                                 setupMethod
                                     ? async () => {
                                           const authUser =
                                               await contextAuthProvider.getCurrentUser();
-                                          const result = await setupMethod(
-                                              { method: 'passkey' },
-                                              authUser
+                                          const result = await runRecoverySetup('passkey', () =>
+                                              setupMethod({ method: 'passkey' }, authUser)
                                           );
                                           return result?.method === 'passkey'
                                               ? result.credentialId
@@ -553,6 +572,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                           return {
                                               phrase: result.phrase,
                                               challengeWordIndices: result.challengeWordIndices,
+                                              challengeWordOptions: result.challengeWordOptions,
                                           };
                                       }
                                     : requireAuth
@@ -640,9 +660,17 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                     ? code => confirmMethod({ method: 'email', code })
                                     : requireAuth
                             }
-                            onClose={closeModal}
+                            onClose={closeRecoveryModal}
                         />,
-                        { sectionClassName: '!max-w-[480px]' },
+                        {
+                            sectionClassName: '!max-w-[480px]',
+                            // Backdrop/Escape: let the modal guard an unfinished check.
+                            onClose: () => {
+                                if (!requestClose) return true;
+                                requestClose();
+                                return false;
+                            },
+                        },
                         { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                     );
                 },

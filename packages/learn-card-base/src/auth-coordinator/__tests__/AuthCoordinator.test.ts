@@ -16,8 +16,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { AuthCoordinator, createAuthCoordinator } from '../AuthCoordinator';
 import {
+    createSSSStrategy,
     EscrowPinMismatchError,
     IdentityRecoverySessionConsumedError,
+    splitAndVerify,
+    type SSSStorageFunctions,
 } from '@learncard/sss-key-manager';
 import { AuthSessionError } from '../types';
 
@@ -1289,6 +1292,146 @@ describe('AuthCoordinator', () => {
             }
         });
 
+        describe('unresolved SSS writes during stale-key login', () => {
+            const privateKey = '1234567890abcdef'.repeat(4);
+            const expectedDid = 'did:key:zPendingOwner';
+            const mainId = 'sss-device-share:user-1';
+            const pendingId = `sss-pending-share:${mainId}`;
+
+            const preparePendingWrite = async () => {
+                const shares = new Map<string, string>();
+                const versions = new Map<string, number>();
+                const storage: SSSStorageFunctions = {
+                    storeDeviceShare: async (share, id) => {
+                        shares.set(id ?? 'sss-device-share', share);
+                    },
+                    getDeviceShare: async id => shares.get(id ?? 'sss-device-share') ?? null,
+                    hasDeviceShare: async id => shares.has(id ?? 'sss-device-share'),
+                    deleteDeviceShare: async id => {
+                        shares.delete(id ?? 'sss-device-share');
+                        versions.delete(id ?? 'sss-device-share');
+                    },
+                    clearAllShares: async id => {
+                        if (id) {
+                            shares.delete(id);
+                            versions.delete(id);
+                        } else {
+                            shares.clear();
+                            versions.clear();
+                        }
+                    },
+                    storeShareVersion: async (version, id) => {
+                        versions.set(id ?? 'sss-device-share', version);
+                    },
+                    getShareVersion: async id => versions.get(id ?? 'sss-device-share') ?? null,
+                };
+                const stale = await splitAndVerify(privateKey);
+                const otherDevice = await splitAndVerify(privateKey);
+                shares.set(mainId, stale.shares.deviceShare);
+                versions.set(mainId, 1);
+                let currentAuthShare = otherDevice.shares.authShare;
+                let version = 1;
+                let delayedAuthShare = '';
+                vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+                    if (init?.method === 'PUT') {
+                        delayedAuthShare = JSON.parse(String(init.body)).authShare.encryptedData;
+                        throw new TypeError('Legacy server committed but reply was lost');
+                    }
+                    const requestedVersion = JSON.parse(String(init?.body)).shareVersion;
+                    return new Response(
+                        JSON.stringify({
+                            authShare:
+                                requestedVersion === 1
+                                    ? otherDevice.shares.authShare
+                                    : currentAuthShare,
+                            shareVersion: version,
+                            keyProvider: 'sss',
+                            primaryDid: expectedDid,
+                            recoveryMethods: [],
+                        })
+                    );
+                });
+                const strategy = createSSSStrategy({
+                    serverUrl: 'http://test-server/api',
+                    storage,
+                });
+                strategy.setActiveUser!('user-1');
+                await expect(
+                    strategy.atomicUpdateShares!({
+                        token: 'mock-token',
+                        providerType: 'firebase',
+                        privateKey,
+                        did: expectedDid,
+                    })
+                ).rejects.toMatchObject({ rolledBack: false });
+
+                const coordinator = createAuthCoordinator({
+                    authProvider: createMockAuthProvider(),
+                    keyDerivation: strategy,
+                    didFromPrivateKey: async key =>
+                        key === privateKey ? expectedDid : 'did:key:zOther',
+                });
+                return {
+                    coordinator,
+                    strategy,
+                    shares,
+                    versions,
+                    commitLegacyWrite: () => {
+                        currentAuthShare = delayedAuthShare;
+                        version = 2;
+                    },
+                };
+            };
+
+            it('keeps the pending split through needs_recovery and recovers after a delayed commit', async () => {
+                const { coordinator, strategy, shares, versions, commitLegacyWrite } =
+                    await preparePendingWrite();
+                const pending = JSON.parse(shares.get(pendingId)!).candidates[0].share;
+
+                expect(await coordinator.initialize()).toMatchObject({
+                    status: 'needs_recovery',
+                    recoveryReason: 'stale_local_key',
+                });
+                expect(shares.has(mainId)).toBe(false);
+                expect(versions.has(mainId)).toBe(false);
+                expect(shares.has(pendingId)).toBe(true);
+                expect(await strategy.getLocalKey()).toBe(pending);
+
+                commitLegacyWrite();
+                expect(await coordinator.initialize()).toMatchObject({
+                    status: 'ready',
+                    did: expectedDid,
+                    privateKey,
+                });
+                expect(shares.get(mainId)).toBe(pending);
+                expect(versions.get(mainId)).toBe(2);
+                expect(shares.has(pendingId)).toBe(false);
+            });
+
+            it('forgets retained pending data without touching another account', async () => {
+                const { coordinator, strategy, shares, versions } = await preparePendingWrite();
+                const otherId = 'sss-device-share:user-2';
+                const otherPendingId = `sss-pending-share:${otherId}`;
+                shares.set(otherId, 'other-account-device');
+                shares.set(otherPendingId, 'other-account-pending');
+                versions.set(otherId, 7);
+
+                expect(await coordinator.initialize()).toMatchObject({
+                    status: 'needs_recovery',
+                    recoveryReason: 'stale_local_key',
+                });
+                expect(shares.has(pendingId)).toBe(true);
+                await coordinator.forgetDevice();
+                expect(shares.has(mainId)).toBe(false);
+                expect(shares.has(pendingId)).toBe(false);
+                expect(versions.has(mainId)).toBe(false);
+                strategy.setActiveUser!('user-2');
+                expect(await strategy.getLocalKey()).toBe('other-account-device');
+                expect(await strategy.getLocalShareVersion!()).toBe(7);
+                expect(shares.get(otherPendingId)).toBe('other-account-pending');
+            });
+        });
+
         it('goes to idle (not error) when AuthSessionError is thrown', async () => {
             const { coordinator } = setup({
                 authProvider: {
@@ -2233,6 +2376,59 @@ describe('AuthCoordinator', () => {
             });
         });
 
+        it.each(['provisional', 'active', undefined] as const)(
+            'preserves the server activation state %s when finishing identity recovery',
+            async sssActivationState => {
+                const fetchServerKeyStatus = vi.fn().mockResolvedValue({
+                    exists: true,
+                    sssActivationState,
+                    recoveryMethods: [],
+                });
+                const { coordinator } = setup({
+                    keyDerivation: {
+                        hasPendingIdentityRecovery: vi.fn().mockReturnValue(true),
+                        completeIdentityRecovery: vi.fn().mockResolvedValue({
+                            privateKey: 'rotated-private-key',
+                            did: 'did:key:z123',
+                        }),
+                        fetchServerKeyStatus,
+                    },
+                });
+
+                await coordinator.initialize();
+                expect(fetchServerKeyStatus).toHaveBeenCalledWith('mock-token', 'firebase');
+                expect(coordinator.finishIdentityRecovery()).toMatchObject({
+                    status: 'ready',
+                    privateKey: 'rotated-private-key',
+                    did: 'did:key:z123',
+                    authSessionValid: true,
+                    sssActivationState: sssActivationState ?? 'provisional',
+                });
+            }
+        );
+
+        it('keeps a successful rebind provisional if the activation status refresh fails', async () => {
+            const { coordinator } = setup({
+                keyDerivation: {
+                    hasPendingIdentityRecovery: vi.fn().mockReturnValue(true),
+                    completeIdentityRecovery: vi.fn().mockResolvedValue({
+                        privateKey: 'rotated-private-key',
+                        did: 'did:key:z123',
+                    }),
+                    fetchServerKeyStatus: vi
+                        .fn()
+                        .mockRejectedValue(new Error('Network unavailable')),
+                },
+            });
+
+            await coordinator.initialize();
+            expect(coordinator.finishIdentityRecovery()).toMatchObject({
+                status: 'ready',
+                privateKey: 'rotated-private-key',
+                sssActivationState: 'provisional',
+            });
+        });
+
         it('returns to email entry when the one-shot recovery session was consumed', async () => {
             const recoveryMethods = [{ type: 'phrase', createdAt: new Date() }];
             const cancelIdentityRecovery = vi.fn();
@@ -2258,11 +2454,14 @@ describe('AuthCoordinator', () => {
             await coordinator.sendIdentityRecoveryCode('recovery@example.com');
             await coordinator.verifyIdentityRecoveryCode('123456');
 
-            const result = await coordinator.prepareIdentityRecovery({
-                method: 'phrase',
-                phrase: 'valid phrase input',
-            });
+            await expect(
+                coordinator.prepareIdentityRecovery({
+                    method: 'phrase',
+                    phrase: 'valid phrase input',
+                })
+            ).rejects.toThrow('Request a new recovery code and try again.');
 
+            const result = coordinator.getState();
             expect(result).toEqual({
                 status: 'identity_recovery',
                 phase: 'enter_email',
@@ -2293,11 +2492,14 @@ describe('AuthCoordinator', () => {
             await coordinator.sendIdentityRecoveryCode('recovery@example.com');
             await coordinator.verifyIdentityRecoveryCode('123456');
 
-            const result = await coordinator.prepareIdentityRecovery({
-                method: 'phrase',
-                phrase: 'invalid phrase input',
-            });
+            await expect(
+                coordinator.prepareIdentityRecovery({
+                    method: 'phrase',
+                    phrase: Array(25).fill('invalid').join(' '),
+                })
+            ).rejects.toThrow('Invalid recovery phrase');
 
+            const result = coordinator.getState();
             expect(result).toMatchObject({
                 status: 'identity_recovery',
                 phase: 'choose_method',

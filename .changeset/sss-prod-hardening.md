@@ -15,3 +15,5 @@ SSS prod hardening: confirmed recovery enrollment, lost-login identity rebind, a
 - Email recovery shares are encrypted on the client to an isolated relay's public key; `lca-api` never sees plaintext. Provider tokens move from query strings to the `X-Auth-Token` header.
 - Sensitive key routes require a single-use DID challenge; key records are keyed by immutable provider ID.
 - `recovery-key` email template now requires `confirmationCode`.
+- Auth-share initialization requires the provider uniqueness index before inserting, preventing competing first writes from creating duplicate accounts. Existing records with missing or BSON-null auth material retain atomic update protection.
+- Automatic stale-key cleanup preserves unresolved pending shares for delayed commits; explicit device forgetting still removes them. Custom SSS storage adapters now implement `deleteDeviceShare(id?)` to remove only the selected share and its version.

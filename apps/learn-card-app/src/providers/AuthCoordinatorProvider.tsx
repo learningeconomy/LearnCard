@@ -50,11 +50,14 @@ import {
     getSSSConfig,
     getEscrowStrategyConfig,
     getLogger,
+    useToast,
+    ToastTypeEnum,
     type AuthCoordinatorContextValue,
     type AuthProvider,
     type AuthUser,
     type DebugEventLevel,
     type KeyDerivationStrategy,
+    isEmailRelayConfigured,
 } from 'learn-card-base';
 
 import currentUserStore from 'learn-card-base/stores/currentUserStore';
@@ -115,10 +118,13 @@ registerKeycloakFactories();
 import {
     countUserConfiguredRecoveryMethods,
     mergeAuthUserIntoCurrentUser,
-    registerRecoveryMethodCompletion,
     shouldResetWalletOnStatus,
+    decidePinPromptAfterReady,
+    type EscrowRecoveryKind,
 } from './authCoordinator.helpers';
 import { getTenantHeaders, getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
+import { createRecoveryPinActions } from './recoveryPinActions';
+import { runPasskeyRecoverySetup } from './passkeyRecoverySetup';
 
 import {
     emitAuthDebugEvent,
@@ -415,6 +421,7 @@ const AuthSessionManager: React.FC<{
     authProvider: AuthProvider | null;
 }> = ({ children, authProvider }) => {
     const coordinator = useBaseAuthCoordinator();
+    const { presentToast } = useToast();
     const signInAdapter = useSignInAdapter();
     const authConfig = getAuthConfig();
 
@@ -467,18 +474,18 @@ const AuthSessionManager: React.FC<{
     // --- Recovery setup prompt (shown after first-time setup with no recovery methods) ---
     const [showRecoverySetup, setShowRecoverySetup] = useState(false);
     const recoverySetupOptionsRef = useRef<RecoverySetupOptions>({});
-    const completedRecoveryMethodsRef = useRef<Set<RecoverySetupType>>(new Set());
+    const recoveryRequestCloseRef = useRef<(() => void) | null>(null);
     const wasNewUserRef = useRef(false);
     // Set when a PIN-based recovery just succeeded, proving the user had a PIN
     // even on a new/forgotten device where the local prompt flag is absent.
-    const recoveredWithPinRef = useRef(false);
+    const recoveredViaEscrowRef = useRef<EscrowRecoveryKind | null>(null);
 
     // null = recovery method status has not been checked yet
     const [recoveryMethodCount, setRecoveryMethodCount] = useState<number | null>(null);
+    const recoveryMethodReadRef = useRef(0);
 
     const openRecoverySetup = useCallback((options: RecoverySetupOptions = {}) => {
         recoverySetupOptionsRef.current = options;
-        completedRecoveryMethodsRef.current.clear();
         setShowRecoverySetup(true);
     }, []);
 
@@ -486,16 +493,11 @@ const AuthSessionManager: React.FC<{
         const onClosed = recoverySetupOptionsRef.current.onClosed;
 
         recoverySetupOptionsRef.current = {};
-        completedRecoveryMethodsRef.current.clear();
         setShowRecoverySetup(false);
         onClosed?.();
     }, []);
 
     const completeRecoverySetup = useCallback((method: RecoverySetupType) => {
-        if (registerRecoveryMethodCompletion(completedRecoveryMethodsRef.current, method)) {
-            setRecoveryMethodCount(previousCount => (previousCount ?? 0) + 1);
-        }
-
         const onCompleted = recoverySetupOptionsRef.current.onCompleted;
 
         // Prompt-owned setup is a single-action flow, so return to the Dashboard.
@@ -581,6 +583,14 @@ const AuthSessionManager: React.FC<{
     const readyEnrollment =
         coordinator.state.status === 'ready' ? coordinator.state.escrowEnrollment : undefined;
 
+    // Identity recovery only completes through the escrow hold, and initialize()
+    // re-derives this status after a reload, unlike the in-memory onRecover signal.
+    useEffect(() => {
+        if (coordinator.state.status === 'identity_recovery_success') {
+            recoveredViaEscrowRef.current = 'hold';
+        }
+    }, [coordinator.state.status]);
+
     // Track whether the user went through needs_setup (new user flow)
     useEffect(() => {
         if (coordinator.state.status === 'needs_setup') {
@@ -593,20 +603,36 @@ const AuthSessionManager: React.FC<{
             const did = coordinator.state.did;
             const flag = readRecoveryPinPromptFlag(did);
 
-            if (wasNewUserRef.current && !flag && readyEnrollment === 'enrolled') {
+            // Never prompt a first-time setup for an account that already has a
+            // PIN — guards the window between a PIN mutation resolving and the
+            // prompt flag being written by the caller.
+            if (
+                wasNewUserRef.current &&
+                !flag &&
+                readyEnrollment === 'enrolled' &&
+                readyPinEnabled !== true
+            ) {
                 setRecoveryPinSetupReason('first-time');
             }
 
-            if (readyPinEnabled === true) {
-                recoveredWithPinRef.current = false;
-            } else if (readyPinEnabled === false) {
-                if (recoveredWithPinRef.current) {
-                    writeRecoveryPinPromptFlag(did, 'set');
-                    setRecoveryPinSetupReason('after-recovery');
-                    recoveredWithPinRef.current = false;
-                } else if (flag === 'set') {
-                    setShowRecoveryPinReset(true);
-                }
+            if (readyPinEnabled === true) recoveredViaEscrowRef.current = null;
+
+            const prompt = decidePinPromptAfterReady({
+                recoveredVia: recoveredViaEscrowRef.current,
+                pinEnabled: readyPinEnabled,
+                enrollment: readyEnrollment,
+                promptFlag: flag,
+            });
+            if (prompt.kind === 'after-recovery') {
+                writeRecoveryPinPromptFlag(did, 'set');
+                setRecoveryPinSetupReason('after-recovery');
+                recoveredViaEscrowRef.current = null;
+            } else if (prompt.kind === 'after-hold-recovery') {
+                // No flag write, so skipping never shows the "PIN was reset" banner.
+                setRecoveryPinSetupReason('after-hold-recovery');
+                recoveredViaEscrowRef.current = null;
+            } else if (prompt.kind === 'reset-banner') {
+                setShowRecoveryPinReset(true);
             }
         }
     }, [coordinator.state.status, readyDid, readyPinEnabled, readyEnrollment]);
@@ -1046,6 +1072,7 @@ const AuthSessionManager: React.FC<{
                         keyDerivation.getAvailableRecoveryMethods
                     ) {
                         wasNewUserRef.current = false;
+                        const readId = ++recoveryMethodReadRef.current;
 
                         try {
                             const token = await authProvider.getIdToken();
@@ -1065,7 +1092,8 @@ const AuthSessionManager: React.FC<{
                                 status?.maskedRecoveryEmail
                             );
 
-                            setRecoveryMethodCount(userConfiguredCount);
+                            if (readId === recoveryMethodReadRef.current)
+                                setRecoveryMethodCount(userConfiguredCount);
                         } catch {
                             // Non-critical — don't block the user
                         }
@@ -1097,10 +1125,11 @@ const AuthSessionManager: React.FC<{
             setWallet(null);
             setLcnProfile(null);
             setRecoveryMethodCount(null);
+            recoveryMethodReadRef.current += 1;
             walletInitRef.current = false;
             walletModeRef.current = null;
             walletModeStore.set.mode(null);
-            recoveredWithPinRef.current = false;
+            recoveredViaEscrowRef.current = null;
         }
     }, [coordinator.state.status, wallet]);
 
@@ -1129,13 +1158,15 @@ const AuthSessionManager: React.FC<{
             coordinator.state.status !== 'ready' ||
             !wallet ||
             !authProvider ||
-            recoveryMethodCount !== null ||
+            (recoveryMethodCount !== null && coordinator.recoverySetupRevision === 0) ||
             !keyDerivation.capabilities.recovery ||
             !keyDerivation.getAvailableRecoveryMethods
         )
             return;
 
         let cancelled = false;
+
+        const readId = ++recoveryMethodReadRef.current;
 
         void (async () => {
             try {
@@ -1152,7 +1183,7 @@ const AuthSessionManager: React.FC<{
                           .catch(() => null)
                     : null;
 
-                if (!cancelled) {
+                if (!cancelled && readId === recoveryMethodReadRef.current) {
                     setRecoveryMethodCount(
                         countUserConfiguredRecoveryMethods(methods, status?.maskedRecoveryEmail)
                     );
@@ -1165,7 +1196,14 @@ const AuthSessionManager: React.FC<{
         return () => {
             cancelled = true;
         };
-    }, [coordinator.state.status, wallet, authProvider, recoveryMethodCount, keyDerivation]);
+    }, [
+        coordinator.state.status,
+        coordinator.recoverySetupRevision,
+        wallet,
+        authProvider,
+        recoveryMethodCount,
+        keyDerivation,
+    ]);
 
     // --- Clear stale legacy stores when coordinator is idle ---
     // After a public-computer session, the tab close destroys the Firebase
@@ -1285,34 +1323,25 @@ const AuthSessionManager: React.FC<{
         setDeviceLinkVisible(true);
     }, []);
 
-    // Record the prompt flag when a PIN is set/removed from recovery settings
-    // (MyLearnCardModal -> AutomaticRecoveryCard), mirroring what the
-    // post-setup RecoveryPinSetupOverlay already does on its own callbacks.
-    const setEscrowPin = useCallback<AppAuthContextValue['setEscrowPin']>(
-        async pin => {
-            await coordinator.setEscrowPin(pin);
-            if (coordinator.state.status === 'ready') {
-                writeRecoveryPinPromptFlag(coordinator.state.did, 'set');
-            }
-            // A PIN is a deliberately chosen recovery secret, so it completes
-            // activation the same way a passkey or phrase does.
-            if (coordinator.needsActivation) {
-                try {
-                    await coordinator.activate();
-                } catch (error) {
-                    log.warn('escrow.pin.activate.failed', error);
-                }
-            }
-        },
-        [coordinator]
+    const { setEscrowPin, clearEscrowPin } = useMemo(
+        () =>
+            createRecoveryPinActions(
+                {
+                    runRecoverySetup: coordinator.runRecoverySetup,
+                    resetRecoverySetup: coordinator.resetRecoverySetup,
+                    setEscrowPin: coordinator.setEscrowPin,
+                    clearEscrowPin: coordinator.clearEscrowPin,
+                },
+                readyDid
+            ),
+        [
+            coordinator.runRecoverySetup,
+            coordinator.resetRecoverySetup,
+            coordinator.setEscrowPin,
+            coordinator.clearEscrowPin,
+            readyDid,
+        ]
     );
-
-    const clearEscrowPin = useCallback<AppAuthContextValue['clearEscrowPin']>(async () => {
-        await coordinator.clearEscrowPin();
-        if (coordinator.state.status === 'ready') {
-            writeRecoveryPinPromptFlag(coordinator.state.did, 'skipped');
-        }
-    }, [coordinator]);
 
     const enrichedValue: AppAuthContextValue = useMemo(
         () => ({
@@ -1368,11 +1397,15 @@ const AuthSessionManager: React.FC<{
         <AppAuthContext.Provider value={enrichedValue}>
             {children}
             {coordinator.state.status === 'ready' && (
-                <div className="fixed top-6 inset-x-4 z-[10000] max-w-md mx-auto space-y-2">
+                <div
+                    className="fixed inset-x-4 z-[10000] max-w-md mx-auto space-y-2"
+                    style={{ top: 'calc(1.5rem + var(--ion-safe-area-top, 0px))' }}
+                >
                     {coordinator.state.pendingEscrowHold && (
                         <EscrowRecoveryHoldBanner
                             key={coordinator.state.pendingEscrowHold.holdId}
                             requestedAt={coordinator.state.pendingEscrowHold.requestedAt}
+                            releaseAfter={coordinator.state.pendingEscrowHold.releaseAfter}
                             onCancel={coordinator.cancelEscrowRecovery}
                         />
                     )}
@@ -1413,7 +1446,9 @@ const AuthSessionManager: React.FC<{
                             await coordinator.recover(input);
 
                             if (input.method === 'escrow-pin') {
-                                recoveredWithPinRef.current = true;
+                                recoveredViaEscrowRef.current = 'pin';
+                            } else if (input.method === 'escrow') {
+                                recoveredViaEscrowRef.current = 'hold';
                             }
                         },
                         canResumeCompleted: () =>
@@ -1682,6 +1717,10 @@ const AuthSessionManager: React.FC<{
                                 );
                             } catch (e) {
                                 log.warn('Email backup share after upgrade failed (non-fatal)', e);
+                                presentToast(m['recovery.error.default'](), {
+                                    type: ToastTypeEnum.Error,
+                                    hasDismissButton: true,
+                                });
                             }
                         }
 
@@ -1693,6 +1732,7 @@ const AuthSessionManager: React.FC<{
 
             {recoveryPinSetupReason && coordinator.state.status === 'ready' && (
                 <RecoveryPinSetupOverlay
+                    setPin={setEscrowPin}
                     reason={recoveryPinSetupReason}
                     onComplete={() => {
                         if (!readyDid) return;
@@ -1826,6 +1866,9 @@ const AuthSessionManager: React.FC<{
                             providerType,
                         });
 
+                        if (input.method !== 'passkey')
+                            coordinator.resetRecoverySetup(input.method);
+
                         return keyDerivation.setupRecoveryMethod!({
                             token,
                             providerType,
@@ -1844,17 +1887,15 @@ const AuthSessionManager: React.FC<{
                         const token = await authProvider.getIdToken();
                         const providerType = authProvider.getProviderType();
 
-                        await keyDerivation.confirmRecoveryMethod({
-                            token,
-                            providerType,
-                            privateKey: currentPrivateKey,
-                            input,
-                            signDidAuthVp,
-                        });
-
-                        if (coordinator.needsActivation) {
-                            await coordinator.activate();
-                        }
+                        await coordinator.runRecoverySetup(input.method, () =>
+                            keyDerivation.confirmRecoveryMethod!({
+                                token,
+                                providerType,
+                                privateKey: currentPrivateKey,
+                                input,
+                                signDidAuthVp,
+                            })
+                        );
                     };
 
                     const getTokenAndProvider = async () => {
@@ -1884,8 +1925,16 @@ const AuthSessionManager: React.FC<{
                     };
 
                     return (
-                        <Overlay onDismiss={closeRecoverySetup}>
+                        <Overlay
+                            onDismiss={() =>
+                                (recoveryRequestCloseRef.current ?? closeRecoverySetup)()
+                            }
+                        >
                             <RecoverySetupModal
+                                registerCloseRequest={fn => {
+                                    recoveryRequestCloseRef.current = fn;
+                                }}
+                                emailAvailable={isEmailRelayConfigured()}
                                 onGetEscrowEnrollmentState={coordinator.getEscrowEnrollmentState}
                                 onDisableEscrowRecovery={coordinator.disableEscrowRecovery}
                                 onEnableEscrowRecovery={coordinator.enableEscrowRecovery}
@@ -1897,18 +1946,10 @@ const AuthSessionManager: React.FC<{
                                 onCompleted={completeRecoverySetup}
                                 onSetupPasskey={async () => {
                                     const authUser = await authProvider.getCurrentUser();
-                                    const result = await setupMethod(
-                                        { method: 'passkey' },
-                                        authUser
+                                    return runPasskeyRecoverySetup(
+                                        coordinator.runRecoverySetup,
+                                        () => setupMethod({ method: 'passkey' }, authUser)
                                     );
-
-                                    // Passkey setup confirms server-side in one step, so it
-                                    // never reaches confirmMethod; activate here instead.
-                                    if (coordinator.needsActivation) {
-                                        await coordinator.activate();
-                                    }
-
-                                    return result.method === 'passkey' ? result.credentialId : '';
                                 }}
                                 onGeneratePhrase={async () => {
                                     const authUser = await authProvider.getCurrentUser();
@@ -1923,6 +1964,7 @@ const AuthSessionManager: React.FC<{
                                     return {
                                         phrase: result.phrase,
                                         challengeWordIndices: result.challengeWordIndices,
+                                        challengeWordOptions: result.challengeWordOptions,
                                     };
                                 }}
                                 onConfirmPhrase={async challengeWords => {

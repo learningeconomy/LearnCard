@@ -305,6 +305,54 @@ describe('RecoveryFlowModal', () => {
         expect(screen.getByRole('heading', { name: /Access Restored/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Done/i })).toBeInTheDocument();
     });
+
+    it('hides device linking in the lost-login chooser even with a device callback', () => {
+        render(
+            <RecoveryFlowModal
+                {...defaultProps}
+                identityPhase="choose_method"
+                onRecoverWithDevice={vi.fn()}
+                availableMethods={[{ type: 'phrase', createdAt: '2026-09-06T00:00:00Z' }]}
+            />
+        );
+
+        expect(screen.queryByRole('button', { name: /approve from another device/i })).toBeNull();
+        expect(screen.getByRole('button', { name: /phrase/i })).toBeEnabled();
+        expect(screen.queryByText('QrLoginRequester')).toBeNull();
+    });
+
+    it('keeps device linking available in ordinary recovery', () => {
+        render(<RecoveryFlowModal {...defaultProps} onRecoverWithDevice={vi.fn()} />);
+
+        const deviceButton = screen.getByRole('button', { name: /approve from another device/i });
+        expect(deviceButton).toBeEnabled();
+        fireEvent.click(deviceButton);
+        expect(screen.getByText('QrLoginRequester')).toBeInTheDocument();
+    });
+
+    it('shows a friendly error and enables retry and Back after an invalid lost-login phrase', async () => {
+        const recover = vi.fn().mockRejectedValue(new Error('Invalid recovery phrase'));
+        render(
+            <RecoveryFlowModal
+                {...defaultProps}
+                identityPhase="choose_method"
+                availableMethods={[{ type: 'phrase', createdAt: '2026-09-06T00:00:00Z' }]}
+                onRecoverWithPhrase={recover}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: /phrase/i }));
+        const invalidPhrase = Array(25).fill('invalid').join(' ');
+        fireEvent.change(screen.getByRole('textbox'), { target: { value: invalidPhrase } });
+        fireEvent.click(screen.getByRole('button', { name: 'Recover Account' }));
+
+        expect(await screen.findByText(/Please check for typos/)).toBeInTheDocument();
+        expect(recover).toHaveBeenCalledWith(invalidPhrase);
+        expect(screen.getByRole('button', { name: 'Recover Account' })).toBeEnabled();
+        expect(screen.getByRole('button', { name: 'Back' })).toBeEnabled();
+        fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+        expect(screen.getByRole('button', { name: /phrase/i })).toBeEnabled();
+    });
 });
 
 const renderModal = (
@@ -321,6 +369,210 @@ const renderModal = (
         />
     );
 };
+
+describe('RecoveryFlowModal sign-in picker', () => {
+    const base = {
+        onRecoverWithPasskey: vi.fn(),
+        onRecoverWithPhrase: vi.fn(),
+        onRecoverWithBackup: vi.fn(),
+        onCancel: vi.fn(),
+        recoveryReason: 'new_device' as const,
+    };
+    const escrowRecovery = {
+        pinAvailable: true,
+        onStart: vi.fn(),
+        onStatus: vi.fn().mockResolvedValue({ holdId: 'hold', status: 'pending' }),
+        onRecover: vi.fn().mockResolvedValue(undefined),
+    };
+    const methods = (...types: string[]) =>
+        types.map(type => ({ type, createdAt: '2026-09-01', credentialId: `${type}-id` }));
+
+    beforeEach(() => {
+        vi.mocked(isEscrowRecoveryStorageAvailable).mockReturnValue(true);
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValue(undefined);
+    });
+
+    const buttonNames = () => screen.getAllByRole('button').map(button => button.textContent ?? '');
+
+    it('frames a new device as routine and leads with a passkey when one is set up', () => {
+        render(
+            <RecoveryFlowModal
+                {...base}
+                availableMethods={methods('passkey', 'phrase', 'escrow')}
+                onRecoverWithDevice={vi.fn()}
+                escrowRecovery={escrowRecovery}
+            />
+        );
+
+        expect(screen.getByRole('heading', { name: 'Sign in on this device' })).toBeTruthy();
+        const names = buttonNames();
+        const hero = names.findIndex(name => name.includes('Use your passkey'));
+        const device = names.findIndex(name => name.includes('Sign In from Another Device'));
+        const phrase = names.findIndex(name => name.includes('Recovery Phrase'));
+        expect(hero).toBeGreaterThanOrEqual(0);
+        expect(device).toBeGreaterThan(hero);
+        expect(phrase).toBeGreaterThan(device);
+        expect(screen.queryByText('Enter my recovery PIN')).toBeNull();
+    });
+
+    it('treats unreadable local key material like a stale device', () => {
+        render(
+            <RecoveryFlowModal
+                {...base}
+                recoveryReason="missing_server_data"
+                availableMethods={methods('phrase', 'escrow')}
+                onRecoverWithDevice={vi.fn()}
+                escrowRecovery={escrowRecovery}
+            />
+        );
+
+        expect(screen.getByRole('heading', { name: 'Sign in again on this device' })).toBeTruthy();
+    });
+
+    it('leads with another device when no passkey is set up', () => {
+        render(
+            <RecoveryFlowModal
+                {...base}
+                availableMethods={methods('phrase', 'escrow')}
+                onRecoverWithDevice={vi.fn()}
+                escrowRecovery={escrowRecovery}
+            />
+        );
+
+        expect(buttonNames()[0]).toContain('Approve from another device');
+    });
+
+    it('hides methods that are not set up until asked', () => {
+        render(
+            <RecoveryFlowModal
+                {...base}
+                availableMethods={methods('phrase', 'escrow')}
+                onRecoverWithDevice={vi.fn()}
+                escrowRecovery={escrowRecovery}
+            />
+        );
+
+        expect(screen.queryByText('Backup File')).toBeNull();
+        const more = screen.getByRole('button', { name: 'Show 3 not set up' });
+        expect(more.getAttribute('aria-expanded')).toBe('false');
+
+        fireEvent.click(more);
+
+        expect(more.getAttribute('aria-expanded')).toBe('true');
+        expect(more.textContent).toBe('Hide methods not set up');
+        expect(screen.getByText('Backup File')).toBeTruthy();
+    });
+
+    it('moves the PIN and the waiting period behind a clear last-resort screen', async () => {
+        render(
+            <RecoveryFlowModal
+                {...base}
+                availableMethods={methods('phrase', 'escrow')}
+                onRecoverWithDevice={vi.fn()}
+                escrowRecovery={escrowRecovery}
+            />
+        );
+
+        expect(screen.getByText("Can't use any of these?")).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: 'Get back into your account' }));
+
+        expect(screen.getByRole('heading', { name: 'Get back into your account' })).toBeTruthy();
+        expect(screen.getByText('Sign you out on your other devices')).toBeTruthy();
+        expect(
+            screen.getByText('Turn off your other sign-in methods until you set them up again')
+        ).toBeTruthy();
+        expect(await screen.findByText('Enter my recovery PIN')).toBeTruthy();
+
+        fireEvent.click(screen.getByRole('button', { name: "I don't have a PIN" }));
+        expect(await screen.findByRole('button', { name: 'Start a 7-day recovery' })).toBeTruthy();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Use my recovery PIN instead' }));
+        expect(await screen.findByText('Enter my recovery PIN')).toBeTruthy();
+
+        fireEvent.click(screen.getByRole('button', { name: /Back/ }));
+        expect(screen.getByRole('heading', { name: 'Sign in on this device' })).toBeTruthy();
+    });
+
+    it('offers "I can\'t use another device" when that is the only option', () => {
+        render(
+            <RecoveryFlowModal
+                {...base}
+                availableMethods={methods('escrow')}
+                onRecoverWithDevice={vi.fn()}
+                escrowRecovery={escrowRecovery}
+            />
+        );
+
+        expect(screen.getByText("Can't use another device?")).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Get back into your account' })).toBeTruthy();
+    });
+
+    it('opens straight on the last-resort screen when nothing else can be used', async () => {
+        render(
+            <RecoveryFlowModal
+                {...base}
+                availableMethods={methods('escrow')}
+                escrowRecovery={escrowRecovery}
+            />
+        );
+
+        expect(screen.getByRole('heading', { name: 'Get back into your account' })).toBeTruthy();
+        expect(screen.queryByRole('button', { name: /Back/ })).toBeNull();
+    });
+
+    it('shows a recovery already underway on the first screen', async () => {
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValue({
+            holdId: 'hold',
+            resumeToken: 'resume',
+            clientEphemeralPrivateKey: 'ephemeral',
+            releaseAfter: '2099-09-01T12:00:00Z',
+            requestedAt: '2026-09-01',
+        });
+        render(
+            <RecoveryFlowModal
+                {...base}
+                availableMethods={methods('phrase', 'escrow')}
+                onRecoverWithDevice={vi.fn()}
+                escrowRecovery={escrowRecovery}
+            />
+        );
+
+        expect(screen.getByRole('heading', { name: 'Sign in on this device' })).toBeTruthy();
+        expect(
+            await screen.findByRole('region', { name: 'Account recovery request' })
+        ).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'Start a 7-day recovery' })).toBeNull();
+    });
+
+    it('keeps the first screen free of recovery chrome when nothing is underway', async () => {
+        vi.mocked(isEscrowRecoveryStorageAvailable).mockReturnValue(false);
+        render(
+            <RecoveryFlowModal
+                {...base}
+                availableMethods={methods('phrase', 'escrow')}
+                onRecoverWithDevice={vi.fn()}
+                escrowRecovery={escrowRecovery}
+            />
+        );
+
+        await waitFor(() => expect(loadPendingEscrowRecovery).toHaveBeenCalled());
+        expect(screen.queryByRole('region', { name: 'Account recovery request' })).toBeNull();
+    });
+
+    it('has no escape hatch when automatic recovery is not set up', () => {
+        render(
+            <RecoveryFlowModal
+                {...base}
+                availableMethods={methods('phrase')}
+                onRecoverWithDevice={vi.fn()}
+                escrowRecovery={escrowRecovery}
+            />
+        );
+
+        expect(screen.queryByText(/Can't use/)).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Get back into your account' })).toBeNull();
+    });
+});
 
 describe('RecoveryFlowModal keyboard behavior', () => {
     beforeEach(() => {

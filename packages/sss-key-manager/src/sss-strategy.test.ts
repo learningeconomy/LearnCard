@@ -24,10 +24,17 @@ import {
     parseVersionedEmailShare,
     selectRecoveryPhraseChallengeIndices,
     withRotationLock,
+    readPendingShareCandidates,
+    writePendingShareCandidates,
+    PENDING_WRITE_EXPIRY_MS,
 } from './sss-strategy';
 import { reconstructFromShares } from './sss';
 import { AtomicUpdateError, splitAndVerify, verifyStoredShares } from './atomic-operations';
-import { shareToRecoveryPhrase, recoveryPhraseToShare } from './recovery-phrase';
+import {
+    shareToRecoveryPhrase,
+    recoveryPhraseToShare,
+    buildRecoveryPhraseChallengeOptions,
+} from './recovery-phrase';
 import { bufferToBase64 } from './crypto';
 import { decryptEmailRelayPayload, type EmailRelayEnvelope } from './email-relay-crypto';
 
@@ -87,6 +94,11 @@ const createMemoryStorage = (): SSSStorageFunctions & {
 
         hasDeviceShare: vi.fn(async (id?: string) => {
             return store.has(id ?? DEFAULT_KEY);
+        }),
+
+        deleteDeviceShare: vi.fn(async (id?: string) => {
+            store.delete(id ?? DEFAULT_KEY);
+            versions.delete(id ?? DEFAULT_KEY);
         }),
 
         clearAllShares: vi.fn(async (id?: string) => {
@@ -594,7 +606,10 @@ describe('escrow strategy', () => {
         expect(version).toBe(3);
         expect(pinSalt).not.toBe(previousSalt);
         expect(blob?.pinVerifier).toBe(await derivePinProof('246802', pinSalt!));
+        calls = [];
         await strategy.clearEscrowPin!(params);
+        const enrollment = calls.find(call => call.path === '/keys/escrow');
+        expect(JSON.parse(String(enrollment?.init?.body))).toMatchObject({ clearPin: true });
         expect(version).toBe(4);
         expect(pinSalt).toBeUndefined();
         expect(blob?.pinVerifier).toBeUndefined();
@@ -814,6 +829,27 @@ describe('escrow strategy', () => {
         expect(blob?.shareVersion).toBe(3);
         expect(strategy.hasPendingIdentityRecovery!()).toBe(false);
         expect(calls.some(call => call.path === '/keys/recovery-session/rebind')).toBe(true);
+        const reEnrollment = calls.filter(call => call.path === '/keys/escrow').at(-1);
+        expect(JSON.parse(String(reEnrollment?.init?.body))).toMatchObject({ clearPin: true });
+    });
+    it('lets the server carry the PIN after a non-escrow recovery', async () => {
+        await strategy.ensureEscrowEnrollment!({ ...params, options: { pin: '135790' } });
+        const setup = await strategy.setupRecoveryMethod!({
+            ...params,
+            input: { method: 'phrase' },
+        });
+        if (setup.method !== 'phrase') throw new Error('expected phrase setup');
+        calls = [];
+
+        await strategy.executeRecovery({
+            ...params,
+            input: { method: 'phrase', phrase: setup.phrase },
+            didFromPrivateKey: async key => (key === privateKey ? did : ''),
+        });
+
+        const reEnrollment = calls.filter(call => call.path === '/keys/escrow').at(-1);
+        expect(reEnrollment).toBeDefined();
+        expect(JSON.parse(String(reEnrollment?.init?.body)).clearPin).toBeUndefined();
     });
     it('keeps the OTP-style pending state until a replacement login completes rebind', async () => {
         await strategy.ensureEscrowEnrollment!(params);
@@ -953,6 +989,23 @@ describe('createSSSStrategy', () => {
             expect(await strategy.getLocalKey()).toBeNull();
         });
 
+        it('preserves unresolved unscoped candidates while removing only the stale main share and version', async () => {
+            await strategy.storeLocalKey('stale-main');
+            await strategy.storeLocalShareVersion!(4);
+            await writePendingShareCandidates(storage, [
+                { share: 'unresolved-device-share', createdAt: Date.now() },
+            ]);
+
+            await strategy.clearLocalKeys({ preservePending: true });
+
+            expect(await storage.getDeviceShare()).toBeNull();
+            expect(await strategy.getLocalShareVersion!()).toBeNull();
+            expect(await readPendingShareCandidates(storage)).toEqual([
+                { share: 'unresolved-device-share', createdAt: expect.any(Number) },
+            ]);
+            expect(await strategy.getLocalKey()).toBe('unresolved-device-share');
+        });
+
         it('delegates to the injected storage with undefined id when no active user', async () => {
             await strategy.storeLocalKey('delegated-share');
 
@@ -1049,6 +1102,40 @@ describe('createSSSStrategy', () => {
             strategy.setActiveUser!('user-a');
             expect(await strategy.hasLocalKey()).toBe(true);
             expect(await strategy.getLocalKey()).toBe('share-a');
+        });
+
+        it('preserves only the active account pending candidates on automatic cleanup', async () => {
+            strategy.setActiveUser!('user-a');
+            await strategy.storeLocalKey('stale-a');
+            await strategy.storeLocalShareVersion!(2);
+            const pendingA = [{ share: 'pending-a', createdAt: Date.now() }];
+            await writePendingShareCandidates(storage, pendingA, 'sss-device-share:user-a');
+
+            strategy.setActiveUser!('user-b');
+            await strategy.storeLocalKey('share-b');
+            await strategy.storeLocalShareVersion!(3);
+            const pendingB = [{ share: 'pending-b', createdAt: Date.now() }];
+            await writePendingShareCandidates(storage, pendingB, 'sss-device-share:user-b');
+
+            strategy.setActiveUser!('user-a');
+            await strategy.clearLocalKeys({ preservePending: true });
+            expect(await storage.getDeviceShare('sss-device-share:user-a')).toBeNull();
+            expect(await strategy.getLocalShareVersion!()).toBeNull();
+            expect(await strategy.getLocalKey()).toBe('pending-a');
+            expect(await readPendingShareCandidates(storage, 'sss-device-share:user-a')).toEqual(
+                pendingA
+            );
+            expect(await readPendingShareCandidates(storage, 'sss-device-share:user-b')).toEqual(
+                pendingB
+            );
+
+            await strategy.clearLocalKeys();
+            expect(await readPendingShareCandidates(storage, 'sss-device-share:user-a')).toEqual(
+                []
+            );
+            strategy.setActiveUser!('user-b');
+            expect(await strategy.getLocalKey()).toBe('share-b');
+            expect(await strategy.getLocalShareVersion!()).toBe(3);
         });
     });
 
@@ -1316,7 +1403,7 @@ describe('createSSSStrategy', () => {
                             primaryDid: 'did:key:zCorrect',
                             recoveryMethods: [],
                             keyProvider: 'sss',
-                            // no shareVersion field
+                            shareVersion: 1, // The PUT response below omits the version.
                         }),
                         { status: 200 }
                     );
@@ -1727,6 +1814,263 @@ describe('createSSSStrategy', () => {
     });
 
     describe('lost login identity recovery', () => {
+        const prepareRebind = async () => {
+            const privateKey = 'ab'.repeat(32);
+            const did = 'did:key:rebind-test';
+            const { shares } = await splitAndVerify(privateKey);
+            const storageId = 'sss-device-share:rebind-user';
+            const pendingId = `sss-pending-share:${storageId}`;
+            strategy.setActiveUser!('rebind-user');
+            await storage.storeDeviceShare(shares.deviceShare, storageId);
+            await storage.storeShareVersion(1, storageId);
+            let serverShare = shares.authShare;
+            let version = 1;
+            let outcome: 'lost' | 'rejected' | 'uncommitted' | 'success' = 'lost';
+            let rebindCalls = 0;
+            const postedShares: string[] = [];
+            const json = (data: unknown) => new Response(JSON.stringify(data), { status: 200 });
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+                const path = new URL(String(url)).pathname;
+                if (path.endsWith('/recovery-session/recover')) {
+                    return json({
+                        authShare: { encryptedData: shares.authShare },
+                        primaryDid: did,
+                        rebindSessionToken: 'one-shot-token',
+                    });
+                }
+                if (path.endsWith('/keys/challenge')) return json({ challenge: 'challenge' });
+                if (path.endsWith('/keys/auth-share')) {
+                    expect(JSON.parse(String(init?.body)).authToken).toBe('new-sign-in');
+                    return json({
+                        authShare: { encryptedData: serverShare },
+                        shareVersion: version,
+                    });
+                }
+                if (path.endsWith('/recovery-session/rebind')) {
+                    rebindCalls++;
+                    const body = JSON.parse(String(init?.body));
+                    postedShares.push(body.authShare.encryptedData);
+                    if (outcome === 'rejected') {
+                        return new Response(JSON.stringify({ message: 'Rebind rejected' }), {
+                            status: 401,
+                        });
+                    }
+                    if (outcome === 'uncommitted') throw new TypeError('Reply lost');
+                    serverShare = body.authShare.encryptedData;
+                    version = 2;
+                    if (outcome === 'lost') throw new TypeError('Reply lost');
+                    return json({ shareVersion: version });
+                }
+                throw new Error(`Unexpected request: ${path}`);
+            });
+            await strategy.prepareIdentityRecovery!({
+                recoverySessionToken: 'session-token',
+                input: {
+                    method: 'email',
+                    emailShare: formatVersionedEmailShare(shares.emailShare, 1),
+                },
+                didFromPrivateKey: async key => (key === privateKey ? did : ''),
+            });
+            const params = {
+                token: 'new-sign-in',
+                providerType: 'firebase',
+                signDidAuthVp: async () => 'proof',
+            };
+            return {
+                privateKey,
+                did,
+                storageId,
+                pendingId,
+                params,
+                shares,
+                postedShares,
+                setOutcome: (value: typeof outcome) => {
+                    outcome = value;
+                },
+                getServerShare: () => serverShare,
+                getRebindCalls: () => rebindCalls,
+            };
+        };
+
+        it('reconciles a committed rebind on retry without a new split or another POST', async () => {
+            const fixture = await prepareRebind();
+            await expect(strategy.completeIdentityRecovery!(fixture.params)).rejects.toThrow(
+                'Reply lost'
+            );
+            const candidates = await readPendingShareCandidates(storage, fixture.storageId);
+            expect(candidates).toHaveLength(1);
+            const pending = candidates[0]!.share;
+            expect(await storage.getDeviceShare(fixture.storageId)).toBe(
+                fixture.shares.deviceShare
+            );
+            const writes = vi.mocked(storage.storeDeviceShare).mock.calls.length;
+            await expect(strategy.completeIdentityRecovery!(fixture.params)).resolves.toEqual({
+                privateKey: fixture.privateKey,
+                did: fixture.did,
+            });
+            expect(fixture.getRebindCalls()).toBe(1);
+            expect(vi.mocked(storage.storeDeviceShare).mock.calls.slice(writes)).toEqual([
+                [pending, fixture.storageId],
+            ]);
+            expect(
+                await reconstructFromShares([
+                    (await storage.getDeviceShare(fixture.storageId))!,
+                    fixture.getServerShare(),
+                ])
+            ).toBe(fixture.privateKey);
+            expect(await storage.getShareVersion(fixture.storageId)).toBe(2);
+            expect(await storage.getDeviceShare(fixture.pendingId)).toBeNull();
+            expect(strategy.hasPendingIdentityRecovery!()).toBe(false);
+        });
+
+        it('recovers a committed rebind after reload from the account-scoped pending entry', async () => {
+            const fixture = await prepareRebind();
+            await expect(strategy.completeIdentityRecovery!(fixture.params)).rejects.toThrow(
+                'Reply lost'
+            );
+            const reloaded = createSSSStrategy({ serverUrl: 'https://example.com', storage });
+            reloaded.setActiveUser!('rebind-user');
+            expect(reloaded.hasPendingIdentityRecovery!()).toBe(false);
+            await expect(
+                reloaded.reconcileShares!({
+                    ...fixture.params,
+                    expectedDid: fixture.did,
+                    didFromPrivateKey: async key => (key === fixture.privateKey ? fixture.did : ''),
+                })
+            ).resolves.toEqual({ privateKey: fixture.privateKey, did: fixture.did });
+            expect(
+                await reconstructFromShares([
+                    (await storage.getDeviceShare(fixture.storageId))!,
+                    fixture.getServerShare(),
+                ])
+            ).toBe(fixture.privateKey);
+            expect(await storage.getShareVersion(fixture.storageId)).toBe(2);
+            expect(await storage.getDeviceShare(fixture.pendingId)).toBeNull();
+            expect(fixture.getRebindCalls()).toBe(1);
+        });
+
+        it('surfaces a definitive rejection without destroying the matching active share', async () => {
+            const fixture = await prepareRebind();
+            fixture.setOutcome('rejected');
+            await expect(strategy.completeIdentityRecovery!(fixture.params)).rejects.toThrow(
+                'Rebind rejected'
+            );
+            expect(await storage.getDeviceShare(fixture.pendingId)).toBeNull();
+            expect(await storage.getShareVersion(fixture.storageId)).toBe(1);
+            expect(
+                await reconstructFromShares([
+                    (await storage.getDeviceShare(fixture.storageId))!,
+                    fixture.getServerShare(),
+                ])
+            ).toBe(fixture.privateKey);
+        });
+
+        it('retains the committed pending share when a stale retry read leads to rejection', async () => {
+            const fixture = await prepareRebind();
+            await expect(strategy.completeIdentityRecovery!(fixture.params)).rejects.toThrow(
+                'Reply lost'
+            );
+            const pending = await readPendingShareCandidates(storage, fixture.storageId);
+            expect(pending).toHaveLength(1);
+            vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+                new Response(
+                    JSON.stringify({
+                        authShare: { encryptedData: fixture.shares.authShare },
+                        shareVersion: 1,
+                    }),
+                    { status: 200 }
+                )
+            );
+            fixture.setOutcome('rejected');
+            await expect(strategy.completeIdentityRecovery!(fixture.params)).rejects.toThrow(
+                'Rebind rejected'
+            );
+            expect(await readPendingShareCandidates(storage, fixture.storageId)).toEqual(pending);
+            await strategy.completeIdentityRecovery!(fixture.params);
+            expect(fixture.getRebindCalls()).toBe(2);
+            expect(
+                await reconstructFromShares([
+                    (await storage.getDeviceShare(fixture.storageId))!,
+                    fixture.getServerShare(),
+                ])
+            ).toBe(fixture.privateKey);
+        });
+
+        it('does not publish recovery success when cancelled during local promotion', async () => {
+            const fixture = await prepareRebind();
+            fixture.setOutcome('success');
+            vi.mocked(storage.storeShareVersion).mockImplementationOnce(async (version, id) => {
+                storage._versions.set(id ?? DEFAULT_KEY, version);
+                strategy.cancelIdentityRecovery!();
+            });
+            await expect(strategy.completeIdentityRecovery!(fixture.params)).rejects.toThrow(
+                'cancelled'
+            );
+            expect(
+                await reconstructFromShares([
+                    (await storage.getDeviceShare(fixture.storageId))!,
+                    fixture.getServerShare(),
+                ])
+            ).toBe(fixture.privateKey);
+        });
+
+        it('reuses the staged split when retrying an uncommitted request', async () => {
+            const fixture = await prepareRebind();
+            fixture.setOutcome('uncommitted');
+            await expect(strategy.completeIdentityRecovery!(fixture.params)).rejects.toThrow(
+                'Reply lost'
+            );
+            const candidates = await readPendingShareCandidates(storage, fixture.storageId);
+            expect(candidates).toHaveLength(1);
+            const pending = candidates[0]!.share;
+            await expect(strategy.completeIdentityRecovery!(fixture.params)).rejects.toThrow(
+                'Reply lost'
+            );
+            expect(await readPendingShareCandidates(storage, fixture.storageId)).toEqual(
+                candidates
+            );
+            fixture.setOutcome('success');
+            await strategy.completeIdentityRecovery!(fixture.params);
+            expect(fixture.postedShares).toHaveLength(3);
+            expect(fixture.postedShares[0]).toBe(fixture.postedShares[1]);
+            expect(fixture.postedShares[0]).toBe(fixture.postedShares[2]);
+            expect(await storage.getDeviceShare(fixture.storageId)).toBe(pending);
+            expect(await reconstructFromShares([pending!, fixture.getServerShare()])).toBe(
+                fixture.privateKey
+            );
+        });
+
+        it.each([false, true])(
+            'preserves unrelated queued candidates when binding (retry: %s)',
+            async retry => {
+                const fixture = await prepareRebind();
+                if (retry) {
+                    fixture.setOutcome('uncommitted');
+                    await expect(
+                        strategy.completeIdentityRecovery!(fixture.params)
+                    ).rejects.toThrow('Reply lost');
+                }
+                const unrelated = (await splitAndVerify(fixture.privateKey)).shares.deviceShare;
+                const candidates = [
+                    ...(await readPendingShareCandidates(storage, fixture.storageId)),
+                    { share: unrelated, createdAt: Date.now() },
+                ];
+                await writePendingShareCandidates(storage, candidates, fixture.storageId);
+                const calls = fixture.getRebindCalls();
+                await expect(strategy.completeIdentityRecovery!(fixture.params)).rejects.toThrow(
+                    'Reconcile the pending share update before binding a sign-in'
+                );
+                expect(fixture.getRebindCalls()).toBe(calls);
+                expect(await readPendingShareCandidates(storage, fixture.storageId)).toEqual(
+                    candidates
+                );
+                expect(await storage.getDeviceShare(fixture.storageId)).toBe(
+                    fixture.shares.deviceShare
+                );
+                expect(await storage.getShareVersion(fixture.storageId)).toBe(1);
+            }
+        );
+
         it('rejects an invalid phrase before submitting the one-shot session token', async () => {
             const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
@@ -2168,6 +2512,7 @@ describe('createSSSStrategy', () => {
 
             expect(emailBody.emailShare).toBeUndefined();
             expect(emailBody.relayPayload).toBeDefined();
+            expect(emailBody.shareVersion).toBe(2);
             expect(fetchCalls[0]!.body).not.toContain(remoteKey);
 
             const decrypted = await decryptEmailRelayPayload(
@@ -2353,7 +2698,7 @@ describe('createSSSStrategy', () => {
                 // fetchAuthShareRaw — capture the requested shareVersion
                 if (urlStr.includes('/keys/auth-share') && (init?.method ?? 'GET') === 'POST') {
                     const body = JSON.parse(init?.body as string);
-                    capturedVersion = body.shareVersion;
+                    if (body.shareVersion !== undefined) capturedVersion = body.shareVersion;
 
                     return new Response(
                         JSON.stringify({
@@ -2400,7 +2745,7 @@ describe('createSSSStrategy', () => {
 
                 if (urlStr.includes('/keys/auth-share') && (init?.method ?? 'GET') === 'POST') {
                     const body = JSON.parse(init?.body as string);
-                    capturedVersion = body.shareVersion;
+                    if (body.shareVersion !== undefined) capturedVersion = body.shareVersion;
 
                     return new Response(
                         JSON.stringify({
@@ -2612,7 +2957,8 @@ describe('createSSSStrategy', () => {
                 // fetchAuthShareRaw — capture requested shareVersion
                 if (urlStr.includes('/keys/auth-share') && method === 'POST') {
                     const body = JSON.parse(init?.body as string);
-                    authShareRequestVersion = body.shareVersion;
+                    if (body.shareVersion !== undefined)
+                        authShareRequestVersion = body.shareVersion;
 
                     return new Response(
                         JSON.stringify({
@@ -3193,6 +3539,768 @@ describe('createSSSStrategy', () => {
         const privateKey = '1234567890abcdef'.repeat(4);
         const expectedDid = 'did:key:zAtomicOwner';
 
+        it('does not clear or cancel an in-flight pending write during automatic cleanup', async () => {
+            strategy.setActiveUser!('account-a');
+            let signalPut!: () => void;
+            let finishPut!: () => void;
+            const putStarted = new Promise<void>(resolve => {
+                signalPut = resolve;
+            });
+            const putFinished = new Promise<void>(resolve => {
+                finishPut = resolve;
+            });
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+                if (init?.method === 'PUT') {
+                    signalPut();
+                    await putFinished;
+                    return new Response(
+                        JSON.stringify({ shareVersion: 1, expectedShareVersionChecked: true })
+                    );
+                }
+                return new Response(JSON.stringify({ authShare: null, shareVersion: 0 }));
+            });
+            const update = strategy.atomicUpdateShares!({
+                token: 'token',
+                providerType: 'firebase',
+                privateKey,
+                did: expectedDid,
+            });
+            await putStarted;
+            const pending = await readPendingShareCandidates(storage, 'sss-device-share:account-a');
+            expect(pending).toHaveLength(1);
+            await expect(strategy.clearLocalKeys({ preservePending: true })).rejects.toMatchObject({
+                rolledBack: false,
+            });
+            expect(await readPendingShareCandidates(storage, 'sss-device-share:account-a')).toEqual(
+                pending
+            );
+            finishPut();
+            await update;
+            expect(await strategy.getLocalKey()).toBe(pending[0]!.share);
+        });
+
+        it('does not promote an old account pending share after an account switch', async () => {
+            strategy.setActiveUser!('account-a');
+            let authShare = '';
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+                if (init?.method === 'PUT') {
+                    authShare = JSON.parse(String(init.body)).authShare.encryptedData;
+                    throw new TypeError('Lost reply');
+                }
+                return new Response(JSON.stringify({ authShare, shareVersion: 1 }));
+            });
+            await expect(
+                strategy.atomicUpdateShares!({
+                    token: 'token',
+                    providerType: 'firebase',
+                    privateKey,
+                    did: expectedDid,
+                })
+            ).rejects.toMatchObject({ rolledBack: false });
+            await storage.storeDeviceShare('account-b-share', 'sss-device-share:account-b');
+            await expect(
+                strategy.reconcileShares!({
+                    token: 'token',
+                    providerType: 'firebase',
+                    expectedDid,
+                    didFromPrivateKey: async key => {
+                        strategy.setActiveUser!('account-b');
+                        return key === privateKey ? expectedDid : 'did:key:wrong';
+                    },
+                })
+            ).rejects.toThrow('Active account changed');
+            expect(await strategy.getLocalKey()).toBe('account-b-share');
+            strategy.setActiveUser!('account-a');
+            expect(await strategy.hasLocalKey()).toBe(true);
+            expect(
+                await strategy.reconcileShares!({
+                    token: 'token',
+                    providerType: 'firebase',
+                    expectedDid,
+                    didFromPrivateKey: async key =>
+                        key === privateKey ? expectedDid : 'did:key:wrong',
+                })
+            ).toEqual({ privateKey, did: expectedDid });
+        });
+
+        it('keeps cleanup scoped to its starting account across awaits', async () => {
+            strategy.setActiveUser!('account-a');
+            await strategy.storeLocalKey('account-a-share');
+            await storage.storeDeviceShare('account-b-share', 'sss-device-share:account-b');
+            const clear = storage.clearAllShares;
+            vi.mocked(storage.clearAllShares).mockImplementationOnce(async id => {
+                strategy.setActiveUser!('account-b');
+                storage._store.delete(id!);
+            });
+            await strategy.clearLocalKeys();
+            expect(clear).toHaveBeenLastCalledWith('sss-device-share:account-a');
+            expect(await strategy.getLocalKey()).toBe('account-b-share');
+        });
+
+        it.each([408, 502, 503, 504])(
+            'preserves a committed write when a gateway returns HTTP %s',
+            async status => {
+                let authShare = '';
+                vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+                    if (init?.method === 'PUT') {
+                        authShare = JSON.parse(String(init.body)).authShare.encryptedData;
+                        return new Response(null, { status });
+                    }
+                    return new Response(JSON.stringify({ authShare, shareVersion: 1 }));
+                });
+                await expect(
+                    strategy.atomicUpdateShares!({
+                        token: 'token',
+                        providerType: 'firebase',
+                        privateKey,
+                        did: expectedDid,
+                    })
+                ).rejects.toMatchObject({ rolledBack: false });
+                expect(
+                    await strategy.reconcileShares!({
+                        token: 'token',
+                        providerType: 'firebase',
+                        expectedDid,
+                        didFromPrivateKey: async key =>
+                            key === privateKey ? expectedDid : 'did:key:wrong',
+                    })
+                ).toEqual({ privateKey, did: expectedDid });
+            }
+        );
+
+        it('does not let an overlapping update or reconciliation overwrite the pending slot', async () => {
+            let releaseWrite: () => void = () => {
+                throw new Error('Write not started');
+            };
+            const blocked = new Promise<void>(resolve => {
+                releaseWrite = resolve;
+            });
+            let writeStarted: () => void = () => {
+                throw new Error('Wait not initialized');
+            };
+            const started = new Promise<void>(resolve => {
+                writeStarted = resolve;
+            });
+            let authShare = '';
+            const fetchMock = vi
+                .spyOn(globalThis, 'fetch')
+                .mockImplementation(async (_url, init) => {
+                    if (init?.method === 'PUT') {
+                        authShare = JSON.parse(String(init.body)).authShare.encryptedData;
+                        writeStarted();
+                        await blocked;
+                        throw new TypeError('Reply lost');
+                    }
+                    return new Response(JSON.stringify({ authShare, shareVersion: 1 }));
+                });
+            const params = {
+                token: 'token',
+                providerType: 'firebase' as const,
+                privateKey,
+                did: expectedDid,
+            };
+            const first = expect(strategy.atomicUpdateShares!(params)).rejects.toMatchObject({
+                rolledBack: false,
+            });
+            await started;
+            const second = createSSSStrategy({ serverUrl: 'http://test-server:5100/api', storage });
+            const reconciliation = {
+                token: 'token',
+                providerType: 'firebase' as const,
+                expectedDid,
+                didFromPrivateKey: async (key: string) =>
+                    key === privateKey ? expectedDid : 'did:key:wrong',
+            };
+            try {
+                await expect(second.atomicUpdateShares!(params)).rejects.toThrow(
+                    'already in progress'
+                );
+                await expect(second.reconcileShares!(reconciliation)).rejects.toThrow(
+                    'already in progress'
+                );
+                expect(
+                    fetchMock.mock.calls.filter(([, init]) => init?.method === 'PUT')
+                ).toHaveLength(1);
+            } finally {
+                releaseWrite();
+                await first;
+            }
+            expect(await second.reconcileShares!(reconciliation)).toEqual({
+                privateKey,
+                did: expectedDid,
+            });
+        });
+
+        it.each([400, 403])(
+            'clears only the pending fresh-account share after HTTP %s rejection',
+            async status => {
+                strategy.setActiveUser!('rejected-user');
+                await storage.storeDeviceShare('other-user-share', 'sss-device-share:other');
+                vi.spyOn(globalThis, 'fetch').mockImplementation(
+                    async (_url, init) =>
+                        new Response(null, { status: init?.method === 'PUT' ? status : 404 })
+                );
+                await expect(
+                    strategy.atomicUpdateShares!({
+                        token: 'token',
+                        providerType: 'firebase',
+                        privateKey,
+                        did: expectedDid,
+                    })
+                ).rejects.toMatchObject({ rolledBack: true });
+                expect(await strategy.hasLocalKey()).toBe(false);
+                expect([...storage._store.values()]).toEqual(['other-user-share']);
+            }
+        );
+
+        it('retains earlier candidates and allows another split while a write remains indeterminate', async () => {
+            const previous = await splitAndVerify(privateKey);
+            await strategy.storeLocalKey(previous.shares.deviceShare);
+            await strategy.storeLocalShareVersion!(1);
+            const fetchMock = vi
+                .spyOn(globalThis, 'fetch')
+                .mockImplementation(async (_url, init) => {
+                    if (init?.method === 'PUT') throw new TypeError('Offline');
+                    return new Response(
+                        JSON.stringify({ authShare: previous.shares.authShare, shareVersion: 1 })
+                    );
+                });
+            const update = {
+                token: 'token',
+                providerType: 'firebase' as const,
+                privateKey,
+                did: expectedDid,
+            };
+            await expect(strategy.atomicUpdateShares!(update)).rejects.toMatchObject({
+                rolledBack: false,
+            });
+            expect(storage._store.size).toBe(2);
+            expect(await strategy.getLocalKey()).toBe(previous.shares.deviceShare);
+            const firstCandidates = await readPendingShareCandidates(storage);
+            await expect(strategy.atomicUpdateShares!(update)).rejects.toMatchObject({
+                rolledBack: false,
+            });
+            const candidates = await readPendingShareCandidates(storage);
+            expect(candidates).toHaveLength(2);
+            expect(candidates[0]).toEqual(firstCandidates[0]);
+            expect(await strategy.getLocalKey()).toBe(previous.shares.deviceShare);
+            expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'PUT')).toHaveLength(
+                2
+            );
+            fetchMock.mockRejectedValue(new TypeError('Offline'));
+            await expect(
+                strategy.reconcileShares!({
+                    token: 'token',
+                    providerType: 'firebase',
+                    expectedDid,
+                    didFromPrivateKey: async key =>
+                        key === privateKey ? expectedDid : 'did:key:zWrong',
+                })
+            ).rejects.toThrow('Offline');
+            expect(await readPendingShareCandidates(storage)).toEqual(candidates);
+            expect(storage._store.size).toBe(2);
+            await strategy.clearLocalKeys();
+            expect(storage._store.size).toBe(0);
+        });
+
+        const updateParams = {
+            token: 'token',
+            providerType: 'firebase' as const,
+            privateKey,
+            did: expectedDid,
+        };
+        const reconcileParams = {
+            token: 'token',
+            providerType: 'firebase' as const,
+            expectedDid,
+            didFromPrivateKey: async (key: string) =>
+                key === privateKey ? expectedDid : 'did:key:wrong',
+        };
+
+        it('recovers an expired committed candidate from history with no main share and re-splits', async () => {
+            const rotated = await splitAndVerify(privateKey);
+            const history = new Map<number, string>();
+            let version = 0;
+            let authShare: string | null = null;
+            let puts = 0;
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+                const body = JSON.parse(String(init?.body));
+                if (init?.method === 'PUT') {
+                    expect(body.expectedShareVersion).toBe(version);
+                    if (authShare) history.set(version, authShare);
+                    authShare = body.authShare.encryptedData;
+                    version++;
+                    if (++puts === 1) throw new TypeError('Committed but reply lost');
+                    return new Response(
+                        JSON.stringify({ shareVersion: version, expectedShareVersionChecked: true })
+                    );
+                }
+                return new Response(
+                    JSON.stringify(
+                        version
+                            ? {
+                                  authShare: body.shareVersion
+                                      ? (history.get(body.shareVersion) ?? null)
+                                      : authShare,
+                                  shareVersion: version,
+                              }
+                            : null
+                    )
+                );
+            });
+            await expect(strategy.atomicUpdateShares!(updateParams)).rejects.toMatchObject({
+                rolledBack: false,
+            });
+            expect(await storage.getDeviceShare()).toBeNull();
+            const pending = await readPendingShareCandidates(storage);
+            await writePendingShareCandidates(
+                storage,
+                pending.map(candidate => ({
+                    ...candidate,
+                    createdAt: Date.now() - PENDING_WRITE_EXPIRY_MS - 1,
+                }))
+            );
+            history.set(version, authShare!);
+            authShare = rotated.shares.authShare;
+            version++;
+            expect(await strategy.reconcileShares!(reconcileParams)).toEqual({
+                privateKey,
+                did: expectedDid,
+            });
+            expect(version).toBe(3);
+            expect(await reconstructFromShares([(await strategy.getLocalKey())!, authShare!])).toBe(
+                privateKey
+            );
+            expect(await readPendingShareCandidates(storage)).toEqual([]);
+        });
+
+        it.each([false, true])(
+            'expires unmatched candidates only with complete history (failure=%s)',
+            async failure => {
+                const pending = await splitAndVerify(privateKey);
+                const current = await splitAndVerify(privateKey);
+                const historical = await splitAndVerify(privateKey);
+                const candidates = [
+                    {
+                        share: pending.shares.deviceShare,
+                        createdAt: Date.now() - PENDING_WRITE_EXPIRY_MS - 1,
+                    },
+                ];
+                await writePendingShareCandidates(storage, candidates);
+                vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+                    const body = JSON.parse(String(init?.body));
+                    if (body.shareVersion && failure) throw new TypeError('History unavailable');
+                    return new Response(
+                        JSON.stringify({
+                            shareVersion: 2,
+                            authShare: body.shareVersion
+                                ? historical.shares.authShare
+                                : current.shares.authShare,
+                        })
+                    );
+                });
+                expect(await strategy.reconcileShares!(reconcileParams)).toBeNull();
+                expect(await readPendingShareCandidates(storage)).toEqual(
+                    failure ? candidates : []
+                );
+            }
+        );
+
+        it.each([false, true])(
+            'survives six delayed writes after an acknowledged seventh (CAS=%s)',
+            async cas => {
+                const delayed: Array<{ authShare: string; base: number }> = [];
+                const history = new Map<number, string>();
+                let version = 0;
+                let authShare: string | null = null;
+                const commit = (share: string, base: number): Response => {
+                    if (cas && base !== version) return new Response(null, { status: 409 });
+                    if (authShare) history.set(version, authShare);
+                    authShare = share;
+                    version++;
+                    for (const old of history.keys()) if (old < version - 5) history.delete(old);
+                    return new Response(
+                        JSON.stringify({
+                            shareVersion: version,
+                            ...(cas ? { expectedShareVersionChecked: true } : {}),
+                        })
+                    );
+                };
+                vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+                    const body = JSON.parse(String(init?.body));
+                    if (init?.method === 'PUT') {
+                        expect(body.expectedShareVersion).toBe(version);
+                        if (delayed.length < 6) {
+                            delayed.push({
+                                authShare: body.authShare.encryptedData,
+                                base: body.expectedShareVersion,
+                            });
+                            throw new TypeError('Request still in flight');
+                        }
+                        return commit(body.authShare.encryptedData, body.expectedShareVersion);
+                    }
+                    return new Response(
+                        JSON.stringify(
+                            version
+                                ? {
+                                      shareVersion: version,
+                                      authShare: body.shareVersion
+                                          ? (history.get(body.shareVersion) ?? null)
+                                          : authShare,
+                                  }
+                                : null
+                        )
+                    );
+                });
+                for (let i = 0; i < 6; i++)
+                    await expect(strategy.atomicUpdateShares!(updateParams)).rejects.toMatchObject({
+                        rolledBack: false,
+                    });
+                await strategy.atomicUpdateShares!(updateParams);
+                expect(await readPendingShareCandidates(storage)).toHaveLength(6);
+                for (const write of delayed)
+                    expect(commit(write.authShare, write.base).status).toBe(cas ? 409 : 200);
+                const reloaded = createSSSStrategy({
+                    serverUrl: 'http://test-server:5100/api',
+                    storage,
+                });
+                await reloaded.reconcileShares!(reconcileParams);
+                expect(
+                    await reconstructFromShares([(await reloaded.getLocalKey())!, authShare!])
+                ).toBe(privateKey);
+                expect(version).toBe(cas ? 1 : 7);
+            }
+        );
+
+        it('preserves expired candidates when the current auth share has no version', async () => {
+            const previous = await splitAndVerify(privateKey);
+            const candidates = [{ share: previous.shares.deviceShare, createdAt: 0 }];
+            await writePendingShareCandidates(storage, candidates);
+            vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+                new Response(JSON.stringify({ authShare: previous.shares.authShare }))
+            );
+            await expect(strategy.reconcileShares!(reconcileParams)).rejects.toThrow(
+                'valid share version'
+            );
+            expect(await readPendingShareCandidates(storage)).toEqual(candidates);
+        });
+
+        it('does not promote or retry for an account switched during pending resolution', async () => {
+            strategy.setActiveUser!('account-a');
+            let authShare = '';
+            const fetchMock = vi
+                .spyOn(globalThis, 'fetch')
+                .mockImplementation(async (_url, init) => {
+                    if (init?.method === 'PUT') {
+                        authShare = JSON.parse(String(init.body)).authShare.encryptedData;
+                        throw new TypeError('Lost reply');
+                    }
+                    if (authShare) strategy.setActiveUser!('account-b');
+                    return new Response(JSON.stringify({ authShare, shareVersion: 1 }));
+                });
+            await expect(strategy.atomicUpdateShares!(updateParams)).rejects.toMatchObject({
+                rolledBack: false,
+            });
+            const candidates = await readPendingShareCandidates(
+                storage,
+                'sss-device-share:account-a'
+            );
+            await expect(strategy.atomicUpdateShares!(updateParams)).rejects.toThrow(
+                'Active account changed'
+            );
+            expect(await readPendingShareCandidates(storage, 'sss-device-share:account-a')).toEqual(
+                candidates
+            );
+            expect(await strategy.getLocalKey()).toBeNull();
+            expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'PUT')).toHaveLength(
+                1
+            );
+        });
+
+        it('invalidates an older cached email share when promoting a device-only candidate', async () => {
+            const enabled = createSSSStrategy({
+                serverUrl: 'http://test-server:5100/api',
+                storage,
+                enableEmailBackupShare: true,
+                ...getTestRelayConfig(),
+            });
+            let authShare = '';
+            let version = 0;
+            const fetchMock = vi
+                .spyOn(globalThis, 'fetch')
+                .mockImplementation(async (_url, init) => {
+                    if (init?.method === 'PUT') {
+                        authShare = JSON.parse(String(init.body)).authShare.encryptedData;
+                        if (++version === 2) throw new TypeError('Lost reply');
+                    }
+                    return new Response(JSON.stringify({ authShare, shareVersion: version }));
+                });
+            await enabled.atomicUpdateShares!(updateParams);
+            await expect(enabled.atomicUpdateShares!(updateParams)).rejects.toMatchObject({
+                rolledBack: false,
+            });
+            expect(await enabled.reconcileShares!(reconcileParams)).toEqual({
+                privateKey,
+                did: expectedDid,
+            });
+            const calls = fetchMock.mock.calls.length;
+            await enabled.sendEmailBackupShare!(
+                'token',
+                'firebase',
+                privateKey,
+                'test@example.com'
+            );
+            expect(fetchMock.mock.calls).toHaveLength(calls);
+        });
+
+        it.each([false, true])(
+            'retries a write lost before the server after reload (existing=%s)',
+            async existing => {
+                const previous = await splitAndVerify(privateKey);
+                let authShare = existing ? previous.shares.authShare : null;
+                let version = existing ? 1 : 0;
+                if (existing) {
+                    await strategy.storeLocalKey(previous.shares.deviceShare);
+                    await strategy.storeLocalShareVersion!(version);
+                }
+                let puts = 0;
+                vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+                    if (init?.method === 'PUT') {
+                        if (++puts === 1) throw new TypeError('Lost before server');
+                        authShare = JSON.parse(String(init.body)).authShare.encryptedData;
+                        return new Response(JSON.stringify({ shareVersion: ++version }));
+                    }
+                    return authShare
+                        ? new Response(JSON.stringify({ authShare, shareVersion: version }))
+                        : new Response(null, { status: 404 });
+                });
+                await expect(strategy.atomicUpdateShares!(updateParams)).rejects.toMatchObject({
+                    rolledBack: false,
+                });
+                const reloaded = createSSSStrategy({
+                    serverUrl: 'http://test-server:5100/api',
+                    storage,
+                });
+                expect(await reloaded.reconcileShares!(reconcileParams)).toBeNull();
+                expect(await readPendingShareCandidates(storage)).toHaveLength(1);
+                await reloaded.atomicUpdateShares!(updateParams);
+                expect(puts).toBe(2);
+                expect(
+                    await reconstructFromShares([(await reloaded.getLocalKey())!, authShare!])
+                ).toBe(privateKey);
+                expect(await readPendingShareCandidates(storage)).toHaveLength(1);
+                expect(await reloaded.getLocalShareVersion!()).toBe(version);
+            }
+        );
+
+        it('promotes the first candidate when it lands after two indeterminate writes', async () => {
+            const writes: string[] = [];
+            let authShare: string | null = null;
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+                if (init?.method === 'PUT') {
+                    writes.push(JSON.parse(String(init.body)).authShare.encryptedData);
+                    throw new TypeError('In flight');
+                }
+                return authShare
+                    ? new Response(JSON.stringify({ authShare, shareVersion: 1 }))
+                    : new Response(null, { status: 404 });
+            });
+            await expect(strategy.atomicUpdateShares!(updateParams)).rejects.toMatchObject({
+                rolledBack: false,
+            });
+            await expect(strategy.atomicUpdateShares!(updateParams)).rejects.toMatchObject({
+                rolledBack: false,
+            });
+            const candidates = await readPendingShareCandidates(storage);
+            expect(candidates).toHaveLength(2);
+            expect(await strategy.getLocalKey()).toBe(candidates[1]!.share);
+            authShare = writes[0]!;
+            expect(await strategy.reconcileShares!(reconcileParams)).toEqual({
+                privateKey,
+                did: expectedDid,
+            });
+            expect(await strategy.getLocalKey()).toBe(candidates[0]!.share);
+            expect(await readPendingShareCandidates(storage)).toEqual([candidates[1]]);
+        });
+
+        it.each([false, true])(
+            'checks expired candidates before dropping them (matching=%s)',
+            async matching => {
+                const old = await splitAndVerify(privateKey);
+                const live = await splitAndVerify(privateKey);
+                await writePendingShareCandidates(storage, [
+                    {
+                        share: old.shares.deviceShare,
+                        createdAt: Date.now() - PENDING_WRITE_EXPIRY_MS - 1,
+                    },
+                    { share: live.shares.deviceShare, createdAt: Date.now() },
+                ]);
+                vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+                    matching
+                        ? new Response(
+                              JSON.stringify({ authShare: old.shares.authShare, shareVersion: 1 })
+                          )
+                        : new Response(null, { status: 404 })
+                );
+                const result = await strategy.reconcileShares!(reconcileParams);
+                if (matching) {
+                    expect(result).toEqual({ privateKey, did: expectedDid });
+                    expect(await strategy.getLocalKey()).toBe(old.shares.deviceShare);
+                    expect(
+                        (await readPendingShareCandidates(storage)).map(
+                            candidate => candidate.share
+                        )
+                    ).toEqual([live.shares.deviceShare]);
+                } else {
+                    expect(result).toBeNull();
+                    expect(
+                        (await readPendingShareCandidates(storage)).map(
+                            candidate => candidate.share
+                        )
+                    ).toEqual([live.shares.deviceShare]);
+                }
+            }
+        );
+
+        it.each([false, true])(
+            'resolves legacy raw candidates before expiry (matching=%s)',
+            async matching => {
+                const old = await splitAndVerify(privateKey);
+                await storage.storeDeviceShare(
+                    old.shares.deviceShare,
+                    'sss-pending-share:sss-device-share'
+                );
+                expect(await readPendingShareCandidates(storage)).toEqual([
+                    { share: old.shares.deviceShare, createdAt: 0 },
+                ]);
+                vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+                    matching
+                        ? new Response(
+                              JSON.stringify({ authShare: old.shares.authShare, shareVersion: 1 })
+                          )
+                        : new Response(null, { status: 404 })
+                );
+                expect(await strategy.reconcileShares!(reconcileParams)).toEqual(
+                    matching ? { privateKey, did: expectedDid } : null
+                );
+                expect(await readPendingShareCandidates(storage)).toEqual([]);
+                expect(await strategy.getLocalKey()).toBe(matching ? old.shares.deviceShare : null);
+            }
+        );
+
+        it('removes only the new candidate on a definitive rejection', async () => {
+            let puts = 0;
+            vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+                if (init?.method === 'PUT') {
+                    if (++puts === 1) throw new TypeError('In flight');
+                    return new Response(null, { status: 403 });
+                }
+                return new Response(null, { status: 404 });
+            });
+            await expect(strategy.atomicUpdateShares!(updateParams)).rejects.toMatchObject({
+                rolledBack: false,
+            });
+            const candidates = await readPendingShareCandidates(storage);
+            await expect(strategy.atomicUpdateShares!(updateParams)).rejects.toMatchObject({
+                rolledBack: true,
+            });
+            expect(puts).toBe(2);
+            expect(await readPendingShareCandidates(storage)).toEqual(candidates);
+        });
+
+        it('caps live candidates without deleting them or sending another PUT', async () => {
+            const fetchMock = vi
+                .spyOn(globalThis, 'fetch')
+                .mockImplementation(async (_url, init) => {
+                    if (init?.method === 'PUT') throw new TypeError('In flight');
+                    return new Response(null, { status: 404 });
+                });
+            for (let i = 0; i < 8; i++) {
+                await expect(strategy.atomicUpdateShares!(updateParams)).rejects.toMatchObject({
+                    rolledBack: false,
+                });
+            }
+            const candidates = await readPendingShareCandidates(storage);
+            expect(candidates).toHaveLength(8);
+            await expect(strategy.atomicUpdateShares!(updateParams)).rejects.toMatchObject({
+                phase: 'store_device',
+            });
+            expect(await readPendingShareCandidates(storage)).toEqual(candidates);
+            expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'PUT')).toHaveLength(
+                8
+            );
+        });
+
+        it.each([false, true])(
+            'recovers a committed lost reply after reload without server history (existing=%s)',
+            async existing => {
+                strategy.setActiveUser!('lost-response-user');
+                if (existing) {
+                    const previous = await splitAndVerify(privateKey);
+                    await strategy.storeLocalKey(previous.shares.deviceShare);
+                    await strategy.storeLocalShareVersion!(1);
+                }
+
+                let committedAuthShare: string | null = null;
+                const version = existing ? 2 : 1;
+                const fetchMock = vi
+                    .spyOn(globalThis, 'fetch')
+                    .mockImplementation(async (_url, init) => {
+                        const body = JSON.parse(String(init?.body));
+                        if (init?.method === 'PUT') {
+                            committedAuthShare = body.authShare.encryptedData;
+                            throw new TypeError('Connection closed after commit');
+                        }
+                        if (body.shareVersion && body.shareVersion !== version) {
+                            return new Response(null, { status: 404 });
+                        }
+                        return new Response(
+                            JSON.stringify({
+                                authShare: committedAuthShare,
+                                primaryDid: expectedDid,
+                                shareVersion: version,
+                            })
+                        );
+                    });
+
+                await expect(
+                    strategy.atomicUpdateShares!({
+                        token: 'token',
+                        providerType: 'firebase',
+                        privateKey,
+                        did: expectedDid,
+                    })
+                ).rejects.toMatchObject({ rolledBack: false });
+
+                const reloaded = createSSSStrategy({
+                    serverUrl: 'http://test-server:5100/api',
+                    storage,
+                });
+                reloaded.setActiveUser!('lost-response-user');
+                expect(await reloaded.hasLocalKey()).toBe(true);
+                await reloaded.fetchServerKeyStatus('token', 'firebase');
+                expect(
+                    await reloaded.reconcileShares!({
+                        token: 'token',
+                        providerType: 'firebase',
+                        expectedDid,
+                        didFromPrivateKey: async key =>
+                            key === privateKey ? expectedDid : 'did:key:zWrong',
+                    })
+                ).toEqual({ privateKey, did: expectedDid });
+                expect(await reloaded.getLocalShareVersion!()).toBe(version);
+                expect(
+                    await reconstructFromShares([
+                        (await reloaded.getLocalKey())!,
+                        committedAuthShare!,
+                    ])
+                ).toBe(privateKey);
+                expect(
+                    fetchMock.mock.calls.filter(([, init]) => init?.method === 'PUT')
+                ).toHaveLength(1);
+            }
+        );
+
         it.each(['initial setup', 'Web3Auth migration'])(
             '%s restores the previous device share when the server write fails',
             async () => {
@@ -3201,8 +4309,15 @@ describe('createSSSStrategy', () => {
                 await strategy.storeLocalKey(previous.shares.deviceShare);
                 await strategy.storeLocalShareVersion!(4);
 
-                vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-                    new Response(null, { status: 503, statusText: 'Unavailable' })
+                vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) =>
+                    init?.method === 'PUT'
+                        ? new Response(null, { status: 403, statusText: 'Forbidden' })
+                        : new Response(
+                              JSON.stringify({
+                                  authShare: previous.shares.authShare,
+                                  shareVersion: 4,
+                              })
+                          )
                 );
 
                 let thrown: unknown;
@@ -3246,7 +4361,7 @@ describe('createSSSStrategy', () => {
                     );
                 }
 
-                return new Response(null, { status: 503, statusText: 'Unavailable' });
+                return new Response(null, { status: 403, statusText: 'Forbidden' });
             });
 
             let thrown: unknown;
@@ -3267,7 +4382,7 @@ describe('createSSSStrategy', () => {
             expect(await strategy.getLocalShareVersion!()).toBe(7);
         });
 
-        it('executeRecovery uses atomicRecovery and restores the previous device share on rotation failure', async () => {
+        it('executeRecovery preserves the previous device share on rejected rotation', async () => {
             const recoverySource = await splitAndVerify(privateKey);
             const previousDevice = 'previous-device-share';
 
@@ -3290,7 +4405,7 @@ describe('createSSSStrategy', () => {
                     );
                 }
 
-                return new Response(null, { status: 503, statusText: 'Unavailable' });
+                return new Response(null, { status: 403, statusText: 'Forbidden' });
             });
 
             let thrown: unknown;
@@ -3373,7 +4488,7 @@ describe('createSSSStrategy', () => {
                     privateKey,
                     did: expectedDid,
                 })
-            ).rejects.toMatchObject({ rolledBack: true });
+            ).rejects.toMatchObject({ rolledBack: false });
 
             expect(await strategy.getLocalKey()).toBe(versionOne.shares.deviceShare);
             expect(await strategy.getLocalShareVersion!()).toBe(1);
@@ -3403,8 +4518,8 @@ describe('createSSSStrategy', () => {
             });
 
             expect(reconciled).toEqual({ privateKey, did: expectedDid });
-            expect(server.version).toBe(3);
-            expect(await strategy.getLocalShareVersion!()).toBe(3);
+            expect(server.version).toBe(2);
+            expect(await strategy.getLocalShareVersion!()).toBe(2);
 
             const repairedDevice = await strategy.getLocalKey();
             const repairedHealth = await verifyStoredShares(
@@ -3423,6 +4538,24 @@ describe('createSSSStrategy', () => {
     // -----------------------------------------------------------------------
     // Versioned email share format edge cases
     // -----------------------------------------------------------------------
+
+    describe('buildRecoveryPhraseChallengeOptions', () => {
+        it('offers the answer plus decoys that never appear in the phrase', async () => {
+            const phrase = await shareToRecoveryPhrase('ab'.repeat(32));
+            const words = phrase.split(' ');
+            const indices = [2, 9];
+
+            const options = await buildRecoveryPhraseChallengeOptions(phrase, indices);
+
+            expect(options).toHaveLength(2);
+            options.forEach((choices, i) => {
+                expect(choices).toHaveLength(6);
+                expect(new Set(choices).size).toBe(6);
+                expect(choices).toContain(words[indices[i]!]);
+                expect(choices.filter(word => words.includes(word))).toEqual([words[indices[i]!]]);
+            });
+        });
+    });
 
     describe('selectRecoveryPhraseChallengeIndices', () => {
         it('rejects values in the partial tail before accepting uniform-range values', () => {

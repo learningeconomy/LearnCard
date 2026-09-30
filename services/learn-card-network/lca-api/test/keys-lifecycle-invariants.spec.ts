@@ -122,6 +122,256 @@ describe('P0-6 immutable provider identity', () => {
 });
 
 describe('share version concurrency', () => {
+    it('enforces client versions, preserves acknowledged history against six stale writes, and supports legacy clients', async () => {
+        const uid = randomUUID();
+        const email = `cas-${uid}@example.com`;
+        const { learnCard } = await getUser('9'.repeat(64));
+        const caller = getClient({ did: learnCard.id.did(), isChallengeValid: true });
+        const auth = { authToken: makeMockToken(email, uid), providerType: 'firebase' as const };
+        const input = {
+            ...auth,
+            primaryDid: learnCard.id.did(),
+            authShare: { encryptedData: 'first', encryptedDek: '', iv: '' },
+        };
+        const collection = getUserKeysCollection();
+        try {
+            expect(await caller.keys.getAuthShare(auth)).toBeNull();
+            await expect(
+                caller.keys.storeAuthShare({ ...input, expectedShareVersion: 1 })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+            expect(await collection.countDocuments({ 'authProviders.id': uid })).toBe(0);
+            expect(
+                await caller.keys.storeAuthShare({ ...input, expectedShareVersion: 0 })
+            ).toMatchObject({ shareVersion: 1, expectedShareVersionChecked: true });
+            const acknowledged = await caller.keys.storeAuthShare({
+                ...input,
+                authShare: { ...input.authShare, encryptedData: 'acknowledged' },
+                expectedShareVersion: 1,
+            });
+            expect(acknowledged).toMatchObject({
+                shareVersion: 2,
+                expectedShareVersionChecked: true,
+            });
+            for (let i = 0; i < 6; i++) {
+                await expect(
+                    caller.keys.storeAuthShare({ ...input, expectedShareVersion: 1 })
+                ).rejects.toMatchObject({
+                    code: 'CONFLICT',
+                    message: 'Key material changed; please retry',
+                });
+            }
+            expect(await caller.keys.getAuthShare(auth)).toMatchObject({
+                shareVersion: 2,
+                authShare: { encryptedData: 'acknowledged' },
+            });
+            const stored = await collection.findOne({ 'authProviders.id': uid });
+            expect(stored?.previousAuthShares.map(share => share.shareVersion)).toEqual([1]);
+            expect(await caller.keys.storeAuthShare(input)).toMatchObject({
+                shareVersion: 3,
+                expectedShareVersionChecked: false,
+            });
+        } finally {
+            await collection.deleteMany({ 'authProviders.id': uid });
+        }
+    });
+
+    it.each([false, true])(
+        'reports version zero for a record without auth material and atomically initializes it (BSON null=%s)',
+        async bsonNull => {
+            const uid = randomUUID();
+            const email = `empty-${uid}@example.com`;
+            const { learnCard } = await getUser('9'.repeat(64));
+            const caller = getClient({ did: learnCard.id.did(), isChallengeValid: true });
+            const auth = {
+                authToken: makeMockToken(email, uid),
+                providerType: 'firebase' as const,
+            };
+            const key = makeUserKey(email, uid, learnCard.id.did());
+            const collection = getUserKeysCollection();
+            await collection.insertOne(key);
+            await collection.updateOne(
+                { 'authProviders.id': uid },
+                bsonNull ? [{ $set: { authShare: null } }] : { $unset: { authShare: '' } }
+            );
+            try {
+                const stored = await collection.findOne({ 'authProviders.id': uid });
+                if (bsonNull) expect(stored?.authShare).toBeNull();
+                else expect(stored?.authShare).toBeUndefined();
+                expect(await caller.keys.getAuthShare(auth)).toMatchObject({
+                    shareVersion: 0,
+                    authShare: null,
+                });
+                expect(
+                    await caller.keys.storeAuthShare({
+                        ...auth,
+                        primaryDid: key.primaryDid,
+                        authShare: { encryptedData: 'initialized', encryptedDek: '', iv: '' },
+                        expectedShareVersion: 0,
+                    })
+                ).toMatchObject({ shareVersion: 2, expectedShareVersionChecked: true });
+                await expect(
+                    caller.keys.storeAuthShare({
+                        ...auth,
+                        primaryDid: key.primaryDid,
+                        authShare: { encryptedData: 'stale', encryptedDek: '', iv: '' },
+                        expectedShareVersion: 0,
+                    })
+                ).rejects.toMatchObject({ code: 'CONFLICT' });
+            } finally {
+                await collection.deleteMany({ 'authProviders.id': uid });
+            }
+        }
+    );
+
+    it('advances an auth-bearing legacy record without a counter from observable version one to two', async () => {
+        const uid = randomUUID();
+        const email = `legacy-${uid}@example.com`;
+        const { learnCard } = await getUser('9'.repeat(64));
+        const caller = getClient({ did: learnCard.id.did(), isChallengeValid: true });
+        const auth = { authToken: makeMockToken(email, uid), providerType: 'firebase' as const };
+        const collection = getUserKeysCollection();
+        await collection.insertOne(makeUserKey(email, uid, learnCard.id.did()));
+        await collection.updateOne({ 'authProviders.id': uid }, { $unset: { shareVersion: '' } });
+        try {
+            expect(await caller.keys.getAuthShare(auth)).toMatchObject({ shareVersion: 1 });
+            const input = {
+                ...auth,
+                primaryDid: learnCard.id.did(),
+                authShare: { encryptedData: 'next', encryptedDek: '', iv: '' },
+                expectedShareVersion: 1,
+            };
+            expect(await caller.keys.storeAuthShare(input)).toMatchObject({ shareVersion: 2 });
+            expect(await caller.keys.getAuthShare({ ...auth, shareVersion: 1 })).toMatchObject({
+                authShare: { encryptedData: 'existing-auth-share' },
+            });
+            await expect(caller.keys.storeAuthShare(input)).rejects.toMatchObject({
+                code: 'CONFLICT',
+            });
+        } finally {
+            await collection.deleteMany({ 'authProviders.id': uid });
+        }
+    });
+
+    it('recreates a missing provider index before concurrent first writes can succeed', async () => {
+        const uid = randomUUID();
+        const collection = getUserKeysCollection();
+        const provider = { type: 'firebase' as const, id: uid };
+        await collection.dropIndex('auth_provider_identity_unique');
+        try {
+            const results = await Promise.allSettled([
+                upsertUserKeyByAuthProvider(
+                    { type: 'email', value: `first-${uid}@example.com` },
+                    provider,
+                    { primaryDid: `did:example:first-${uid}` },
+                    0
+                ),
+                upsertUserKeyByAuthProvider(
+                    { type: 'email', value: `second-${uid}@example.com` },
+                    provider,
+                    { primaryDid: `did:example:second-${uid}` },
+                    0
+                ),
+            ]);
+            expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1);
+            const rejected = results.find(result => result.status === 'rejected');
+            expect(rejected?.status === 'rejected' && rejected.reason).toBeInstanceOf(
+                UserKeyVersionConflictError
+            );
+            expect(await collection.countDocuments({ 'authProviders.id': uid })).toBe(1);
+            const indexes = await collection.listIndexes().toArray();
+            expect(
+                indexes.some(
+                    index =>
+                        index.unique === true &&
+                        index.key?.['authProviders.type'] === 1 &&
+                        index.key?.['authProviders.id'] === 1
+                )
+            ).toBe(true);
+        } finally {
+            await collection.deleteMany({ 'authProviders.id': uid });
+            await createUserKeysIndexes();
+        }
+    });
+
+    it('fails first writes closed when legacy duplicate providers prevent index creation, but still updates existing records', async () => {
+        const suffix = randomUUID();
+        const duplicateUid = `duplicate-${suffix}`;
+        const newUid = `blocked-${suffix}`;
+        const collection = getUserKeysCollection();
+        const existing = makeUserKey(
+            `duplicate-a-${suffix}@example.com`,
+            duplicateUid,
+            `did:example:original-${suffix}`
+        );
+        const duplicate = makeUserKey(
+            `duplicate-b-${suffix}@example.com`,
+            duplicateUid,
+            `did:example:other-${suffix}`
+        );
+        await collection.dropIndex('auth_provider_identity_unique');
+        try {
+            await collection.insertMany([existing, duplicate]);
+            await expect(
+                upsertUserKeyByAuthProvider(
+                    { type: 'email', value: `blocked-${suffix}@example.com` },
+                    { type: 'firebase', id: newUid },
+                    { primaryDid: `did:example:new-${suffix}` },
+                    0
+                )
+            ).rejects.toBeInstanceOf(UserKeyVersionConflictError);
+            expect(await collection.countDocuments({ 'authProviders.id': newUid })).toBe(0);
+            expect(
+                (await collection.listIndexes().toArray()).some(
+                    index =>
+                        index.unique === true &&
+                        index.key?.['authProviders.type'] === 1 &&
+                        index.key?.['authProviders.id'] === 1
+                )
+            ).toBe(false);
+            const updated = await upsertUserKeyByAuthProvider(
+                existing.contactMethod,
+                { type: 'firebase', id: duplicateUid },
+                { authShare: { encryptedData: 'updated', encryptedDek: 'dek', iv: 'iv' } },
+                1
+            );
+            expect(updated.primaryDid).toBe(existing.primaryDid);
+            expect(updated.shareVersion).toBe(2);
+            expect(updated.previousAuthShares.map(share => share.shareVersion)).toEqual([1]);
+        } finally {
+            await collection.deleteMany({ 'authProviders.id': { $in: [duplicateUid, newUid] } });
+            await createUserKeysIndexes();
+        }
+    });
+
+    it('allows only one concurrent version-zero insert for an immutable provider identity', async () => {
+        const uid = randomUUID();
+        const email = `insert-${uid}@example.com`;
+        const { learnCard } = await getUser('9'.repeat(64));
+        const caller = getClient({ did: learnCard.id.did(), isChallengeValid: true });
+        const input = {
+            authToken: makeMockToken(email, uid),
+            providerType: 'firebase' as const,
+            primaryDid: learnCard.id.did(),
+            authShare: { encryptedData: 'new', encryptedDek: '', iv: '' },
+            expectedShareVersion: 0,
+        };
+        const collection = getUserKeysCollection();
+        try {
+            const results = await Promise.allSettled([
+                caller.keys.storeAuthShare(input),
+                caller.keys.storeAuthShare(input),
+            ]);
+            expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1);
+            const rejected = results.find(result => result.status === 'rejected');
+            expect(rejected?.status === 'rejected' && rejected.reason).toMatchObject({
+                code: 'CONFLICT',
+            });
+            expect(await collection.countDocuments({ 'authProviders.id': uid })).toBe(1);
+        } finally {
+            await collection.deleteMany({ 'authProviders.id': uid });
+        }
+    });
+
     it('allows exactly one auth-share update from the same starting version', async () => {
         const suffix = `${Date.now()}-${randomUUID()}`;
         const email = `auth-share-cas-${suffix}@example.com`;
@@ -258,7 +508,7 @@ describe('P0-1 provisional SSS activation', () => {
         }
     });
 
-    it('accepts markMigrated for a legacy account whose first record was created provisional', async () => {
+    it('preserves legacy fallback when a migration without a prior record expires', async () => {
         const suffix = `${Date.now()}-${randomUUID()}`;
         const email = `legacy-no-record-${suffix}@example.com`;
         const uid = `uid-${suffix}`;
@@ -283,8 +533,36 @@ describe('P0-1 provisional SSS activation', () => {
                 authProviders: { $elemMatch: { type: 'firebase', id: uid } },
             });
 
-            expect(stored?.keyProvider).toBe('sss');
+            expect(stored?.keyProvider).toBe('web3auth');
             expect(stored?.sssActivationState).toBe('provisional');
+            expect(stored?.migratedFromWeb3Auth).toBe(false);
+            expect(stored?.provisionalCreatedAt).toBeInstanceOf(Date);
+
+            // Simulate abandoning recovery confirmation for more than 30 days.
+            const expiredAt = new Date(Date.now() - PROVISIONAL_MIGRATION_TTL_MS - 1_000);
+            await collection.updateOne(
+                { _id: stored!._id },
+                { $set: { provisionalCreatedAt: expiredAt } }
+            );
+            await caller.keys.markMigrated({ authToken: token, providerType: 'firebase' });
+            expect((await collection.findOne({ _id: stored!._id }))?.provisionalCreatedAt).toEqual(
+                expiredAt
+            );
+
+            // getAuthShare invokes the same lazy cleanup as for pre-existing Web3Auth records.
+            const result = await getClient().keys.getAuthShare({
+                authToken: token,
+                providerType: 'firebase',
+            });
+            const purged = await collection.findOne({ _id: stored!._id });
+            expect(result?.authShare).toBeNull();
+            expect(result?.keyProvider).toBe('web3auth');
+            expect(purged?.keyProvider).toBe('web3auth');
+            expect(purged?.authShare).toBeUndefined();
+            expect(purged?.sssActivationState).toBeUndefined();
+            expect(purged?.provisionalCreatedAt).toBeUndefined();
+            expect(purged?.recoveryMethods).toEqual([]);
+            expect(purged?.previousAuthShares).toEqual([]);
         } finally {
             await collection.deleteMany({ 'contactMethod.value': email });
         }

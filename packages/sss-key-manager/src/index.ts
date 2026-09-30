@@ -114,6 +114,7 @@ export {
     generateRecoveryPhrase,
     validateRecoveryPhrase,
     countWords,
+    buildRecoveryPhraseChallengeOptions,
 } from './recovery-phrase';
 
 export type { RecoveryPhraseData } from './recovery-phrase';
@@ -125,6 +126,7 @@ export {
     atomicRecovery,
     ShareVerificationError,
     AtomicUpdateError,
+    ShareWriteRejectedError,
 } from './atomic-operations';
 
 export type {

@@ -1,4 +1,4 @@
-import { timingSafeEqual } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 
 import { renderEmail, resolveBranding } from '@learncard/email-templates';
 import {
@@ -57,10 +57,12 @@ const tokenMatches = (authorization: string | undefined, expectedToken: string):
     const suppliedToken = authorization?.startsWith('Bearer ')
         ? authorization.slice('Bearer '.length)
         : '';
-    const supplied = Buffer.from(suppliedToken);
-    const expected = Buffer.from(expectedToken);
+    // Hash both sides to a fixed width so the comparison runs in constant time
+    // regardless of the supplied token's length.
+    const supplied = createHash('sha256').update(suppliedToken).digest();
+    const expected = createHash('sha256').update(expectedToken).digest();
 
-    return supplied.length === expected.length && timingSafeEqual(supplied, expected);
+    return timingSafeEqual(supplied, expected) && suppliedToken.length > 0;
 };
 
 const parseRelayRequest = (body: unknown): ParsedRelayRequest => {

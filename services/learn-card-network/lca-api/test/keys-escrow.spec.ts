@@ -704,6 +704,99 @@ describe('escrow PIN release', () => {
     const completePin = (hold: Parameters<typeof resume>[0], proof = pinProof) =>
         getClient().escrow.completeRecovery({ ...resume(hold), pinProof: proof });
 
+    it.each([
+        'success',
+        'locked',
+        'key mismatch',
+        'carry failure',
+        'concurrent counter',
+        'concurrent lock',
+        'concurrent blob',
+        'clear',
+        'released',
+    ])('enrolls after rotation with safe PIN carry: %s', async scenario => {
+        await enrollPin();
+        if (scenario === 'released') await completePin(await startPin());
+        await getUserKeysCollection().updateOne(
+            { 'authProviders.id': authProvider.id },
+            {
+                $set: {
+                    'escrowPin.failedAttempts': 3,
+                    'escrowPin.verifiedFailedAttempts': 2,
+                    ...(scenario === 'locked' ? { 'escrowPin.disabledAt': new Date() } : {}),
+                    ...(scenario === 'key mismatch'
+                        ? { 'escrowBlob.enclaveKeyId': 'old-key' }
+                        : {}),
+                },
+            }
+        );
+        await owner().keys.storeAuthShare({
+            ...auth,
+            primaryDid: did,
+            authShare: { encryptedData: shares.authShare, encryptedDek: '', iv: '' },
+        });
+        const replacement = await encryptEscrowBlob(
+            { recoveryShare: shares.recoveryShare, did, shareVersion: 2 },
+            enclaveKeys.publicKey,
+            keyId
+        );
+        const enclave = getEscrowEnclave();
+        const carry = enclave.carryPinVerifier.bind(enclave);
+        const spy = vi.spyOn(enclave, 'carryPinVerifier');
+        if (scenario === 'carry failure') spy.mockRejectedValueOnce(new EscrowBlobError());
+        if (scenario.startsWith('concurrent'))
+            spy.mockImplementationOnce(async input => {
+                await getUserKeysCollection().updateOne(
+                    { 'authProviders.id': authProvider.id },
+                    {
+                        $set:
+                            scenario === 'concurrent counter'
+                                ? { 'escrowPin.failedAttempts': 4 }
+                                : scenario === 'concurrent lock'
+                                  ? { 'escrowPin.disabledAt': new Date() }
+                                  : { 'escrowBlob.envelope.ciphertext': 'changed' },
+                    }
+                );
+                return carry(input);
+            });
+        await expect(
+            owner().escrow.enroll({
+                ...auth,
+                envelope: replacement,
+                shareVersion: 2,
+                enclaveKeyId: keyId,
+                ...(scenario === 'clear' ? { clearPin: true } : {}),
+            })
+        ).resolves.toEqual({ success: true, shareVersion: 2 });
+        const stored = await record();
+        if (scenario === 'success') {
+            expect(stored?.escrowPin).toMatchObject({
+                salt: pinSalt,
+                shareVersion: 2,
+                failedAttempts: 3,
+                verifiedFailedAttempts: 2,
+            });
+            expect((await owner().keys.getAuthShare(auth))?.escrowPin?.enabled).toBe(true);
+            const hold = await startPin();
+            expect(hold.pinSalt).toBe(pinSalt);
+            const released = await completePin(hold);
+            expect(
+                await openEscrowRelease(released.sealedShare, recipient.privateKey)
+            ).toMatchObject({ recoveryShare: shares.recoveryShare, shareVersion: 2 });
+        } else {
+            expect(stored?.escrowPin).toBeUndefined();
+            expect(
+                await enclave.verifyEscrowBlob({
+                    envelope: stored!.escrowBlob!.envelope,
+                    expectedDid: did,
+                    expectedShareVersion: 2,
+                })
+            ).toEqual({ ok: true, hasPin: false });
+            if (['locked', 'key mismatch', 'clear', 'released'].includes(scenario))
+                expect(spy).not.toHaveBeenCalled();
+        }
+    });
+
     it('rejects mismatched verifier/salt enrollment and invalid salts', async () => {
         await expect(
             owner().escrow.enroll({
@@ -734,7 +827,7 @@ describe('escrow PIN release', () => {
         });
     });
 
-    it('releases immediately with the correct PIN and resets attempts', async () => {
+    it('releases immediately with the correct PIN without replenishing the lifetime budget', async () => {
         await enrollPin();
         await getUserKeysCollection().updateOne(
             { 'authProviders.id': authProvider.id },
@@ -751,7 +844,7 @@ describe('escrow PIN release', () => {
         const opened = await openEscrowRelease(result.sealedShare, recipient.privateKey);
         expect(opened.holdId).toBe(hold.holdId);
         expect(opened.pinVerifier).toBeUndefined();
-        expect((await record())?.escrowPin?.failedAttempts).toBe(0);
+        expect((await record())?.escrowPin?.failedAttempts).toBe(4);
         expect((await findEscrowHoldById(hold.holdId))?.status).toBe('completed');
     });
 
@@ -772,7 +865,7 @@ describe('escrow PIN release', () => {
         const second = await startPin();
         expect(second.holdId).not.toBe(first.holdId);
         await completePin(second);
-        expect((await record())?.escrowPin?.failedAttempts).toBe(0);
+        expect((await record())?.escrowPin?.failedAttempts).toBe(2);
     });
 
     it('locks after ten mismatches and still permits delayed recovery', async () => {
@@ -834,7 +927,7 @@ describe('escrow PIN release', () => {
         expect((await record())?.escrowPin?.failedAttempts).toBe(9);
     });
 
-    it('cancels a pending PIN hold as pin-locked when no reservation remains', async () => {
+    it('throttles without disabling or cancelling when no reservation remains', async () => {
         await enrollPin();
         const hold = await startPin();
         await getUserKeysCollection().updateOne(
@@ -842,14 +935,105 @@ describe('escrow PIN release', () => {
             { $set: { 'escrowPin.failedAttempts': 10 } }
         );
         const release = vi.spyOn(getEscrowEnclave(), 'releaseEscrow');
-        await expect(completePin(hold)).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+        await expect(completePin(hold)).rejects.toMatchObject({
+            code: 'TOO_MANY_REQUESTS',
+            message: 'Please wait before trying again.',
+        });
         expect(release).not.toHaveBeenCalled();
         expect(await findEscrowHoldById(hold.holdId)).toMatchObject({
-            status: 'cancelled',
-            cancelReason: 'pin-locked',
-            cancelledBy: 'system',
+            status: 'pending',
         });
+        expect((await record())?.escrowPin?.disabledAt).toBeUndefined();
+    });
+
+    it('lets a correct tenth reservation finish while a competing completion is throttled', async () => {
+        await enrollPin();
+        await getUserKeysCollection().updateOne(
+            { 'authProviders.id': authProvider.id },
+            { $set: { 'escrowPin.failedAttempts': 9, 'escrowPin.verifiedFailedAttempts': 9 } }
+        );
+        const waiting = await start();
+        const hold = await startPin();
+        const reserve = models.reserveEscrowPinAttempt;
+        const release = vi.spyOn(getEscrowEnclave(), 'releaseEscrow');
+        vi.spyOn(models, 'reserveEscrowPinAttempt').mockImplementationOnce(async (...args) => {
+            const reserved = await reserve(...args);
+            expect(reserved?.escrowPin?.failedAttempts).toBe(10);
+            await expect(completePin(hold)).rejects.toMatchObject({
+                code: 'TOO_MANY_REQUESTS',
+                message: 'Please wait before trying again.',
+            });
+            expect((await record())?.escrowPin?.disabledAt).toBeUndefined();
+            expect((await findEscrowHoldById(hold.holdId))?.status).toBe('pending');
+            return reserved;
+        });
+        await expect(completePin(hold)).resolves.toHaveProperty('sealedShare');
+        expect(release).toHaveBeenCalledTimes(1);
+        expect((await record())?.escrowPin).toMatchObject({
+            failedAttempts: 10,
+            verifiedFailedAttempts: 9,
+        });
+        expect((await record())?.escrowPin?.disabledAt).toBeUndefined();
+        expect((await findEscrowHoldById(waiting.holdId))?.status).toBe('pending');
+        await expect(completePin(await startPin())).rejects.toMatchObject({
+            message: 'Please wait before trying again.',
+        });
+        expect(release).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not lock on the tenth reservation mismatch while an earlier reservation is unresolved', async () => {
+        await enrollPin();
+        await getUserKeysCollection().updateOne(
+            { 'authProviders.id': authProvider.id },
+            { $set: { 'escrowPin.failedAttempts': 8, 'escrowPin.verifiedFailedAttempts': 8 } }
+        );
+        const hold = await startPin();
+        const ciphertext = (await record())!.escrowBlob!.envelope.ciphertext;
+        await models.reserveEscrowPinAttempt(authProvider, 1, ciphertext);
+        await expect(completePin(hold, wrongProof)).rejects.toMatchObject({
+            message: 'Incorrect PIN. 0 attempts left.',
+        });
+        expect((await record())?.escrowPin?.disabledAt).toBeUndefined();
+        await models.refundEscrowPinAttempt(authProvider, 1, ciphertext);
+        expect((await record())?.escrowPin?.failedAttempts).toBe(9);
+        await expect(completePin(await startPin(), wrongProof)).rejects.toMatchObject({
+            message: 'Too many incorrect PIN attempts. You can still recover by waiting.',
+        });
+        expect((await record())?.escrowPin?.verifiedFailedAttempts).toBe(10);
         expect((await record())?.escrowPin?.disabledAt).toBeInstanceOf(Date);
+    });
+
+    it('keeps legacy charged history without treating unresolved attempts as verified failures', async () => {
+        await enrollPin();
+        await getUserKeysCollection().updateOne(
+            { 'authProviders.id': authProvider.id },
+            { $set: { 'escrowPin.failedAttempts': 9 } }
+        );
+        const hold = await startPin();
+        await expect(completePin(hold, wrongProof)).rejects.toMatchObject({
+            message: 'Incorrect PIN. 0 attempts left.',
+        });
+        expect((await record())?.escrowPin).toMatchObject({
+            failedAttempts: 10,
+            verifiedFailedAttempts: 1,
+        });
+        expect((await record())?.escrowPin?.disabledAt).toBeUndefined();
+        await expect(completePin(await startPin())).rejects.toMatchObject({
+            message: 'Please wait before trying again.',
+        });
+    });
+
+    it('reports the charged budget after successful evaluations followed by a mismatch', async () => {
+        await enrollPin();
+        for (let attempt = 0; attempt < 9; attempt++) await completePin(await startPin());
+        await expect(completePin(await startPin(), wrongProof)).rejects.toMatchObject({
+            message: 'Incorrect PIN. 0 attempts left.',
+        });
+        expect((await record())?.escrowPin?.disabledAt).toBeUndefined();
+        expect((await owner().keys.getAuthShare(auth))?.escrowPin?.attemptsRemaining).toBe(0);
+        await expect(completePin(await startPin())).rejects.toMatchObject({
+            message: 'Please wait before trying again.',
+        });
     });
 
     it('ignores the restart flag for PIN policy and supersedes immediately', async () => {
@@ -951,6 +1135,42 @@ describe('escrow PIN release', () => {
         expect((await record())?.escrowPin?.failedAttempts).toBe(9);
         expect((await record())?.escrowPin?.disabledAt).toBeUndefined();
     });
+
+    it.each(['claim', 'revalidation', 'cleanup'] as const)(
+        'refunds pre-enclave reservations when %s throws',
+        async failure => {
+            await enrollPin();
+            await getUserKeysCollection().updateOne(
+                { 'authProviders.id': authProvider.id },
+                { $set: { 'escrowPin.failedAttempts': 9, 'escrowPin.verifiedFailedAttempts': 9 } }
+            );
+            const hold = await startPin();
+            const claim = models.completeEscrowHold;
+            vi.spyOn(models, 'completeEscrowHold').mockImplementationOnce(async id => {
+                if (failure === 'claim') throw new Error('claim unavailable');
+                const completed = await claim(id);
+                if (failure === 'revalidation') {
+                    vi.spyOn(models, 'findUserKeyByAuthProvider').mockRejectedValueOnce(
+                        new Error('lookup unavailable')
+                    );
+                } else {
+                    vi.spyOn(models, 'findUserKeyByAuthProvider').mockResolvedValueOnce(null);
+                    vi.spyOn(models, 'markClaimedEscrowHoldFailed').mockRejectedValueOnce(
+                        new Error('cleanup unavailable')
+                    );
+                }
+                return completed;
+            });
+            const release = vi.spyOn(getEscrowEnclave(), 'releaseEscrow');
+            await expect(completePin(hold)).rejects.toBeDefined();
+            expect(release).not.toHaveBeenCalled();
+            expect((await record())?.escrowPin).toMatchObject({
+                failedAttempts: 9,
+                verifiedFailedAttempts: 9,
+            });
+            expect((await record())?.escrowPin?.disabledAt).toBeUndefined();
+        }
+    );
 
     it.each(['disabled', 'cleared', 'version', 'ciphertext'] as const)(
         'returns unavailable rather than lockout for concurrent PIN changes: %s',
