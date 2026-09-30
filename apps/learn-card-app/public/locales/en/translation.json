@@ -2049,7 +2049,9 @@
             "replacePasskey": "Replace Passkey",
             "setUpPasskey": "Set Up Passkey",
             "settingUp": "Setting up...",
-            "tapToChoose": "Tap to choose backup file"
+            "tapToChoose": "Tap to choose backup file",
+            "nextCheckIt": "Next: check it",
+            "nextCheckFile": "Next: check your file"
         },
         "passkeyNotSupported": "Passkeys aren't supported on this device or browser. Try using a recovery phrase or backup file instead.",
         "passkeyBiometric": "Uses your device's secure biometric authentication",
@@ -2138,7 +2140,10 @@
         "step": {
             "searchInbox": "Search your inbox for an email with the subject \"Your LearnCard Recovery Key\"",
             "findKey": "Find the long string of characters between \"RECOVERY KEY\" and \"END RECOVERY KEY\"",
-            "copyKey": "Copy that entire string and paste it below"
+            "copyKey": "Copy that entire string and paste it below",
+            "save": "Save",
+            "check": "Check",
+            "send": "Send"
         },
         "newDeviceDesc": "This device hasn’t been set up for your account yet. Choose a method to sign in.",
         "restoreAccessDesc": "Choose how you’d like to restore access to your account.",
@@ -2193,7 +2198,7 @@
             "dontHave": "I don't have a PIN",
             "incorrect": "Incorrect PIN. {{attempts}} attempts left.",
             "locked": "Too many attempts. You can still recover by waiting 7 days.",
-            "throttled": "Too many tries right now. Wait a minute and try again.",
+            "throttled": "Too many attempts. Please try again later.",
             "title": "Recovery PIN",
             "instantRecoveryOn": "Instant recovery: On",
             "notSet": "Not set",
@@ -2206,7 +2211,8 @@
             "afterHoldRecovery": {
                 "title": "Skip the wait next time",
                 "body": "You're back in. Set a 6-digit PIN so you can recover instantly next time, without waiting 7 days."
-            }
+            },
+            "useInstead": "Use my recovery PIN instead"
         },
         "addWayBackIn": "Add a way back in",
         "addAnotherMethod": "Add another method",
@@ -2221,7 +2227,45 @@
             "stopping": "Stopping…",
             "success": "Recovery stopped. Your account is safe.",
             "dismiss": "It was me"
-        }
+        },
+        "signInOnThisDevice": "Sign in on this device",
+        "signInOnThisDeviceDesc": "Use a way you've already set up to finish signing in.",
+        "signInAgainOnThisDevice": "Sign in again on this device",
+        "signInAgainOnThisDeviceDesc": "Use a way you've already set up to continue.",
+        "hero": {
+            "device": "Approve from another device",
+            "deviceDesc": "Scan a code with a phone or computer where you're signed in",
+            "passkey": "Use your passkey",
+            "passkeyDesc": "Sign in with Face ID, Touch ID, or your device PIN"
+        },
+        "notSetUp": "Not set up",
+        "cantUseAny": "Can't use any of these?",
+        "cantUseAnotherDevice": "Can't use another device?",
+        "getBackIntoAccount": "Get back into your account",
+        "getBackIntoAccountDesc": "We'll confirm it's you, then set up this device from scratch.",
+        "thisWill": "This will:",
+        "consequence": {
+            "signOut": "Sign you out on your other devices",
+            "turnOff": "Turn off your other sign-in methods until you set them up again"
+        },
+        "showNotSetUp": "Show {{count}} not set up",
+        "hideNotSetUp": "Hide methods not set up",
+        "stepOf": "Step {{current}} of {{total}}",
+        "hint": {
+            "oneMoreStep": "One more step: check your file."
+        },
+        "guard": {
+            "phraseTitle": "Finish setting up your recovery phrase?",
+            "backupTitle": "Finish setting up your backup file?",
+            "emailTitle": "Finish setting up your recovery email?",
+            "body": "It won't work until you check it. This only takes a few seconds.",
+            "finish": "Finish setup",
+            "discardPhrase": "Discard phrase",
+            "discardBackup": "Discard backup",
+            "discardEmail": "Discard",
+            "discardNote": "The one you saved won't work. You can make a new one anytime."
+        },
+        "notFinished": "Not finished"
     },
     "alerts": {
         "accepted": "Accepted",
@@ -9208,6 +9252,17 @@
             "invalid": "Some details on this credential aren't valid yet. Please review and try again.",
             "generic": "Something went wrong issuing your credential. Please try again."
         }
+    },
+    "connectivity": {
+        "offlineTitle": "You're offline",
+        "offlineBody": "Sign in works once you're back online.",
+        "limitedTitle": "Some features are unavailable",
+        "reconnect": "Reconnect",
+        "reconnecting": "Reconnecting…",
+        "backOnline": "Back online",
+        "slowUnstable": "Connection seems slow or unstable. Some actions may take longer.",
+        "tryAgain": "Try Again",
+        "checking": "Checking..."
     },
     "shareLinks": {
         "qrLabel": "Private link QR code",

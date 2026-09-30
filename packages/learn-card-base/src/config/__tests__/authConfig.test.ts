@@ -5,6 +5,7 @@ import {
     getAuthConfig,
     getConfigCapabilities,
     getSSSConfig,
+    isEmailRelayConfigured,
     getEscrowStrategyConfig,
     isEmailBackupShareEnabled,
     isProductionTenant,
@@ -68,6 +69,20 @@ describe('authConfig', () => {
             escrowRelayPublicKey: 'relay-public-key',
             escrowRelayKeyId: '2026-09',
         });
+    });
+
+    it('reports whether emailed recovery keys can be sent', () => {
+        expect(isEmailRelayConfigured()).toBe(false);
+        setAuthConfigOverrides({
+            providerConfig: {
+                sss: { escrowRelayPublicKey: 'relay-public-key', escrowRelayKeyId: '2026-09' },
+            },
+        });
+        expect(isEmailRelayConfigured()).toBe(true);
+        setAuthConfigOverrides({
+            providerConfig: { sss: { escrowRelayPublicKey: 'relay-public-key' } },
+        });
+        expect(isEmailRelayConfigured()).toBe(false);
     });
 
     it('maps the software enclave policy and leaves escrow disabled by default', () => {
@@ -144,7 +159,7 @@ describe('authConfig', () => {
         );
     });
 
-    it('blocks software mode for a production tenant in a production build, and logs an error', () => {
+    it('blocks software mode for a production tenant on a production deploy stage, and logs an error', () => {
         const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
         setAuthConfigOverrides({
             tenantId: 'learncard',
@@ -153,17 +168,15 @@ describe('authConfig', () => {
             },
         });
 
-        expect(
-            getEscrowStrategyConfig(getSSSConfig(), { isProductionBuild: true })
-        ).toBeUndefined();
+        expect(getEscrowStrategyConfig(getSSSConfig(), { stage: 'production' })).toBeUndefined();
         expect(errorSpy).toHaveBeenCalledWith(
             '[auth-config]',
             'escrow.software-mode.blocked-in-production',
-            { tenantId: 'learncard' }
+            { tenantId: 'learncard', stage: 'production' }
         );
     });
 
-    it('keeps software mode working outside a production-mode build (local dev)', () => {
+    it('allows software mode for a production tenant on a staging deploy', () => {
         setAuthConfigOverrides({
             tenantId: 'learncard',
             providerConfig: {
@@ -171,13 +184,27 @@ describe('authConfig', () => {
             },
         });
 
-        expect(getEscrowStrategyConfig(getSSSConfig(), { isProductionBuild: false })).toEqual({
+        expect(getEscrowStrategyConfig(getSSSConfig(), { stage: 'staging' })).toEqual({
             enabled: true,
             attestation: { mode: 'software', pinnedPublicKeys: ['dev-key'] },
         });
     });
 
-    it('keeps software mode working for a non-production tenant even in a production build', () => {
+    it('allows software mode on a local deploy, even for a production tenant', () => {
+        setAuthConfigOverrides({
+            tenantId: 'learncard',
+            providerConfig: {
+                sss: { escrowEnclaveMode: 'software', escrowEnclavePublicKeys: ['dev-key'] },
+            },
+        });
+
+        expect(getEscrowStrategyConfig(getSSSConfig(), { stage: 'local' })).toEqual({
+            enabled: true,
+            attestation: { mode: 'software', pinnedPublicKeys: ['dev-key'] },
+        });
+    });
+
+    it('keeps software mode working for a non-production tenant even on a production deploy stage', () => {
         setAuthConfigOverrides({
             tenantId: 'some-dev-tenant',
             providerConfig: {
@@ -185,10 +212,28 @@ describe('authConfig', () => {
             },
         });
 
-        expect(getEscrowStrategyConfig(getSSSConfig(), { isProductionBuild: true })).toEqual({
+        expect(getEscrowStrategyConfig(getSSSConfig(), { stage: 'production' })).toEqual({
             enabled: true,
             attestation: { mode: 'software', pinnedPublicKeys: ['dev-key'] },
         });
+    });
+
+    it('treats a missing stage as production and blocks software mode for a production tenant (fail-closed)', () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        setAuthConfigOverrides({
+            tenantId: 'learncard',
+            providerConfig: {
+                sss: { escrowEnclaveMode: 'software', escrowEnclavePublicKeys: ['dev-key'] },
+            },
+        });
+
+        // No `stage` override at all — getAuthConfig().stage falls back to 'production'.
+        expect(getEscrowStrategyConfig(getSSSConfig())).toBeUndefined();
+        expect(errorSpy).toHaveBeenCalledWith(
+            '[auth-config]',
+            'escrow.software-mode.blocked-in-production',
+            { tenantId: 'learncard', stage: 'production' }
+        );
     });
 
     it('recognizes only known production tenants', () => {

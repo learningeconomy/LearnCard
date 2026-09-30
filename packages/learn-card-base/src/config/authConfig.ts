@@ -13,9 +13,10 @@ import type { AuthProviderType } from '../auth-coordinator/types';
 import type { TenantConfig } from './tenantConfig';
 import type { SSSStrategyConfig, EscrowAttestationPolicy } from '@learncard/sss-key-manager';
 import { getLogger } from '../logging/logger';
-import { isProductionEnvironment } from './isProduction';
 
 const log = getLogger('auth-config');
+
+export type DeploymentStage = TenantConfig['stage'];
 
 export interface AuthConfig {
     /** Which auth provider to use (open string matching providerRegistry factories) */
@@ -38,6 +39,16 @@ export interface AuthConfig {
 
     /** The active tenant's id, used by the escrow production guard (see `isProductionTenant`). */
     tenantId?: string;
+
+    /**
+     * The deploy stage ('local' | 'staging' | 'production'), bridged from `TenantConfig.stage`.
+     * Used by the escrow production guard (see `getEscrowStrategyConfig`) to tell a staging
+     * deploy apart from production — both build in Vite "production" mode, so `stage` (not
+     * `isProductionEnvironment()`) is the signal that distinguishes them. Defaults to
+     * 'production' so an isolated consumer that never called `setAuthConfigFromTenant` fails
+     * closed.
+     */
+    stage?: DeploymentStage;
 
     /** Staged rollout percentage (0-100) for automatic escrow enrollment. See `escrowRollout.ts`. */
     escrowRolloutPercent?: number;
@@ -135,6 +146,7 @@ export const setAuthConfigFromTenant = (tenant: TenantConfig): void => {
         keyDerivation: tenant.auth.keyDerivation,
         providerConfig,
         tenantId: tenant.tenantId,
+        stage: tenant.stage,
         escrowRolloutPercent: tenant.features.escrowRolloutPercent,
         escrowRolloutAllowlist: tenant.features.escrowRolloutAllowlist,
     };
@@ -195,6 +207,7 @@ export const getAuthConfig = (): AuthConfig => {
         keyDerivation: _authConfigOverrides?.keyDerivation ?? 'sss',
         providerConfig,
         tenantId: _authConfigOverrides?.tenantId,
+        stage: _authConfigOverrides?.stage ?? 'production',
         escrowRolloutPercent: _authConfigOverrides?.escrowRolloutPercent ?? 0,
         escrowRolloutAllowlist: _authConfigOverrides?.escrowRolloutAllowlist ?? [],
     };
@@ -236,8 +249,11 @@ export const shouldUseSSS = (): boolean => {
 export interface EscrowProdGuardOptions {
     /** Defaults to `getAuthConfig().tenantId`. */
     tenantId?: string;
-    /** Defaults to `isProductionEnvironment()`. */
-    isProductionBuild?: boolean;
+    /**
+     * Defaults to `getAuthConfig().stage`. Anything other than exactly 'staging' or 'local'
+     * (including an unrecognized string or omission) is treated as 'production' — fail-closed.
+     */
+    stage?: DeploymentStage;
 }
 
 /**
@@ -246,8 +262,11 @@ export interface EscrowProdGuardOptions {
  * Two fail-closed guards apply before a policy is returned:
  *  - `nitro` with zero PCR-tuple pins (empty, or only legacy `{ imageSha384 }` pins) disables
  *    escrow entirely, since no attestation could ever match.
- *  - `software` is never allowed for a production tenant in a production build — the host-trusted
- *    software enclave must not run in production; it is downgraded to `off` instead.
+ *  - `software` is never allowed for a production tenant on a production deploy — the
+ *    host-trusted software enclave must not run in production; it is downgraded to `off`
+ *    instead. Staging deliberately runs it (see D12 in `services/escrow-enclave-app/SECURITY.md`),
+ *    so the guard keys on the deploy *stage*, not the Vite build mode (staging is also built in
+ *    Vite "production" mode).
  * Both guards log via `log.error` so a misconfigured tenant is loud, not silent.
  */
 export const getEscrowStrategyConfig = (
@@ -257,11 +276,12 @@ export const getEscrowStrategyConfig = (
     if (sss.escrowEnclaveMode === 'off') return undefined;
 
     const tenantId = options.tenantId ?? getAuthConfig().tenantId;
-    const isProductionBuild = options.isProductionBuild ?? isProductionEnvironment();
+    const stage = options.stage ?? getAuthConfig().stage;
+    const isProductionDeploy = stage !== 'staging' && stage !== 'local';
 
     if (sss.escrowEnclaveMode === 'software') {
-        if (isProductionBuild && isProductionTenant(tenantId)) {
-            log.error('escrow.software-mode.blocked-in-production', { tenantId });
+        if (isProductionDeploy && isProductionTenant(tenantId)) {
+            log.error('escrow.software-mode.blocked-in-production', { tenantId, stage });
             return undefined;
         }
 
@@ -337,3 +357,11 @@ export const isEmailBackupShareEnabled = (): boolean => {
 };
 
 export default getAuthConfig;
+
+/**
+ * Whether emailed recovery keys can be sent: the client must encrypt them to the
+ * relay's pinned public key, so without one the Email method cannot work.
+ */
+export const isEmailRelayConfigured = (sss: SSSConfig = getSSSConfig()): boolean =>
+    sss.escrowRelayPublicKey.trim().length > 0 &&
+    /^[A-Za-z0-9._-]{1,128}$/.test(sss.escrowRelayKeyId.trim());

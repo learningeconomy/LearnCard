@@ -102,7 +102,9 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
         disableRedirect || Boolean(insightsProfile) || Boolean(childInsightsProfile);
 
     const isSwitchedProfile = switchedProfileStore.use.isSwitchedProfile();
-    const shouldGetAnAdult = isSwitchedProfile && !isPreview && !insightsProfile;
+    const profileType = switchedProfileStore.use.profileType();
+    const shouldGetAnAdult =
+        isSwitchedProfile && profileType === 'child' && !isPreview && !insightsProfile;
 
     const [step, setStep] = useState<ConsentFlowStep>(
         shouldGetAnAdult ? ConsentFlowStep.getAnAdult : ConsentFlowStep.confirmation

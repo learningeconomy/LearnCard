@@ -1878,7 +1878,7 @@
     },
     "recovery": {
         "pin": {
-            "throttled": "Trop de tentatives pour le moment. Attendez une minute et réessayez.",
+            "throttled": "Trop de tentatives. Veuillez réessayer plus tard.",
             "title": "PIN de récupération",
             "instantRecoveryOn": "Récupération instantanée : activée",
             "notSet": "Non défini",
@@ -1887,7 +1887,8 @@
                 "title": "Définissez un nouveau PIN de récupération",
                 "body": "Le PIN que vous venez d’utiliser a été retiré : chaque PIN ne sert qu’une fois pour garder votre compte protégé. Choisissez-en un nouveau pour conserver la récupération instantanée.",
                 "hint": "Mêmes règles : 6 chiffres, rien d’évident."
-            }
+            },
+            "useInstead": "Utiliser mon code PIN de récupération"
         },
         "error.invalidPhrase": "Ces mots ne correspondent pas à votre phrase de récupération. Vérifiez-les et réessayez.",
         "error.invalidPassword": "Mot de passe incorrect ou le fichier n'a pas pu être lu. Veuillez réessayer.",
@@ -2022,7 +2023,9 @@
             "tapToChoose": "Appuyez pour choisir le fichier de sauvegarde",
             "fileSelected": "Fichier sélectionné",
             "enter": "Saisir",
-            "change": "Modifier"
+            "change": "Modifier",
+            "nextCheckIt": "Suivant : vérifiez-le",
+            "nextCheckFile": "Suivant : vérifiez votre fichier"
         },
         "tab": {
             "email": "E-mail",
@@ -2101,7 +2104,10 @@
         "step": {
             "searchInbox": "Recherchez dans votre boîte de réception un e-mail avec l’objet \"Votre clé de récupération LearnCard\"",
             "findKey": "Trouvez la longue chaîne de caractères entre \"RECOVERY KEY\" et \"END RECOVERY KEY\"",
-            "copyKey": "Copiez toute cette chaîne et collez-la ci-dessous"
+            "copyKey": "Copiez toute cette chaîne et collez-la ci-dessous",
+            "save": "Sauvegarder",
+            "check": "Vérifier",
+            "send": "Envoyer"
         },
         "newDeviceDesc": "Cet appareil n’a pas encore été configuré pour votre compte. Choisissez une méthode pour vous connecter.",
         "restoreAccessDesc": "Choisissez comment vous souhaitez restaurer l’accès à votre compte.",
@@ -2176,7 +2182,45 @@
         "tapTheWord": "Touchez le mot de votre phrase de récupération.",
         "wrongWord": "Ce n'est pas le mot nº {{number}}. Vérifiez votre phrase enregistrée et réessayez.",
         "showPhraseAgain": "Afficher à nouveau ma phrase",
-        "challengeProgress": "{{current}} sur {{total}}"
+        "challengeProgress": "{{current}} sur {{total}}",
+        "signInOnThisDevice": "Se connecter sur cet appareil",
+        "signInOnThisDeviceDesc": "Utilisez une méthode que vous avez déjà configurée pour terminer la connexion.",
+        "signInAgainOnThisDevice": "Se reconnecter sur cet appareil",
+        "signInAgainOnThisDeviceDesc": "Utilisez une méthode que vous avez déjà configurée pour continuer.",
+        "hero": {
+            "device": "Approuver depuis un autre appareil",
+            "deviceDesc": "Scannez un code avec un téléphone ou un ordinateur où vous êtes connecté",
+            "passkey": "Utiliser votre clé d'accès",
+            "passkeyDesc": "Connectez-vous avec Face ID, Touch ID ou le code PIN de votre appareil"
+        },
+        "notSetUp": "Non configuré",
+        "cantUseAny": "Vous ne pouvez utiliser aucune de ces options ?",
+        "cantUseAnotherDevice": "Vous ne pouvez pas utiliser un autre appareil ?",
+        "getBackIntoAccount": "Récupérer l'accès à votre compte",
+        "getBackIntoAccountDesc": "Nous confirmerons que c'est bien vous, puis nous configurerons cet appareil à partir de zéro.",
+        "thisWill": "Ceci va :",
+        "consequence": {
+            "signOut": "Vous déconnecter de vos autres appareils",
+            "turnOff": "Désactiver vos autres méthodes de connexion jusqu'à ce que vous les reconfiguriez"
+        },
+        "showNotSetUp": "Afficher {{count}} non configurés",
+        "hideNotSetUp": "Masquer les méthodes non configurées",
+        "stepOf": "Étape {{current}} sur {{total}}",
+        "hint": {
+            "oneMoreStep": "Encore une étape : vérifiez votre fichier."
+        },
+        "guard": {
+            "phraseTitle": "Terminer la configuration de votre phrase de récupération ?",
+            "backupTitle": "Terminer la configuration de votre fichier de sauvegarde ?",
+            "emailTitle": "Terminer la configuration de votre e-mail de récupération ?",
+            "body": "Cela ne fonctionnera pas tant que vous ne l'aurez pas vérifié. Cela ne prend que quelques secondes.",
+            "finish": "Terminer la configuration",
+            "discardPhrase": "Ignorer la phrase",
+            "discardBackup": "Ignorer la sauvegarde",
+            "discardEmail": "Ignorer",
+            "discardNote": "Celui que vous avez sauvegardé ne fonctionnera pas. Vous pouvez en créer un nouveau à tout moment."
+        },
+        "notFinished": "Non terminé"
     },
     "alerts": {
         "title": "Alertes",
@@ -9157,6 +9201,17 @@
             "invalid": "Certaines informations de ce justificatif ne sont pas encore valides. Veuillez les vérifier et réessayer.",
             "generic": "Une erreur s'est produite lors de l'émission de votre justificatif. Veuillez réessayer."
         }
+    },
+    "connectivity": {
+        "offlineTitle": "Vous êtes hors ligne",
+        "offlineBody": "La connexion sera possible dès votre retour en ligne.",
+        "limitedTitle": "Certaines fonctionnalités sont indisponibles",
+        "reconnect": "Reconnecter",
+        "reconnecting": "Reconnexion…",
+        "backOnline": "De nouveau en ligne",
+        "slowUnstable": "La connexion semble lente ou instable. Certaines actions peuvent prendre plus de temps.",
+        "tryAgain": "Réessayer",
+        "checking": "Vérification..."
     },
     "shareLinks": {
         "qrLabel": "Code QR du lien privé",

@@ -15,6 +15,7 @@ describe('EscrowRecoveryPanel', () => {
     it('defaults to delayed recovery when PIN availability is unknown', async () => {
         render(
             <EscrowRecoveryPanel
+                view="start"
                 available
                 onStart={vi.fn()}
                 onStatus={vi.fn()}
@@ -31,6 +32,7 @@ describe('EscrowRecoveryPanel', () => {
             const error = Object.assign(new Error('private server details'), { name, status: 403 });
             render(
                 <EscrowRecoveryPanel
+                    view="start"
                     available
                     pinAvailable
                     onStart={vi.fn()}
@@ -61,6 +63,7 @@ describe('EscrowRecoveryPanel', () => {
     it('shows PIN flow first', async () => {
         render(
             <EscrowRecoveryPanel
+                view="start"
                 available={true}
                 pinAvailable
                 onStart={mockOnStart}
@@ -69,7 +72,7 @@ describe('EscrowRecoveryPanel', () => {
             />
         );
 
-        expect(screen.getByText('Do you have a recovery PIN?')).toBeInTheDocument();
+        expect(screen.getByText('Enter my recovery PIN')).toBeInTheDocument();
         expect(screen.getByText("I don't have a PIN")).toBeInTheDocument();
     });
 
@@ -81,6 +84,7 @@ describe('EscrowRecoveryPanel', () => {
 
         render(
             <EscrowRecoveryPanel
+                view="start"
                 available={true}
                 pinAvailable
                 onStart={mockOnStart}
@@ -104,6 +108,7 @@ describe('EscrowRecoveryPanel', () => {
         mockOnRecover.mockRejectedValueOnce(error);
         render(
             <EscrowRecoveryPanel
+                view="start"
                 available
                 pinAvailable
                 onStart={mockOnStart}
@@ -115,9 +120,9 @@ describe('EscrowRecoveryPanel', () => {
             clipboardData: { getData: () => '135790' },
         });
         expect(
-            await screen.findByText('Too many tries right now. Wait a minute and try again.')
+            await screen.findByText('Too many attempts. Please try again later.')
         ).toBeInTheDocument();
-        expect(screen.getByText('Do you have a recovery PIN?')).toBeInTheDocument();
+        expect(screen.getByText('Enter my recovery PIN')).toBeInTheDocument();
         expect(screen.getAllByLabelText(/PIN digit/)).toHaveLength(6);
         expect(mockOnRecover).toHaveBeenCalledTimes(1);
         expect(mockOnStart).not.toHaveBeenCalled();
@@ -130,6 +135,7 @@ describe('EscrowRecoveryPanel', () => {
 
         render(
             <EscrowRecoveryPanel
+                view="start"
                 available={true}
                 pinAvailable
                 onStart={mockOnStart}
@@ -147,6 +153,7 @@ describe('EscrowRecoveryPanel', () => {
             ).toBeInTheDocument();
             expect(screen.getByText('Start a 7-day recovery')).toBeInTheDocument();
         });
+        expect(screen.queryByText('Use my recovery PIN instead')).not.toBeInTheDocument();
     });
 
     it('shows existing request card when onStart returns null resumeToken', async () => {
@@ -161,6 +168,7 @@ describe('EscrowRecoveryPanel', () => {
 
         render(
             <EscrowRecoveryPanel
+                view="start"
                 available
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
@@ -193,6 +201,7 @@ describe('EscrowRecoveryPanel', () => {
 
         render(
             <EscrowRecoveryPanel
+                view="start"
                 available
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
@@ -235,6 +244,7 @@ describe('EscrowRecoveryPanel', () => {
 
         render(
             <EscrowRecoveryPanel
+                view="start"
                 available
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
@@ -275,6 +285,7 @@ describe('EscrowRecoveryPanel', () => {
 
         render(
             <EscrowRecoveryPanel
+                view="start"
                 available
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
@@ -302,6 +313,7 @@ describe('EscrowRecoveryPanel', () => {
     it('switches to hold flow when clicking I dont have a PIN', async () => {
         render(
             <EscrowRecoveryPanel
+                view="start"
                 available={true}
                 pinAvailable
                 onStart={mockOnStart}

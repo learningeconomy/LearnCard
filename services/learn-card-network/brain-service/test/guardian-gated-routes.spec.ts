@@ -225,6 +225,19 @@ describe('Guardian-approved consent mutations', () => {
         expect(await ConsentFlowTransaction.findMany({ where: {} })).toEqual([]);
     });
 
+    it('does not guardian-gate a managed service profile', async () => {
+        await Profile.update({ isServiceProfile: true }, { where: { profileId: 'child-user' } });
+        await manageChild();
+
+        const { termsUri } = await childCaller().contracts.consentToContract({
+            contractUri,
+            terms: minimalTerms,
+        });
+        const record = await getContractTermsByUri(termsUri);
+        expect(record?.terms.status).toBe('live');
+        expect(record?.terms.guardianApproval).toBeUndefined();
+    });
+
     it('records the verified guardian and contract version on consent and permission updates', async () => {
         await manageChild();
         const beforeApproval = Date.now();

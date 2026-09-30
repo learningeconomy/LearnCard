@@ -420,6 +420,23 @@ export const tenantConfigSchema = z
         domain: z.string(),
         devDomain: z.string().optional(),
 
+        /**
+         * The deploy stage this config was baked/served for — 'local', 'staging', or
+         * 'production'. Written by `prepare-native-config.ts --stage <stage>` (learn-card-app)
+         * and the equivalent `VITE_NODE_ENV`-driven overlay (scouts) at build time.
+         *
+         * This is deliberately distinct from the Vite build *mode* (`IS_PRODUCTION` /
+         * `isProductionEnvironment()`), which is `'production'` for every deployed build
+         * including staging. `stage` is the only signal that tells production-mode code
+         * apart from a staging deploy — see `getEscrowStrategyConfig`'s software-enclave
+         * guard in `authConfig.ts`.
+         *
+         * Defaults to `'production'` so a config that predates this field, or one served by
+         * an edge function that doesn't set it, fails closed rather than accidentally
+         * unlocking a staging-only behavior.
+         */
+        stage: z.enum(['local', 'staging', 'production']).default('production'),
+
         apis: tenantApiConfigSchema,
         auth: tenantAuthConfigSchema,
         storage: tenantStorageConfigSchema.default({

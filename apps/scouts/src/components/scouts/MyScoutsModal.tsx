@@ -35,6 +35,7 @@ import {
     useCurrentUser,
     useWallet,
     getAuthConfig,
+    isEmailRelayConfigured,
 } from 'learn-card-base';
 import useLogout from '../../hooks/useLogout';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
@@ -88,7 +89,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
     } = useAppAuth();
     const { currentLCNUser, refetch } = useGetCurrentLCNUser();
 
-    const { newModal, closeModal } = useModal();
+    const { newModal, newModalWithToken, closeModal, forceCloseModalByToken } = useModal();
     const { handleLogout, isLoggingOut } = useLogout();
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
 
@@ -442,8 +443,18 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                     };
                 };
 
-                newModal(
+                let requestClose: (() => void) | undefined;
+                const modalRef: { token?: ReturnType<typeof newModalWithToken> } = {};
+                // Close exactly this instance; a no-op if it already closed.
+                const closeRecoveryModal = () => {
+                    if (modalRef.token) forceCloseModalByToken(modalRef.token);
+                };
+                modalRef.token = newModalWithToken(
                     <RecoverySetupModal
+                        registerCloseRequest={fn => {
+                            requestClose = fn;
+                        }}
+                        emailAvailable={isEmailRelayConfigured()}
                         existingMethods={existingMethods.map(m => ({
                             type: m.type,
                             createdAt:
@@ -453,7 +464,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                         }))}
                         maskedRecoveryEmail={fetchedMaskedRecoveryEmail}
                         isActivationPending={needsActivation}
-                        onCompleted={closeModal}
+                        onCompleted={closeRecoveryModal}
                         onSetupPasskey={
                             setupMethod
                                 ? async () => {
@@ -557,9 +568,17 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                         onConfirmEmailRecovery={async code => {
                             await confirmMethod({ method: 'email', code });
                         }}
-                        onClose={closeModal}
+                        onClose={closeRecoveryModal}
                     />,
-                    { sectionClassName: '!max-w-[480px]' },
+                    {
+                        sectionClassName: '!max-w-[480px]',
+                        // Backdrop/Escape: let the modal guard an unfinished check.
+                        onClose: () => {
+                            if (!requestClose) return true;
+                            requestClose();
+                            return false;
+                        },
+                    },
                     { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                 );
             },

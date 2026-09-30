@@ -2260,10 +2260,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 primaryDid,
             };
 
-            // Only passkey/phrase/backup/email reach this point: escrow and escrow-pin
-            // return earlier above and retire the PIN through completeIdentityRecovery's
-            // rebind path instead. These methods never exposed the PIN, so let the
-            // server carry it forward to the new share version.
+            // Non-escrow methods never exposed the PIN, so let the server carry it to the
+            // new version. Escrow recovery completes via completeIdentityRecovery, which
+            // retires it.
             await tryEnrollEscrow(
                 token,
                 providerType,

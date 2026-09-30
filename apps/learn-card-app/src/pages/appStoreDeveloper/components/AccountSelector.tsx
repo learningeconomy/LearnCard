@@ -172,7 +172,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
     });
 
     // Filter to only show service profiles (organizations)
-    const profileRecords = (profiles as any)?.records ?? [];
+    const profileRecords = Array.isArray(profiles?.records) ? profiles.records : [];
     const serviceProfiles = profileRecords.filter(
         ({ profile }: { profile: LCNProfile }) => profile.isServiceProfile
     );
@@ -242,7 +242,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
         onSelect?.(account);
     };
 
-    const handleSelectExistingProfile = async (profile: LCNProfile, manager: LCNProfile) => {
+    const handleSelectExistingProfile = async (profile: LCNProfile) => {
         const accountProfile: AccountProfile = {
             did: profile.did!,
             profileId: profile.profileId!,
@@ -253,15 +253,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
 
         handleSelectProfile(accountProfile);
 
-        // Switch to this profile
-        const switchedUser = {
-            ...manager,
-            did: profile.did,
-            profileId: profile.profileId,
-            isServiceProfile: profile.isServiceProfile,
-        };
-
-        await handleSwitchAccount(switchedUser as LCNProfile);
+        await handleSwitchAccount(profile);
 
         // Invalidate developer portal queries so they refetch for the new account
         queryClient.invalidateQueries({ queryKey: ['developer'] });
@@ -285,10 +277,14 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
 
     const handleUseParentAccount = async () => {
         if (!parentUser || !parentUserDid) return;
+        const parentProfileId =
+            'profileId' in parentUser && typeof parentUser.profileId === 'string'
+                ? parentUser.profileId
+                : (parentUser.name ?? '');
 
         const parentProfile: AccountProfile = {
             did: parentUserDid,
-            profileId: (parentUser as any).profileId ?? parentUser.name ?? '',
+            profileId: parentProfileId,
             displayName: parentUser.name ?? 'Personal Account',
             image: parentUser.profileImage,
             isServiceProfile: false,
@@ -474,10 +470,10 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
             setProfileId('');
             setImage(undefined);
             setShowAdvanced(false);
-        } catch (e: any) {
+        } catch (e) {
             presentToast(
                 m['developerPortal.components.accountSelector.failedToCreateOrganization']({
-                    message: e?.message,
+                    message: e instanceof Error ? e.message : String(e),
                 }),
                 {
                     type: ToastTypeEnum.Error,
@@ -630,18 +626,10 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
 
                             <div className="space-y-2">
                                 {serviceProfiles.map(
-                                    (
-                                        {
-                                            profile,
-                                            manager,
-                                        }: { profile: LCNProfile; manager: LCNProfile },
-                                        index: number
-                                    ) => (
+                                    ({ profile }: { profile: LCNProfile }, index: number) => (
                                         <button
                                             key={index}
-                                            onClick={() =>
-                                                handleSelectExistingProfile(profile, manager)
-                                            }
+                                            onClick={() => handleSelectExistingProfile(profile)}
                                             disabled={isSwitching}
                                             className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
                                                 selectedProfile?.did === profile.did

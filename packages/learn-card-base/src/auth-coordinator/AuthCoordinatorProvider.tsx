@@ -203,7 +203,13 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     enabled = true,
     legacyAccountThresholdMs,
 }) => {
-    const [state, setState] = useState<UnifiedAuthState>({ status: 'idle' });
+    // `idle` means storage/session restoration has finished without an account.
+    // On the first render, even the no-op auth provider must await the native
+    // cached-key read. Publishing idle here briefly exposes persisted account
+    // UI before deriving_key brings the startup loader back.
+    const [state, setState] = useState<UnifiedAuthState>(() => ({
+        status: enabled ? 'authenticating' : 'idle',
+    }));
     const coordinatorRef = useRef<AuthCoordinator | null>(null);
     const [recoverySetupIdentity, setRecoverySetupIdentity] = useState<object>({});
     const recoverySetupIdentityRef = useRef(recoverySetupIdentity);
@@ -242,10 +248,6 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     // `state` to its deps (which would recreate the coordinator on every
     // state transition).
     const stateRef = useRef(state);
-
-    useEffect(() => {
-        stateRef.current = state;
-    }, [state]);
 
     // Helper to determine event level from state
     const getStateEventLevel = useCallback((newState: UnifiedAuthState): DebugEventLevel => {
@@ -303,6 +305,10 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     useEffect(() => {
         if (!enabled) {
             coordinatorRef.current = null;
+            stateRef.current = { status: 'idle' };
+            // Synchronize React with the disabled external coordinator lifecycle.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setState({ status: 'idle' });
             return;
         }
 
@@ -337,6 +343,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
                 recoverySetupAccountRef.current = null;
             }
 
+            stateRef.current = newState;
             setState(newState);
 
             onDebugEvent?.(

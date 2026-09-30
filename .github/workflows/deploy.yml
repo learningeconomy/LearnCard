@@ -739,7 +739,18 @@ jobs:
                   MONGO_URI: ${{ secrets.MONGO_URI }}
                   MONGO_DB_NAME: ${{ secrets.MONGO_DB_NAME }}
                   SCOUTS_SSO_CLIENT_SECRET: ${{ secrets.SCOUTS_SSO_CLIENT_SECRET }}
+                  # Compatibility first; advance these per environment using the seed-encryption runbook.
+                  SA_SEED_ENCRYPT_WRITES: ${{ vars.SA_SEED_ENCRYPT_WRITES || 'false' }}
+                  SA_SEED_ALLOW_LEGACY_READ: ${{ vars.SA_SEED_ALLOW_LEGACY_READ || 'true' }}
                   LEARN_CLOUD_URL: ${{ secrets.LEARN_CLOUD_URL }}
+                  # Escrow recovery stays off unless the environment sets ESCROW_ENCLAVE_MODE.
+                  ESCROW_ENCLAVE_MODE: ${{ vars.ESCROW_ENCLAVE_MODE }}
+                  ESCROW_ENCLAVE_ACTIVE_KEY_ID: ${{ vars.ESCROW_ENCLAVE_ACTIVE_KEY_ID }}
+                  ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON: ${{ secrets.ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON }}
+                  ESCROW_HOLD_DURATION_MS: ${{ vars.ESCROW_HOLD_DURATION_MS }}
+                  ESCROW_HOLD_RESTART_MIN_AGE_MS: ${{ vars.ESCROW_HOLD_RESTART_MIN_AGE_MS }}
+                  ESCROW_RELAY_URL: ${{ vars.ESCROW_RELAY_URL }}
+                  ESCROW_RELAY_AUTH_TOKEN: ${{ secrets.ESCROW_RELAY_AUTH_TOKEN }}
                   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
                   SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
                   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
