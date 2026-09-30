@@ -66,6 +66,7 @@ const runtimePackagePaths = [
 
 expect(rootPackage.devDependencies?.typescript === '5.9.3', 'TypeScript must be pinned to 5.9.3');
 expect(rootPackage.overrides?.typescript === '5.9.3', 'TypeScript override must be 5.9.3');
+expect(rootPackage.devDependencies?.nx === '23.2.1', 'Nx 23.2.1 must support Bun lockfile v3');
 expect(ts.version === '5.9.3', 'Installed TypeScript must be 5.9.3');
 
 expect(readFileSync('.nvmrc', 'utf8').trim() === 'v24.12.0', '.nvmrc must pin Node 24.12.0');

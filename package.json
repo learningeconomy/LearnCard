@@ -75,7 +75,7 @@
         "husky": "8.0.3",
         "lint-staged": "13.3.0",
         "node-gyp": "^12.2.0",
-        "nx": "22.7.7",
+        "nx": "23.2.1",
         "prettier": "^3.6.0",
         "prettier-plugin-astro": "^0.5.5",
         "publint": "^0.3.21",
