@@ -1,15 +1,12 @@
 import React, { useState, useCallback } from 'react';
 
-import {
-    isSdJwtVcFixture,
-    prepareFixture,
-    type LibraryFixture,
-} from '@learncard/credential-library';
+import { isSdJwtVcFixture, type LibraryFixture } from '@learncard/credential-library';
 
 import { Badge } from './Badge';
 import { SPEC_LABELS, SPEC_COLORS, CATEGORY_COLORS, DEFAULT_CATEGORY_COLOR } from '../lib/colors';
 import { useWallet } from '../context/WalletContext';
 import { getCategoryForFixture, ALL_CATEGORIES, type CredentialCategory } from '../lib/category';
+import { prepareViewerFixture } from '../lib/prepare';
 
 interface IssuePanelProps {
     fixtures: LibraryFixture[];
@@ -36,6 +33,7 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
         errors: [],
     });
     const [progress, setProgress] = useState(0);
+    const [keepFixtureDates, setKeepFixtureDates] = useState(false);
 
     // Per-fixture category overrides: empty string = use auto-detected
     const [categoryOverrides, setCategoryOverrides] = useState<Record<string, string>>({});
@@ -68,10 +66,11 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
 
                     uris.push(uri);
                 } else {
-                    const unsigned = prepareFixture(fixture, {
-                        issuerDid: did,
-                        subjectDid: did,
-                    });
+                    const unsigned = prepareViewerFixture(
+                        fixture,
+                        { issuerDid: did, subjectDid: did },
+                        keepFixtureDates
+                    );
 
                     const { uri } = await issueAndStore(
                         unsigned as Record<string, unknown>,
@@ -93,7 +92,14 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
 
         setResult({ succeeded, failed, uris, errors });
         setStep(failed > 0 && succeeded === 0 ? 'error' : 'success');
-    }, [did, fixtures, issueAndStore, materializeAndStoreSdJwt, categoryOverrides]);
+    }, [
+        did,
+        fixtures,
+        issueAndStore,
+        materializeAndStoreSdJwt,
+        categoryOverrides,
+        keepFixtureDates,
+    ]);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -281,6 +287,19 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
                                     </span>
                                 </div>
                             </div>
+                            {fixtures.some(fixture => !isSdJwtVcFixture(fixture)) && (
+                                <label className="flex items-center gap-2 text-xs text-gray-300">
+                                    <input
+                                        type="checkbox"
+                                        checked={keepFixtureDates}
+                                        onChange={event =>
+                                            setKeepFixtureDates(event.target.checked)
+                                        }
+                                        className="accent-emerald-600"
+                                    />
+                                    Keep fixture dates (including expired credentials)
+                                </label>
+                            )}
 
                             <button
                                 onClick={handleIssue}

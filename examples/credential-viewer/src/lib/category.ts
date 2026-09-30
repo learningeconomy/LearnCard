@@ -15,7 +15,8 @@ export type CredentialCategory =
     | 'Learning History'
     | 'Work History'
     | 'Social Badge'
-    | 'Accommodation';
+    | 'Accommodation'
+    | 'Qualifications';
 
 export const ALL_CATEGORIES: CredentialCategory[] = [
     'Achievement',
@@ -25,6 +26,7 @@ export const ALL_CATEGORIES: CredentialCategory[] = [
     'Work History',
     'Social Badge',
     'Accommodation',
+    'Qualifications',
 ];
 
 const CATEGORY_MAP: Record<string, CredentialCategory> = {
@@ -37,19 +39,19 @@ const CATEGORY_MAP: Record<string, CredentialCategory> = {
     Certificate: 'Achievement',
     Competency: 'Achievement',
     Assessment: 'Achievement',
-    Certification: 'Achievement',
     MicroCredential: 'Achievement',
 
     // ID
-    License: 'ID',
     Membership: 'ID',
     PermanentResidentCard: 'ID',
     AlumniCredential: 'ID',
 
-    // Work History
-    ApprenticeshipCertificate: 'Work History',
-    JourneymanCertificate: 'Work History',
-    MasterCertificate: 'Work History',
+    // Qualifications
+    License: 'Qualifications',
+    Certification: 'Qualifications',
+    ApprenticeshipCertificate: 'Qualifications',
+    JourneymanCertificate: 'Qualifications',
+    MasterCertificate: 'Qualifications',
 
     // Learning History
     Assignment: 'Learning History',
@@ -93,9 +95,7 @@ export const getCategoryForCredential = (
     if (!subject) return 'Achievement';
 
     const achievement = subject.achievement as
-        | Record<string, unknown>
-        | Record<string, unknown>[]
-        | undefined;
+        Record<string, unknown> | Record<string, unknown>[] | undefined;
 
     if (!achievement) return 'Achievement';
 
@@ -104,8 +104,7 @@ export const getCategoryForCredential = (
         if (achievement.length === 0) return 'Achievement';
 
         const firstType = (achievement[0] as Record<string, unknown>)?.achievementType as
-            | string
-            | undefined;
+            string | undefined;
 
         if (firstType && CATEGORY_MAP[firstType]) return CATEGORY_MAP[firstType];
 
