@@ -1,9 +1,11 @@
+import { neogma } from '@instance';
 import { QueryBuilder, BindParam } from 'neogma';
 
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { ConsentFlowContract, ConsentFlowInstance, Profile } from '@models';
 import { DbContractType } from 'types/consentflowcontract';
 import { inflateObject } from '@helpers/objects.helpers';
+import type { ContractRequestFields } from '@learncard/types';
 import { ProfileType } from 'types/profile';
 
 export const getContractById = async (id: string): Promise<DbContractType | null> => {
@@ -37,6 +39,16 @@ export const getConsentFlowContractById = async (
     return record.toObject().contract;
 };
 
+const requestFields = (properties: ContractRequestFields): ContractRequestFields => ({
+    ...(properties.requestId ? { requestId: properties.requestId } : {}),
+    ...(properties.requestedBy ? { requestedBy: properties.requestedBy } : {}),
+    ...(properties.externalReferenceId
+        ? { externalReferenceId: properties.externalReferenceId }
+        : {}),
+    ...(properties.requestedAt ? { requestedAt: properties.requestedAt } : {}),
+    ...(properties.message ? { message: properties.message } : {}),
+});
+
 export const getRequestedForList = async (id: string) => {
     const result = await new QueryBuilder()
         .match({
@@ -52,6 +64,7 @@ export const getRequestedForList = async (id: string) => {
         const { p, r } = rec.toObject();
 
         return {
+            ...requestFields(r.properties),
             profile: p.properties,
             status: r.properties?.status ?? null,
             readStatus: r.properties?.readStatus ?? null,
@@ -82,7 +95,9 @@ export const getSharedInsightsRequestsForTargetProfile = async (
                 { identifier: 'writer', model: Profile },
             ],
         })
-        .where("writer.profileId <> $targetProfileId AND r.status IN ['pending', 'accepted']")
+        .where(
+            "writer.profileId <> $targetProfileId AND r.requestId IS NULL AND r.status IN ['pending', 'accepted']"
+        )
         .return(['writer', 'r', 'c'])
         .run();
 
@@ -129,6 +144,7 @@ export const getRequestedForByStatus = async (
         const { p, r } = rec.toObject();
 
         return {
+            ...requestFields(r.properties),
             profile: p.properties,
             status: r.properties?.status ?? null,
             readStatus: r.properties?.readStatus ?? null,
@@ -152,6 +168,7 @@ export const getRequestedForForUser = async (contractId: string, requesterProfil
         const { p, r } = rec.toObject();
 
         return {
+            ...requestFields(r.properties),
             profile: p.properties,
             status: r.properties?.status ?? null,
             readStatus: r.properties?.readStatus ?? null,
@@ -175,9 +192,29 @@ export const getAllRequestsForTargetProfile = async (targetProfileId: string) =>
 
         return {
             contract: c.properties,
+            ...requestFields(r.properties),
             profile: p.properties,
             status: r.properties?.status ?? null,
             readStatus: r.properties?.readStatus ?? null,
         };
     });
+};
+
+export type StoredContractRequest = ContractRequestFields & {
+    status?: 'pending' | 'accepted' | 'denied' | 'cancelled' | null;
+    readStatus?: 'unseen' | 'seen' | null;
+};
+
+export const getStoredContractRequest = async (
+    contractId: string,
+    targetProfileId: string
+): Promise<StoredContractRequest | null> => {
+    const result = await neogma.queryRunner.run(
+        `
+        MATCH (:ConsentFlowContract {id: $contractId})-[request:REQUESTED_FOR]->(:Profile {profileId: $targetProfileId})
+        RETURN request
+    `,
+        { contractId, targetProfileId }
+    );
+    return result.records[0]?.get('request').properties ?? null;
 };

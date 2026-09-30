@@ -4,6 +4,7 @@ import {
     ConsentFlowTermsStatusValidator,
     ConsentFlowTransactionActionValidator,
     ConsentFlowGuardianApprovalValidator,
+    ConsentFlowReferralValidator,
 } from '@learncard/types';
 import { z } from 'zod';
 
@@ -13,6 +14,10 @@ type FlatGuardianApproval = {
             typeof ConsentFlowGuardianApprovalValidator
         > as `guardianApproval.${Key}`
     ]?: string;
+};
+
+type FlatReferral = {
+    [Key in keyof z.infer<typeof ConsentFlowReferralValidator> as `referral.${Key}`]?: string;
 };
 
 type FlatConsentTerms = Partial<Record<`terms.${string}`, string | boolean | string[]>>;
@@ -43,15 +48,20 @@ export const DbTransactionValidator = z.object({
     action: ConsentFlowTransactionActionValidator,
     terms: ConsentFlowTermsValidator,
     guardianApproval: ConsentFlowGuardianApprovalValidator.optional(),
+    referral: ConsentFlowReferralValidator.optional(),
     date: z.string(),
     expiresAt: z.string().optional(),
     oneTime: z.boolean().optional(),
 });
 
 export type DbTransactionType = z.infer<typeof DbTransactionValidator>;
-export type FlatDbTransactionType = Omit<DbTransactionType, 'guardianApproval' | 'terms'> &
+export type FlatDbTransactionType = Omit<
+    DbTransactionType,
+    'guardianApproval' | 'terms' | 'referral'
+> &
     FlatConsentTerms &
-    FlatGuardianApproval;
+    FlatGuardianApproval &
+    FlatReferral;
 
 export const DbTermsValidator = z.object({
     smartResumeFingerprint: z.string().optional(),
@@ -66,6 +76,7 @@ export const DbTermsValidator = z.object({
     // Neo4j has no properties to store for entirely empty permission objects.
     terms: ConsentFlowTermsValidator.prefault({}),
     guardianApproval: ConsentFlowGuardianApprovalValidator.optional(),
+    referral: ConsentFlowReferralValidator.optional(),
     createdAt: z.string().optional(),
     updatedAt: z.string().optional(),
     expiresAt: z.string().optional(),
@@ -73,6 +84,7 @@ export const DbTermsValidator = z.object({
 });
 
 export type DbTermsType = z.infer<typeof DbTermsValidator>;
-export type FlatDbTermsType = Omit<DbTermsType, 'guardianApproval' | 'terms'> &
+export type FlatDbTermsType = Omit<DbTermsType, 'guardianApproval' | 'terms' | 'referral'> &
     FlatConsentTerms &
-    FlatGuardianApproval;
+    FlatGuardianApproval &
+    FlatReferral;

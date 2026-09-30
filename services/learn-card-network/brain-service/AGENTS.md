@@ -888,3 +888,12 @@ Tenant is resolved once per request in `createContext` via `resolveTenantFromReq
 4. Call `deliveryService.send()` from the route, passing `branding: ctx.tenant?.emailBranding`.
 
 See [Tenant-Branded Emails (architecture)](../../../docs/core-concepts/tenant-branded-emails.md) for the end-to-end flow and [Configure Tenant-Branded Emails](../../../docs/how-to-guides/configure-tenant-branded-emails.md) for operator-facing setup.
+
+### Attributed contract requests and event delivery
+
+- Generic `REQUESTED_FOR` edges have `requestId`, `requestedBy`, optional `externalReferenceId`/`message`, and `requestedAt`. Exact pending retries are idempotent; conflicting or terminal requests do not reopen. Legacy edges have no request ID and retain legacy AI behavior.
+- Snapshot referral identity onto Terms and every related transaction, including issuance and maintenance. Do not infer historical correlation from the latest mutable request edge.
+- Append `ConsentFlowEvent` + per-recipient `ConsentFlowEventDelivery` in the same locked query as consent/request state changes. The contract audience lock serializes request decisions, consent and recipient changes.
+- `contract-events.helpers.ts` dispatches a bounded batch with leases; scheduler Lambda and Docker use the same worker. Failed transports stay pending. Completed intents discard payload/message, retaining stable event/delivery IDs. Consumers deduplicate `data.metadata.deliveryKey`.
+- Recheck current audience membership and consent/category permissions before outbox delivery and again in the SQS consumer. Nonaudience requesters receive only a decision, no transaction payload or Terms URI.
+- Contract integration tests use `bun run test:integration -- test/contract-requests.spec.ts`; the default unit config excludes them.

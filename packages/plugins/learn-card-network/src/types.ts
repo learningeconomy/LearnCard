@@ -1,3 +1,4 @@
+import type { SendContractRequest, ConsentFlowContractRequestForProfile } from '@learncard/types';
 import type { LCNClient } from '@learncard/network-brain-client';
 import {
     LCNProfile,
@@ -722,6 +723,11 @@ export type LearnCardNetworkPluginMethods = {
         removedSharedUris: number;
     }>;
 
+    /** Sends one attributed request; identical pending retries are idempotent. */
+    sendContractRequest: (request: SendContractRequest) => Promise<boolean>;
+    /** Target-only denial preserves the request and its referral reference. */
+    denyContractRequest: (contractUri: string) => Promise<boolean>;
+
     sendAiInsightsContractRequest: (
         contractUri: string,
         targetProfileId: string,
@@ -734,31 +740,25 @@ export type LearnCardNetworkPluginMethods = {
         childProfileId?: string
     ) => Promise<boolean>;
 
-    getContractSentRequests: (contractUri: string) => Promise<
-        {
-            profile: LCNProfile;
-            status: 'pending' | 'accepted' | 'denied' | null;
-            readStatus?: 'unseen' | 'seen' | null;
-        }[]
-    >;
+    getContractSentRequests: (
+        contractUri: string
+    ) => Promise<ConsentFlowContractRequestForProfile[]>;
 
     getRequestStatusForProfile: (
         targetProfileId: string,
-        contractId?: string | undefined,
-        contractUri?: string | undefined
-    ) => Promise<{
-        profile: LCNProfile;
-        status: 'pending' | 'accepted' | 'denied' | null;
-        readStatus?: 'unseen' | 'seen' | null;
-    } | null>;
+        contractId?: string,
+        contractUri?: string
+    ) => Promise<ConsentFlowContractRequestForProfile | null>;
 
     getAllContractRequestsForProfile: (targetProfileId: string) => Promise<
-        {
-            contract: ConsentFlowContract & { uri: string };
-            profile: LCNProfile;
-            status: 'pending' | 'accepted' | 'denied' | null;
-            readStatus?: 'unseen' | 'seen' | null;
-        }[]
+        (ConsentFlowContractRequestForProfile & {
+            contract: ConsentFlowContract & {
+                uri: string;
+                name?: string;
+                image?: string;
+                description?: string;
+            };
+        })[]
     >;
 
     getSharedInsightsRequestsForProfile: (targetProfileId: string) => Promise<
