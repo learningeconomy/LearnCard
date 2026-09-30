@@ -244,13 +244,6 @@ export const sidemenuLinks: Record<BrandingEnum, SideMenuLinks[]> = {
             type: SideMenuLinksEnum.achievements,
         },
         {
-            id: 8,
-            name: 'Qualifications',
-            IconComponent: AchievementsTwoTonedIcon,
-            path: '/qualifications',
-            type: SideMenuLinksEnum.qualifications,
-        },
-        {
             id: 1,
             name: 'Studies',
             IconComponent: StudiesTwoTonedIcon,
@@ -291,6 +284,13 @@ export const sidemenuLinks: Record<BrandingEnum, SideMenuLinks[]> = {
             IconComponent: IDsTwoTonedIcon,
             path: '/ids',
             type: SideMenuLinksEnum.ids,
+        },
+        {
+            id: 8,
+            name: 'Qualifications',
+            IconComponent: AchievementsTwoTonedIcon,
+            path: '/qualifications',
+            type: SideMenuLinksEnum.qualifications,
         },
         // {
         //     id: 9,

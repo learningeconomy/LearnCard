@@ -34,6 +34,7 @@ describe('filterPassportCategories', () => {
     });
     it('orders results by PASSPORT_CATEGORY_ORDER regardless of input order', () => {
         const input = [
+            cat(CredentialCategoryEnum.qualifications),
             cat(CredentialCategoryEnum.id),
             cat(CredentialCategoryEnum.achievement),
             cat(CredentialCategoryEnum.socialBadge),
@@ -42,6 +43,7 @@ describe('filterPassportCategories', () => {
             CredentialCategoryEnum.socialBadge,
             CredentialCategoryEnum.achievement,
             CredentialCategoryEnum.id,
+            CredentialCategoryEnum.qualifications,
         ]);
     });
     it('ignores allow-listed categories that are absent from input', () => {

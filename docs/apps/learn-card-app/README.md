@@ -63,7 +63,7 @@ flowchart LR
 
 ### Qualifications
 
-Qualifications has its own section in the wallet and navigation, even when it is empty. It contains professional licenses, certifications, and apprenticeship, journeyman, and master certificates.
+Qualifications has its own section after IDs in the wallet and navigation, even when it is empty. It contains professional licenses, certifications, and apprenticeship, journeyman, and master certificates.
 
 - Existing credentials in their original automatic category move to Qualifications when the account opens. Saved manual overrides, explicit credential categories, and custom Boost categories stay unchanged. Older choices without a manual-choice marker are treated as automatic defaults.
 - Expiration dates remain visible. An expired qualification stays in the account and can still be opened or shared.

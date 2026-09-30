@@ -10,12 +10,12 @@ import { CredentialCategoryEnum } from 'learn-card-base';
 export const PASSPORT_CATEGORY_ORDER: CredentialCategoryEnum[] = [
     CredentialCategoryEnum.socialBadge,
     CredentialCategoryEnum.achievement,
-    CredentialCategoryEnum.qualifications,
     CredentialCategoryEnum.learningHistory,
     CredentialCategoryEnum.accomplishment,
     CredentialCategoryEnum.accommodation,
     CredentialCategoryEnum.workHistory,
     CredentialCategoryEnum.id,
+    CredentialCategoryEnum.qualifications,
 ];
 
 const ORDER_INDEX = new Map(PASSPORT_CATEGORY_ORDER.map((id, i) => [id, i]));
