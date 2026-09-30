@@ -12,7 +12,8 @@ const log = getLogger('email-form');
 
 import useWallet from 'learn-card-base/hooks/useWallet';
 import { useTheme } from '../../../theme/hooks/useTheme';
-import { useAnalytics, AnalyticsEvents, LAST_LOGIN_METHOD_KEY } from '@analytics';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
+import { recordEmailLoginMethod } from '../../../auth/recordEmailLoginMethod';
 import type { KeycloakSignInAdapter } from 'learn-card-base';
 import {
     authStore,
@@ -192,7 +193,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
         await (adapter as KeycloakSignInAdapter).signInWithCustomToken(ticket);
         authStore.set.typeOfLogin(SocialLoginTypes.passwordless);
         try {
-            localStorage.setItem(LAST_LOGIN_METHOD_KEY, SocialLoginTypes.passwordless);
+            recordEmailLoginMethod();
         } catch {
             log.warn('Unable to persist the last login method');
         }
