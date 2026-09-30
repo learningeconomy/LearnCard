@@ -574,48 +574,19 @@ it.each([0, undefined])('ignores ambiguous response status %s', responseStatus =
     observer?.disconnect();
 });
 
-describe('engines without responseStatus (WebKit)', () => {
-    const makeWebKitEntry = (overrides: Omit<EntryOverrides, 'responseStatus'>) => {
-        const entry: Partial<PerformanceResourceTiming> = { ...makeEntry(overrides) };
-        delete (entry as { responseStatus?: number }).responseStatus;
-        return entry as PerformanceResourceTiming;
-    };
-
-    it('reports slow entries as slow evidence and skips fast ones', () => {
-        const onSample = vi.fn();
-        const Fake = makeFakeObserverCtor();
-        const observer = observeConnectionQuality(
-            makeOptions({
-                onSample,
-                PerformanceObserverCtor: Fake as unknown as typeof PerformanceObserver,
-            })
-        );
-
-        emit(Fake, [
-            makeWebKitEntry({ duration: 300 }),
-            makeWebKitEntry({ duration: 2500 }),
-            makeWebKitEntry({ duration: 4000 }),
-        ]);
-
-        expect(onSample).toHaveBeenCalledTimes(1);
-        expect(onSample.mock.calls[0][0]).toMatchObject({ ok: true, durationMs: 4000 });
-        observer?.disconnect();
-    });
-
-    it('honors a custom slowMs threshold', () => {
-        const onSample = vi.fn();
-        const Fake = makeFakeObserverCtor();
-        const observer = observeConnectionQuality(
-            makeOptions({
-                onSample,
-                slowMs: 1000,
-                PerformanceObserverCtor: Fake as unknown as typeof PerformanceObserver,
-            })
-        );
-
-        emit(Fake, [makeWebKitEntry({ duration: 1200 })]);
-
-        expect(onSample).toHaveBeenCalledTimes(1);
-        observer?.disconnect();
-    });
+it('ignores both fast and slow timings when HTTP status is unavailable', () => {
+    const onSample = vi.fn();
+    const Fake = makeFakeObserverCtor();
+    const observer = observeConnectionQuality(
+        makeOptions({
+            onSample,
+            PerformanceObserverCtor: Fake as unknown as typeof PerformanceObserver,
+        })
+    );
+    emit(
+        Fake,
+        [300, 2500, 4000, 8000].map(duration => makeEntry({ responseStatus: undefined, duration }))
+    );
+    expect(onSample).not.toHaveBeenCalled();
+    observer?.disconnect();
 });
