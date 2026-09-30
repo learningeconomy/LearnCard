@@ -11,3 +11,5 @@ feat: [LC-2111] Add Qualifications across LearnCard navigation, credential organ
 Fix Boost notification render loops by reusing URI-keyed cached Boost details.
 
 Preserve indexed categories in sharing and classify preselected credentials once, reusing cached Boost lookups when index metadata is unavailable.
+
+Give Qualifications a distinct navigation identity so it does not reuse another menu item's React key.

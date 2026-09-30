@@ -286,7 +286,7 @@ export const sidemenuLinks: Record<BrandingEnum, SideMenuLinks[]> = {
             type: SideMenuLinksEnum.ids,
         },
         {
-            id: 8,
+            id: 12,
             name: 'Qualifications',
             IconComponent: AchievementsTwoTonedIcon,
             path: '/qualifications',
