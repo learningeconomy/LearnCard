@@ -70,6 +70,7 @@ Qualifications has its own section after IDs in the wallet and navigation, even 
 - Certificate previews keep the issuer's details and seal inside the frame, above the category label.
 - Expiration dates remain visible. An expired qualification stays in the account and can still be opened or shared.
 - Identification documents, such as passports and driver's licenses, remain in IDs.
+- Resumes keep Achievements alongside Qualifications. Existing saved section order, hidden sections, dates, and edited descriptions remain intact when an older resume is opened.
 
 ### Self-Assigning Skills
 
