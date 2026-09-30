@@ -482,7 +482,10 @@ describe('escrow model invariants', () => {
         expect(token).toMatch(/^[0-9a-f]{64}$/);
         const rotated = await findEscrowHoldById(hold._id);
         expect(rotated?.cancelTokenHash).toMatch(/^[0-9a-f]{64}$/);
-        expect(rotated?.cancelTokenHash).not.toBe(originalHash);
+        expect(rotated?.cancelTokenHash).toBe(originalHash);
+        expect(rotated?.cancelTokenHashes).toHaveLength(1);
+        expect(await rotateEscrowCancelToken(hold._id)).toBe(token);
+        expect((await findEscrowHoldById(hold._id))?.cancelTokenHashes).toHaveLength(1);
 
         // Cancelling burns the pending-only precondition: further rotation is a no-op.
         const cancelled = await cancelEscrowHold(hold._id, 'did');
@@ -557,7 +560,7 @@ describe('escrow model invariants', () => {
         const winners = [first, second].filter((claim): claim is EscrowHold => claim !== null);
         expect(winners).toHaveLength(1);
         expect(winners[0]?.notifications.filter(entry => entry.kind === 'reminder')).toHaveLength(
-            1
+            0
         );
         expect(await claimEscrowHoldForReminder(dueSoon._id, now)).toBeNull();
     });

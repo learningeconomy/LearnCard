@@ -5,6 +5,7 @@ import type { EscrowHold, MongoUserKeyType, RecoveryMethod } from '@models';
 import type { TemplateNotification } from '../delivery';
 import {
     notifyEscrowHoldEvent,
+    ESCROW_NOTIFICATION_TIMEOUT_MS,
     type EscrowHoldNotifierDeps,
     type EscrowHoldEventKind,
 } from './notifications';
@@ -253,7 +254,7 @@ describe('notifyEscrowHoldEvent', () => {
         ]);
     });
 
-    it('records delivery and logs only safe metadata when one channel fails', async () => {
+    it('keeps the security email pending even when push succeeds and logs only safe metadata', async () => {
         const userKey = baseUserKey();
         const hold = baseHold();
         const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -269,7 +270,7 @@ describe('notifyEscrowHoldEvent', () => {
             deps
         );
 
-        expect(recorded).toEqual([{ holdId: hold._id, kind: 'started' }]);
+        expect(recorded).toEqual([]);
         expect(errorSpy).toHaveBeenCalled();
         expect(sentrySpy).toHaveBeenCalled();
 
@@ -301,9 +302,76 @@ describe('notifyEscrowHoldEvent', () => {
                 { kind: 'started', hold, userKey, cancelToken: 'a'.repeat(64) },
                 deps
             )
-        ).resolves.toBeUndefined();
+        ).resolves.toBe(false);
         expect(recorded).toHaveLength(0);
 
         vi.restoreAllMocks();
+    });
+
+    it('contains template token and persistence rejections', async () => {
+        for (const overrides of [
+            {
+                rotateCancelToken: async () => {
+                    throw new Error('token DB failed');
+                },
+            },
+            {
+                recordNotification: async () => {
+                    throw new Error('record DB failed');
+                },
+            },
+        ]) {
+            const { deps } = makeDeps(overrides);
+            await expect(
+                notifyEscrowHoldEvent(
+                    { kind: 'reminder', hold: baseHold(), userKey: baseUserKey() },
+                    deps
+                )
+            ).resolves.toBe(false);
+        }
+    });
+
+    it.each(['started', 'reminder'] as const)(
+        'retries %s when only one verified inbox receives its email',
+        async kind => {
+            const { deps, recorded } = makeDeps({
+                send: async notification => {
+                    if (notification.to === 'recovery@example.com')
+                        throw new Error('delivery failed');
+                },
+            });
+            const userKey = baseUserKey({
+                recoveryEmail: 'recovery@example.com',
+                recoveryEmailVerifiedAt: new Date(),
+            });
+            expect(await notifyEscrowHoldEvent({ kind, hold: baseHold(), userKey }, deps)).toBe(
+                false
+            );
+            expect(recorded).toEqual([]);
+        }
+    );
+
+    it('bounds hanging delivery and consumes its late rejection', async () => {
+        vi.useFakeTimers();
+        try {
+            let rejectSend!: (error: Error) => void;
+            const { deps, recorded } = makeDeps({
+                send: () =>
+                    new Promise((_, reject) => {
+                        rejectSend = reject;
+                    }),
+            });
+            const pending = notifyEscrowHoldEvent(
+                { kind: 'reminder', hold: baseHold(), userKey: baseUserKey() },
+                deps
+            );
+            await vi.advanceTimersByTimeAsync(ESCROW_NOTIFICATION_TIMEOUT_MS);
+            expect(await pending).toBe(false);
+            rejectSend(new Error('late failure'));
+            await vi.runAllTimersAsync();
+            expect(recorded).toEqual([]);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 });

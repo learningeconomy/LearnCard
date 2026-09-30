@@ -77,6 +77,10 @@ const setDuration = (ms: number): void => {
     process.env.ESCROW_HOLD_DURATION_MS = String(ms);
     __setEscrowEnclaveForTests(undefined);
 };
+const advanceToRelease = (hold: { releaseAfter: string }): void => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(hold.releaseAfter));
+};
 
 beforeAll(async () => {
     process.env.IS_E2E_TEST = 'true';
@@ -172,7 +176,10 @@ describe('A6 escrow recovery', () => {
             releasePolicy: 'hold',
             clientEphemeralPublicKey: recipient.publicKey,
         });
-        await new Promise(resolve => setTimeout(resolve, 5));
+        expect(Date.parse(started.releaseAfter)).toBe(
+            created.holdRecord.hold.createdHi + created.holdRecord.holdDurationMs + 60_000
+        );
+        advanceToRelease(started);
         await getClient().escrow.completeRecovery(resume(started));
         expect(release).toHaveBeenCalledWith(expect.objectContaining({ hold: stored?.holdRecord }));
         expect(release.mock.calls[0]![0].hold).not.toHaveProperty('status');
@@ -446,7 +453,7 @@ describe('A6 escrow recovery', () => {
         expect(second.resumeToken).toBeTruthy();
         expect(second.resumeToken).not.toBe(first.resumeToken);
         expect(second.requestedAt).toBe(now.toISOString());
-        expect(second.releaseAfter).toBe(new Date(now.getTime() + 60_000).toISOString());
+        expect(second.releaseAfter).toBe(new Date(now.getTime() + 120_000).toISOString());
         expect(await findEscrowHoldById(first.holdId)).toMatchObject({
             status: 'cancelled',
             cancelReason: 'superseded',
@@ -519,7 +526,7 @@ describe('A6 escrow recovery', () => {
             setDuration(1);
             await enroll();
             const hold = await start();
-            await new Promise(resolve => setTimeout(resolve, 5));
+            advanceToRelease(hold);
             const claim = models.completeEscrowHold;
             vi.spyOn(models, 'completeEscrowHold').mockImplementationOnce(async id => {
                 await getUserKeysCollection().updateOne(
@@ -695,7 +702,7 @@ describe('A6 escrow recovery', () => {
             const started = await start();
             const token = generateEscrowCancelToken();
             await setCancelToken(started.holdId, token);
-            await new Promise(resolve => setTimeout(resolve, 5));
+            advanceToRelease(started);
             await getClient().escrow.completeRecovery(resume(started));
             await expect(
                 getClient().escrow.cancelRecoveryByLink({ holdId: started.holdId, token })
@@ -757,7 +764,7 @@ describe('A6 escrow recovery', () => {
                 hold: hold.holdRecord,
                 expectedDid: did,
                 clientEphemeralPublicKey: recipient.publicKey,
-                now: new Date(hold.releaseAfter.getTime() - 1),
+                now: new Date(hold.holdRecord.hold.createdHi + hold.holdRecord.holdDurationMs - 1),
             })
         ).rejects.toBeInstanceOf(EscrowPolicyError);
         await expect(
@@ -775,7 +782,7 @@ describe('A6 escrow recovery', () => {
         setDuration(1);
         await enroll();
         const started = await start();
-        await new Promise(resolve => setTimeout(resolve, 5));
+        advanceToRelease(started);
         const recovered = await getClient().escrow.completeRecovery(resume(started));
         const opened = await openEscrowRelease(recovered.sealedShare, recipient.privateKey);
         expect(opened.did).toBe(did);
@@ -796,11 +803,11 @@ describe('A6 escrow recovery', () => {
         });
     });
 
-    it('8: concurrent completions invoke the enclave only once and failures burn the claimed hold', async () => {
+    it('8: concurrent completions invoke the enclave once and only terminal failures burn the hold', async () => {
         setDuration(1);
         await enroll();
         const started = await start();
-        await new Promise(resolve => setTimeout(resolve, 5));
+        advanceToRelease(started);
         const release = vi.spyOn(getEscrowEnclave(), 'releaseEscrow');
         const results = await Promise.allSettled([
             getClient().escrow.completeRecovery(resume(started)),
@@ -808,17 +815,33 @@ describe('A6 escrow recovery', () => {
         ]);
         expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1);
         expect(release).toHaveBeenCalledTimes(1);
-        for (const error of [new EscrowBlobError(), new EscrowPolicyError()]) {
+        for (const error of [
+            new EscrowBlobError(),
+            new EscrowPolicyError(),
+            new EscrowUnavailableError(),
+        ]) {
             const next = await start();
-            await new Promise(resolve => setTimeout(resolve, 5));
+            advanceToRelease(next);
             release.mockRejectedValueOnce(error);
             await expect(getClient().escrow.completeRecovery(resume(next))).rejects.toMatchObject({
-                code: error instanceof EscrowBlobError ? 'INTERNAL_SERVER_ERROR' : 'FORBIDDEN',
+                code:
+                    error instanceof EscrowBlobError
+                        ? 'INTERNAL_SERVER_ERROR'
+                        : error instanceof EscrowPolicyError
+                          ? 'FORBIDDEN'
+                          : 'PRECONDITION_FAILED',
             });
-            expect(await findEscrowHoldById(next.holdId)).toMatchObject({
-                status: 'cancelled',
-                cancelReason: 'release-failed',
-            });
+            if (error instanceof EscrowBlobError) {
+                expect(await findEscrowHoldById(next.holdId)).toMatchObject({
+                    status: 'cancelled',
+                    cancelReason: 'release-failed',
+                });
+            } else {
+                expect(await findEscrowHoldById(next.holdId)).toMatchObject({ status: 'pending' });
+                await expect(
+                    getClient().escrow.completeRecovery(resume(next))
+                ).resolves.toHaveProperty('sealedShare');
+            }
         }
     });
 
@@ -918,7 +941,7 @@ describe('A6 escrow recovery', () => {
         setDuration(1);
         await enroll();
         const started = await start();
-        await new Promise(resolve => setTimeout(resolve, 5));
+        advanceToRelease(started);
         for (const holdId of [started.holdId, randomUUID()]) {
             await expect(
                 getClient().escrow.completeRecovery({ holdId, resumeToken: 'wrong' })
@@ -1344,9 +1367,7 @@ describe('escrow PIN release', () => {
             code: 'FORBIDDEN',
         });
         expect(await findEscrowHoldById(hold.holdId)).toMatchObject({
-            status: 'cancelled',
-            cancelledBy: 'system',
-            cancelReason: 'release-failed',
+            status: 'pending',
         });
         expect((await record())?.escrowPin?.disabledAt).toBeUndefined();
         expect((await record())?.escrowPin?.failedAttempts).toBe(9);
@@ -1590,8 +1611,9 @@ describe('escrow PIN release', () => {
             expect((await record())?.escrowPin).toMatchObject({ failedAttempts: 9 });
             expect((await record())?.escrowPin?.disabledAt).toBeUndefined();
             expect(await findEscrowHoldById(hold.holdId)).toMatchObject({
-                status: 'cancelled',
-                cancelReason: 'release-failed',
+                ...(error instanceof EscrowBlobError
+                    ? { status: 'cancelled', cancelReason: 'release-failed' }
+                    : { status: 'pending' }),
             });
         }
     );
@@ -1829,7 +1851,7 @@ describe('escrow PIN release', () => {
         });
     });
 
-    it('does not reserve on invalid tokens, and burns missing-proof releases fail-closed', async () => {
+    it('does not reserve on invalid tokens, and permits retrying missing-proof refusals', async () => {
         await enrollPin();
         const hold = await startPin();
         await expect(
@@ -1845,8 +1867,7 @@ describe('escrow PIN release', () => {
         });
         expect((await record())?.escrowPin?.failedAttempts).toBe(0);
         expect(await findEscrowHoldById(hold.holdId)).toMatchObject({
-            status: 'cancelled',
-            cancelReason: 'release-failed',
+            status: 'pending',
         });
     });
 
@@ -1887,7 +1908,7 @@ describe('P7.1 ESCROW_RELEASE_KILL_SWITCH', () => {
         setDuration(1);
         await enroll();
         const started = await start();
-        await new Promise(resolve => setTimeout(resolve, 5));
+        advanceToRelease(started);
         process.env.ESCROW_RELEASE_KILL_SWITCH = 'true';
         await expect(getClient().escrow.completeRecovery(resume(started))).rejects.toMatchObject({
             code: 'PRECONDITION_FAILED',
@@ -1928,6 +1949,8 @@ describe('P6.1 escrow enclave-mode staleness', () => {
         releaseEscrow: input => base.releaseEscrow(input),
         createHold: input => base.createHold(input),
         cancelHold: input => base.cancelHold(input),
+        carryPinVerifier: input => base.carryPinVerifier(input),
+        rewrapEscrowBlob: input => base.rewrapEscrowBlob(input),
     });
 
     afterEach(() => {
@@ -1955,7 +1978,7 @@ describe('P6.1 escrow enclave-mode staleness', () => {
         setDuration(1);
         await enroll();
         const started = await start();
-        await new Promise(resolve => setTimeout(resolve, 5));
+        advanceToRelease(started);
         const base = getEscrowEnclave();
         process.env.ESCROW_ENCLAVE_MODE = 'remote';
         process.env.ESCROW_ENCLAVE_REMOTE_URL = 'http://localhost:5999';
@@ -1987,7 +2010,7 @@ describe('P6.1 escrow enclave-mode staleness', () => {
         setDuration(1);
         await enroll();
         const started = await start();
-        await new Promise(resolve => setTimeout(resolve, 5));
+        advanceToRelease(started);
         const base = getEscrowEnclave();
         __setEscrowEnclaveForTests(
             withAttestationOverrides(base, { keyId: 'rotated-software-key' })
@@ -2019,7 +2042,7 @@ describe('P6.1 escrow enclave-mode staleness', () => {
         setDuration(1);
         await enroll();
         const started = await start();
-        await new Promise(resolve => setTimeout(resolve, 5));
+        advanceToRelease(started);
         const base = getEscrowEnclave();
         __setEscrowEnclaveForTests(
             withAttestationOverrides(base, {
@@ -2039,7 +2062,7 @@ describe('P6.1 escrow enclave-mode staleness', () => {
         await enroll();
         expect((await owner().keys.getAuthShare(auth))?.escrowStale).toBeUndefined();
         const started = await start();
-        await new Promise(resolve => setTimeout(resolve, 5));
+        advanceToRelease(started);
         await expect(getClient().escrow.completeRecovery(resume(started))).resolves.toBeDefined();
     });
 

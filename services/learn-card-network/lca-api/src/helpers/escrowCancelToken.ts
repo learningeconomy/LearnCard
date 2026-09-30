@@ -33,8 +33,15 @@ export const hashEscrowCancelToken = (token: string): string =>
  * link's effective TTL is the hold's own lifetime, not a separate clock.
  */
 export const escrowCancelTokenMatches = (hold: EscrowHold, token: string): boolean => {
-    if (hold.status !== 'pending' || !hold.cancelTokenHash || hold.cancelTokenUsedAt) return false;
+    if (hold.status !== 'pending' || hold.cancelTokenUsedAt) return false;
     const actual = Buffer.from(hashEscrowCancelToken(token), 'hex');
-    const expected = Buffer.from(hold.cancelTokenHash, 'hex');
-    return actual.length === expected.length && timingSafeEqual(actual, expected);
+    const hashes = [
+        ...(hold.cancelTokenHashes ?? []),
+        ...(hold.cancelTokenHash ? [hold.cancelTokenHash] : []),
+    ];
+    // Evaluate every hash, including after a match, rather than short-circuiting.
+    return hashes.reduce((matches, hash) => {
+        const expected = Buffer.from(hash, 'hex');
+        return (actual.length === expected.length && timingSafeEqual(actual, expected)) || matches;
+    }, false);
 };

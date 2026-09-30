@@ -23,7 +23,15 @@ let config: LcaApiEnvironment = environment;
 // its readiness is checked here instead; missing it fails this closed rather
 // than crashing the whole service at boot.
 export const isEscrowEnabled = (): boolean => {
-    if (config.ESCROW_ENCLAVE_MODE === 'software') return true;
+    if (config.ESCROW_ENCLAVE_MODE === 'software') {
+        // Serverless injects the actual deploy stage; NODE_ENV often remains development
+        // in Lambda. Unknown deployed stages fail closed, regardless of offline flags.
+        const allowed = config.LAMBDA_STAGE
+            ? ['dev', 'development', 'staging', 'test', 'local'].includes(config.LAMBDA_STAGE)
+            : config.NODE_ENV !== 'production';
+        if (!allowed) console.error('[escrow] Software enclave disabled for this deploy stage');
+        return allowed;
+    }
     if (config.ESCROW_ENCLAVE_MODE === 'remote') {
         return Boolean(config.ESCROW_ENCLAVE_REMOTE_URL && config.ESCROW_ENCLAVE_REMOTE_TOKEN);
     }

@@ -165,10 +165,9 @@ const mapCancelReason = (hold: EscrowHold): EscrowHoldCancelledReason | undefine
  * sendable (e.g. a reminder whose hold was claimed/cancelled before the
  * scheduler ran, so a fresh cancel token can no longer be issued).
  *
- * 'started' reuses the plaintext token generated at hold creation (never
- * persisted, so it can't be regenerated later). 'reminder' mints a fresh one
- * via `rotateCancelToken` on its own hold, which invalidates any previously
- * issued link for it. 'pin-locked' instead rotates a token on `activeHold`
+ * 'started' reuses the creation token when available; scheduled retries and
+ * 'reminder' add a retry-stable token without invalidating earlier links.
+ * 'pin-locked' instead adds a token on `activeHold`
  * (the account's still-open waiting-period hold, if any) — its own `hold` is
  * already terminal by the time it fires, so a token rotated there could
  * never authorize a cancel; `cancelUrl`/`releaseAfter` are omitted together
@@ -183,14 +182,15 @@ const buildEmailTemplateModel = async (
 
     switch (event.kind) {
         case 'started': {
-            if (!event.cancelToken) return null;
+            const token = event.cancelToken ?? (await deps.rotateCancelToken(hold._id));
+            if (!token) return null;
             return {
                 requestedAt: hold.requestedAt.toISOString(),
                 releaseAfter: hold.releaseAfter.toISOString(),
                 cancelUrl: buildEscrowCancelUrl({
                     baseUrl,
                     holdId: hold._id,
-                    token: event.cancelToken,
+                    token,
                 }),
             };
         }
@@ -248,21 +248,52 @@ const logDeliveryFailure = (
     channel: 'email' | 'push'
 ): void => {
     const meta = { holdId: hold._id, kind, channel };
-    console.error('[escrow-notifications] delivery failed', meta);
-    Sentry.captureException(new Error('Escrow hold notification delivery failed'), { extra: meta });
+    try {
+        console.error('[escrow-notifications] delivery failed', meta);
+        Sentry.captureException(new Error('Escrow hold notification delivery failed'), {
+            extra: meta,
+        });
+    } catch {
+        // Observability must not turn best-effort delivery into a request failure.
+    }
 };
 
-/** Fans an escrow hold lifecycle event out to every verified email address and
- * registered device on the account. Delivery failures are logged (never
- * thrown) so a notification problem can never block the underlying escrow
- * operation. Recorded on the hold once at least one channel succeeds. */
+export const ESCROW_NOTIFICATION_TIMEOUT_MS = 3_000;
+
+/** Await delivery within a request budget, including template/token preparation
+ * and persistence. Rejections (including late ones after timeout) are consumed.
+ * Pending start markers and reminder leases make interrupted deliveries retryable. */
 export const notifyEscrowHoldEvent = async (
     event: EscrowHoldEvent,
     overrides: Partial<EscrowHoldNotifierDeps> = {}
-): Promise<void> => {
+): Promise<boolean> => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+        return await Promise.race([
+            deliverEscrowHoldEvent(event, overrides),
+            new Promise<never>((_, reject) => {
+                timer = setTimeout(
+                    () => reject(new Error('Notification timed out')),
+                    ESCROW_NOTIFICATION_TIMEOUT_MS
+                );
+            }),
+        ]);
+    } catch {
+        logDeliveryFailure(event.hold, event.kind, 'email');
+        return false;
+    } finally {
+        clearTimeout(timer);
+    }
+};
+
+const deliverEscrowHoldEvent = async (
+    event: EscrowHoldEvent,
+    overrides: Partial<EscrowHoldNotifierDeps>
+): Promise<boolean> => {
     const deps: EscrowHoldNotifierDeps = { ...defaultDeps, ...overrides };
     const { hold, userKey, kind } = event;
     let delivered = false;
+    let emailDelivered = false;
 
     const recipients = getRecipientEmails(userKey);
     if (recipients.length > 0) {
@@ -281,9 +312,11 @@ export const notifyEscrowHoldEvent = async (
                     })
                 )
             );
+            // Retry the full set on partial failure: a successful login-inbox
+            // delivery must not suppress the independent recovery-email alert.
+            emailDelivered = results.every(result => result.status === 'fulfilled');
             for (const result of results) {
-                if (result.status === 'fulfilled') delivered = true;
-                else logDeliveryFailure(hold, kind, 'email');
+                if (result.status === 'rejected') logDeliveryFailure(hold, kind, 'email');
             }
         }
     }
@@ -304,5 +337,12 @@ export const notifyEscrowHoldEvent = async (
         }
     }
 
+    // A push cannot substitute for the security email's cancel link. Keep
+    // start/reminder retries pending until email succeeds when addresses exist.
+    delivered =
+        (kind === 'started' || kind === 'reminder') && recipients.length > 0
+            ? emailDelivered
+            : delivered || emailDelivered;
     if (delivered) await deps.recordNotification(hold._id, kind);
+    return delivered;
 };

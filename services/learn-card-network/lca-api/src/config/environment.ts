@@ -13,6 +13,7 @@ import {
 
 export const lcaApiEnvironmentShape = {
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    LAMBDA_STAGE: optionalEnvironmentString,
     PORT: environmentPort.default(3000),
     SEED: requiredEnvironmentString,
     SA_SEED_KMS_KEY_ARN: optionalEnvironmentString,
@@ -226,7 +227,7 @@ export const parseLcaApiEnvironment = (
 // tests can toggle it per-case. The escrow-ledger-monitor must never set this itself
 // — see services/escrow-ledger-monitor/README.md.
 export const isEscrowReleaseKillSwitchEnabled = (): boolean =>
-    process.env.ESCROW_RELEASE_KILL_SWITCH === 'true';
+    optionalEnvironmentBoolean.parse(process.env.ESCROW_RELEASE_KILL_SWITCH) ?? false;
 
 /** Parse configuration without exposing secret values in validation errors. */
 export const parseEscrowPrivateKeys = (serialized: string): Record<string, string> => {

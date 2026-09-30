@@ -745,6 +745,10 @@ jobs:
                   LEARN_CLOUD_URL: ${{ secrets.LEARN_CLOUD_URL }}
                   # Escrow recovery stays off unless the environment sets ESCROW_ENCLAVE_MODE.
                   ESCROW_ENCLAVE_MODE: ${{ vars.ESCROW_ENCLAVE_MODE }}
+                  ESCROW_ENCLAVE_REMOTE_URL: ${{ vars.ESCROW_ENCLAVE_REMOTE_URL }}
+                  ESCROW_ENCLAVE_REMOTE_TOKEN: ${{ secrets.ESCROW_ENCLAVE_REMOTE_TOKEN }}
+                  ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS: ${{ vars.ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS }}
+                  ESCROW_RELEASE_KILL_SWITCH: ${{ vars.ESCROW_RELEASE_KILL_SWITCH }}
                   ESCROW_ENCLAVE_ACTIVE_KEY_ID: ${{ vars.ESCROW_ENCLAVE_ACTIVE_KEY_ID }}
                   ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON: ${{ secrets.ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON }}
                   ESCROW_HOLD_DURATION_MS: ${{ vars.ESCROW_HOLD_DURATION_MS }}

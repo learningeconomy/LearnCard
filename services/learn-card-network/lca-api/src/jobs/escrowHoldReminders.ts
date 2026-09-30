@@ -4,10 +4,15 @@ import {
     findEscrowHoldsDueForReminder,
     claimEscrowHoldForReminder,
     findUserKeyByAuthProvider,
+    findEscrowHoldsPendingStartNotification,
+    releaseEscrowReminderClaim,
+    recordEscrowStartNotificationAttempt,
 } from '@models';
 import { isEscrowEnabled, notifyEscrowHoldEvent } from '../services/escrow-enclave';
 
-const DEFAULT_REMINDER_BATCH_LIMIT = 200;
+// Two queues of ten 3-second deliveries leave half the 120-second Lambda
+// budget for database work. Least-recently-attempted ordering prevents starvation.
+const DEFAULT_REMINDER_BATCH_LIMIT = 10;
 
 export interface EscrowHoldReminderResult {
     reminded: number;
@@ -75,7 +80,10 @@ export const runEscrowHoldReminders = async (
     if (!isEscrowEnabled()) return empty;
 
     const now = options.now ?? new Date();
-    const limit = options.limit ?? DEFAULT_REMINDER_BATCH_LIMIT;
+    const limit = Math.max(
+        1,
+        Math.min(options.limit ?? DEFAULT_REMINDER_BATCH_LIMIT, DEFAULT_REMINDER_BATCH_LIMIT)
+    );
     const notify = options.notify ?? notifyEscrowHoldEvent;
 
     const expired = await expireStaleEscrowHolds(now);
@@ -84,39 +92,53 @@ export const runEscrowHoldReminders = async (
     let reminded = 0;
     let failed = 0;
 
-    for (const candidate of candidates) {
+    // A hold is inserted with this marker before the route attempts delivery,
+    // so Lambda freezes/timeouts cannot lose the security-critical start email.
+    for (const hold of await findEscrowHoldsPendingStartNotification(limit)) {
         try {
-            // Claim before send: only the caller that wins this atomic push
-            // notifies. Losing the race (already claimed by a concurrent
-            // run) is not a failure — just move on to the next candidate.
-            const claimed = await claimEscrowHoldForReminder(candidate._id, now);
+            await recordEscrowStartNotificationAttempt(hold._id, now);
+            const userKey = await findUserKeyByAuthProvider(
+                hold.authProvider.type,
+                hold.authProvider.id
+            );
+            if (
+                userKey &&
+                !(await notify({
+                    kind: 'started',
+                    hold,
+                    userKey,
+                    tenant: resolveTenantById(hold.tenantId),
+                }))
+            )
+                failed += 1;
+        } catch (error) {
+            failed += 1;
+            logJobError(hold._id, error);
+        }
+    }
+
+    for (const candidate of candidates) {
+        let claimed: Awaited<ReturnType<typeof claimEscrowHoldForReminder>> = null;
+        try {
+            // Lease before send; only successful delivery writes the sent marker.
+            claimed = await claimEscrowHoldForReminder(candidate._id, now);
             if (!claimed) continue;
 
             const userKey = await findUserKeyByAuthProvider(
                 claimed.authProvider.type,
                 claimed.authProvider.id
             );
-            // Account/auth-provider mapping is gone; the claim stands, so
-            // this hold is never retried — a best-effort reminder has
-            // nothing left to notify.
             if (!userKey) continue;
 
             const tenant = resolveTenantById(claimed.tenantId);
 
-            // The claim above already is the durable 'reminder' record (see
-            // claimEscrowHoldForReminder), so recordNotification is a no-op
-            // here — otherwise notify()'s own post-delivery write (P5.4)
-            // would push a second 'reminder' entry onto the same hold.
-            // Every other event kind still self-records via notify()'s real
-            // default; only this call site overrides it.
-            await notify(
-                { kind: 'reminder', hold: claimed, userKey, tenant },
-                { recordNotification: async () => {} }
-            );
-            reminded += 1;
+            if (await notify({ kind: 'reminder', hold: claimed, userKey, tenant })) reminded += 1;
+            else failed += 1;
         } catch (error) {
             failed += 1;
             logJobError(candidate._id, error);
+        } finally {
+            if (claimed) await releaseEscrowReminderClaim(claimed);
         }
     }
 

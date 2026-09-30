@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'crypto';
+import { createHash, createHmac, randomBytes } from 'crypto';
 import { z } from 'zod';
 import type { Collection } from 'mongodb';
 import mongodb from '@mongo';
@@ -55,6 +55,14 @@ export const EscrowHoldValidator = z.object({
         .regex(/^[0-9a-f]{64}$/)
         .optional(),
     cancelTokenUsedAt: z.date().optional(),
+    cancelTokenHashes: z
+        .array(z.string().regex(/^[0-9a-f]{64}$/))
+        .max(4)
+        .optional(),
+    startedNotificationPending: z.boolean().optional(),
+    reminderClaimedUntil: z.date().optional(),
+    startedNotificationAttemptedAt: z.date().optional(),
+    reminderAttemptedAt: z.date().optional(),
     notifications: z
         .array(
             z.object({
@@ -221,7 +229,7 @@ export const cancelEscrowHoldByCancelToken = async (
         {
             _id: id,
             status: 'pending',
-            cancelTokenHash,
+            $or: [{ cancelTokenHash }, { cancelTokenHashes: cancelTokenHash }],
             cancelTokenUsedAt: { $exists: false },
         },
         {
@@ -295,6 +303,44 @@ export const markClaimedEscrowHoldFailed = async (
         }
     );
 };
+/** Reopen only our own failed release claim, never another request's terminal row. */
+export const retryClaimedEscrowHold = async (id: string, completedAt: Date): Promise<void> => {
+    try {
+        await getEscrowHoldsCollection().updateOne(
+            { _id: id, status: 'completed', completedAt },
+            { $set: { status: 'pending', updatedAt: new Date() }, $unset: { completedAt: '' } }
+        );
+    } catch (error) {
+        // A replacement hold may have won the pending unique index while we released.
+        if (!(
+            typeof error === 'object' &&
+            error !== null &&
+            'code' in error &&
+            error.code === 11000
+        ))
+            throw error;
+        await markClaimedEscrowHoldFailed(id, 'release-failed', completedAt);
+    }
+};
+
+export const findEscrowHoldsPendingStartNotification = async (
+    limit: number
+): Promise<EscrowHold[]> =>
+    getEscrowHoldsCollection()
+        .find({ status: 'pending', startedNotificationPending: true })
+        .sort({ startedNotificationAttemptedAt: 1, requestedAt: 1 })
+        .limit(limit)
+        .toArray();
+
+export const recordEscrowStartNotificationAttempt = async (
+    id: string,
+    now: Date
+): Promise<void> => {
+    await getEscrowHoldsCollection().updateOne(
+        { _id: id, status: 'pending', startedNotificationPending: true },
+        { $set: { startedNotificationAttemptedAt: now } }
+    );
+};
 /**
  * Pending, hold-policy holds whose waiting period ends within the next 24h
  * (and hasn't ended yet) that have never been reminded. `pin`-policy holds
@@ -319,34 +365,42 @@ export const findEscrowHoldsDueForReminder = async (
             },
             'notifications.kind': { $ne: 'reminder' },
         })
-        .sort({ releaseAfter: 1 })
+        .sort({ reminderAttemptedAt: 1, releaseAfter: 1 })
         .limit(limit)
         .toArray();
 
-/**
- * Atomically marks a hold as reminded by pushing the `reminder` marker
- * BEFORE any notification is sent — this write IS the claim. Matching on
- * `'notifications.kind': {$ne:'reminder'}` means two concurrent calls for
- * the same hold can never both succeed: MongoDB serializes writes to a
- * single document, so only the first `findOneAndUpdate` still observes the
- * pre-push state; the second sees the just-pushed entry and matches
- * nothing. The reminders job treats a successful claim as the durable
- * notification record (it tells the notifier to skip its own post-delivery
- * write for this call), so a claimed hold is never retried even if the
- * subsequent send fails — an intentional trade-off of "claim before send"
- * over the alternative of two concurrent runs both delivering a reminder.
- * Returns the post-claim hold, or null if it is no longer pending or was
- * already claimed by a concurrent run.
- */
+/** A short delivery lease avoids concurrent sends without recording false success.
+ * A crashed Lambda's lease expires before the next hourly run. */
 export const claimEscrowHoldForReminder = async (
     id: string,
     now: Date
 ): Promise<EscrowHold | null> =>
     getEscrowHoldsCollection().findOneAndUpdate(
-        { _id: id, status: 'pending', 'notifications.kind': { $ne: 'reminder' } },
-        { $push: { notifications: { kind: 'reminder', sentAt: now } }, $set: { updatedAt: now } },
+        {
+            _id: id,
+            status: 'pending',
+            'notifications.kind': { $ne: 'reminder' },
+            $or: [
+                { reminderClaimedUntil: { $exists: false } },
+                { reminderClaimedUntil: { $lte: now } },
+            ],
+        },
+        {
+            $set: {
+                reminderClaimedUntil: new Date(now.getTime() + 5 * 60_000),
+                reminderAttemptedAt: now,
+                updatedAt: now,
+            },
+        },
         { returnDocument: 'after' }
     );
+
+export const releaseEscrowReminderClaim = async (hold: EscrowHold): Promise<void> => {
+    await getEscrowHoldsCollection().updateOne(
+        { _id: hold._id, reminderClaimedUntil: hold.reminderClaimedUntil },
+        { $unset: { reminderClaimedUntil: '' } }
+    );
+};
 
 export const hashEscrowResumeToken = (token: string): string =>
     createHash('sha256').update(token).digest('hex');
@@ -359,35 +413,40 @@ export const recordEscrowHoldNotification = async (
 ): Promise<void> => {
     const now = new Date();
     await getEscrowHoldsCollection().updateOne(
-        { _id: holdId },
-        { $push: { notifications: { kind, sentAt: now } }, $set: { updatedAt: now } }
+        { _id: holdId, 'notifications.kind': { $ne: kind } },
+        {
+            $push: { notifications: { kind, sentAt: now } },
+            $set: {
+                updatedAt: now,
+                ...(kind === 'started' ? { startedNotificationPending: false } : {}),
+            },
+        }
     );
 };
 
 /**
- * Issues a fresh single-use cancel token for a hold and returns its plaintext.
- * Only 'started' emails carry the original plaintext token (it is never
- * persisted); 'reminder' and 'pin-locked' notifications call this instead to
- * mint a new one. This intentionally invalidates any previously issued
- * cancel link for the hold (the old hash is overwritten), so only the most
- * recently sent email's link still works. Hashing matches
- * `hashEscrowCancelToken` in `@helpers/escrowCancelToken` exactly (plain
- * SHA-256, no key) so links rotated here still verify there; duplicated
- * in-line rather than imported to avoid a models→helpers dependency.
- * Requires the hold to still be `pending` — matching `cancelTokenMatches`'s
- * own precondition — so a cancelled/completed hold's hash is left
- * untouched; no `cancelTokenUsedAt` unset is needed because a pending hold
- * can never have one set (it's only ever written atomically alongside the
- * `status` transition away from pending, in `cancelEscrowHoldByCancelToken`).
- * Returns null if no pending hold matches.
+ * Adds a retry-stable, domain-separated token without revoking earlier links.
+ * HMAC allows delivery retries without storing plaintext or exhausting the
+ * bounded hash set. The original random hash remains valid until terminal.
+ * At most four additional hashes (plus the legacy original) are accepted;
+ * never evict a previously delivered link, even after a server seed rotation.
  */
 export const rotateEscrowCancelToken = async (holdId: string): Promise<string | null> => {
-    const token = randomBytes(32).toString('hex');
+    const token = createHmac('sha256', environment.SEED)
+        .update(`escrow-cancel-notification:v1:${holdId}`)
+        .digest('hex');
     const cancelTokenHash = createHash('sha256').update(token).digest('hex');
     const now = new Date();
     const result = await getEscrowHoldsCollection().findOneAndUpdate(
-        { _id: holdId, status: 'pending' },
-        { $set: { cancelTokenHash, updatedAt: now } },
+        {
+            _id: holdId,
+            status: 'pending',
+            $or: [
+                { cancelTokenHashes: cancelTokenHash },
+                { 'cancelTokenHashes.3': { $exists: false } },
+            ],
+        },
+        { $addToSet: { cancelTokenHashes: cancelTokenHash }, $set: { updatedAt: now } },
         { returnDocument: 'after' }
     );
     return result ? token : null;

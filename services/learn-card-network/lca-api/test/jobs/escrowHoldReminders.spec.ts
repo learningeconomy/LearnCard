@@ -16,7 +16,11 @@ import {
     recordEscrowHoldNotification,
     type AuthProviderMapping,
 } from '@models';
-import { __setEscrowEnclaveForTests } from '../../src/services/escrow-enclave';
+import {
+    __setEscrowEnclaveForTests,
+    notifyEscrowHoldEvent,
+} from '../../src/services/escrow-enclave';
+import { escrowCancelTokenMatches, hashEscrowCancelToken } from '@helpers/escrowCancelToken';
 import { runEscrowHoldReminders } from '../../src/jobs/escrowHoldReminders';
 
 const HOUR = 60 * 60 * 1000;
@@ -103,6 +107,96 @@ afterAll(async () => {
 });
 
 describe('runEscrowHoldReminders', () => {
+    it('budgets both queues and moves failed starts behind unattempted holds', async () => {
+        const now = new Date();
+        const starts = await Promise.all(
+            Array.from({ length: 11 }, () => seed(new Date(now.getTime() + 7 * 24 * HOUR)))
+        );
+        await getEscrowHoldsCollection().updateMany(
+            { _id: { $in: starts.map(hold => hold._id) } },
+            { $set: { startedNotificationPending: true } }
+        );
+        const reminder = await seed(new Date(now.getTime() + HOUR));
+        const attempts: string[] = [];
+        const notify: typeof notifyEscrowHoldEvent = async event => {
+            attempts.push(event.hold._id);
+            return false;
+        };
+        await runEscrowHoldReminders({ now, limit: 200, notify });
+        expect(attempts).toHaveLength(11); // Ten starts plus one reminder, not 200 starts.
+        expect(attempts).toContain(reminder._id);
+        const untouched = starts.find(hold => !attempts.includes(hold._id))!;
+        attempts.length = 0;
+        await runEscrowHoldReminders({ now: new Date(now.getTime() + HOUR / 2), limit: 1, notify });
+        expect(attempts[0]).toBe(untouched._id);
+        expect(attempts[1]).toBe(reminder._id);
+    });
+
+    it('retries an undelivered start notification with a cancel link', async () => {
+        const now = new Date();
+        const hold = await seed(new Date(now.getTime() + 7 * 24 * HOUR));
+        await getEscrowHoldsCollection().updateOne(
+            { _id: hold._id },
+            { $set: { startedNotificationPending: true } }
+        );
+        const failed = await runEscrowHoldReminders({
+            now,
+            notify: event =>
+                notifyEscrowHoldEvent(event, {
+                    send: async () => {
+                        throw new Error('Postmark unavailable');
+                    },
+                    sendPush: async () => ({ successCount: 1, failureCount: 0, failedTokens: [] }),
+                }),
+        });
+        expect(failed.failed).toBe(1);
+        expect((await findEscrowHoldById(hold._id))?.startedNotificationPending).toBe(true);
+        let cancelUrl = '';
+        await runEscrowHoldReminders({
+            now,
+            notify: event =>
+                notifyEscrowHoldEvent(event, {
+                    send: async notification => {
+                        if ('templateModel' in notification)
+                            cancelUrl = String(notification.templateModel.cancelUrl);
+                    },
+                    sendPush: async () => ({ successCount: 0, failureCount: 0, failedTokens: [] }),
+                }),
+        });
+        const stored = await findEscrowHoldById(hold._id);
+        expect(stored?.startedNotificationPending).toBe(false);
+        expect(stored?.notifications.map(entry => entry.kind)).toEqual(['started']);
+        expect(cancelUrl).toContain(hold._id);
+    });
+
+    it('failed reminder delivery preserves the original cancel link and retries next run', async () => {
+        const now = new Date();
+        const hold = await seed(new Date(now.getTime() + HOUR));
+        const originalToken = 'a'.repeat(64);
+        await getEscrowHoldsCollection().updateOne(
+            { _id: hold._id },
+            { $set: { cancelTokenHash: hashEscrowCancelToken(originalToken) } }
+        );
+        const result = await runEscrowHoldReminders({
+            now,
+            notify: event =>
+                notifyEscrowHoldEvent(event, {
+                    send: async () => {
+                        throw new Error('Postmark unavailable');
+                    },
+                    sendPush: async () => ({ successCount: 1, failureCount: 0, failedTokens: [] }),
+                }),
+        });
+        expect(result.failed).toBe(1);
+        const stored = await findEscrowHoldById(hold._id);
+        expect(escrowCancelTokenMatches(stored!, originalToken)).toBe(true);
+        expect(stored?.notifications).toEqual([]);
+        expect((await runEscrowHoldReminders({ now })).reminded).toBe(1);
+        expect(escrowCancelTokenMatches((await findEscrowHoldById(hold._id))!, originalToken)).toBe(
+            true
+        );
+    });
+
     it('reminds a hold due within 24h exactly once, even racing two full job runs', async () => {
         const now = new Date();
         const hold = await seed(new Date(now.getTime() + 23 * HOUR));
@@ -168,7 +262,7 @@ describe('runEscrowHoldReminders', () => {
         );
     });
 
-    it('counts a notifier failure as failed without throwing, and never retries the claimed hold', async () => {
+    it('counts a notifier failure without marking sent and retries on the next run', async () => {
         const now = new Date();
         const hold = await seed(new Date(now.getTime() + HOUR));
 
@@ -180,12 +274,10 @@ describe('runEscrowHoldReminders', () => {
         });
 
         expect(result).toEqual({ reminded: 0, expired: 0, failed: 1 });
-        // Claim-before-send means the claim IS the record: a failed send still
-        // burns the hold's one reminder instead of retrying it next hour.
         const stored = await findEscrowHoldById(hold._id);
-        expect(stored?.notifications.map(entry => entry.kind)).toEqual(['reminder']);
+        expect(stored?.notifications.map(entry => entry.kind)).toEqual([]);
         const rerun = await runEscrowHoldReminders({ now });
-        expect(rerun).toEqual({ reminded: 0, expired: 0, failed: 0 });
+        expect(rerun).toEqual({ reminded: 1, expired: 0, failed: 0 });
     });
 
     it('no-ops without touching the database when escrow is disabled', async () => {
