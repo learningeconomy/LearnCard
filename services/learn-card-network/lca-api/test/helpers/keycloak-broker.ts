@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomInt, randomUUID } from 'node:crypto';
 import Redis from 'ioredis';
 import { z } from 'zod';
 
@@ -114,7 +114,7 @@ export const signInThroughBroker = async (
         port: Number(process.env.REDIS_PORT),
         maxRetriesPerRequest: 1,
     });
-    const code = String(randomBytes(4).readUInt32BE() % 1_000_000).padStart(6, '0');
+    const code = String(randomInt(1_000_000)).padStart(6, '0');
     const key = `login-code:${email}`;
     let ticket: string;
     try {
