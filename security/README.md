@@ -53,7 +53,7 @@ build-enclave`, and diffs both `measurements.json` files with
    name), following the **N / N+1 measurement rotation** procedure in
    `infra/escrow-enclave/README.md` (never remove the currently-live
    measurement until every running enclave instance has moved to the new
-   one).
+   one). Note: measurement rotation is distinct from key rotation; for key rotation, see `services/escrow-enclave-app/SECURITY.md`.
 4. **Tenant config picks it up.** The same three PCR values become one entry
    in each tenant's `escrowEnclaveMeasurements: {pcr0, pcr1, pcr2,
 imageSha384?}[]` array (see decisions.md D6, `learn-card-base`'s tenant

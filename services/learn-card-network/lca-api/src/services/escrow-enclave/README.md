@@ -103,3 +103,7 @@ so there is no epoch-scoped budget to carry — its PIN attempt budget is the
 host's `escrowPin.failedAttempts`/`verifiedFailedAttempts` counters in
 MongoDB, which the enroll route already copies forward unchanged on every
 carry, independent of `enrollmentEpoch`.
+
+## Key rotation
+
+When the enclave key is rotated, previous keys are retained as read-only. The `assertFreshEscrowBlob` check allows carry eligibility for blobs sealed under a recognized previous key (stale-but-usable). The `escrowBlobRewrap` job runs periodically to migrate these blobs to the current key, skipping accounts with pending holds. Use `scripts/escrow-blob-mode-report.ts` with `--current-key-id` and `--previous-key-ids` to monitor migration progress.

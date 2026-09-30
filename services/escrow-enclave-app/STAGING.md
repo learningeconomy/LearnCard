@@ -56,6 +56,23 @@ Set lca-api's `ESCROW_ENCLAVE_MODE=remote`, `ESCROW_ENCLAVE_REMOTE_URL=<internal
 
 ## 4. First-boot provisioning
 
+**Before the very first boot, confirm the sealed-key IAM permission actually exists.** The
+enclave-host role needs `s3:PutObject` on the exact `ESCROW_SEALED_KEY_OBJECT` path
+(`infra/escrow-enclave/iam.tf`'s `WriteSealedKey` statement, scoped to the `sealed-keys/` prefix
+only — `ESCROW_SEALED_KEY_OBJECT` MUST live under that prefix or the host's own startup validation
+refuses to boot, per `services/escrow-enclave-host/README.md`). Don't assume `terraform apply`
+succeeding proves this: verify with a real write **as the enclave-host role**, e.g.
+
+```sh
+aws s3api put-object --bucket <artifacts-bucket> --key sealed-keys/.permission-check \
+  --body /dev/null --if-none-match "*"
+aws s3api delete-object --bucket <artifacts-bucket> --key sealed-keys/.permission-check
+```
+
+A missing or misscoped `WriteSealedKey` statement, or a bucket-policy Deny that doesn't correctly
+exempt conditional writes, would otherwise only surface as an opaque `AccessDenied` on the host's
+real first boot.
+
 On the very first boot of a brand-new escrow CMK (no sealed key exists yet in
 `ESCROW_SEALED_KEY_OBJECT`), set `ESCROW_ALLOW_FIRST_BOOT=true` on **both** the host and the
 enclave. Per `services/escrow-enclave-host/README.md`: "Missing ciphertext fails closed by
@@ -173,6 +190,15 @@ Reverse the apply order (compute/monitor → IAM → DynamoDB/S3/KMS → network
 compute teardown** — those hold the audit trail and, in the CMK's case, the only path to ever
 decrypt already-sealed escrow blobs. Destroying compute (ASG, NLB, host) is safe and reversible;
 destroying the CMK or ledger storage is not.
+
+## 11. Key Rotation Rehearsal
+
+Before performing a key rotation in production, rehearse it on staging:
+
+1. Follow the [Key Rotation Procedure](./SECURITY.md#key-rotation-procedure) to generate a new key and configure the old one as previous.
+2. Confirm a PIN survives adding a recovery method (the carry-on-enroll path).
+3. Run the rewrap job (`bun scripts/escrow-blob-mode-report.ts` then trigger the job).
+4. Confirm the report drains (0 copies under the old key).
 
 ## Open launch blockers
 

@@ -65,6 +65,10 @@ Roughtime and Enrollment items specifically are closed (D10 is a residual, secur
 risk by design; the Roughtime and Enrollment items are hard functional blockers — recovery
 literally cannot complete without them).
 
+## Key Rotation
+
+Key rotation must be rehearsed on staging before being performed in production. See [STAGING.md](./STAGING.md#11-key-rotation-rehearsal) and [SECURITY.md](./SECURITY.md#key-rotation-procedure).
+
 ## Computing an allowlist hash for an internal tester
 
 Allowlist entries are lowercase hex SHA-256 hashes of the tester's **primary

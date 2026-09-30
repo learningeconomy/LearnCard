@@ -577,28 +577,11 @@ feature set cannot pass that time gate. No parent enrollment claims are trusted.
 
 ## Previous keys / key rotation (P9.1)
 
-**Design A**: the escrow P-256 key is generated once and KMS-sealed under
-encryption context `{purpose: "escrow-enclave-key", keyId: ESCROW_KEY_ID}`.
-Every build/redeploy whose PCRs remain in the KMS key policy unseals the SAME
-key, so `ESCROW_KEY_ID` and the sealed blob are stable across ordinary
-releases — `keyId` changes only on a **deliberate rotation** (a new
-`ESCROW_KEY_ID`, with the old sealed blob provisioned as a previous key below)
-or if the host **loses the sealed key** and a fresh one is generated on first
-boot under a new id. Rotation is intentionally a two-key state, not an N-key
-history: `ESCROW_PREVIOUS_KEY_IDS` (comma-separated, capped at
-`policy::MAX_PREVIOUS_KEYS = 3`) names read-only decrypt-only keys the current
-boot also unseals (each via the identical attested-KMS path, its own
-`keyId` encryption context) — this is `Policy::decrypt`'s only change:
-select key material by the envelope's own `keyId` (current, or a match in
-`previous_keys`), else the existing generic `Blob` error. Every _seal_ still
-always targets the CURRENT key (`carry_pin_verifier`'s reseal;
-`release`/`cancel` never re-seal a blob at all — see "Release policy" above).
-Boot is unaffected when zero previous keys are configured: the parent's
-`boot` wire message already took an arbitrary `keyId`, so previous keys are
-served through the exact same message, one extra call per key — no wire
-protocol change either enclave- or host-side.
+The escrow P-256 key is generated once and KMS-sealed. The `keyId` changes only on a deliberate rotation or if the host loses the sealed key. Previous keys (up to 3) are read-only, advertised and bound in the signed attestation, and new copies are always sealed with the current key.
 
-`attest`'s response gains `previousKeyIds: string[]` (always present, empty
+For the step-by-step key rotation procedure, see [SECURITY.md](./SECURITY.md#key-rotation-procedure).
+
+`attest`'s response includes `previousKeyIds: string[]` (always present, empty
 when none are configured) and — since a client verifying only the raw JSON
 response would be trusting an unauthenticated relay — the SAME list is bound
 inside NSM `user_data` alongside the escrow SPKI: canonical CBOR
