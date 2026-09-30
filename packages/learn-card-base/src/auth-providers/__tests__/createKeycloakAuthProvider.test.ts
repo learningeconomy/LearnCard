@@ -1,13 +1,40 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ErrorResponse, InMemoryWebStorage, User, WebStorageStateStore } from 'oidc-client-ts';
 import { AuthSessionError } from '@learncard/types';
-import { createKeycloakAuthProvider } from '../createKeycloakAuthProvider';
+import { createKeycloakAuthProvider, trimTrailingSlashes } from '../createKeycloakAuthProvider';
 import type {
     KeycloakAuthProvider,
     KeycloakAuthProviderConfig,
     UserManagerLike,
 } from '../createKeycloakAuthProvider';
 import { createManager, createUser, keycloakConfig } from './keycloakTestHelpers';
+
+describe('trimTrailingSlashes', () => {
+    it('leaves a URL with no trailing slash untouched', () => {
+        expect(trimTrailingSlashes('https://auth.example.org')).toBe('https://auth.example.org');
+    });
+    it('strips a single trailing slash', () => {
+        expect(trimTrailingSlashes('https://auth.example.org/')).toBe('https://auth.example.org');
+    });
+    it('strips many trailing slashes in linear time', () => {
+        const input = `https://auth.example.org${'/'.repeat(50_000)}`;
+        const start = performance.now();
+        const result = trimTrailingSlashes(input);
+        expect(performance.now() - start).toBeLessThan(50);
+        expect(result).toBe('https://auth.example.org');
+    });
+    it('returns an empty string unchanged', () => {
+        expect(trimTrailingSlashes('')).toBe('');
+    });
+    it('trims a string made entirely of slashes down to empty', () => {
+        expect(trimTrailingSlashes('////')).toBe('');
+    });
+    it('does not touch interior slashes', () => {
+        expect(trimTrailingSlashes('https://auth.example.org/realms/x//')).toBe(
+            'https://auth.example.org/realms/x'
+        );
+    });
+});
 
 const constructed = vi.hoisted(() => vi.fn());
 vi.mock('oidc-client-ts', async importOriginal => {

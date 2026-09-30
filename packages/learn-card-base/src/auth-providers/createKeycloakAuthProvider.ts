@@ -3,6 +3,20 @@ import type { UserManagerSettings } from 'oidc-client-ts';
 import { AuthSessionError } from '@learncard/types';
 import type { AuthProvider, AuthUser } from '@learncard/types';
 
+/**
+ * Strip trailing slashes from a URL the host app supplies (config, not user
+ * input, but still untrusted enough to keep linear-time). Implemented as a
+ * character-wise loop rather than `value.replace(/\/+$/, '')` — CodeQL flags
+ * the `+` quantifier on network-adjacent strings as a polynomial-ReDoS
+ * candidate even though this particular pattern is linear; the loop sidesteps
+ * the heuristic entirely.
+ */
+export const trimTrailingSlashes = (value: string): string => {
+    let end = value.length;
+    while (end > 0 && value.charCodeAt(end - 1) === 0x2f /* '/' */) end--;
+    return value.slice(0, end);
+};
+
 /** The SDK boundary used by the provider and sign-in adapter. */
 export interface UserManagerLike {
     getUser(): Promise<User | null>;
@@ -73,7 +87,7 @@ export const handleRedirectCallback = async (
 export const createKeycloakAuthProvider = (
     config: KeycloakAuthProviderConfig
 ): KeycloakAuthProvider => {
-    const authority = `${config.serverUrl.replace(/\/+$/, '')}/realms/${config.realm}`;
+    const authority = `${trimTrailingSlashes(config.serverUrl)}/realms/${config.realm}`;
     const userManager =
         config.userManager ??
         new UserManager(
@@ -124,6 +138,7 @@ export const createKeycloakAuthProvider = (
         } catch (error) {
             if (
                 error instanceof ErrorResponse &&
+                error.error != null &&
                 ['invalid_grant', 'login_required', 'interaction_required'].includes(error.error)
             ) {
                 throw new AuthSessionError(
