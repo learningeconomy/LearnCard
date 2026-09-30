@@ -9,7 +9,9 @@
  * Run these tests before any release that touches SSS code.
  */
 
-import { describe, it, expect } from 'vitest';
+import 'fake-indexeddb/auto';
+import { describe, it, expect, vi } from 'vitest';
+import { createSSSStrategy } from './sss-strategy';
 
 import { splitPrivateKey, reconstructFromShares, SSS_THRESHOLD } from './sss';
 import { generateEd25519PrivateKey, encryptWithPassword, decryptWithPassword } from './crypto';
@@ -20,6 +22,54 @@ import {
 } from './recovery-phrase';
 
 describe('Critical: Key must NEVER be lost', () => {
+    it('recovers a fresh account from encrypted IndexedDB after the auth-share reply is lost', async () => {
+        const config = { serverUrl: 'https://test.invalid/api' };
+        const strategy = createSSSStrategy(config);
+        strategy.setActiveUser!('indexeddb-lost-response');
+        const privateKey = await generateEd25519PrivateKey();
+        const expectedDid = 'did:key:test-owner';
+        let authShare = '';
+        const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+            if (init?.method === 'PUT') {
+                authShare = JSON.parse(String(init.body)).authShare.encryptedData;
+                throw new TypeError('Lost reply');
+            }
+            return new Response(
+                JSON.stringify({ authShare, shareVersion: 1, primaryDid: expectedDid })
+            );
+        });
+
+        try {
+            await expect(
+                strategy.atomicUpdateShares!({
+                    token: 'token',
+                    providerType: 'firebase',
+                    privateKey,
+                    did: expectedDid,
+                })
+            ).rejects.toMatchObject({ rolledBack: false });
+
+            const reloaded = createSSSStrategy(config);
+            reloaded.setActiveUser!('indexeddb-lost-response');
+            expect(await reloaded.hasLocalKey()).toBe(true);
+            const result = await reloaded.reconcileShares!({
+                token: 'token',
+                providerType: 'firebase',
+                expectedDid,
+                didFromPrivateKey: async key =>
+                    key === privateKey ? expectedDid : 'did:key:wrong',
+            });
+            expect(result).toEqual({ privateKey, did: expectedDid });
+            expect(await reloaded.getLocalShareVersion!()).toBe(1);
+            expect(await reconstructFromShares([(await reloaded.getLocalKey())!, authShare])).toBe(
+                privateKey
+            );
+        } finally {
+            fetchMock.mockRestore();
+            await strategy.clearLocalKeys();
+        }
+    });
+
     describe('Share split verification (fuzz test)', () => {
         it('should verify all 6 share combinations reconstruct the key (100 iterations)', async () => {
             for (let i = 0; i < 100; i++) {

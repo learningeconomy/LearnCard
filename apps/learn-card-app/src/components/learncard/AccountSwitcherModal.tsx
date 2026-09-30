@@ -200,6 +200,8 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
                                             did: profile?.did,
                                             profileId: profile?.profileId,
                                             isServiceProfile: profile?.isServiceProfile,
+                                            displayName,
+                                            image,
                                         };
 
                                         if (handlePlayerSwitchOverride) {

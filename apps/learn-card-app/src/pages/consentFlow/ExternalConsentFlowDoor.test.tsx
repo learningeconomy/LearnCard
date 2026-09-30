@@ -86,6 +86,7 @@ const mockFns = {
     useContract: vi.fn(),
     useConsentedContracts: vi.fn(),
     useCurrentUser: vi.fn(),
+    useGetCurrentLCNUser: vi.fn(),
     initWallet: vi.fn(),
     presentToast: vi.fn(),
 };
@@ -93,6 +94,9 @@ const mockFns = {
 vi.mock('learn-card-base/hooks/useGetCurrentUser', () => ({
     __esModule: true,
     default: () => mockFns.useCurrentUser(),
+}));
+vi.mock('learn-card-base/hooks/useGetCurrentLCNUser', () => ({
+    default: () => mockFns.useGetCurrentLCNUser(),
 }));
 
 vi.mock('learn-card-base/hooks/useConsentedContracts', () => ({
@@ -137,7 +141,9 @@ vi.mock('learn-card-base', () => ({
         warn: vi.fn(),
     }),
     useWallet: () => ({ initWallet: mockFns.initWallet }),
-    ProfilePicture: () => <div data-testid="profile-picture" />,
+    UserProfilePicture: ({ user }: { user: { image?: string; displayName?: string } }) => (
+        <img src={user.image} alt={user.displayName} />
+    ),
     pushUtilities: { revokePushToken: vi.fn() },
     useAuthCoordinator: () => ({ logout: vi.fn(), state: { status: 'idle' } }),
     useSQLiteStorage: () => ({ clearDB: vi.fn(), setCurrentUser: vi.fn() }),
@@ -292,6 +298,10 @@ describe('ExternalConsentFlowDoor', () => {
             name: 'Test User',
             uid: 'test-uid',
         });
+        mockFns.useGetCurrentLCNUser.mockReturnValue({
+            currentLCNUser: null,
+            currentLCNUserLoading: false,
+        });
 
         mockFns.useContract.mockReturnValue({
             data: {
@@ -302,6 +312,25 @@ describe('ExternalConsentFlowDoor', () => {
             isPending: false,
             error: null,
         });
+    });
+    it('shows the selected organization identity after wallet restoration', () => {
+        mockFns.useCurrentUser.mockReturnValue({ name: '', profileImage: '', uid: 'test-uid' });
+        mockFns.useGetCurrentLCNUser.mockReturnValue({
+            currentLCNUser: {
+                displayName: 'Demo Organization',
+                image: 'https://example.com/org.png',
+                profileId: 'demo-org',
+            },
+            currentLCNUserLoading: false,
+        });
+        mockFns.useConsentedContracts.mockReturnValue({ data: [], isLoading: false });
+
+        render(<ExternalConsentFlowDoor login={true} />);
+
+        expect(screen.getByRole('button', { name: 'Continue as Demo Organization' })).toBeTruthy();
+        expect(screen.getByRole('img', { name: 'Demo Organization' }).getAttribute('src')).toBe(
+            'https://example.com/org.png'
+        );
     });
 
     describe('Race condition: clicking Continue while consent query is loading', () => {
