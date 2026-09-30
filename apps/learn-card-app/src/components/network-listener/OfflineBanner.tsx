@@ -1,6 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { IonIcon } from '@ionic/react';
-import { cloudOfflineOutline, warningOutline, wifiOutline, refreshOutline } from 'ionicons/icons';
+import {
+    cloudOfflineOutline,
+    warningOutline,
+    wifiOutline,
+    refreshOutline,
+    closeOutline,
+} from 'ionicons/icons';
 import * as m from '../../paraglide/messages.js';
 import { connectivityStore, walletModeStore } from 'learn-card-base';
 
@@ -27,6 +33,8 @@ export const OfflineBanner: React.FC = () => {
     const [reconnecting, setReconnecting] = useState(false);
     const [showReconnected, setShowReconnected] = useState(false);
     const wasLimited = useRef(false);
+    const [showSlowWarning, setShowSlowWarning] = useState(false);
+    const lastSlowWarningAt = useRef<number | null>(null);
 
     const isOffline = status === 'offline';
     // "Limited" whenever the device is verified offline OR the wallet is
@@ -35,7 +43,7 @@ export const OfflineBanner: React.FC = () => {
     const isLimited = isOffline || walletMode === 'offline';
     // Advisory only — never used for gating, and never shown while offline
     // (offline display has priority).
-    const showQualityWarning = !isLimited && quality === 'poor';
+    const hasPoorQuality = !isLimited && quality === 'poor';
 
     useEffect(() => {
         if (isLimited) {
@@ -44,10 +52,37 @@ export const OfflineBanner: React.FC = () => {
         } else if (wasLimited.current && status === 'online') {
             wasLimited.current = false;
             setShowReconnected(true);
-            const timer = setTimeout(() => setShowReconnected(false), 2500);
-            return () => clearTimeout(timer);
         }
     }, [isLimited, status]);
+
+    // Keep the toast lifetime independent of subsequent reachability checks.
+    // Otherwise an online → unknown transition cancels its only hide timer.
+    useEffect(() => {
+        if (!showReconnected) return;
+        const timer = setTimeout(() => setShowReconnected(false), 2500);
+        return () => clearTimeout(timer);
+    }, [showReconnected]);
+
+    useEffect(() => {
+        setShowSlowWarning(false);
+        if (!hasPoorQuality || showReconnected) return;
+        // Ignore brief dips, then show one brief advisory per poor episode.
+        // A cooldown also prevents flapping quality from repeatedly interrupting.
+        if (
+            lastSlowWarningAt.current !== null &&
+            Date.now() - lastSlowWarningAt.current < 5 * 60_000
+        )
+            return;
+        const showTimer = setTimeout(() => {
+            lastSlowWarningAt.current = Date.now();
+            setShowSlowWarning(true);
+        }, 5000);
+        const hideTimer = setTimeout(() => setShowSlowWarning(false), 11_000);
+        return () => {
+            clearTimeout(showTimer);
+            clearTimeout(hideTimer);
+        };
+    }, [hasPoorQuality, showReconnected]);
 
     const handleReconnect = async () => {
         if (reconnecting) return;
@@ -114,12 +149,20 @@ export const OfflineBanner: React.FC = () => {
                 <div className="pointer-events-auto flex items-center gap-2.5 px-4 py-2.5 rounded-full shadow-lg bg-emerald-50 border border-emerald-200 text-emerald-800 font-poppins animate-fade-in-up">
                     <IonIcon icon={wifiOutline} className="text-emerald-500 text-lg shrink-0" />
                     <span className="text-xs font-medium">{m['connectivity.backOnline']()}</span>
+                    <button
+                        type="button"
+                        aria-label={m['common.close']()}
+                        onClick={() => setShowReconnected(false)}
+                        className="flex items-center justify-center min-w-11 min-h-11 -my-2 -me-2 rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-current"
+                    >
+                        <IonIcon icon={closeOutline} className="text-lg" aria-hidden="true" />
+                    </button>
                 </div>
             </div>
         );
     }
 
-    if (showQualityWarning) {
+    if (showSlowWarning && hasPoorQuality) {
         return (
             <div
                 className="fixed top-0 left-0 right-0 z-[9999] flex justify-center px-4 pointer-events-none"
@@ -136,6 +179,14 @@ export const OfflineBanner: React.FC = () => {
                         aria-hidden="true"
                     />
                     <span className="text-xs font-medium">{m['connectivity.slowUnstable']()}</span>
+                    <button
+                        type="button"
+                        aria-label={m['common.close']()}
+                        onClick={() => setShowSlowWarning(false)}
+                        className="flex items-center justify-center min-w-11 min-h-11 -my-2 -me-2 rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-current"
+                    >
+                        <IonIcon icon={closeOutline} className="text-lg" aria-hidden="true" />
+                    </button>
                 </div>
             </div>
         );
