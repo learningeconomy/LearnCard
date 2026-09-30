@@ -47,6 +47,8 @@ provider:
     stage: ${opt:stage, "dev"}
     region: ${opt:region, "us-east-1"}
     environment:
+        INBOX_QUEUE_URL: ${env:INBOX_QUEUE_URL, ''}
+        INBOX_QUEUE_ENDPOINT: ${env:INBOX_QUEUE_ENDPOINT, ''}
         PORT: ${env:PORT, 3000}
         LAMBDA_STAGE: ${opt:stage, "dev"}
         SEED: ${env:SEED}

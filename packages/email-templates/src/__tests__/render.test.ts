@@ -83,10 +83,12 @@ const TEMPLATE_FIXTURES: { [K in TemplateId]: TemplateDataMap[K] } = {
 
     'recovery-key': {
         recoveryKey: 'ABCD-EFGH-1234-5678',
+        confirmationCode: '123456',
     },
 
     'recovery-key-backup': {
         recoveryKey: 'WXYZ-9876-LMNO-4321',
+        confirmationCode: '654321',
     },
 
     'endorsement-request': {
@@ -135,6 +137,7 @@ const TEMPLATE_FIXTURES: { [K in TemplateId]: TemplateDataMap[K] } = {
         issuer: { name: 'Inbox Demo School' },
         credential: { name: 'Introduction to Biology' },
     },
+    'account-sign-in-changed': {},
 };
 
 const ALL_TEMPLATE_IDS = Object.keys(TEMPLATE_FIXTURES) as TemplateId[];
@@ -251,6 +254,7 @@ describe('renderEmail — content assertions', () => {
         const { html } = await renderEmail('recovery-key', DEFAULT_BRANDING, data);
 
         expect(html).toContain('ABCD-EFGH-1234-5678');
+        expect(html).toContain('123456');
     });
 
     it('endorsement-request includes the share link and message', async () => {

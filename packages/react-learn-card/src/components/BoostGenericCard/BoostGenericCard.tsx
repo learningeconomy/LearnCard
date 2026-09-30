@@ -63,7 +63,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
 
     return (
         <div
-            className={`flex bg-white flex-col shadow-bottom relative p-0 w-[160px] h-[285px] rounded-[20px] overflow-hidden ${className}`}
+            className={`boost-generic-card-wrapper flex bg-white flex-col shadow-bottom relative p-0 w-[160px] h-[285px] rounded-[20px] overflow-hidden ${className}`}
         >
             {isInactive && (
                 <span
@@ -94,7 +94,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
 
             <button
                 type="button"
-                className="z-10 flex flex-col flex-grow"
+                className="boost-generic-card-button z-10 flex flex-col flex-grow rounded-[20px]"
                 onClick={handleInnerClick}
             >
                 {/* Thumbnail — filter on the wrapper so it desaturates a

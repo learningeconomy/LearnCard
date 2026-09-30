@@ -3,9 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { Keyboard } from '@capacitor/keyboard';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
-import { auth } from '../../../firebase/firebase';
-import { updateProfile } from 'firebase/auth';
+import { useSignInAdapter } from 'learn-card-base';
 import { Check, Loader2, Edit2, ShieldCheck, User } from 'lucide-react';
 
 import * as m from '../../../paraglide/messages.js';
@@ -26,6 +24,7 @@ import {
     UploadRes,
     useImageUpload,
     getLogger,
+    Toggle,
 } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
@@ -47,13 +46,14 @@ import { generateHandle, generateRandomSuffix } from './handleGenerator';
 import { inferCountryCode } from './countryInference';
 import { resolvePostOnboardingRedirect } from './postOnboardingRedirect';
 
+import { RecoveryPinStep } from './RecoveryPinStep';
+import { writeRecoveryPinPromptFlag } from '../../recovery/recoveryPinPromptFlag';
 import BirthdayPicker from './BirthdayPicker';
 import CountrySelectorModal from '../onboardingNetworkForm/components/CountrySelectorModal';
 import LocationIcon from '../../svgs/LocationIcon';
 import UnderageModalContent from '../onboardingNetworkForm/components/UnderageModalContent';
 import GuardianLinkedModal from '../GuardianLinkedModal';
 import { Confetti } from '../../../pages/issue/components/Confetti';
-import AccessibleToggle from '../../accessibility/AccessibleToggle';
 
 import useLogout from '../../../hooks/useLogout';
 import useAutoConsentLearnCardAi from '../../../hooks/useAutoConsentLearnCardAi';
@@ -74,15 +74,16 @@ const COUNTRIES: Record<string, string> = countries as Record<string, string>;
 
 const log = getLogger('onboarding-flow-v2');
 
-type Step = 'age-country' | 'profile' | 'celebrate';
+type Step = 'age-country' | 'profile' | 'pin' | 'celebrate';
 
 type OnboardingFlowProps = {
     onSuccess?: () => void;
 };
 
 const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
+    const adapter = useSignInAdapter();
     const { newModal, closeModal } = useModal();
-    const { state: coordinatorState, setupNewKey } = useAppAuth();
+    const { state: coordinatorState, setupNewKey, setEscrowPin, authProvider } = useAppAuth();
     const { initWallet } = useWallet();
     const { track } = useAnalytics();
     const { mutateAsync: updatePreferences } = useUpdatePreferences();
@@ -180,9 +181,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const onboardingCompletedRef = useRef(false);
     const currentStepRef = useRef<Step>('age-country');
     const stepStartedAtRef = useRef(Date.now());
-    const completedStepIdsRef = useRef<Record<'age-country' | 'profile', boolean>>({
+    const completedStepIdsRef = useRef<Record<'age-country' | 'profile' | 'pin', boolean>>({
         'age-country': false,
         profile: false,
+        pin: false,
     });
     const getStepMetadata = useCallback((currentStep: Step) => {
         switch (currentStep) {
@@ -190,15 +192,17 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 return { step_id: 'age-country', step_index: 1 } as const;
             case 'profile':
                 return { step_id: 'profile', step_index: 2 } as const;
+            case 'pin':
+                return { step_id: 'pin', step_index: 3 } as const;
             case 'celebrate':
-                return { step_id: 'celebrate', step_index: 3 } as const;
+                return { step_id: 'celebrate', step_index: 4 } as const;
         }
     }, []);
 
     const getStepDuration = useCallback(() => Date.now() - stepStartedAtRef.current, []);
 
     const trackOnboardingStepCompleted = useCallback(
-        (stepId: 'age-country' | 'profile', stepIndex: number) => {
+        (stepId: 'age-country' | 'profile' | 'pin', stepIndex: number) => {
             if (completedStepIdsRef.current[stepId]) {
                 return;
             }
@@ -354,12 +358,12 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
     // Pre-fill from Firebase
     useEffect(() => {
-        if (auth()?.currentUser) {
-            const fbUser = auth()?.currentUser;
-            if (fbUser?.displayName && !name) setName(fbUser.displayName);
-            if (fbUser?.photoURL && !photo) setPhoto(fbUser.photoURL);
+        const fbUser = adapter.getCurrentUser();
+        if (fbUser) {
+            if (fbUser.displayName && !name) setName(fbUser.displayName);
+            if (fbUser.photoUrl && !photo) setPhoto(fbUser.photoUrl);
         }
-    }, [name, photo]);
+    }, [name, photo, adapter]);
 
     // Photo Upload
     const onUpload = (data: UploadRes) => {
@@ -528,13 +532,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
             let fbAuthToken: string | undefined;
             try {
-                if (Capacitor.isNativePlatform()) {
-                    const res = await FirebaseAuthentication.getIdToken({ forceRefresh: false });
-                    fbAuthToken = res?.token;
-                } else {
-                    const user = auth()?.currentUser;
-                    fbAuthToken = user ? await user.getIdToken(false) : undefined;
-                }
+                fbAuthToken = await authProvider?.getIdToken(false);
             } catch (e) {
                 log.warn('Could not get Firebase ID token (non-fatal):', e);
             }
@@ -612,11 +610,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
                 if (authToken !== 'dummy') {
                     try {
-                        const fbUser = auth()?.currentUser;
+                        const fbUser = adapter.getCurrentUser();
                         if (fbUser) {
-                            await updateProfile(fbUser, {
+                            await adapter.updateProfile?.({
                                 displayName: name,
-                                photoURL: photo,
+                                photoUrl: photo,
                             });
                         }
                     } catch (e) {
@@ -661,9 +659,13 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 }
 
                 trackOnboardingStepCompleted('profile', 2);
-                setStep('celebrate');
+
+                const pinAvailable =
+                    coordinatorState.status === 'ready' &&
+                    coordinatorState.escrowEnrollment === 'enrolled';
+                setStep(pinAvailable ? 'pin' : 'celebrate');
             }
-        } catch (err) {
+        } catch (err: unknown) {
             const errorDetails =
                 typeof err === 'object' && err !== null ? (err as Record<string, unknown>) : {};
             if (signupLifecycle.terminate()) {
@@ -1186,8 +1188,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                         brand: brandName,
                                                     })}
                                                 </span>
-                                                <AccessibleToggle
-                                                    ariaLabel={m['onboarding.v2.brandAi']({
+                                                <Toggle
+                                                    aria-label={m['onboarding.v2.brandAi']({
                                                         brand: brandName,
                                                     })}
                                                     checked={Boolean(
@@ -1216,8 +1218,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                 <span className="text-sm font-medium text-grayscale-700">
                                                     {m['onboarding.v2.analytics']()}
                                                 </span>
-                                                <AccessibleToggle
-                                                    ariaLabel={m['onboarding.v2.analytics']()}
+                                                <Toggle
+                                                    aria-label={m['onboarding.v2.analytics']()}
                                                     checked={Boolean(
                                                         privacyPreferences?.analyticsEnabled
                                                     )}
@@ -1238,8 +1240,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                 <span className="text-sm font-medium text-grayscale-700">
                                                     {m['onboarding.v2.bugReports']()}
                                                 </span>
-                                                <AccessibleToggle
-                                                    ariaLabel={m['onboarding.v2.bugReports']()}
+                                                <Toggle
+                                                    aria-label={m['onboarding.v2.bugReports']()}
                                                     checked={Boolean(
                                                         privacyPreferences?.bugReportsEnabled
                                                     )}
@@ -1290,6 +1292,25 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {step === 'pin' && (
+                <RecoveryPinStep
+                    onComplete={() => {
+                        if (coordinatorState.status === 'ready') {
+                            writeRecoveryPinPromptFlag(coordinatorState.did, 'set');
+                        }
+                        trackOnboardingStepCompleted('pin', 3);
+                        setStep('celebrate');
+                    }}
+                    onSkip={() => {
+                        if (coordinatorState.status === 'ready') {
+                            writeRecoveryPinPromptFlag(coordinatorState.did, 'skipped');
+                        }
+                        setStep('celebrate');
+                    }}
+                    setPin={setEscrowPin}
+                />
             )}
 
             {step === 'celebrate' && (

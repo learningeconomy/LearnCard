@@ -57,7 +57,8 @@ export type NotificationMessageKey =
     | 'credentialRestoredUnnamed'
     // --- Managed credential refresh (LC-2136) — generic copy only: never name the
     // credential, the holder's claims, or implementation terms (refresh/sync/etc.) ---
-    | 'credentialRefreshed';
+    | 'credentialRefreshed'
+    | 'shareViewed';
 
 type MessageTemplate = { title: string; body: string };
 type LocaleCatalog = Record<NotificationMessageKey, MessageTemplate>;
@@ -216,6 +217,10 @@ const en: LocaleCatalog = {
         title: 'Credential updated',
         body: '{from} updated one of your credentials.',
     },
+    shareViewed: {
+        title: 'Share viewed',
+        body: 'Your share “{title} ({count})” was viewed.',
+    },
 };
 
 const es: LocaleCatalog = {
@@ -366,6 +371,10 @@ const es: LocaleCatalog = {
     credentialRefreshed: {
         title: 'Credencial actualizada',
         body: '{from} actualizó una de tus credenciales.',
+    },
+    shareViewed: {
+        title: 'Enlace visto',
+        body: 'Se vio tu enlace «{title} ({count})».',
     },
 };
 
@@ -518,6 +527,10 @@ const fr: LocaleCatalog = {
         title: 'Titre mis à jour',
         body: "{from} a mis à jour l'un de vos titres.",
     },
+    shareViewed: {
+        title: 'Partage consulté',
+        body: 'Votre partage « {title} ({count}) » a été consulté.',
+    },
 };
 
 const ar: LocaleCatalog = {
@@ -668,6 +681,10 @@ const ar: LocaleCatalog = {
     credentialRefreshed: {
         title: 'تم تحديث الشهادة',
         body: 'قام {from} بتحديث إحدى شهاداتك.',
+    },
+    shareViewed: {
+        title: 'تمت مشاهدة المشاركة',
+        body: 'تمت مشاهدة مشاركتك «{title} ({count})».',
     },
 };
 

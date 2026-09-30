@@ -104,6 +104,7 @@ import {
     isDraftBoost,
     appendTemplateEvidenceToCredential,
 } from '@helpers/boost.helpers';
+import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
 import { createBoostForListing } from '@accesslayer/boost/create';
 import { setBoostAsParent } from '@accesslayer/boost/relationships/create';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
@@ -692,17 +693,7 @@ export const handleSendCredentialEvent = async (
 
         const targetDid = getDidWeb(ctx.domain, target.profileId);
 
-        if (Array.isArray(unsignedVc.credentialSubject)) {
-            unsignedVc.credentialSubject = unsignedVc.credentialSubject.map(subject => ({
-                ...subject,
-                id: targetDid,
-            }));
-        } else {
-            unsignedVc.credentialSubject = {
-                ...unsignedVc.credentialSubject,
-                id: targetDid,
-            };
-        }
+        setCredentialSubjectIds(unsignedVc, targetDid);
 
         if (unsignedVc?.type?.includes('BoostCredential')) {
             unsignedVc.boostId = boostUri;
@@ -1671,7 +1662,7 @@ const handleSendNotificationEvent = async (
         // tRPC does not support HTTP 429 natively, so we cast to BAD_REQUEST
         // while keeping the semantic code in the message for clients.
         throw new TRPCError({
-            code: 'TOO_MANY_REQUESTS' as 'BAD_REQUEST',
+            code: 'TOO_MANY_REQUESTS',
             message: 'Rate limit exceeded: max 10 notifications per user per app per hour',
         });
     }
@@ -2718,7 +2709,7 @@ export const appStoreRouter = t.router({
                 // tRPC does not support HTTP 429 natively, so we cast to BAD_REQUEST
                 // while keeping the semantic code in the message for clients.
                 throw new TRPCError({
-                    code: 'TOO_MANY_REQUESTS' as 'BAD_REQUEST',
+                    code: 'TOO_MANY_REQUESTS',
                     message: 'Rate limit exceeded: max 60 notifications per app per hour',
                 });
             }

@@ -15,6 +15,20 @@ plugins:
     - serverless-prune-plugin
 
 constructs:
+    inbox-queue:
+        type: queue
+        batchSize: 1
+        maxConcurrency: 10
+        maxRetries: 5
+        worker:
+            handler: lambda.inboxQueueWorker
+            timeout: 300
+            reservedConcurrency: 10
+            vpc:
+                securityGroupIds:
+                    - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+                subnetIds:
+                    - Ref: PrivateSubnetA
     notifications-queue:
         type: queue
         worker:
@@ -128,6 +142,7 @@ provider:
         PORT: ${env:PORT, 3000}
         INBOX_DELETE_EXPIRED_RECORDS: ${env:INBOX_DELETE_EXPIRED_RECORDS, "false"}
         LAMBDA_STAGE: ${opt:stage, "dev"}
+        INBOX_BATCH_ITEMS_PER_HOUR: ${env:INBOX_BATCH_ITEMS_PER_HOUR, '10000'}
         SEED: ${env:SEED}
         DOMAIN_NAME: ${env:DOMAIN_NAME}
         CLIENT_APP_DOMAIN_NAME: ${env:CLIENT_APP_DOMAIN_NAME}
@@ -153,6 +168,7 @@ provider:
         REDIS_PORT:
             'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Port]
         NOTIFICATIONS_QUEUE_URL: ${construct:notifications-queue.queueUrl}
+        INBOX_QUEUE_URL: ${construct:inbox-queue.queueUrl}
         SKILL_EMBEDDING_GOOGLE_API_KEY: ${env:SKILL_EMBEDDING_GOOGLE_API_KEY, ""}
         SKILL_EMBEDDING_GOOGLE_MODEL: ${env:SKILL_EMBEDDING_GOOGLE_MODEL, "gemini-embedding-001"}
         SKILL_EMBEDDING_BATCH_SIZE: ${env:SKILL_EMBEDDING_BATCH_SIZE, "25"}
@@ -177,6 +193,25 @@ provider:
         CREDENTIAL_REFRESH_ENABLED: ${env:CREDENTIAL_REFRESH_ENABLED, "false"}
         CREDENTIAL_REFRESH_DIGEST_SECRET: ${env:CREDENTIAL_REFRESH_DIGEST_SECRET, ""}
         CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS: ${env:CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS, "24"}
+        # Stable HMAC key for passcode-bearing share-link request fingerprints.
+        SHARE_LINK_REQUEST_HASH_SECRET: ${env:SHARE_LINK_REQUEST_HASH_SECRET, ""}
+        # LC-2187 share-link service wiring and automatic maintenance. Every value is
+        # bounded and re-validated fail-closed at runtime. Never read from the
+        # scheduled event payload.
+        SHARE_LINK_MAINTENANCE_NAMESPACE: ${env:SHARE_LINK_MAINTENANCE_NAMESPACE, ""}
+        SHARE_LINK_MAINTENANCE_ORIGIN: ${env:SHARE_LINK_MAINTENANCE_ORIGIN, ""}
+        SHARE_LINK_MAINTENANCE_AUDIENCE: ${env:SHARE_LINK_MAINTENANCE_AUDIENCE, ""}
+        SHARE_LINK_MAINTENANCE_ALLOW_INSECURE_LOOPBACK: ${env:SHARE_LINK_MAINTENANCE_ALLOW_INSECURE_LOOPBACK, "false"}
+        SHARE_LINK_MAINTENANCE_CLAIMANT: ${env:SHARE_LINK_MAINTENANCE_CLAIMANT, "brain-share-link-maintenance"}
+        SHARE_LINK_MAINTENANCE_RECOVERY_LIMIT: ${env:SHARE_LINK_MAINTENANCE_RECOVERY_LIMIT, "25"}
+        SHARE_LINK_MAINTENANCE_CLEANUP_LIMIT: ${env:SHARE_LINK_MAINTENANCE_CLEANUP_LIMIT, "25"}
+        SHARE_LINK_MAINTENANCE_LEASE_MS: ${env:SHARE_LINK_MAINTENANCE_LEASE_MS, "120000"}
+        SHARE_LINK_MAINTENANCE_CLAIM_MS: ${env:SHARE_LINK_MAINTENANCE_CLAIM_MS, "300000"}
+        SHARE_LINK_MAINTENANCE_BUDGET_MS: ${env:SHARE_LINK_MAINTENANCE_BUDGET_MS, "60000"}
+        SHARE_LINK_MAINTENANCE_INTERVAL_MS: ${env:SHARE_LINK_MAINTENANCE_INTERVAL_MS, "300000"}
+        SHARE_LINK_MAINTENANCE_REQUEST_TIMEOUT_MS: ${env:SHARE_LINK_MAINTENANCE_REQUEST_TIMEOUT_MS, "10000"}
+        SHARE_LINK_MAINTENANCE_FINALIZE_RESERVE_MS: ${env:SHARE_LINK_MAINTENANCE_FINALIZE_RESERVE_MS, "5000"}
+        SHARE_LINK_MAINTENANCE_GRAPH_TIMEOUT_MS: ${env:SHARE_LINK_MAINTENANCE_GRAPH_TIMEOUT_MS, "15000"}
     tracing:
         apiGateway: true
         lambda: true
@@ -190,6 +225,31 @@ provider:
                 - ETag
 
 functions:
+    inboxDeadLetterWorker:
+        handler: lambda.inboxDeadLetterWorker
+        timeout: 30
+        reservedConcurrency: 2
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - sqs:
+                  arn: ${construct:inbox-queue.dlqArn}
+                  batchSize: 1
+                  functionResponseType: ReportBatchItemFailures
+    inboxQueueDispatcher:
+        handler: lambda.inboxQueueDispatcher
+        timeout: 60
+        reservedConcurrency: 1
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - schedule: rate(1 minute)
     inboxMaintenance:
         handler: lambda.inboxMaintenanceHandler
         timeout: 300
@@ -201,6 +261,23 @@ functions:
         events:
             - schedule:
                   rate: rate(1 day)
+                  enabled: true
+
+    # LC-2187 share-link recovery + cleanup. Dedicated entrypoint (no lambda.ts
+    # import-time work). Runs automatically with valid service configuration;
+    # absent wiring remains inert and partial wiring fails closed. The cadence
+    # matches the default Docker maintenance interval (5 minutes).
+    shareLinkMaintenance:
+        handler: shareLinkMaintenanceLambda.shareLinkMaintenanceHandler
+        timeout: 300
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - schedule:
+                  rate: rate(5 minutes)
                   enabled: true
 
     trpc:
@@ -288,6 +365,40 @@ functions:
 
 resources:
     Resources:
+        InboxQueueAgeAlarm:
+            Type: AWS::CloudWatch::Alarm
+            Properties:
+                AlarmDescription: Inbox issuance has waited over five minutes
+                Namespace: AWS/SQS
+                MetricName: ApproximateAgeOfOldestMessage
+                Dimensions:
+                    - Name: QueueName
+                      Value:
+                          Fn::Select:
+                              - 4
+                              - Fn::Split: ['/', '${construct:inbox-queue.queueUrl}']
+                Statistic: Maximum
+                Period: 60
+                EvaluationPeriods: 2
+                Threshold: 300
+                ComparisonOperator: GreaterThanThreshold
+                TreatMissingData: notBreaching
+        InboxDispatcherErrorsAlarm:
+            Type: AWS::CloudWatch::Alarm
+            Properties:
+                AlarmDescription: Durable inbox dispatch or recovery failed in three of five minutes
+                Namespace: AWS/Lambda
+                MetricName: Errors
+                Dimensions:
+                    - Name: FunctionName
+                      Value: { Ref: InboxQueueDispatcherLambdaFunction }
+                Statistic: Sum
+                Period: 60
+                EvaluationPeriods: 5
+                DatapointsToAlarm: 3
+                Threshold: 0
+                ComparisonOperator: GreaterThanThreshold
+                TreatMissingData: notBreaching
         VPC:
             Type: AWS::EC2::VPC
             Properties:

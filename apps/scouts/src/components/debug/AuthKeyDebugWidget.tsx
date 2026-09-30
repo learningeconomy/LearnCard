@@ -24,6 +24,7 @@ import {
 import {
     authStore,
     authUserStore,
+    useSignInAdapter,
     currentUserStore,
     getAuthConfig,
     getSSSConfig,
@@ -324,6 +325,7 @@ const Section: React.FC<{
 // ---------------------------------------------------------------------------
 
 export const AuthKeyDebugWidget: React.FC = () => {
+    const adapter = useSignInAdapter();
     const [isOpen, setIsOpen] = useState(false);
     const [copied, setCopied] = useState<string | null>(null);
     const [refreshKey, setRefreshKey] = useState(0);
@@ -346,6 +348,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
         isReady,
         did,
         authSessionValid,
+        authProvider,
         wallet,
         walletReady,
         isLoggedIn,
@@ -387,7 +390,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
             const authUser = 'authUser' in state ? state.authUser : null;
 
             if (authUser) {
-                rows.push({ label: 'Auth UID', value: authUser.uid });
+                rows.push({ label: 'Auth UID', value: authUser.id });
                 rows.push({ label: 'Auth Email', value: authUser.email ?? '—' });
             }
         }
@@ -566,20 +569,21 @@ export const AuthKeyDebugWidget: React.FC = () => {
         setServerError(null);
 
         try {
-            // Use the live Firebase SDK user (not the zustand store's plain object)
-            const { auth } = await import('../../firebase/firebase');
-            const liveUser = auth().currentUser;
+            const liveUser = await authProvider?.getCurrentUser();
 
             if (!liveUser) {
                 throw new Error('Firebase SDK has no current user (session may be expired)');
             }
 
-            const token = await liveUser.getIdToken();
+            const token = await authProvider?.getIdToken();
 
             const response = await fetch(`${sssServerUrl}/keys/auth-share`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ authToken: token, providerType: 'firebase' }),
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType: authProvider?.getProviderType(),
+                }),
             });
 
             if (!response.ok) {
@@ -624,7 +628,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
         } finally {
             setServerLoading(false);
         }
-    }, [authUser]);
+    }, [authUser, authProvider]);
 
     // --- Derive both DID formats for comparison ---
     useEffect(() => {
@@ -663,9 +667,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
             // This does NOT clear local storage/coordinator state — it only
             // kills the Firebase auth session so getIdToken() will fail,
             // simulating a session expiration.
-            const { signOut } = await import('firebase/auth');
-            const firebaseAuth = (await import('../../firebase/firebase')).auth();
-            await signOut(firebaseAuth);
+            await adapter.signOut();
 
             // Clear the auth user store so the coordinator detects sign-out
             authUserStore.set.setUser(null);
@@ -677,7 +679,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
             log.error('invalidate session error', e);
             alert(`Failed: ${e instanceof Error ? e.message : String(e)}`);
         }
-    }, [authUser]);
+    }, [authUser, adapter]);
 
     const handleExportEvents = useCallback(async () => {
         const exportData = {

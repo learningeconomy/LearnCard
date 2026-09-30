@@ -2,7 +2,7 @@ import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 
-const { credentialList } = vi.hoisted(() => ({ credentialList: { value: undefined as any } }));
+const { credentialList } = vi.hoisted(() => ({ credentialList: { value: undefined as unknown } }));
 
 vi.mock('learn-card-base', async () => ({
     ...(await (await import('../../../test-utils/mockLearnCardBase')).learnCardBaseEnumMock()),
@@ -16,7 +16,7 @@ vi.mock('learn-card-base', async () => ({
     categoryMetadata: {},
 }));
 vi.mock('learn-card-base/hooks/useOnScreen', () => ({ default: () => false }));
-vi.mock('../../../components/boost/boost-earned-card/BoostEarnedCard', () => ({
+vi.mock('./PassportCredentialCard', () => ({
     default: ({ record }: { record: { title?: string } }) => (
         <div data-testid="card">{record.title}</div>
     ),

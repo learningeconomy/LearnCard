@@ -14,7 +14,9 @@ import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayC
 import BoostMediaPreview from './BoostMediaPreview';
 import BoostFooterLayout from '../../../accessibility/AccessibleBoostFooterLayout';
 import AccessibleCredentialCard from '../../../accessibility/AccessibleCredentialCard';
-import ClrTranscriptFullPage from '../../../clr-transcript/surfaces/ClrTranscriptFullPage';
+import ClrTranscriptFullPage, {
+    createClrRecordNavigator,
+} from '../../../clr-transcript/surfaces/ClrTranscriptFullPage';
 import ClrCourseDetailPanel from '../../../clr-transcript/ClrCourseDetailPanel';
 import {
     isStandaloneCourseCredential,
@@ -196,6 +198,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
         newModal(
             <BoostDetailsSideMenu
                 credential={selectedCredential}
+                shareCredentialUri={boostUri ?? credentialUri}
                 categoryType={categoryType}
                 verificationItems={detailVerificationItems}
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
@@ -276,6 +279,24 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     const hasClrEvidence = clrEvidence.length > 0;
     const standaloneCourse = isStandaloneCourse ? clrModel?.courses[0] : undefined;
     const showsCoursePanel = Boolean(standaloneCourse && clrModel);
+    const clrRecordNavigator = useMemo(
+        () =>
+            clrModel
+                ? createClrRecordNavigator({
+                      model: clrModel,
+                      boost: clrCredential,
+                      adminMode: false,
+                      openPanel: panel => {
+                          newModal(panel, undefined, {
+                              desktop: ModalTypes.Right,
+                              mobile: ModalTypes.Right,
+                          });
+                      },
+                  })
+                : undefined,
+        [clrCredential, clrModel, newModal]
+    );
+    const handleSelectClrRecord = clrRecordNavigator?.selectRecord;
     let previewWrapperPaddingClass = '';
     let previewContentPaddingClass = '';
 
@@ -347,8 +368,8 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                         course={standaloneCourse}
                         boost={clrCredential}
                         showCloseButton={false}
-                        associations={clrModel.associations}
-                        competencies={clrModel.competencies}
+                        model={clrModel}
+                        onSelectRecord={handleSelectClrRecord}
                         issuerName={clrModel.header.issuerName?.value}
                         issuerLogo={getClrIssuerLogo(clrModel)}
                     />
@@ -423,6 +444,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                     {!isMobile && !isClrCredential && !showsCoursePanel && (
                         <BoostDetailsSideBar
                             credential={selectedCredential}
+                            shareCredentialUri={boostUri ?? credentialUri}
                             categoryType={categoryType}
                             verificationItems={detailVerificationItems}
                             customLinkedCredentialsComponent={customLinkedCredentialsComponent}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => {
@@ -72,7 +72,8 @@ vi.mock('learn-card-base', () => ({
 import EndorsementRequestModal from './EndorsementRequestModal';
 
 const credential = { id: 'credential:test' } as never;
-const shareLinkInfo = 'uri=credential%3Atest&seed=request-seed&pin=1234';
+const shareLinkInfo =
+    'uri=credential%3Atest&seed=request-seed&pin=1234&credentialId=credential%3Atest';
 
 describe('EndorsementRequestModal', () => {
     beforeEach(() => {
@@ -99,7 +100,11 @@ describe('EndorsementRequestModal', () => {
 
     it('fetches once when wallet hooks change function identity after rerender', async () => {
         const { rerender } = render(
-            <EndorsementRequestModal credential={credential} shareLinkInfo={shareLinkInfo} />
+            <EndorsementRequestModal
+                credential={credential}
+                targetCredential={credential}
+                shareLinkInfo={shareLinkInfo}
+            />
         );
 
         await screen.findByText('Existing endorsement');
@@ -107,11 +112,45 @@ describe('EndorsementRequestModal', () => {
 
         await act(async () => {
             rerender(
-                <EndorsementRequestModal credential={credential} shareLinkInfo={shareLinkInfo} />
+                <EndorsementRequestModal
+                    credential={credential}
+                    targetCredential={credential}
+                    shareLinkInfo={shareLinkInfo}
+                />
             );
         });
 
         expect(mocks.getSentCredentials).toHaveBeenCalledOnce();
         expect(screen.getByText('Existing endorsement')).toBeInTheDocument();
+    });
+
+    it('does not approve a different credential that reused the same presentation link', async () => {
+        mocks.getSentCredentials.mockReset();
+        mocks.getSentCredentials.mockResolvedValue([
+            {
+                uri: 'endorsement:other-credential',
+                from: 'did:example:endorser',
+                sent: new Date(),
+                received: true,
+                metadata: {
+                    type: 'endorsement',
+                    sharedUri:
+                        'uri=credential%3Atest&seed=request-seed&pin=1234&credentialId=credential%3Aother',
+                    relationship: { type: 'friend', label: 'Friend' },
+                },
+            },
+        ]);
+
+        render(
+            <EndorsementRequestModal
+                credential={credential}
+                targetCredential={credential}
+                shareLinkInfo={shareLinkInfo}
+            />
+        );
+
+        await waitFor(() => expect(mocks.getSentCredentials).toHaveBeenCalledOnce());
+        expect(mocks.readCredential).not.toHaveBeenCalled();
+        expect(screen.queryByText('Existing endorsement')).not.toBeInTheDocument();
     });
 });

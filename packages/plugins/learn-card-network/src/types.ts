@@ -11,6 +11,18 @@ import {
     VP,
     SentCredentialInfo,
     JWE,
+    CreateShareLinkInput,
+    UpdateShareLinkInput,
+    ListShareLinksInput,
+    PaginatedShareLinks,
+    ShareLinkOperationKeyInput,
+    ShareLinkOwnerCommitOutput,
+    ShareLinkOwnerContentOutput,
+    ShareLinkOwnerStatusOutput,
+    ShareLinkOwnerRecoveryOutput,
+    ShareLinkPublicState,
+    ShareLinkPublicContentView,
+    AcknowledgeViewOutput,
     Boost,
     BoostQuery,
     LCNSigningAuthorityForUserType,
@@ -53,6 +65,9 @@ import {
     AuthGrantType,
     AuthGrantQuery,
     IssueInboxCredentialType,
+    IssueInboxCredentialBatch,
+    InboxBatchReceipt,
+    InboxBatchStatus,
     InboxCredentialType,
     PaginatedInboxCredentialsType,
     PaginatedSkillFrameworksType,
@@ -119,7 +134,7 @@ import {
     GetCredentialRefreshHistoryInput,
     GetCredentialRefreshHistoryResult,
 } from '@learncard/types';
-import { Plugin } from '@learncard/core';
+import { LearnCard, Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
 import { VerifyExtension } from '@learncard/vc-plugin';
 
@@ -211,6 +226,14 @@ export type LearnCardNetworkPluginMethods = {
     getManagedProfiles: (
         options?: Partial<PaginationOptionsType> & { query?: LCNProfileQuery }
     ) => Promise<PaginatedLCNProfiles>;
+    /**
+     * Returns a new LearnCard instance whose network plugin sends every request with the
+     * `X-LearnCard-Act-As` header set to `profileId`, asking the server to swap the acting
+     * profile for the duration of each request. Token scope is unchanged; the server responds
+     * `403` if the caller doesn't manage `profileId`, or if an API token's grant doesn't cover
+     * it. The original instance (and its headers) is left untouched.
+     */
+    actAs: (profileId: string) => Promise<ActingLearnCard>;
     claimPendingGuardianLinks: () => Promise<
         Array<{ childProfileId: string; childDisplayName: string; managerId: string | null }>
     >;
@@ -280,6 +303,48 @@ export type LearnCardNetworkPluginMethods = {
 
     invalidateInvite: (challenge: string) => Promise<boolean>;
 
+    /**
+     * LC-2187 authenticated owner share-link methods. All owner identity and
+     * namespace binding is derived server-side from the authenticated session;
+     * no caller-supplied owner/namespace/object authority is accepted.
+     */
+    createShareLink: (input: CreateShareLinkInput) => Promise<ShareLinkOwnerCommitOutput>;
+    updateShareLink: (input: UpdateShareLinkInput) => Promise<ShareLinkOwnerCommitOutput>;
+    revokeShareLink: (input: {
+        id: string;
+        expectedVersion?: number;
+        clientRequestId?: string;
+    }) => Promise<ShareLinkOwnerCommitOutput>;
+    getShareLink: (id: string) => Promise<ShareLinkOwnerStatusOutput>;
+    getShareLinkOperationStatus: (
+        input: ShareLinkOperationKeyInput
+    ) => Promise<ShareLinkOwnerStatusOutput>;
+    retryShareLinkOperation: (
+        input: ShareLinkOperationKeyInput
+    ) => Promise<ShareLinkOwnerStatusOutput>;
+    getShareLinkRecovery: (id: string) => Promise<ShareLinkOwnerRecoveryOutput>;
+    getShareLinkOwnerContent: (id: string) => Promise<ShareLinkOwnerContentOutput>;
+
+    /**
+     * Bounded, newest-first owner share list. Scope (namespace/owner) is derived
+     * server-side from the authenticated session; the input carries only a
+     * bounded `limit` and an opaque ordering cursor. Ineligible/unknown owners
+     * never receive `viewCount`/`lastViewedAt`.
+     */
+    listShareLinks: (input: ListShareLinksInput) => Promise<PaginatedShareLinks>;
+
+    /**
+     * LC-2187 PUBLIC (anonymous) share-link methods. These require no
+     * authentication and no profile: namespace/owner are derived server-side
+     * from trusted configuration and the committed share. `resolveShareLink`
+     * returns metadata only and never counts; `getShareLinkContent` returns the
+     * guarded ciphertext envelope plus a uniformly shaped opaque receipt;
+     * `acknowledgeShareLinkView` always resolves to `{ ok: true }`.
+     */
+    resolveShareLink: (id: string, passcode?: string) => Promise<ShareLinkPublicState>;
+    getShareLinkContent: (id: string, passcode?: string) => Promise<ShareLinkPublicContentView>;
+    acknowledgeShareLinkView: (receipt: string) => Promise<AcknowledgeViewOutput>;
+
     blockProfile: (profileId: string) => Promise<boolean>;
     unblockProfile: (profileId: string) => Promise<boolean>;
     getBlockedProfiles: () => Promise<LCNVisibleProfile[]>;
@@ -303,7 +368,12 @@ export type LearnCardNetworkPluginMethods = {
     getIncomingCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
     deleteCredential: (uri: string) => Promise<boolean>;
 
-    sendPresentation: (profileId: string, vp: VP, encrypt?: boolean) => Promise<string>;
+    sendPresentation: (
+        profileId: string,
+        vp: VP,
+        metadataOrEncrypt?: Record<string, unknown> | boolean,
+        encrypt?: boolean
+    ) => Promise<string>;
     acceptPresentation: (uri: string) => Promise<boolean>;
     getReceivedPresentations: (from?: string) => Promise<SentCredentialInfo[]>;
     getSentPresentations: (to?: string) => Promise<SentCredentialInfo[]>;
@@ -724,6 +794,27 @@ export type LearnCardNetworkPluginMethods = {
     revokeAuthGrant: (id: string) => Promise<boolean>;
     getAPITokenForAuthGrant: (id: string) => Promise<string>;
 
+    /** Queue 1–100 credentials; workers may start up to a minute later. Use sendCredentialViaInbox for immediate single issuance. */
+    sendCredentialsViaInbox: (batch: IssueInboxCredentialBatch) => Promise<InboxBatchReceipt>;
+    /** Explicit batch alias for sendCredentialsViaInbox. Returns a durable receipt. */
+    sendCredentialBatchViaInbox: (batch: IssueInboxCredentialBatch) => Promise<InboxBatchReceipt>;
+    /** Ordered results and disjoint success/failure/unconfirmed counts. `done` includes unconfirmed outcomes.
+     * @see https://docs.learncard.com/sdks/learncard-network/universal-inbox-api
+     */
+    getInboxCredentialBatch: (batchId: string) => Promise<InboxBatchStatus>;
+    /** Poll until done with bounded backoff. Abort/timeout stops waiting, not processing. */
+    waitForInboxCredentialBatch: (
+        batchId: string,
+        options?: WaitForInboxCredentialBatchOptions
+    ) => Promise<InboxBatchStatus>;
+    /** Submit once and wait; persist the receipt with onSubmitted for recovery after timeout. */
+    sendCredentialsViaInboxAndWait: (
+        batch: IssueInboxCredentialBatch,
+        options?: WaitForInboxCredentialBatchOptions & {
+            onSubmitted?: (receipt: InboxBatchReceipt) => void | Promise<void>;
+        }
+    ) => Promise<InboxBatchStatus>;
+    /** Issue one credential synchronously, without waiting for the batch dispatcher. */
     sendCredentialViaInbox: (
         issueInboxCredential: IssueInboxCredentialType
     ) => Promise<IssueInboxCredentialResponseType>;
@@ -1016,6 +1107,16 @@ export type LearnCardNetworkPluginMethods = {
 };
 
 /** @group LearnCardNetwork Plugin */
+/**
+ * The wallet returned by `invoke.actAs`: the caller's existing plugins with a network
+ * plugin bound to the target profile appended. The caller's plugin list cannot be named
+ * from inside the plugin's own method map, hence the open tuple.
+ */
+export type ActingLearnCard = LearnCard<
+    [...Plugin[], LearnCardNetworkPlugin],
+    'id' | 'read' | 'store'
+>;
+
 export type LearnCardNetworkPlugin = Plugin<
     'LearnCard Network',
     'id' | 'read' | 'store',
@@ -1033,3 +1134,12 @@ export type TrustedBoostRegistryEntry = {
     url: string;
     did: string;
 };
+
+export interface WaitForInboxCredentialBatchOptions {
+    /** Overall polling deadline; defaults to ten minutes. */
+    timeoutMs?: number;
+    /** Initial interval; increases by 1.5x up to ten seconds (or this interval if larger). */
+    intervalMs?: number;
+    signal?: AbortSignal;
+    onProgress?: (status: InboxBatchStatus) => void;
+}

@@ -111,7 +111,9 @@ describe('CLI: one folder, every command', () => {
             expect(init.profileId).toBeTruthy();
             expect(JSON.parse(cli('init', '--json')).created).toBe(false);
             expect(() => cliRaw('sned', 'x@y.com')).toThrow(/unknown command 'sned'/);
-            expect(() => cli('send', 'notanemail')).toThrow(/not an email address/);
+            expect(() => cli('send', 'Not A Recipient!')).toThrow(
+                /not an email, phone number, profile ID, or DID/
+            );
         }
 
         // setup-signing creates identity + profile + primary signing authority, idempotently

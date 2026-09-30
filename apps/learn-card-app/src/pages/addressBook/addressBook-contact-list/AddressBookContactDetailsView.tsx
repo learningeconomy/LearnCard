@@ -36,9 +36,7 @@ import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadg
 
 import { CalendarIcon } from 'learn-card-base/svgs/CalendarIcon';
 import { CredentialGeneralIcon } from 'learn-card-base/svgs/CredentialGeneralIcon';
-import BoostOutline3 from 'learn-card-base/svgs/BoostOutline3';
 
-import BoostTemplateSelector from '../../../components/boost/boost-template/BoostTemplateSelector';
 import useLCNGatedAction from '../../../components/network-prompts/hooks/useLCNGatedAction';
 import SlimCaretLeft from '../../../components/svgs/SlimCaretLeft';
 import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
@@ -63,7 +61,6 @@ type ContactWithRelationship = LCNProfile & {
 type AddressBookContactDetailsViewProps = {
     contact: ContactWithRelationship | null;
     showCloseButton: boolean;
-    showBoostButton: boolean;
     showRequestButton: boolean;
     handleConnectionRequest: (
         event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
@@ -178,7 +175,6 @@ const ContactCredentialPreview: React.FC<{ item: ContactCredentialHistoryItem }>
 export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsViewProps> = ({
     contact,
     showCloseButton,
-    showBoostButton,
     showRequestButton,
     handleConnectionRequest = () => {},
     showDeleteButton,
@@ -202,7 +198,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
     const [showOverflow, setShowOverflow] = useState(false);
     const [credentialAtBeginning, setCredentialAtBeginning] = useState(true);
     const [credentialAtEnd, setCredentialAtEnd] = useState(false);
-    const [loadingAction, setLoadingAction] = useState<'boost' | 'send' | 'block' | null>(null);
+    const [loadingAction, setLoadingAction] = useState<'send' | 'block' | null>(null);
 
     const connectionStatus = contact?.connectionStatus;
     const isConnected =
@@ -254,24 +250,6 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
-        }
-    };
-
-    const handleBoost = async (): Promise<void> => {
-        setLoadingAction('boost');
-
-        try {
-            const { prompted } = await gate();
-            if (prompted) return;
-
-            closeModal();
-            newModal(
-                <BoostTemplateSelector otherUserProfileId={contact.profileId} />,
-                { hideButton: true },
-                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-            );
-        } finally {
-            setLoadingAction(null);
         }
     };
 
@@ -419,40 +397,21 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
         <footer className="shrink-0 border-t border-grayscale-200 bg-white px-6 py-4">
             <div className="mx-auto w-full max-w-md space-y-3">
                 {isConnected ? (
-                    <>
-                        {showBoostButton && (
-                            <button
-                                type="button"
-                                className={`${PRIMARY_BUTTON_CLASSES} !bg-blue-500`}
-                                disabled={Boolean(loadingAction)}
-                                onClick={handleBoost}
-                            >
-                                {loadingAction === 'boost' ? (
-                                    <IonSpinner className="h-4 w-4 text-white" />
-                                ) : (
-                                    <BoostOutline3 className="text-lg text-blue-500" />
-                                )}
-                                {loadingAction === 'boost'
-                                    ? m['contacts.opening']()
-                                    : m['contacts.boost']()}
-                            </button>
+                    <button
+                        type="button"
+                        className={`${SECONDARY_BUTTON_CLASSES} border border-solid border-1px border-grayscale-200 font-semibold text-sm rounded-full text-grayscale-900`}
+                        disabled={Boolean(loadingAction)}
+                        onClick={handleSendCredential}
+                    >
+                        {loadingAction === 'send' ? (
+                            <IonSpinner className="h-4 w-4 text-grayscale-900" />
+                        ) : (
+                            <CredentialGeneralIcon className="text-lg text-grayscale-900" />
                         )}
-                        <button
-                            type="button"
-                            className={`${SECONDARY_BUTTON_CLASSES} border border-solid border-1px border-grayscale-200 font-semibold text-sm rounded-full text-grayscale-900`}
-                            disabled={Boolean(loadingAction)}
-                            onClick={handleSendCredential}
-                        >
-                            {loadingAction === 'send' ? (
-                                <IonSpinner className="h-4 w-4 text-grayscale-900" />
-                            ) : (
-                                <CredentialGeneralIcon className="text-lg text-grayscale-900" />
-                            )}
-                            {loadingAction === 'send'
-                                ? m['contacts.opening']()
-                                : m['contacts.sendCredential']()}
-                        </button>
-                    </>
+                        {loadingAction === 'send'
+                            ? m['contacts.opening']()
+                            : m['contacts.sendCredential']()}
+                    </button>
                 ) : (
                     connectionAction
                 )}

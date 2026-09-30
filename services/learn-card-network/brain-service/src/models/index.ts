@@ -69,6 +69,7 @@ Presentation.addRelationships({
         properties: {
             from: { property: 'from', schema: { type: 'string', required: true } },
             date: { property: 'date', schema: { type: 'string', required: true } },
+            metadata: { property: 'metadata', schema: { type: 'object', required: false } },
         },
     },
 });
@@ -256,4 +257,5 @@ export * from './Integration';
 export * from './AppStoreListing';
 export * from './CredentialActivity';
 export * from './CredentialRefresh';
+export * from './ShareLink';
 export * from './StatusList';

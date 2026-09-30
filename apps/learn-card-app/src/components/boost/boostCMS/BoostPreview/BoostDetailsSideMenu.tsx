@@ -34,6 +34,8 @@ import moment from 'moment';
 
 type BoostDetailsSideMenuProps = {
     credential: VC;
+    endorsementCredential?: VC;
+    shareCredentialUri?: string;
     categoryType?: CredentialCategoryEnum;
     customSkillsComponent?: React.ReactNode;
     verificationItems: VerificationItem[];
@@ -49,6 +51,8 @@ type BoostDetailsSideMenuProps = {
 };
 const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     credential,
+    endorsementCredential: endorsementCredentialProp,
+    shareCredentialUri,
     categoryType,
     customSkillsComponent,
     verificationItems,
@@ -62,6 +66,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     issuancesSummaryComponent,
     isPreview = false,
 }) => {
+    const endorsementCredential = endorsementCredentialProp ?? credential;
     const selectedTab = boostPreviewStore.useTracked.selectedTab();
 
     const { closeModal } = useModal();
@@ -118,7 +123,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
         </div>
     );
 
-    let activeTabDetails = null;
+    let activeTabDetails: React.ReactNode;
     switch (selectedTab) {
         case BoostPreviewTabsEnum.Details:
             activeTabDetails = (
@@ -180,14 +185,15 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
 
                     {!hideEndorsementRequestCard && (
                         <EndorsementCard
-                            credential={credential}
+                            credential={endorsementCredential}
+                            shareCredentialUri={shareCredentialUri}
                             categoryType={categoryType}
                             existingEndorsements={existingEndorsements}
                         />
                     )}
 
                     <EndorsementsList
-                        credential={credential}
+                        credential={endorsementCredential}
                         categoryType={categoryType}
                         existingEndorsements={existingEndorsements}
                     />
@@ -227,7 +233,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
             activeTabDetails = (
                 <>
                     <BoostEndorsementDetails
-                        credential={credential}
+                        credential={endorsementCredential}
                         categoryType={categoryType}
                         existingEndorsements={existingEndorsements}
                     />

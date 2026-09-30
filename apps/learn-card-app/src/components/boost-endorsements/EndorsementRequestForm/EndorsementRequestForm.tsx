@@ -14,8 +14,9 @@ import { CredentialCategoryEnum } from 'learn-card-base';
 
 export const EndorsementRequestForm: React.FC<{
     credential: VC;
+    shareCredentialUri?: string;
     categoryType: CredentialCategoryEnum;
-}> = ({ credential, categoryType }) => {
+}> = ({ credential, shareCredentialUri, categoryType }) => {
     const [endorsementRequest, setEndorsementRequest] = useState<EndorsementRequestState>(
         initialEndorsementRequestState
     );
@@ -27,6 +28,7 @@ export const EndorsementRequestForm: React.FC<{
                 <div className="w-full flex flex-col items-center justify-center px-4 pt-4 pb-[150px] bg-grayscale-100 h-full">
                     <EndorsementRequestOptions
                         credential={credential}
+                        shareCredentialUri={shareCredentialUri}
                         categoryType={categoryType}
                         endorsementRequest={endorsementRequest}
                         setEndorsementRequest={setEndorsementRequest}
