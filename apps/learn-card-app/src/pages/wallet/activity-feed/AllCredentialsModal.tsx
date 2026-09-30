@@ -1,37 +1,27 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { IonIcon, IonSpinner } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
-import { useGetCredentialList, categoryMetadata, CredentialCategoryEnum } from 'learn-card-base';
+import { useGetCredentialList } from 'learn-card-base';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
-import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
-import {
-    resolveActivityCategory,
-    isHiddenActivity,
-    groupByRelativeTime,
-} from './activityFeed.helpers';
+import PassportCredentialCard, { ActivityIndexRecord } from './PassportCredentialCard';
+import { isHiddenActivity, groupByRelativeTime } from './activityFeed.helpers';
 import * as m from '../../../paraglide/messages.js';
-
-type IndexRecord = {
-    id?: string;
-    uri: string;
-    category?: string;
-    title?: string;
-    date?: string;
-    imgUrl?: string;
-};
 
 export const AllCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { data, isPending, isFetching, hasNextPage, fetchNextPage } =
         useGetCredentialList(undefined);
     const sentinelRef = useRef<HTMLDivElement>(null);
-    const onScreen = useOnScreen(sentinelRef as any, '300px', [data?.pages?.length]);
+    // useOnScreen's legacy type omits null even though its implementation guards current.
+    const observerRef = sentinelRef as React.MutableRefObject<HTMLDivElement>;
+    const onScreen = useOnScreen(observerRef, '300px', [data?.pages?.length]);
 
     useEffect(() => {
         if (onScreen && hasNextPage) fetchNextPage();
     }, [onScreen, hasNextPage, fetchNextPage]);
 
     const groups = useMemo(() => {
-        const records = (data?.pages?.flatMap(p => p?.records ?? []) ?? []) as IndexRecord[];
+        const records = (data?.pages?.flatMap(p => p?.records ?? []) ??
+            []) as ActivityIndexRecord[];
         const visible = records
             .filter(r => r?.uri && !isHiddenActivity(r.category))
             .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''));
@@ -75,22 +65,9 @@ export const AllCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose
                             {group.label}
                         </p>
                         <div className="flex flex-wrap gap-3 justify-center sm:justify-start">
-                            {group.items.map(record => {
-                                const category = resolveActivityCategory(record.category);
-                                return (
-                                    <BoostEarnedCard
-                                        key={record.uri}
-                                        record={record}
-                                        categoryType={category}
-                                        defaultImg={
-                                            categoryMetadata[category as CredentialCategoryEnum]
-                                                ?.defaultImageSrc
-                                        }
-                                        useWrapper={false}
-                                        hideCardOptionsMenu
-                                    />
-                                );
-                            })}
+                            {group.items.map(record => (
+                                <PassportCredentialCard key={record.uri} record={record} />
+                            ))}
                         </div>
                     </div>
                 ))}

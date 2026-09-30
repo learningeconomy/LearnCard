@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { IonIcon } from '@ionic/react';
 import {
     fingerPrint,
@@ -8,18 +8,24 @@ import {
     phonePortraitOutline,
     chevronBackOutline,
     mailOutline,
+    checkmarkCircleOutline,
+    shieldOutline,
+    chevronDownOutline,
 } from 'ionicons/icons';
 import { QRCodeSVG } from 'qrcode.react';
 
 import { Capacitor } from '@capacitor/core';
 import { isWebAuthnSupported } from '@learncard/sss-key-manager';
-import { QrLoginRequester, getSSSConfig } from 'learn-card-base';
+import { Overlay, QrLoginRequester, getSSSConfig } from 'learn-card-base';
 import type { RecoveryReason } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
+import { EscrowRecoveryPanel } from './EscrowRecoveryPanel';
+import type { EscrowRecoveryPanelProps } from './EscrowRecoveryPanel';
 
 export type RecoveryFlowType = 'passkey' | 'phrase' | 'backup' | 'device' | 'email';
 
 interface RecoveryFlowModalProps {
+    escrowRecovery?: Omit<EscrowRecoveryPanelProps, 'available'>;
     availableMethods: { type: string; credentialId?: string; createdAt: string }[];
     recoveryReason?: RecoveryReason;
     maskedRecoveryEmail?: string | null;
@@ -28,6 +34,14 @@ interface RecoveryFlowModalProps {
     onRecoverWithBackup: (fileContents: string, password: string) => Promise<void>;
     onRecoverWithDevice?: (deviceShare: string, shareVersion?: number) => Promise<void>;
     onRecoverWithEmail?: (emailShare: string) => Promise<void>;
+    identityPhase?: 'enter_email' | 'verify_email' | 'choose_method' | 'new_login' | 'success';
+    identityEmail?: string;
+    /** Error surfaced by the coordinator (e.g. a consumed one-shot session). Shown alongside local errors. */
+    identityError?: string;
+    onSendIdentityCode?: (email: string) => Promise<void>;
+    onVerifyIdentityCode?: (code: string) => Promise<void>;
+    onContinueWithNewLogin?: () => void;
+    onFinishIdentityRecovery?: () => void;
     onCancel: () => void;
 }
 
@@ -38,7 +52,15 @@ const friendlyError = (e: unknown): string => {
             return m['recovery.connectionIssue']();
         if (e.message.includes('phrase') || e.message.includes('mnemonic'))
             return m['recovery.phraseInvalid']();
-        return e.message;
+        if (e.message.toLowerCase().includes('too many')) {
+            return m['recovery.identity.tooManyAttempts']();
+        }
+        if (e.message.toLowerCase().includes('code')) {
+            return m['recovery.identity.invalidCode']();
+        }
+        if (e.message.toLowerCase().includes('incorrect key')) {
+            return m['recovery.identity.invalidRecoveryMethod']();
+        }
     }
 
     return m['recovery.somethingWrong']();
@@ -65,6 +87,7 @@ const getDefaultCopy = () => ({
 });
 
 export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
+    escrowRecovery,
     availableMethods,
     recoveryReason,
     maskedRecoveryEmail,
@@ -73,8 +96,79 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     onRecoverWithBackup,
     onRecoverWithDevice,
     onRecoverWithEmail,
+    identityPhase,
+    identityEmail,
+    identityError: coordinatorIdentityError,
+    onSendIdentityCode,
+    onVerifyIdentityCode,
+    onContinueWithNewLogin,
+    onFinishIdentityRecovery,
     onCancel,
 }) => {
+    const hasMethod = (type: string) => availableMethods.some(m => m.type === type);
+    const webAuthnSupported = isWebAuthnSupported();
+
+    const allMethods = [
+        {
+            id: 'email' as const,
+            label: m['recovery.emailRecoveryLabel'](),
+            desc: m['recovery.method.emailDesc'](),
+            icon: mailOutline,
+            available: hasMethod('email') && !!onRecoverWithEmail,
+        },
+        {
+            id: 'phrase' as const,
+            label: m['recovery.method.phrase'](),
+            desc: m['recovery.phraseEnter25'](),
+            icon: documentTextOutline,
+            available: hasMethod('phrase'),
+        },
+        {
+            id: 'backup' as const,
+            label: m['recovery.method.backup'](),
+            desc: m['recovery.method.backupDesc'](),
+            icon: cloudUploadOutline,
+            available: hasMethod('backup'),
+        },
+        {
+            id: 'passkey' as const,
+            label: m['recovery.method.passkey'](),
+            desc: m['recovery.method.passkeyDesc'](),
+            icon: fingerPrint,
+            available: hasMethod('passkey') && webAuthnSupported,
+        },
+        {
+            id: 'device' as const,
+            label: m['recovery.signInFromDevice'](),
+            desc: m['recovery.anotherDeviceDesc'](),
+            icon: phonePortraitOutline,
+            available: !!onRecoverWithDevice,
+        },
+    ];
+
+    const methods = allMethods.filter(
+        method =>
+            !(identityPhase && method.id === 'device') &&
+            !(Capacitor.isNativePlatform() && method.id === 'passkey')
+    );
+
+    const availableCount = methods.filter(m => m.available).length;
+    const hasEscrow = hasMethod('escrow');
+    const canShowScreen2 = !!escrowRecovery && hasEscrow;
+    const initialScreen = availableCount === 0 && canShowScreen2 ? 2 : 1;
+
+    const [chosenScreen, setScreen] = useState<1 | 2>(initialScreen);
+    // Methods can load after mount: with nothing to pick, Screen 2 is the only useful view.
+    const screen = initialScreen === 2 ? 2 : chosenScreen;
+    const [showMore, setShowMore] = useState(false);
+
+    const screen2HeadingRef = useRef<HTMLHeadingElement>(null);
+    useEffect(() => {
+        if (screen === 2 && screen2HeadingRef.current) {
+            screen2HeadingRef.current.focus();
+        }
+    }, [screen]);
+
     const [activeMethod, setActiveMethod] = useState<RecoveryFlowType | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -83,9 +177,13 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     const [backupFile, setBackupFile] = useState<string | null>(null);
     const [backupPassword, setBackupPassword] = useState('');
     const [emailShare, setEmailShare] = useState('');
+    const [recoveryEmail, setRecoveryEmail] = useState(identityEmail ?? '');
+    const [verificationCode, setVerificationCode] = useState('');
 
-    const hasMethod = (type: string) => availableMethods.some(m => m.type === type);
-    const webAuthnSupported = isWebAuthnSupported();
+    const handleBack = (): void => {
+        setActiveMethod(null);
+        setError(null);
+    };
 
     const handlePasskeyRecovery = async () => {
         const passkeyMethod = availableMethods.find(m => m.type === 'passkey');
@@ -178,125 +276,448 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
         }
     };
 
-    const allMethods = [
-        {
-            id: 'email' as const,
-            label: m['recovery.emailRecoveryLabel'](),
-            desc: m['recovery.method.emailDesc'](),
-            icon: mailOutline,
-            available: hasMethod('email') && !!onRecoverWithEmail,
-        },
-        {
-            id: 'phrase' as const,
-            label: m['recovery.method.phrase'](),
-            desc: m['recovery.phraseEnter25'](),
-            icon: documentTextOutline,
-            available: hasMethod('phrase'),
-        },
-        {
-            id: 'backup' as const,
-            label: m['recovery.method.backup'](),
-            desc: m['recovery.method.backupDesc'](),
-            icon: cloudUploadOutline,
-            available: hasMethod('backup'),
-        },
-        {
-            id: 'passkey' as const,
-            label: m['recovery.method.passkey'](),
-            desc: m['recovery.method.passkeyDesc'](),
-            icon: fingerPrint,
-            available: hasMethod('passkey') && webAuthnSupported,
-        },
-        {
-            id: 'device' as const,
-            label: m['recovery.signInFromDevice'](),
-            desc: m['recovery.anotherDeviceDesc'](),
-            icon: phonePortraitOutline,
-            available: !!onRecoverWithDevice,
-        },
-    ];
-
-    // Hide passkey entirely on native platforms (WebAuthn unavailable in WKWebView / Android WebView)
-    const methods = Capacitor.isNativePlatform()
-        ? allMethods.filter(m => m.id !== 'passkey')
-        : allMethods;
-
     const phraseWordCount = phrase.trim() ? phrase.trim().split(/\s+/).length : 0;
 
-    // ── Method picker ────────────────────────────────────────────
+    const identityErrorMessage = error ?? coordinatorIdentityError ?? null;
+    const identityError = identityErrorMessage && (
+        <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
+            <IonIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
+            <span className="text-sm text-red-700 leading-relaxed">{identityErrorMessage}</span>
+        </div>
+    );
 
-    if (!activeMethod) {
-        return (
-            <div className="p-6 max-w-md mx-auto">
+    if (identityPhase === 'enter_email') {
+        const content = (
+            <div className="p-6 max-w-md mx-auto font-poppins">
                 <div className="text-center mb-6">
+                    <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                        <IonIcon icon={mailOutline} className="text-2xl" />
+                    </div>
                     <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
-                        {recoveryReason
-                            ? getRecoveryCopy()[recoveryReason].title
-                            : getDefaultCopy().title}
+                        {m['recovery.identity.title']()}
                     </h2>
-
                     <p className="text-sm text-grayscale-600 leading-relaxed">
-                        {recoveryReason
-                            ? getRecoveryCopy()[recoveryReason].description
-                            : getDefaultCopy().description}
+                        {m['recovery.identity.emailDescription']()}
                     </p>
                 </div>
 
-                <div className="space-y-2">
-                    {methods.map(method => (
-                        <button
-                            key={method.id}
-                            onClick={() => method.available && setActiveMethod(method.id)}
-                            disabled={!method.available}
-                            className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all ${
-                                method.available
-                                    ? 'bg-grayscale-10 hover:bg-grayscale-100 text-grayscale-900'
-                                    : 'bg-grayscale-10 text-grayscale-400 cursor-not-allowed opacity-60'
-                            }`}
-                        >
-                            <div
-                                className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                                    method.available
-                                        ? 'bg-emerald-50 text-emerald-700'
-                                        : 'bg-grayscale-200 text-grayscale-400'
-                                }`}
-                            >
-                                <IonIcon icon={method.icon} className="text-lg" />
-                            </div>
+                {identityError}
 
-                            <div className="flex-1 text-left">
-                                <p className="font-medium text-sm">{method.label}</p>
-
-                                <p className="text-xs text-grayscale-500 mt-0.5">
-                                    {method.available
-                                        ? method.desc
-                                        : m['recovery.method.passkeyNotSetup']()}
-                                </p>
-                            </div>
-                        </button>
-                    ))}
-                </div>
+                <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                    {m['recovery.identity.recoveryEmailLabel']()}
+                </label>
+                <input
+                    type="email"
+                    value={recoveryEmail}
+                    onChange={event => setRecoveryEmail(event.target.value)}
+                    placeholder={m['recovery.identity.recoveryEmailPlaceholder']()}
+                    autoComplete="email"
+                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                />
 
                 <button
+                    onClick={async () => {
+                        if (!recoveryEmail.trim() || !onSendIdentityCode) return;
+                        setLoading(true);
+                        setError(null);
+                        try {
+                            await onSendIdentityCode(recoveryEmail.trim());
+                        } catch (e) {
+                            setError(friendlyError(e));
+                        } finally {
+                            setLoading(false);
+                        }
+                    }}
+                    disabled={loading || !recoveryEmail.trim()}
+                    className="w-full mt-5 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                    {loading ? (
+                        <span className="flex items-center justify-center gap-2">
+                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            {m['recovery.identity.sendingCode']()}
+                        </span>
+                    ) : (
+                        m['recovery.identity.sendCode']()
+                    )}
+                </button>
+                <button
                     onClick={onCancel}
-                    className="w-full mt-6 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+                    className="w-full mt-3 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                 >
                     {m['common.cancel']()}
                 </button>
             </div>
         );
+        return <Overlay onDismiss={loading ? undefined : onCancel}>{content}</Overlay>;
+    }
+
+    if (identityPhase === 'verify_email') {
+        const content = (
+            <div className="p-6 max-w-md mx-auto font-poppins">
+                <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
+                    {m['recovery.identity.checkEmail']()}
+                </h2>
+                <p className="text-sm text-grayscale-600 leading-relaxed mb-5">
+                    {m['recovery.identity.codeDescription']()}
+                </p>
+                {identityError}
+                <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                    {m['recovery.identity.codeLabel']()}
+                </label>
+                <input
+                    type="text"
+                    inputMode="numeric"
+                    value={verificationCode}
+                    onChange={event =>
+                        setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))
+                    }
+                    placeholder="000000"
+                    autoComplete="one-time-code"
+                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-center tracking-[0.3em] text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                />
+                <button
+                    onClick={async () => {
+                        if (verificationCode.length !== 6 || !onVerifyIdentityCode) return;
+                        setLoading(true);
+                        setError(null);
+                        try {
+                            await onVerifyIdentityCode(verificationCode);
+                        } catch (e) {
+                            setError(friendlyError(e));
+                        } finally {
+                            setLoading(false);
+                        }
+                    }}
+                    disabled={loading || verificationCode.length !== 6}
+                    className="w-full mt-5 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                    {loading ? (
+                        <span className="flex items-center justify-center gap-2">
+                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            {m['common.verifying']()}
+                        </span>
+                    ) : (
+                        m['recovery.identity.verifyCode']()
+                    )}
+                </button>
+                <button
+                    onClick={onCancel}
+                    className="w-full mt-3 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+                >
+                    {m['common.cancel']()}
+                </button>
+            </div>
+        );
+        return <Overlay onDismiss={loading ? undefined : onCancel}>{content}</Overlay>;
+    }
+
+    if (identityPhase === 'new_login') {
+        const content = (
+            <div className="p-8 max-w-md mx-auto text-center font-poppins">
+                <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                    <IonIcon icon={checkmarkCircleOutline} className="text-2xl" />
+                </div>
+                <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
+                    {m['recovery.identity.keyVerified']()}
+                </h2>
+                <p className="text-sm text-grayscale-600 leading-relaxed mb-6">
+                    {m['recovery.identity.newLoginDescription']()}
+                </p>
+                <button
+                    onClick={onContinueWithNewLogin}
+                    className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                >
+                    {m['recovery.identity.continueToLogin']()}
+                </button>
+            </div>
+        );
+        return <Overlay onDismiss={onCancel}>{content}</Overlay>;
+    }
+
+    if (identityPhase === 'success') {
+        const content = (
+            <div className="p-8 max-w-md mx-auto text-center font-poppins">
+                <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <IonIcon icon={checkmarkCircleOutline} className="text-3xl" />
+                </div>
+                <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
+                    {m['recovery.identity.successTitle']()}
+                </h2>
+                <p className="text-sm text-grayscale-600 leading-relaxed mb-6">
+                    {m['recovery.identity.successDescription']()}
+                </p>
+                <button
+                    onClick={onFinishIdentityRecovery}
+                    className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                >
+                    {m['common.done']()}
+                </button>
+            </div>
+        );
+        return <Overlay onDismiss={onFinishIdentityRecovery}>{content}</Overlay>;
+    }
+
+    // ── Method picker ────────────────────────────────────────────
+
+    if (!activeMethod) {
+        const getTitle = () => {
+            if (recoveryReason === 'new_device') return m['recovery.signInOnThisDevice']();
+            // Both mean this device's key no longer works; users just need to sign in again.
+            if (recoveryReason === 'stale_local_key' || recoveryReason === 'missing_server_data')
+                return m['recovery.signInAgainOnThisDevice']();
+            if (identityPhase === 'choose_method') return m['recovery.identity.chooseMethod']();
+            return getDefaultCopy().title;
+        };
+
+        const getDesc = () => {
+            if (recoveryReason === 'new_device') return m['recovery.signInOnThisDeviceDesc']();
+            if (recoveryReason === 'stale_local_key' || recoveryReason === 'missing_server_data')
+                return m['recovery.signInAgainOnThisDeviceDesc']();
+            if (identityPhase === 'choose_method')
+                return m['recovery.identity.chooseMethodDescription']();
+            return getDefaultCopy().description;
+        };
+
+        const availableMethodsList = methods.filter(m => m.available);
+        const unavailableMethodsList = methods.filter(m => !m.available);
+
+        let heroMethod = null;
+        let remainingMethods = availableMethodsList;
+
+        if (availableMethodsList.length > 0) {
+            const passkeyMethod = availableMethodsList.find(m => m.id === 'passkey');
+            const deviceMethod = availableMethodsList.find(m => m.id === 'device');
+
+            if (passkeyMethod) {
+                heroMethod = passkeyMethod;
+            } else if (deviceMethod) {
+                heroMethod = deviceMethod;
+            } else {
+                heroMethod = availableMethodsList[0];
+            }
+
+            const secondaryOrder = ['device', 'passkey', 'phrase', 'backup', 'email'];
+            remainingMethods = availableMethodsList
+                .filter(method => method.id !== heroMethod.id)
+                .sort((a, b) => secondaryOrder.indexOf(a.id) - secondaryOrder.indexOf(b.id));
+        }
+
+        const getHeroCopy = (id: string) => {
+            if (id === 'device')
+                return {
+                    label: m['recovery.hero.device'](),
+                    desc: m['recovery.hero.deviceDesc'](),
+                };
+            if (id === 'passkey')
+                return {
+                    label: m['recovery.hero.passkey'](),
+                    desc: m['recovery.hero.passkeyDesc'](),
+                };
+            const method = methods.find(m => m.id === id);
+            return { label: method?.label || '', desc: method?.desc || '' };
+        };
+
+        const renderMethodButton = (method: (typeof methods)[0], isHero: boolean) => {
+            const copy = isHero
+                ? getHeroCopy(method.id)
+                : {
+                      label: method.label,
+                      desc: method.available ? method.desc : m['recovery.notSetUp'](),
+                  };
+
+            return (
+                <button
+                    key={method.id}
+                    onClick={() => method.available && setActiveMethod(method.id)}
+                    disabled={!method.available}
+                    className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all ${
+                        method.available
+                            ? isHero
+                                ? 'bg-emerald-50 hover:bg-emerald-100 text-grayscale-900 border border-emerald-100'
+                                : 'bg-grayscale-10 hover:bg-grayscale-100 text-grayscale-900'
+                            : 'bg-grayscale-10 text-grayscale-400 cursor-not-allowed opacity-60'
+                    }`}
+                >
+                    <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                            method.available
+                                ? isHero
+                                    ? 'bg-emerald-100 text-emerald-700'
+                                    : 'bg-emerald-50 text-emerald-700'
+                                : 'bg-grayscale-200 text-grayscale-400'
+                        }`}
+                    >
+                        <IonIcon icon={method.icon} className="text-lg" />
+                    </div>
+
+                    <div className="flex-1 text-left">
+                        <p className="font-medium text-sm">{copy.label}</p>
+                        <p className="text-xs text-grayscale-500 mt-0.5">{copy.desc}</p>
+                    </div>
+                </button>
+            );
+        };
+
+        const content = (
+            <div className="p-6 max-w-md mx-auto">
+                {screen === 1 ? (
+                    <div className="animate-fade-in-up motion-reduce:animate-none">
+                        <div className="text-center mb-6">
+                            <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
+                                {getTitle()}
+                            </h2>
+                            <p className="text-sm text-grayscale-600 leading-relaxed">
+                                {getDesc()}
+                            </p>
+                        </div>
+
+                        {escrowRecovery && (
+                            <EscrowRecoveryPanel
+                                key={escrowRecovery.scope}
+                                {...escrowRecovery}
+                                view="status"
+                                pinAvailable={
+                                    !identityPhase && escrowRecovery.pinAvailable === true
+                                }
+                                available={hasEscrow}
+                            />
+                        )}
+
+                        <div className="space-y-2">
+                            {heroMethod && renderMethodButton(heroMethod, true)}
+                            {remainingMethods.map(m => renderMethodButton(m, false))}
+
+                            {unavailableMethodsList.length > 0 && (
+                                <>
+                                    <button
+                                        onClick={() => setShowMore(!showMore)}
+                                        aria-expanded={showMore}
+                                        aria-controls="unavailable-methods"
+                                        className="flex items-center gap-1.5 px-1 py-2 min-h-[44px] text-xs font-medium text-grayscale-500 hover:text-grayscale-800 transition-colors rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                    >
+                                        <IonIcon
+                                            icon={chevronDownOutline}
+                                            aria-hidden="true"
+                                            className={`text-sm transition-transform motion-reduce:transition-none ${
+                                                showMore ? 'rotate-180' : ''
+                                            }`}
+                                        />
+                                        {showMore
+                                            ? m['recovery.hideNotSetUp']()
+                                            : m['recovery.showNotSetUp']({
+                                                  count: String(unavailableMethodsList.length),
+                                              })}
+                                    </button>
+
+                                    {showMore && (
+                                        <div
+                                            id="unavailable-methods"
+                                            className="space-y-2 animate-fade-in-up"
+                                        >
+                                            {unavailableMethodsList.map(m =>
+                                                renderMethodButton(m, false)
+                                            )}
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+
+                        {canShowScreen2 && (
+                            <div className="mt-6 pt-5 border-t border-grayscale-200 text-center">
+                                <p className="text-xs text-grayscale-500 mb-3">
+                                    {availableCount === 1 && availableMethodsList[0].id === 'device'
+                                        ? m['recovery.cantUseAnotherDevice']()
+                                        : m['recovery.cantUseAny']()}
+                                </p>
+                                <button
+                                    onClick={() => setScreen(2)}
+                                    className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                >
+                                    {m['recovery.getBackIntoAccount']()}
+                                </button>
+                            </div>
+                        )}
+
+                        <button
+                            onClick={onCancel}
+                            className="w-full mt-2 py-3 min-h-[44px] text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                        >
+                            {m['common.cancel']()}
+                        </button>
+                    </div>
+                ) : (
+                    <div className="animate-fade-in-up motion-reduce:animate-none">
+                        {initialScreen === 1 && (
+                            <button
+                                onClick={() => setScreen(1)}
+                                className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5"
+                            >
+                                <IonIcon icon={chevronBackOutline} className="text-xs" />
+                                {m['common.back']()}
+                            </button>
+                        )}
+
+                        <div className="text-center mb-6">
+                            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+                                <IonIcon icon={shieldOutline} className="text-2xl" />
+                            </div>
+                            <h2
+                                ref={screen2HeadingRef}
+                                tabIndex={-1}
+                                className="text-xl font-semibold text-grayscale-900 mb-1 focus:outline-none"
+                            >
+                                {m['recovery.getBackIntoAccount']()}
+                            </h2>
+                            <p className="text-sm text-grayscale-600 leading-relaxed">
+                                {m['recovery.getBackIntoAccountDesc']()}
+                            </p>
+                        </div>
+
+                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl mb-6">
+                            <p className="text-sm font-medium text-amber-900 mb-2">
+                                {m['recovery.thisWill']()}
+                            </p>
+                            <ul className="text-sm text-amber-800 space-y-1.5 list-disc pl-4">
+                                <li>{m['recovery.consequence.signOut']()}</li>
+                                <li>{m['recovery.consequence.turnOff']()}</li>
+                            </ul>
+                        </div>
+
+                        {escrowRecovery && (
+                            <EscrowRecoveryPanel
+                                key={escrowRecovery.scope}
+                                {...escrowRecovery}
+                                view="start"
+                                pinAvailable={
+                                    !identityPhase && escrowRecovery.pinAvailable === true
+                                }
+                                available={hasEscrow}
+                            />
+                        )}
+
+                        <button
+                            onClick={onCancel}
+                            className="w-full mt-6 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+                        >
+                            {m['common.cancel']()}
+                        </button>
+                    </div>
+                )}
+            </div>
+        );
+
+        return <Overlay onDismiss={onCancel}>{content}</Overlay>;
     }
 
     // ── Active method detail ─────────────────────────────────────
 
-    return (
+    const content = (
         <div className="p-6 max-w-md mx-auto">
             <button
-                onClick={() => {
-                    setActiveMethod(null);
-                    setError(null);
-                }}
-                className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5"
+                onClick={handleBack}
+                disabled={loading}
+                className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5 disabled:opacity-40 disabled:cursor-not-allowed"
             >
                 <IonIcon icon={chevronBackOutline} className="text-xs" />
                 {m['common.back']()}
@@ -601,6 +1022,8 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             )}
         </div>
     );
+
+    return <Overlay onDismiss={loading ? undefined : handleBack}>{content}</Overlay>;
 };
 
 export default RecoveryFlowModal;

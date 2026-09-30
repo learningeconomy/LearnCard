@@ -59,6 +59,7 @@ const VerifySharedResume = lazyWithRetry(() => import('./pages/resume-builder/Ve
 const AiPathways = lazyWithRetry(() => import('./pages/ai-pathways/AiPathways'));
 const MyAssistantPage = lazyWithRetry(() => import('./pages/my-assistant/MyAssistantPage'));
 const PathwaysShell = lazyWithRetry(() => import('./pages/pathways/PathwaysShell'));
+const ShareLinkViewer = lazyWithRetry(() => import('./components/share-links/ShareLinkViewer'));
 const ViewCredsBundle = lazyWithRetry(() => import('./components/creds-bundle/ViewCredsBundle'));
 const ViewSharedBoost = lazyWithRetry(() => import('./components/creds-bundle/ViewSharedBoost'));
 const MembershipPage = lazyWithRetry(() => import('./pages/membership/MembershipPage'));
@@ -136,33 +137,6 @@ const AppStoreAdminWithProvider: React.FC = () => (
         </DeveloperPortalProvider>
     </Suspense>
 );
-// import ExternalConsentFlowDoor from './pages/consentFlow/ExternalConsentFlowDoor';
-// import CustomWallet from './pages/hidden/CustomWallet';
-// import ClaimFromDashboard from './pages/claim-from-dashboard/ClaimFromDashboard';
-// import FamilyPage from './pages/familyPage/FamilyPage';
-const AdminToolsPage = lazyWithRetry(() => import('./pages/adminToolsPage/AdminToolsPage'));
-const ViewAllManagedBoostsPage = lazyWithRetry(
-    () => import('./pages/adminToolsPage/ViewAllManagedBoostsPage')
-);
-const BulkBoostImportPage = lazyWithRetry(
-    () => import('./pages/adminToolsPage/bulk-import/BulkBoostImportPage')
-);
-const ManageServiceProfilesPage = lazyWithRetry(
-    () => import('./pages/adminToolsPage/ManageServiceProfilePage')
-);
-const ManageConsentFlowContractsPage = lazyWithRetry(
-    () => import('./pages/adminToolsPage/ManageConsentFlowContractsPage')
-);
-const SigningAuthoritiesPage = lazyWithRetry(
-    () => import('./pages/adminToolsPage/SigningAuthoritiesPage')
-);
-const APITokensPage = lazyWithRetry(
-    () => import('./pages/adminToolsPage/api-tokens/APITokensPage')
-);
-const LearnerContextPromptTestPage = lazyWithRetry(
-    () => import('./pages/adminToolsPage/learner-context-test/LearnerContextPromptTestPage')
-);
-
 const DevCli = lazyWithRetry(() => import('./pages/devCli/DevCli'));
 const ClrTranscriptRendererDemo = lazyWithRetry(
     () => import('./pages/dev/ClrTranscriptRendererDemo')
@@ -232,6 +206,7 @@ export const Routes: React.FC = () => {
             >
                 <GenericErrorBoundary>
                     <Switch location={background || location}>
+                        <Route exact path="/s/:id" component={ShareLinkViewer} />
                         <SentryRoute exact path="/login" component={LoginPage} />
                         <SentryRoute
                             exact
@@ -349,50 +324,6 @@ export const Routes: React.FC = () => {
                             children={<VCClaimModalController />}
                         />
                         <SentryRoute path="/did-auth/:challenge" children={<DIDAuthModal />} />
-                        <PrivateRoute exact path="/admin-tools" component={AdminToolsPage} />
-                        <PrivateRoute
-                            exact
-                            path="/admin-tools/view-managed-boosts"
-                            component={ViewAllManagedBoostsPage}
-                        />
-                        <PrivateRoute
-                            exact
-                            path="/admin-tools/bulk-import"
-                            component={BulkBoostImportPage}
-                        />
-                        <PrivateRoute
-                            exact
-                            path="/admin-tools/service-profiles"
-                            component={ManageServiceProfilesPage}
-                        />
-                        <PrivateRoute
-                            exact
-                            path="/admin-tools/manage-contracts"
-                            component={ManageConsentFlowContractsPage}
-                        />
-                        <PrivateRoute
-                            exact
-                            path="/admin-tools/signing-authorities"
-                            component={SigningAuthoritiesPage}
-                        />
-                        <PrivateRoute
-                            exact
-                            path="/admin-tools/api-tokens"
-                            component={APITokensPage}
-                        />
-                        {flags.enableLearnerContextTest && (
-                            <PrivateRoute
-                                exact
-                                path="/admin-tools/learner-context-test"
-                                component={LearnerContextPromptTestPage}
-                            />
-                        )}
-
-                        <SentryRoute
-                            path="/claim-credential/:uri"
-                            children={<VCClaimModalController />}
-                        />
-                        <SentryRoute path="/did-auth/:challenge" children={<DIDAuthModal />} />
 
                         <SentryRoute exact path="/connect" component={ConnectPage} />
                         <SentryRoute exact path="/connect/:profileId" component={ConnectPage} />
@@ -489,9 +420,6 @@ const AI_GATED_PATHS = new Set([
  * await the matching preload before calling history.push, which keeps the
  * current page mounted (no Suspense fallback flash) until the destination
  * chunk is in memory.
- *
- * Note: admin-tools is intentionally excluded — it's a debug-only surface,
- * not worth eagerly downloading for end users.
  */
 export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
     '/dashboard': () => DashboardPage.preload(),

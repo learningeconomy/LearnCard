@@ -57,7 +57,6 @@
         "apps/scouts/src/pages/consentFlow/ConsentFlowSelectiveSharingWarning.tsx",
         "apps/scouts/src/pages/consentFlow/ConsentFlowSyncCard.tsx",
         "packages/learn-card-base/src/assets/styles/modal.scss",
-        "packages/learn-card-base/src/auth-coordinator/components/Overlay.tsx",
         "packages/learn-card-base/src/components/openid4vc/ExchangeErrorDisplay.tsx",
         "packages/learn-card-base/src/components/toast/Toast.tsx",
         "packages/learn-card-base/src/hooks/useSafeArea.ts",

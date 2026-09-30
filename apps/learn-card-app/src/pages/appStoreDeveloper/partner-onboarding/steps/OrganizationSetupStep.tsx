@@ -137,7 +137,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
     });
 
     // Filter to only show service profiles (organizations)
-    const profileRecords = (profiles as any)?.records ?? [];
+    const profileRecords = Array.isArray(profiles?.records) ? profiles.records : [];
     const serviceProfiles = profileRecords.filter(
         ({ profile }: { profile: LCNProfile }) => profile.isServiceProfile
     );
@@ -195,7 +195,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
         return true;
     };
 
-    const handleSelectExistingProfile = async (profile: LCNProfile, manager: LCNProfile) => {
+    const handleSelectExistingProfile = async (profile: LCNProfile) => {
         const orgProfile: OrganizationProfile = {
             did: profile.did!,
             profileId: profile.profileId!,
@@ -206,15 +206,8 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
 
         setSelectedProfile(orgProfile);
 
-        // Switch to this profile
-        const switchedUser = {
-            ...manager,
-            did: profile.did,
-            profileId: profile.profileId,
-            isServiceProfile: profile.isServiceProfile,
-        };
-
-        await handleSwitchAccount(switchedUser as LCNProfile);
+        // The manager grants access, but the switched identity is the organization.
+        await handleSwitchAccount(profile);
     };
 
     const handleUseCurrentAccount = () => {
@@ -233,10 +226,14 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
 
     const handleUseParentAccount = async () => {
         if (!parentUser || !parentUserDid) return;
+        const parentProfileId =
+            'profileId' in parentUser && typeof parentUser.profileId === 'string'
+                ? parentUser.profileId
+                : (parentUser.name ?? '');
 
         const parentProfile: OrganizationProfile = {
             did: parentUserDid,
-            profileId: (parentUser as any).profileId ?? parentUser.name ?? '',
+            profileId: parentProfileId,
             displayName: parentUser.name ?? 'Personal Account',
             image: parentUser.profileImage,
             isServiceProfile: false,
@@ -401,10 +398,13 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
 
             presentToast(`Organization "${orgName}" created successfully!`);
             setMode('select');
-        } catch (e: any) {
-            presentToast(`Failed to create organization: ${e?.message}`, {
-                type: ToastTypeEnum.Error,
-            });
+        } catch (e) {
+            presentToast(
+                `Failed to create organization: ${e instanceof Error ? e.message : String(e)}`,
+                {
+                    type: ToastTypeEnum.Error,
+                }
+            );
             log.error('Error creating organization:', e);
         } finally {
             setIsCreating(false);
@@ -558,18 +558,10 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
 
                             <div className="space-y-2">
                                 {serviceProfiles.map(
-                                    (
-                                        {
-                                            profile,
-                                            manager,
-                                        }: { profile: LCNProfile; manager: LCNProfile },
-                                        index: number
-                                    ) => (
+                                    ({ profile }: { profile: LCNProfile }, index: number) => (
                                         <button
                                             key={index}
-                                            onClick={() =>
-                                                handleSelectExistingProfile(profile, manager)
-                                            }
+                                            onClick={() => handleSelectExistingProfile(profile)}
                                             disabled={isSwitching}
                                             className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
                                                 selectedProfile?.did === profile.did

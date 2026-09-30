@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth } from '../../firebase/firebase';
-import { updateProfile } from 'firebase/auth';
+import { useSignInAdapter } from 'learn-card-base';
 import { Capacitor } from '@capacitor/core';
 import { z } from 'zod';
 import { Clipboard } from '@capacitor/clipboard';
@@ -58,7 +57,7 @@ type UserProfileUpdateFormProps = {
     showNetworkModal?: boolean;
     showNotificationsModal?: boolean;
     handleChapiInfo: () => void;
-    children?: any;
+    children?: React.ReactNode;
 };
 
 const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
@@ -71,6 +70,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     handleChapiInfo,
     children,
 }) => {
+    const adapter = useSignInAdapter();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,
@@ -177,7 +177,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
             ...currentUser,
             name: name ?? currentUser?.name ?? '',
             profileImage: photo ?? currentUser?.profileImage ?? '',
-        } as any);
+        });
     };
 
     const handleLCNetworkProfileUpdate = async () => {
@@ -198,9 +198,9 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
         // ! APPLE HOT FIX
         if (typeOfLogin === SocialLoginTypes.apple) {
             // ! apple's guidelines: name should NOT be required
-            await updateProfile(auth()?.currentUser as any, {
+            await adapter.updateProfile?.({
                 displayName: name ?? '',
-                photoURL: photo ?? '',
+                photoUrl: photo ?? '',
             });
 
             handleStorageUpdate();
@@ -220,7 +220,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             ...currentUser,
                             name: name ?? currentUser?.name ?? '',
                             profileImage: photo ?? currentUser?.profileImage ?? '',
-                        } as any);
+                        });
 
                         // update LC network profile
                         await handleLCNetworkProfileUpdate();
@@ -232,9 +232,9 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         }
                     } else {
                         // update firebase profile
-                        await updateProfile(auth()?.currentUser as any, {
+                        await adapter.updateProfile?.({
                             displayName: name as string,
-                            photoURL: photo as string,
+                            photoUrl: photo as string,
                         });
 
                         // update LC network profile

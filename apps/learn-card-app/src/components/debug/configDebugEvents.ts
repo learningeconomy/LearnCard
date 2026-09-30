@@ -34,7 +34,7 @@ export type ConfigDebugEventType =
     | 'config:resolved'
     // ── Bootstrap subsystems ──
     | 'bootstrap:start'
-    | 'bootstrap:firebase_init'
+    | 'bootstrap:auth_provider_init'
     | 'bootstrap:auth_config_set'
     | 'bootstrap:image_upload_config_set'
     | 'bootstrap:network_store_init'

@@ -1,5 +1,15 @@
 # @welibraryos/react-learn-card
 
+## 2.12.7
+
+### Patch Changes
+
+- [#1537](https://github.com/learningeconomy/LearnCard/pull/1537) [`e6f4524139f98b2ffb705a3e28df1f450fd3afe7`](https://github.com/learningeconomy/LearnCard/commit/e6f4524139f98b2ffb705a3e28df1f450fd3afe7) Thanks [@smurflo2](https://github.com/smurflo2)! - Improve keyboard and screen reader accessibility across shared form controls, dialogs, onboarding, and credential flows.
+
+- Updated dependencies [[`2991bd32b03e26736239dd8e586e2f720d9bcd45`](https://github.com/learningeconomy/LearnCard/commit/2991bd32b03e26736239dd8e586e2f720d9bcd45), [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e)]:
+    - @learncard/init@2.5.0
+    - @learncard/helpers@1.6.0
+
 ## 2.12.6
 
 ### Patch Changes

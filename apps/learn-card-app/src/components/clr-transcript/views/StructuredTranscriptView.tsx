@@ -1,6 +1,6 @@
 import React from 'react';
 
-import ClrTranscriptResultsList from '../ClrTranscriptResultsList';
+import ClrResultWithScaleList from '../ClrResultWithScaleList';
 
 import { formatClrDate } from '../../../helpers/clrRenderer.helpers';
 import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
@@ -36,7 +36,7 @@ const StructuredTranscriptView: React.FC<{
                                         `Expires: ${formatClrDate(program.validUntil.value)}`}
                                 </p>
                             )}
-                            <ClrTranscriptResultsList
+                            <ClrResultWithScaleList
                                 results={program.results}
                                 showResultType={showSource}
                             />
@@ -103,7 +103,7 @@ const StructuredTranscriptView: React.FC<{
                                         `Expires: ${formatClrDate(course.validUntil.value)}`}
                                 </p>
                             )}
-                            <ClrTranscriptResultsList
+                            <ClrResultWithScaleList
                                 results={course.results}
                                 showResultType={showSource}
                             />

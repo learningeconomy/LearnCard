@@ -35,8 +35,9 @@ const log = getLogger('endorsement-request-modal');
 export const EndorsementRequestModal: React.FC<{
     credential: VC;
     shareLinkInfo?: string;
+    targetCredential?: VC;
     existingEndorsements?: VC[];
-}> = ({ credential, shareLinkInfo, existingEndorsements }) => {
+}> = ({ credential, targetCredential, shareLinkInfo, existingEndorsements }) => {
     const { desktopLoginBgAlt } = useTenantBrandingAssets();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { initWallet } = useWallet();
@@ -56,7 +57,7 @@ export const EndorsementRequestModal: React.FC<{
         currentLCNUserRef.current = currentLCNUser;
     });
 
-    let {
+    const {
         issuerProfile,
         issueeProfile,
         issueeName,
@@ -118,7 +119,7 @@ export const EndorsementRequestModal: React.FC<{
         return () => {
             cancelled = true;
         };
-    }, [credential?.id, issueeProfile?.profileId, shareLinkInfo]);
+    }, [credential?.id, targetCredential?.id, issueeProfile?.profileId, shareLinkInfo]);
 
     const handleOnSuccess = (endorsementRequest: EndorsementState) => {
         endorsementRequestStore.set.setEndorsementRequest(endorsementRequest);
@@ -138,6 +139,7 @@ export const EndorsementRequestModal: React.FC<{
             <EndorsementForm
                 credential={credential}
                 categoryType={categoryType}
+                targetCredential={targetCredential}
                 isRequest
                 onSuccess={handleOnSuccess}
                 shareLinkInfo={shareLinkInfo}
@@ -166,6 +168,7 @@ export const EndorsementRequestModal: React.FC<{
         return (
             <EndorsementDraftRequestSuccess
                 credential={credential}
+                targetCredential={targetCredential}
                 closeModal={closeModal}
                 autoSend={false}
                 endorsementState={pendingEndorsement}
@@ -182,7 +185,7 @@ export const EndorsementRequestModal: React.FC<{
             className="relative flex h-full w-full flex-col items-center justify-center px-4"
             style={loggedOutBGStyles}
         >
-            {credential ? (
+            {credential && targetCredential ? (
                 <div className="flex flex-col items-center justify-center bg-white  w-full max-w-[375px] rounded-[20px] pt-4 relative">
                     {/* endorsement badge */}
                     <img
@@ -217,8 +220,8 @@ export const EndorsementRequestModal: React.FC<{
                                         title,
                                     }}
                                     components={[
-                                        <span className="font-semibold" />,
-                                        <span className="font-semibold" />,
+                                        <span key="name" className="font-semibold" />,
+                                        <span key="title" className="font-semibold" />,
                                     ]}
                                 />
                             </p>
@@ -240,7 +243,7 @@ export const EndorsementRequestModal: React.FC<{
                 <EndorsementRequestModalSkeletonLoader />
             )}
 
-            {!isLoggedIn && credential && (
+            {!isLoggedIn && credential && targetCredential && (
                 <button
                     onClick={handleOpenEndorsementRequestForm}
                     className={`py-[9px] pl-[20px] pr-[15px] items-center justify-center rounded-[30px] font-poppins text-[17px] leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] max-w-[375px] mt-2 bg-white font-semibold z-9999`}
@@ -253,7 +256,7 @@ export const EndorsementRequestModal: React.FC<{
                 </button>
             )}
 
-            {isLoggedIn && (
+            {isLoggedIn && credential && targetCredential && (
                 <EndorsementRequestModalFooter handleOnClick={handleOpenEndorsementRequestForm} />
             )}
         </div>

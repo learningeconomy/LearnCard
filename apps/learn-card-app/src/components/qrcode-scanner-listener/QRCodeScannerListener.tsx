@@ -157,7 +157,8 @@ export const QRCodeScannerListener: React.FC = () => {
             if (disposed || processingResult || scanId !== activeScanId) return;
 
             processingResult = true;
-            log.debug('scan::success', { rawValue });
+            // Scanned links can contain private decryption keys or claim capabilities.
+            log.debug('scan::success');
 
             try {
                 await stopOwnedScan();

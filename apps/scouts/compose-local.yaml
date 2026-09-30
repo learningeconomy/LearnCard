@@ -166,6 +166,7 @@ services:
         extra_hosts:
             - 'localhost:host-gateway'
         env_file:
+            - path: ../../services/learn-card-network/lca-api/compose.env
             - path: ../../services/learn-card-network/lca-api/.env
               required: false
             - path: ../../services/learn-card-network/lca-api/.env.scouts

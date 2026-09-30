@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth } from '../../firebase/firebase';
+import { useSignInAdapter } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
 
@@ -21,16 +21,16 @@ const DeleteUserConfirmationPrompt: React.FC<{
     handleCloseModal: () => void;
     handleLogout: (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void;
 }> = ({ handleCloseModal, handleLogout }) => {
-    const firebaseAuth = auth();
+    const adapter = useSignInAdapter();
     const { removeAllVCsFromWallet, initWallet } = useWallet();
     const { deleteFirebaseUser } = useFirebase();
     const currentUser = useCurrentUser();
     const { newModal } = useModal();
     const authToken = getAuthToken();
-    const currentFirebaseUser = firebaseAuth.currentUser;
+    const currentAuthUser = adapter.getCurrentUser();
 
     const [phrase, setPhrase] = useState<string>(
-        currentFirebaseUser?.email ?? currentFirebaseUser?.phoneNumber ?? currentUser?.email ?? ''
+        currentAuthUser?.email ?? currentAuthUser?.phone ?? currentUser?.email ?? ''
     );
     const [confirmationPhrase, setConfirmationPhrase] = useState<string>();
     const [lcNetworkProfile, setLcNetworkProfile] = useState<AddressBookContact | null | undefined>(
@@ -97,7 +97,7 @@ const DeleteUserConfirmationPrompt: React.FC<{
                     if (userDeleted.message === 'auth/requires-recent-login') {
                         setError(m['userProfile.errors.recentLoginRequired']());
                     } else {
-                        setError(userDeleted.message);
+                        setError(userDeleted.message == null ? '' : String(userDeleted.message));
                     }
                     setIsLoading(false);
                     deletingAccountStore.set.deletingAccount(false);

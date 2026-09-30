@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { auth } from '../../firebase/firebase';
-import { updateProfile } from 'firebase/auth';
+import { useSignInAdapter } from 'learn-card-base';
 import { z } from 'zod';
 import { Capacitor } from '@capacitor/core';
 import { Clipboard } from '@capacitor/clipboard';
@@ -105,6 +104,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     onOpenNotifications,
     showNotificationsRow,
 }) => {
+    const adapter = useSignInAdapter();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,
@@ -338,9 +338,9 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                 return;
             }
             // ! apple's guidelines: name should NOT be required
-            await updateProfile(auth()?.currentUser, {
+            await adapter.updateProfile?.({
                 displayName: name ?? '',
-                photoURL: photo ?? '',
+                photoUrl: photo ?? '',
             });
 
             handleStorageUpdate();
@@ -393,9 +393,9 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         // prevent updating the firebase account when in child mode
                         if (!hasParentSwitchedProfile) {
                             // update firebase profile
-                            await updateProfile(auth()?.currentUser, {
+                            await adapter.updateProfile?.({
                                 displayName: name,
-                                photoURL: photo,
+                                photoUrl: photo,
                             });
                         }
 

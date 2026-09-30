@@ -36,6 +36,9 @@ export const brainServiceEnvironmentShape = {
     OIDC_EXPECTED_AUDIENCE: optionalEnvironmentString,
     AWS_REGION: optionalEnvironmentString,
     NOTIFICATIONS_QUEUE_URL: optionalEnvironmentUrl,
+    INBOX_QUEUE_URL: optionalEnvironmentUrl,
+    INBOX_DEAD_LETTER_QUEUE_URL: optionalEnvironmentUrl,
+    INBOX_QUEUE_ENDPOINT: optionalEnvironmentUrl,
     NOTIFICATIONS_QUEUE_POLL_URL: optionalEnvironmentUrl,
     NOTIFICATIONS_SERVICE_WEBHOOK_URL: optionalEnvironmentUrl.or(z.literal('false')),
     NOTIFICATIONS_SERVICE_PORT: optionalEnvironmentPort,
@@ -74,12 +77,15 @@ export const brainServiceEnvironmentShape = {
     SKILL_SEMANTIC_SEARCH_RATE_LIMIT_PER_MIN: optionalEnvironmentPort,
     BITSTRING_STATUS_LIST_SIZE: optionalEnvironmentPort,
     CREDENTIAL_REFRESH_DIGEST_SECRET: optionalEnvironmentString,
+    SHARE_LINK_REQUEST_HASH_SECRET: optionalEnvironmentString,
     CREDENTIAL_REFRESH_ENABLED: optionalEnvironmentBoolean.default(false),
     CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS: credentialRefreshNotificationWindowHours,
     IS_OFFLINE: optionalEnvironmentBoolean.default(false),
     IS_CI: optionalEnvironmentBoolean.default(false),
     IS_E2E_TEST: optionalEnvironmentBoolean.default(false),
     INBOX_DELETE_EXPIRED_RECORDS: optionalEnvironmentBoolean.default(false),
+    INBOX_BATCH_ITEMS_PER_HOUR: optionalEnvironmentString,
+    AWS_LAMBDA_FUNCTION_NAME: optionalEnvironmentString,
     ENABLE_BENCH_ROUTES: optionalEnvironmentBoolean.default(false),
     ENABLE_SEND_CREDENTIAL_TELEMETRY: optionalEnvironmentBoolean.default(false),
     LC_PERF_LOG: optionalEnvironmentBoolean.default(false),
@@ -202,6 +208,40 @@ export type CredentialRefreshRuntimeEnvironment = z.output<
 export const getCredentialRefreshRuntimeEnvironment = (): CredentialRefreshRuntimeEnvironment =>
     parseEnvironment(credentialRefreshRuntimeEnvironmentSchema, process.env, {
         project: 'brain-service credential refresh',
+        source: 'process environment',
+        examplePath: 'services/learn-card-network/brain-service/.env.example',
+    });
+
+const shareLinkRequestHashRuntimeEnvironmentSchema = z.object({
+    NODE_ENV: brainServiceEnvironmentShape.NODE_ENV,
+    SHARE_LINK_REQUEST_HASH_SECRET: brainServiceEnvironmentShape.SHARE_LINK_REQUEST_HASH_SECRET,
+});
+
+/** Reads the dedicated fingerprint secret at call time for enabled share-link APIs. */
+export const getShareLinkRequestHashRuntimeEnvironment = () =>
+    parseEnvironment(shareLinkRequestHashRuntimeEnvironmentSchema, process.env, {
+        project: 'brain-service share links',
+        source: 'process environment',
+        examplePath: 'services/learn-card-network/brain-service/.env.example',
+    });
+
+const inboxBatchRuntimeEnvironmentSchema = z.object({
+    INBOX_QUEUE_URL: brainServiceEnvironmentShape.INBOX_QUEUE_URL,
+    INBOX_DEAD_LETTER_QUEUE_URL: brainServiceEnvironmentShape.INBOX_DEAD_LETTER_QUEUE_URL,
+    INBOX_QUEUE_ENDPOINT: brainServiceEnvironmentShape.INBOX_QUEUE_ENDPOINT,
+    AWS_REGION: brainServiceEnvironmentShape.AWS_REGION,
+    NODE_ENV: brainServiceEnvironmentShape.NODE_ENV,
+    IS_OFFLINE: brainServiceEnvironmentShape.IS_OFFLINE,
+    AWS_LAMBDA_FUNCTION_NAME: brainServiceEnvironmentShape.AWS_LAMBDA_FUNCTION_NAME,
+    INBOX_BATCH_ITEMS_PER_HOUR: brainServiceEnvironmentShape.INBOX_BATCH_ITEMS_PER_HOUR,
+});
+
+export type InboxBatchRuntimeEnvironment = z.output<typeof inboxBatchRuntimeEnvironmentSchema>;
+
+/** Reads batch settings at call time so local invocations and tests can override them safely. */
+export const getInboxBatchRuntimeEnvironment = (): InboxBatchRuntimeEnvironment =>
+    parseEnvironment(inboxBatchRuntimeEnvironmentSchema, process.env, {
+        project: 'brain-service inbox batch',
         source: 'process environment',
         examplePath: 'services/learn-card-network/brain-service/.env.example',
     });

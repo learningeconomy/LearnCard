@@ -4,6 +4,7 @@
 target "browser-base" {
   context    = "."
   dockerfile = "Dockerfile.monorepo"
+  tags       = ["learncard-monorepo-local"]
   cache-from = ["type=gha,scope=e2e-monorepo-base"]
   cache-to   = ["type=gha,scope=e2e-monorepo-base,mode=max"]
 }
@@ -17,33 +18,9 @@ target "browser-app" {
   tags       = ["learn-card-e2e-app"]
 }
 
-target "browser-brain" {
-  context    = "."
-  dockerfile = "services/learn-card-network/brain-service/Dockerfile"
-  contexts = {
-    learncard-monorepo-local = "target:browser-base"
-  }
-  tags       = ["welibrary/lcn-brain-service"]
-}
-
-target "browser-cloud" {
-  context    = "."
-  dockerfile = "services/learn-card-network/learn-cloud-service/Dockerfile"
-  contexts = {
-    learncard-monorepo-local = "target:browser-base"
-  }
-  tags       = ["welibrary/lcn-cloud-service"]
-}
-
-target "browser-api" {
-  context    = "."
-  dockerfile = "services/learn-card-network/lca-api/Dockerfile"
-  contexts = {
-    learncard-monorepo-local = "target:browser-base"
-  }
-  tags       = ["lca-api-service"]
-}
-
+# The three backend containers run directly from browser-base with Compose
+# command overrides. Their Dockerfiles only change WORKDIR/CMD, so building and
+# exporting three additional copies of the monorepo image wastes several minutes.
 target "browser-delete" {
   context    = "services/playwright-delete-service"
   dockerfile = "Dockerfile"
@@ -54,10 +31,8 @@ target "browser-delete" {
 
 group "browser" {
   targets = [
+    "browser-base",
     "browser-app",
-    "browser-brain",
-    "browser-cloud",
-    "browser-api",
     "browser-delete",
   ]
 }

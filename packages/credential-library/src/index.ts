@@ -57,6 +57,8 @@ export type {
     MaterializeSdJwtVcOptions,
     MaterializedSdJwtVcFixture,
 } from './materialize-sd-jwt-vc';
+// Persona bundles
+export * from './bundles';
 
 // Fixtures — importing this module registers all fixtures in the registry
 export * from './fixtures';
