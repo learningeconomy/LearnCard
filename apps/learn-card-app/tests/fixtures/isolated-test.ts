@@ -21,7 +21,7 @@ export const test = base.extend<IsolatedFixtures>({
         const id = randomBytes(8).toString('hex');
         const actor = (role: string): TestActor => ({
             seed: randomBytes(32).toString('hex'),
-            profileId: `e2e-${browserName}-${testInfo.parallelIndex}-${testInfo.retry}-${id}-${role}`,
+            profileId: `e2e-${browserName[0]}-${testInfo.parallelIndex}-${testInfo.retry}-${id}-${role}`,
         });
         await provide({
             learner: actor('learner'),

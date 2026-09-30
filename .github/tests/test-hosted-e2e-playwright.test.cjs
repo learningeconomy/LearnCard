@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const { execFileSync } = require('node:child_process');
 const ts = require('typescript');
 const app = path.resolve(__dirname, '../../apps/learn-card-app');
 
@@ -179,7 +180,7 @@ async function checkSetup(config, expectedOrigin) {
                 for (const actor of Object.values(actors)) {
                     assert.match(actor.seed, /^[a-f0-9]{64}$/);
                     assert.match(actor.profileId, /^[a-z0-9-]+$/);
-                    assert.ok(actor.profileId.length <= 64);
+                    assert.ok(actor.profileId.length <= 40);
                     assert.ok(
                         !identities.has(actor.profileId),
                         'backend profile reused across attempts'
@@ -192,6 +193,23 @@ async function checkSetup(config, expectedOrigin) {
             attempt
         );
     }
+    // Use the source schema so this contract works before SDK builds in CI.
+    execFileSync(
+        'bun',
+        [
+            '--eval',
+            `
+        import { LCNProfileValidator } from './packages/learn-card-types/src/lcn.ts';
+        for (const profileId of JSON.parse(process.env.E2E_ACTOR_IDS)) {
+            LCNProfileValidator.shape.profileId.parse(profileId);
+        }
+    `,
+        ],
+        {
+            cwd: path.resolve(app, '../..'),
+            env: { ...process.env, E2E_ACTOR_IDS: JSON.stringify([...identities]) },
+        }
+    );
     assert.equal(failures, 0, 'global setup URL contract failures');
     console.log(
         'Hosted E2E Playwright tests passed (2 config modes, 10 global setup URL cases, a11y inheritance)'
