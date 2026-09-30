@@ -21,6 +21,7 @@ import FullScreenConsentFlow from './FullScreenConsentFlow';
 
 const state = vi.hoisted(() => ({
     child: true,
+    service: false,
     now: 1_800_000_000_875,
     initWallet: vi.fn(),
     sign: vi.fn(),
@@ -38,10 +39,17 @@ vi.mock('learn-card-base', () => ({
     useWallet: () => ({ initWallet: state.initWallet }),
     switchedProfileStore: {
         use: {
-            isSwitchedProfile: () => state.child,
-            profileType: () => (state.child ? 'child' : 'parent'),
+            isSwitchedProfile: () => state.child || state.service,
+            profileType: () => (state.service ? 'service' : state.child ? 'child' : 'parent'),
         },
-        get: { switchedDid: () => (state.child ? 'did:example:child' : undefined) },
+        get: {
+            switchedDid: () =>
+                state.service
+                    ? 'did:example:service'
+                    : state.child
+                      ? 'did:example:child'
+                      : undefined,
+        },
     },
     currentUserStore: {
         use: { parentUserDid: () => 'did:example:parent' },
@@ -137,6 +145,7 @@ describe('guardian approval at the consent submission boundary', () => {
     beforeEach(() => {
         vi.resetAllMocks();
         state.child = true;
+        state.service = false;
         state.now = 1_800_000_000_875;
         vi.spyOn(Date, 'now').mockImplementation(() => state.now);
         guardianApprovalStore.set.clearAllApprovals();
@@ -246,10 +255,11 @@ describe('guardian approval at the consent submission boundary', () => {
         expect(state.consent).not.toHaveBeenCalled();
     });
 
-    it.each(['adult', 'preview'] as const)(
+    it.each(['adult', 'service', 'preview'] as const)(
         'preserves the %s path without guardian signing',
         async mode => {
-            state.child = mode !== 'adult';
+            state.child = mode === 'preview';
+            state.service = mode === 'service';
             showFlow({ isPreview: mode === 'preview' });
             fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
             await waitFor(() => expect(state.consent).toHaveBeenCalledOnce());

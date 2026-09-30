@@ -31,16 +31,7 @@ export const shouldResetWalletOnStatus = (status: AuthStatus): boolean =>
  * can synthesize an email entry for the primary sign-in address; only a verified
  * secondary recovery email (identified by its masked value) counts here.
  */
-export const countUserConfiguredRecoveryMethods = (
-    methods: Array<{ type: string }>,
-    maskedRecoveryEmail?: string | null
-): number => {
-    const nonEmailMethods = methods.filter(method => method.type !== 'email').length;
-    const hasExplicitRecoveryEmail =
-        !!maskedRecoveryEmail && methods.some(method => method.type === 'email');
-
-    return nonEmailMethods + (hasExplicitRecoveryEmail ? 1 : 0);
-};
+export { countConfiguredRecoveryMethods as countUserConfiguredRecoveryMethods } from 'learn-card-base/auth-coordinator/recoverySetup';
 
 /**
  * Records a recovery method completed during the current setup session.
@@ -69,7 +60,7 @@ export const registerRecoveryMethodCompletion = <T extends string>(
  * Returns the updated user, or null when there is nothing to change.
  */
 export const mergeAuthUserIntoCurrentUser = <
-    T extends { uid: string; email: string; phoneNumber: string }
+    T extends { uid: string; email: string; phoneNumber: string },
 >(
     currentUser: T | null,
     authUser: { id: string; email?: string; phone?: string } | null | undefined
@@ -89,4 +80,35 @@ export const mergeAuthUserIntoCurrentUser = <
     }
 
     return { ...currentUser, uid, email, phoneNumber };
+};
+
+export type EscrowRecoveryKind = 'pin' | 'hold';
+
+export type PinPromptAfterReady =
+    | { kind: 'after-recovery' }
+    | { kind: 'after-hold-recovery' }
+    | { kind: 'reset-banner' }
+    | { kind: 'none' };
+
+/**
+ * Decides which PIN prompt (if any) to show once the account is ready without a
+ * working PIN. PIN prompts only make sense while escrow recovery is enrolled.
+ */
+export const decidePinPromptAfterReady = ({
+    recoveredVia,
+    pinEnabled,
+    enrollment,
+    promptFlag,
+}: {
+    recoveredVia: EscrowRecoveryKind | null;
+    pinEnabled: boolean | undefined;
+    enrollment: string | undefined;
+    promptFlag: string | null | undefined;
+}): PinPromptAfterReady => {
+    if (pinEnabled !== false) return { kind: 'none' };
+    if (recoveredVia === 'pin') return { kind: 'after-recovery' };
+    if (recoveredVia === 'hold') {
+        return enrollment === 'enrolled' ? { kind: 'after-hold-recovery' } : { kind: 'none' };
+    }
+    return promptFlag === 'set' ? { kind: 'reset-banner' } : { kind: 'none' };
 };

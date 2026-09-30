@@ -57,6 +57,11 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
 
         sss: {
             serverUrl: 'https://api.learncard.app/trpc',
+            escrowRelayPublicKey: '',
+            escrowRelayKeyId: '',
+            escrowEnclaveMode: 'off',
+            escrowEnclavePublicKeys: [],
+            escrowEnclaveMeasurements: [],
             enableEmailBackupShare: true,
             requireEmailForPhoneUsers: false,
         },

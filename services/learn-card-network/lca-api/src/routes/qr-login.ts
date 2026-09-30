@@ -20,9 +20,9 @@ import crypto from 'crypto';
 
 import { t, openRoute } from '@routes';
 import cache from '@cache';
-import { verifyAuthToken, getContactMethodFromUser, AuthProviderType } from '@helpers/auth.helpers';
+import { verifyAuthToken, AuthProviderType } from '@helpers/auth.helpers';
+import { findUserKeyByAuthProvider } from '@models';
 import { checkRateLimit } from '@helpers/rateLimit.helpers';
-import { findUserKeyByContactMethod } from '@models';
 import { sendPushNotification } from '@helpers/pushNotifications.helpers';
 
 // ---------------------------------------------------------------------------
@@ -357,14 +357,9 @@ export const qrLoginRouter = t.router({
                 input.providerType as AuthProviderType
             );
 
-            const contactMethod = getContactMethodFromUser(user);
-
-            if (!contactMethod) {
-                throw new Error('User must have an email or phone number');
-            }
-
-            // Look up the user's DID from their key record
-            const userKey = await findUserKeyByContactMethod(contactMethod);
+            // Provider identity is immutable; a recycled contact method must
+            // never receive notifications for a previous owner's DID.
+            const userKey = await findUserKeyByAuthProvider(input.providerType, user.id);
 
             if (!userKey?.primaryDid) {
                 return { sent: false, deviceCount: 0 };
