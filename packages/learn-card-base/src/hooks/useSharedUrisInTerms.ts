@@ -27,6 +27,8 @@ const getCredentialListQueryKey = (category: string) => [
     category,
 ];
 
+export type ConsentDataAudience = string | string[];
+
 const getRecipientsForOwnerDid = (contractOwnerDid: string): string[] => {
     const isSmartResume =
         contractOwnerDid === 'did:web:network.learncard.com:users:smart-resume-integration' ||
@@ -42,6 +44,16 @@ const getRecipientsForOwnerDid = (contractOwnerDid: string): string[] => {
 
     return recipients;
 };
+
+/** Cache ciphertext by its entire effective audience; never by a single recipient. */
+export const getConsentAudienceRecipients = (audience: ConsentDataAudience): string[] =>
+    [
+        ...new Set(
+            (typeof audience === 'string' ? [audience] : audience).flatMap(getRecipientsForOwnerDid)
+        ),
+    ].sort();
+export const getConsentAudienceCacheKey = (audience: ConsentDataAudience): string =>
+    `audience:${JSON.stringify(getConsentAudienceRecipients(audience))}`;
 
 const syncCachedCategoryRecords = (
     queryClient: QueryClient,
@@ -85,8 +97,7 @@ const loadCategoryRecordsForWallet = async (
 
     while (pageCount < MAX_LEARN_CLOUD_PAGE_ITERATIONS) {
         const page = (await getPage({ category }, { cursor, limit: 100 })) as
-            | CredentialListPage
-            | undefined;
+            CredentialListPage | undefined;
 
         pageCount += 1;
 
@@ -114,25 +125,30 @@ const loadCategoryRecordsForWallet = async (
 
 const getOrCreateSharedUriFromCategoryRecords = async (
     wallet: BespokeLearnCard,
-    contractOwnerDid: string,
+    contractOwnerDid: ConsentDataAudience,
     credUri: string,
     records: LCR[]
 ): Promise<SharedUriResolution> => {
-    const mainRecord = records.find(record => record.uri === credUri);
+    const audienceKey = getConsentAudienceCacheKey(contractOwnerDid);
+    const mainRecord = records.find(
+        record =>
+            record.uri === credUri ||
+            Object.values(record.sharedUris ?? {}).some(uris => uris.includes(credUri))
+    );
 
     if (mainRecord) {
-        const existingSharedUris = mainRecord.sharedUris?.[contractOwnerDid];
+        const existingSharedUris = mainRecord.sharedUris?.[audienceKey];
         if (existingSharedUris?.length) {
             return { sharedUri: existingSharedUris.at(-1) ?? false, status: 'reused' };
         }
 
-        const vc = await wallet.read.get(credUri);
+        const vc = await wallet.read.get(mainRecord.uri);
         if (!vc) {
             return { sharedUri: false, status: 'missing' };
         }
 
         const newUri = await wallet.store.LearnCloud.uploadEncrypted?.(vc, {
-            recipients: getRecipientsForOwnerDid(contractOwnerDid),
+            recipients: getConsentAudienceRecipients(contractOwnerDid),
         });
 
         if (!newUri) {
@@ -140,8 +156,8 @@ const getOrCreateSharedUriFromCategoryRecords = async (
         }
 
         const newSharedUris = mainRecord.sharedUris
-            ? { ...mainRecord.sharedUris, [contractOwnerDid]: [newUri] }
-            : { [contractOwnerDid]: [newUri] };
+            ? { ...mainRecord.sharedUris, [audienceKey]: [newUri] }
+            : { [audienceKey]: [newUri] };
 
         await wallet.index.LearnCloud.update(mainRecord.id, {
             sharedUris: newSharedUris,
@@ -152,49 +168,47 @@ const getOrCreateSharedUriFromCategoryRecords = async (
         return { sharedUri: newUri, status: 'created' };
     }
 
-    const alreadySharedRecord = records.find(record => {
-        const sharedUris = record.sharedUris?.[contractOwnerDid];
-        return sharedUris?.includes(credUri);
-    });
-
-    if (alreadySharedRecord) {
-        return {
-            sharedUri: alreadySharedRecord.sharedUris?.[contractOwnerDid]?.at(-1) ?? false,
-            status: 'reused',
-        };
-    }
-
     return { sharedUri: false, status: 'missing' };
 };
 
 /**
- * In-flight shared URI creations, keyed by profile, credential, and contract owner.
+ * In-flight shared URI creations, keyed by profile, credential, and full data audience.
  * Concurrent callers (e.g. the background contract sync worker and lazy
  * materialization in getCredentialById) await the same promise instead of
  * each uploading a shared URI, which would orphan all but the last one.
  */
 const inFlightSharedUriCreations = new Map<string, Promise<string | false>>();
+// Serialize index updates for the same source credential across different audiences.
+const inFlightCredentialCreations = new Map<string, Promise<string | false>>();
 
 export const getOrCreateSharedUriForWallet = async (
     wallet: BespokeLearnCard,
-    contractOwnerDid: string,
+    contractOwnerDid: ConsentDataAudience,
     queryClient: QueryClient,
     credUri: string,
     category: string
 ): Promise<string | false> => {
-    const didWeb = switchedProfileStore.get.switchedDid();
-    const inFlightKey = [didWeb, credUri, contractOwnerDid].filter(Boolean).join('|');
+    const didWeb = switchedProfileStore.get.switchedDid() ?? wallet.id?.did();
+    const credentialKey = JSON.stringify([didWeb, credUri]);
+    const inFlightKey = [didWeb, credUri, getConsentAudienceCacheKey(contractOwnerDid)]
+        .filter(Boolean)
+        .join('|');
     const inFlight = inFlightSharedUriCreations.get(inFlightKey);
     if (inFlight) return inFlight;
 
-    const creation = createSharedUriForWallet(
-        wallet,
-        contractOwnerDid,
-        queryClient,
-        credUri,
-        category
-    ).finally(() => inFlightSharedUriCreations.delete(inFlightKey));
+    const previous = inFlightCredentialCreations.get(credentialKey);
+    const creation = Promise.resolve(previous)
+        .catch(() => undefined)
+        .then(() =>
+            createSharedUriForWallet(wallet, contractOwnerDid, queryClient, credUri, category)
+        )
+        .finally(() => {
+            inFlightSharedUriCreations.delete(inFlightKey);
+            if (inFlightCredentialCreations.get(credentialKey) === creation)
+                inFlightCredentialCreations.delete(credentialKey);
+        });
 
+    inFlightCredentialCreations.set(credentialKey, creation);
     inFlightSharedUriCreations.set(inFlightKey, creation);
 
     return creation;
@@ -202,7 +216,7 @@ export const getOrCreateSharedUriForWallet = async (
 
 const createSharedUriForWallet = async (
     wallet: BespokeLearnCard,
-    contractOwnerDid: string,
+    contractOwnerDid: ConsentDataAudience,
     queryClient: QueryClient,
     credUri: string,
     category: string
@@ -239,7 +253,7 @@ const createSharedUriForWallet = async (
 
 export const getTermsWithSharedUrisForWallet = async (
     wallet: BespokeLearnCard,
-    contractOwnerDid: string,
+    contractOwnerDid: ConsentDataAudience,
     queryClient: QueryClient,
     _terms: {
         terms: ConsentFlowTerms;
@@ -312,7 +326,7 @@ export const getTermsWithSharedUrisForWallet = async (
     return terms;
 };
 
-export const useSharedUrisInTerms = (contractOwnerDid: string) => {
+export const useSharedUrisInTerms = (contractOwnerDid: ConsentDataAudience) => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
 

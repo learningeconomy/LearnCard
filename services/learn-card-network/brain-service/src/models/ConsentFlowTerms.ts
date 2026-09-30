@@ -23,6 +23,7 @@ export const ConsentFlowTerms = ModelFactory<FlatDbTermsType, ConsentFlowTermsRe
             status: { type: 'string', required: true },
             createdAt: { type: 'string', required: false },
             updatedAt: { type: 'string', required: false },
+            mutationVersion: { type: 'number', required: false },
             expiresAt: { type: 'string', required: false },
             oneTime: { type: 'boolean', required: false },
             deniedWriters: { type: 'string[]', required: false },

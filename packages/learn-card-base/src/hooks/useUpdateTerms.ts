@@ -1,13 +1,15 @@
-import { ConsentFlowTerms } from '@learncard/types';
+import { ConsentFlowTerms, ConsentFlowContractDetails } from '@learncard/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { switchedProfileStore, useWallet } from 'learn-card-base';
-import { useSharedUrisInTerms } from './useSharedUrisInTerms';
+import { getTermsWithSharedUrisForWallet } from './useSharedUrisInTerms';
+import { loadContractAudience } from './consentAudience';
+import { useConsentAudienceReview } from './useConsentAudienceReview';
 
-export const useUpdateTerms = (termsUri: string, contractOwnerDid: string) => {
+export const useUpdateTerms = (termsUri: string, _contractOwnerDid: string) => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
 
-    const { getTermsWithSharedUris } = useSharedUrisInTerms(contractOwnerDid);
+    const reviewAudience = useConsentAudienceReview();
 
     return useMutation({
         mutationFn: async (_terms: {
@@ -20,11 +22,33 @@ export const useUpdateTerms = (termsUri: string, contractOwnerDid: string) => {
             const wallet = await initWallet();
 
             const { beforeSubmit, ...submission } = _terms;
-            const terms = await getTermsWithSharedUris(submission);
+            const records: {
+                records: { uri: string; contract: ConsentFlowContractDetails }[];
+                hasMore: boolean;
+                cursor?: string;
+            } = await wallet.invoke.getConsentedContracts();
+            let record = records.records.find(item => item.uri === termsUri);
+            let page = records;
+            while (!record && page.hasMore) {
+                page = await wallet.invoke.getConsentedContracts({ cursor: page.cursor });
+                record = page.records.find(item => item.uri === termsUri);
+            }
+            if (!record) throw new Error('Could not find sharing settings.');
+            const audience = await loadContractAudience(wallet, record.contract.uri);
+            await reviewAudience(audience.contract);
+            const terms = await getTermsWithSharedUrisForWallet(
+                wallet,
+                audience.recipients,
+                queryClient,
+                submission
+            );
 
             await beforeSubmit?.();
 
-            return wallet.invoke.updateContractTerms(termsUri, terms);
+            return wallet.invoke.updateContractTerms(termsUri, {
+                ...terms,
+                audienceVersion: audience.audienceVersion,
+            });
         },
         onSuccess: data => {
             if (data) {

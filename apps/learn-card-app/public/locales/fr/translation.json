@@ -3535,6 +3535,13 @@
         "skillsHub": "Pôle de compétences"
     },
     "base": {
+        "consentAudience": {
+            "title": "Vérifiez qui reçoit vos données",
+            "description": "Les informations que vous choisissez seront accessibles à toutes les personnes ci-dessous.",
+            "confirm": "Confirmer le partage",
+            "cancel": "Annuler"
+        },
+
         "verification": {
             "selfIssued": "Auto-émis",
             "trustedIssuer": "Émetteur de confiance",
