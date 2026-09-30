@@ -356,6 +356,7 @@ export const useTotalBoostCounts = () => {
 export type VC_WITH_URI = {
     vc: VC;
     uri?: string;
+    category?: CredentialCategory;
 };
 
 // Returns a list of resolved credentials
@@ -614,7 +615,7 @@ export const useGetCredentialsPaginated = (
                             const vc = (await wallet.read.get(record?.uri)) as VC;
                             const uri = record?.uri;
 
-                            return { vc, uri };
+                            return { vc, uri, category: record.category };
                         })
                     )
                 ).filter(Boolean);

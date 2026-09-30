@@ -1,13 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { selectedCredsStore, SelectedCredsStoreState, useWallet } from 'learn-card-base';
-import { getAllSortedCredentials } from 'learn-card-base/helpers/credentialHelpers';
-import { getCategoryForCredential } from 'learn-card-base/hooks/useWallet';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+    selectedCredsStore,
+    SelectedCredsStoreState,
+    useWallet,
+    contractCategoryNameToCategoryMetadata,
+} from 'learn-card-base';
+import {
+    getAllSortedCredentials,
+    getDefaultCategoryForCredential,
+    isBoostCredential,
+    unwrapBoostCredential,
+} from 'learn-card-base/helpers/credentialHelpers';
 import { filterMaybes } from '@learncard/helpers';
 import { SortedCredentials } from 'learn-card-base/stores/selectedCredsStore';
 import { VC } from '@learncard/types';
 import {
-    useGetCredentials,
     useGetCredentialsPaginated,
+    type VC_WITH_URI,
 } from 'learn-card-base/react-query/queries/vcQueries';
 
 export const VC_TYPE = {
@@ -32,12 +42,26 @@ export const useShareCredentials = (
 ) => {
     const [loading, setLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState<string>();
+    const queryClient = useQueryClient();
     const { initWallet } = useWallet();
 
-    const { data: vcsFromWallet, isLoading: vcsFromWalletLoading } = useGetCredentialsPaginated(
+    const { data: walletCredentials, isLoading: vcsFromWalletLoading } = useGetCredentialsPaginated(
         undefined,
-        initialCredentials
+        initialCredentials,
+        true
     );
+    const { vcsFromWallet, indexedCategories } = useMemo(() => {
+        const indexedCategories = new Map<VC, string>();
+        const vcsFromWallet = walletCredentials?.map(item => {
+            if ('vc' in item) {
+                const record = item as VC_WITH_URI;
+                if (record.category) indexedCategories.set(record.vc, record.category);
+                return record.vc;
+            }
+            return item as VC;
+        });
+        return { vcsFromWallet, indexedCategories };
+    }, [walletCredentials]);
 
     const credentials = selectedCredsStore.useTracked.credentials();
 
@@ -200,10 +224,57 @@ export const useShareCredentials = (
                 });
 
                 const wallet = await initWallet();
-                const sortedCredentials = await getAllSortedCredentials(
-                    dedupedCredentials ?? [],
-                    credential => getCategoryForCredential(credential, wallet)
+                const resolveCategory = async (credential: VC): Promise<string> => {
+                    const indexedCategory = indexedCategories.get(credential);
+                    if (indexedCategory) return indexedCategory;
+
+                    const fallbackCategory = getDefaultCategoryForCredential(credential);
+                    const boostUri =
+                        credential.boostId ?? unwrapBoostCredential(credential)?.boostId;
+                    if (!isBoostCredential(credential) || !boostUri) return fallbackCategory;
+
+                    try {
+                        const boost = await queryClient.fetchQuery({
+                            queryKey: ['useGetBoost', boostUri],
+                            queryFn: () => wallet.invoke.getBoost(boostUri),
+                            staleTime: 60_000,
+                        });
+                        return boost?.category
+                            ? (contractCategoryNameToCategoryMetadata(boost.category)
+                                  ?.credentialType ?? boost.category)
+                            : fallbackCategory;
+                    } catch (error) {
+                        log.warn('Failed to resolve boost for share categorization', error);
+                        return fallbackCategory;
+                    }
+                };
+                const walletCredentialIds = new Set(
+                    (dedupedCredentials ?? []).map(credential => getUniqueId(credential))
                 );
+                const preselected = preSelectedCredentials ?? [];
+                const sortingInput = [
+                    ...(dedupedCredentials ?? []),
+                    ...preselected.filter(
+                        credential => !walletCredentialIds.has(getUniqueId(credential))
+                    ),
+                ];
+                const sortedAllCredentials = await getAllSortedCredentials(
+                    sortingInput,
+                    resolveCategory
+                );
+                const walletOnly = (items: VC[]) =>
+                    items.filter(credential => walletCredentialIds.has(getUniqueId(credential)));
+                const sortedCredentials = {
+                    ids: walletOnly(sortedAllCredentials.ids),
+                    courses: walletOnly(sortedAllCredentials.courses),
+                    workHistory: walletOnly(sortedAllCredentials.workHistory),
+                    achievements: walletOnly(sortedAllCredentials.achievements),
+                    skills: walletOnly(sortedAllCredentials.skills),
+                    socialBadges: walletOnly(sortedAllCredentials.socialBadges),
+                    qualifications: walletOnly(sortedAllCredentials.qualifications),
+                    memberships: walletOnly(sortedAllCredentials.memberships),
+                    families: walletOnly(sortedAllCredentials.families),
+                };
 
                 let allSkillIds,
                     allCourseIds,
@@ -213,25 +284,20 @@ export const useShareCredentials = (
                     allQualificationIds,
                     allSocialBadgeIds;
                 if (preSelectedCredentials) {
-                    const preSelectedSortedCredentials = await getAllSortedCredentials(
-                        preSelectedCredentials,
-                        credential => getCategoryForCredential(credential, wallet)
+                    const selectedIds = new Set(
+                        preSelectedCredentials.map(credential => getUniqueId(credential))
                     );
-                    allSkillIds = preSelectedSortedCredentials.skills?.map(vc => getUniqueId(vc));
-                    allCourseIds = preSelectedSortedCredentials.courses?.map(vc => getUniqueId(vc));
-                    allAchievementIds = preSelectedSortedCredentials.achievements?.map(vc =>
-                        getUniqueId(vc)
-                    );
-                    allIdIds = preSelectedSortedCredentials.ids?.map(vc => getUniqueId(vc));
-                    allWorkHistoryIds = preSelectedSortedCredentials.workHistory?.map(vc =>
-                        getUniqueId(vc)
-                    );
-                    allQualificationIds = preSelectedSortedCredentials.qualifications?.map(vc =>
-                        getUniqueId(vc)
-                    );
-                    allSocialBadgeIds = preSelectedSortedCredentials.socialBadges.map(vc =>
-                        getUniqueId(vc)
-                    );
+                    const idsFor = (type: keyof typeof sortedAllCredentials) =>
+                        sortedAllCredentials[type]
+                            ?.filter(credential => selectedIds.has(getUniqueId(credential)))
+                            .map(credential => getUniqueId(credential));
+                    allSkillIds = idsFor('skills');
+                    allCourseIds = idsFor('courses');
+                    allAchievementIds = idsFor('achievements');
+                    allIdIds = idsFor('ids');
+                    allWorkHistoryIds = idsFor('workHistory');
+                    allQualificationIds = idsFor('qualifications');
+                    allSocialBadgeIds = idsFor('socialBadges');
                 } else {
                     allSkillIds = getCredentialIdsForType(sortedCredentials, VC_TYPE.SKILL);
                     allCourseIds = getCredentialIdsForType(sortedCredentials, VC_TYPE.COURSE);
@@ -279,12 +345,9 @@ export const useShareCredentials = (
     };
 
     useEffect(() => {
-        if (skipReloadCredentials && credentials) {
-            setLoading(false);
-        } else {
-            loadCredentials();
-        }
-    }, [preSelectedCredentials, vcsFromWalletLoading, vcsFromWallet]);
+        if (skipReloadCredentials && credentials) return;
+        loadCredentials();
+    }, [preSelectedCredentials, vcsFromWalletLoading, vcsFromWallet, indexedCategories]);
 
     // Function that handles what happens when you hit the select all top level toggle
     const handleToggleSelectAll = () => {
@@ -339,7 +402,7 @@ export const useShareCredentials = (
         handleToggleSelectAll,
         handleToggleSelectAllType,
         handleVcClick,
-        loading,
+        loading: skipReloadCredentials && credentials ? false : loading,
         errorMessage,
         vcMap,
         vcCounts,
