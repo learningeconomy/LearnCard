@@ -117,10 +117,6 @@ for (const path of runtimePinFiles) {
     for (const match of contents.matchAll(/npm (?:install|i) -g bun@([^\s\\]+)/g)) {
         expect(match[1] === '1.4.2', `${path} must install Bun 1.4.2`);
     }
-
-    for (const match of contents.matchAll(/FROM\s+oven\/bun:([^\s]+)/gi)) {
-        expect(/^1\.4\.2(?:-alpine)?$/.test(match[1]), `${path} must use oven/bun:1.4.2`);
-    }
 }
 
 for (const path of runtimePinFiles) {

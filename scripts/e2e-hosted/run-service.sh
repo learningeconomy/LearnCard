@@ -69,5 +69,8 @@ wait_for_service() {
     return 1
 }
 e2e_timed service_readiness wait_for_service
+e2e_timed cloud_did_resolution bash -c \
+    'cd "$1/tests/e2e" && bash "$1/scripts/e2e-hosted/verify-service-did-resolution.sh"' \
+    _ "$REPO_ROOT"
 e2e_timed service_e2e run_service_suite
 e2e_snapshot after-service-suite
