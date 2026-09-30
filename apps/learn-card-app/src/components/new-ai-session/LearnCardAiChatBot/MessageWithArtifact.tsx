@@ -3,7 +3,7 @@ import { useStore } from '@nanostores/react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('message-with-artifact');
 
-import MarkdownRenderer from '../../ai-assessment/AiAssessment/helpers/MarkdownRenderer';
+import MarkdownRenderer from '../../ai-assessment/AiAssessment/helpers/LazyMarkdownRenderer';
 import { IonSpinner } from '@ionic/react';
 
 import {
@@ -50,7 +50,9 @@ export const MessageWithArtifact: React.FC<MessageProps> = ({ message }) => {
 
     const $claimedArtifacts = useStore(claimedArtifacts);
     const $dismissedArtifacts = useStore(dismissedArtifacts);
-    const claimed = artifact?.id ? $claimedArtifacts.has(artifact.id) : artifact?.claimed ?? false;
+    const claimed = artifact?.id
+        ? $claimedArtifacts.has(artifact.id)
+        : (artifact?.claimed ?? false);
     const dismissed = artifact?.id ? $dismissedArtifacts.has(artifact.id) : false;
     const [isSaving, setIsSaving] = useState<boolean>(false);
 

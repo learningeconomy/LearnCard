@@ -8,7 +8,7 @@ import {
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 import useLCNGatedAction from '../../../network-prompts/hooks/useLCNGatedAction';
-import NewAiSessionContainer from '../../../new-ai-session/NewAiSessionContainer';
+import NewAiSessionContainer from '../../../new-ai-session/LazyNewAiSessionContainer';
 
 import useTheme from '../../../../theme/hooks/useTheme';
 import { SetState } from 'packages/shared-types/dist';

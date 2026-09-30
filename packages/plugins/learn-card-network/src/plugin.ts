@@ -639,6 +639,12 @@ export async function getLearnCardNetworkPlugin(
           );
 
     let userData: LCNProfile | undefined;
+    // Share concurrent profile lookups within this client only. Completed results
+    // are not retained, so later explicit reads still see profile updates.
+    const profileLookups = new Map<
+        string,
+        ReturnType<typeof client.profile.getOtherProfile.query>
+    >();
 
     learnCard?.debug?.('LCN: initial getProfile query starting', { apiToken: !!apiToken });
     const initialQuery = client.profile.getProfile
@@ -1011,7 +1017,16 @@ export async function getLearnCardNetworkPlugin(
                 // If no profileId is provided, return whatever we have cached locally.
                 if (!profileId) return userData;
 
-                return client.profile.getOtherProfile.query({ profileId });
+                let lookup = profileLookups.get(profileId);
+                if (!lookup) {
+                    lookup = client.profile.getOtherProfile.query({ profileId });
+                    profileLookups.set(profileId, lookup);
+                }
+                try {
+                    return await lookup;
+                } finally {
+                    if (profileLookups.get(profileId) === lookup) profileLookups.delete(profileId);
+                }
             },
             getProfileManagerProfile: async (_learnCard, id) => {
                 if (!id) return client.profileManager.getProfileManager.query();

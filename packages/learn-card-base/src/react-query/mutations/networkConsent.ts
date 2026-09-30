@@ -179,6 +179,7 @@ export const useNetworkConsentMutation = () => {
 
                 // Consent to the contract
                 await wallet.invoke.consentToContract(NETWORK_CONTRACT_URI, { terms });
+                await queryClient.invalidateQueries({ queryKey: ['useConsentedContracts'] });
 
                 return { success: true, alreadyConsented: false };
             } catch (error) {
