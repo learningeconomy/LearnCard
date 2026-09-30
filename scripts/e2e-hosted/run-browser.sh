@@ -82,7 +82,18 @@ run_playwright() {
     local -a test_files
     read -r -a test_files <<< "$E2E_TEST_FILES"
     cd "$APP_DIR"
-    E2E_EXTERNAL_STACK=true bunx playwright test "${test_files[@]}"
+    # Legacy specs still reset the whole database. Only the audited isolated
+    # suites may use parallel workers; a mixed/manual selection stays serial.
+    local config=playwright.parallel.config.ts
+    local file
+    for file in "${test_files[@]}"; do
+        case "$file" in
+            consent-flow-race.spec.ts|app-store.spec.ts|wallet-credentials.spec.ts) ;;
+            *) config=playwright.config.ts ;;
+        esac
+    done
+    echo "Running browser suites with $config"
+    E2E_EXTERNAL_STACK=true bunx playwright test "${test_files[@]}" --config="$config"
 }
 
 run_accessibility() {

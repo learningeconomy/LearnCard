@@ -108,6 +108,28 @@ async function checkSetup(config, expectedOrigin) {
         }).default;
         assert.equal(a11y.webServer, config.webServer);
         assert.equal(a11y.workers, 1);
+        const parallel = load('playwright.parallel.config.ts', {
+            './playwright.config': { default: config, __esModule: true },
+        }).default;
+        assert.equal(parallel.workers, 2);
+        assert.equal(parallel.fullyParallel, true);
+        assert.equal(parallel.globalSetup, undefined);
+        assert.deepEqual(JSON.parse(JSON.stringify(parallel.use.storageState)), {
+            cookies: [],
+            origins: [],
+        });
+        for (const file of ['app-store', 'wallet-credentials', 'consent-flow-race']) {
+            assert.equal(parallel.testMatch.test(`${file}.spec.ts`), true);
+        }
+        assert.equal(parallel.testMatch.test('accessibility.spec.ts'), false);
+        assert.equal(parallel.testMatch.test('credentials.spec.ts'), false);
+        const mocked = load('playwright.mock.config.ts', {
+            './playwright.config': { default: config, __esModule: true },
+        }).default;
+        assert.equal(mocked.workers, 2);
+        assert.equal(mocked.fullyParallel, true);
+        assert.equal(mocked.globalSetup, undefined);
+
         for (const [baseURL, origin] of [
             ['http://localhost:3000', 'http://localhost:3000'],
             ['https://example.test:8443/', 'https://example.test:8443'],
@@ -126,6 +148,49 @@ async function checkSetup(config, expectedOrigin) {
                 console.error(`FAIL mode=${mode} baseURL=${baseURL}: ${error.message}`);
             }
         }
+    }
+    // Drive the real actor fixture across workers and a retry. They must never
+    // reuse backend identities or inherit the demo user's browser state.
+    let fixtures;
+    load('tests/fixtures/isolated-test.ts', {
+        './mocked-test': {
+            test: {
+                extend: value => {
+                    fixtures = value;
+                },
+            },
+        },
+        '@playwright/test': { expect: {} },
+    });
+    assert.deepEqual(JSON.parse(JSON.stringify(fixtures.storageState)), {
+        cookies: [],
+        origins: [],
+    });
+    const identities = new Set();
+    const seeds = new Set();
+    for (const attempt of [
+        { parallelIndex: 0, retry: 0 },
+        { parallelIndex: 1, retry: 0 },
+        { parallelIndex: 0, retry: 1 },
+    ]) {
+        await fixtures.actors(
+            { browserName: 'firefox' },
+            async actors => {
+                for (const actor of Object.values(actors)) {
+                    assert.match(actor.seed, /^[a-f0-9]{64}$/);
+                    assert.match(actor.profileId, /^[a-z0-9-]+$/);
+                    assert.ok(actor.profileId.length <= 64);
+                    assert.ok(
+                        !identities.has(actor.profileId),
+                        'backend profile reused across attempts'
+                    );
+                    assert.ok(!seeds.has(actor.seed), 'backend seed reused across attempts');
+                    identities.add(actor.profileId);
+                    seeds.add(actor.seed);
+                }
+            },
+            attempt
+        );
     }
     assert.equal(failures, 0, 'global setup URL contract failures');
     console.log(
