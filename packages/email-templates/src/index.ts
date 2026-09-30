@@ -38,6 +38,7 @@ export type {
     GuardianEmailOtpData,
     GuardianRejectedCredentialData,
     CredentialUpdatedData,
+    AccountSignInChangedData,
 } from './render';
 
 // SMS rendering

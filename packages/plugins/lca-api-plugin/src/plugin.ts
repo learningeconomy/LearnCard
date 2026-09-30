@@ -107,9 +107,10 @@ export const getLCAPlugin = async (
                 );
             })
             .catch(error => {
-                console.warn('[LCA Plugin] Initialization warning:', error);
                 // Continue without encryption JWK if initialization fails
                 // This allows the plugin methods to still work even if initial setup has issues
+                const message = error instanceof Error ? error.message : String(error);
+                console.warn(`[LCA Plugin] Initialization warning: ${message}`);
             });
 
         return {
@@ -536,11 +537,11 @@ export const getLCAPlugin = async (
                     return client.keys.markMigrated.mutate({ authToken, providerType });
                 },
 
-                deleteUserKey: async (_learnCard, authToken, providerType) => {
+                deleteUserKey: async (_learnCard, authToken, providerType, challenge) => {
                     await initialized;
                     await updateLearnCard(_learnCard);
 
-                    return client.keys.deleteUserKey.mutate({ authToken, providerType });
+                    return client.keys.deleteUserKey.mutate({ authToken, providerType, challenge });
                 },
             },
         };

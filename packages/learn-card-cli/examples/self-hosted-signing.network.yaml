@@ -1,0 +1,10 @@
+# The issuer keeps its own keys: LearnCard calls your VC-API endpoint to sign.
+# `did` is the DID your service signs with; it becomes the credential's issuer.
+issuer:
+    profileId: example-issuer
+    displayName: Example Issuer
+    signingAuthority:
+        type: self-hosted
+        name: example-signer
+        endpoint: https://signing.example.org/api
+        did: did:web:example.org

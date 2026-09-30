@@ -71,6 +71,11 @@ export type TenantKeycloakConfig = z.infer<typeof tenantKeycloakConfigSchema>;
 export const tenantSSSConfigSchema = z
     .object({
         serverUrl: urlOrPlaceholder().default('https://api.learncard.app/trpc'),
+        escrowRelayPublicKey: z.string().default(''),
+        escrowRelayKeyId: z.string().default(''),
+        escrowEnclaveMode: z.enum(['off', 'software', 'nitro']).default('off'),
+        escrowEnclavePublicKeys: z.array(z.string()).default([]),
+        escrowEnclaveMeasurements: z.array(z.object({ imageSha384: z.string() })).default([]),
         enableEmailBackupShare: z.boolean().default(true),
         requireEmailForPhoneUsers: z.boolean().default(true),
     })
@@ -216,6 +221,15 @@ export const tenantBrandingConfigSchema = z
     })
     .passthrough();
 
+export const samplePersonaConfigSchema = z
+    .object({
+        id: z.string().min(1),
+        contractUri: z.string().min(1),
+        displayName: z.string().min(1).optional(),
+        description: z.string().min(1).optional(),
+    })
+    .passthrough();
+
 export const tenantFeatureConfigSchema = z
     .object({
         aiFeatures: z.boolean().default(true),
@@ -244,6 +258,8 @@ export const tenantFeatureConfigSchema = z
          * set `true` in the `config.local.json` / `config.staging.json` overlays.
          */
         useSeededSkillFrameworks: z.boolean().default(false),
+        samplePersonas: z.array(samplePersonaConfigSchema).default([]),
+        legacySamplePersonaContractUris: z.array(z.string().min(1)).default([]),
     })
     .passthrough();
 
@@ -393,6 +409,7 @@ export type TenantStorageConfig = z.infer<typeof tenantStorageConfigSchema>;
 export type TenantFilestackStorageConfig = z.infer<typeof tenantFilestackStorageConfigSchema>;
 export type TenantS3StorageConfig = z.infer<typeof tenantS3StorageConfigSchema>;
 export type TenantBrandingConfig = z.infer<typeof tenantBrandingConfigSchema>;
+export type SamplePersonaConfig = z.infer<typeof samplePersonaConfigSchema>;
 export type TenantFeatureConfig = z.infer<typeof tenantFeatureConfigSchema>;
 export type TenantObservabilityConfig = z.infer<typeof tenantObservabilityConfigSchema>;
 export type TenantLinksConfig = z.infer<typeof tenantLinksConfigSchema>;

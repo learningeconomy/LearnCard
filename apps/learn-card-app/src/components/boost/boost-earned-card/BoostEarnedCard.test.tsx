@@ -85,6 +85,12 @@ vi.mock('learn-card-base', () => ({
     },
 }));
 
+// Keep the collection picker import graph outside these credential UI unit tests.
+vi.mock('../../share-links/ShareLinkCreate', () => ({ default: () => null }));
+vi.mock('launchdarkly-react-client-sdk', () => ({
+    useFlags: () => ({ shareMultipleEnabled: false }),
+}));
+
 vi.mock('../../../stores/loadingStore', () => ({ useLoadingLine: vi.fn() }));
 vi.mock('../../../theme/hooks/useTheme', () => ({
     default: () => ({ getThemedCategory: () => undefined }),
@@ -115,6 +121,7 @@ vi.mock('../boostCMS/BoostPreview/NonBoostPreview', () => ({
     default: mocks.nonBoostPreview,
 }));
 vi.mock('../boost-options-menu/ShareBoostLink', () => ({ default: () => null }));
+vi.mock('../../share-links/ShareLinkCreate', () => ({ default: () => null }));
 vi.mock('../../familyCMS/FamilyCard/FamilyCard', () => ({ default: () => null }));
 vi.mock('./helpers/CustomIssuerName', () => ({ default: () => null }));
 vi.mock('./helpers/CustomBoostTitleDisplay', () => ({ default: () => null }));

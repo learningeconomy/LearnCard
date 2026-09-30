@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-    getSigningAuthorityForDid: vi.fn(async () => ({ seed: 'shared-seed' })),
+    getSigningAuthorityForDid: vi.fn(),
     initLearnCard: vi.fn(async (options: { didWeb?: string }) => ({
         did: options.didWeb ?? 'did:key:cached-test',
     })),
@@ -18,9 +18,19 @@ vi.mock('@learncard/didkit-plugin-node', () => ({
 }));
 
 import { getSigningAuthorityLearnCard } from './learnCard.helpers';
+import { seedEncryption } from './seedEncryption.helpers';
 
 describe('getSigningAuthorityLearnCard', () => {
     it('isolates cached wallets by owner DID when authorities share a seed', async () => {
+        const authorities = await Promise.all(
+            ['did:key:z6MkOwner', 'did:web:example.com:owner'].map(async ownerDid => {
+                const identity = { _id: ownerDid, ownerDid, name: 'shared-authority' };
+                return { ...identity, ...(await seedEncryption.encrypt('a'.repeat(64), identity)) };
+            })
+        );
+        mocks.getSigningAuthorityForDid.mockImplementation(async ownerDid =>
+            authorities.find(authority => authority.ownerDid === ownerDid)
+        );
         const didKeyWallet = await getSigningAuthorityLearnCard(
             'did:key:z6MkOwner',
             'shared-authority'

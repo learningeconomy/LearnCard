@@ -53,8 +53,8 @@
         "@balena/dockerignore": "1.0.2",
         "@changesets/changelog-github": "^0.4.8",
         "@changesets/cli": "^2.26.0",
-        "@vitest/coverage-v8": "4.1.10",
-        "@vitest/ui": "4.1.10",
+        "@vitest/coverage-v8": "*",
+        "@vitest/ui": "*",
         "@eslint/compat": "^2.0.0",
         "@eslint/js": "^10.0.0",
         "@types/node": "^18.19.68",
@@ -85,7 +85,7 @@
         "vite-tsconfig-paths": "^4.3.2",
         "happy-dom": "20.10.6",
         "jsdom": "24.1.3",
-        "vitest": "4.1.11"
+        "vitest": "*"
     },
     "dependencies": {
         "@ionic/react": "8.7.2",
@@ -111,6 +111,9 @@
         "zod-openapi": "5.4.5"
     },
     "overrides": {
+        "vitest": "4.1.11",
+        "@vitest/coverage-v8": "4.1.11",
+        "@vitest/ui": "4.1.11",
         "@parcel/watcher": "2.5.1",
         "fastify": "^5.8.5",
         "pvutils": "1.0.17",

@@ -21,6 +21,7 @@ import {
     StoredCredentialEnvelope,
     StoredCredentialEnvelopeValidator,
     isStoredCredentialEnvelope,
+    ACT_AS_HEADER,
 } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 import { VerifyExtension } from '@learncard/vc-plugin';
@@ -520,6 +521,30 @@ export * from './types';
 
 export type GuardianApprovalGetter = () => string | undefined | Promise<string | undefined>;
 
+export { ACT_AS_HEADER };
+
+// Must match the message resolveActAs throws for a missing target
+// (services/learn-card-network/brain-service/src/routes/index.ts).
+const ACT_AS_TARGET_NOT_FOUND_MESSAGE = 'Act-as target profile not found';
+
+/**
+ * True only for errors the server's act-as resolver throws when denying the delegation
+ * itself (FORBIDDEN: not a manager / policy denies; BAD_REQUEST: malformed header;
+ * NOT_FOUND: the target profile). Any other error — including a NOT_FOUND from elsewhere —
+ * is unrelated and must surface unchanged.
+ */
+const isActAsDenial = (error: unknown): boolean => {
+    const code = (error as { data?: { code?: string } } | undefined)?.data?.code;
+    if (code === 'FORBIDDEN' || code === 'BAD_REQUEST') return true;
+    if (code === 'NOT_FOUND') {
+        return (
+            (error as { message?: unknown } | undefined)?.message ===
+            ACT_AS_TARGET_NOT_FOUND_MESSAGE
+        );
+    }
+    return false;
+};
+
 /**
  * @group Plugins
  */
@@ -527,6 +552,15 @@ export type GuardianApprovalGetter = () => string | undefined | Promise<string |
 export interface LearnCardNetworkPluginOptions extends FederationConfig {
     guardianApprovalGetter?: GuardianApprovalGetter;
     extraHeaders?: Record<string, string>;
+    /**
+     * Profile ID (or managed `did:web`) to act as for every request made by this plugin
+     * instance. Sent as the `X-LearnCard-Act-As` header ({@link ACT_AS_HEADER}). The server
+     * swaps the acting profile for the duration of the request without changing token scope;
+     * it responds `403` if the caller doesn't manage the target profile, or if an API token's
+     * grant doesn't allow acting as it. Works for both API-token and seed/DID-auth clients,
+     * since seed-based users may also manage — and act as — other profiles.
+     */
+    actAs?: string;
 }
 
 export async function getLearnCardNetworkPlugin(
@@ -555,7 +589,12 @@ export async function getLearnCardNetworkPlugin(
         extraHeaders,
         trustedFederationHosts,
         allowLocalhostFederation,
+        actAs,
     } = resolvedOptions;
+
+    // Only allocate a new headers object when actAs is actually set, so behavior/identity
+    // of `extraHeaders` is unchanged for existing callers that don't use actAs.
+    const mergedExtraHeaders = actAs ? { ...extraHeaders, [ACT_AS_HEADER]: actAs } : extraHeaders;
 
     // Parse service URL to determine origin and auto-detect localhost
     const serviceUrl = new URL(url);
@@ -582,7 +621,7 @@ export async function getLearnCardNetworkPlugin(
 
     learnCard?.debug?.('Adding LearnCardNetwork Plugin');
     const client = apiToken
-        ? await getApiTokenClient(url, apiToken, guardianApprovalGetter, extraHeaders)
+        ? await getApiTokenClient(url, apiToken, guardianApprovalGetter, mergedExtraHeaders)
         : await getClient(
               url,
               async challenge => {
@@ -596,7 +635,7 @@ export async function getLearnCardNetworkPlugin(
                   return jwt;
               },
               guardianApprovalGetter,
-              extraHeaders
+              mergedExtraHeaders
           );
 
     let userData: LCNProfile | undefined;
@@ -885,6 +924,31 @@ export async function getLearnCardNetworkPlugin(
             getManagedProfiles: async (_learnCard, options = {}) => {
                 return client.profileManager.getManagedProfiles.query(options);
             },
+            actAs: async (_learnCard, profileId) => {
+                const actingOptions: LearnCardNetworkPluginOptions = {
+                    ...resolvedOptions,
+                    actAs: profileId,
+                };
+
+                const actingPlugin = apiToken
+                    ? await getLearnCardNetworkPlugin(_learnCard, url, apiToken, actingOptions)
+                    : await getLearnCardNetworkPlugin(_learnCard, url, actingOptions);
+
+                // The plugin's own initial getProfile is non-fatal by design, so an act-as
+                // denial would otherwise only surface later as "Please make an account first!".
+                try {
+                    await actingPlugin.methods.getLCNClient(_learnCard).profile.getProfile.query();
+                } catch (error) {
+                    if (isActAsDenial(error)) {
+                        const message =
+                            error instanceof Error ? error.message : 'Act-as request was denied.';
+                        throw new Error(message, { cause: error });
+                    }
+                    _learnCard.debug?.('LCN actAs: getProfile failed (non-fatal)', error);
+                }
+
+                return _learnCard.addPlugin(actingPlugin);
+            },
             claimPendingGuardianLinks: async () => {
                 await ensureUser();
                 return client.inbox.claimPendingGuardianLinks.mutate({});
@@ -1083,6 +1147,63 @@ export async function getLearnCardNetworkPlugin(
                 return client.profile.invalidateInvite.mutate({ challenge });
             },
 
+            createShareLink: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.create.mutate(input);
+            },
+            updateShareLink: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.update.mutate(input);
+            },
+            revokeShareLink: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.revoke.mutate(input);
+            },
+            getShareLink: async (_learnCard, id) => {
+                await ensureUser();
+
+                return client.shareLinks.get.query({ id });
+            },
+            getShareLinkOperationStatus: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.getOperationStatus.query(input);
+            },
+            retryShareLinkOperation: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.retry.mutate(input);
+            },
+            getShareLinkRecovery: async (_learnCard, id) => {
+                await ensureUser();
+
+                return client.shareLinks.getRecovery.query({ id });
+            },
+            getShareLinkOwnerContent: async (_learnCard, id) => {
+                await ensureUser();
+
+                return client.shareLinks.getContent.query({ id });
+            },
+            listShareLinks: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.shareLinks.list.query(input);
+            },
+
+            // Anonymous public methods: deliberately NO `ensureUser()`. A viewer
+            // has no account and must not need one.
+            // POST keeps an optional passcode in the request body and out of URLs,
+            // access logs, browser history and referrers.
+            resolveShareLink: async (_learnCard, id, passcode) =>
+                client.publicShareLinks.resolve.mutate({ id, passcode }),
+            getShareLinkContent: async (_learnCard, id, passcode) =>
+                client.publicShareLinks.content.mutate({ id, passcode }),
+            acknowledgeShareLinkView: async (_learnCard, receipt) =>
+                client.publicShareLinks.acknowledgeView.mutate({ receipt }),
+
             blockProfile: async (_learnCard, profileId) => {
                 await ensureUser();
 
@@ -1227,13 +1348,19 @@ export async function getLearnCardNetworkPlugin(
                 return client.credential.deleteCredential.mutate({ uri });
             },
 
-            sendPresentation: async (_learnCard, profileId, vp, encrypt = true) => {
+            sendPresentation: async (_learnCard, profileId, vp, metadataOrEncrypt, encrypt) => {
                 await ensureUser();
 
-                if (!encrypt) {
+                const metadata =
+                    typeof metadataOrEncrypt === 'object' ? metadataOrEncrypt : undefined;
+                const shouldEncrypt =
+                    typeof metadataOrEncrypt === 'boolean' ? metadataOrEncrypt : (encrypt ?? true);
+
+                if (!shouldEncrypt) {
                     return client.presentation.sendPresentation.mutate({
                         profileId,
                         presentation: vp,
+                        metadata,
                     });
                 }
 
@@ -1247,7 +1374,11 @@ export async function getLearnCardNetworkPlugin(
                     target.did,
                 ]);
 
-                return client.presentation.sendPresentation.mutate({ profileId, presentation });
+                return client.presentation.sendPresentation.mutate({
+                    profileId,
+                    presentation,
+                    metadata,
+                });
             },
             acceptPresentation: async (_learnCard, uri) => {
                 await ensureUser();

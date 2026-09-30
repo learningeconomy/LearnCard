@@ -127,6 +127,11 @@ describe('tenantConfigSchema', () => {
         expect(result.auth.provider).toBe('firebase');
         expect(result.auth.keyDerivation).toBe('sss');
         expect(result.auth.sss?.enableEmailBackupShare).toBe(true);
+        expect(result.auth.sss?.escrowRelayPublicKey).toBe('');
+        expect(result.auth.sss?.escrowRelayKeyId).toBe('');
+        expect(result.auth.sss?.escrowEnclaveMode).toBe('off');
+        expect(result.auth.sss?.escrowEnclavePublicKeys).toEqual([]);
+        expect(result.auth.sss?.escrowEnclaveMeasurements).toEqual([]);
         expect(result.auth.sss?.requireEmailForPhoneUsers).toBe(true);
         expect(result.branding.defaultTheme).toBe('colorful');
         expect(result.branding.loginRedirectPath).toBe('/waitingsofa?loginCompleted=true');
@@ -134,6 +139,34 @@ describe('tenantConfigSchema', () => {
         expect(result.features.analytics).toBe(true);
         expect(result.observability.analyticsProvider).toBe('noop');
         expect(result.storage.provider).toBe('filestack');
+    });
+
+    it('validates sample persona contract configuration', () => {
+        const result = tenantConfigSchema.parse({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            features: {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG.features,
+                samplePersonas: [
+                    {
+                        id: 'student',
+                        contractUri: 'lc:network:network.example/trpc:contract:student',
+                    },
+                ],
+                legacySamplePersonaContractUris: [
+                    'lc:network:network.example/trpc:contract:legacy',
+                ],
+            },
+        });
+
+        expect(result.features.samplePersonas).toEqual([
+            {
+                id: 'student',
+                contractUri: 'lc:network:network.example/trpc:contract:student',
+            },
+        ]);
+        expect(result.features.legacySamplePersonaContractUris).toEqual([
+            'lc:network:network.example/trpc:contract:legacy',
+        ]);
     });
 
     it('accepts S3 storage config and preserves extra fields', () => {

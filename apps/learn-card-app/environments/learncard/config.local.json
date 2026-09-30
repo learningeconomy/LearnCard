@@ -12,7 +12,14 @@
     },
     "features": {
         "analytics": false,
-        "useSeededSkillFrameworks": true
+        "useSeededSkillFrameworks": true,
+        "samplePersonas": [
+            {
+                "id": "student",
+                "contractUri": "lc:network:localhost%3A4000/trpc:contract:79672d1a-fe7c-5715-95db-27586e529934"
+            }
+        ],
+        "legacySamplePersonaContractUris": []
     },
     "observability": {
         "sentryEnv": "development",
@@ -22,7 +29,11 @@
     "auth": {
         "keyDerivation": "sss",
         "sss": {
-            "serverUrl": "http://localhost:5100/api"
+            "serverUrl": "http://localhost:5100/api",
+            "escrowEnclaveMode": "software",
+            "escrowEnclavePublicKeys": [
+                "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAENPKxocNq3k04Rf3nH2ny846YY5qr8khyWcKin6kp/GDyv9RjFjgz1qLp5SdjGW/4kvw+vStJPXbqxrBo2km9CA=="
+            ]
         }
     }
 }
