@@ -69,6 +69,9 @@ vi.mock('learn-card-base', () => ({
     ModalTypes: { FullScreen: 'fullscreen', Cancel: 'cancel', Right: 'right' },
     ToastTypeEnum: { Error: 'error', Success: 'success' },
 }));
+vi.mock('learn-card-base/components/modals/useModal', () => ({
+    useModal: () => ({ newModal: state.newModal, closeModal: vi.fn(), closeAllModals: vi.fn() }),
+}));
 vi.mock('react-router-dom', () => ({
     useHistory: () => ({ push: vi.fn() }),
     useLocation: () => ({ search: '' }),
@@ -159,6 +162,11 @@ describe('guardian approval at the consent submission boundary', () => {
         state.upload.mockResolvedValue('lc:shared');
         state.initWallet.mockResolvedValue({
             invoke: {
+                getContract: vi.fn().mockResolvedValue(contract),
+                getConsentedContracts: vi.fn().mockResolvedValue({
+                    records: [{ uri: 'lc:terms', contract }],
+                    hasMore: false,
+                }),
                 hasPin: state.hasPin,
                 getDidAuthVp: state.sign,
                 consentToContract: state.consent,
