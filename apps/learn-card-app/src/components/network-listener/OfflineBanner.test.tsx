@@ -20,6 +20,7 @@ vi.mock('learn-card-base', async () => {
 vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
 
 vi.mock('../../paraglide/messages.js', () => ({
+    'common.close': () => 'Close',
     'connectivity.offlineTitle': () => "You're offline",
     'connectivity.limitedTitle': () => 'Some features are unavailable',
     'connectivity.reconnect': () => 'Reconnect',
@@ -146,9 +147,12 @@ describe('OfflineBanner', () => {
     });
 
     it('the advisory slow/unstable warning is an accessible status, shown only when not limited', () => {
+        vi.useFakeTimers();
         setStores('online', 'poor', 'full');
         render(<OfflineBanner />);
 
+        expect(screen.queryByRole('status')).toBeNull();
+        act(() => vi.advanceTimersByTime(5000));
         const status = screen.getByRole('status');
         expect(status).toHaveTextContent(
             'Connection seems slow or unstable. Some actions may take longer.'
@@ -191,3 +195,62 @@ it('waits through unknown before announcing a confirmed recovery', () => {
     setStores('online', 'good', 'full');
     expect(screen.getByText('Back online')).toBeTruthy();
 });
+
+it('still hides recovery after reachability becomes unknown during its lifetime', () => {
+    vi.useFakeTimers();
+    setStores('offline', 'unknown', 'full');
+    render(<OfflineBanner />);
+    setStores('online', 'good', 'full');
+    act(() => vi.advanceTimersByTime(1000));
+    setStores('unknown', 'good', 'full');
+    act(() => vi.advanceTimersByTime(1500));
+    expect(screen.queryByText('Back online')).toBeNull();
+});
+
+it('allows immediate dismissal of the recovery toast', () => {
+    setStores('offline', 'unknown', 'full');
+    render(<OfflineBanner />);
+    setStores('online', 'good', 'full');
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByText('Back online')).toBeNull();
+    expect(connectivityStore.get.status()).toBe('online');
+});
+
+it('ignores short poor-quality bursts', () => {
+    vi.useFakeTimers();
+    setStores('online', 'poor', 'full');
+    render(<OfflineBanner />);
+    act(() => vi.advanceTimersByTime(4000));
+    setStores('online', 'good', 'full');
+    act(() => vi.advanceTimersByTime(10_000));
+    expect(screen.queryByRole('status')).toBeNull();
+});
+
+it.each(['close', 'timeout'])(
+    'limits repeated slow warnings after %s without changing connectivity',
+    mode => {
+        vi.useFakeTimers();
+        setStores('online', 'poor', 'full');
+        render(<OfflineBanner />);
+        act(() => vi.advanceTimersByTime(5000));
+        expect(screen.getByRole('status')).toBeInTheDocument();
+        if (mode === 'close') fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+        else act(() => vi.advanceTimersByTime(6000));
+        expect(screen.queryByRole('status')).toBeNull();
+        expect(connectivityStore.get.quality()).toBe('poor');
+        // Persistent poor quality never repeats; brief recovery cannot bypass cooldown.
+        act(() => vi.advanceTimersByTime(60_000));
+        setStores('online', 'good', 'full');
+        setStores('online', 'poor', 'full');
+        act(() => vi.advanceTimersByTime(11_000));
+        expect(screen.queryByRole('status')).toBeNull();
+        act(() => vi.advanceTimersByTime(5 * 60_000));
+        setStores('online', 'good', 'full');
+        setStores('online', 'poor', 'full');
+        act(() => vi.advanceTimersByTime(5000));
+        expect(screen.getByRole('status')).toBeInTheDocument();
+        setStores('offline', 'poor', 'full');
+        expect(screen.queryByRole('status')).toBeNull();
+        expect(screen.getByText("You're offline")).toBeInTheDocument();
+    }
+);
