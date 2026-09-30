@@ -32,6 +32,12 @@ import { getProfileByProfileId, getProfilesByProfileIds } from '@accesslayer/pro
 import { cloneDeep } from 'lodash';
 import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
 import { constructUri } from '@helpers/uri.helpers';
+import {
+    lockContractAudience,
+    audienceVersionWhere,
+    assertAudienceMutation,
+    runAudienceMutation,
+} from './recipients';
 
 export const setCreatorForContract = async (contract: DbContractType, profile: LCNProfile) => {
     return ConsentFlowContract.relateTo({
@@ -78,12 +84,14 @@ export const consentToContract = async (
         expiresAt,
         oneTime,
         guardianApproval,
+        audienceVersion,
     }: {
         terms: ConsentFlowTermsType;
         expiresAt?: string;
         liveSyncing?: boolean;
         oneTime?: boolean;
         guardianApproval?: ConsentFlowGuardianApproval;
+        audienceVersion?: number;
     },
     domain: string
 ) => {
@@ -125,7 +133,7 @@ export const consentToContract = async (
     if (existing.length > 0) {
         return reconsentTerms(
             { terms: inflateObject(existing[0]!.terms), consenter, contract, contractOwner },
-            { terms, expiresAt, oneTime, guardianApproval },
+            { terms, expiresAt, oneTime, guardianApproval, audienceVersion },
             domain
         );
     }
@@ -140,55 +148,75 @@ export const consentToContract = async (
 
     const termsId = uuid();
 
-    const result = await new QueryBuilder(
-        new BindParam({
-            params: flattenObject({ terms, ...(guardianApproval ? { guardianApproval } : {}) }),
-        })
-    )
-        .match({
-            multiple: [
-                {
-                    model: Profile,
-                    where: { profileId: consenter.profileId },
-                    identifier: 'profile',
-                },
-                { model: ConsentFlowContract, where: { id: contract.id }, identifier: 'contract' },
-            ],
-        })
-        .create({
-            related: [
-                { identifier: 'profile' },
-                ConsentFlowTerms.getRelationshipByAlias('createdBy'),
-                {
-                    model: ConsentFlowTerms,
-                    properties: {
-                        id: termsId,
-                        status: oneTime ? 'stale' : 'live',
-                        createdAt: transaction.date,
-                        updatedAt: transaction.date,
-                        ...(expiresAt ? { expiresAt } : {}),
-                        ...(oneTime ? { oneTime } : {}),
+    const result = await runAudienceMutation(
+        lockContractAudience(
+            new QueryBuilder(
+                new BindParam({
+                    params: flattenObject({
+                        terms,
+                        ...(guardianApproval ? { guardianApproval } : {}),
+                    }),
+                    audienceVersion: audienceVersion ?? null,
+                })
+            ),
+            contract.id
+        )
+            .where(audienceVersionWhere)
+            .set('contract.hasConsented = true')
+            .with('contract')
+            .match({
+                multiple: [
+                    {
+                        model: Profile,
+                        where: { profileId: consenter.profileId },
+                        identifier: 'profile',
                     },
-                    identifier: 'terms',
-                },
-                ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
-                { identifier: 'contract' },
-            ],
-        })
-        .create({
-            related: [
-                {
-                    identifier: 'transaction',
-                    model: ConsentFlowTransactionModel,
-                    properties: transaction,
-                },
-                ConsentFlowTransactionModel.getRelationshipByAlias('isFor'),
-                { identifier: 'terms' },
-            ],
-        })
-        .set('terms += $params')
-        .set('transaction += $params')
-        .run();
+                    {
+                        model: ConsentFlowContract,
+                        where: { id: contract.id },
+                        identifier: 'contract',
+                    },
+                ],
+            })
+            .where(
+                'NOT EXISTS { MATCH (profile)-[:CREATED_BY]->(:ConsentFlowTerms)-[:CONSENTS_TO]->(contract) }'
+            )
+            .create({
+                related: [
+                    { identifier: 'profile' },
+                    ConsentFlowTerms.getRelationshipByAlias('createdBy'),
+                    {
+                        model: ConsentFlowTerms,
+                        properties: {
+                            id: termsId,
+                            status: oneTime ? 'stale' : 'live',
+                            createdAt: transaction.date,
+                            updatedAt: transaction.date,
+                            ...(expiresAt ? { expiresAt } : {}),
+                            ...(oneTime ? { oneTime } : {}),
+                        },
+                        identifier: 'terms',
+                    },
+                    ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
+                    { identifier: 'contract' },
+                ],
+            })
+            .create({
+                related: [
+                    {
+                        identifier: 'transaction',
+                        model: ConsentFlowTransactionModel,
+                        properties: transaction,
+                    },
+                    ConsentFlowTransactionModel.getRelationshipByAlias('isFor'),
+                    { identifier: 'terms' },
+                ],
+            })
+            .set('terms += $params')
+            .set('transaction += $params')
+            .return('terms.id AS id')
+    );
+    assertAudienceMutation(result.records.length);
 
     const autoBoosts = await ConsentFlowContract.findRelationships({
         alias: 'autoReceive',

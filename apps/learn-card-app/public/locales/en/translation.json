@@ -3586,6 +3586,13 @@
         "skillsHub": "Skills Hub"
     },
     "base": {
+        "consentAudience": {
+            "title": "Review who receives your data",
+            "description": "Your selected information will be available to everyone listed below.",
+            "confirm": "Confirm Sharing",
+            "cancel": "Cancel"
+        },
+
         "verification": {
             "selfIssued": "Self Issued",
             "trustedIssuer": "Trusted Issuer",

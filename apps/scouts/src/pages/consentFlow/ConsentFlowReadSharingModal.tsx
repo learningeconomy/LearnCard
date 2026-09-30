@@ -44,11 +44,11 @@ type ConsentFlowReadSharingModalProps = {
 };
 
 const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = ({
-    initialTerm,
-    saveTerm,
+    term: initialTerm,
+    setTerm: saveTerm,
     category,
-    contractOwnerDid,
-}: any) => {
+    contractOwnerDid: _contractOwnerDid,
+}) => {
     const { newModal, closeModal } = useModal();
     const infiniteScrollRef = useRef<HTMLDivElement>(null);
 
@@ -93,15 +93,19 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
         fetchNextPage,
     } = useGetCredentialList(category as CredentialCategory);
 
-    const onScreen = useOnScreen(infiniteScrollRef as any, '-300px', [
-        records?.pages?.[0]?.records?.length,
-    ]);
+    const onScreen = useOnScreen(
+        infiniteScrollRef as React.MutableRefObject<HTMLDivElement>,
+        '-300px',
+        [records?.pages?.[0]?.records?.length]
+    );
 
     useEffect(() => {
         if (onScreen && hasNextPage) fetchNextPage();
     }, [fetchNextPage, hasNextPage, onScreen]);
 
-    const allCreds = records?.pages.flatMap(page => page?.records);
+    const allCreds = records?.pages
+        .flatMap(page => page?.records)
+        .filter((credential): credential is NonNullable<typeof credential> => Boolean(credential));
     const allUris = allCreds?.map(credential => credential?.uri) ?? [];
 
     const totalCount = typeof count === 'number' ? count : '?';
@@ -111,19 +115,18 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
         closeModal();
     };
 
-    const getAlreadySharedUri = (credential: CredentialRecord<CredentialMetadata>) => {
-        return credential.sharedUris?.[contractOwnerDid]?.at(-1);
-    };
+    const getAlreadySharedUris = (credential: CredentialRecord<CredentialMetadata>) =>
+        Object.values(credential.sharedUris ?? {}).flat();
 
     const getIsSelected = (credential: CredentialRecord<CredentialMetadata>) => {
-        const alreadySharedUri = getAlreadySharedUri(credential);
+        const alreadySharedUris = getAlreadySharedUris(credential);
         return term.shared?.some(
-            (termUri: string) => credential.uri === termUri || alreadySharedUri === termUri
+            (termUri: string) => credential.uri === termUri || alreadySharedUris.includes(termUri)
         );
     };
 
     const toggleCredentialSelected = (credential: CredentialRecord<CredentialMetadata>) => {
-        const alreadySharedUri = getAlreadySharedUri(credential);
+        const alreadySharedUris = getAlreadySharedUris(credential);
         const isSelected = getIsSelected(credential);
 
         if (term.shareAll) {
@@ -134,7 +137,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                             ...term,
                             shareAll: false,
                             shared: allUris.filter(
-                                uri => uri !== credential.uri && uri !== alreadySharedUri
+                                uri => uri !== credential.uri && !alreadySharedUris.includes(uri)
                             ),
                         });
                     }}
@@ -153,9 +156,9 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
             shareAll: false,
             shared: isSelected
                 ? term?.shared?.filter(
-                      (uri: string) => uri !== credential.uri && uri !== alreadySharedUri
+                      (uri: string) => uri !== credential.uri && !alreadySharedUris.includes(uri)
                   )
-                : [...(term.shared ?? []), alreadySharedUri || credential.uri],
+                : [...(term.shared ?? []), credential.uri],
         });
     };
 
@@ -168,14 +171,9 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
             setFormerSharedUris(term.shared ?? []);
         }
 
-        const allSharedUris = allCreds
-            ?.map(cred => {
-                if (!cred) return;
-                return getAlreadySharedUri(cred) ?? cred.uri;
-            })
-            .filter(c => !!c);
+        const allSharedUris = allCreds?.map(credential => credential.uri) ?? [];
 
-        setTerm({ ...term, shared: allSharedUris as string[], shareAll: true, sharing: true });
+        setTerm({ ...term, shared: allSharedUris, shareAll: true, sharing: true });
     };
 
     const handleSelectiveSharing = () => {
@@ -363,7 +361,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                             {m['consentFlow.sharingCount']({
                                                 count: term.shareAll
                                                     ? totalCount
-                                                    : term.shared?.length ?? 0,
+                                                    : (term.shared?.length ?? 0),
                                                 total: totalCount,
                                             })}
                                         </output>
@@ -393,9 +391,11 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                                     <BoostEarnedCard
                                                         className="[&>button>.check-btn-overlay]:right-[5px] [&>button>.check-btn-overlay]:left-[unset]"
                                                         key={record.uri}
-                                                        credential={record as any}
+                                                        uri={record.uri}
                                                         defaultImg={categoryImgUrl}
-                                                        categoryType={record.category as any}
+                                                        categoryType={
+                                                            record.category as CredentialCategory
+                                                        }
                                                         verifierState
                                                         onCheckMarkClick={() => {
                                                             toggleCredentialSelected(record);

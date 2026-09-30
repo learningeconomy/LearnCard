@@ -639,6 +639,7 @@ export type LearnCardNetworkPluginMethods = {
         image?: string;
         expiresAt?: string;
         writers?: string[];
+        recipients?: string[];
         autoboosts?: AutoBoostConfig[];
     }) => Promise<string>;
     addAutoBoostsToContract: (
@@ -646,6 +647,8 @@ export type LearnCardNetworkPluginMethods = {
         autoboosts: AutoBoostConfig[]
     ) => Promise<boolean>;
     removeAutoBoostsFromContract: (contractUri: string, boostUris: string[]) => Promise<boolean>;
+    addContractRecipient: (contractUri: string, recipient: string) => Promise<boolean>;
+    removeContractRecipient: (contractUri: string, recipient: string) => Promise<boolean>;
     getContract: (uri: string) => Promise<ConsentFlowContractDetails>;
     getContracts: (
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowContractQuery }
@@ -676,6 +679,7 @@ export type LearnCardNetworkPluginMethods = {
             terms: ConsentFlowTerms;
             expiresAt?: string;
             oneTime?: boolean;
+            audienceVersion?: number;
         },
         recipientToken?: string
     ) => Promise<{ termsUri: string; redirectUrl?: string }>;
@@ -688,6 +692,7 @@ export type LearnCardNetworkPluginMethods = {
             terms: ConsentFlowTerms;
             expiresAt?: string;
             oneTime?: boolean;
+            audienceVersion?: number;
         }
     ) => Promise<boolean>;
     withdrawConsent: (uri: string) => Promise<boolean>;
@@ -708,7 +713,8 @@ export type LearnCardNetworkPluginMethods = {
 
     syncCredentialsToContract: (
         termsUri: string,
-        categories: Record<string, string[]>
+        categories: Record<string, string[]>,
+        audienceVersion?: number
     ) => Promise<boolean>;
 
     deleteCredentialFromAllContracts: (deletedUris: string[]) => Promise<{

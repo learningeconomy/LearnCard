@@ -1,17 +1,19 @@
 import { ConsentFlowTerms } from '@learncard/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { switchedProfileStore, useWallet } from 'learn-card-base';
-import { useSharedUrisInTerms } from './useSharedUrisInTerms';
+import { getTermsWithSharedUrisForWallet } from './useSharedUrisInTerms';
+import { loadContractAudience } from './consentAudience';
+import { useConsentAudienceReview } from './useConsentAudienceReview';
 
 export const useConsentToContract = (
     uri: string,
-    contractOwnerDid: string,
+    _contractOwnerDid: string,
     recipientToken?: string // required for SmartResume and SmartResume only
 ) => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
 
-    const { getTermsWithSharedUris } = useSharedUrisInTerms(contractOwnerDid);
+    const reviewAudience = useConsentAudienceReview();
 
     return useMutation({
         mutationFn: async (_terms: {
@@ -25,13 +27,32 @@ export const useConsentToContract = (
             const wallet = await initWallet();
             const { beforeSubmit, skipSharedUriMaterialization, ...submission } = _terms;
 
-            const terms = skipSharedUriMaterialization
-                ? submission
-                : await getTermsWithSharedUris(submission);
+            const audience = await loadContractAudience(wallet, uri);
+            await reviewAudience(audience.contract);
+            const terms =
+                skipSharedUriMaterialization &&
+                Object.values(submission.terms.read.credentials.categories).every(
+                    category => !category.shared?.length
+                )
+                    ? {
+                          terms: submission.terms,
+                          expiresAt: submission.expiresAt,
+                          oneTime: submission.oneTime,
+                      }
+                    : await getTermsWithSharedUrisForWallet(
+                          wallet,
+                          audience.recipients,
+                          queryClient,
+                          submission
+                      );
 
             await beforeSubmit?.();
 
-            return wallet.invoke.consentToContract(uri, terms, recipientToken);
+            return wallet.invoke.consentToContract(
+                uri,
+                { ...terms, audienceVersion: audience.audienceVersion },
+                recipientToken
+            );
         },
         onSuccess: data => {
             if (data) {

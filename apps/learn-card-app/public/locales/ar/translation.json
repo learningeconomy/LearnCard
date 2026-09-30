@@ -3532,6 +3532,13 @@
         "skillsHub": "مركز المهارات"
     },
     "base": {
+        "consentAudience": {
+            "title": "راجع من يتلقى بياناتك",
+            "description": "ستكون المعلومات التي تختارها متاحة لجميع الجهات المدرجة أدناه.",
+            "confirm": "تأكيد المشاركة",
+            "cancel": "إلغاء"
+        },
+
         "verification": {
             "selfIssued": "صادر ذاتياً",
             "trustedIssuer": "جهة إصدار موثوقة",

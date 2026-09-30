@@ -31,6 +31,8 @@ export const DbContractValidator = z.object({
     createdAt: z.string(),
     updatedAt: z.string(),
     expiresAt: z.string().optional(),
+    audienceVersion: z.coerce.number().int().nonnegative().optional(),
+    hasConsented: z.boolean().optional(),
 });
 
 export type DbContractType = z.infer<typeof DbContractValidator>;
@@ -52,6 +54,7 @@ export type FlatDbTransactionType = Omit<DbTransactionType, 'guardianApproval' |
     FlatGuardianApproval;
 
 export const DbTermsValidator = z.object({
+    mutationVersion: z.coerce.number().int().nonnegative().optional(),
     id: z.string(),
     status: ConsentFlowTermsStatusValidator,
     // Neo4j has no properties to store for entirely empty permission objects.

@@ -14,6 +14,7 @@ export type ConsentFlowRelationships = {
         { signingAuthorityEndpoint: string; signingAuthorityName: string; issuer?: string }
     >;
     canWrite: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
+    sharesDataWith: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     relatedTo: ModelRelatedNodesI<typeof Boost, BoostInstance>;
     requestedFor: ModelRelatedNodesI<
         typeof Profile,
@@ -47,6 +48,8 @@ export const ConsentFlowContract = ModelFactory<FlatDbContractType, ConsentFlowR
             createdAt: { type: 'string', required: true },
             updatedAt: { type: 'string', required: true },
             expiresAt: { type: 'string', required: false },
+            audienceVersion: { type: 'number', required: false },
+            hasConsented: { type: 'boolean', required: false },
         } as any,
         relationships: {
             createdBy: { model: Profile, direction: 'out', name: 'CREATED_BY' },
@@ -70,6 +73,7 @@ export const ConsentFlowContract = ModelFactory<FlatDbContractType, ConsentFlowR
                 },
             },
             canWrite: { model: Profile, direction: 'out', name: 'CAN_WRITE' },
+            sharesDataWith: { model: Profile, direction: 'out', name: 'SHARES_DATA_WITH' },
             relatedTo: { model: Boost, direction: 'out', name: 'RELATED_TO' },
             requestedFor: {
                 model: Profile,

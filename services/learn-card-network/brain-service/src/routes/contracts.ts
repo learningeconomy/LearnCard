@@ -105,6 +105,24 @@ import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getNotificationMessage } from '@helpers/notificationMessages';
 import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { ProfileType } from 'types/profile';
+import {
+    getRecipientsForContract,
+    addRecipientToContract,
+    removeRecipientFromContract,
+    canReadContractData,
+} from '@accesslayer/consentflowcontract/relationships/recipients';
+
+const publicContractRecipient = (domain: string, recipient: ProfileType) => {
+    const profile = updateDidForProfile(domain, recipient);
+    return { ...sanitizeProfileForTier(profile, 'unauthenticated'), did: profile.did };
+};
+
+const resolveRecipientProfileId = async (identifier: string, domain: string): Promise<string> => {
+    const profileId = await getProfileIdFromString(identifier, domain);
+    if (!profileId)
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid recipient identifier' });
+    return profileId;
+};
 
 export const contractsRouter = t.router({
     createConsentFlowContract: profileRoute
@@ -133,6 +151,7 @@ export const contractsRouter = t.router({
                 expiresAt: z.string().optional(),
                 autoboosts: z.array(AutoBoostConfigValidator).optional(),
                 writers: z.array(z.string()).optional(),
+                recipients: z.array(z.string()).max(50).optional(),
             })
         )
         .output(z.string())
@@ -150,7 +169,23 @@ export const contractsRouter = t.router({
                 expiresAt,
                 autoboosts,
                 writers,
+                recipients,
             } = input;
+
+            const recipientIds = [
+                ...new Set(
+                    await Promise.all(
+                        (recipients ?? []).map(id => resolveRecipientProfileId(id, ctx.domain))
+                    )
+                ),
+            ].filter(id => id !== ctx.user.profile.profileId);
+            const recipientProfiles = await getProfilesByProfileIds(recipientIds);
+            if (recipientProfiles.length !== recipientIds.length) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Could not find all recipient profiles',
+                });
+            }
 
             // Create ConsentFlow instance
             const createdContract = await createConsentFlowContract({
@@ -168,6 +203,10 @@ export const contractsRouter = t.router({
 
             // Get profile by profileId
             await setCreatorForContract(createdContract, ctx.user.profile);
+
+            for (const recipientId of recipientIds) {
+                await addRecipientToContract(createdContract.id, recipientId);
+            }
 
             // Add specified writers
             if (writers && writers.length > 0) {
@@ -255,6 +294,65 @@ export const contractsRouter = t.router({
             return constructUri('contract', createdContract.id, ctx.domain);
         }),
 
+    addContractRecipient: profileRoute
+        .meta({
+            requiredScope: 'contracts:write',
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contract/recipient/add',
+                tags: ['Contracts'],
+                summary: 'Add a data recipient before first consent',
+            },
+        })
+        .input(z.object({ contractUri: z.string(), recipient: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const contract = await getContractByUri(input.contractUri);
+            if (!contract)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
+            if (!(await isProfileConsentFlowContractAdmin(ctx.user.profile, contract)))
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not own contract',
+                });
+            const profileId = await resolveRecipientProfileId(input.recipient, ctx.domain);
+            if (!(await getProfileByProfileId(profileId)))
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Could not find recipient profile',
+                });
+            return addRecipientToContract(contract.id, profileId);
+        }),
+
+    removeContractRecipient: profileRoute
+        .meta({
+            requiredScope: 'contracts:write',
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contract/recipient/remove',
+                tags: ['Contracts'],
+                summary: 'Remove a data recipient',
+            },
+        })
+        .input(z.object({ contractUri: z.string(), recipient: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const contract = await getContractByUri(input.contractUri);
+            if (!contract)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
+            if (!(await isProfileConsentFlowContractAdmin(ctx.user.profile, contract)))
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not own contract',
+                });
+            return removeRecipientFromContract(
+                contract.id,
+                await resolveRecipientProfileId(input.recipient, ctx.domain)
+            );
+        }),
+
     getConsentFlowContract: openRoute
         .meta({
             openapi: {
@@ -280,6 +378,7 @@ export const contractsRouter = t.router({
             }
 
             const autoboosts = await getAutoBoostsForContract(result.contract.id, ctx.domain);
+            const recipients = await getRecipientsForContract(result.contract.id);
 
             return {
                 owner: updateDidForProfile(ctx.domain, result.contractOwner),
@@ -297,6 +396,10 @@ export const contractsRouter = t.router({
                 uri: constructUri('contract', result.contract.id, ctx.domain),
                 ...(result.contract.expiresAt ? { expiresAt: result.contract.expiresAt } : {}),
                 autoBoosts: autoboosts,
+                recipients: recipients.map(recipient =>
+                    publicContractRecipient(ctx.domain, recipient)
+                ),
+                audienceVersion: Number(result.contract.audienceVersion ?? 0),
             };
         }),
 
@@ -426,16 +529,16 @@ export const contractsRouter = t.router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
             }
 
-            if (!(await isProfileConsentFlowContractAdmin(profile, contract))) {
+            if (!(await canReadContractData(contract.id, profile.profileId))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
-                    message: 'Profile does not own contract',
+                    message: 'Profile is not in the contract data audience',
                 });
             }
 
             const contractId = getIdFromUri(uri);
 
-            const results = await getConsentedDataForContract(contractId, {
+            const results = await getConsentedDataForContract(contractId, profile.profileId, {
                 query,
                 limit: limit + 1,
                 cursor,
@@ -892,6 +995,7 @@ export const contractsRouter = t.router({
                 contractUri: z.string(),
                 expiresAt: z.string().optional(),
                 oneTime: z.boolean().optional(),
+                audienceVersion: z.number().int().nonnegative().optional(),
                 recipientToken: z.string().optional(), // SmartResume recipientToken needed for API call
             })
         )
@@ -907,7 +1011,8 @@ export const contractsRouter = t.router({
                 });
             }
 
-            const { terms, contractUri, expiresAt, oneTime, recipientToken } = input;
+            const { terms, contractUri, expiresAt, oneTime, recipientToken, audienceVersion } =
+                input;
 
             const contractDetails = await getContractDetailsByUri(contractUri);
 
@@ -1085,6 +1190,7 @@ export const contractsRouter = t.router({
                     terms,
                     expiresAt,
                     oneTime,
+                    audienceVersion,
                     guardianApproval: guardianIdentity
                         ? {
                               guardianProfileId: guardianIdentity.profileId,
@@ -1159,33 +1265,39 @@ export const contractsRouter = t.router({
             return {
                 hasMore,
                 cursor: nextCursor,
-                records: contracts.map(record => ({
-                    contract: {
-                        contract: record.contract.contract,
-                        name: record.contract.name,
-                        subtitle: record.contract.subtitle,
-                        description: record.contract.description,
-                        reasonForAccessing: record.contract.reasonForAccessing,
-                        needsGuardianConsent: record.contract.needsGuardianConsent,
-                        redirectUrl: record.contract.redirectUrl,
-                        frontDoorBoostUri: record.contract.frontDoorBoostUri,
-                        image: record.contract.image,
-                        createdAt: record.contract.createdAt,
-                        updatedAt: record.contract.updatedAt,
-                        uri: constructUri('contract', record.contract.id, ctx.domain),
-                        owner: updateDidForProfile(ctx.domain, record.owner),
-                        ...(record.contract.expiresAt
-                            ? { expiresAt: record.contract.expiresAt }
-                            : {}),
-                        autoBoosts: record.autoBoosts,
-                    },
-                    uri: constructUri('terms', record.terms.id, ctx.domain),
-                    terms: record.terms.terms,
-                    ...(record.terms.expiresAt ? { expiresAt: record.terms.expiresAt } : {}),
-                    ...(record.terms.oneTime ? { oneTime: record.terms.oneTime } : {}),
-                    consenter: updateDidForProfile(ctx.domain, profile),
-                    status: record.terms.status,
-                })),
+                records: await Promise.all(
+                    contracts.map(async record => ({
+                        contract: {
+                            contract: record.contract.contract,
+                            name: record.contract.name,
+                            subtitle: record.contract.subtitle,
+                            description: record.contract.description,
+                            reasonForAccessing: record.contract.reasonForAccessing,
+                            needsGuardianConsent: record.contract.needsGuardianConsent,
+                            redirectUrl: record.contract.redirectUrl,
+                            frontDoorBoostUri: record.contract.frontDoorBoostUri,
+                            image: record.contract.image,
+                            createdAt: record.contract.createdAt,
+                            updatedAt: record.contract.updatedAt,
+                            uri: constructUri('contract', record.contract.id, ctx.domain),
+                            owner: updateDidForProfile(ctx.domain, record.owner),
+                            ...(record.contract.expiresAt
+                                ? { expiresAt: record.contract.expiresAt }
+                                : {}),
+                            autoBoosts: record.autoBoosts,
+                            audienceVersion: Number(record.contract.audienceVersion ?? 0),
+                            recipients: (await getRecipientsForContract(record.contract.id)).map(
+                                recipient => publicContractRecipient(ctx.domain, recipient)
+                            ),
+                        },
+                        uri: constructUri('terms', record.terms.id, ctx.domain),
+                        terms: record.terms.terms,
+                        ...(record.terms.expiresAt ? { expiresAt: record.terms.expiresAt } : {}),
+                        ...(record.terms.oneTime ? { oneTime: record.terms.oneTime } : {}),
+                        consenter: updateDidForProfile(ctx.domain, profile),
+                        status: record.terms.status,
+                    }))
+                ),
             };
         }),
 
@@ -1207,6 +1319,7 @@ export const contractsRouter = t.router({
                 terms: ConsentFlowTermsValidator,
                 expiresAt: z.string().optional(),
                 oneTime: z.boolean().optional(),
+                audienceVersion: z.number().int().nonnegative().optional(),
             })
         )
         .output(z.boolean())
@@ -1222,7 +1335,7 @@ export const contractsRouter = t.router({
                 });
             }
 
-            const { uri, terms, expiresAt, oneTime } = input;
+            const { uri, terms, expiresAt, oneTime, audienceVersion } = input;
 
             const decodedUri = decodeURIComponent(uri);
             const relationship = await getContractTermsByUri(decodedUri);
@@ -1271,6 +1384,7 @@ export const contractsRouter = t.router({
                         terms,
                         expiresAt,
                         oneTime,
+                        audienceVersion,
                         guardianApproval: guardianIdentity
                             ? {
                                   guardianProfileId: guardianIdentity.profileId,
@@ -1528,13 +1642,14 @@ export const contractsRouter = t.router({
         .input(
             z.object({
                 termsUri: z.string(),
+                audienceVersion: z.number().int().nonnegative().optional(),
                 categories: z.record(z.string(), z.string().array()),
             })
         )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { termsUri, categories } = input;
+            const { termsUri, categories, audienceVersion } = input;
 
             // Verify the terms exist and belong to this profile
             const relationship = await getContractTermsByUri(termsUri);
@@ -1604,7 +1719,11 @@ export const contractsRouter = t.router({
             }
 
             // Sync the credentials
-            const result = await syncCredentialsToContract(relationship, categories);
+            const result = await syncCredentialsToContract(
+                relationship,
+                categories,
+                audienceVersion
+            );
 
             return result;
         }),

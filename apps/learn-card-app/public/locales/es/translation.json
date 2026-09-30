@@ -3535,6 +3535,13 @@
         "skillsHub": "Centro de habilidades"
     },
     "base": {
+        "consentAudience": {
+            "title": "Revisa quién recibe tus datos",
+            "description": "La información que elijas estará disponible para todas las personas que aparecen a continuación.",
+            "confirm": "Confirmar uso compartido",
+            "cancel": "Cancelar"
+        },
+
         "verification": {
             "selfIssued": "Autoemitido",
             "trustedIssuer": "Emisor de confianza",
