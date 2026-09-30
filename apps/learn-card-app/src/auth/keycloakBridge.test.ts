@@ -70,7 +70,7 @@ describe('resolveKeycloakBridgeUrl', () => {
     it('falls back to authorizeUrl when the probe times out', async () => {
         vi.useFakeTimers();
         const fetcher = vi.fn(
-            (_url: string, init?: RequestInit) =>
+            (_url: RequestInfo | URL, init?: RequestInit) =>
                 new Promise<Response>((_, reject) => {
                     init?.signal?.addEventListener('abort', () =>
                         reject(new DOMException('Aborted', 'AbortError'))

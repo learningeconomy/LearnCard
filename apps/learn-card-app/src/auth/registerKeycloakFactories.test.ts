@@ -13,6 +13,14 @@ interface MockAdapterConfig {
     [key: string]: unknown;
 }
 
+interface MockKeycloakConfig {
+    serverUrl: string;
+    realm: string;
+    clientId: string;
+    authBridgeUrl?: string;
+    [key: string]: unknown;
+}
+
 const mocks = vi.hoisted(() => ({
     authFactory: vi.fn<(name: string, factory: () => unknown) => void>(),
     adapterFactory: vi.fn<(name: string, factory: () => unknown) => void>(),
@@ -22,7 +30,7 @@ const mocks = vi.hoisted(() => ({
         handleRedirectCallback: vi.fn(async () => ({ id: 'user-1' })),
     })),
     createAdapter: vi.fn((_config: MockAdapterConfig) => ({ marker: 'adapter' })),
-    config: vi.fn(() => ({
+    config: vi.fn((): MockKeycloakConfig => ({
         serverUrl: 'http://localhost:8081',
         realm: 'learncard',
         clientId: 'learncard-app',

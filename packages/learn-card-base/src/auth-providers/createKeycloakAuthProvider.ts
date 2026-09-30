@@ -190,6 +190,7 @@ export const createKeycloakAuthProvider = (
         } catch (error) {
             if (
                 error instanceof ErrorResponse &&
+                error.error != null &&
                 ['invalid_grant', 'login_required', 'interaction_required'].includes(error.error)
             ) {
                 throw new AuthSessionError(
