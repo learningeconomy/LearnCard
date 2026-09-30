@@ -41,6 +41,8 @@ jobs:
 
               with:
                   generator: ${{ matrix.generator-name }}
+                  # Keep template changes explicit and covered by the security-floor contracts.
+                  generator-tag: v7.25.0
                   openapi-url: https://network.learncard.com/docs/openapi.json
                   command-args: -o ${{ env.working-directory }}/${{ matrix.generator-name }}-client/ --skip-validate-spec
             - name: Remove generated GitHub metadata
