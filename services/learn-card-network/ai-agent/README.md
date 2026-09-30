@@ -276,7 +276,7 @@ Production retains its environment approval; no separate action dispatch is requ
 See [RUNBOOK.md](./RUNBOOK.md) for CI, release metadata, environment setup, and controlled rollout.
 
 Trigger tasks explicitly use **Node.js 24.18.0** (`runtime: 'node-24'`), while the ECS HTTP
-service and repository Bun commands retain **Bun 1.3.14**. Trigger SDK/build/CLI are pinned
+service and repository Bun commands now use **Bun 1.4.2**. Trigger SDK/build/CLI are pinned
 to 4.5.7, the first release with stable Node 24 support; see the
 [release notes](https://trigger.dev/changelog/v4-5-7) and
 [platform runtime versions](https://trigger.dev/docs/config/config-file#nodejs-versions).

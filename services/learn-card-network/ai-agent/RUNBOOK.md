@@ -371,7 +371,7 @@ perform irreversible effects.
   Trigger runtime in [4.5.7](https://trigger.dev/changelog/v4-5-7); the
   [runtime matrix](https://trigger.dev/docs/config/config-file#nodejs-versions) lists its
   exact version. Do not fall back to `runtime: 'node'`, which selects obsolete Node 21.
-  ECS continues to use the independently pinned Bun 1.3.14 image.
+  The ECS image now uses Bun 1.4.2 to consume the repository's version 3 lockfile.
 - Images receive an immutable `sha-<git-sha>` tag. Workflow retries reuse the existing image rather than overwriting it.
 - The workflow rejects ARM64 images with critical or high ECR findings, updates the CloudFormation image tag and deployment ID, waits for the ECS rolling deployment with circuit-breaker rollback, checks readiness, and runs the authenticated smoke test in staging.
 

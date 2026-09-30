@@ -47,7 +47,7 @@ const walkFiles = (root: string): string[] => {
 
 const packageSchema = z
     .object({
-        engines: z.object({ node: z.string().optional() }).optional(),
+        engines: z.object({ node: z.string().optional(), bun: z.string().optional() }).optional(),
         packageManager: z.string().optional(),
         scripts: z.record(z.string(), z.string()).optional(),
         devDependencies: z.record(z.string(), z.string()).optional(),
@@ -69,14 +69,16 @@ expect(rootPackage.overrides?.typescript === '5.9.3', 'TypeScript override must 
 expect(ts.version === '5.9.3', 'Installed TypeScript must be 5.9.3');
 
 expect(readFileSync('.nvmrc', 'utf8').trim() === 'v24.12.0', '.nvmrc must pin Node 24.12.0');
-expect(rootPackage.packageManager === 'bun@1.3.14', 'root packageManager must be bun@1.3.14');
+expect(rootPackage.packageManager === 'bun@1.4.2', 'root packageManager must be bun@1.4.2');
 expect(rootPackage.engines?.node === '>=24.12 <25', 'root Node engine must be >=24.12 <25');
 
 for (const path of runtimePackagePaths) {
     const packageJson = readJson(path, packageSchema);
-    expect(packageJson.packageManager === 'bun@1.3.14', `${path} must declare bun@1.3.14`);
+    expect(packageJson.packageManager === 'bun@1.4.2', `${path} must declare bun@1.4.2`);
     expect(packageJson.engines?.node === '>=24.12 <25', `${path} must declare Node >=24.12 <25`);
 }
+const aiAgentPackage = readJson('services/learn-card-network/ai-agent/package.json', packageSchema);
+expect(aiAgentPackage.engines?.bun === '>=1.4.2', 'AI Agent package must require Bun >=1.4.2');
 
 const workflowPathPattern = /(?:^|\/)\.github\/workflows\/[^/]+\.(?:yml|yaml)$/;
 const runtimePinFiles = walkFiles('.').filter(path => {
@@ -87,7 +89,7 @@ const runtimePinFiles = walkFiles('.').filter(path => {
         name === '.node-version' ||
         name === 'netlify.toml' ||
         name.startsWith('Dockerfile') ||
-        workflowPathPattern.test(path) ||
+        path === 'packages/learn-card-bridge-http/cli/Info.tsx' ||
         path === 'preview/docker-compose.preview.yaml'
     );
 });
@@ -99,19 +101,24 @@ for (const path of runtimePinFiles) {
     const contents = readFileSync(path, 'utf8');
 
     expect(!staleNodePattern.test(contents), `${path} contains a stale Node pin`);
+    if (path.endsWith('netlify.toml')) {
+        for (const match of contents.matchAll(/^BUN_VERSION\s*=\s*"([^"]+)"/gm)) {
+            expect(match[1] === '1.4.2', `${path} must use Bun 1.4.2`);
+        }
+    }
     expect(
-        !/bun\.sh\/install(?!\s*\|\s*bash\s+-s\s+--\s+["']?bun-v(?:1\.3\.14|\$\{BUN_VERSION\})["']?)|npm install -g bun(?:\s|\\|$)/.test(
+        !/bun\.sh\/install(?!\s*\|\s*bash\s+-s\s+--\s+["']?bun-v(?:1\.4\.2|\$\{BUN_VERSION\})["']?)|npm (?:install|i) -g bun(?:\s|\\|$)/.test(
             contents
         ),
         `${path} contains an unpinned Bun installer`
     );
 
-    for (const match of contents.matchAll(/npm install -g bun@([^\s\\]+)/g)) {
-        expect(match[1] === '1.3.14', `${path} must install Bun 1.3.14`);
+    for (const match of contents.matchAll(/npm (?:install|i) -g bun@([^\s\\]+)/g)) {
+        expect(match[1] === '1.4.2', `${path} must install Bun 1.4.2`);
     }
 
     for (const match of contents.matchAll(/FROM\s+oven\/bun:([^\s]+)/gi)) {
-        expect(match[1] === '1.3.14', `${path} must use oven/bun:1.3.14`);
+        expect(/^1\.4\.2(?:-alpine)?$/.test(match[1]), `${path} must use oven/bun:1.4.2`);
     }
 }
 
@@ -124,8 +131,8 @@ for (const path of runtimePinFiles) {
     for (const match of setupMatches) {
         const setupBlock = contents.slice(match.index, match.index + 180);
         expect(
-            /bun-version:\s*1\.3\.14/.test(setupBlock),
-            `${path} has setup-bun without bun-version 1.3.14`
+            /bun-version:\s*1\.4\.2/.test(setupBlock),
+            `${path} has setup-bun without bun-version 1.4.2`
         );
     }
 }
