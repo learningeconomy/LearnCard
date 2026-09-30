@@ -38,6 +38,7 @@ export enum Icons {
 export enum LCCategoryEnum {
     socialBadge = 'Social Badge',
     achievement = 'Achievement',
+    qualifications = 'Qualifications',
     course = 'Course',
     job = 'Job',
     id = 'ID',
