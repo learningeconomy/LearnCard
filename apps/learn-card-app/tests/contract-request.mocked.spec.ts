@@ -222,6 +222,14 @@ const setup = async (
         timeout: 30_000,
     });
     await page.goto('/notifications', { waitUntil: 'domcontentloaded' });
+    // A full navigation initializes the account again before notifications load.
+    // Wait for that observable UI state, including on a cold CI server.
+    const notification = page.getByTestId(
+        (options.tenant ?? true) && (options.flag ?? true)
+            ? 'contract-request-card'
+            : 'notification-title'
+    );
+    await expect(notification).toBeVisible({ timeout: 30_000 });
     return {
         seen: () => seen,
         denied: () => denied,
