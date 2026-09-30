@@ -1,5 +1,6 @@
 import type { BespokeLearnCard } from '../types/learn-card';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { QueryClient, QueryObserver } from '@tanstack/react-query';
 const { completionStorage } = vi.hoisted(() => {
     const completionStorage = new Map<string, string>();
     Object.defineProperty(globalThis, 'window', {
@@ -300,5 +301,54 @@ describe('reconcileQualificationCategories', () => {
         expect(anotherClient.index.LearnCloud.getPage).not.toHaveBeenCalled();
         finish({ records: [], hasMore: false, cursor: undefined });
         await Promise.all([firstRun, secondRun]);
+    });
+    it('retries a truncated page on the next session instead of persisting completion', async () => {
+        const first: TestRecord = {
+            id: 'first',
+            uri: 'credential:first',
+            category: 'ID',
+            credential: credential('License'),
+        };
+        const second: TestRecord = {
+            id: 'second',
+            uri: 'credential:second',
+            category: 'ID',
+            credential: credential('License'),
+        };
+        const { wallet, getPage } = makeWallet('truncated', [[first, second]]);
+        getPage.mockResolvedValueOnce({ records: [first], hasMore: true, cursor: undefined });
+        await reconcileQualificationCategories(wallet);
+        expect(first.category).toBe('Qualifications');
+        expect(second.category).toBe('ID');
+        const nextSession = await startNewSession();
+        await nextSession(wallet);
+        expect(second.category).toBe('Qualifications');
+    });
+
+    it('refreshes active sharing categories after a legacy qualification is moved', async () => {
+        const record: TestRecord = {
+            id: 'active-share',
+            uri: 'credential:active-share',
+            category: 'ID',
+            credential: credential('License'),
+        };
+        const { wallet } = makeWallet('active-share', [[record]]);
+        const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        const observer = new QueryObserver(client, {
+            queryKey: ['useGetCredentials', '', undefined, true],
+            queryFn: async () => [{ uri: record.uri, category: record.category }],
+        });
+        const unsubscribe = observer.subscribe(() => {});
+        try {
+            await observer.refetch();
+            expect(observer.getCurrentResult().data?.[0]?.category).toBe('ID');
+            await reconcileQualificationCategories(wallet, client);
+            await vi.waitFor(() =>
+                expect(observer.getCurrentResult().data?.[0]?.category).toBe('Qualifications')
+            );
+        } finally {
+            unsubscribe();
+            client.clear();
+        }
     });
 });

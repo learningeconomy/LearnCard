@@ -71,6 +71,7 @@ export const reconcileQualificationCategories = async (
                 incomplete = true;
                 break;
             }
+            if (page.hasMore && !page.cursor) incomplete = true;
 
             for (const record of page?.records ?? []) {
                 if (
@@ -138,6 +139,7 @@ export const reconcileQualificationCategories = async (
         if (changed && queryClient) {
             void Promise.all([
                 queryClient.invalidateQueries({ queryKey: ['useGetCredentialList'] }),
+                queryClient.invalidateQueries({ queryKey: ['useGetCredentials'] }),
                 queryClient.invalidateQueries({ queryKey: ['useGetCredentialCount'] }),
                 queryClient.invalidateQueries({ queryKey: ['useGetRecordForUri'] }),
             ]).catch(error => log.warn('Failed to invalidate credential category caches', error));
