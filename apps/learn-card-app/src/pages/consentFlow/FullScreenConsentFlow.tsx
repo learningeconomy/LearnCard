@@ -55,6 +55,7 @@ type FullScreenConsentFlowProps = {
         hideCloseButton?: boolean;
     };
     disableRedirect?: boolean;
+    beforeSubmit?: () => Promise<void>;
     onCloseCallback?: () => void;
     onBackCallback?: () => void;
 };
@@ -71,6 +72,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
     aiInsightsRequestOptions,
     childInsightsProfile,
     disableRedirect = false,
+    beforeSubmit,
     onCloseCallback,
     onBackCallback,
 }) => {
@@ -158,6 +160,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
 
                 const { redirectUrl } = await submit(async () => {
                     await guardedAction(() => {});
+                    await beforeSubmit?.();
                 });
 
                 // Sync any auto-boost credentials (if any). No need to wait.

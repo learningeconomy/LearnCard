@@ -1478,6 +1478,17 @@
         "@simplewebauthn/browser",
       ],
     },
+    "scripts/lc-2226": {
+      "name": "@workspace/lc-2226-labs",
+      "dependencies": {
+        "@learncard/didkit-plugin": "workspace:*",
+        "@learncard/init": "workspace:*",
+        "@learncard/lca-api-plugin": "workspace:*",
+        "@learncard/types": "workspace:*",
+        "bs58": "^5.0.0",
+        "jose": "^5.9.6",
+      },
+    },
     "scripts/siwa-migration": {
       "name": "siwa-migration",
       "version": "1.0.0",
@@ -5050,6 +5061,8 @@
     "@workspace/e2e-tests": ["@workspace/e2e-tests@workspace:tests/e2e"],
 
     "@workspace/federation-e2e-tests": ["@workspace/federation-e2e-tests@workspace:tests/federation-e2e"],
+
+    "@workspace/lc-2226-labs": ["@workspace/lc-2226-labs@workspace:scripts/lc-2226"],
 
     "@workspace/openid4vc-e2e-tests": ["@workspace/openid4vc-e2e-tests@workspace:tests/openid4vc-e2e"],
 
