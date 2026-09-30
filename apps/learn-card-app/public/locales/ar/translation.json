@@ -3454,6 +3454,7 @@
             "noPathways": "لا توجد مسارات تعلم متاحة لهذه الجلسة.",
             "pathwayModalSubtitle": "اختر مسارًا لمواصلة استكشاف هذا الموضوع",
             "pathwayModalTitle": "واصل رحلة تعلمك",
+            "personalizedSuggestionsUnavailable": "الاقتراحات المخصصة غير متاحة. لا يزال بإمكانك الدردشة.",
             "placeholderInsights": "اسأل ما تشاء...",
             "placeholderTutor": "قل ما تشاء...",
             "resumeTopicEmphasis": "اختر موضوعًا",

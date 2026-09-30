@@ -39,6 +39,7 @@ export const isEndingSession = atom(false);
 export const showEndingSessionLoader = atom(false);
 export const activeQuestions = atom<string[]>([]);
 export const suggestedTopics = atom<string[]>([]);
+export const credentialPreloadUnavailable = atom(false);
 export const topicCredentials = atom<ThreadCredentialContext[]>([]);
 export const sessionEnded = atom(false);
 export const planReady = atom(false);
@@ -186,6 +187,7 @@ export function resetChatSessionStores() {
     showEndingSessionLoader.set(false);
     activeQuestions.set([]);
     suggestedTopics.set([]);
+    credentialPreloadUnavailable.set(false);
     topicCredentials.set([]);
     sessionEnded.set(false);
     planReady.set(false);
@@ -633,6 +635,7 @@ const createWebSocket = async (generation: number): Promise<WebSocket | null> =>
         return null;
 
     ws = new WebSocket(addActiveLocaleToUrl(wsUrl.toString()), protocols);
+    credentialPreloadUnavailable.set(false);
     const socket = ws;
     const isCurrentSocket = (): boolean =>
         ws === socket && generation === connectionGeneration && isCurrentConnectionIdentity();
@@ -701,8 +704,13 @@ const createWebSocket = async (generation: number): Promise<WebSocket | null> =>
                 return;
             }
 
+            if (data.event === 'credential_preload_error') {
+                credentialPreloadUnavailable.set(true);
+                return;
+            }
+
             if (data.event === 'credentials_ready') {
-                if (!isCurrentSessionStartFrame(data.requestId)) return;
+                credentialPreloadUnavailable.set(false);
                 if (Array.isArray(data.suggestedTopics)) {
                     suggestedTopics.set(data.suggestedTopics);
                 }

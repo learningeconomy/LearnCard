@@ -3508,6 +3508,7 @@
             "noPathways": "No learning pathways available for this session.",
             "pathwayModalSubtitle": "Select a pathway to keep exploring this topic",
             "pathwayModalTitle": "Continue Your Learning Journey",
+            "personalizedSuggestionsUnavailable": "Personalized suggestions are unavailable. You can still chat.",
             "placeholderInsights": "Ask anything...",
             "placeholderTutor": "Say anything...",
             "resumeTopicEmphasis": "Select a topic",

@@ -3457,6 +3457,7 @@
             "noPathways": "Aucun parcours d'apprentissage disponible pour cette session.",
             "pathwayModalSubtitle": "Sélectionnez un parcours pour continuer à explorer ce sujet",
             "pathwayModalTitle": "Poursuivez votre parcours d'apprentissage",
+            "personalizedSuggestionsUnavailable": "Les suggestions personnalisées ne sont pas disponibles. Vous pouvez continuer à discuter.",
             "placeholderInsights": "Posez n'importe quelle question...",
             "placeholderTutor": "Dites ce que vous voulez...",
             "resumeTopicEmphasis": "Sélectionnez un sujet",

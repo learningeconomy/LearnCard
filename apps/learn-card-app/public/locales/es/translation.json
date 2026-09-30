@@ -3457,6 +3457,7 @@
             "noPathways": "No hay rutas de aprendizaje disponibles para esta sesión.",
             "pathwayModalSubtitle": "Selecciona una ruta para seguir explorando este tema",
             "pathwayModalTitle": "Continúa tu viaje de aprendizaje",
+            "personalizedSuggestionsUnavailable": "Las sugerencias personalizadas no están disponibles. Puedes seguir chateando.",
             "placeholderInsights": "Pregunta lo que quieras...",
             "placeholderTutor": "Di lo que quieras...",
             "resumeTopicEmphasis": "Selecciona un tema",
