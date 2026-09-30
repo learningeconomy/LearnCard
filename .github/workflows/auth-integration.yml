@@ -11,6 +11,13 @@ on:
 permissions:
     contents: read
 
+# Both standalone API jobs use local services, not AWS KMS. Keep encrypted writes
+# enabled with a public, disposable test key; never use this key in deployments.
+env:
+    IS_OFFLINE: 'true'
+    SA_SEED_ENCRYPT_WRITES: 'true'
+    SA_SEED_LOCAL_KEK: ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+
 jobs:
     keycloak-verifier-tests:
         runs-on: ubuntu-latest
