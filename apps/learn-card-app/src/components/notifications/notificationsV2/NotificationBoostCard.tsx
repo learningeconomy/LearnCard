@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { capitalize } from 'lodash-es';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
@@ -19,7 +19,6 @@ import {
     isEndorsementCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { formatDid } from 'learn-card-base/helpers/didHelpers';
-import { getCategoryForCredential } from 'learn-card-base/hooks/useWallet';
 
 import {
     useGetResolvedCredential,
@@ -32,7 +31,8 @@ import {
     BoostCategoryOptionsEnum,
     getBoostMetadata,
     useGetCredentialWithEdits,
-    useWallet,
+    useGetBoost,
+    contractCategoryNameToCategoryMetadata,
 } from 'learn-card-base';
 
 import { ErrorBoundary } from 'react-error-boundary';
@@ -76,7 +76,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     const [claimModalOpen, setClaimModalOpen] = useState<boolean>(false);
 
     // Ref for the element that we want to detect whether on screen
-    const ref: any = useRef<HTMLDivElement>();
+    const ref = useRef<HTMLDivElement>(null);
     // Call the hook passing in ref and root margin
     // In this case it would only be considered onScreen if more ...
     // ... than 300px of element is visible.
@@ -95,8 +95,6 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     const { data, isLoading } = useGetResolvedCredential(notification?.data?.vcUris?.[0]);
     const { mutate, isLoading: acceptCredentialLoading } = useAcceptCredentialMutation();
     const { mutate: updateNotification } = useUpdateNotification();
-    const { initWallet } = useWallet();
-    const [boostCategory, setBoostCategory] = useState<CredentialCategoryEnum>();
 
     const boostVc = data;
     const duplicateLookup = getNotificationDuplicateLookup(boostVc, notification?.data);
@@ -110,29 +108,16 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     }
     const { credentialWithEdits } = useGetCredentialWithEdits(unwrappedCred);
     unwrappedCred = credentialWithEdits ?? unwrappedCred;
-    useEffect(() => {
-        let cancelled = false;
-        setBoostCategory(undefined);
-        if (!unwrappedCred || !boostVc) {
-            return () => {
-                cancelled = true;
-            };
-        }
 
-        void initWallet()
-            .then(wallet => getCategoryForCredential(boostVc, wallet))
-            .then(category => {
-                if (!cancelled && category) setBoostCategory(category as CredentialCategoryEnum);
-            })
-            .catch(() => undefined);
-
-        return () => {
-            cancelled = true;
-        };
-    }, [boostVc, unwrappedCred, initWallet]);
-
+    const boostUri = boostVc?.boostId ?? unwrappedCred?.boostId;
+    const { data: boost } = useGetBoost(boostUri ?? '');
     const credCategory =
-        boostVc && (boostCategory ?? getDefaultCategoryForCredential(unwrappedCred));
+        boostVc &&
+        ((boost?.category
+            ? ((contractCategoryNameToCategoryMetadata(boost.category)?.credentialType ??
+                  boost.category) as CredentialCategoryEnum)
+            : undefined) ??
+            getDefaultCategoryForCredential(unwrappedCred));
     const isEndorsementCredentialType = isEndorsementCredential(unwrappedCred);
 
     const credImgUrl = boostVc && getImageUrlFromCredential(unwrappedCred, credCategory);
@@ -175,8 +160,8 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     const badgeScaleClass = isCertDisplayType
         ? 'w-[120px] min-w-[120px] scale-[0.7]'
         : isMeritStyleBadge
-        ? 'w-[138px] min-w-[138px] scale-[0.8]'
-        : 'w-full';
+          ? 'w-[138px] min-w-[138px] scale-[0.8]'
+          : 'w-full';
 
     // Compact circular fallback (matching the ID treatment) for display types
     // whose full art can't fit the notification slot, e.g. media/portfolio.
