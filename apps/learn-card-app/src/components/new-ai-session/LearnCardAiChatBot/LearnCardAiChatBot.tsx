@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useStore } from '@nanostores/react';
+import { m } from '../../../paraglide/messages.js';
 import {
     aiPassportFetch,
     useDeviceTypeByWidth,
@@ -41,6 +42,7 @@ import {
     disconnectWebSocket,
     startInsightsSession,
     streamingMessage,
+    credentialPreloadUnavailable,
 } from 'learn-card-base/stores/nanoStores/chatStore';
 import { auth } from 'learn-card-base/stores/nanoStores/authStore';
 
@@ -119,6 +121,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     const authState = useStore(auth);
     const streaming = useStore(streamingMessage);
     const aiError = useStore(lastAiError);
+    const preloadUnavailable = useStore(credentialPreloadUnavailable);
 
     const chatContainerRef = useRef<HTMLDivElement>(null);
     const chatContentRef = useRef<HTMLDivElement>(null);
@@ -533,7 +536,19 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                                 )}
                             </div>
 
-                            <div className="sm:px-4">{!loading && <ChatInput />}</div>
+                            <div className="sm:px-4">
+                                {preloadUnavailable && (
+                                    <p
+                                        role="status"
+                                        aria-live="polite"
+                                        aria-atomic="true"
+                                        className="mx-4 mb-2 rounded-2xl border border-amber-100 bg-amber-50 px-3 py-2 text-sm leading-relaxed text-amber-900 sm:mx-0"
+                                    >
+                                        {m['aiSession.chat.personalizedSuggestionsUnavailable']()}
+                                    </p>
+                                )}
+                                {!loading && <ChatInput />}
+                            </div>
                         </div>
                     </>
                 )}

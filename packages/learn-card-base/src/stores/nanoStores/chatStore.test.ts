@@ -99,10 +99,7 @@ class FakeWebSocket {
     onclose: SocketHandler = null;
     onerror: SocketHandler = null;
 
-    constructor(
-        readonly url: string,
-        readonly protocols?: string | string[]
-    ) {
+    constructor(readonly url: string, readonly protocols?: string | string[]) {
         FakeWebSocket.instances.push(this);
     }
 
@@ -159,6 +156,7 @@ const {
     closeInsightsSession,
     continuePlan,
     credentialContextReadiness,
+    credentialPreloadUnavailable,
     currentThreadId,
     getActiveSessionStatus,
     finishSession,
@@ -223,6 +221,60 @@ describe('chat session startup', () => {
         disconnectWebSocket();
         vi.clearAllTimers();
         vi.useRealTimers();
+    });
+
+    it('keeps a preload warning independent of startup, streaming, and readiness', async () => {
+        const start = startTopic('Algebra');
+        const socket = await openLatestSocket();
+        await start;
+        socket.receive({ event: 'session_start_accepted', requestId: 'request-preload' });
+        socket.receive({
+            event: 'credential_preload_error',
+            code: 'credential_verification_unavailable',
+        });
+
+        expect(credentialPreloadUnavailable.get()).toBe(true);
+        expect(isLoading.get()).toBe(true);
+        expect(isTyping.get()).toBe(true);
+        expect(planReady.get()).toBe(false);
+        expect(lastAiError.get()).toBe(null);
+        socket.receive({
+            event: 'plan_structured_delta',
+            requestId: 'request-preload',
+            planData: { welcome: 'Welcome to Algebra' },
+        });
+        socket.receive({
+            event: 'plan_ready',
+            requestId: 'request-preload',
+            threadId: 'thread-preload',
+            title: 'Algebra',
+        });
+        expect(planReady.get()).toBe(true);
+        expect(planSections.get().welcome).toBe('Welcome to Algebra');
+        expect(credentialPreloadUnavailable.get()).toBe(true);
+
+        socket.receive({ event: 'credentials_ready', suggestedTopics: ['Algebra'] });
+        expect(credentialPreloadUnavailable.get()).toBe(false);
+        expect(planReady.get()).toBe(true);
+    });
+
+    it('does not carry preload warnings across accounts or accept stale socket warnings', async () => {
+        await connectWebSocket();
+        const first = await openLatestSocket();
+        first.receive({ event: 'credential_preload_error' });
+        expect(credentialPreloadUnavailable.get()).toBe(true);
+        auth.set({ did: 'did:example:replacement' });
+        walletStore.set.wallet({
+            id: { did: () => 'did:example:replacement' },
+        } as unknown as BespokeLearnCard);
+        expect(credentialPreloadUnavailable.get()).toBe(false);
+
+        await connectWebSocket();
+        const second = await openLatestSocket();
+        first.receive({ event: 'credential_preload_error' });
+        expect(credentialPreloadUnavailable.get()).toBe(false);
+        second.receive({ event: 'credential_preload_error' });
+        expect(credentialPreloadUnavailable.get()).toBe(true);
     });
 
     it('starts over the socket without a REST preflight and sends the structured payload', async () => {
