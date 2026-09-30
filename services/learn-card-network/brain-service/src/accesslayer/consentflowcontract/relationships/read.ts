@@ -429,6 +429,7 @@ export const getHolderExportMetadataForProfile = async (
                     autoBoosts: record.autoBoosts,
                 },
                 terms: record.terms.terms,
+                ...(record.terms.referral ? { referral: record.terms.referral } : {}),
                 transactions,
             });
         }

@@ -1,3 +1,4 @@
+import type { ConsentFlowContractRequestStatus } from '@learncard/types';
 import React from 'react';
 
 import { m } from '../../paraglide/messages.js';
@@ -38,7 +39,7 @@ export const AiInsightsUserCard: React.FC<{
     imageClassName?: string;
     contractUri?: string;
     readStatus?: 'unseen' | 'seen' | null | undefined;
-    status?: 'pending' | 'accepted' | 'denied' | null | undefined;
+    status?: ConsentFlowContractRequestStatus | undefined;
 }> = ({
     profile,
     mode = AiInsightsUserCardMode.Request,

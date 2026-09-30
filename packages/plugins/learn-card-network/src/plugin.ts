@@ -2511,6 +2511,14 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
+            sendContractRequest: async (_learnCard, request) => {
+                await ensureUser();
+                return client.contracts.sendContractRequest.mutate(request);
+            },
+            denyContractRequest: async (_learnCard, contractUri) => {
+                await ensureUser();
+                return client.contracts.denyContractRequest.mutate({ contractUri });
+            },
             sendAiInsightsContractRequest: async (
                 _learnCard,
                 contractUri,

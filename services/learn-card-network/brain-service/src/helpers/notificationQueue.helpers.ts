@@ -1,3 +1,4 @@
+import { authorizeContractNotification } from '@helpers/contract-events.helpers';
 import { LCNNotificationValidator } from '@learncard/types';
 
 import { acknowledgeConnectionPromptNotificationDelivery } from '@helpers/connectionPrompt.helpers';
@@ -5,6 +6,8 @@ import { sendNotification } from '@helpers/notifications.helpers';
 
 export const deliverQueuedNotification = async (body: string): Promise<void> => {
     const notification = await LCNNotificationValidator.parseAsync(JSON.parse(body));
+
+    if (!(await authorizeContractNotification(notification))) return;
 
     const stored = await sendNotification(notification, {
         propagateDirectWebhookTransportErrors: true,
