@@ -22,6 +22,7 @@ import { t, openRoute } from '@routes';
 import cache from '@cache';
 import { verifyAuthToken, AuthProviderType } from '@helpers/auth.helpers';
 import { findUserKeyByAuthProvider } from '@models';
+import { checkRateLimit } from '@helpers/rateLimit.helpers';
 import { sendPushNotification } from '@helpers/pushNotifications.helpers';
 
 // ---------------------------------------------------------------------------
@@ -51,35 +52,6 @@ const NOTIFY_RATE_WINDOW = 300; // 5-minute window (seconds)
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/**
- * Check and increment a rate-limit counter in Redis.
- * Returns true if the request is allowed, false if rate-limited.
- *
- * Uses atomic INCR + EXPIRE to avoid TOCTOU races where two concurrent
- * requests could both read the same counter value and both pass.
- */
-const checkRateLimit = async (
-    key: string,
-    maxAttempts: number,
-    windowSeconds: number
-): Promise<boolean> => {
-    const fullKey = `${RATE_PREFIX}${key}`;
-    const redis = cache.redis ?? cache.node;
-
-    // INCR is atomic — returns the new value after incrementing.
-    // If the key doesn't exist, Redis creates it with value 1.
-    const current = await redis.incr(fullKey);
-
-    // First request for this window — set the TTL
-    if (current === 1) {
-        await redis.expire(fullKey, windowSeconds);
-    }
-
-    if (current > maxAttempts) return false;
-
-    return true;
-};
 
 const generateSessionId = (): string => crypto.randomUUID();
 
@@ -150,7 +122,12 @@ export const qrLoginRouter = t.router({
             const clientIp = ctx.clientIp ?? 'unknown';
 
             if (
-                !(await checkRateLimit(`create:${clientIp}`, CREATE_RATE_LIMIT, CREATE_RATE_WINDOW))
+                !(await checkRateLimit(
+                    `create:${clientIp}`,
+                    CREATE_RATE_LIMIT,
+                    CREATE_RATE_WINDOW,
+                    RATE_PREFIX
+                ))
             ) {
                 throw new Error('Too many session requests. Please try again later.');
             }
@@ -221,7 +198,8 @@ export const qrLoginRouter = t.router({
                     !(await checkRateLimit(
                         `lookup:${clientIp}`,
                         LOOKUP_RATE_LIMIT,
-                        LOOKUP_RATE_WINDOW
+                        LOOKUP_RATE_WINDOW,
+                        RATE_PREFIX
                     ))
                 ) {
                     throw new Error('Too many lookup attempts. Please try again later.');
@@ -293,7 +271,8 @@ export const qrLoginRouter = t.router({
                 !(await checkRateLimit(
                     `approve:${input.sessionId}`,
                     APPROVE_RATE_LIMIT,
-                    SESSION_TTL_SECONDS
+                    SESSION_TTL_SECONDS,
+                    RATE_PREFIX
                 ))
             ) {
                 throw new Error('Too many approve attempts for this session.');
@@ -365,7 +344,8 @@ export const qrLoginRouter = t.router({
                 !(await checkRateLimit(
                     `notify:${input.sessionId}`,
                     NOTIFY_RATE_LIMIT,
-                    NOTIFY_RATE_WINDOW
+                    NOTIFY_RATE_WINDOW,
+                    RATE_PREFIX
                 ))
             ) {
                 return { sent: false, deviceCount: 0 };

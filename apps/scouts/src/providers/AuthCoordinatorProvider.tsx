@@ -48,11 +48,14 @@ import {
     getSSSConfig,
     getEscrowStrategyConfig,
     getLogger,
+    useToast,
+    ToastTypeEnum,
     type AuthCoordinatorContextValue,
     type AuthProvider,
     type AuthUser,
     type DebugEventLevel,
     type KeyDerivationStrategy,
+    isEmailRelayConfigured,
 } from 'learn-card-base';
 import currentUserStore from 'learn-card-base/stores/currentUserStore';
 import { walletStore } from 'learn-card-base/stores/walletStore';
@@ -105,6 +108,7 @@ import { createPreAuthEmailPayload } from '../i18n/preAuthEmail';
 import { clearStoragePreservingLocale } from '../i18n/storage';
 import * as m from '../paraglide/messages.js';
 import { RecoverySetupModal } from '../components/recovery/RecoverySetupModal';
+import { countConfiguredRecoveryMethods } from 'learn-card-base';
 import ReAuthOverlay from '../components/auth/ReAuthOverlay';
 
 const log = getLogger('scouts/auth-coordinator');
@@ -354,6 +358,7 @@ const AuthSessionManager: React.FC<{
     authProvider: AuthProvider | null;
 }> = ({ children, authProvider }) => {
     const coordinator = useBaseAuthCoordinator();
+    const { presentToast } = useToast();
     const signInAdapter = useSignInAdapter();
     const authConfig = getAuthConfig();
     const locale = useLocale();
@@ -395,6 +400,8 @@ const AuthSessionManager: React.FC<{
 
     // --- Recovery setup prompt (shown after first-time setup with no recovery methods) ---
     const [showRecoverySetup, setShowRecoverySetup] = useState(false);
+    // The open setup modal registers its guarded close so the backdrop can't skip a check.
+    const recoveryRequestCloseRef = useRef<(() => void) | null>(null);
     const wasNewUserRef = useRef(false);
 
     // --- Proactive auth session check state (effect is below, after authProvider) ---
@@ -402,6 +409,45 @@ const AuthSessionManager: React.FC<{
 
     // --- Recovery method count (null = not yet checked) ---
     const [recoveryMethodCount, setRecoveryMethodCount] = useState<number | null>(null);
+    const recoveryMethodReadRef = useRef(0);
+
+    // Refresh from confirmed methods, including setups launched from the profile menu.
+    // Reconfirming/replacing an existing type must not inflate the banner count.
+    useEffect(() => {
+        if (
+            !coordinator.recoverySetupRevision ||
+            coordinator.state.status !== 'ready' ||
+            !authProvider
+        )
+            return;
+        const strategy = coordinator.keyDerivation;
+        if (!strategy.getAvailableRecoveryMethods) return;
+        let cancelled = false;
+        const readId = ++recoveryMethodReadRef.current;
+        void (async () => {
+            try {
+                const token = await authProvider.getIdToken();
+                const providerType = authProvider.getProviderType();
+                const methods = await strategy.getAvailableRecoveryMethods!(token, providerType);
+                const status = await strategy.fetchServerKeyStatus?.(token, providerType);
+                if (!cancelled && readId === recoveryMethodReadRef.current) {
+                    setRecoveryMethodCount(
+                        countConfiguredRecoveryMethods(methods, status?.maskedRecoveryEmail)
+                    );
+                }
+            } catch (error) {
+                log.warn('Could not refresh recovery methods', error);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [
+        coordinator.recoverySetupRevision,
+        coordinator.state.status,
+        coordinator.keyDerivation,
+        authProvider,
+    ]);
 
     // --- Phone→email upgrade gate ---
     // Phone-only users must link an email before proceeding, but only when:
@@ -797,6 +843,7 @@ const AuthSessionManager: React.FC<{
                     keyDerivation.getAvailableRecoveryMethods
                 ) {
                     wasNewUserRef.current = false;
+                    const readId = ++recoveryMethodReadRef.current;
 
                     try {
                         const token = await authProvider.getIdToken();
@@ -806,11 +853,16 @@ const AuthSessionManager: React.FC<{
                             providerType
                         );
 
-                        // Only count user-configured methods (password, passkey, phrase, backup).
-                        // The silently-sent email share is injected by the strategy and isn't
-                        // something the user explicitly set up, so exclude it from the count.
-                        const userConfiguredCount = methods.filter(m => m.type !== 'email').length;
+                        const status = await keyDerivation.fetchServerKeyStatus?.(
+                            token,
+                            providerType
+                        );
+                        const userConfiguredCount = countConfiguredRecoveryMethods(
+                            methods,
+                            status?.maskedRecoveryEmail
+                        );
 
+                        if (readId !== recoveryMethodReadRef.current) return;
                         setRecoveryMethodCount(userConfiguredCount);
 
                         // Show recovery setup modal only on public computers
@@ -839,6 +891,7 @@ const AuthSessionManager: React.FC<{
             setWallet(null);
             setLcnProfile(null);
             setRecoveryMethodCount(null);
+            recoveryMethodReadRef.current += 1;
             walletInitRef.current = false;
             walletModeStore.set.mode(null);
         }
@@ -1148,6 +1201,10 @@ const AuthSessionManager: React.FC<{
                                 );
                             } catch (e) {
                                 log.warn('Email backup share after upgrade failed (non-fatal)', e);
+                                presentToast(m['error.generic'](), {
+                                    type: ToastTypeEnum.Error,
+                                    hasDismissButton: true,
+                                });
                             }
                         }
 
@@ -1275,6 +1332,9 @@ const AuthSessionManager: React.FC<{
                             providerType,
                         });
 
+                        if (input.method !== 'passkey')
+                            coordinator.resetRecoverySetup(input.method);
+
                         return keyDerivation.setupRecoveryMethod!({
                             token,
                             providerType,
@@ -1295,19 +1355,15 @@ const AuthSessionManager: React.FC<{
                         const token = await authProvider.getIdToken();
                         const providerType = authProvider.getProviderType();
 
-                        await keyDerivation.confirmRecoveryMethod({
-                            token,
-                            providerType,
-                            privateKey: currentPrivateKey,
-                            input,
-                            signDidAuthVp,
-                        });
-
-                        setRecoveryMethodCount(prev => (prev ?? 0) + 1);
-
-                        if (coordinator.needsActivation) {
-                            await coordinator.activate();
-                        }
+                        await coordinator.runRecoverySetup(input.method, () =>
+                            keyDerivation.confirmRecoveryMethod!({
+                                token,
+                                providerType,
+                                privateKey: currentPrivateKey,
+                                input,
+                                signDidAuthVp,
+                            })
+                        );
                     };
 
                     const getTokenAndProvider = async () => {
@@ -1333,26 +1389,28 @@ const AuthSessionManager: React.FC<{
                     };
 
                     return (
-                        <Overlay onDismiss={() => setShowRecoverySetup(false)}>
+                        <Overlay
+                            onDismiss={() =>
+                                recoveryRequestCloseRef.current
+                                    ? recoveryRequestCloseRef.current()
+                                    : setShowRecoverySetup(false)
+                            }
+                        >
                             <RecoverySetupModal
+                                registerCloseRequest={fn => {
+                                    recoveryRequestCloseRef.current = fn;
+                                }}
+                                emailAvailable={isEmailRelayConfigured()}
                                 existingMethods={[]}
                                 maskedRecoveryEmail={null}
                                 isActivationPending={coordinator.needsActivation}
                                 onCompleted={() => setShowRecoverySetup(false)}
                                 onSetupPasskey={async () => {
                                     const authUser = await authProvider.getCurrentUser();
-                                    const result = await setupMethod(
-                                        { method: 'passkey' },
-                                        authUser
+                                    const result = await coordinator.runRecoverySetup(
+                                        'passkey',
+                                        () => setupMethod({ method: 'passkey' }, authUser)
                                     );
-
-                                    // Passkey setup confirms server-side in one step, so it
-                                    // never reaches confirmMethod; activate here instead.
-                                    if (coordinator.needsActivation) {
-                                        await coordinator.activate();
-                                    }
-
-                                    setRecoveryMethodCount(prev => (prev ?? 0) + 1);
                                     return result.method === 'passkey' ? result.credentialId : '';
                                 }}
                                 onGeneratePhrase={async () => {
@@ -1368,6 +1426,7 @@ const AuthSessionManager: React.FC<{
                                     return {
                                         phrase: result.phrase,
                                         challengeWordIndices: result.challengeWordIndices,
+                                        challengeWordOptions: result.challengeWordOptions,
                                     };
                                 }}
                                 onConfirmPhrase={async challengeWords => {

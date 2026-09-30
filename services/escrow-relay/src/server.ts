@@ -15,14 +15,28 @@ const server = createServer((request, response) => {
 
     const chunks: Buffer[] = [];
     let totalBytes = 0;
+    let rejected = false;
 
+    request.on('error', () => {
+        rejected = true;
+    });
     request.on('data', (chunk: Buffer) => {
+        if (rejected) return;
+
         totalBytes += chunk.length;
 
-        if (totalBytes > MAX_BODY_BYTES) request.destroy();
-        else chunks.push(chunk);
+        if (totalBytes > MAX_BODY_BYTES) {
+            rejected = true;
+            response.writeHead(413, { 'content-type': 'application/json', connection: 'close' });
+            response.end(JSON.stringify({ accepted: false, error: 'Request body too large' }));
+            request.destroy();
+        } else {
+            chunks.push(chunk);
+        }
     });
     request.on('end', async () => {
+        if (rejected) return;
+
         let body: unknown;
 
         try {
@@ -33,10 +47,18 @@ const server = createServer((request, response) => {
             return;
         }
 
-        const result = await relay({
-            authorization: request.headers.authorization,
-            body,
-        });
+        let result: Awaited<ReturnType<typeof relay>>;
+
+        try {
+            result = await relay({
+                authorization: request.headers.authorization,
+                body,
+            });
+        } catch {
+            response.writeHead(500, { 'content-type': 'application/json' });
+            response.end(JSON.stringify({ accepted: false, error: 'Relay failed' }));
+            return;
+        }
 
         response.writeHead(result.statusCode, {
             'content-type': 'application/json',

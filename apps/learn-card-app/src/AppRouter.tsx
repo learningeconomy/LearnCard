@@ -1,3 +1,4 @@
+import { enterSharePrivacy, isShareViewerPath } from './components/share-links/sharePrivacy';
 import React, { useEffect, useRef } from 'react';
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
@@ -69,6 +70,8 @@ import ReducedMotionManager from './components/accessibility/ReducedMotionManage
 const log = getLogger('app-router');
 
 const AppRouter: React.FC = () => {
+    const location = useLocation();
+    const isShareViewer = isShareViewerPath(location.pathname);
     const { state: coordinatorState, walletReady } = useAppAuth();
 
     // Initial-load gate: when true, render the loader instead of <Routes>.
@@ -100,13 +103,15 @@ const AppRouter: React.FC = () => {
         !walletReady &&
         (authStatus.tag === 'unauthenticated' || authStatus.tag === 'resolving');
 
-    const initLoading = !(
-        walletReady ||
-        coordinatorState.status === 'idle' ||
-        coordinatorState.status === 'needs_setup' ||
-        coordinatorState.status === 'needs_recovery' ||
-        coordinatorState.status === 'error'
-    );
+    const initLoading =
+        !isShareViewer &&
+        !(
+            walletReady ||
+            coordinatorState.status === 'idle' ||
+            coordinatorState.status === 'needs_setup' ||
+            coordinatorState.status === 'needs_recovery' ||
+            coordinatorState.status === 'error'
+        );
 
     // Native splash bridge. The Capacitor splash is configured with
     // launchAutoHide=false so it stays visible during the entire JS bootstrap
@@ -138,7 +143,7 @@ const AppRouter: React.FC = () => {
     }, []);
     const { verifySignInLinkAndLogin, verifyAppleLogin } = useFirebase();
     const history = useHistory();
-    const location = useLocation();
+
     const isLoggedIn = useIsLoggedIn();
     const isOnboardingOpen = redirectStore.use.isOnboardingOpen();
     const collapsed = useIsCollapsed();
@@ -210,6 +215,7 @@ const AppRouter: React.FC = () => {
     const { openConsentFlowModal } = useConsentFlow(contract, undefined, contractUri);
 
     const hideSideMenu =
+        isShareViewer ||
         [
             '/consent-flow',
             '/consent-flow-login',
@@ -419,6 +425,11 @@ const AppRouter: React.FC = () => {
             // Create a URL object
             const parsedUrl = new URL(data?.url);
 
+            if (isShareViewerPath(parsedUrl.pathname)) {
+                enterSharePrivacy();
+                return;
+            }
+
             // Get the query parameters
             const params = new URLSearchParams(parsedUrl.search);
 
@@ -444,7 +455,11 @@ const AppRouter: React.FC = () => {
         });
 
         // verify passwordless, email login link on web
-        if (!Capacitor.isNativePlatform() && saved_email) {
+        if (
+            !Capacitor.isNativePlatform() &&
+            saved_email &&
+            !isShareViewerPath(window.location.pathname)
+        ) {
             verifySignInLinkAndLogin(saved_email, window.location.href);
         }
     }, [saved_email]);

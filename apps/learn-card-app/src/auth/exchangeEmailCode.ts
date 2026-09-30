@@ -4,6 +4,7 @@ interface EmailCodeResult {
     success: boolean;
     token?: string;
     message?: string;
+    error?: string;
 }
 
 /** Keep the legacy exchange unchanged while Keycloak consumes the code as a ticket. */

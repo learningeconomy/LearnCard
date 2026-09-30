@@ -1,6 +1,7 @@
 import { timingSafeEqual } from 'crypto';
 import {
     decryptEscrowBlob,
+    encryptEscrowBlob,
     sealEscrowRelease,
     parseEscrowEnvelope,
     type EscrowBlobPlaintext,
@@ -16,6 +17,7 @@ import {
     type VerifyEscrowBlobResult,
     type ReleaseRequest,
     type ReleaseResult,
+    type CarryPinVerifierInput,
 } from './types';
 
 export interface SoftwareEnclaveConfig {
@@ -94,6 +96,30 @@ export class SoftwareEnclave implements EscrowEnclave {
             };
         }
         return { ok: true, hasPin: !!blob.pinVerifier };
+    }
+
+    /** Transfer only the verifier; recovery material remains sealed within the enclave. */
+    async carryPinVerifier(input: CarryPinVerifierInput) {
+        const source = await this.decrypt(input.sourceEnvelope);
+        const target = await this.decrypt(input.targetEnvelope);
+        if (
+            source.did !== input.expectedDid ||
+            target.did !== input.expectedDid ||
+            source.shareVersion !== input.sourceShareVersion ||
+            target.shareVersion !== input.targetShareVersion ||
+            target.shareVersion <= source.shareVersion ||
+            !source.pinVerifier ||
+            target.pinVerifier
+        )
+            throw new EscrowBlobError();
+        const attestation = await this.getAttestation();
+        return {
+            envelope: await encryptEscrowBlob(
+                { ...target, pinVerifier: source.pinVerifier },
+                attestation.publicKey,
+                attestation.keyId
+            ),
+        };
     }
 
     async releaseEscrow(input: ReleaseRequest): Promise<ReleaseResult> {

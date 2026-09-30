@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { IonItem, IonLabel, IonList, IonPopover } from '@ionic/react';
+import type { VC } from '@learncard/types';
 
 import {
     clrUniversityTranscript,
@@ -8,6 +9,7 @@ import {
     clrMinimal,
     clrWestbridgeFull,
     clrCompetencyAligned,
+    clrAchievementIdAssociations,
 } from '@learncard/credential-library';
 
 import {
@@ -28,6 +30,7 @@ const FIXTURES = {
     greatPlains: clrGreatPlainsFull.credential as Record<string, unknown>,
     minimal: clrMinimal.credential as Record<string, unknown>,
     competencyAligned: clrCompetencyAligned.credential as Record<string, unknown>,
+    relationships: clrAchievementIdAssociations.credential as Record<string, unknown>,
 };
 
 const FIXTURE_LABELS: Record<string, string> = {
@@ -37,6 +40,7 @@ const FIXTURE_LABELS: Record<string, string> = {
     greatPlains: 'Great Plains',
     minimal: 'Minimal',
     competencyAligned: 'Competency Aligned',
+    relationships: 'Relationships and Scales',
 };
 
 const VIEWER_LABELS: Record<string, string> = {
@@ -72,7 +76,7 @@ const ClrTranscriptRendererDemo = () => {
     // );
 
     return (
-        <div className="bg-grayscale-10 h-screen overflow-y-auto font-poppins flex flex-col">
+        <div className="bg-grayscale-10 h-dvh overflow-hidden font-poppins flex flex-col pt-[var(--ion-safe-area-top,0px)] pb-[var(--ion-safe-area-bottom,0px)]">
             {/* Controls header */}
             <div className="px-4 pt-4 pb-3 space-y-3 bg-white border-b border-grayscale-200 shrink-0">
                 <div className="flex items-center justify-between">
@@ -209,7 +213,7 @@ const ClrTranscriptRendererDemo = () => {
                 {surface === ClrTranscriptSurface.Card && (
                     <ClrTranscriptCard
                         model={currentModel}
-                        boost={FIXTURES[fixture] as any}
+                        boost={FIXTURES[fixture] as unknown as VC}
                         onViewDetails={() => setSurface(ClrTranscriptSurface.Full)}
                     />
                 )}
@@ -219,8 +223,9 @@ const ClrTranscriptRendererDemo = () => {
                 {surface === ClrTranscriptSurface.Full && (
                     <ClrTranscriptFullPage
                         model={currentModel}
-                        boost={FIXTURES[fixture] as any}
+                        boost={FIXTURES[fixture] as unknown as VC}
                         options={{ viewer, surface }}
+                        insetTop={false}
                     />
                 )}
             </div>

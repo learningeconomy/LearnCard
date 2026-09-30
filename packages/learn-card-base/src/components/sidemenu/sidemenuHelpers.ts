@@ -17,10 +17,6 @@ import WalletIconThin2 from 'learn-card-base/svgs/WalletIconThin2';
 import AiInsightsTwoTonedIcon from 'learn-card-base/svgs/SideNav/AiInsightsTwoTonedIcon';
 import AiWandIcon from 'learn-card-base/svgs/AiWandIcon';
 import UnicornIcon from 'learn-card-base/svgs/UnicornIcon';
-import {
-    ThinnerLighterShieldChevron,
-    ThinnerShieldChevron,
-} from 'learn-card-base/svgs/ShieldChevron';
 
 import { SideNavIcons } from 'learn-card-base/svgs/SideNav/SideNavIcons';
 import PassportIcon from 'learn-card-base/svgs/PassportIcon';
@@ -46,7 +42,6 @@ export enum SideMenuLinksEnum {
     alerts = 'alerts',
     myAssistant = 'myAssistant',
     personalize = 'personalize',
-    adminTools = 'adminTools',
 
     // secondary links
     wallet = 'wallet',
@@ -166,13 +161,6 @@ export const sideMenuRootLinks: Record<BrandingEnum, SideMenuLinks[]> = {
             path: '/personalize',
             type: SideMenuLinksEnum.personalize,
         },
-        {
-            id: 6,
-            name: 'Admin Tools',
-            IconComponent: ThinnerShieldChevron,
-            path: '/admin-tools',
-            type: SideMenuLinksEnum.adminTools,
-        },
     ],
     [BrandingEnum.metaversity]: [
         {
@@ -206,12 +194,6 @@ export const sideMenuRootLinks: Record<BrandingEnum, SideMenuLinks[]> = {
             name: 'Alerts',
             IconComponent: NotificationIcon2,
             path: '/notifications',
-        },
-        {
-            id: 5,
-            name: 'Admin Tools',
-            IconComponent: ThinnerLighterShieldChevron,
-            path: '/admin-tools',
         },
     ],
 };

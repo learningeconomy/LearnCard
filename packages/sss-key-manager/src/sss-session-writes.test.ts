@@ -15,15 +15,15 @@ const deferred = <T>() => {
 };
 
 const setup = () => {
-    let device: string | null = 'previous-share';
+    const devices = new Map<string | undefined, string>([[undefined, 'previous-share']]);
     const storage: SSSStorageFunctions = {
-        getDeviceShare: async () => device,
-        hasDeviceShare: async () => device !== null,
-        storeDeviceShare: vi.fn(async share => {
-            device = share;
+        getDeviceShare: async id => devices.get(id) ?? null,
+        hasDeviceShare: async id => devices.has(id),
+        storeDeviceShare: vi.fn(async (share, id) => {
+            devices.set(id, share);
         }),
-        clearAllShares: vi.fn(async () => {
-            device = null;
+        clearAllShares: vi.fn(async id => {
+            devices.delete(id);
         }),
         getShareVersion: async () => 1,
         storeShareVersion: vi.fn(async () => {}),

@@ -1,0 +1,26 @@
+name: Validate Changesets
+
+# `changeset version` only runs on main (Deploy → Manage Release PR), so an invalid
+# changeset — e.g. one mixing ignored and non-ignored packages — used to fail only
+# after merge. `changeset status` builds the same release plan and fails fast here.
+
+on:
+    pull_request:
+        paths:
+            - '.changeset/**'
+
+jobs:
+    validate:
+        name: Validate changesets
+        # The release PR consumes all changesets, which `status` would flag as missing
+        if: github.head_ref != 'changeset-release/main'
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+
+            - uses: ./.github/actions/setup
+
+            - name: Validate changesets
+              run: bunx changeset status --since=origin/main

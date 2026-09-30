@@ -28,6 +28,10 @@ export const parseEnvironmentExample = (path: string): Record<string, string> =>
 for (const path of EXAMPLE_PATHS.slice(2)) {
     Object.assign(process.env, parseEnvironmentExample(path));
 }
+// The shared verifier process must use the offline provider while importing service schemas.
+// Individual contracts below are still validated using their own example values.
+const verifierOfflineSetting = process.env.IS_OFFLINE;
+process.env.IS_OFFLINE = 'true';
 
 const [learnCardApp, scouts, brainService, lcaApi, learnCloudService] = await Promise.all([
     import('../apps/learn-card-app/src/config/buildEnvironment'),
@@ -36,6 +40,8 @@ const [learnCardApp, scouts, brainService, lcaApi, learnCloudService] = await Pr
     import('../services/learn-card-network/lca-api/src/config/environment'),
     import('../services/learn-card-network/learn-cloud-service/src/config/environment'),
 ]);
+if (verifierOfflineSetting === undefined) delete process.env.IS_OFFLINE;
+else process.env.IS_OFFLINE = verifierOfflineSetting;
 
 export type EnvironmentContract = {
     project: string;
@@ -83,6 +89,12 @@ export const environmentContracts: readonly EnvironmentContract[] = [
         examplePath: EXAMPLE_PATHS[2],
         schema: brainService.brainServiceEnvironmentSchema,
         shape: brainService.brainServiceEnvironmentShape,
+        unmanagedKeys: [
+            'MONGO_URI',
+            'MONGO_DB_NAME',
+            'DEMO_PERSONA_SIGNING_AUTHORITY_ENDPOINT',
+            'DEMO_PERSONA_SA_SEED',
+        ],
     },
     {
         project: 'lca-api',
@@ -111,6 +123,7 @@ const ENVIRONMENT_ENTRYPOINTS = [
     'services/learn-card-network/brain-service/lambda.ts',
     'services/learn-card-network/brain-service/didWebLambda.ts',
     'services/learn-card-network/lca-api/lambda.ts',
+    'services/learn-card-network/lca-api/seedMigrationLambda.ts',
     'services/learn-card-network/learn-cloud-service/lambda.ts',
     'services/learn-card-network/learn-cloud-service/didWebLambda.ts',
     'services/learn-card-network/learn-cloud-service/oidcLambda.ts',
@@ -221,7 +234,7 @@ export const validateEnvironmentExamples = (): string[] => {
         }
 
         for (const key of exampleKeys) {
-            if (!schemaKeys.includes(key)) {
+            if (!schemaKeys.includes(key) && !contract.unmanagedKeys?.includes(key)) {
                 errors.push(`${contract.examplePath} documents unknown key ${key}`);
             }
         }

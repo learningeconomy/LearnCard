@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { t, openRoute } from '@routes';
-import { getDel } from '@cache/getDel';
+import { consumeMatchingCode } from '@cache/getDel';
 import { issueLoginTicket } from '@cache/login-tickets';
 import {
     findAuthSubjectByIdentityKey,
@@ -95,10 +95,10 @@ export const authRouter = t.router({
             await assertUnderLimit(emailKey, MAX_FAILED_ATTEMPTS_PER_EMAIL);
 
             // Match the existing email-code issuance key exactly, before identity normalization.
-            // GETDEL validates and consumes in one atomic step so a code can never be replayed.
-            let consumed: string | null;
+            // Compare and consume atomically; a wrong code must not delete the valid one.
+            let consumed: boolean;
             try {
-                consumed = await getDel(`login-code:${input.email}:${input.code}`);
+                consumed = await consumeMatchingCode(`login-code:${input.email}`, input.code);
             } catch (error) {
                 console.error('Error consuming login code:', error);
                 return { success: false, error: SERVER_ERROR };

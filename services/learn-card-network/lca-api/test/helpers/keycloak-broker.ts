@@ -115,10 +115,10 @@ export const signInThroughBroker = async (
         maxRetriesPerRequest: 1,
     });
     const code = String(randomBytes(4).readUInt32BE() % 1_000_000).padStart(6, '0');
-    const key = `login-code:${email}:${code}`;
+    const key = `login-code:${email}`;
     let ticket: string;
     try {
-        await redis.set(key, 'true', 'EX', 60);
+        await redis.set(key, code, 'EX', 60);
         const result = z
             .object({ success: z.literal(true), ticket: z.string() })
             .parse(await trpc('auth.requestLoginTicket', { email, code }));

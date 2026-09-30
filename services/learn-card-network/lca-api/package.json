@@ -1,6 +1,6 @@
 {
     "name": "@learncard/lca-api-service",
-    "version": "1.3.1",
+    "version": "1.3.2",
     "description": "",
     "engines": {
         "node": ">=24.12 <25"
@@ -9,6 +9,10 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
+        "migrate:sa-seeds:local": "bash scripts/migrate-signing-authority-seeds-local.sh",
+        "migrate:sa-seeds": "node scripts/migrate-signing-authority-seeds.mjs",
+        "check:sa-infra": "node scripts/check-seed-encryption-infrastructure.mjs",
+        "check:sa-redis": "node scripts/check-signing-authority-redis.mjs",
         "provision:keycloak": "bun --conditions=development scripts/provision-keycloak-users.ts",
         "test": "vitest run --config vitest.config.ts",
         "test:watch": "vitest --config vitest.config.ts",
@@ -23,7 +27,7 @@
         "start-p-5000": "PORT=5000 serverless offline --httpPort 5000 --websocketPort 5001 --lambdaPort 5002 --albPort 5003 --config serverless-local.yml",
         "dev": "bun --conditions=development --watch src/docker-entry.ts",
         "start:docker": "bun --conditions=development src/docker-entry.ts",
-        "serverless-deploy": "node ../../../scripts/prepare-didkit-native-layer.cjs && serverless deploy",
+        "serverless-deploy": "node scripts/check-seed-encryption-infrastructure.mjs && node ../../../scripts/prepare-didkit-native-layer.cjs && serverless deploy",
         "serverless-deploy-scouts": "serverless deploy --config serverless-scouts.yml"
     },
     "keywords": [],
@@ -49,17 +53,18 @@
         "shx": "^0.3.4"
     },
     "dependencies": {
+        "@aws-sdk/client-kms": "^3.1139.0",
         "@fastify/cors": "^11.2.0",
         "@fastify/formbody": "^8.0.2",
         "@fastify/rate-limit": "^10.2.0",
         "@fastify/static": "^10.1.1",
         "@learncard/core": "workspace:*",
-        "@learncard/email-templates": "workspace:*",
         "@learncard/did-web-plugin": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
         "@learncard/didkit-plugin-node": "workspace:*",
-        "@learncard/init": "workspace:*",
+        "@learncard/email-templates": "workspace:*",
         "@learncard/helpers": "workspace:*",
+        "@learncard/init": "workspace:*",
         "@learncard/types": "workspace:*",
         "@learncard/sss-key-manager": "workspace:*",
         "@sentry/serverless": "^7.61.0",
@@ -68,9 +73,9 @@
         "@types/lodash": "^4.14.191",
         "@types/node-forge": "^1.3.11",
         "axios": "^0.33.0",
-        "dotenv": "^16.0.3",
         "dag-jose-utils": "2.0.0",
         "did-jwt": "5.9.0",
+        "dotenv": "^16.0.3",
         "express": "^4.18.2",
         "fastify": "^5.8.5",
         "filestack-js": "^3.24.0",

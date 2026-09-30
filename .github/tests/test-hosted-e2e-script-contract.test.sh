@@ -46,7 +46,7 @@ grep -Fq 'docker compose down --remove-orphans -v' "$SERVICE_SCRIPT"
 BAKE_JSON="$(docker buildx bake --file "$BAKE_FILE" --print browser service)"
 ruby -rjson -e '
   bake = JSON.parse(STDIN.read)
-  required = %w[browser-base browser-app browser-brain browser-cloud browser-api browser-delete service-base]
+  required = %w[browser-base browser-app browser-delete service-base]
   abort "Bake targets missing" unless (required - bake.fetch("target").keys).empty?
   cached = %w[browser-base service-base browser-delete]
   uncached = required - cached
@@ -62,12 +62,24 @@ ruby -rjson -e '
   browser_scope = bake.fetch("target").fetch("browser-base").fetch("cache-to").fetch(0).fetch("scope")
   service_scope = bake.fetch("target").fetch("service-base").fetch("cache-to").fetch(0).fetch("scope")
   abort "identical monorepo bases must share one cache scope" unless browser_scope == service_scope
+  browser_base_tags = bake.fetch("target").fetch("browser-base").fetch("tags")
+  abort "browser base tag must match Compose" unless browser_base_tags.include?("learncard-monorepo-local")
 ' <<< "$BAKE_JSON"
 
 ruby -ryaml -e '
   compose = YAML.load_file(ARGV.fetch(0), aliases: true).fetch("services")
   abort "app image name must be explicit" unless compose.dig("app", "image") == "learn-card-e2e-app"
   abort "delete-service image name must be explicit" unless compose.dig("delete-service", "image") == "learn-card-e2e-delete-service"
+  commands = {
+    "brain" => "cd services/learn-card-network/brain-service && bun run start:docker",
+    "cloud" => "cd services/learn-card-network/learn-cloud-service && bun run start:docker",
+    "api" => "cd services/learn-card-network/lca-api && bun run start:docker",
+  }
+  commands.each do |service, expected_command|
+    abort "#{service} must reuse the monorepo base image" unless compose.dig(service, "image") == "learncard-monorepo-local"
+    abort "#{service} must not trigger a duplicate image build" if compose.fetch(service).key?("build")
+    abort "#{service} start command changed" unless compose.dig(service, "command") == "sh -c \"#{expected_command}\""
+  end
 ' "$REPO_ROOT/apps/learn-card-app/compose.yaml"
 grep -Fq '"learn-card-e2e-app"' "$BAKE_FILE" || { echo 'Bake app tag must match Compose' >&2; exit 1; }
 grep -Fq '"learn-card-e2e-delete-service"' "$BAKE_FILE" || { echo 'Bake delete tag must match Compose' >&2; exit 1; }

@@ -45,7 +45,11 @@ export type RecoverySetupType = 'passkey' | 'phrase' | 'backup' | 'email';
 
 interface RecoverySetupModalProps {
     onSetupPasskey: () => Promise<string>;
-    onGeneratePhrase: () => Promise<{ phrase: string; challengeWordIndices: number[] }>;
+    onGeneratePhrase: () => Promise<{
+        phrase: string;
+        challengeWordIndices: number[];
+        challengeWordOptions?: string[][];
+    }>;
     onConfirmPhrase: (challengeWords: string[]) => Promise<void>;
     onSetupBackup: (password: string) => Promise<string>;
     onConfirmBackup: (fileContents: string, password: string) => Promise<void>;
@@ -57,9 +61,20 @@ interface RecoverySetupModalProps {
     maskedRecoveryEmail?: string | null;
     isActivationPending?: boolean;
     initialMethod?: RecoverySetupType;
+    /** False when emailed recovery keys cannot be sent (no relay key configured). */
+    emailAvailable?: boolean;
     onCompleted?: (method: RecoverySetupType) => void;
     onClose: () => void;
+    registerCloseRequest?: (fn: () => void) => void;
 }
+
+const isValidChallengeOptions = (
+    options: string[][] | undefined,
+    challengeCount: number
+): options is string[][] =>
+    Array.isArray(options) &&
+    options.length === challengeCount &&
+    options.every(choices => Array.isArray(choices) && choices.length > 1);
 
 export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     onSetupPasskey,
@@ -75,8 +90,10 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     maskedRecoveryEmail,
     isActivationPending = false,
     initialMethod,
+    emailAvailable = true,
     onCompleted,
     onClose,
+    registerCloseRequest,
 }) => {
     const webAuthnSupported = isWebAuthnSupported();
     const isNative = Capacitor.isNativePlatform();
@@ -94,9 +111,16 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
     // Default to the first unconfigured method in priority order:
     // email > phrase > backup > passkey
+    const [showLeaveGuard, setShowLeaveGuard] = useState(false);
+    const [pendingAction, setPendingAction] = useState<'close' | RecoverySetupType | null>(null);
     const [activeTab, setActiveTab] = useState<RecoverySetupType>(() => {
-        if (initialMethod && !isConfigured(initialMethod)) return initialMethod;
-        if (!isConfigured('email')) return 'email';
+        if (
+            initialMethod &&
+            !isConfigured(initialMethod) &&
+            (initialMethod !== 'email' || emailAvailable)
+        )
+            return initialMethod;
+        if (emailAvailable && !isConfigured('email')) return 'email';
         if (!isConfigured('phrase')) return 'phrase';
         if (!isConfigured('backup')) return 'backup';
         if (!isNative && webAuthnSupported && !isConfigured('passkey')) return 'passkey';
@@ -116,6 +140,11 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     const [phraseChallengeStarted, setPhraseChallengeStarted] = useState(false);
     const [phraseChallengeWordIndices, setPhraseChallengeWordIndices] = useState<number[]>([]);
     const [phraseChallengeWords, setPhraseChallengeWords] = useState<string[]>([]);
+    const [phraseChallengeOptions, setPhraseChallengeOptions] = useState<string[][]>([]);
+    const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
+    const [wrongTaps, setWrongTaps] = useState<Set<string>>(new Set());
+    const [wrongTapsCount, setWrongTapsCount] = useState(0);
+    const [correctTap, setCorrectTap] = useState<string | null>(null);
 
     const [backupPassword, setBackupPassword] = useState('');
     const [confirmBackupPassword, setConfirmBackupPassword] = useState('');
@@ -131,9 +160,70 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     const [emailVerified, setEmailVerified] = useState(!!maskedRecoveryEmail);
     const [emailMasked, setEmailMasked] = useState(maskedRecoveryEmail ?? '');
     const [emailShareSent, setEmailShareSent] = useState(false);
+    const [emailCheckPending, setEmailCheckPending] = useState(false);
     const [emailRecoveryCode, setEmailRecoveryCode] = useState('');
 
+    // A method is unfinished from the moment it is saved until its check passes,
+    // including when it replaces one that already works.
+    const unfinished: RecoverySetupType | null =
+        recoveryPhrase !== null
+            ? 'phrase'
+            : backupDownloaded && !backupConfirmed
+              ? 'backup'
+              : emailShareSent && emailCheckPending
+                ? 'email'
+                : null;
+
+    const requestClose = React.useCallback(() => {
+        if (unfinished) {
+            setPendingAction('close');
+            setShowLeaveGuard(true);
+        } else {
+            onClose();
+        }
+    }, [unfinished, onClose]);
+
+    React.useEffect(() => {
+        if (registerCloseRequest) {
+            registerCloseRequest(requestClose);
+        }
+    }, [registerCloseRequest, requestClose]);
+
+    const handleDiscard = () => {
+        if (unfinished === 'phrase') {
+            setRecoveryPhrase(null);
+            setPhraseChallengeStarted(false);
+            setPhraseChallengeWords([]);
+            setCurrentChallengeIndex(0);
+            setWrongTaps(new Set());
+            setWrongTapsCount(0);
+            setCorrectTap(null);
+        } else if (unfinished === 'backup') {
+            setBackupDownloaded(false);
+            setBackupVerificationPassword('');
+        } else if (unfinished === 'email') {
+            setEmailShareSent(false);
+            setEmailRecoveryCode('');
+            setEmailCheckPending(false);
+        }
+        setShowLeaveGuard(false);
+        if (pendingAction === 'close') {
+            onClose();
+        } else if (pendingAction) {
+            setActiveTab(pendingAction);
+            setError(null);
+            setSuccess(null);
+            setShowUpdateForm(false);
+        }
+        setPendingAction(null);
+    };
+
     const handleTabSwitch = (tab: RecoverySetupType) => {
+        if (unfinished && tab !== activeTab) {
+            setPendingAction(tab);
+            setShowLeaveGuard(true);
+            return;
+        }
         setActiveTab(tab);
         setError(null);
         setSuccess(null);
@@ -173,7 +263,20 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             const result = await onGeneratePhrase();
             setRecoveryPhrase(result.phrase);
             setPhraseChallengeWordIndices(result.challengeWordIndices);
-            setPhraseChallengeWords(result.challengeWordIndices.map(() => ''));
+            const options = isValidChallengeOptions(
+                result.challengeWordOptions,
+                result.challengeWordIndices.length
+            )
+                ? result.challengeWordOptions
+                : [];
+            setPhraseChallengeOptions(options);
+            setPhraseChallengeWords(
+                options.length > 0 ? [] : result.challengeWordIndices.map(() => '')
+            );
+            setCurrentChallengeIndex(0);
+            setWrongTaps(new Set());
+            setWrongTapsCount(0);
+            setCorrectTap(null);
             setPhraseChallengeStarted(false);
         } catch (e) {
             log.error('handleGeneratePhrase error', e);
@@ -188,6 +291,51 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             await navigator.clipboard.writeText(recoveryPhrase);
             setPhraseCopied(true);
             setTimeout(() => setPhraseCopied(false), 2000);
+        }
+    };
+
+    const handleChipTap = async (word: string) => {
+        if (loading || correctTap) return;
+
+        const expectedWord =
+            recoveryPhrase?.split(' ')[phraseChallengeWordIndices[currentChallengeIndex]];
+
+        if (word === expectedWord) {
+            setCorrectTap(word);
+
+            setTimeout(async () => {
+                const newWords = [...phraseChallengeWords.slice(0, currentChallengeIndex), word];
+                setPhraseChallengeWords(newWords);
+
+                if (currentChallengeIndex < phraseChallengeWordIndices.length - 1) {
+                    setCurrentChallengeIndex(prev => prev + 1);
+                    setWrongTaps(new Set());
+                    setWrongTapsCount(0);
+                    setCorrectTap(null);
+                } else {
+                    setLoading(true);
+                    setError(null);
+
+                    try {
+                        await onConfirmPhrase(newWords);
+                        markConfigured('phrase');
+                        setRecoveryPhrase(null);
+                        setPhraseChallengeStarted(false);
+                        setSuccess(m['recovery.setup.success.phrase']());
+                        setShowUpdateForm(false);
+                        onCompleted?.('phrase');
+                    } catch (e) {
+                        log.error('handleConfirmPhrase error', e);
+                        setError(toFriendlyConfirmError(e));
+                    } finally {
+                        setLoading(false);
+                        setCorrectTap(null);
+                    }
+                }
+            }, 250);
+        } else {
+            setWrongTaps(prev => new Set(prev).add(word));
+            setWrongTapsCount(prev => prev + 1);
         }
     };
 
@@ -260,6 +408,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                 });
 
                 setBackupDownloaded(true);
+                setBackupConfirmed(false);
             } catch (e) {
                 log.error('Native file download failed', e);
                 setError(m['recovery.setup.errors.downloadFailed']());
@@ -277,6 +426,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
             URL.revokeObjectURL(url);
             setBackupDownloaded(true);
+            setBackupConfirmed(false);
         }
     };
 
@@ -350,6 +500,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
         try {
             await onSetupEmailRecovery(emailInput);
             setEmailShareSent(true);
+            setEmailCheckPending(true);
         } catch (e) {
             log.error('handleSetupEmailRecovery error', e);
             setError(e instanceof Error ? e.message : m['error.generic']());
@@ -367,6 +518,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
         try {
             await onConfirmEmailRecovery(emailRecoveryCode);
             markConfigured('email');
+            setEmailCheckPending(false);
             setSuccess(m['recovery.setup.success.email']());
             setShowUpdateForm(false);
             onCompleted?.('email');
@@ -406,11 +558,38 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     ];
 
     // Hide passkey tab entirely on native platforms (WebAuthn unavailable in WKWebView / Android WebView)
-    const tabs = isNative ? allTabs.filter(t => t.id !== 'passkey') : allTabs;
+    const tabs = allTabs.filter(
+        t => !(isNative && t.id === 'passkey') && !(!emailAvailable && t.id === 'email')
+    );
 
     const configuredCount = tabs.filter(t => isConfigured(t.id)).length;
 
     // ── Shared helpers ──────────────────────────────────────────────
+
+    const StepIndicator = ({
+        step,
+        label1,
+        label2,
+    }: {
+        step: 1 | 2;
+        label1: string;
+        label2: string;
+    }) => (
+        <div className="flex items-center gap-2 mb-4">
+            <div className="flex gap-1">
+                <div
+                    className={`w-1.5 h-1.5 rounded-full ${step >= 1 ? 'bg-emerald-500' : 'bg-grayscale-300'}`}
+                />
+                <div
+                    className={`w-1.5 h-1.5 rounded-full ${step >= 2 ? 'bg-emerald-500' : 'bg-grayscale-300'}`}
+                />
+            </div>
+            <span className="text-xs text-grayscale-500 font-medium">
+                {m['recovery.stepOf']({ current: String(step), total: '2' })} ·{' '}
+                {step === 1 ? label1 : label2}
+            </span>
+        </div>
+    );
 
     const updateWarning = (text: string) => (
         <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-2.5">
@@ -484,7 +663,58 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     // ── Render ─────────────────────────────────────────────────────────
 
     return (
-        <div className="p-6 max-w-md mx-auto bg-white min-h-full">
+        <div className="p-6 max-w-md mx-auto bg-white min-h-full relative">
+            {showLeaveGuard && (
+                <div
+                    className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in-up motion-reduce:animate-none"
+                    role="alertdialog"
+                    aria-labelledby="leave-guard-title"
+                    aria-describedby="leave-guard-desc"
+                >
+                    <div className="bg-white rounded-[20px] shadow-2xl border border-grayscale-200 p-6 w-full max-w-sm text-center">
+                        <h3
+                            id="leave-guard-title"
+                            className="text-lg font-semibold text-grayscale-900 mb-2"
+                        >
+                            {unfinished === 'phrase'
+                                ? m['recovery.guard.phraseTitle']()
+                                : unfinished === 'backup'
+                                  ? m['recovery.guard.backupTitle']()
+                                  : m['recovery.guard.emailTitle']()}
+                        </h3>
+                        <p id="leave-guard-desc" className="text-sm text-grayscale-600 mb-6">
+                            {m['recovery.guard.body']()}
+                        </p>
+                        <div className="space-y-3">
+                            <button
+                                autoFocus
+                                onClick={() => setShowLeaveGuard(false)}
+                                className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                            >
+                                {m['recovery.guard.finish']()}
+                            </button>
+                            <div>
+                                <button
+                                    onClick={handleDiscard}
+                                    className="w-full py-2.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors font-medium"
+                                >
+                                    {unfinished === 'phrase'
+                                        ? m['recovery.guard.discardPhrase']()
+                                        : unfinished === 'backup'
+                                          ? m['recovery.guard.discardBackup']()
+                                          : m['recovery.guard.discardEmail']()}
+                                </button>
+                                {(unfinished === 'phrase' || unfinished === 'backup') && (
+                                    <p className="text-xs text-grayscale-500 mt-1">
+                                        {m['recovery.guard.discardNote']()}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Dynamic Header */}
             <div className="text-center mb-5">
                 <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
@@ -515,11 +745,21 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         <IonIcon icon={tab.icon} className={tab.iconClass} />
                         {tab.label}
 
-                        {isConfigured(tab.id) && (
-                            <IonIcon
-                                icon={checkmarkCircleOutline}
-                                className="text-emerald-400 text-sm"
-                            />
+                        {unfinished === tab.id ? (
+                            <>
+                                <span
+                                    aria-hidden="true"
+                                    className="w-1.5 h-1.5 rounded-full bg-amber-500 ms-1"
+                                />
+                                <span className="sr-only">{m['recovery.setup.notFinished']()}</span>
+                            </>
+                        ) : (
+                            isConfigured(tab.id) && (
+                                <IonIcon
+                                    icon={checkmarkCircleOutline}
+                                    className="text-emerald-400 text-sm"
+                                />
+                            )
                         )}
                     </button>
                 ))}
@@ -623,51 +863,158 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                             setShowUpdateForm(true)
                         )
                     ) : phraseChallengeStarted ? (
-                        <>
-                            <div>
-                                <h3 className="text-sm font-semibold text-grayscale-900 mb-1">
-                                    {m['recovery.setup.phrase.verifyTitle']()}
-                                </h3>
-                                <p className="text-sm text-grayscale-600 leading-relaxed">
-                                    {m['recovery.setup.phrase.verifyDesc']()}
-                                </p>
-                            </div>
-
-                            {phraseChallengeWordIndices.map((wordIndex, challengeIndex) => (
-                                <div key={wordIndex}>
-                                    <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
-                                        {m['recovery.setup.phrase.wordNumber']({
-                                            number: wordIndex + 1,
+                        phraseChallengeOptions.length > 0 ? (
+                            <>
+                                <StepIndicator
+                                    step={2}
+                                    label1={m['recovery.step.save']()}
+                                    label2={m['recovery.step.check']()}
+                                />
+                                <div className="mb-4">
+                                    <h3
+                                        id="phrase-challenge-heading"
+                                        className="text-sm font-semibold text-grayscale-900 mb-1"
+                                    >
+                                        {m['recovery.setup.phrase.whichWordIs']({
+                                            number: String(
+                                                phraseChallengeWordIndices[currentChallengeIndex] +
+                                                    1
+                                            ),
                                         })}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        autoCapitalize="none"
-                                        autoCorrect="off"
-                                        value={phraseChallengeWords[challengeIndex] ?? ''}
-                                        onChange={event =>
-                                            setPhraseChallengeWords(words =>
-                                                words.map((word, index) =>
-                                                    index === challengeIndex
-                                                        ? event.target.value
-                                                              .trimStart()
-                                                              .toLowerCase()
-                                                        : word
-                                                )
-                                            )
-                                        }
-                                        className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
-                                    />
+                                    </h3>
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-sm text-grayscale-600 leading-relaxed">
+                                            {m['recovery.setup.phrase.tapTheWord']()}
+                                        </p>
+                                        <span className="text-xs font-medium text-grayscale-500">
+                                            {m['recovery.setup.phrase.challengeProgress']({
+                                                current: String(currentChallengeIndex + 1),
+                                                total: String(phraseChallengeWordIndices.length),
+                                            })}
+                                        </span>
+                                    </div>
                                 </div>
-                            ))}
 
-                            {primaryButton(
-                                m['recovery.setup.phrase.confirmBtn'](),
-                                handleConfirmPhrase,
-                                loading || phraseChallengeWords.some(word => !word.trim()),
-                                m['common.verifying']()
-                            )}
-                        </>
+                                <div
+                                    role="group"
+                                    aria-labelledby="phrase-challenge-heading"
+                                    className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6"
+                                >
+                                    {phraseChallengeOptions[currentChallengeIndex].map(word => {
+                                        const isWrong = wrongTaps.has(word);
+                                        const isCorrect = correctTap === word;
+                                        return (
+                                            <button
+                                                key={word}
+                                                onClick={() => handleChipTap(word)}
+                                                disabled={isWrong || loading || correctTap !== null}
+                                                className={`
+                                                    min-h-[44px] px-3 py-2 rounded-[20px] text-sm font-medium transition-all
+                                                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500
+                                                    ${
+                                                        isCorrect
+                                                            ? 'bg-emerald-500 text-white border border-transparent'
+                                                            : isWrong
+                                                              ? 'bg-red-50 text-red-700 border border-red-200'
+                                                              : 'bg-grayscale-100 text-grayscale-900 hover:bg-grayscale-200 border border-transparent'
+                                                    }
+                                                `}
+                                            >
+                                                {word}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                {wrongTapsCount > 0 && (
+                                    <div
+                                        aria-live="polite"
+                                        className="mb-4 text-sm text-red-600 text-center"
+                                    >
+                                        {m['recovery.setup.phrase.wrongWord']({
+                                            number: String(
+                                                phraseChallengeWordIndices[currentChallengeIndex] +
+                                                    1
+                                            ),
+                                        })}
+                                    </div>
+                                )}
+
+                                {wrongTapsCount >= 2 && (
+                                    <button
+                                        onClick={() => {
+                                            setPhraseChallengeStarted(false);
+                                            setPhraseChallengeWords([]);
+                                            setCurrentChallengeIndex(0);
+                                            setWrongTaps(new Set());
+                                            setWrongTapsCount(0);
+                                            setCorrectTap(null);
+                                        }}
+                                        className="w-full py-2.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                                    >
+                                        {m['recovery.setup.phrase.showPhraseAgain']()}
+                                    </button>
+                                )}
+
+                                {loading && (
+                                    <div className="flex items-center justify-center gap-2 text-sm text-grayscale-600 mt-4">
+                                        <span className="w-4 h-4 border-2 border-grayscale-300 border-t-grayscale-900 rounded-full animate-spin" />
+                                        {m['common.verifying']()}
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                <StepIndicator
+                                    step={2}
+                                    label1={m['recovery.step.save']()}
+                                    label2={m['recovery.step.check']()}
+                                />
+                                <div>
+                                    <h3 className="text-sm font-semibold text-grayscale-900 mb-1">
+                                        {m['recovery.setup.phrase.verifyTitle']()}
+                                    </h3>
+                                    <p className="text-sm text-grayscale-600 leading-relaxed">
+                                        {m['recovery.setup.phrase.verifyDesc']()}
+                                    </p>
+                                </div>
+
+                                {phraseChallengeWordIndices.map((wordIndex, challengeIndex) => (
+                                    <div key={wordIndex}>
+                                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                                            {m['recovery.setup.phrase.wordNumber']({
+                                                number: wordIndex + 1,
+                                            })}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            autoCapitalize="none"
+                                            autoCorrect="off"
+                                            value={phraseChallengeWords[challengeIndex] ?? ''}
+                                            onChange={event =>
+                                                setPhraseChallengeWords(words =>
+                                                    words.map((word, index) =>
+                                                        index === challengeIndex
+                                                            ? event.target.value
+                                                                  .trimStart()
+                                                                  .toLowerCase()
+                                                            : word
+                                                    )
+                                                )
+                                            }
+                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                        />
+                                    </div>
+                                ))}
+
+                                {primaryButton(
+                                    m['recovery.setup.phrase.confirmBtn'](),
+                                    handleConfirmPhrase,
+                                    loading || phraseChallengeWords.some(word => !word.trim()),
+                                    m['common.verifying']()
+                                )}
+                            </>
+                        )
                     ) : !recoveryPhrase ? (
                         <>
                             {isUpdate && updateWarning(m['recovery.setup.phrase.updateWarning']())}
@@ -711,6 +1058,11 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         </>
                     ) : (
                         <>
+                            <StepIndicator
+                                step={1}
+                                label1={m['recovery.step.save']()}
+                                label2={m['recovery.step.check']()}
+                            />
                             <div className="p-4 bg-grayscale-900 rounded-2xl">
                                 <p className="text-xs text-grayscale-400 mb-2 font-medium">
                                     {m['recovery.setup.phrase.yourPhrase']()}
@@ -738,7 +1090,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                 onClick={() => setPhraseChallengeStarted(true)}
                                 className="w-full py-3 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors"
                             >
-                                {m['recovery.setup.phrase.confirmBtn']()}
+                                {m['recovery.setup.phrase.nextCheckIt']()}
                             </button>
                         </>
                     )}
@@ -805,6 +1157,11 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         </>
                     ) : (
                         <>
+                            <StepIndicator
+                                step={backupDownloaded ? 2 : 1}
+                                label1={m['recovery.step.save']()}
+                                label2={m['recovery.step.check']()}
+                            />
                             <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
                                 <div className="flex items-start gap-2.5">
                                     <IonIcon
@@ -836,6 +1193,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
                             {backupDownloaded && !backupConfirmed && (
                                 <div className="space-y-4">
+                                    <p className="text-xs text-grayscale-600">
+                                        {m['recovery.setup.backup.oneMoreStep']()}
+                                    </p>
                                     <div>
                                         <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
                                             {m['recovery.setup.backup.reenterPassword']()}
@@ -992,6 +1352,11 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                     ) : !emailShareSent ? (
                         // Step 3: Email verified, send recovery share
                         <>
+                            <StepIndicator
+                                step={1}
+                                label1={m['recovery.step.send']()}
+                                label2={m['recovery.step.check']()}
+                            />
                             <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5">
                                 <IonIcon
                                     icon={checkmarkCircleOutline}
@@ -1023,6 +1388,11 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                     ) : (
                         // Step 4: Confirm receipt of the recovery key
                         <>
+                            <StepIndicator
+                                step={2}
+                                label1={m['recovery.step.send']()}
+                                label2={m['recovery.step.check']()}
+                            />
                             <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl">
                                 <p className="text-sm text-emerald-700 leading-relaxed">
                                     {m['recovery.setup.email.confirmationCodeSent']({
@@ -1074,7 +1444,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             {!isActivationPending && (
                 <div className="mt-6 pt-4 border-t border-grayscale-200">
                     <button
-                        onClick={onClose}
+                        onClick={requestClose}
                         className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                     >
                         {anyConfigured ? m['common.done']() : m['common.skipForNow']()}

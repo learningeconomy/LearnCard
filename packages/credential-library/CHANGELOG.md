@@ -1,5 +1,21 @@
 # @learncard/credential-library
 
+## 2.0.4
+
+### Patch Changes
+
+- [#1590](https://github.com/learningeconomy/LearnCard/pull/1590) [`59d2c92fa58ce1b864e0bf4e2aa60c85d3f8a9a4`](https://github.com/learningeconomy/LearnCard/commit/59d2c92fa58ce1b864e0bf4e2aa60c85d3f8a9a4) Thanks [@Custard7](https://github.com/Custard7)! - CLI: add issuer-org tooling for partner integrations — `org apply` (declarative, idempotent org bootstrap), `doctor` (read-only preflight), `clr validate` (CLR 2.0 transcript lint), `inbox list`, `refresh history`, and `promote` (staging → production).
+
+    Credential library: the `clr/provisional-transcript` fixture now marks itself `partial: true` with a `validUntil`, and its in-progress result points at a `Status`-typed ResultDescription (was `RawScore`). `buildFinalTranscriptVariant` strips those provisional markers.
+
+    LCA API plugin: skip the encryption-key probe when the profile does not exist yet (it could only 401) and log initialization warnings as one line instead of a full stack dump.
+
+- [#1539](https://github.com/learningeconomy/LearnCard/pull/1539) [`5c87de780c20924cfb94cfce2a155437014f9ea1`](https://github.com/learningeconomy/LearnCard/commit/5c87de780c20924cfb94cfce2a155437014f9ea1) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2165] Support Open Skills Alignment result authoring.
+
+- Updated dependencies [[`2991bd32b03e26736239dd8e586e2f720d9bcd45`](https://github.com/learningeconomy/LearnCard/commit/2991bd32b03e26736239dd8e586e2f720d9bcd45), [`0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e`](https://github.com/learningeconomy/LearnCard/commit/0c1bf9a8a33e6392d5fd279479d9ab4fb0449b5e), [`3174c09b97fde6f7b5251390245038cf6b7ea9ba`](https://github.com/learningeconomy/LearnCard/commit/3174c09b97fde6f7b5251390245038cf6b7ea9ba), [`928e587378b3674766cf58a8bbe1cbd4d66d3a9f`](https://github.com/learningeconomy/LearnCard/commit/928e587378b3674766cf58a8bbe1cbd4d66d3a9f), [`928e587378b3674766cf58a8bbe1cbd4d66d3a9f`](https://github.com/learningeconomy/LearnCard/commit/928e587378b3674766cf58a8bbe1cbd4d66d3a9f)]:
+    - @learncard/types@5.21.0
+    - @learncard/sd-jwt-vc-plugin@0.2.14
+
 ## 2.0.3
 
 ### Patch Changes

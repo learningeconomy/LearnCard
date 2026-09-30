@@ -18,7 +18,7 @@ import {
     EscrowPinSaltValidator,
     reserveEscrowPinAttempt,
     refundEscrowPinAttempt,
-    resetEscrowPinAttempts,
+    recordEscrowPinFailure,
     disableEscrowPin,
     markClaimedEscrowHoldFailed,
     ServerEncryptedShareValidator,
@@ -34,6 +34,7 @@ import {
     findEscrowHoldById,
     cancelEscrowHold,
     completeEscrowHold,
+    hasCompletedEscrowHoldForVersion,
     expireStaleEscrowHolds,
     hashEscrowResumeToken,
     generateEscrowResumeToken,
@@ -253,6 +254,7 @@ export const escrowRouter = t.router({
                 shareVersion: z.number().int().positive(),
                 enclaveKeyId: EscrowBlobValidator.shape.enclaveKeyId,
                 pinSalt: EscrowPinSaltValidator.optional(),
+                clearPin: z.boolean().optional(),
             }).strict()
         )
         .output(successValidator.extend({ shareVersion: z.number() }))
@@ -291,22 +293,66 @@ export const escrowRouter = t.router({
                     }),
                 true
             );
-            if (!verification.ok || verification.hasPin !== !!input.pinSalt) {
+            if (
+                !verification.ok ||
+                verification.hasPin !== !!input.pinSalt ||
+                (input.clearPin && input.pinSalt)
+            ) {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message: 'Invalid automatic recovery material.',
                 });
             }
-            const stored = await setEscrowBlobByAuthProvider(
+            const blob = {
+                envelope: input.envelope,
+                enclaveKeyId: attestation.keyId,
+                enclaveMode: attestation.mode,
+                measurements: attestation.measurements,
+                shareVersion: input.shareVersion,
+                createdAt: new Date(),
+            };
+            let stored;
+            const oldBlob = userKey.escrowBlob;
+            const oldPin = userKey.escrowPin;
+            if (!input.pinSalt && !input.clearPin && oldPin) {
+                if (
+                    oldBlob &&
+                    !oldPin.disabledAt &&
+                    oldPin.shareVersion === oldBlob.shareVersion &&
+                    oldBlob.enclaveKeyId === attestation.keyId &&
+                    input.shareVersion > oldBlob.shareVersion &&
+                    // A released blob's PIN is retired: it was just used, or the user forgot it.
+                    !(await hasCompletedEscrowHoldForVersion(authProvider, oldBlob.shareVersion))
+                ) {
+                    try {
+                        const carried = await getEscrowEnclave().carryPinVerifier({
+                            sourceEnvelope: oldBlob.envelope,
+                            targetEnvelope: input.envelope,
+                            expectedDid: ctx.user.did,
+                            sourceShareVersion: oldBlob.shareVersion,
+                            targetShareVersion: input.shareVersion,
+                        });
+                        stored = await setEscrowBlobByAuthProvider(
+                            authProvider,
+                            { ...blob, envelope: carried.envelope },
+                            input.shareVersion,
+                            undefined,
+                            { blob: oldBlob, pin: oldPin }
+                        );
+                    } catch {
+                        // Never log enclave errors: a backend could include decrypted material.
+                        console.warn('[LCA escrow/enroll] PIN carry failed; enrolling without PIN');
+                    }
+                }
+                if (!stored) {
+                    console.warn(
+                        '[LCA escrow/enroll] PIN carry unavailable; enrolling without PIN'
+                    );
+                }
+            }
+            stored ??= await setEscrowBlobByAuthProvider(
                 authProvider,
-                {
-                    envelope: input.envelope,
-                    enclaveKeyId: attestation.keyId,
-                    enclaveMode: attestation.mode,
-                    measurements: attestation.measurements,
-                    shareVersion: input.shareVersion,
-                    createdAt: new Date(),
-                },
+                blob,
                 input.shareVersion,
                 input.pinSalt ? { salt: input.pinSalt } : undefined
             );
@@ -407,7 +453,6 @@ export const escrowRouter = t.router({
                 input.releasePolicy === 'pin' &&
                 (!userKey.escrowPin ||
                     userKey.escrowPin.disabledAt ||
-                    userKey.escrowPin.failedAttempts >= ESCROW_PIN_MAX_ATTEMPTS ||
                     userKey.escrowPin.shareVersion !== userKey.shareVersion)
             ) {
                 throw new TRPCError({
@@ -639,10 +684,9 @@ export const escrowRouter = t.router({
                     });
                 }
                 if (current.escrowPin.failedAttempts >= ESCROW_PIN_MAX_ATTEMPTS) {
-                    await lockPin(hold, current);
                     throw new TRPCError({
                         code: 'TOO_MANY_REQUESTS',
-                        message: ESCROW_PIN_LOCKED_MESSAGE,
+                        message: pinThrottledMessage,
                     });
                 }
                 throw new TRPCError({
@@ -652,44 +696,46 @@ export const escrowRouter = t.router({
             }
             // Claim the pending hold BEFORE releasing secrets. The enclave receives the
             // pending snapshot whose CAS we won; release failures burn the hold (fail-closed).
-            const completed = await completeEscrowHold(hold._id);
-            if (!completed) {
-                if (reserved)
-                    await refundEscrowPinAttempt(
-                        hold.authProvider,
-                        hold.shareVersion,
-                        expectedCiphertext
-                    );
-                throw new TRPCError({
-                    code: 'CONFLICT',
-                    message: 'Recovery state changed; please retry.',
-                });
-            }
-            // Revalidate after the claim so a rotation or removal cannot release the old snapshot.
-            const current = await findUserKeyByAuthProvider(
-                hold.authProvider.type,
-                hold.authProvider.id
-            );
-            if (
-                !current?.escrowBlob ||
-                current.escrowOptedOutAt ||
-                current.shareVersion !== userKey.shareVersion ||
-                current.escrowBlob.shareVersion !== hold.shareVersion ||
-                current.escrowBlob.envelope.ciphertext !== expectedCiphertext ||
-                !hasConfirmedEscrow(current, hold.shareVersion)
-            ) {
-                await markClaimedEscrowHoldFailed(
-                    hold._id,
-                    'release-failed',
-                    completed.completedAt!
+            let completed: Awaited<ReturnType<typeof completeEscrowHold>> = null;
+            try {
+                completed = await completeEscrowHold(hold._id);
+                if (!completed) {
+                    throw new TRPCError({
+                        code: 'CONFLICT',
+                        message: 'Recovery state changed; please retry.',
+                    });
+                }
+                // Revalidate after the claim so a rotation/removal cannot release the old snapshot.
+                const current = await findUserKeyByAuthProvider(
+                    hold.authProvider.type,
+                    hold.authProvider.id
                 );
+                if (
+                    !current?.escrowBlob ||
+                    current.escrowOptedOutAt ||
+                    current.shareVersion !== userKey.shareVersion ||
+                    current.escrowBlob.shareVersion !== hold.shareVersion ||
+                    current.escrowBlob.envelope.ciphertext !== expectedCiphertext ||
+                    !hasConfirmedEscrow(current, hold.shareVersion)
+                ) {
+                    throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
+                }
+            } catch (error) {
+                // No enclave evaluation occurred, including when Mongo throws rather
+                // than returning a lost CAS. Refund before any fallible hold cleanup.
                 if (reserved)
                     await refundEscrowPinAttempt(
                         hold.authProvider,
                         hold.shareVersion,
                         expectedCiphertext
                     );
-                throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
+                if (completed)
+                    await markClaimedEscrowHoldFailed(
+                        hold._id,
+                        'release-failed',
+                        completed.completedAt!
+                    );
+                throw error;
             }
             const release = await enclaveOperation(async () => {
                 try {
@@ -723,9 +769,16 @@ export const escrowRouter = t.router({
                 }
             });
             if (release.mismatch) {
+                const failed = await recordEscrowPinFailure(
+                    hold.authProvider,
+                    hold.shareVersion,
+                    expectedCiphertext
+                );
                 const attemptsRemaining =
-                    ESCROW_PIN_MAX_ATTEMPTS - reserved!.escrowPin!.failedAttempts;
-                const cancelReason = attemptsRemaining <= 0 ? 'pin-locked' : 'pin-mismatch';
+                    ESCROW_PIN_MAX_ATTEMPTS -
+                    (failed?.escrowPin?.failedAttempts ?? reserved!.escrowPin!.failedAttempts);
+                const locked = !!failed?.escrowPin?.disabledAt;
+                const cancelReason = locked ? 'pin-locked' : 'pin-mismatch';
                 await markClaimedEscrowHoldFailed(hold._id, cancelReason, completed.completedAt!);
                 void notifyEscrowHoldEvent({
                     kind: 'cancelled',
@@ -738,7 +791,7 @@ export const escrowRouter = t.router({
                     },
                     userKey,
                 });
-                if (attemptsRemaining <= 0) {
+                if (locked) {
                     await lockPin(hold, userKey);
                     throw new TRPCError({
                         code: 'TOO_MANY_REQUESTS',
@@ -752,12 +805,8 @@ export const escrowRouter = t.router({
                 });
             }
             const { sealed } = release.result;
-            if (hold.releasePolicy === 'pin')
-                await resetEscrowPinAttempts(
-                    hold.authProvider,
-                    hold.shareVersion,
-                    userKey.escrowBlob.envelope.ciphertext
-                );
+            // A successful evaluation also consumes the lifetime budget; do not
+            // erase other requests' reservations or replenish guesses here.
             const authShare = await enclaveOperation(async () =>
                 decryptAuthShare(encryptedAuthShare, environment.SEED)
             );

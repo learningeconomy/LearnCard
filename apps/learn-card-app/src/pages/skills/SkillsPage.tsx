@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useLocation } from 'react-router-dom';
 
 import useTheme from '../../theme/hooks/useTheme';
@@ -61,9 +60,7 @@ const SkillsPage: React.FC = () => {
     const colors = getThemedCategoryColors(CredentialCategoryEnum.skill);
     const { backgroundSecondaryColor } = colors;
 
-    const flags = useFlags();
     const showAdminPanel =
-        flags?.enableAdminTools ||
         lcNetworkProfile?.role === LearnCardRolesEnum.admin ||
         lcNetworkProfile?.role === LearnCardRolesEnum.teacher ||
         lcNetworkProfile?.role === LearnCardRolesEnum.developer ||
@@ -93,12 +90,8 @@ const SkillsPage: React.FC = () => {
 
     useLoadingLine(credentialsBackgroundFetching);
 
-    let isBoostsEmpty = false;
-    if ((!allResolvedBoostsLoading && allResolvedCreds?.length === 0) || allResolvedBoostsLoading) {
-        isBoostsEmpty = true;
-    } else {
-        isBoostsEmpty = false;
-    }
+    const isBoostsEmpty =
+        (!allResolvedBoostsLoading && allResolvedCreds?.length === 0) || allResolvedBoostsLoading;
 
     const total = alignments.length;
 
