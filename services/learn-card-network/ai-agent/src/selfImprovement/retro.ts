@@ -2,7 +2,7 @@ import type { Db, Filter } from 'mongodb';
 import { z } from 'zod';
 
 import type { AgentMessage, AgentProvider, AgentRunObserver } from '../agent/types';
-import { awaitWithSignal } from '../agent/runAgent';
+import { awaitWithSignal, registerSensitiveContent } from '../agent/runAgent';
 import {
     createFieldAad,
     isEncryptedEnvelope,
@@ -263,7 +263,9 @@ const getResultForDecision = (
     ...(error ? { error } : {}),
 });
 
-export const runRetroImprovement = async (input: RetroRunInput): Promise<RetroResult> => {
+export const runRetroImprovement = async (
+    input: RetroRunInput
+): Promise<RetroResult & { failure?: unknown }> => {
     let decision: RetroDecision = { action: 'noop', reason: 'Retro did not complete.' };
     const controller = new AbortController();
     const abort = (): void => controller.abort(input.signal?.reason);
@@ -279,6 +281,10 @@ export const runRetroImprovement = async (input: RetroRunInput): Promise<RetroRe
     try {
         signal.throwIfAborted();
         const messages = getRetroMessages(input.trace, input.activeDocs);
+        registerSensitiveContent(
+            { trace: input.trace, activeDocs: input.activeDocs },
+            input.observer
+        );
         // OpenAI's byte-level tokenizer cannot use more text tokens than UTF-8 bytes.
         // Reserve extra tokens for chat framing rather than guessing a chars/token ratio.
         const inputTokenBound = Buffer.byteLength(JSON.stringify(messages), 'utf8') + 1_024;
@@ -330,11 +336,13 @@ export const runRetroImprovement = async (input: RetroRunInput): Promise<RetroRe
                     model: input.model,
                     messages,
                     tools: [],
+                    privacyObserver: input.observer,
                     signal,
                     maxOutputTokens,
                 })
                 .then(
                     response => {
+                        registerSensitiveContent(response, input.observer);
                         notify(() =>
                             input.observer?.onModelComplete?.({
                                 runId: input.trace.runId,
@@ -452,7 +460,9 @@ export const runRetroImprovement = async (input: RetroRunInput): Promise<RetroRe
         const result = getResultForDecision(input, decision, 'error', undefined, message);
         await input.results.insert(result);
 
-        return result;
+        // Internal failure is returned only after the serializable audit result
+        // is persisted; never store Error instances/custom fields in Mongo.
+        return { ...result, failure: error };
     } finally {
         clearTimeout(timeout);
         input.signal?.removeEventListener('abort', abort);

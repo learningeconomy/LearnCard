@@ -43,6 +43,7 @@ export const runScheduledAgentRequest = async ({
     });
 
     if (result.status !== 200 || !('message' in result.payload)) {
+        if ('failure' in result) throw result.failure;
         throw new Error(
             'error' in result.payload ? result.payload.error : 'Scheduled agent request failed.'
         );

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import type { AgentServiceRuntime } from '../runtime';
 import type { RunChatResult } from '../server';
+import { recordServiceError } from '../observability';
 import { runScheduledAgentRequest } from './runner';
 import { getNextScheduleRun, type DueAgentAutonomySchedule } from './schedules';
 import type {
@@ -243,6 +244,7 @@ export const createAutonomousScheduler = ({
             await renewLease();
 
             if (result.status !== 200 || !('message' in result.payload)) {
+                if ('failure' in result) throw result.failure;
                 throw new Error(
                     'error' in result.payload
                         ? result.payload.error
@@ -276,6 +278,11 @@ export const createAutonomousScheduler = ({
             };
         } catch (error) {
             const failure = heartbeatError ?? error;
+            recordServiceError('autonomy.occurrence', failure, {
+                runId,
+                ownerDid: candidate.ownerDid,
+                phase: 'autonomy',
+            });
             if (runCreated) {
                 await runRepository.markFailed(
                     runId,

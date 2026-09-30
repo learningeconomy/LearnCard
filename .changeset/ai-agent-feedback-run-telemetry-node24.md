@@ -1,0 +1,11 @@
+---
+"@learncard/ai-agent-service": patch
+---
+
+Persist assistant feedback timestamps as ISO strings before DAG-JWE encryption and validate them when reading. Missing or corrupted legacy feedback times are represented as `null` in the API instead of breaking the entire assistant feed; the frontend contract now matches. No historical timestamp is fabricated and no data backfill is added.
+
+Emit unsampled privacy-safe run, model, tool, and post-run Sentry events independently of trace sampling. Preserve sanitized original error types, diagnostic messages, bounded causes, and stack frames with safe lifecycle, budget, usage, and outcome metadata. Hash external correlation/provider IDs and custom error-class log metadata; register raw provider content before parsing can fail; keep approved snapshots private from SDK processors and reject unapproved events.
+
+Forward every existing sanitized per-run application log record to Sentry as a bounded structured event alongside lifecycle/errors, even at trace sample rate zero. Retain contextual service/autonomy records and CloudWatch logfmt, without global console/stdout capture or added HTTP run-ID propagation. Index only approved bounded run metadata in log-event tags; retain all sanitized fields in the structured record. Register configured LaunchDarkly/Mongo credentials and decoded URI userinfo explicitly. Preserve conservative common-word masking when private fragments overlap external diagnostics. Document exact destinations and unsampled event volume: a basic completed run adds four log events to five lifecycle events, for both HTTP and direct invocation.
+
+Pin the AI Agent's local and CI Node runtime to 24.18.0 and select Trigger's stable `node-24` runtime using SDK/build/CLI 4.5.7. Preserve the deliberate Bun 1.3.14 ECS runtime. Add offline real-WASM feed and actual-Sentry-SDK regression commands to CI and document the nullable feedback timestamp and telemetry privacy contracts.

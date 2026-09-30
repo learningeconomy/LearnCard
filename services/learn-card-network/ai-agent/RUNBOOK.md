@@ -337,10 +337,11 @@ perform irreversible effects.
 
 ## Deploy
 
-- Every pull request runs the **AI Agent CI** job: service tests, the Bun service build,
-  and CloudFormation lint. This job has read-only repository permissions, no deployment
-  environment or secrets, and never deploys. It also reports on unrelated PRs so making
-  it a required check will not leave those PRs waiting for a path-filtered workflow.
+- Every pull request runs the **AI Agent CI** job: service tests, offline real-WASM feed
+  and in-memory Sentry transport regressions, the Bun service build, and CloudFormation
+  lint. This job has read-only repository permissions, no deployment environment or
+  secrets, and never deploys. It also reports on unrelated PRs so making it a required
+  check will not leave those PRs waiting for a path-filtered workflow.
   The repository also runs its required **Test** and **E2E** checks; branch protection
   must be configured separately to require **AI Agent CI**.
 - The main **Deploy** workflow (`.github/workflows/deploy.yml`) owns deployment selection,
@@ -365,6 +366,12 @@ perform irreversible effects.
   LaunchDarkly flag off throughout the initial deployment; workflows never open targeting.
 - Trigger.dev packaging, AWS validation, image scanning, and live smoke checks remain
   deployment-time gates, not PR checks.
+- Trigger SDK/build/CLI 4.5.7 explicitly selects `node-24` (Node 24.18.0); the service-local
+  `.nvmrc`, engines, and AI Agent CI/deployment Node setup agree. Node 24 became a stable
+  Trigger runtime in [4.5.7](https://trigger.dev/changelog/v4-5-7); the
+  [runtime matrix](https://trigger.dev/docs/config/config-file#nodejs-versions) lists its
+  exact version. Do not fall back to `runtime: 'node'`, which selects obsolete Node 21.
+  ECS continues to use the independently pinned Bun 1.3.14 image.
 - Images receive an immutable `sha-<git-sha>` tag. Workflow retries reuse the existing image rather than overwriting it.
 - The workflow rejects ARM64 images with critical or high ECR findings, updates the CloudFormation image tag and deployment ID, waits for the ECS rolling deployment with circuit-breaker rollback, checks readiness, and runs the authenticated smoke test in staging.
 
@@ -410,33 +417,109 @@ per-model views together.
 
 Every HTTP response includes `X-Request-ID`. The agent response includes `runId`.
 
-The application log group is `/ecs/learncard-ai-agent-<environment>`. Filter logfmt messages by either correlation value:
+The application log group is `/ecs/learncard-ai-agent-<environment>`. Filter agent-phase logfmt messages by the returned `runId`:
 
 ```text
 fields @timestamp, @message, @logStream
-| filter @message like /runId=<run-id>/ or @message like /correlationId=<request-id>/
+| filter @message like /runId=<run-id>/
 | sort @timestamp asc
 ```
 
-The correlated event sequence is:
+HTTP logs hash external `requestId`; agent-phase logs and Sentry hash correlation/provider IDs, even when UUID-shaped. To search by `X-Request-ID`, use `requestId=sha256:<first 24 hex characters of SHA-256(request ID)>` for HTTP logs and the same hash under `correlationId` for agent/Sentry records. The response header itself is unchanged. Service-generated UUID run IDs remain directly searchable.
 
-1. `http.request.completed`
-2. `agent.run.started`
-3. one or more `agent.model.completed` / `agent.model.failed`
-4. zero or more `agent.tool.completed`
-5. `agent.run.succeeded` / `agent.run.failed`
-6. `agent.post-run.succeeded` / `agent.post-run.failed`
+The correlated records include:
+
+1. `agent.run.started`
+2. interleaved `agent.model.completed` / `agent.model.failed` and `agent.tool.completed`
+3. `agent.run.succeeded` / `agent.run.failed`
+4. retrospective model outcomes, when enabled
+5. `agent.post-run.succeeded` / `agent.post-run.failed`
 
 Autonomous development executions additionally emit `autonomy.cycle.completed` and `autonomy.occurrence.completed`.
 
 Application logs are concise logfmt lines such as `INFO agent.run.succeeded runId=... durationMs=...`.
-They contain hashed owner IDs, tool names, durations, outcomes, token counts, provider request IDs,
-and cost estimates. They do not contain DIDs, prompts, model responses, tool arguments/results,
-credentials, memory contents, or exception messages. Metrics use the CloudWatch `PutMetricData`
-API and therefore do not add EMF JSON records to the application log stream. Ordinary application
-logs are not forwarded to Sentry. Sentry receives a verified deployment event, sanitized
-operational exceptions, and `ai.agent.run` transactions with `ai.model` and `ai.tool` child spans.
-Staging samples all traces; production defaults to `0.1`.
+They contain hashed owner/correlation/provider identifiers, configured tool names (unknown names
+are hashed), durations, outcomes, token counts, and cost estimates. Custom error-class metadata
+is hashed in application logs. They do not contain DIDs, prompts, model responses, tool
+arguments/results, credentials, memory contents, or exception messages. Metrics use the CloudWatch `PutMetricData`
+API and therefore do not add EMF JSON records to the application log stream.
+
+With Sentry configured, **all ordinary safe log records with a run ID are sent to both
+CloudWatch and Sentry**, including the sequence above, contextual `service.error`, and
+`autonomy.occurrence.completed` records with a run ID. Forwarding is confined to existing
+sanitized per-run `writeLog` producers, never global console/stdout capture. HTTP completion
+has no added run-ID propagation and stays CloudWatch-only, along with startup/delivery log
+lines, autonomy cycle summaries, and occurrences without a run ID. A service error without run context still has its
+existing separate Sentry operational exception, but not a forwarded run-log record.
+
+The installed SDK 7.61.0 has no native structured Logs transport. Each forwarded record is
+one bounded event with `recordKind=application-log`, `component=application-log`, and
+`extra.logRecord` containing the original event name, log level, Unix timestamp, process-local
+monotonic sequence, and capped primitive log fields. Warning records retain `level=warn`
+inside the record and use Sentry's `warning` event severity. The existing 256-character string
+limit applies. There is no whole-run list buffer or tail cap: long runs retain every emitted
+safe record as separate events. Query by `recordKind=application-log` and `runId`; inspect
+`extra.logRecord`. These are legacy Sentry events, not native Logs-product records. Ordering
+uses timestamp and sequence within a process; sequence is not globally comparable across
+workers or restarts.
+
+Run-log tags have an explicit bounded allowlist: `component`, `recordKind`, `runId`,
+hashed `correlationId`/`ownerId`, `triggerType`, `phase`, and `status`, when present. All
+sanitized fields remain in `extra.logRecord.fields`. Counters, tool/model/runtime values,
+budgets, provider IDs, schedule IDs, and timestamps are not indexed as run-log tags.
+Existing lifecycle/error metadata is unchanged.
+
+Sentry additionally receives the deployment check and the existing unsampled lifecycle/error
+events for run start/success/failure, model outcomes, tool outcomes, and post-run outcomes.
+`agent.post-run.started` remains a lifecycle event only: no ordinary log line is invented.
+Events carry main/post-run phase, trigger type, budgets, duration, observed cumulative token
+usage, completed model calls, and tool success/failure counts. Exception events preserve
+privacy-safe original types, diagnostic text, up to five causes, and sanitized stack frames.
+Primary and retrospective failures retain the original error/cause rather than replacing it
+with an operational placeholder.
+
+Performance transactions and child spans are separate: staging samples all traces and
+production defaults to `0.1`; `SENTRY_TRACES_SAMPLE_RATE=0` still emits all safe run logs and
+lifecycle/error events. Filter lifecycle/error events by run ID, environment, release, phase,
+and status. A failed tool can coexist with a successful main run; post-run failure is also
+distinct from the HTTP/main-run result.
+
+Sensitive-content registration is bounded and local only. It covers request context, provider
+responses before tool JSON parsing, tool arguments/results, and retrospective inputs/output.
+Credential registration explicitly includes configured OpenAI/Brave keys, wallet seed, debug
+token, Sentry DSN, Trigger secret, LaunchDarkly SDK key, and Mongo URI, including raw and
+percent-decoded URI username/password. Environment credential values are additional inputs,
+not the sole credential boundary. Malformed encoded userinfo fails closed.
+When that registry is unavailable or exceeds its limits, uncertain diagnostic content is
+withheld; known internal token/cost/deadline errors remain useful. Raw request/user contexts,
+prompts, outputs, tool payloads, secrets, arbitrary error properties, and breadcrumbs are never
+forwarded. Approved event snapshots remain private behind opaque SDK hint tokens; the final
+SDK callback reconstructs only approved payloads and drops unapproved events.
+
+Common-word masking is intentional. For example, a prompt mentioning "retry the connection"
+masks "connection" in an external "Provider exhausted connection pool" diagnostic. Without
+trusted provenance, the same word could be private content echoed by a provider or tool.
+No stopword exemption or weaker token matching is introduced. Non-overlapping diagnostic
+text, error type, sanitized frames, and existing known-safe internal literals remain useful;
+overlapping external diagnostic detail is sacrificed to preserve prompt/output/tool privacy.
+
+**Volume/cost:** each emitted safe run log adds one unsampled Sentry event, in addition to the
+existing lifecycle/error event stream. A completed run adds `3 + M + T` log events for run
+start/end, post-run end, model outcome records (`M`), and tool records (`T`), plus contextual
+service-error and autonomy-occurrence records. HTTP completion adds no Sentry event.
+A basic completed run with one model call and no tools is approximately 9 events rather
+than 5 (5 lifecycle + 4 log records), for both HTTP and direct invocation: 80% more event
+traffic with correspondingly higher ingestion/quota/storage cost. Static fingerprints group log events by event name, not by run.
+Lower trace sampling does not lower this volume. Delivery remains subject to the configured
+SDK transport, Sentry availability, quotas, and rate limits.
+
+Offline regression commands (no live Sentry transport, production calls, or environment sync):
+
+```bash
+cd services/learn-card-network/ai-agent
+bun run smoke:feed-wasm
+bun run smoke:sentry
+```
 
 ## Common failures
 

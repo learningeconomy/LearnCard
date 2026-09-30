@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { registerSensitiveContent } from './runAgent';
 
 import type {
     AgentMessage,
@@ -118,6 +119,7 @@ export const createOpenAIProvider = (apiKey: string): AgentProvider => {
             tools,
             signal,
             maxOutputTokens,
+            privacyObserver,
         }: AgentProviderRequest) => {
             const request: Record<string, unknown> = {
                 model,
@@ -138,6 +140,7 @@ export const createOpenAIProvider = (apiKey: string): AgentProvider => {
             const completion = signal
                 ? await client.chat.completions.create(request as never, { signal })
                 : await client.chat.completions.create(request as never);
+            registerSensitiveContent(completion, privacyObserver);
 
             const message = completion.choices[0]?.message;
 

@@ -67,6 +67,48 @@ const notifyObserver = (callback: (() => void) | undefined): void => {
     }
 };
 
+// Register string leaves (including custom response fields) before observers can
+// capture errors. Never invoke toJSON/getters, and never inspect thrown objects.
+export const registerSensitiveContent = (
+    value: unknown,
+    observer: AgentRunRequest['observer']
+): void => {
+    if (!observer?.onSensitiveContent) return;
+    const pending = [value];
+    const seen = new Set<object>();
+    let visited = 0;
+    while (pending.length) {
+        if (++visited > 4_096 || pending.length > 4_096) {
+            notifyObserver(() => observer.onSensitiveContent?.(undefined));
+            return;
+        }
+        const current = pending.pop();
+        if (typeof current === 'string') {
+            notifyObserver(() => observer.onSensitiveContent?.(current));
+        } else if (typeof current === 'number' && Math.abs(current) >= 1_000_000) {
+            notifyObserver(() => observer.onSensitiveContent?.(String(current)));
+        } else if (current && typeof current === 'object' && !seen.has(current)) {
+            seen.add(current);
+            try {
+                const keys = Reflect.ownKeys(current);
+                if (keys.length > 512) {
+                    notifyObserver(() => observer.onSensitiveContent?.(undefined));
+                    return;
+                }
+                for (const key of keys) {
+                    const descriptor = Object.getOwnPropertyDescriptor(current, key);
+                    if (descriptor && 'value' in descriptor) pending.push(descriptor.value);
+                    else notifyObserver(() => observer.onSensitiveContent?.(undefined));
+                }
+            } catch {
+                // Unreachable content cannot be scrubbed; fail closed without
+                // invoking getters/proxies or changing the actual agent run.
+                notifyObserver(() => observer.onSensitiveContent?.(undefined));
+            }
+        }
+    }
+};
+
 const estimateCost = (
     inputTokens: number,
     outputTokens: number,
@@ -118,6 +160,10 @@ export const runAgent = async ({
     let outputTokens = 0;
     let totalTokens = 0;
 
+    registerSensitiveContent(messages, observer);
+    registerSensitiveContent(contextPrompt, observer);
+    registerSensitiveContent(skillSystemPrompt, observer);
+    if (systemPrompt !== DEFAULT_SYSTEM_PROMPT) registerSensitiveContent(systemPrompt, observer);
     signal?.throwIfAborted();
     for (let round = 0; round <= maxToolRounds; round += 1) {
         const modelStartedAt = Date.now();
@@ -128,6 +174,7 @@ export const runAgent = async ({
                 model,
                 messages: conversation,
                 tools: agentTools,
+                privacyObserver: observer,
                 ...(signal ? { signal } : {}),
                 ...(maxOutputTokens ? { maxOutputTokens } : {}),
             });
@@ -144,6 +191,7 @@ export const runAgent = async ({
             throw error;
         }
 
+        registerSensitiveContent(response, observer);
         const modelRun = {
             durationMs: Date.now() - modelStartedAt,
             ...(response.requestId ? { requestId: response.requestId } : {}),
@@ -212,6 +260,7 @@ export const runAgent = async ({
                 arguments: toolCall.arguments,
             };
             const toolStartedAt = Date.now();
+            registerSensitiveContent(toolCall.arguments, observer);
 
             if (!tool) {
                 toolRun.error = `Unknown tool: ${toolCall.name}`;
@@ -243,6 +292,7 @@ export const runAgent = async ({
                     }),
                     signal
                 );
+                registerSensitiveContent(result, observer);
                 signal?.throwIfAborted();
                 toolRun.result = result;
                 toolRun.durationMs = Date.now() - toolStartedAt;
