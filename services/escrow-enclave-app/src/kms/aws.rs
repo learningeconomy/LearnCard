@@ -3,7 +3,7 @@ use super::*;
 use aws_sdk_kms::{
     config::{BehaviorVersion, Region},
     primitives::Blob,
-    types::{KeyEncryptionMechanism, RecipientInfo},
+    types::{DataKeySpec, KeyEncryptionMechanism, RecipientInfo},
 };
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -117,30 +117,51 @@ impl KmsClient for AwsKmsClient {
         })
     }
 
-    fn encrypt<'a>(
+    fn generate_data_key_for_recipient<'a>(
         &'a self,
-        plaintext: &'a [u8],
         context: &'a BTreeMap<String, String>,
-    ) -> KmsFuture<'a> {
+        document: &'a [u8],
+    ) -> GenerateFuture<'a> {
         Box::pin(async move {
-            // AWS SDK owns request/HTTP buffers and does not promise zeroization.
-            // Our caller retains plaintext in Zeroizing, but SDK copies are a limitation.
             let output = self
                 .client
-                .encrypt()
+                .generate_data_key()
                 .key_id(&self.key_id)
-                .plaintext(Blob::new(plaintext))
+                .key_spec(DataKeySpec::Aes256)
+                .recipient(
+                    RecipientInfo::builder()
+                        .attestation_document(Blob::new(document))
+                        .key_encryption_algorithm(KeyEncryptionMechanism::RsaesOaepSha256)
+                        .build(),
+                )
                 .set_encryption_context(Some(context.clone().into_iter().collect()))
                 .send()
                 .await
                 .map_err(|_| KmsError::Unavailable)?;
-            output
-                .ciphertext_blob
-                .filter(|b| !b.as_ref().is_empty())
-                .map(Blob::into_inner)
-                .ok_or(KmsError::UnexpectedResponse)
+            generated_output(output)
         })
     }
+}
+
+fn generated_output(
+    mut output: aws_sdk_kms::operation::generate_data_key::GenerateDataKeyOutput,
+) -> Result<GeneratedDataKey, KmsError> {
+    if let Some(plaintext) = output.plaintext.take() {
+        let _wipe = Zeroizing::new(plaintext.into_inner());
+        return Err(KmsError::UnexpectedResponse);
+    }
+    let ciphertext_blob = output
+        .ciphertext_blob
+        .filter(|b| !b.as_ref().is_empty())
+        .ok_or(KmsError::UnexpectedResponse)?;
+    let ciphertext_for_recipient = output
+        .ciphertext_for_recipient
+        .filter(|b| !b.as_ref().is_empty())
+        .ok_or(KmsError::UnexpectedResponse)?;
+    Ok(GeneratedDataKey {
+        ciphertext_blob: ciphertext_blob.into_inner(),
+        ciphertext_for_recipient: ciphertext_for_recipient.into_inner(),
+    })
 }
 
 #[cfg(test)]
@@ -180,6 +201,16 @@ mod tests {
     #[test]
     fn plaintext_response_is_never_accepted() {
         for plaintext in [vec![], vec![1, 2, 3]] {
+            let generated =
+                aws_sdk_kms::operation::generate_data_key::GenerateDataKeyOutput::builder()
+                    .plaintext(Blob::new(plaintext.clone()))
+                    .ciphertext_for_recipient(Blob::new(vec![4]))
+                    .ciphertext_blob(Blob::new(vec![5]))
+                    .build();
+            assert!(matches!(
+                generated_output(generated),
+                Err(KmsError::UnexpectedResponse)
+            ));
             let output = DecryptOutput::builder()
                 .plaintext(Blob::new(plaintext))
                 .ciphertext_for_recipient(Blob::new(vec![4]))

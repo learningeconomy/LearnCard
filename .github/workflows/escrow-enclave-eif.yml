@@ -158,6 +158,15 @@ jobs:
         needs: test
         if: success() && github.event_name != 'pull_request'
         runs-on: [self-hosted, linux, x64, nitro-enclaves]
+        env:
+            # No parent environment is inherited by an EIF. Both builds bake the
+            # same reviewed public configuration; missing required vars fail closed.
+            ESCROW_TENANT: ${{ vars.ESCROW_TENANT }}
+            ESCROW_KEY_ID: ${{ vars.ESCROW_KEY_ID }}
+            ESCROW_KMS_REGION: ${{ vars.ESCROW_KMS_REGION }}
+            ESCROW_KMS_KEY_ARN: ${{ vars.ESCROW_KMS_KEY_ARN }}
+            ESCROW_PREVIOUS_KEY_IDS: ${{ vars.ESCROW_PREVIOUS_KEY_IDS }}
+            ESCROW_ALLOW_FIRST_BOOT: ${{ vars.ESCROW_ALLOW_FIRST_BOOT || 'false' }}
         permissions:
             contents: read
             id-token: write # cosign keyless signing (GitHub OIDC -> Fulcio/Rekor); granted on this job only.

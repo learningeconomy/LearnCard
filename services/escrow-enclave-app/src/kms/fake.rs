@@ -23,6 +23,7 @@ pub struct FakeKmsClient {
     key: Zeroizing<[u8; 32]>,
     recipient_spki: Vec<u8>,
     allowed_pcr0: Option<Vec<[u8; 48]>>,
+    minted: std::sync::Mutex<std::collections::BTreeSet<Vec<u8>>>,
 }
 
 impl FakeKmsClient {
@@ -42,12 +43,30 @@ impl FakeKmsClient {
             key,
             recipient_spki,
             allowed_pcr0,
+            minted: Default::default(),
         })
     }
 
     /// Simulate a new boot without rotating the fake service's persistent KMS key.
     pub fn set_recipient(&mut self, recipient: &RecipientKey) -> Result<(), KmsError> {
         self.recipient_spki = recipient.public_key_der()?;
+        Ok(())
+    }
+
+    fn validate_attestation(&self, document: &[u8]) -> Result<(), KmsError> {
+        let claims =
+            crate::nsm::parse_attestation_document(document).map_err(|_| KmsError::Attestation)?;
+        if claims.public_key.as_ref().map(|key| key.as_slice())
+            != Some(self.recipient_spki.as_slice())
+        {
+            return Err(KmsError::Attestation);
+        }
+        if let Some(allowed) = &self.allowed_pcr0 {
+            let pcr = claims.pcrs.get(&0).ok_or(KmsError::Attestation)?;
+            if !allowed.iter().any(|pin| pin.as_slice() == pcr.as_slice()) {
+                return Err(KmsError::Attestation);
+            }
+        }
         Ok(())
     }
 }
@@ -60,12 +79,15 @@ fn context_bytes(context: &BTreeMap<String, String>) -> Result<Vec<u8>, KmsError
 }
 
 impl KmsClient for FakeKmsClient {
-    fn encrypt<'a>(
+    fn generate_data_key_for_recipient<'a>(
         &'a self,
-        plaintext: &'a [u8],
         context: &'a BTreeMap<String, String>,
-    ) -> KmsFuture<'a> {
+        document: &'a [u8],
+    ) -> GenerateFuture<'a> {
         Box::pin(async move {
+            self.validate_attestation(document)?;
+            let mut seed = Zeroizing::new([0u8; 32]);
+            OsRng.fill_bytes(seed.as_mut());
             let aad = context_bytes(context)?;
             let cipher =
                 Aes256Gcm::new_from_slice(self.key.as_ref()).map_err(|_| KmsError::Crypto)?;
@@ -75,14 +97,22 @@ impl KmsClient for FakeKmsClient {
                 .encrypt(
                     Nonce::from_slice(&nonce),
                     Payload {
-                        msg: plaintext,
+                        msg: seed.as_ref(),
                         aad: &aad,
                     },
                 )
                 .map_err(|_| KmsError::Crypto)?;
             let mut sealed = nonce.to_vec();
             sealed.extend(encrypted);
-            Ok(sealed)
+            let ciphertext_for_recipient = wrap(seed.as_ref(), &self.recipient_spki)?;
+            self.minted
+                .lock()
+                .map_err(|_| KmsError::Unavailable)?
+                .insert(sealed.clone());
+            Ok(GeneratedDataKey {
+                ciphertext_blob: sealed,
+                ciphertext_for_recipient,
+            })
         })
     }
 
@@ -93,18 +123,14 @@ impl KmsClient for FakeKmsClient {
         document: &'a [u8],
     ) -> KmsFuture<'a> {
         Box::pin(async move {
-            let claims = crate::nsm::parse_attestation_document(document)
-                .map_err(|_| KmsError::Attestation)?;
-            if claims.public_key.as_ref().map(|key| key.as_slice())
-                != Some(self.recipient_spki.as_slice())
+            self.validate_attestation(document)?;
+            if !self
+                .minted
+                .lock()
+                .map_err(|_| KmsError::Unavailable)?
+                .contains(ciphertext)
             {
-                return Err(KmsError::Attestation);
-            }
-            if let Some(allowed) = &self.allowed_pcr0 {
-                let pcr = claims.pcrs.get(&0).ok_or(KmsError::Attestation)?;
-                if !allowed.iter().any(|pin| pin.as_slice() == pcr.as_slice()) {
-                    return Err(KmsError::Attestation);
-                }
+                return Err(KmsError::Crypto);
             }
             let aad = context_bytes(context)?;
             if ciphertext.len() < 28 {
@@ -184,4 +210,40 @@ pub(super) fn wrap(plaintext: &[u8], spki: &[u8]) -> Result<Vec<u8>, KmsError> {
         .to_der()?)
     };
     encode().map_err(|_| KmsError::Crypto)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn even_valid_cmk_ciphertext_without_attested_generation_is_rejected() {
+        let recipient = RecipientKey::generate().unwrap();
+        let kms = FakeKmsClient::new(recipient.public_key_der().unwrap(), None).unwrap();
+        let context = BTreeMap::from([
+            ("purpose".into(), "escrow-enclave-key".into()),
+            ("keyId".into(), "test".into()),
+        ]);
+        // Model the formerly allowed kms:Encrypt of a host-known seed with the
+        // SAME CMK and valid context. Cryptographic validity is not provenance.
+        let nonce = [1u8; 12];
+        let cipher = Aes256Gcm::new_from_slice(kms.key.as_ref()).unwrap();
+        let encrypted = cipher
+            .encrypt(
+                Nonce::from_slice(&nonce),
+                Payload {
+                    msg: &[7; 32],
+                    aad: &context_bytes(&context).unwrap(),
+                },
+            )
+            .unwrap();
+        let mut forged = nonce.to_vec();
+        forged.extend(encrypted);
+        let nsm = crate::nsm::FakeNsm::new(123, [[1; 48]; 3]).unwrap();
+        assert!(
+            unseal_or_generate_escrow_key(&kms, &nsm, &recipient, Some(forged), "test")
+                .await
+                .is_err()
+        );
+    }
 }

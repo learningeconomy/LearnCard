@@ -28,6 +28,40 @@ fn text<'a>(item: &'a HashMap<String, A>, name: &str) -> Result<&'a str> {
 
 #[async_trait::async_trait]
 impl Backend for Aws {
+    async fn head(&self, chain: &str) -> Result<Option<Head>> {
+        let pk = format!("ENROLL#{chain}");
+        chain_from_pk(&pk)?;
+        let output = self
+            .db
+            .get_item()
+            .table_name(&self.heads)
+            .key("pk", A::S(pk))
+            .consistent_read(true)
+            .send()
+            .await
+            .map_err(|_| Error::Unavailable)?;
+        output
+            .item
+            .map(|item| {
+                let seq = item
+                    .get("head_seq")
+                    .and_then(|v| v.as_n().ok())
+                    .and_then(|s| s.parse::<u64>().ok())
+                    .filter(|n| *n < MAX_CHAIN_RECORDS as u64)
+                    .ok_or(Error::Integrity)?;
+                let hash = item
+                    .get("head_hash")
+                    .and_then(|v| v.as_b().ok())
+                    .and_then(|b| b.as_ref().try_into().ok())
+                    .ok_or(Error::Integrity)?;
+                Ok(Head {
+                    chain: chain.to_owned(),
+                    seq,
+                    hash,
+                })
+            })
+            .transpose()
+    }
     async fn chain(&self, chain: &str) -> Result<Vec<Vec<u8>>> {
         let pk = format!("ENROLL#{chain}");
         chain_from_pk(&pk)?;
@@ -145,7 +179,8 @@ impl Monitor<Aws> {
     /// an in-memory cursor or a timestamp filter would silently miss committed data.
     pub async fn sweep(&self) -> Result<()> {
         let mut cursor = None;
-        loop {
+        let mut completed = false;
+        for _ in 0..10_000 {
             let page = self
                 .backend
                 .db
@@ -206,9 +241,49 @@ impl Monitor<Aws> {
             }
             cursor = page.last_evaluated_key;
             if cursor.as_ref().is_none_or(HashMap::is_empty) {
+                completed = true;
                 break;
             }
         }
-        self.backend.metric(Metric::SweepCompleted).await
+        if !completed {
+            return Err(Error::Unavailable);
+        }
+        // Heads alone cannot reveal deleted/missing heads. Enumerate records too,
+        // projecting only partition keys to keep each page and memory bounded.
+        let mut cursor = None;
+        for _ in 0..10_000 {
+            let page = self
+                .backend
+                .db
+                .scan()
+                .table_name(&self.backend.records)
+                .consistent_read(true)
+                .projection_expression("pk")
+                .limit(25)
+                .set_exclusive_start_key(cursor)
+                .send()
+                .await
+                .map_err(|_| Error::Unavailable)?;
+            let mut chains = std::collections::BTreeSet::new();
+            for item in page.items() {
+                match text(item, "pk").and_then(chain_from_pk) {
+                    Ok(chain) => {
+                        chains.insert(chain);
+                    }
+                    Err(_) => self.alarm(Metric::LedgerIntegrityFailure).await?,
+                }
+            }
+            for chain in chains {
+                match self.sweep_record_chain(chain).await {
+                    Err(Error::Integrity) => self.alarm(Metric::LedgerIntegrityFailure).await?,
+                    result => result?,
+                }
+            }
+            cursor = page.last_evaluated_key;
+            if cursor.as_ref().is_none_or(HashMap::is_empty) {
+                return self.backend.metric(Metric::SweepCompleted).await;
+            }
+        }
+        Err(Error::Unavailable)
     }
 }

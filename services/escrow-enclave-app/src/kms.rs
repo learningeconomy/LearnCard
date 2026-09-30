@@ -9,7 +9,7 @@ use cms::{
     enveloped_data::{EnvelopedData, RecipientInfo},
 };
 use der::{asn1::ObjectIdentifier, Decode, Sequence};
-use p256::pkcs8::{DecodePrivateKey, EncodePublicKey};
+use p256::pkcs8::{EncodePrivateKey, EncodePublicKey};
 use rand_core::{OsRng, RngCore};
 use rsa::{pkcs8::spki::AlgorithmIdentifierOwned, Oaep, RsaPrivateKey};
 use sha2::Sha256;
@@ -17,7 +17,7 @@ use thiserror::Error;
 use zeroize::Zeroizing;
 
 use crate::{
-    crypto::{self, EscrowKeyPair},
+    crypto::EscrowKeyPair,
     nsm::{AttestationRequest, NsmDriver},
 };
 
@@ -59,6 +59,12 @@ pub enum KmsError {
 
 /// Explicit boxed Send futures keep this trait dyn-compatible without async-trait.
 pub type KmsFuture<'a> = Pin<Box<dyn Future<Output = Result<Vec<u8>, KmsError>> + Send + 'a>>;
+pub struct GeneratedDataKey {
+    pub ciphertext_for_recipient: Vec<u8>,
+    pub ciphertext_blob: Vec<u8>,
+}
+pub type GenerateFuture<'a> =
+    Pin<Box<dyn Future<Output = Result<GeneratedDataKey, KmsError>> + Send + 'a>>;
 
 pub trait KmsClient: Send + Sync {
     fn decrypt_for_recipient<'a>(
@@ -67,11 +73,11 @@ pub trait KmsClient: Send + Sync {
         encryption_context: &'a BTreeMap<String, String>,
         attestation_document: &'a [u8],
     ) -> KmsFuture<'a>;
-    fn encrypt<'a>(
+    fn generate_data_key_for_recipient<'a>(
         &'a self,
-        plaintext: &'a [u8],
         encryption_context: &'a BTreeMap<String, String>,
-    ) -> KmsFuture<'a>;
+        attestation_document: &'a [u8],
+    ) -> GenerateFuture<'a>;
 }
 
 /// A distinct, ephemeral boot key. RsaPrivateKey implements ZeroizeOnDrop.
@@ -227,45 +233,62 @@ pub async fn unseal_or_generate_escrow_key(
         ("purpose".into(), "escrow-enclave-key".into()),
         ("keyId".into(), key_id.into()),
     ]);
-    if let Some(sealed) = sealed {
-        let mut nonce = vec![0; 32];
-        OsRng.fill_bytes(&mut nonce);
-        let attestation = nsm
-            .attest(AttestationRequest {
-                user_data: key_id.as_bytes().to_vec(),
-                nonce,
-                public_key: Some(recipient.public_key_der()?),
-            })
-            .map_err(|_| KmsError::Attestation)?;
+    let mut nonce = vec![0; 32];
+    OsRng.fill_bytes(&mut nonce);
+    let attestation = nsm
+        .attest(AttestationRequest {
+            user_data: key_id.as_bytes().to_vec(),
+            nonce,
+            public_key: Some(recipient.public_key_der()?),
+        })
+        .map_err(|_| KmsError::Attestation)?;
+    let (cms, new_blob) = if let Some(sealed) = sealed {
         let cms = kms
             .decrypt_for_recipient(&sealed, &context, &attestation)
             .await?;
-        let pkcs8 = open_ciphertext_for_recipient(&cms, recipient)?;
-        let secret = p256::SecretKey::from_pkcs8_der(&pkcs8).map_err(|_| KmsError::Crypto)?;
-        let public = secret
-            .public_key()
-            .to_public_key_der()
-            .map_err(|_| KmsError::Crypto)?;
-        Ok((
-            EscrowKeyPair {
-                public_key: STANDARD.encode(public.as_bytes()),
-                private_key: STANDARD.encode(&*pkcs8),
-            },
-            None,
-        ))
+        (cms, None)
     } else {
-        let keys = crypto::generate_escrow_key_pair().map_err(|_| KmsError::Crypto)?;
-        let pkcs8 = Zeroizing::new(
-            STANDARD
-                .decode(&keys.private_key)
-                .map_err(|_| KmsError::Encoding)?,
-        );
-        let sealed = kms.encrypt(&pkcs8, &context).await?;
-        if sealed.is_empty() {
+        let generated = kms
+            .generate_data_key_for_recipient(&context, &attestation)
+            .await?;
+        if generated.ciphertext_blob.is_empty() || generated.ciphertext_for_recipient.is_empty() {
             return Err(KmsError::UnexpectedResponse);
         }
-        Ok((keys, Some(sealed)))
+        (
+            generated.ciphertext_for_recipient,
+            Some(generated.ciphertext_blob),
+        )
+    };
+    let seed = open_ciphertext_for_recipient(&cms, recipient)?;
+    Ok((derive_escrow_key(&seed, key_id)?, new_blob))
+}
+
+fn derive_escrow_key(seed: &[u8], key_id: &str) -> Result<EscrowKeyPair, KmsError> {
+    if seed.len() != 32 {
+        return Err(KmsError::UnexpectedResponse);
     }
+    let hkdf = hkdf::Hkdf::<Sha256>::new(Some(b"learncard-escrow-seed-v1"), seed);
+    for counter in 0u32..256 {
+        let mut info = b"ecdh-p256-escrow-key\0".to_vec();
+        info.extend_from_slice(&(key_id.len() as u32).to_be_bytes());
+        info.extend_from_slice(key_id.as_bytes());
+        info.extend_from_slice(&counter.to_be_bytes());
+        let mut scalar = Zeroizing::new([0u8; 32]);
+        hkdf.expand(&info, scalar.as_mut())
+            .map_err(|_| KmsError::Crypto)?;
+        if let Ok(secret) = p256::SecretKey::from_slice(scalar.as_ref()) {
+            let private = secret.to_pkcs8_der().map_err(|_| KmsError::Crypto)?;
+            let public = secret
+                .public_key()
+                .to_public_key_der()
+                .map_err(|_| KmsError::Crypto)?;
+            return Ok(EscrowKeyPair {
+                private_key: STANDARD.encode(private.as_bytes()),
+                public_key: STANDARD.encode(public.as_bytes()),
+            });
+        }
+    }
+    Err(KmsError::Crypto)
 }
 
 #[cfg(test)]

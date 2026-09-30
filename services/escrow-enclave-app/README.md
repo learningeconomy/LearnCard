@@ -11,8 +11,8 @@ so every mutating operation (create/release/cancel a hold) fails closed with
 `Unavailable` until an authenticated, fresh enrollment source is integrated — see
 SECURITY.md's Open Items / Launch Blockers for the remaining gates. Do not point
 production recovery traffic at this build yet. `carryPinVerifier` (P8.1) is the one
-exception: it is a pure decrypt/validate/reseal with no ledger, `EnrollmentSource`,
-or trusted-time dependency, so it works in this build today despite
+exception: it decrypts/validates/reseals using stateful ledger observation but no
+`EnrollmentSource` or trusted-time dependency, so the policy operation is not gated by
 BLOCKER-ENROLLMENT — see "Release policy" and "Wire contract" below.
 
 ## Target architecture
@@ -100,6 +100,9 @@ the signature; low-S encoding eliminates the alternative ECDSA signature form.
 `verify_chain` verifies every signature, tenant/identity/epoch/blob binding,
 sequence/link, request transition and non-decreasing time lower bound. It verifies
 enclave attestations of time verification, **not** original Roughtime datagrams.
+`verify_chain_with_keys` selects a verifier from the trusted keyId map using each
+record's signed key 10; unknown IDs fail closed. Mixed current/previous-key chains
+are valid. The legacy `verify_chain` helper retains single-key, single-keyId semantics.
 Only pass fresh `TimeSource` evidence to signing APIs; interval structure alone
 does not establish trusted time. A lower bound before the head is refused even
 if the interval's upper bound overlaps the head.
@@ -118,6 +121,16 @@ unchanged. Measurement is SHA-256 of `PCR0 || PCR1 || PCR2` in raw 48-byte form;
 startup must compute it from NSM, never accept it from the parent. The verifier
 accepts measurement changes under the same signing key; monitor allowlisting is
 separate. `policyVersion=1` is the only currently supported interpretation.
+
+At boot, Policy derives ledger verifiers from the current and up to three unsealed
+previous escrow keys. All appends use the current signing key, while every record
+is verified with its own signed `keyId`. Keep old verifiers available while any
+retained chain contains their records, even after all encrypted blobs are rewrapped.
+The monitor's security-owned SSM String parameter should be a JSON object
+`{"<keyId>":"<130-character lowercase hex uncompressed SEC1 P-256 ledger key>",...}`
+with 1–4 entries. It also accepts the legacy bare 130-hex key with single-key chain
+semantics. Provision every entry from a validated attestation and recycle monitor
+execution environments after updates; do not replace an old entry during overlap.
 
 `Operation.payload_hash` must commit to the full canonical request, including
 tenant, identity, epoch, blob, hold, request ID, client recipient and PIN proof
@@ -158,6 +171,11 @@ The policy layer must canonicalize and bound these request bytes (8192 maximum).
 at its original sequence, not merely that its new sequence is larger. Therefore
 both truncation and a longer fork are rejected. Pure `verify_chain` has no memory;
 production callers use the stateful APIs, not that pure monitor helper alone.
+This includes `carry_pin_verifier` and `rewrap_escrow_blob`: both use `observe`
+and retain high-water marks in the same Policy instance despite not appending.
+Once that instance has spent/observed N attempts, empty or truncated histories
+cannot lower the migrated floor. Fresh-boot, parallel-instance, and substituted
+source-epoch limitations remain detection-only (D3); observation is not a freshness oracle.
 
 ### HeadStore / P3.3 parent obligations
 
@@ -234,15 +252,15 @@ request parameter. Measurement must likewise come from verified NSM startup.
 
 ### Operations and decisions
 
-| Operation                   | Required checks                                                                                                                                                                                                               | Persisted result before returning                                                                                                                                                 |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `verify_blob`               | Authenticated envelope/key ID, positive u32 version; compare decrypted DID/version to expectations                                                                                                                            | None; `{ok, has_pin}`, or `Blob` for invalid ciphertext/key/plaintext                                                                                                             |
-| `create_hold`               | Identity/version, current authenticated enrollment, valid recipient SPKI, unique hold, PIN verifier present for PIN policy, trusted time                                                                                      | `HoldCreated`, then authenticated full-chain readback                                                                                                                             |
-| `release_hold`              | All signed hold fields and current blob/epoch match; live, uncancelled/unreleased hold; trusted `lo >= createdHi + 604800000`                                                                                                 | `Released` + readback, **then** seal to the signed recipient                                                                                                                      |
-| `release_pin`               | Same bindings/live hold; PIN policy, verifier and proof present; enrollment budget available                                                                                                                                  | Reserve + readback → fixed-size `subtle` comparison → success/failure + readback; success adds `Released` + readback before sealing; tenth failure adds `PinLocked`               |
-| `cancel_hold`               | Same authenticated hold/current enrollment; live hold                                                                                                                                                                         | `Cancelled` + readback; subsequent release refused                                                                                                                                |
-| `carry_pin_verifier` (P8.1) | Both plaintexts' DID == `expected_did`; each side's version == its expected version; target version strictly greater than source; source has a verifier; target does not                                                      | None — pure decrypt/validate/reseal, no ledger/enrollment/time; returns `{ envelope }` sealed to the CURRENT key with a fresh ephemeral key, salt and IV                          |
-| `rewrap_escrow_blob` (P9.3) | Envelope's `keyId` is a recognised PREVIOUS key (not current, not unknown); plaintext DID == `expected_did`; version == `expected_share_version`; reads (never writes) the source epoch's ledger chain for the attempts floor | None new — reuses `carry_pin_verifier`'s floor computation; returns `{ envelope }` re-sealed to the CURRENT key with a fresh ephemeral key, salt and IV, same plaintext otherwise |
+| Operation                           | Required checks                                                                                                                                                                                                               | Persisted result before returning                                                                                                                                                 |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `verify_blob`                       | Authenticated envelope/key ID, positive u32 version; compare decrypted DID/version to expectations                                                                                                                            | None; `{ok, has_pin}`, or `Blob` for invalid ciphertext/key/plaintext                                                                                                             |
+| `create_hold`                       | Identity/version, current authenticated enrollment, valid recipient SPKI, unique hold, PIN verifier present for PIN policy, trusted time                                                                                      | `HoldCreated`, then authenticated full-chain readback                                                                                                                             |
+| `release_hold`                      | All signed hold fields and current blob/epoch match; live, uncancelled/unreleased hold; trusted `lo >= createdHi + 604800000`                                                                                                 | `Released` + readback, **then** seal to the signed recipient                                                                                                                      |
+| `release_pin`                       | Same bindings/live hold; PIN policy, verifier and proof present; enrollment budget available                                                                                                                                  | Reserve + readback → fixed-size `subtle` comparison → success/failure + readback; success adds `Released` + readback before sealing; tenth failure adds `PinLocked`               |
+| `cancel_hold`                       | Same authenticated hold/current enrollment; live hold                                                                                                                                                                         | `Cancelled` + readback; subsequent release refused                                                                                                                                |
+| `carry_pin_verifier` (P8.1/P8.3/H1) | DID/version/PIN bindings; target version increases; source epoch in range; statefully observe source chain and add spent attempts to encrypted floor                                                                          | No append; retains high-water memory and returns `{ envelope }` sealed to CURRENT key with fresh ephemeral key, salt and IV; no enrollment/time dependency                        |
+| `rewrap_escrow_blob` (P9.3)         | Envelope's `keyId` is a recognised PREVIOUS key (not current, not unknown); plaintext DID == `expected_did`; version == `expected_share_version`; reads (never writes) the source epoch's ledger chain for the attempts floor | None new — reuses `carry_pin_verifier`'s floor computation; returns `{ envelope }` re-sealed to the CURRENT key with a fresh ephemeral key, salt and IV, same plaintext otherwise |
 
 `release` dispatches on the signed policy. A PIN hold never becomes a delayed
 hold, even after seven days; a delayed hold ignores any PIN proof. The duration
@@ -410,10 +428,10 @@ is not a time trust boundary: every response is independently enclave-verified.
 ## KMS sealing primitives (P1.4)
 
 `RecipientKey::generate()` creates a boot-local RSA-2048 key (zeroized on drop).
-On subsequent boots, `unseal_or_generate_escrow_key` attests its SPKI in NSM
+On every boot, `unseal_or_generate_escrow_key` attests its SPKI in NSM
 `public_key`, a fresh 32-byte nonce in `nonce`, and the logical key ID in `user_data`.
 This boot attestation is separate from client-facing attestation, whose `user_data`
-must contain the escrow P-256 SPKI. KMS `Decrypt` returns only
+must contain the escrow P-256 SPKI. KMS `GenerateDataKey` and `Decrypt` return
 `CiphertextForRecipient`; any plaintext field, even empty, fails closed.
 The always-compiled CMS parser uses `cms 0.2.3` / `der 0.7`, requires a single
 RSA-OAEP recipient (SHA-256, MGF1-SHA-256, empty label), and opens AES-256-CBC
@@ -421,9 +439,28 @@ with PKCS#7 padding. Unsupported OIDs/parameters and malformed DER are rejected.
 CMS CBC has no independent integrity: only feed it responses from authenticated
 KMS TLS, not an unauthenticated parent-provided CMS value.
 
-First boot generates the existing P-256 escrow pair and seals its binary PKCS#8
-with `Encrypt`, using `{purpose: "escrow-enclave-key", keyId: <logical-id>}` on both
-paths. A failed unseal never regenerates a replacement. The caller must persist
+First boot calls **GenerateDataKey(KeySpec=AES_256, Recipient=NSM attestation)**,
+using `{purpose: "escrow-enclave-key", keyId: <logical-id>}` on both generation and
+decryption. Both nonempty `CiphertextForRecipient` and `CiphertextBlob` are required.
+Opening the recipient CMS must produce exactly 32 seed bytes. HKDF-SHA256 uses salt
+`learncard-escrow-seed-v1` and info `ecdh-p256-escrow-key\0 || keyId_length_u32_be ||
+keyId || counter_u32_be`, rejection-sampling a valid P-256 scalar (counter 0–255).
+The resulting pair uses the existing PKCS#8/SPKI base64 representation; the persisted
+sealed object is KMS's **seed CiphertextBlob**, never encrypted PKCS#8. Decrypt on a
+later boot must produce exactly 32 bytes and derives the identical pair.
+`Encrypt` is removed from the enclave trait and both KMS implementations.
+
+This requires the accompanying CMK policy to deny `kms:Encrypt`, `kms:ReEncrypt*`,
+`kms:GenerateDataKeyWithoutPlaintext`, and `kms:GenerateDataKeyPair*` to all principals,
+and allow GenerateDataKey/Decrypt only with the approved per-tuple recipient PCRs;
+missing attestation and debug PCRs must be explicitly denied. Otherwise a host could
+inject a ciphertext for a seed it knows and substitute the attested escrow key.
+No sealed-format migration is supported or needed: Nitro never ran in production
+and the previous `nitro,kms` build did not compile. Do not feed legacy PKCS#8 blobs
+to this build. Use a fresh restricted CMK, or establish that its historical policy
+never permitted attacker-known ciphertext generation: a newly applied deny does
+not revoke old host-known seed ciphertexts. A failed unseal never regenerates a
+replacement. The caller must persist
 the returned new ciphertext via the parent **before serving the key**. Persistence,
 missing-blob/rollback policy, credential wire DTOs, refresh, and startup supervision
 belong to P1.8/P3.3; this library does not silently wire them into the stub server.
@@ -433,6 +470,8 @@ The KMS CMK ARN in `AwsKmsClient::new` is distinct from the logical escrow key I
 is not dyn-compatible in Rust 1.93, so no `async-trait` dependency is needed.
 `FakeKmsClient` is test-only or explicit `fake-kms` (default off); it authenticates
 its sealed blobs with AES-GCM and emits actual DER CMS to exercise the real parser.
+Only blobs minted by its attested GenerateDataKey path can be decrypted: a separate
+minted-blob registry models the CMK policy's prohibition on host-known ciphertexts.
 It checks parsed attestation public-key equality and optional PCR0 pins, **not**
 signatures, chain, nonce or freshness. It is not a production KMS substitute.
 
@@ -450,8 +489,11 @@ local development uses the platform trust store unless explicitly overridden.
 and a region; it never uses IMDS or an environment credential chain. Reconstruct
 the client with refreshed credentials per boot/request; never log these values.
 Its default endpoint is `https://kms.<region>.amazonaws.com:8000`.
-The enclave image **must** map that exact hostname to `127.0.0.1` in `/etc/hosts`
-and supervise `kms::vsock_forward::run()` (Linux + `kms`) before KMS calls:
+Linux Nitro startup validates the region and writes that exact hostname mapping
+to `127.0.0.1` in `/etc/hosts`, failing closed on write failure before any KMS call.
+The measured image includes a UID-65532-owned writable hosts file (with normalized
+mtime); it does not rely on Docker's ephemeral build-time hosts file. Startup also
+supervises `kms::vsock_forward::run()` (Linux + `kms`):
 
 ```text
 SDK -- TLS (AWS hostname/SNI verified) --> 127.0.0.1:8000
@@ -464,14 +506,17 @@ never disable TLS certificate verification to work around that. The forwarder
 has a fixed destination, at most 16 active connections, and a 60-second connection
 lifetime. Dropping its future aborts its child tasks. `ESCROW_KMS_ENDPOINT` can
 select only that regional hostname with port 8000, port 443, or no explicit port;
-other hosts and HTTP fail closed so first-boot plaintext cannot be redirected.
+other hosts and HTTP fail closed so attested KMS requests cannot be redirected.
 The direct 443 options are for non-enclave environments; this setup currently
 assumes the standard `amazonaws.com` partition, not China/FIPS endpoints.
 
 Private key, CEK and application plaintext buffers zeroize on drop, including CBC
 error paths, and RSA decrypt uses blinding. AWS SDK request/HTTP/parser allocations
 are SDK-owned and **do not promise zeroization**; complete memory erasure is not
-claimed. The SDK necessarily copies first-boot PKCS#8 into its Encrypt request.
+claimed. No seed or PKCS#8 is sent in any KMS request. Seed/CMS plaintext and derived
+scalar buffers are zeroized; the host can still deny service or substitute/replay
+other legitimately minted sealed seeds, not obtain their private keys. Key-policy
+administrators can undo the denies; governance and independent alarms remain required.
 RSA dependency timing advisories and real AWS-generated CMS interoperability still
 require the planned security review/staging enclave test before deployment.
 
@@ -611,11 +656,10 @@ blobs under a truly unknown key (retired already, or never valid) — the job
 only ever asks the enclave about keyIds the CURRENT boot's own attestation
 still lists in `previousKeyIds`.
 
-`infra/escrow-enclave/kms.tf` needs **no change**: `kms:Decrypt` is
-authorized purely by `kms:RecipientAttestation:PCR0/1/2` (never by `keyId`),
-and `kms:Encrypt`'s only condition is `kms:EncryptionContext:purpose` — so
-accepting additional keyIds for Decrypt was already within the existing
-policy. `services/escrow-enclave-host` extends `Boot` with a `previous: Vec<(String,
+The CMK policy must implement the GenerateDataKey/Decrypt attestation gates and
+key-substitution denies above. `keyId` is authenticated as encryption context on
+each seed; previous seeds are never regenerated. `services/escrow-enclave-host`
+extends `Boot` with a `previous: Vec<(String,
 S)>` of additional `SealedStore`s (`ESCROW_PREVIOUS_KEY_IDS` +
 `ESCROW_PREVIOUS_KEY_OBJECTS`, same bucket, parallel comma-separated lists,
 bounded/deduplicated/disjoint-from-current at startup) — read-only: a
@@ -674,28 +718,28 @@ the HTTP bearer is not protection from other local processes.
 | `attest`                | `nonce` (JSON byte array)                                                                                                                | `mode`, `keyId`, `publicKey`, `measurements`, `document`, `issuedAt` |
 | `createHold`            | `envelope`, `holdId`, `requestId`, `expectedDid`, `expectedShareVersion`, `enrollmentEpoch`, `releasePolicy`, `clientEphemeralPublicKey` | `hold` (`SignedHoldRecord` wrapper)                                  |
 | `verifyBlob`            | `envelope`, `expectedDid`, `expectedShareVersion`                                                                                        | `ok`, `hasPin`, optional `reason` (on failure)                       |
-| `carryPinVerifier`      | `sourceEnvelope`, `targetEnvelope`, `expectedDid`, `sourceShareVersion`, `targetShareVersion`                                            | `envelope` (sealed to the current key)                               |
+| `carryPinVerifier`      | `sourceEnvelope`, `targetEnvelope`, `expectedDid`, `sourceShareVersion`, `targetShareVersion`, `sourceEnrollmentEpoch`                   | `envelope` (sealed to the current key)                               |
 | `rewrapEscrowBlob`      | `envelope`, `expectedDid`, `expectedShareVersion`, `sourceEnrollmentEpoch`                                                               | `envelope` (sealed to the current key)                               |
 | `release`               | `envelope`, `hold` (`SignedHoldRecord`), `requestId`, `clientEphemeralPublicKey`, `expectedDid`, optional `pinProof`                     | `sealed` (envelope)                                                  |
 | `cancel`                | `envelope`, `hold` (`SignedHoldRecord`), `requestId`, `clientEphemeralPublicKey`, `expectedDid`                                          | `cancelled` (boolean)                                                |
 | `health`                | none                                                                                                                                     | `ok`                                                                 |
 | `error` (response only) | —                                                                                                                                        | `code`, safe `message`                                               |
 
-`carryPinVerifier` (P8.1) takes no `requestId`: like `verifyBlob`, it is a pure
-decrypt/validate/reseal with no ledger, `EnrollmentSource`, or trusted-time
-dependency, so it never touches the PIN attempt budget and needs no idempotency
-key. All of its rejections return the single generic `blob` error, matching
-`verifyBlob`'s `Invalid escrow payload.` — the response never distinguishes which
-binding failed (DID, version, missing/present verifier, or an undecryptable
-envelope). Carrying the PIN attempt budget itself across a rotation is a separate
-follow-up (P8.3), not implemented by this method.
+`carryPinVerifier` takes no `requestId`: it appends nothing but statefully observes
+the source epoch's ledger to carry forward `pinAttemptsFloor`. Its request includes
+`sourceEnrollmentEpoch`; it has no `EnrollmentSource` or trusted-time dependency.
+Blob binding failures return generic `blob`; invalid/rolled-back history returns
+`ledger`, and storage failure returns `unavailable`. No failure is treated as an
+empty chain. Resealing uses fresh ephemeral keys, salt and IV.
 
 `rewrapEscrowBlob` (P9.3) likewise takes no `requestId`: it never appends to the
 ledger, only reads the source epoch's chain (the same read `carryPinVerifier`'s
-P8.3 accounting does) to compute the migrated copy's PIN attempt floor. Every
-rejection is the identical generic `blob` error: an envelope keyed to the
+P8.3 accounting does) to compute the migrated copy's PIN attempt floor, using the
+same stateful high-water observation. Binding failures return generic `blob`:
+an envelope keyed to the
 current key (nothing to migrate) or an unrecognised key is indistinguishable
-from a DID/version mismatch or an undecryptable envelope.
+from a DID/version mismatch or an undecryptable envelope. Ledger/rollback and
+storage failures return `ledger` and `unavailable`, respectively.
 
 Error codes: `policy`, `pinMismatch`, `blob`, `unavailable`, `ledger`, `time`.
 DTO deserialization is **not** signature, algorithm, range, or policy validation.
@@ -858,7 +902,9 @@ Enclave Image File (`.eif`) plus its PCR0/1/2 measurements, reproducibly.
 ### How to build
 
 ```sh
-services/escrow-enclave-app/scripts/build-eif.sh --out /tmp/escrow-eif-out
+services/escrow-enclave-app/scripts/build-eif.sh --out /tmp/escrow-eif-out \
+  --tenant learncard --key-id escrow-v1 --kms-region us-east-1 \
+  --kms-key-arn arn:aws:kms:us-east-1:123456789012:key/00000000-0000-0000-0000-000000000001
 ```
 
 This requires **Amazon Linux with `aws-nitro-enclaves-cli` and a running
@@ -867,8 +913,22 @@ kernel driver, so this only runs in CI (or a Nitro-capable EC2 instance),
 never on a developer laptop. `--source-date-epoch` defaults to
 `git log -1 --format=%ct`; pass it explicitly to reproduce a specific
 commit's build later. Output: `escrow-enclave.eif`, `measurements.json`
-(`{pcr0, pcr1, pcr2, imageTag, sourceDateEpoch, gitCommit, eifSha256}`), the
+(`{pcr0, pcr1, pcr2, imageTag, sourceDateEpoch, gitCommit, eifSha256, config}`), the
 built `image.tar`, and raw `nitro-cli` logs.
+
+Required flags `--tenant`, `--key-id`, `--kms-region`, `--kms-key-arn` may instead
+come from `ESCROW_TENANT`, `ESCROW_KEY_ID`, `ESCROW_KMS_REGION`, `ESCROW_KMS_KEY_ARN`.
+Optional `--previous-key-ids` / `ESCROW_PREVIOUS_KEY_IDS` accepts up to three distinct
+IDs, disjoint from current. `--allow-first-boot` / `ESCROW_ALLOW_FIRST_BOOT` accepts
+only `true|false` (default false). The script validates all config before building,
+passes Docker ARGs, and records `config: {tenant,keyId,kmsRegion,kmsKeyArn,
+previousKeyIds,allowFirstBoot}` in measurements.json. Final-image ENV is carried by
+nitro-cli into the **measured EIF**; no parent process environment is inherited.
+CI uses repository variables with those ESCROW names for both reproducibility builds.
+Every config change, including disabling first boot or changing previous IDs, needs
+a new EIF and coordinated measurement allowlists. Provisioning and steady-state
+images therefore have different PCRs. Verify hosts-file ownership and actual NSM/
+vsock access in a real EIF; Docker/Linux compile tests do not establish hardware boot.
 
 `scripts/verify-measurements.sh <a.json> <b.json>` compares two
 `measurements.json` files' `pcr0`/`pcr1`/`pcr2` and exits non-zero on any

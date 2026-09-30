@@ -116,6 +116,7 @@ COPY rust-toolchain.toml ./
 # layers or cache boundaries were used to get there.
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
+COPY scripts/enclave-hosts /build/enclave-hosts
 
 # Fully static release build.
 #
@@ -200,6 +201,7 @@ RUN set -eux; \
 # means PCR0 reproducibility does not depend on that flag working perfectly.
 RUN touch -d "@${SOURCE_DATE_EPOCH}" \
         /build/target/x86_64-unknown-linux-musl/release/escrow-enclave \
+        /build/enclave-hosts \
         /etc/ssl/certs/ca-certificates.crt
 
 # ---------------------------------------------------------------------------
@@ -220,12 +222,29 @@ RUN touch -d "@${SOURCE_DATE_EPOCH}" \
 # ---------------------------------------------------------------------------
 FROM scratch
 
+ARG ESCROW_TENANT
+ARG ESCROW_KEY_ID
+ARG ESCROW_KMS_REGION
+ARG ESCROW_KMS_KEY_ARN
+ARG ESCROW_PREVIOUS_KEY_IDS=""
+ARG ESCROW_ALLOW_FIRST_BOOT=false
+ENV ESCROW_TENANT=${ESCROW_TENANT} \
+    ESCROW_KEY_ID=${ESCROW_KEY_ID} \
+    ESCROW_KMS_REGION=${ESCROW_KMS_REGION} \
+    ESCROW_KMS_KEY_ARN=${ESCROW_KMS_KEY_ARN} \
+    ESCROW_PREVIOUS_KEY_IDS=${ESCROW_PREVIOUS_KEY_IDS} \
+    ESCROW_ALLOW_FIRST_BOOT=${ESCROW_ALLOW_FIRST_BOOT}
+
 COPY --from=builder --chown=65532:65532 --chmod=0555 \
     /build/target/x86_64-unknown-linux-musl/release/escrow-enclave \
     /escrow-enclave
 COPY --from=builder --chown=65532:65532 --chmod=0444 \
     /etc/ssl/certs/ca-certificates.crt \
     /etc/ssl/certs/ca-certificates.crt
+
+# A real image layer, not Docker's ephemeral build-time /etc/hosts. Startup
+# overwrites it with the validated regional KMS mapping before any KMS request.
+COPY --from=builder --chown=65532:65532 --chmod=0644 /build/enclave-hosts /etc/hosts
 
 # Smithy's current hyper 1 / rustls 0.23 / AWS-LC client loads native roots via
 # rustls-native-certs, which honors SSL_CERT_FILE (no bundled webpki-roots).

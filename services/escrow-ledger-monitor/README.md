@@ -21,6 +21,10 @@ It has **no escrow-CMK access, table writes, or lca-api configuration writes**.
   exact canonical decoder and `Ledger::verify_chain`, binds the chain ID to the
   signed enrollment, and requires the inserted image and sort key to match stored
   bytes. Only the inserted event is counted, not its whole history.
+  It captures the strongly consistent head before reading the chain, requires that
+  head to be a verified prefix at least as recent as the inserted record, and checks
+  the inserted record's exact S3 audit bytes before counting it. Head-first ordering
+  avoids false tampering alarms when a concurrent append advances the head.
 - Neither records nor heads stores a commit/update timestamp. **The sweep scans
   every head on every invocation**, not just a purported two-hour subset. This
   is a superset of the requested lookback and needs no volatile/durable handoff,
@@ -31,14 +35,20 @@ It has **no escrow-CMK access, table writes, or lca-api configuration writes**.
   Scan pagination is not a transaction-wide snapshot; concurrent appends may
   extend the initially scanned head, so prefix matches are allowed.
 - DynamoDB commits precede S3 uploads. A sweep overlapping that short interval
-  can raise a transient missing-object alarm. **It is not silently suppressed**:
+  or INSERT check retries an absent object at most three times, 100 ms apart, then
+  alarms; different bytes alarm immediately. **It is not silently suppressed**:
   investigate and compare on the next sweep. Persistent absence is an incident.
   AccessDenied/timeouts are operational failures, not fabricated missing objects.
-- Full scan work grows with the ledger. All pages are traversed, but Lambda's
+- Reconciliation also scans the **records** table for partitions whose heads are
+  missing, so deleting a head cannot hide its retained records from a sweep. Both
+  scans paginate 25 items at a time, capped at 10,000 pages each; reaching the cap
+  fails the invocation without a SweepCompleted heartbeat. Records scans project
+  partition keys only and deduplicate within each page (bounded memory).
+- Full scan work grows with the ledger. Within those caps all pages are traversed, but Lambda's
   15-minute timeout bounds execution. `SweepCompleted` is emitted only on completion;
   missing-heartbeat and Lambda errors expose incomplete scans. Before scale exceeds
   this bound, implement durable, partitioned sweeps (not in-memory pagination).
-  Table deletion or total removal of heads needs stream/CloudTrail evidence;
+  Table deletion or total removal of both heads and records needs stream/CloudTrail evidence;
   this is not a reverse S3 inventory comparison or an external freshness oracle.
 
 Metrics in `LearnCard/EscrowLedger` have **only `Tenant`**, taken from operator
@@ -55,13 +65,19 @@ DLQs may contain source payloads/metadata: restrict operator access accordingly.
 Before enabling the monitor, security operators must verify a fresh nonce-bound
 Nitro attestation (AWS trust root, approved PCRs, non-debug, freshness) and extract
 its **ledger** public key from `public_key`, not the escrow ECDH key in `user_data`.
-Store the 65-byte uncompressed SEC1 P-256 key as **130 hex characters** in an SSM
-**String** parameter under a security-owned absolute path. This is a public trust
+Store a JSON object `{"<keyId>":"<130-character lowercase hex SEC1 P-256 key>",...}`
+in an SSM **String** parameter under a security-owned absolute path. The value is
+bounded to 2048 bytes and 1–4 entries; IDs are 1–128 ASCII `[A-Za-z0-9._-]` and
+keys are 65-byte uncompressed points (hex starts `04`). Each record selects its
+verifier using signed CBOR key 10, allowing K1/K2 records in the same chain and
+rejecting unknown IDs. The legacy bare 130-hex value is still accepted with its
+previous single-key, single-keyId-per-chain semantics. This is a public trust
 anchor; neither host nor monitor should have PutParameter permission. Never obtain
 it from an unauthenticated parent response. The monitor reads it at cold start;
-recycle execution environments after an approved update. A single tenant/key is
-configured per deployment. Key rotation needs retention/verification planning for
-historical chains: do not simply replace the parameter while old chains remain.
+recycle execution environments after an approved update. A single tenant is
+configured per deployment (up to four ledger key IDs). During rotation retain
+old key entries while any historical chain references them, even after blob rewrap.
+Do not simply replace the parameter while old chains remain.
 This implementation validates signatures against that pinned key; it does not
 perform attestation fetching, PCR allowlisting per record, or enrollment freshness
 verification. Those are separate trust-provisioning/authority obligations.

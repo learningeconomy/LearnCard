@@ -224,6 +224,160 @@ impl Fixture {
     }
 }
 
+#[tokio::test]
+async fn carry_and_rewrap_refuse_same_process_truncation_after_spending_attempts() {
+    for rewrap in [false, true] {
+        for keep in [0, 1] {
+            let mut f = Fixture::new(true);
+            if rewrap {
+                f.envelope = f.previous_envelope("previous", 1.0, Some("ab".repeat(32)));
+                *f.authority.0.lock().unwrap() = Ok(CurrentEnrollment {
+                    epoch: 1,
+                    share_version: 1,
+                    blob_hash: blob_hash(&f.envelope).unwrap(),
+                });
+            }
+            let mut p = f.policy();
+            let hold = p
+                .create_hold(f.create("hold", ReleasePolicy::Pin))
+                .await
+                .unwrap();
+            for i in 0..3 {
+                assert_eq!(
+                    p.release(f.request(&hold, &format!("attempt{i}"), Some("cd")))
+                        .await,
+                    Err(ErrorCode::PinMismatch)
+                );
+            }
+            let records = f.records().await;
+            f.store
+                .inner
+                .replace(&f.enrollment().chain_id(), records[..keep].to_vec())
+                .unwrap();
+            if rewrap {
+                assert_eq!(
+                    p.rewrap_escrow_blob(&f.envelope, "did:key:test", 1, 1)
+                        .await,
+                    Err(ErrorCode::Ledger)
+                );
+            } else {
+                let target = encrypt_escrow_blob(
+                    &EscrowBlobPlaintext {
+                        version: 1,
+                        recovery_share: "cd".repeat(33),
+                        did: "did:key:test".into(),
+                        share_version: 2.0,
+                        pin_verifier: None,
+                        pin_attempts_floor: None,
+                    },
+                    &f.keys.public_key,
+                    "test",
+                )
+                .unwrap();
+                assert_eq!(
+                    p.carry_pin_verifier(&f.envelope, &target, "did:key:test", 1, 2, 1)
+                        .await,
+                    Err(ErrorCode::Ledger)
+                );
+            }
+        }
+    }
+}
+
+#[tokio::test]
+async fn rotation_verifies_old_records_and_signs_new_records_with_current_key() {
+    let f = Fixture::new(true);
+    let mut old = f.policy();
+    let old_public = old.ledger_public_key();
+    let hold = old
+        .create_hold(f.create("rotating", ReleasePolicy::Pin))
+        .await
+        .unwrap();
+    assert_eq!(
+        old.release(f.request(&hold, "old-attempt", Some("cd")))
+            .await,
+        Err(ErrorCode::PinMismatch)
+    );
+    drop(old);
+    let current = generate_escrow_key_pair().unwrap();
+    let target = encrypt_escrow_blob(
+        &EscrowBlobPlaintext {
+            version: 1,
+            recovery_share: "cd".repeat(33),
+            did: "did:key:test".into(),
+            share_version: 2.0,
+            pin_verifier: None,
+            pin_attempts_floor: None,
+        },
+        &current.public_key,
+        "K2",
+    )
+    .unwrap();
+    let previous = EscrowKeyPair {
+        public_key: f.keys.public_key.clone(),
+        private_key: f.keys.private_key.clone(),
+    };
+    let mut rotated = Policy::new(
+        current,
+        "K2".into(),
+        vec![("test".into(), previous)],
+        "tenant".into(),
+        [0; 32],
+        &f.store,
+        &f.clock,
+        &f.authority,
+    )
+    .unwrap();
+    let carried = rotated
+        .carry_pin_verifier(&f.envelope, &target, "did:key:test", 1, 2, 1)
+        .await
+        .unwrap();
+    assert_eq!(
+        rotated.decrypt(&carried).unwrap().pin_attempts_floor,
+        Some(1)
+    );
+    let rewrapped = rotated
+        .rewrap_escrow_blob(&f.envelope, "did:key:test", 1, 1)
+        .await
+        .unwrap();
+    assert_eq!(
+        rotated.decrypt(&rewrapped).unwrap().pin_attempts_floor,
+        Some(1)
+    );
+    let released = rotated
+        .release(f.request(&hold, "new-attempt", Some(&"ab".repeat(32))))
+        .await
+        .unwrap();
+    f.assert_release(&released, "rotating");
+    let records = f.records().await;
+    assert!(records.iter().any(|r| r.key_id == "test"));
+    assert_eq!(records.last().unwrap().key_id, "K2");
+    let mut verifiers = std::collections::BTreeMap::from([
+        ("test".into(), old_public),
+        ("K2".into(), rotated.ledger_public_key()),
+    ]);
+    assert!(Ledger::verify_chain_with_keys(&records, &f.enrollment(), &verifiers).is_ok());
+    verifiers.remove("test");
+    assert!(Ledger::verify_chain_with_keys(&records, &f.enrollment(), &verifiers).is_err());
+    // Both floor paths also authenticate a mixed-key chain after new appends.
+    let carried = rotated
+        .carry_pin_verifier(&f.envelope, &target, "did:key:test", 1, 2, 1)
+        .await
+        .unwrap();
+    assert_eq!(
+        rotated.decrypt(&carried).unwrap().pin_attempts_floor,
+        Some(2)
+    );
+    let rewrapped = rotated
+        .rewrap_escrow_blob(&f.envelope, "did:key:test", 1, 1)
+        .await
+        .unwrap();
+    assert_eq!(
+        rotated.decrypt(&rewrapped).unwrap().pin_attempts_floor,
+        Some(2)
+    );
+}
+
 // softwareEnclave.test.ts:16 — software attestation's unsigned JSON is deliberately
 // not ported as Nitro evidence. P1.3 tests attestation; here verify the derived key.
 #[tokio::test]
@@ -297,7 +451,7 @@ async fn derives_the_attestation_key_verifies_enrollment_and_enforces_release_po
 #[tokio::test]
 async fn carry_pin_verifier_rejects_every_invalid_binding() {
     let f = Fixture::new(false);
-    let p = f.policy();
+    let mut p = f.policy();
     let pin_verifier = "ab".repeat(32);
     for scenario in [
         "source did",
@@ -548,7 +702,7 @@ async fn carry_accumulates_real_source_attempts_and_new_epoch_gets_only_the_rema
 #[tokio::test]
 async fn carry_never_lowers_a_floor_when_the_source_chain_is_empty() {
     let f = Fixture::new(false);
-    let p = f.policy();
+    let mut p = f.policy();
     let source = encrypt_escrow_blob(
         &EscrowBlobPlaintext {
             version: 1,
@@ -942,7 +1096,7 @@ async fn rewrap_escrow_blob_refuses_current_unknown_wrong_did_and_wrong_version(
     let source = f.previous_envelope("previous-3", 1.0, None);
     let mut unknown = f.envelope.clone();
     unknown.key_id = "retired-and-removed".into();
-    let p = f.policy();
+    let mut p = f.policy();
     assert_eq!(
         p.rewrap_escrow_blob(&f.envelope, "did:key:test", 1, 1)
             .await,

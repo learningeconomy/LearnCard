@@ -58,7 +58,11 @@ async fn fake_rejects_context_malformed_attestation_wrong_key_and_pcr() {
     let kms = FakeKmsClient::new(recipient.public_key_der().unwrap(), Some(vec![[1; 48]])).unwrap();
     let nsm = FakeNsm::new(123, [[1; 48]; 3]).unwrap();
     let good = attest(&nsm, recipient.public_key_der().unwrap());
-    let sealed = kms.encrypt(b"secret", &context()).await.unwrap();
+    let sealed = kms
+        .generate_data_key_for_recipient(&context(), &good)
+        .await
+        .unwrap()
+        .ciphertext_blob;
     let mut wrong = context();
     wrong.insert("keyId".into(), "other".into());
     assert!(kms
@@ -66,7 +70,10 @@ async fn fake_rejects_context_malformed_attestation_wrong_key_and_pcr() {
         .await
         .is_err());
     wrong.insert("purpose".into(), "other".into());
-    assert!(kms.encrypt(b"secret", &wrong).await.is_err());
+    assert!(kms
+        .generate_data_key_for_recipient(&wrong, &good)
+        .await
+        .is_err());
     for document in [
         vec![1, 2, 3],
         attest(&nsm, vec![1, 2, 3]),
@@ -80,6 +87,67 @@ async fn fake_rejects_context_malformed_attestation_wrong_key_and_pcr() {
             .await
             .is_err());
     }
+}
+
+#[test]
+fn seed_length_and_key_id_are_bound() {
+    for len in [0, 31, 33, 138] {
+        assert!(derive_escrow_key(&vec![7; len], "test").is_err());
+    }
+    let first = derive_escrow_key(&[7; 32], "first").unwrap();
+    let second = derive_escrow_key(&[7; 32], "second").unwrap();
+    assert_ne!(first.public_key, second.public_key);
+}
+
+#[tokio::test]
+async fn boot_rejects_wrong_seed_lengths_on_generate_and_decrypt() {
+    struct BadSeed(Vec<u8>);
+    impl KmsClient for BadSeed {
+        fn decrypt_for_recipient<'a>(
+            &'a self,
+            _: &'a [u8],
+            _: &'a BTreeMap<String, String>,
+            _: &'a [u8],
+        ) -> KmsFuture<'a> {
+            Box::pin(async { Ok(self.0.clone()) })
+        }
+        fn generate_data_key_for_recipient<'a>(
+            &'a self,
+            _: &'a BTreeMap<String, String>,
+            _: &'a [u8],
+        ) -> GenerateFuture<'a> {
+            Box::pin(async {
+                Ok(GeneratedDataKey {
+                    ciphertext_for_recipient: self.0.clone(),
+                    ciphertext_blob: vec![1],
+                })
+            })
+        }
+    }
+    let recipient = recipient();
+    let nsm = FakeNsm::new(123, [[1; 48]; 3]).unwrap();
+    for len in [0, 31, 33, 138] {
+        let kms = BadSeed(fake::wrap(&vec![7; len], &recipient.public_key_der().unwrap()).unwrap());
+        for sealed in [None, Some(vec![1])] {
+            assert!(matches!(
+                unseal_or_generate_escrow_key(&kms, &nsm, recipient, sealed, "test").await,
+                Err(KmsError::UnexpectedResponse)
+            ));
+        }
+    }
+}
+
+#[tokio::test]
+async fn host_minted_ciphertext_is_refused_at_boot() {
+    let recipient = recipient();
+    let kms = FakeKmsClient::new(recipient.public_key_der().unwrap(), None).unwrap();
+    let nsm = FakeNsm::new(123, [[1; 48]; 3]).unwrap();
+    // A parent-controlled byte string has no attested GenerateDataKey provenance.
+    assert!(
+        unseal_or_generate_escrow_key(&kms, &nsm, recipient, Some(vec![7; 60]), "test")
+            .await
+            .is_err()
+    );
 }
 
 fn mutate(cms: &[u8], edit: impl FnOnce(&mut EnvelopedData)) -> Vec<u8> {

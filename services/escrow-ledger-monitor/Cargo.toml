@@ -8,6 +8,13 @@ publish = false
 [workspace]
 resolver = "3"
 
+# Explicit test/emulation features; production uses the verifier-only dependency.
+[features]
+fake-ledger = ["escrow-enclave/fake-ledger"]
+fake-time = ["escrow-enclave/fake-time"]
+fake-kms = ["escrow-enclave/fake-kms"]
+fake-nsm = ["escrow-enclave/fake-nsm"]
+
 [dependencies]
 escrow-enclave = { path = "../escrow-enclave-app", default-features = false }
 lambda_runtime = "=0.14.4"

@@ -143,7 +143,12 @@ impl<'a> Policy<'a> {
                 return Err(ErrorCode::Policy);
             }
         }
-        let ledger = Ledger::new(&keys, key_id.clone(), measurement).map_err(ledger_error)?;
+        let mut ledger = Ledger::new(&keys, key_id.clone(), measurement).map_err(ledger_error)?;
+        for (id, previous) in &previous_keys {
+            ledger
+                .add_previous_key(id.clone(), previous)
+                .map_err(ledger_error)?;
+        }
         Ok(Self {
             keys,
             key_id,
@@ -245,7 +250,7 @@ impl<'a> Policy<'a> {
     /// Decrypted plaintexts zeroize on drop; `source.pin_verifier` is moved
     /// (not cloned), so it is never duplicated in memory.
     pub async fn carry_pin_verifier(
-        &self,
+        &mut self,
         source_envelope: &EscrowEnvelope,
         target_envelope: &EscrowEnvelope,
         expected_did: &str,
@@ -291,7 +296,7 @@ impl<'a> Policy<'a> {
     /// exists but fails signature/link/binding verification is a distinct
     /// `Ledger`/`Unavailable` error, never silently treated as empty.
     async fn carried_attempts_floor(
-        &self,
+        &mut self,
         did: &str,
         epoch: u64,
         blob_hash: Hash,
@@ -303,7 +308,9 @@ impl<'a> Policy<'a> {
             .get_chain(&enrollment.chain_id())
             .await
             .map_err(|_| ErrorCode::Unavailable)?;
-        let state = Ledger::verify_chain(&records, &enrollment, &self.ledger.public_key())
+        let state = self
+            .ledger
+            .observe(&records, &enrollment)
             .map_err(ledger_error)?;
         let used = floor
             .unwrap_or(0)
@@ -334,7 +341,7 @@ impl<'a> Policy<'a> {
     /// `carried_attempts_floor`. No plaintext ever leaves in an error or
     /// log; the decrypted value zeroizes on drop.
     pub async fn rewrap_escrow_blob(
-        &self,
+        &mut self,
         envelope: &EscrowEnvelope,
         expected_did: &str,
         expected_share_version: u32,

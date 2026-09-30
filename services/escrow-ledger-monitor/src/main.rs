@@ -1,7 +1,6 @@
 use aws_lambda_events::event::dynamodb::Event;
-use escrow_ledger_monitor::{Error, Metric, Monitor, aws::Aws};
+use escrow_ledger_monitor::{Error, Metric, Monitor, TrustedKeys, aws::Aws};
 use lambda_runtime::{LambdaEvent, service_fn};
-use p256::ecdsa::VerifyingKey;
 use serde_dynamo::AttributeValue;
 use serde_json::Value;
 
@@ -61,11 +60,7 @@ async fn main() -> Result<(), lambda_runtime::Error> {
         .parameter
         .and_then(|p| p.value)
         .ok_or(Error::Configuration)?;
-    if value.len() != 130 {
-        return Err(Error::Configuration.into());
-    }
-    let key = VerifyingKey::from_sec1_bytes(&hex::decode(value).map_err(|_| Error::Configuration)?)
-        .map_err(|_| Error::Configuration)?;
+    let key = TrustedKeys::parse(&value)?;
     let tenant = env("TENANT")?;
     if tenant.len() > 128
         || !tenant

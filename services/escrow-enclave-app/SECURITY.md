@@ -36,7 +36,7 @@ flowchart TD
 
 ## Assets
 
-1. **Escrow Private Key:** An ECDSA P-256 private key generated inside the enclave at first boot. It never leaves the enclave in plaintext. It is sealed via AWS KMS and stored by the parent.
+1. **Escrow Private Key:** A P-256 key deterministically derived inside the enclave from an attested KMS-generated 32-byte seed. The parent stores only the seed's KMS CiphertextBlob; neither seed nor derived private key leaves the enclave in plaintext.
 2. **User Recovery Pieces:** Encrypted blobs submitted by clients. The enclave decrypts these only when the release policy is satisfied.
 3. **PIN Budgets:** The remaining number of PIN attempts (max 10) for a given enrollment.
 4. **Ledger State:** The history of holds, cancellations, and releases, ensuring a hold cannot be replayed or a PIN budget bypassed.
@@ -54,7 +54,7 @@ flowchart TD
 - **D1 (Instance Size):** The enclave requires an `m6i.xlarge` instance. AWS requires at least 2 vCPUs for the parent host, so a 2-vCPU enclave necessitates a 4-vCPU parent instance.
 - **D2 (Time Sources):** The enclave clock is host-influenced and untrusted. Time evidence must come from ≥2 independent signed sources (Roughtime) checked inside the enclave. Non-overlapping intervals fail closed.
 - **D3 (Rollback Detection):** The anti-replay ledger provides rollback _detection_, not prevention. A fresh-booted enclave cannot know the true head (Trust On First Use). Strict prevention requires quorum replicas, which is deferred.
-- **D4 (KMS Recipient Flow):** The enclave generates a boot-time RSA-2048 keypair for the KMS recipient. KMS decrypts the sealed escrow key using this recipient key, returning CMS EnvelopedData which the enclave unwraps.
+- **D4 (KMS Recipient Flow):** The enclave generates a boot-time RSA-2048 recipient keypair. First boot calls `GenerateDataKey(KeySpec=AES_256, Recipient=NSM attestation)` with `{purpose:escrow-enclave-key,keyId}` context; subsequent boots call `Decrypt` with the same context and Recipient. Both reject any Plaintext field (including empty), require nonempty recipient ciphertext, and accept exactly 32 seed bytes after CMS opening. Generation additionally requires a nonempty CiphertextBlob for persistence. Domain-separated HKDF-SHA256 binds keyId and rejection-samples the escrow P-256 scalar; the seed/scalar buffers zeroize. No `Encrypt` operation exists in the enclave. No sealed-format migration is supported: Nitro never ran in production and the prior `nitro,kms` build did not compile. Deploy with a fresh restricted CMK, or prove it has never allowed attacker-known ciphertext generation: newly denying Encrypt does not invalidate pre-existing host-known 32-byte-seed ciphertexts.
 - **D7 (KMS Key Policy):** The KMS key policy uses one statement per released measurement tuple. It requires an exact match on PCR0, PCR1, and PCR2 simultaneously to prevent cross-combination of measurements.
 - **D10 (Key Admin Residual Risk):** An MFA-authenticated key admin can theoretically rewrite the KMS key policy to remove attestation gates. This residual risk is mitigated by mandatory two-person PR review and CloudTrail alarms, rather than an immutable key policy.
 - **D11 (RSA/Marvin Rationale):** The `rsa` crate has a known timing side-channel (Marvin). This is accepted because the CMS blob only arrives inside the enclave's own TLS session to KMS, meaning the host cannot submit chosen ciphertexts.
@@ -85,12 +85,23 @@ We are scrupulously honest about the limits of this system. The following table 
 
 The AWS KMS Customer Master Key (CMK) policy (`infra/escrow-enclave/kms.tf`) is the primary security boundary enforcing attestation.
 
-- **Per-Tuple PCR Statements:** `kms:Decrypt` is granted via individual statements for each approved measurement tuple (PCR0, PCR1, PCR2). Conditions use `StringEqualsIgnoreCase` and require all three PCRs to match simultaneously.
+- **Per-Tuple PCR Statements:** `kms:GenerateDataKey` and `kms:Decrypt` are granted via individual statements for each approved measurement tuple (PCR0, PCR1, PCR2). Conditions use `StringEqualsIgnoreCase` and require all three PCRs to match simultaneously.
+- **Key-Substitution Denies:** Deny `kms:Encrypt`, `kms:ReEncrypt*`, `kms:GenerateDataKeyWithoutPlaintext`, and `kms:GenerateDataKeyPair*` for all principals. Attestation-only Decrypt is insufficient if the host can mint ciphertext for known plaintext. These denies and fresh-CMK provenance are required deployment contracts, not a property the Rust CMS parser can establish.
 - **Grant Ban:** `kms:CreateGrant` is explicitly denied for all principals to prevent bypassing the policy via grants.
-- **Debug-PCR Deny:** `kms:Decrypt` is explicitly denied if the attestation document contains the all-zero debug-mode PCR values.
+- **Missing/Debug Attestation Deny:** GenerateDataKey and Decrypt must be explicitly denied without recipient attestation or with any all-zero debug PCR.
 - **MFA on Policy Changes:** `kms:PutKeyPolicy` is denied unless the caller's session is MFA-authenticated (`aws:MultiFactorAuthPresent`).
 
 ## Measurement Rotation Procedure (N / N+1)
+
+`ESCROW_TENANT`, `ESCROW_KEY_ID`, `ESCROW_KMS_REGION`, `ESCROW_KMS_KEY_ARN`,
+`ESCROW_PREVIOUS_KEY_IDS`, and `ESCROW_ALLOW_FIRST_BOOT` are Docker ARG→ENV measured
+configuration. `build-eif.sh` validates required flags/env and records them under
+`measurements.json.config`; CI supplies repository variables. The EIF does not
+inherit the parent's environment. Changes to any value require rebuilding and
+reviewing new PCRs, including the provisioning→steady-state first-boot flag change.
+Linux startup writes the validated regional KMS→127.0.0.1 mapping to `/etc/hosts`
+before KMS access and fails closed on error. The final image contains a non-root
+owned writable hosts file; real EIF permissions/NSM/vsock access remain staging checks.
 
 When the enclave code changes, the EIF measurements (PCRs) change. To rotate without downtime (`infra/escrow-enclave/README.md`):
 
@@ -112,6 +123,17 @@ To deliberately rotate the escrow key (e.g., periodic rotation or suspected comp
 6. **Monitor Progress:** Watch migration progress using `bun scripts/escrow-blob-mode-report.ts --current-key-id=<new> --previous-key-ids=<old>`.
 7. **Retire Previous Key:** Once the report shows 0 copies under the old key (or after deciding the remainder falls back to other recovery methods), remove it from the host configuration.
 
+Enclave-side steps above require rebuilding the measured image, not only changing
+the host environment. Keep previous keys while retained active histories reference
+their ledger signatures, even if blob migration is complete. Policy derives a
+keyId→ledger-verifier map from current plus up to three previous unsealed keys;
+each record selects its verifier with signed CBOR key 10, unknown IDs fail, and new
+appends always use the current signer. Before rotation, publish the monitor SSM
+String parameter as `{"<keyId>":"<130-character lowercase hex SEC1 P-256 key>",...}`
+(1–4 entries), retaining old attestation-validated ledger public keys. A bare
+130-hex key remains accepted with legacy single-key/single-keyId semantics; it
+cannot verify mixed-key chains. Recycle monitor execution environments on updates.
+
 ## Incident Response Pointers
 
 - **Monitor Alarms:** The independent ledger monitor (`services/escrow-ledger-monitor/`) runs every 15 minutes. It alarms on DynamoDB/S3 divergence, invalid signatures, or unexpected `MODIFY`/`REMOVE` events on the append-only ledger.
@@ -120,11 +142,21 @@ To deliberately rotate the escrow key (e.g., periodic rotation or suspected comp
 ## Open Items / Launch Blockers
 
 - **BLOCKER-TIME:** The system requires ≥2 independent Roughtime sources. Currently, only Cloudflare is viable (Google's sandbox is unreachable/unsupported). A second production-grade source must be identified and pinned before launch. ([Design Decisions](#design-decisions) D2)
-- **BLOCKER-ENROLLMENT:** The production enclave has no authenticated `EnrollmentSource`. `src/server/parent/nitro.rs` wires in `UnavailableEnrollment`, so every mutating operation (create hold, release, cancel) fails closed with `Unavailable` in a Nitro build. `EnrollmentSource::current(tenant, did)` must independently authenticate the current `{epoch, shareVersion, blobHash}` and serialize rotation with policy operations; a host-database lookup or replayable signed snapshot is not acceptable (anyone can encrypt to the enclave's public key, so a blob proves neither ownership nor currentness). A protocol design and separate security review are required. ([Design Decisions](#design-decisions) D14). **Exception:** `carryPinVerifier` (P8.1/P8.3, `Policy::carry_pin_verifier`) is a decrypt/validate/reseal that calls neither `EnrollmentSource` nor `TimeSource` — so it is not gated by this blocker and works in a Nitro build today. P8.3 added a READ-ONLY ledger chain lookup (verifying the source epoch's chain with the same checks `release_pin` uses, to carry the spent PIN attempt budget forward — see RESOLVED-PIN-EPOCH-CARRY below); it still never appends/mutates a chain, so this exception still holds.
-- **RESOLVED-PIN-EPOCH-CARRY (P8.3):** the enclave ledger's PIN attempt budget is keyed by `(tenant, enrollment, epoch)` (D13), and every successful blob write bumps `escrowBlob.enrollmentEpoch` — including a PIN carry — so a naive carry handed the new epoch's chain a fresh ten-attempt budget for an unchanged PIN. Fixed by adding an optional `pinAttemptsFloor` (0..=10) to the escrow blob plaintext (`EscrowBlobPlaintext`, absent means 0, stripped before any release plaintext reaches the client exactly like `pinVerifier`). `carryPinVerifier`'s wire request gained `sourceEnrollmentEpoch` (threaded from the old blob's `enrollmentEpoch`, which lca-api already has at the enroll call site) so the enclave can locate the source epoch's ledger chain; it verifies that chain with the same signature/sequence/binding checks `release_pin` uses (`Ledger::verify_chain`, read-only — a failure is a fail-closed `Ledger`/`Unavailable` error, never silently treated as empty), and writes `pinAttemptsFloor = source.pinAttemptsFloor.unwrap_or(0) + source_chain.attempts_used` (capped at ten) into the re-sealed target. `release_pin` then refuses once `chain.attempts_used + floor >= 10`, so a carried PIN gets only `10 - floor` further local reservations — a carry of a carry accumulates (never resets), and a carry never lowers a floor the source blob already had.
+- **BLOCKER-ENROLLMENT:** Production uses `UnavailableEnrollment`; create hold, release and cancel fail closed until a fresh, independently authenticated `{epoch,shareVersion,blobHash}` authority exists. A host-database response or replayable signed snapshot is insufficient. Carry/rewrap do not call EnrollmentSource or TimeSource, so are not gated by this policy blocker (the separate startup time gate still applies). Their source-chain lookup uses the **same stateful ledger observation** as release: per-keyId signature, sequence/binding/state validation and non-evicting high-water checks. They never append a record but do update enclave memory. Caller-supplied source epoch remains a separate limitation below.
+- **RESOLVED-PIN-EPOCH-CARRY (P8.3/H1):** `pinAttemptsFloor` is an optional 0..=10 field in the encrypted blob (absent means zero; stripped before client release). `sourceEnrollmentEpoch` locates the source chain. `carried_attempts_floor` calls `self.ledger.observe`, rejects invalid or remembered stale history with `Ledger` (storage errors are `Unavailable`), and carries `min(10, source.pinAttemptsFloor.unwrap_or(0) + source_chain.attempts_used)`. Release refuses once floor plus local reservations reaches ten. This accumulates carry-of-carry budgets and never lowers an existing encrypted floor. The storage read is read-only; the high-water observation is intentionally stateful.
     - **Deliberate deviation from a literal `max(chain.attempts_used, floor)`:** the ledger's own `ChainState.attempts_used` stays a purely LOCAL, per-epoch-chain counter (`ledger.rs`/`Enrollment` are otherwise unchanged) — the floor is combined with it only at the `policy.rs` call sites (`release_pin`'s budget/lock-timing check, `carry_pin_verifier`'s floor computation), never baked into the ledger's own replay/validation logic. This was a deliberate choice, not an oversight: seeding `ChainState`'s replay from an externally-supplied floor would require the independent **ledger monitor** (`services/escrow-ledger-monitor/`) — which has no blob-decryption capability and therefore no way to learn the true floor — to also know it, or it would false-positive-alarm (`LedgerIntegrityFailure`) on every post-carry chain. Keeping the ledger's own chain encoding and validation untouched preserves the monitor's independent verification unmodified (confirmed: `cargo test` for `escrow-ledger-monitor` is unaffected by this change) and needed no change to the canonical CBOR record schema (golden bytes test `ledger::tests::golden_cbor_and_strict_bounded_decode` is unmodified and still passes). One side effect: the enclave-signed `PinAttemptReserved`/`PinLocked` ledger events for a post-carry epoch are numbered LOCALLY (1, 2, 3, …) rather than showing the true cumulative attempt number, and the explicit `PinLocked` audit record is only written when the ledger's own local count reaches ten — with a nonzero floor the account can lock with a lower local count (`floor + local >= 10`), in which case no `PinLocked` marker is written (the lock is still fully enforced by the `>= 10` check on the next attempt; `PinLocked` is documented as an audit convenience, not the enforcement boundary, both before and after this change).
     - **Software mode (`softwareEnclave.ts`):** accepts `sourceEnrollmentEpoch` but ignores it. Software mode has no enclave ledger to reset in the first place — its PIN attempt budget is the host's `escrowPin.failedAttempts`/`verifiedFailedAttempts` counters in MongoDB, which `routes/escrow.ts`'s enroll route already copies forward unchanged on every carry, independent of `enrollmentEpoch`. Software mode therefore never had this bug; `pinAttemptsFloor` is a remote/nitro-mode-only concept, not implemented for software-mode enforcement (documented in `softwareEnclave.ts`).
-    - **Rollback caveat (unchanged from D3):** the host chooses which source epoch's chain to present to `carryPinVerifier`. Presenting an older/emptier chain than the truth yields a lower floor than reality — the same rollback exposure the ledger already has everywhere else (detection-only via the independent monitor, never a strict prevention guarantee; see D3/D13).
+    - **Same-process rollback fix (H1):** carry and rewrap both call the existing Policy ledger's stateful `observe`, not stateless `verify_chain`. This retains high-water marks and rejects empty/truncated chains and forks after the process has observed or signed a newer head. The source chain is read-only in storage, but observation mutates enclave memory. The same-instance regression spends three attempts and refuses both empty and truncated views on both paths.
+    - **Residual rollback/source-epoch caveat:** a fresh boot or parallel enclave can still accept stale valid history (D3). The host also supplies `sourceEnrollmentEpoch`; a different, previously unseen epoch selects a different chain ID and can evade remembered state for the real epoch. Carry/rewrap append no event and the monitor has no authenticated source-epoch binding, so this particular substitution is **not detected by the current monitor**. An independently authenticated epoch/blob/version binding remains a launch requirement; do not claim a globally replay-proof ten-attempt budget.
+
+**Independent persistence checks (M9):** INSERT requires a head captured before
+the chain read (valid prefix, at least the inserted sequence), and exact signed S3
+bytes at `audit/<tenant>/<chainId>/<seq>-<record_hash_hex>.cbor`. Missing audits
+receive at most three reads with 100 ms gaps; different bytes alarm immediately.
+Sweeps paginate both heads and records (25 items/page, at most 10,000 pages per
+table), detect record partitions lacking heads, and emit SweepCompleted only after
+both scans finish. Operational errors/cap exhaustion fail the invocation, not a
+fabricated empty result. Fully suppressed evidence remains outside detection.
 
 ## How to Verify
 

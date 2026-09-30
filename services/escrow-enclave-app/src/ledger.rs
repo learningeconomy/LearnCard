@@ -191,6 +191,7 @@ pub enum PinOutcome {
 
 pub struct Ledger {
     signing_key: SigningKey,
+    verifiers: BTreeMap<String, VerifyingKey>,
     payload_key: Zeroizing<[u8; 32]>,
     key_id: String,
     measurement: Hash,
@@ -229,6 +230,7 @@ impl Ledger {
                 .map_err(|_| LedgerError::Signature)?;
             if let Ok(signing_key) = SigningKey::from_slice(candidate.as_ref()) {
                 return Ok(Self {
+                    verifiers: BTreeMap::from([(key_id.clone(), *signing_key.verifying_key())]),
                     signing_key,
                     payload_key,
                     key_id,
@@ -242,6 +244,20 @@ impl Ledger {
 
     pub fn public_key(&self) -> VerifyingKey {
         *self.signing_key.verifying_key()
+    }
+
+    /// Previous keys verify historical records only; new records use the current key.
+    pub fn add_previous_key(
+        &mut self,
+        key_id: String,
+        keys: &EscrowKeyPair,
+    ) -> Result<(), LedgerError> {
+        if self.verifiers.len() >= 4 || self.verifiers.contains_key(&key_id) {
+            return Err(LedgerError::Encoding);
+        }
+        let previous = Self::new(keys, key_id.clone(), self.measurement)?;
+        self.verifiers.insert(key_id, previous.public_key());
+        Ok(())
     }
 
     /// Secret-keyed HKDF commitment prevents the public ledger becoming a PIN
@@ -264,6 +280,19 @@ impl Ledger {
         expected: &Enrollment,
         public_key: &VerifyingKey,
     ) -> Result<ChainState, LedgerError> {
+        // Legacy single-key monitor contract: a chain has exactly one keyId.
+        let keys = records
+            .first()
+            .map(|r| BTreeMap::from([(r.key_id.clone(), *public_key)]))
+            .unwrap_or_default();
+        Self::verify_chain_with_keys(records, expected, &keys)
+    }
+
+    pub fn verify_chain_with_keys(
+        records: &[LedgerRecord],
+        expected: &Enrollment,
+        keys: &BTreeMap<String, VerifyingKey>,
+    ) -> Result<ChainState, LedgerError> {
         codec::identifier(&expected.tenant)?;
         if records.len() > MAX_CHAIN_RECORDS {
             return Err(LedgerError::Capacity);
@@ -278,7 +307,8 @@ impl Ledger {
             if signature.normalize_s().is_some() {
                 return Err(LedgerError::Signature);
             }
-            public_key
+            keys.get(&record.key_id)
+                .ok_or(LedgerError::Signature)?
                 .verify_prehash(&hash, &signature)
                 .map_err(|_| LedgerError::Signature)?;
             if record.tenant != expected.tenant
@@ -288,9 +318,6 @@ impl Ledger {
                 || record.seq != seq as u64
                 || record.prev_hash != previous
                 || record.time_evidence.interval.lo_ms < floor
-                || records
-                    .first()
-                    .is_some_and(|first| first.key_id != record.key_id)
             {
                 return Err(LedgerError::Chain);
             }
@@ -309,7 +336,7 @@ impl Ledger {
         records: &[LedgerRecord],
         expected: &Enrollment,
     ) -> Result<ChainState, LedgerError> {
-        let state = Self::verify_chain(records, expected, &self.public_key())?;
+        let state = Self::verify_chain_with_keys(records, expected, &self.verifiers)?;
         let id = expected.chain_id();
         if let Some((seq, hash)) = self.high_water.get(&id) {
             if records

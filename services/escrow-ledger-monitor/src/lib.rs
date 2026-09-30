@@ -1,6 +1,7 @@
 //! Independent, read-only detection. No record identifiers or SDK errors enter telemetry.
 use escrow_enclave::ledger::{Enrollment, Event, Ledger, LedgerRecord, MAX_CHAIN_RECORDS};
 use p256::ecdsa::VerifyingKey;
+use std::collections::BTreeMap;
 
 pub mod aws;
 
@@ -59,6 +60,7 @@ impl From<Event> for Metric {
     }
 }
 
+#[derive(Clone)]
 pub struct Head {
     pub chain: String,
     pub seq: u64,
@@ -67,6 +69,7 @@ pub struct Head {
 
 #[async_trait::async_trait]
 pub trait Backend: Send + Sync {
+    async fn head(&self, chain: &str) -> Result<Option<Head>>;
     async fn chain(&self, chain: &str) -> Result<Vec<Vec<u8>>>;
     async fn audit(&self, key: &str) -> Result<Option<Vec<u8>>>;
     async fn metric(&self, metric: Metric) -> Result<()>;
@@ -76,7 +79,55 @@ pub trait Backend: Send + Sync {
 pub struct Monitor<B> {
     pub backend: B,
     pub tenant: String,
-    pub key: VerifyingKey,
+    pub key: TrustedKeys,
+}
+
+pub enum TrustedKeys {
+    Legacy(VerifyingKey),
+    ById(BTreeMap<String, VerifyingKey>),
+}
+
+impl TrustedKeys {
+    /// Bounded security-owned SSM trust anchor; never loaded from the parent.
+    pub fn parse(value: &str) -> Result<Self> {
+        fn key(value: &str, lowercase: bool) -> Result<VerifyingKey> {
+            if value.len() != 130
+                || !value.starts_with("04")
+                || (lowercase
+                    && !value
+                        .bytes()
+                        .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)))
+            {
+                return Err(Error::Configuration);
+            }
+            VerifyingKey::from_sec1_bytes(&hex::decode(value).map_err(|_| Error::Configuration)?)
+                .map_err(|_| Error::Configuration)
+        }
+        if value.len() == 130 && !value.starts_with('{') {
+            return Ok(Self::Legacy(key(value, false)?));
+        }
+        if value.len() > 2048 {
+            return Err(Error::Configuration);
+        }
+        let values: BTreeMap<String, String> =
+            serde_json::from_str(value).map_err(|_| Error::Configuration)?;
+        if values.is_empty() || values.len() > 4 {
+            return Err(Error::Configuration);
+        }
+        let mut keys = BTreeMap::new();
+        for (id, value) in values {
+            if id.is_empty()
+                || id.len() > 128
+                || !id
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b"._-".contains(&b))
+            {
+                return Err(Error::Configuration);
+            }
+            keys.insert(id, key(&value, true)?);
+        }
+        Ok(Self::ById(keys))
+    }
 }
 
 pub fn chain_from_pk(pk: &str) -> Result<&str> {
@@ -118,7 +169,11 @@ impl<B: Backend> Monitor<B> {
         if first.tenant != self.tenant || enrollment.chain_id() != chain {
             return Err(Error::Integrity);
         }
-        Ledger::verify_chain(&records, &enrollment, &self.key).map_err(|_| Error::Integrity)?;
+        match &self.key {
+            TrustedKeys::Legacy(key) => Ledger::verify_chain(&records, &enrollment, key),
+            TrustedKeys::ById(keys) => Ledger::verify_chain_with_keys(&records, &enrollment, keys),
+        }
+        .map_err(|_| Error::Integrity)?;
         Ok(records)
     }
 
@@ -139,6 +194,10 @@ impl<B: Backend> Monitor<B> {
 
     async fn insert(&self, pk: &str, sk: &str, image: &[u8]) -> Result<()> {
         let chain = chain_from_pk(pk)?;
+        // Read the head first: a subsequent append may extend the chain, but
+        // this captured head must remain a valid prefix. The reverse order
+        // would falsely alarm when a valid head advances beyond our snapshot.
+        let head = self.backend.head(chain).await?.ok_or(Error::Integrity)?;
         let bytes = self.backend.chain(chain).await?;
         let records = self.verify(chain, &bytes)?;
         let incoming = LedgerRecord::decode(image).map_err(|_| Error::Integrity)?;
@@ -147,9 +206,55 @@ impl<B: Backend> Monitor<B> {
         {
             return Err(Error::Integrity);
         }
+        if head.chain != chain
+            || head.seq < incoming.seq
+            || records
+                .get(head.seq as usize)
+                .and_then(|r| r.record_hash().ok())
+                != Some(head.hash)
+        {
+            return Err(Error::Integrity);
+        }
+        if !self.audit_matches(chain, &incoming, image).await? {
+            return self.alarm(Metric::AuditMismatch).await;
+        }
         self.backend
             .metric(records[incoming.seq as usize].event.into())
             .await
+    }
+
+    async fn audit_matches(
+        &self,
+        chain: &str,
+        record: &LedgerRecord,
+        bytes: &[u8],
+    ) -> Result<bool> {
+        let hash = record.record_hash().map_err(|_| Error::Integrity)?;
+        let key = format!(
+            "audit/{}/{}/{}-{}.cbor",
+            self.tenant,
+            chain,
+            record.seq,
+            hex::encode(hash)
+        );
+        // DynamoDB commit precedes the S3 put. Retry absence only, never mismatched bytes.
+        for attempt in 0..3 {
+            if let Some(audit) = self.backend.audit(&key).await? {
+                return Ok(audit == bytes);
+            }
+            if attempt < 2 {
+                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+            }
+        }
+        Ok(false)
+    }
+
+    /// Called for every record partition encountered by the bounded paginated sweep.
+    pub async fn sweep_record_chain(&self, chain: &str) -> Result<()> {
+        match self.backend.head(chain).await? {
+            Some(head) => self.sweep_head(&head).await,
+            None => self.alarm(Metric::LedgerIntegrityFailure).await,
+        }
     }
 
     /// Snapshot head may lag concurrent appends: it must match a verified prefix.
@@ -171,15 +276,7 @@ impl<B: Backend> Monitor<B> {
             return Err(Error::Integrity);
         }
         for (record, bytes) in records.iter().zip(bytes.iter()) {
-            let hash = record.record_hash().map_err(|_| Error::Integrity)?;
-            let key = format!(
-                "audit/{}/{}/{}-{}.cbor",
-                self.tenant,
-                head.chain,
-                record.seq,
-                hex::encode(hash)
-            );
-            if self.backend.audit(&key).await?.as_ref() != Some(bytes) {
+            if !self.audit_matches(&head.chain, record, bytes).await? {
                 self.alarm(Metric::AuditMismatch).await?;
             }
         }

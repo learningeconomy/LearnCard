@@ -8,6 +8,13 @@ publish = false
 [workspace]
 resolver = "3"
 
+# Forward the shared verification matrix to the test-only enclave dependency.
+[features]
+fake-ledger = ["escrow-enclave/fake-ledger"]
+fake-time = ["escrow-enclave/fake-time"]
+fake-kms = ["escrow-enclave/fake-kms"]
+fake-nsm = ["escrow-enclave/fake-nsm"]
+
 [dependencies]
 async-trait = "0.1"
 aws-config = { version = "~1.8.18", default-features = false, features = ["rt-tokio", "default-https-client", "behavior-version-latest"] }

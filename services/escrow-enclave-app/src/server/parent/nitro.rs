@@ -85,10 +85,11 @@ async fn boot_and_serve(port: u32) -> io::Result<()> {
     }
     let tenant = configured("ESCROW_TENANT")?;
     let region = configured("ESCROW_KMS_REGION")?;
+    install_kms_hosts(&region)?;
     let arn = configured("ESCROW_KMS_KEY_ARN")?;
     let keys = timeout(Duration::from_secs(60), async {
-        let mut boot = boot(&mut connect().await?, &key_id).await?;
-        let sealed = match &boot.sealed {
+        let mut boot_material = boot(&mut connect().await?, &key_id).await?;
+        let sealed = match &boot_material.sealed {
             Some(blob) if blob.len() <= 24_000 => {
                 Some(STANDARD.decode(blob).map_err(|_| invalid())?)
             }
@@ -97,9 +98,9 @@ async fn boot_and_serve(port: u32) -> io::Result<()> {
         };
         let kms = AwsKmsClient::new(
             Credentials {
-                access_key_id: std::mem::take(&mut boot.access_key_id),
-                secret_access_key: std::mem::take(&mut boot.secret_access_key),
-                session_token: std::mem::take(&mut boot.session_token),
+                access_key_id: std::mem::take(&mut boot_material.access_key_id),
+                secret_access_key: std::mem::take(&mut boot_material.secret_access_key),
+                session_token: std::mem::take(&mut boot_material.session_token),
             },
             &region,
             arn,
@@ -171,4 +172,22 @@ async fn boot_and_serve(port: u32) -> io::Result<()> {
         String::new(),
     )
     .await
+}
+
+fn install_kms_hosts(region: &str) -> io::Result<()> {
+    if region.is_empty()
+        || region.len() > 64
+        || !region
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')
+    {
+        return Err(unavailable());
+    }
+    // Docker's build-time hosts file does not survive EIF construction.
+    // This process owns the enclave network namespace; no parent DNS is trusted.
+    std::fs::write(
+        "/etc/hosts",
+        format!("127.0.0.1 localhost kms.{region}.amazonaws.com\n"),
+    )
+    .map_err(|_| unavailable())
 }

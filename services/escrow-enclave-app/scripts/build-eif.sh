@@ -35,10 +35,22 @@ KANIKO_IMAGE="gcr.io/kaniko-project/executor@sha256:7cf94e02d5648080da34bec09de3
 
 OUT_DIR=""
 SOURCE_DATE_EPOCH=""
+ESCROW_TENANT="${ESCROW_TENANT:-}"
+ESCROW_KEY_ID="${ESCROW_KEY_ID:-}"
+ESCROW_KMS_REGION="${ESCROW_KMS_REGION:-}"
+ESCROW_KMS_KEY_ARN="${ESCROW_KMS_KEY_ARN:-}"
+ESCROW_PREVIOUS_KEY_IDS="${ESCROW_PREVIOUS_KEY_IDS:-}"
+ESCROW_ALLOW_FIRST_BOOT="${ESCROW_ALLOW_FIRST_BOOT:-false}"
 
 usage() {
     cat <<'EOF'
 Usage: build-eif.sh --out <dir> [--source-date-epoch <unix-seconds>]
+  --tenant <id> --key-id <id> --kms-region <region> --kms-key-arn <arn>
+  [--previous-key-ids <comma-separated-ids>] [--allow-first-boot true|false]
+
+The corresponding ESCROW_TENANT, ESCROW_KEY_ID, ESCROW_KMS_REGION,
+ESCROW_KMS_KEY_ARN, ESCROW_PREVIOUS_KEY_IDS and ESCROW_ALLOW_FIRST_BOOT
+environment variables may be used instead. These values are measured image config.
 
 Builds services/escrow-enclave-app's Dockerfile reproducibly with kaniko,
 loads the resulting image into the local Docker daemon, converts it to a
@@ -62,6 +74,12 @@ EOF
 
 while [ $# -gt 0 ]; do
     case "$1" in
+        --tenant) ESCROW_TENANT="${2:?missing tenant}"; shift 2 ;;
+        --key-id) ESCROW_KEY_ID="${2:?missing key ID}"; shift 2 ;;
+        --kms-region) ESCROW_KMS_REGION="${2:?missing region}"; shift 2 ;;
+        --kms-key-arn) ESCROW_KMS_KEY_ARN="${2:?missing key ARN}"; shift 2 ;;
+        --previous-key-ids) ESCROW_PREVIOUS_KEY_IDS="${2-}"; shift 2 ;;
+        --allow-first-boot) ESCROW_ALLOW_FIRST_BOOT="${2:?missing boolean}"; shift 2 ;;
         --out)
             OUT_DIR="$2"
             shift 2
@@ -81,6 +99,30 @@ while [ $# -gt 0 ]; do
             ;;
     esac
 done
+
+valid_id() { [[ "$1" =~ ^[A-Za-z0-9._-]{1,128}$ ]]; }
+if ! valid_id "$ESCROW_TENANT" || [ "${#ESCROW_TENANT}" -gt 112 ] ||
+   ! valid_id "$ESCROW_KEY_ID" ||
+   ! [[ "$ESCROW_KMS_REGION" =~ ^[a-z]{2}(-[a-z]+)+-[0-9]+$ ]] ||
+   [ "${#ESCROW_KMS_REGION}" -gt 64 ] ||
+   ! [[ "$ESCROW_KMS_KEY_ARN" =~ ^arn:aws:kms:${ESCROW_KMS_REGION}:[0-9]{12}:key/[A-Za-z0-9-]+$ ]] ||
+   ! [[ "$ESCROW_ALLOW_FIRST_BOOT" =~ ^(true|false)$ ]]; then
+    echo "error: invalid or missing measured enclave configuration" >&2
+    exit 1
+fi
+if [ -n "$ESCROW_PREVIOUS_KEY_IDS" ]; then
+    IFS=',' read -r -a previous <<< "$ESCROW_PREVIOUS_KEY_IDS"
+    if [ "${#previous[@]}" -gt 3 ] || [[ "$ESCROW_PREVIOUS_KEY_IDS" == *, ]]; then
+        echo "error: invalid previous key IDs" >&2; exit 1
+    fi
+    seen=",${ESCROW_KEY_ID},"
+    for id in "${previous[@]}"; do
+        if ! valid_id "$id" || [[ "$seen" == *",${id},"* ]]; then
+            echo "error: invalid or duplicate previous key ID" >&2; exit 1
+        fi
+        seen+="${id},"
+    done
+fi
 
 if [ -z "${OUT_DIR}" ]; then
     echo "error: --out <dir> is required" >&2
@@ -135,7 +177,13 @@ docker run --rm \
     --tar-path=/output/image.tar \
     --reproducible \
     --custom-platform=linux/amd64 \
-    --build-arg="SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH}"
+    --build-arg="SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH}" \
+    --build-arg="ESCROW_TENANT=${ESCROW_TENANT}" \
+    --build-arg="ESCROW_KEY_ID=${ESCROW_KEY_ID}" \
+    --build-arg="ESCROW_KMS_REGION=${ESCROW_KMS_REGION}" \
+    --build-arg="ESCROW_KMS_KEY_ARN=${ESCROW_KMS_KEY_ARN}" \
+    --build-arg="ESCROW_PREVIOUS_KEY_IDS=${ESCROW_PREVIOUS_KEY_IDS}" \
+    --build-arg="ESCROW_ALLOW_FIRST_BOOT=${ESCROW_ALLOW_FIRST_BOOT}"
 
 echo "==> Loading built image into the local Docker daemon" >&2
 docker load --input "${OUT_DIR}/image.tar"
@@ -193,7 +241,10 @@ jq -n \
     --argjson sourceDateEpoch "${SOURCE_DATE_EPOCH}" \
     --arg gitCommit "${GIT_COMMIT}" \
     --arg eifSha256 "${EIF_SHA256}" \
-    '{pcr0: $pcr0, pcr1: $pcr1, pcr2: $pcr2, imageTag: $imageTag, sourceDateEpoch: $sourceDateEpoch, gitCommit: $gitCommit, eifSha256: $eifSha256}' \
+    --arg tenant "$ESCROW_TENANT" --arg keyId "$ESCROW_KEY_ID" \
+    --arg kmsRegion "$ESCROW_KMS_REGION" --arg kmsKeyArn "$ESCROW_KMS_KEY_ARN" \
+    --arg previousKeyIds "$ESCROW_PREVIOUS_KEY_IDS" --argjson allowFirstBoot "$ESCROW_ALLOW_FIRST_BOOT" \
+    '{pcr0: $pcr0, pcr1: $pcr1, pcr2: $pcr2, imageTag: $imageTag, sourceDateEpoch: $sourceDateEpoch, gitCommit: $gitCommit, eifSha256: $eifSha256, config: {tenant: $tenant, keyId: $keyId, kmsRegion: $kmsRegion, kmsKeyArn: $kmsKeyArn, previousKeyIds: ($previousKeyIds | split(",") | map(select(length > 0))), allowFirstBoot: $allowFirstBoot}}' \
     >"${OUT_DIR}/measurements.json"
 
 echo "==> Wrote ${OUT_DIR}/measurements.json and ${EIF_PATH}" >&2

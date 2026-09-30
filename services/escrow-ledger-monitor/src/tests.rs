@@ -13,10 +13,24 @@ struct Fake {
     metrics: Mutex<Vec<Metric>>,
     notices: Mutex<Vec<Metric>>,
     unavailable: bool,
+    head: Option<Head>,
+    advance_after_chain: bool,
+    chain_read: Mutex<bool>,
 }
 #[async_trait::async_trait]
 impl Backend for Fake {
+    async fn head(&self, _: &str) -> Result<Option<Head>> {
+        let mut head = self.head.clone();
+        if self.advance_after_chain && *self.chain_read.lock().unwrap() {
+            if let Some(head) = &mut head {
+                head.seq += 1;
+                head.hash = [9; 32];
+            }
+        }
+        Ok(head)
+    }
     async fn chain(&self, _: &str) -> Result<Vec<Vec<u8>>> {
+        *self.chain_read.lock().unwrap() = true;
         if self.unavailable {
             Err(Error::Unavailable)
         } else {
@@ -102,11 +116,12 @@ async fn fixture() -> (Monitor<Fake>, Head) {
         seq: last.seq,
         hash: last.record_hash().unwrap(),
     };
+    backend.head = Some(head.clone());
     (
         Monitor {
             backend,
             tenant: "tenant".into(),
-            key: ledger.public_key(),
+            key: TrustedKeys::Legacy(ledger.public_key()),
         },
         head,
     )
@@ -298,5 +313,124 @@ async fn telemetry_and_errors_have_no_pii() {
     ] {
         assert!(!source.contains("println!"));
         assert!(!source.contains("tracing::"));
+    }
+}
+
+#[tokio::test]
+async fn inserts_require_head_and_identical_audit_object() {
+    for attack in 0..3 {
+        let (mut monitor, head) = fixture().await;
+        match attack {
+            0 => monitor.backend.head = None,
+            1 => monitor.backend.objects.clear(),
+            _ => {
+                for bytes in monitor.backend.objects.values_mut() {
+                    bytes[0] ^= 1;
+                }
+            }
+        }
+        insert(&monitor, &head, 0).await;
+        assert_eq!(
+            *monitor.backend.notices.lock().unwrap(),
+            [if attack == 0 {
+                Metric::LedgerIntegrityFailure
+            } else {
+                Metric::AuditMismatch
+            }]
+        );
+    }
+}
+
+#[tokio::test]
+async fn reconciliation_finds_records_without_heads() {
+    let (mut monitor, head) = fixture().await;
+    monitor.backend.head = None;
+    monitor.sweep_record_chain(&head.chain).await.unwrap();
+    assert_eq!(
+        *monitor.backend.notices.lock().unwrap(),
+        [Metric::LedgerIntegrityFailure]
+    );
+}
+
+#[tokio::test]
+async fn insert_uses_head_prefix_despite_concurrent_append() {
+    let (mut monitor, head) = fixture().await;
+    monitor.backend.advance_after_chain = true;
+    insert(&monitor, &head, 0).await;
+    assert!(monitor.backend.notices.lock().unwrap().is_empty());
+    assert_eq!(
+        *monitor.backend.metrics.lock().unwrap(),
+        [Metric::HoldCreated]
+    );
+}
+
+#[tokio::test]
+async fn insert_rejects_head_behind_record_or_with_wrong_hash() {
+    for wrong_hash in [false, true] {
+        let (mut monitor, head) = fixture().await;
+        if wrong_hash {
+            monitor.backend.head.as_mut().unwrap().hash[0] ^= 1;
+        } else {
+            monitor.backend.head.as_mut().unwrap().seq = 0;
+        }
+        insert(&monitor, &head, 3).await;
+        assert_eq!(
+            *monitor.backend.notices.lock().unwrap(),
+            [Metric::LedgerIntegrityFailure]
+        );
+    }
+}
+
+#[tokio::test]
+async fn key_map_accepts_rotation_and_rejects_unknown_ids() {
+    let old_keys = generate_escrow_key_pair().unwrap();
+    let new_keys = generate_escrow_key_pair().unwrap();
+    let mut old = Ledger::new(&old_keys, "K1".into(), [0; 32]).unwrap();
+    let mut new = Ledger::new(&new_keys, "K2".into(), [0; 32]).unwrap();
+    new.add_previous_key("K1".into(), &old_keys).unwrap();
+    let enrollment = Enrollment::new("tenant".into(), "did:test", 1, [2; 32]);
+    let store = FakeHeadStore::default();
+    old.transition(
+        &store,
+        &enrollment,
+        &operation("create"),
+        Event::HoldCreated,
+    )
+    .await
+    .unwrap();
+    new.transition(&store, &enrollment, &operation("release"), Event::Released)
+        .await
+        .unwrap();
+    let bytes: Vec<_> = store
+        .get_chain(&enrollment.chain_id())
+        .await
+        .unwrap()
+        .iter()
+        .map(|r| r.canonical_bytes().unwrap())
+        .collect();
+    let value = serde_json::json!({
+        "K1": hex::encode(old.public_key().to_encoded_point(false).as_bytes()),
+        "K2": hex::encode(new.public_key().to_encoded_point(false).as_bytes()),
+    })
+    .to_string();
+    let mut monitor = Monitor {
+        backend: Fake::default(),
+        tenant: "tenant".into(),
+        key: TrustedKeys::parse(&value).unwrap(),
+    };
+    assert!(monitor.verify(&enrollment.chain_id(), &bytes).is_ok());
+    if let TrustedKeys::ById(keys) = &mut monitor.key {
+        keys.remove("K1");
+    }
+    assert!(matches!(
+        monitor.verify(&enrollment.chain_id(), &bytes),
+        Err(Error::Integrity)
+    ));
+    let legacy = hex::encode(old.public_key().to_encoded_point(false).as_bytes());
+    monitor.key = TrustedKeys::parse(&legacy).unwrap();
+    assert!(monitor.verify(&enrollment.chain_id(), &bytes[..1]).is_ok());
+    assert!(monitor.verify(&enrollment.chain_id(), &bytes).is_err());
+    for invalid in ["{}", "[]", "{\"key\":\"04\"}", &" ".repeat(2049)] {
+        assert!(TrustedKeys::parse(invalid).is_err());
     }
 }
