@@ -8,6 +8,7 @@ use std::{collections::HashMap, sync::Mutex};
 
 #[derive(Default)]
 struct Fake {
+    chains: Option<HashMap<String, Vec<Vec<u8>>>>,
     records: Vec<Vec<u8>>,
     objects: HashMap<String, Vec<u8>>,
     metrics: Mutex<Vec<Metric>>,
@@ -21,18 +22,21 @@ struct Fake {
 impl Backend for Fake {
     async fn head(&self, _: &str) -> Result<Option<Head>> {
         let mut head = self.head.clone();
-        if self.advance_after_chain && *self.chain_read.lock().unwrap() {
-            if let Some(head) = &mut head {
-                head.seq += 1;
-                head.hash = [9; 32];
-            }
+        if self.advance_after_chain
+            && *self.chain_read.lock().unwrap()
+            && let Some(head) = &mut head
+        {
+            head.seq += 1;
+            head.hash = [9; 32];
         }
         Ok(head)
     }
-    async fn chain(&self, _: &str) -> Result<Vec<Vec<u8>>> {
+    async fn chain(&self, chain: &str) -> Result<Vec<Vec<u8>>> {
         *self.chain_read.lock().unwrap() = true;
         if self.unavailable {
             Err(Error::Unavailable)
+        } else if let Some(chains) = &self.chains {
+            Ok(chains.get(chain).cloned().unwrap_or_default())
         } else {
             Ok(self.records.clone())
         }
@@ -163,6 +167,90 @@ async fn valid_chain_emits_only_inserted_event_metrics() {
         Metric::from(Event::PinAttemptSucceeded),
         Metric::PinAttemptSucceeded
     );
+}
+
+#[tokio::test]
+async fn carried_edges_are_checked_on_insert_and_sweep() {
+    for attack in ["honest", "floor", "missing", "head", "empty", "empty-floor"] {
+        let keys = generate_escrow_key_pair().unwrap();
+        let mut ledger = Ledger::new(&keys, "key".into(), [0; 32]).unwrap();
+        let store = FakeHeadStore::default();
+        let source = Enrollment::new("tenant".into(), "did:example:private", 1, [1; 32]);
+        ledger
+            .transition(&store, &source, &operation("create"), Event::HoldCreated)
+            .await
+            .unwrap();
+        ledger
+            .verify_pin(&store, &source, &operation("pin"), || false)
+            .await
+            .unwrap();
+        let records = store.get_chain(&source.chain_id()).await.unwrap();
+        let destination = Enrollment::new("tenant".into(), "did:example:private", 2, [2; 32]);
+        let event = Event::Carried {
+            source_chain_id: if attack == "missing" {
+                [9; 32]
+            } else {
+                hex::decode(source.chain_id()).unwrap().try_into().unwrap()
+            },
+            source_head_hash: match attack {
+                "head" => [9; 32],
+                "empty" | "empty-floor" => [0; 32],
+                _ => records.last().unwrap().record_hash().unwrap(),
+            },
+            attempts_carried: match attack {
+                "floor" => 0,
+                "empty" => 0,
+                _ => 1,
+            },
+        };
+        // Signed but semantically forged event: test accounting, not just signatures.
+        let carried = ledger
+            .transition(&store, &destination, &operation("carry"), event)
+            .await
+            .unwrap();
+        let bytes = carried.canonical_bytes().unwrap();
+        let head = Head {
+            chain: destination.chain_id(),
+            seq: 0,
+            hash: carried.record_hash().unwrap(),
+        };
+        let backend = Fake {
+            records: vec![bytes.clone()],
+            head: Some(head.clone()),
+            chains: Some(HashMap::from([
+                (
+                    source.chain_id(),
+                    records
+                        .iter()
+                        .map(|r| r.canonical_bytes().unwrap())
+                        .collect(),
+                ),
+                (destination.chain_id(), vec![bytes.clone()]),
+            ])),
+            objects: HashMap::from([(
+                format!(
+                    "audit/tenant/{}/0-{}.cbor",
+                    head.chain,
+                    hex::encode(head.hash)
+                ),
+                bytes,
+            )]),
+            ..Fake::default()
+        };
+        let monitor = Monitor {
+            backend,
+            tenant: "tenant".into(),
+            key: TrustedKeys::Legacy(ledger.public_key()),
+        };
+        insert(&monitor, &head, 0).await;
+        monitor.sweep_head(&head).await.unwrap();
+        let notices = monitor.backend.notices.lock().unwrap();
+        if matches!(attack, "honest" | "empty") {
+            assert!(notices.is_empty(), "{attack}");
+        } else {
+            assert_eq!(*notices, [Metric::LedgerIntegrityFailure; 2], "{attack}");
+        }
+    }
 }
 
 #[tokio::test]

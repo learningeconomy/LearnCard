@@ -16,7 +16,7 @@ use p256::{
 };
 use rand_core::{OsRng, RngCore};
 use serde::{Deserialize, Serialize};
-use sha2::Sha256;
+use sha2::{Digest, Sha256};
 use subtle::ConstantTimeEq;
 use thiserror::Error;
 use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
@@ -265,6 +265,39 @@ fn decode(value: &str) -> Result<Vec<u8>, CryptoError> {
     STANDARD
         .decode(value)
         .map_err(|_| CryptoError::Invalid("base64"))
+}
+
+/// Canonical budget identity, invariant under Q/-Q and envelope serialization.
+/// Each field has a u64 big-endian byte-length prefix; version is one byte.
+pub fn escrow_blob_identity(envelope: &EscrowEnvelope) -> Result<[u8; 32], CryptoError> {
+    validate_envelope(envelope)?;
+    let point = decode(&envelope.ephemeral_public_key)?;
+    if point.len() != 65 || point.first() != Some(&4) {
+        return Err(CryptoError::Invalid("ephemeralPublicKey"));
+    }
+    let public = PublicKey::from_sec1_bytes(&point).map_err(|_| CryptoError::Key)?;
+    let encoded = public.to_encoded_point(false);
+    let salt = decode(&envelope.salt)?;
+    let iv = decode(&envelope.iv)?;
+    let ciphertext = decode(&envelope.ciphertext)?;
+    if salt.len() != 32 || iv.len() != 12 || ciphertext.len() < 16 {
+        return Err(CryptoError::Invalid("envelope lengths"));
+    }
+    let mut hash = Sha256::new();
+    hash.update(b"learncard-escrow-blob-id-v1\0");
+    for field in [
+        b"\x01".as_slice(),
+        envelope.algorithm.as_bytes(),
+        envelope.key_id.as_bytes(),
+        encoded.x().ok_or(CryptoError::Key)?.as_slice(),
+        &salt,
+        &iv,
+        &ciphertext,
+    ] {
+        hash.update((field.len() as u64).to_be_bytes());
+        hash.update(field);
+    }
+    Ok(hash.finalize().into())
 }
 
 fn decode_key(value: &str, field: &'static str) -> Result<Vec<u8>, CryptoError> {
@@ -622,6 +655,40 @@ mod tests {
                 &plaintext,
             );
         }
+    }
+
+    /// Shared with lca-api `blobIdentity.test.ts`: both hash `escrow-vectors.json` blobs[0].
+    const BLOB_IDENTITY_GOLDEN: &str =
+        "8090217ef11060bfa380c4a4b26d76a64811216176ecb60749652fabf3b09425";
+
+    fn negate_ephemeral_point(envelope: &EscrowEnvelope) -> EscrowEnvelope {
+        let point = decode(&envelope.ephemeral_public_key).unwrap();
+        let public = PublicKey::from_sec1_bytes(&point).unwrap();
+        let negated = PublicKey::from_affine(-*public.as_affine()).unwrap();
+        let mut twin = envelope.clone();
+        twin.ephemeral_public_key = STANDARD.encode(negated.to_encoded_point(false).as_bytes());
+        twin
+    }
+
+    #[test]
+    fn blob_identity_is_invariant_under_negated_ephemeral_point() {
+        let vectors = fixtures();
+        let envelope = &vectors.blobs[0].envelope;
+        let twin = negate_ephemeral_point(envelope);
+        assert_ne!(twin.ephemeral_public_key, envelope.ephemeral_public_key);
+        same(
+            &decrypt_escrow_blob(&twin, &vectors.enclave.private_key).unwrap(),
+            &decrypt_escrow_blob(envelope, &vectors.enclave.private_key).unwrap(),
+        );
+        let identity = escrow_blob_identity(envelope).unwrap();
+        assert_eq!(escrow_blob_identity(&twin).unwrap(), identity);
+        assert_eq!(hex::encode(identity), BLOB_IDENTITY_GOLDEN);
+
+        let mut other = envelope.clone();
+        let mut ciphertext = decode(&other.ciphertext).unwrap();
+        ciphertext[0] ^= 1;
+        other.ciphertext = STANDARD.encode(ciphertext);
+        assert_ne!(escrow_blob_identity(&other).unwrap(), identity);
     }
 
     #[test]

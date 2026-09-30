@@ -67,20 +67,16 @@ export interface CarryPinVerifierInput {
     expectedDid: string;
     sourceShareVersion: number;
     targetShareVersion: number;
-    /** P8.3: locates the source epoch's ledger chain so its spent PIN attempt
-     * budget carries forward instead of resetting; ignored in software mode
-     * (see softwareEnclave.ts, which relies on the host Mongo counter instead). */
+    /** Signed source-record binding; blob hash, not epoch, selects the chain. */
     sourceEnrollmentEpoch: number;
+    /** Signed binding for the output blob's first Carried record. */
+    targetEnrollmentEpoch: number;
 }
 export interface RewrapEscrowBlobInput {
     envelope: EscrowEnvelope;
     expectedDid: string;
     expectedShareVersion: number;
-    /** P9.3: locates the source epoch's ledger chain, exactly like
-     * `CarryPinVerifierInput.sourceEnrollmentEpoch`, so the migrated copy's
-     * spent PIN attempt budget carries forward instead of resetting;
-     * ignored in software mode (no enclave ledger to reset in the first
-     * place — see softwareEnclave.ts). */
+    /** Source and destination record binding. Rewrap preserves this epoch. */
     sourceEnrollmentEpoch: number;
 }
 export interface EscrowEnclave {

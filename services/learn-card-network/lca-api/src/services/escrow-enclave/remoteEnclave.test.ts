@@ -153,6 +153,7 @@ describe('createRemoteEnclave', () => {
             expectedDid: 'did:example:alice',
             sourceShareVersion: 1,
             targetShareVersion: 2,
+            targetEnrollmentEpoch: 2,
             sourceEnrollmentEpoch: 1,
         };
 
@@ -166,6 +167,7 @@ describe('createRemoteEnclave', () => {
                 expectedDid: 'did:example:alice',
                 sourceShareVersion: 1,
                 targetShareVersion: 2,
+                targetEnrollmentEpoch: 2,
                 sourceEnrollmentEpoch: 1,
             },
             { headers: { Authorization: `Bearer ${token}` }, timeout: timeoutMs }
@@ -194,6 +196,7 @@ describe('createRemoteEnclave', () => {
                     expectedDid: 'did:example:alice',
                     sourceShareVersion: 1,
                     targetShareVersion: 2,
+                    targetEnrollmentEpoch: 2,
                     sourceEnrollmentEpoch: 1,
                 })
             ).rejects.toBeInstanceOf(ErrorClass);
@@ -213,6 +216,7 @@ describe('createRemoteEnclave', () => {
                 expectedDid: 'did:example:alice',
                 sourceShareVersion: 1,
                 targetShareVersion: 2,
+                targetEnrollmentEpoch: 2,
                 sourceEnrollmentEpoch: 1,
             })
         ).rejects.toBeInstanceOf(EscrowUnavailableError);

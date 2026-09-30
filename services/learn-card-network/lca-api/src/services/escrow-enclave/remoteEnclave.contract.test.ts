@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { readFile, rename, writeFile } from 'node:fs/promises';
 import {
     encryptEscrowBlob,
@@ -7,24 +7,8 @@ import {
     openEscrowRelease,
 } from '@learncard/sss-key-manager';
 import { createRemoteEnclave } from './remoteEnclave';
+import { escrowBlobIdentity } from './blobIdentity';
 import { EscrowPinMismatchError, EscrowPolicyError } from './types';
-
-const blobHash = (envelope: {
-    version: number;
-    algorithm: string;
-    keyId: string;
-    ephemeralPublicKey: string;
-    salt: string;
-    iv: string;
-    ciphertext: string;
-}) => {
-    const { version, algorithm, keyId, ephemeralPublicKey, salt, iv, ciphertext } = envelope;
-    return createHash('sha256')
-        .update(
-            JSON.stringify({ version, algorithm, keyId, ephemeralPublicKey, salt, iv, ciphertext })
-        )
-        .digest('hex');
-};
 
 // Runs the HTTP contract implemented in remoteEnclave.ts against a live
 // `escrow-enclave --emulate` process (services/escrow-enclave-app, P1.8).
@@ -99,21 +83,7 @@ describe.skipIf(!contractUrl)('remote enclave contract (escrow-enclave --emulate
             attestation.publicKey,
             attestation.keyId
         );
-        // Match the enclave's declared envelope field order, not arbitrary JS order.
-        const { version, algorithm, keyId, ephemeralPublicKey, salt, iv, ciphertext } = envelope;
-        const blobHash = createHash('sha256')
-            .update(
-                JSON.stringify({
-                    version,
-                    algorithm,
-                    keyId,
-                    ephemeralPublicKey,
-                    salt,
-                    iv,
-                    ciphertext,
-                })
-            )
-            .digest('hex');
+        const blobHash = escrowBlobIdentity(envelope);
         try {
             await replace(
                 JSON.stringify({
@@ -197,12 +167,16 @@ describe.skipIf(!contractUrl)('remote enclave contract (escrow-enclave --emulate
             attestation.keyId
         );
         try {
+            // Carry now signs a ledger genesis using trusted time; hold time must
+            // not move backwards relative to that record.
+            await replace(JSON.stringify({ nowMs: 1_700_000_000_000 }));
             const { envelope: carried } = await enclave.carryPinVerifier({
                 sourceEnvelope,
                 targetEnvelope,
                 expectedDid: did,
                 sourceShareVersion: 1,
                 targetShareVersion: 2,
+                targetEnrollmentEpoch: 2,
                 sourceEnrollmentEpoch: 1,
             });
             await expect(
@@ -217,7 +191,7 @@ describe.skipIf(!contractUrl)('remote enclave contract (escrow-enclave --emulate
                 JSON.stringify({
                     nowMs: 1_700_000_000_000,
                     enrollments: {
-                        [did]: { epoch: 1, shareVersion: 2, blobHash: blobHash(carried) },
+                        [did]: { epoch: 2, shareVersion: 2, blobHash: escrowBlobIdentity(carried) },
                     },
                 })
             );
@@ -227,7 +201,7 @@ describe.skipIf(!contractUrl)('remote enclave contract (escrow-enclave --emulate
                 holdId,
                 expectedDid: did,
                 expectedShareVersion: 2,
-                enrollmentEpoch: 1,
+                enrollmentEpoch: 2,
                 releasePolicy: 'pin',
                 clientEphemeralPublicKey: client.publicKey,
             });
@@ -248,11 +222,8 @@ describe.skipIf(!contractUrl)('remote enclave contract (escrow-enclave --emulate
         }
     });
 
-    // P8.3: the enclave ledger's PIN attempt budget is keyed by (tenant,
-    // enrollment, epoch); a real blob write always bumps enrollmentEpoch
-    // (UserKey.escrowBlob.enrollmentEpoch), so carrying the PIN into a new
-    // epoch must ALSO carry however many attempts were already spent, or the
-    // new epoch's chain gets a fresh ten-attempt budget for an unchanged PIN.
+    // Carry changes the blob and therefore the chain. Its signed genesis must
+    // preserve the spent budget regardless of the destination epoch.
     it('carries the PIN attempt budget across a rotation: N failures then only 10-N remain', async () => {
         const fixturePath = process.env.ESCROW_ENCLAVE_EMULATE_FIXTURE;
         if (!fixturePath)
@@ -303,7 +274,11 @@ describe.skipIf(!contractUrl)('remote enclave contract (escrow-enclave --emulate
                 JSON.stringify({
                     nowMs: 1_700_000_000_000,
                     enrollments: {
-                        [did]: { epoch: 1, shareVersion: 1, blobHash: blobHash(sourceEnvelope) },
+                        [did]: {
+                            epoch: 1,
+                            shareVersion: 1,
+                            blobHash: escrowBlobIdentity(sourceEnvelope),
+                        },
                     },
                 })
             );
@@ -324,6 +299,7 @@ describe.skipIf(!contractUrl)('remote enclave contract (escrow-enclave --emulate
                 expectedDid: did,
                 sourceShareVersion: 1,
                 targetShareVersion: 2,
+                targetEnrollmentEpoch: 2,
                 sourceEnrollmentEpoch: 1,
             });
             // Every real blob write bumps enrollmentEpoch; simulate that here.
@@ -331,7 +307,7 @@ describe.skipIf(!contractUrl)('remote enclave contract (escrow-enclave --emulate
                 JSON.stringify({
                     nowMs: 1_700_000_000_000,
                     enrollments: {
-                        [did]: { epoch: 2, shareVersion: 2, blobHash: blobHash(carried) },
+                        [did]: { epoch: 2, shareVersion: 2, blobHash: escrowBlobIdentity(carried) },
                     },
                 })
             );

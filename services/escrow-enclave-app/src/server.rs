@@ -189,6 +189,7 @@ impl Service<'_> {
                 source_share_version,
                 target_share_version,
                 source_enrollment_epoch,
+                target_enrollment_epoch,
             } => {
                 let envelope = self
                     .policy
@@ -198,7 +199,7 @@ impl Service<'_> {
                         &expected_did,
                         source_share_version,
                         target_share_version,
-                        source_enrollment_epoch,
+                        (source_enrollment_epoch, target_enrollment_epoch),
                     )
                     .await?;
                 Ok(Response::CarryPinVerifier { envelope })

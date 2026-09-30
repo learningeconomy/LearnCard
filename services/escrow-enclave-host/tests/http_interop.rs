@@ -19,7 +19,6 @@ use escrow_enclave_host::{
     framing::{self, Enclave, MAX_FRAME},
 };
 use serde_json::{Value, json};
-use sha2::{Digest, Sha256};
 use std::{
     io,
     net::SocketAddr,
@@ -93,7 +92,7 @@ async fn host_http_to_real_enclave_framed_lifecycle() {
         CurrentEnrollment {
             epoch: 1,
             share_version: 1,
-            blob_hash: Sha256::digest(serde_json::to_vec(&envelope).unwrap()).into(),
+            blob_hash: escrow_enclave::crypto::escrow_blob_identity(&envelope).unwrap(),
         },
     );
     let server_clock = clock.clone();
@@ -194,6 +193,7 @@ async fn host_http_to_real_enclave_framed_lifecycle() {
             "expectedDid": "did:key:carry",
             "sourceShareVersion": 5,
             "targetShareVersion": 6,
+            "targetEnrollmentEpoch": 2,
             "sourceEnrollmentEpoch": 1,
         }),
     )
@@ -219,6 +219,7 @@ async fn host_http_to_real_enclave_framed_lifecycle() {
             "expectedDid": "did:key:wrong",
             "sourceShareVersion": 5,
             "targetShareVersion": 6,
+            "targetEnrollmentEpoch": 2,
             "sourceEnrollmentEpoch": 1,
         }),
     )
@@ -299,7 +300,7 @@ async fn host_http_rewrap_escrow_blob_through_real_enclave() {
         CurrentEnrollment {
             epoch: 1,
             share_version: 1,
-            blob_hash: Sha256::digest(serde_json::to_vec(&envelope).unwrap()).into(),
+            blob_hash: escrow_enclave::crypto::escrow_blob_identity(&envelope).unwrap(),
         },
     );
     let server_clock = clock.clone();

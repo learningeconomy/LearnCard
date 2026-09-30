@@ -115,7 +115,7 @@ async fn policy_suite_through_loopback_and_http() {
         CurrentEnrollment {
             epoch: 1,
             share_version: 1,
-            blob_hash: Sha256::digest(serde_json::to_vec(&envelope).unwrap()).into(),
+            blob_hash: crate::crypto::escrow_blob_identity(&envelope).unwrap(),
         },
     );
     let server_clock = clock.clone();
@@ -210,6 +210,7 @@ async fn policy_suite_through_loopback_and_http() {
         expected_did: "did:key:test".into(),
         source_share_version: 1,
         target_share_version: 2,
+        target_enrollment_epoch: 1,
         source_enrollment_epoch: 1,
     };
     let carried_envelope = match call(address, carry_request.clone()).await {
@@ -492,7 +493,7 @@ async fn boot_with_two_previous_keys_advertises_them_and_releases_a_previous_key
         CurrentEnrollment {
             epoch: 1,
             share_version: 1,
-            blob_hash: Sha256::digest(serde_json::to_vec(&previous_envelope).unwrap()).into(),
+            blob_hash: crate::crypto::escrow_blob_identity(&previous_envelope).unwrap(),
         },
     );
     let server_clock = clock.clone();

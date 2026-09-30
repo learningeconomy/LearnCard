@@ -45,6 +45,14 @@ fn validate(record: &LedgerRecord) -> Result<(), LedgerError> {
             return Err(LedgerError::Encoding);
         }
     }
+    if let Event::Carried {
+        attempts_carried, ..
+    } = record.event
+    {
+        if attempts_carried > PIN_BUDGET {
+            return Err(LedgerError::Encoding);
+        }
+    }
     Ok(())
 }
 
@@ -110,9 +118,29 @@ pub(super) fn encode(r: &LedgerRecord, signed: bool) -> Result<Vec<u8>, LedgerEr
         Event::Released => (4, None),
         Event::Cancelled => (5, None),
         Event::PinLocked => (6, None),
+        Event::Carried { .. } => (7, None),
     };
-    array(&mut out, if attempt.is_some() { 2 } else { 1 });
+    array(
+        &mut out,
+        if event == 7 {
+            4
+        } else if attempt.is_some() {
+            2
+        } else {
+            1
+        },
+    );
     uint(&mut out, event);
+    if let Event::Carried {
+        source_chain_id,
+        source_head_hash,
+        attempts_carried,
+    } = r.event
+    {
+        bytes(&mut out, &source_chain_id);
+        bytes(&mut out, &source_head_hash);
+        uint(&mut out, u64::from(attempts_carried));
+    }
     if let Some(attempt) = attempt {
         uint(&mut out, attempt as u64);
     }
@@ -251,6 +279,11 @@ pub(super) fn decode(bytes: &[u8]) -> Result<LedgerRecord, LedgerError> {
         (4, 1) => Event::Released,
         (5, 1) => Event::Cancelled,
         (6, 1) => Event::PinLocked,
+        (7, 4) => Event::Carried {
+            source_chain_id: r.bytes()?,
+            source_head_hash: r.bytes()?,
+            attempts_carried: r.uint()?.try_into().map_err(|_| LedgerError::Encoding)?,
+        },
         _ => return Err(LedgerError::Encoding),
     };
     r.key(8)?;

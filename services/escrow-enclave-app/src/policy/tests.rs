@@ -4,6 +4,7 @@ use crate::{
     ledger::{AppendError, FakeHeadStore, StoreFuture},
     time::{SourceEvidence, TimeError, TimeFuture, TrustedInterval},
 };
+use p256::elliptic_curve::sec1::ToEncodedPoint;
 use std::sync::Mutex;
 
 struct Clock(Mutex<Result<TimeEvidence, TimeError>>);
@@ -81,6 +82,210 @@ struct Fixture {
     authority: Authority,
     store: Store,
     previous_keys: Vec<(String, EscrowKeyPair)>,
+}
+
+#[tokio::test]
+async fn carry_audits_source_head_accumulates_and_fails_closed_on_append() {
+    let f = Fixture::new(true);
+    let mut p = f.policy();
+    let hold = p
+        .create_hold(f.create("source", ReleasePolicy::Pin))
+        .await
+        .unwrap();
+    assert_eq!(
+        p.release(f.request(&hold, "wrong", Some("cd"))).await,
+        Err(ErrorCode::PinMismatch)
+    );
+    let target = |version| {
+        encrypt_escrow_blob(
+            &EscrowBlobPlaintext {
+                version: 1,
+                recovery_share: "cd".repeat(33),
+                did: "did:key:test".into(),
+                share_version: version,
+                pin_verifier: None,
+                pin_attempts_floor: None,
+            },
+            &f.keys.public_key,
+            "test",
+        )
+        .unwrap()
+    };
+    let next = target(2.0);
+    assert_eq!(
+        p.carry_pin_verifier(&f.envelope, &next, "did:key:test", 1, 2, (999, 2))
+            .await,
+        Err(ErrorCode::Ledger)
+    );
+    let source_records = f.records().await;
+    let event = Event::Carried {
+        source_chain_id: hex::decode(f.enrollment().chain_id())
+            .unwrap()
+            .try_into()
+            .unwrap(),
+        source_head_hash: source_records.last().unwrap().record_hash().unwrap(),
+        attempts_carried: 1,
+    };
+    *f.store.fault.lock().unwrap() = Some(Fault {
+        event,
+        error: AppendError::Unavailable,
+        persist: false,
+    });
+    assert_eq!(
+        p.carry_pin_verifier(&f.envelope, &next, "did:key:test", 1, 2, (1, 2))
+            .await,
+        Err(ErrorCode::Unavailable)
+    );
+    *f.store.fault.lock().unwrap() = None;
+    let carried = p
+        .carry_pin_verifier(&f.envelope, &next, "did:key:test", 1, 2, (1, 2))
+        .await
+        .unwrap();
+    let enrollment = Enrollment::new(
+        "tenant".into(),
+        "did:key:test",
+        2,
+        blob_hash(&carried).unwrap(),
+    );
+    let records = f.store.get_chain(&enrollment.chain_id()).await.unwrap();
+    assert_eq!(records.len(), 1);
+    assert_eq!(records[0].event, event);
+    assert_eq!(records[0].enrollment_epoch, 2);
+    assert_eq!(records[0].prev_hash, [0; 32]);
+    *f.authority.0.lock().unwrap() = Ok(CurrentEnrollment {
+        epoch: 2,
+        share_version: 2,
+        blob_hash: enrollment.blob_hash,
+    });
+    let mut create = f.create("carried", ReleasePolicy::Pin);
+    create.envelope = &carried;
+    create.expected_share_version = 2;
+    create.enrollment_epoch = 2;
+    let hold = p.create_hold(create).await.unwrap();
+    let mut release = f.request(&hold, "second-wrong", Some("cd"));
+    release.envelope = &carried;
+    assert_eq!(p.release(release).await, Err(ErrorCode::PinMismatch));
+    let twice = p
+        .carry_pin_verifier(&carried, &target(3.0), "did:key:test", 2, 3, (2, 3))
+        .await
+        .unwrap();
+    assert_eq!(p.decrypt(&twice).unwrap().pin_attempts_floor, Some(2));
+}
+
+#[tokio::test]
+async fn negated_ephemeral_point_twin_cannot_reset_the_attempt_budget() {
+    let f = Fixture::new(true);
+    let mut p = f.policy();
+    let hold = p
+        .create_hold(f.create("source", ReleasePolicy::Pin))
+        .await
+        .unwrap();
+    assert_eq!(
+        p.release(f.request(&hold, "wrong", Some("cd"))).await,
+        Err(ErrorCode::PinMismatch)
+    );
+
+    let mut twin = f.envelope.clone();
+    let point = STANDARD.decode(&twin.ephemeral_public_key).unwrap();
+    let public = p256::PublicKey::from_sec1_bytes(&point).unwrap();
+    let negated = p256::PublicKey::from_affine(-*public.as_affine()).unwrap();
+    twin.ephemeral_public_key = STANDARD.encode(negated.to_encoded_point(false).as_bytes());
+    assert_ne!(twin.ephemeral_public_key, f.envelope.ephemeral_public_key);
+    assert_eq!(blob_hash(&twin).unwrap(), blob_hash(&f.envelope).unwrap());
+
+    let target = encrypt_escrow_blob(
+        &EscrowBlobPlaintext {
+            version: 1,
+            recovery_share: "cd".repeat(33),
+            did: "did:key:test".into(),
+            share_version: 2.0,
+            pin_verifier: None,
+            pin_attempts_floor: None,
+        },
+        &f.keys.public_key,
+        "test",
+    )
+    .unwrap();
+    let carried = p
+        .carry_pin_verifier(&twin, &target, "did:key:test", 1, 2, (1, 2))
+        .await
+        .unwrap();
+    assert_eq!(p.decrypt(&carried).unwrap().pin_attempts_floor, Some(1));
+}
+
+#[tokio::test]
+async fn rewrap_and_release_cannot_change_epoch_to_reset_a_blob_chain() {
+    let mut f = Fixture::new(true);
+    f.envelope = f.previous_envelope("old", 1.0, Some("ab".repeat(32)));
+    f.authority.0.lock().unwrap().as_mut().unwrap().blob_hash = blob_hash(&f.envelope).unwrap();
+    let mut p = f.policy();
+    let mut hold = p
+        .create_hold(f.create("source", ReleasePolicy::Pin))
+        .await
+        .unwrap();
+    assert_eq!(
+        p.release(f.request(&hold, "wrong", Some("cd"))).await,
+        Err(ErrorCode::PinMismatch)
+    );
+    assert_eq!(
+        p.rewrap_escrow_blob(&f.envelope, "did:key:test", 1, 999)
+            .await,
+        Err(ErrorCode::Ledger)
+    );
+    f.authority.0.lock().unwrap().as_mut().unwrap().epoch = 999;
+    hold.hold.enrollment_epoch = 999;
+    assert_eq!(
+        p.release(f.request(&hold, "changed", Some("cd"))).await,
+        Err(ErrorCode::Ledger)
+    );
+    assert_eq!(p.comparisons, 1);
+}
+
+#[tokio::test]
+async fn release_refuses_positive_floor_without_matching_carried_genesis() {
+    for recorded in [None, Some(1)] {
+        let f = Fixture::new(true);
+        let mut p = f.policy();
+        let mut hold = p
+            .create_hold(f.create("original", ReleasePolicy::Pin))
+            .await
+            .unwrap();
+        let mut blob = p.decrypt(&f.envelope).unwrap();
+        blob.pin_attempts_floor = Some(2);
+        let envelope = encrypt_escrow_blob(&blob, &f.keys.public_key, "test").unwrap();
+        let hash = blob_hash(&envelope).unwrap();
+        f.authority.0.lock().unwrap().as_mut().unwrap().blob_hash = hash;
+        hold.hold.blob_hash = hex::encode(hash);
+        if let Some(attempts_carried) = recorded {
+            let enrollment = Enrollment::new("tenant".into(), &blob.did, 1, hash);
+            let operation = Operation {
+                hold_id: "carry".into(),
+                request_id: "carry".into(),
+                payload_hash: hash,
+                time_evidence: f.clock.0.lock().unwrap().clone().unwrap(),
+            };
+            p.ledger
+                .transition(
+                    &f.store,
+                    &enrollment,
+                    &operation,
+                    Event::Carried {
+                        source_chain_id: [1; 32],
+                        source_head_hash: [2; 32],
+                        attempts_carried,
+                    },
+                )
+                .await
+                .unwrap();
+        }
+        let mut req = f.request(&hold, "release", Some("cd"));
+        req.envelope = &envelope;
+        assert_eq!(p.release(req).await, Err(ErrorCode::Ledger));
+        assert_eq!(p.comparisons, 0);
+        let mut req = f.create("new", ReleasePolicy::Pin);
+        req.envelope = &envelope;
+        assert_eq!(p.create_hold(req).await, Err(ErrorCode::Ledger));
+    }
 }
 impl Fixture {
     fn new(pin: bool) -> Self {
@@ -275,7 +480,7 @@ async fn carry_and_rewrap_refuse_same_process_truncation_after_spending_attempts
                 )
                 .unwrap();
                 assert_eq!(
-                    p.carry_pin_verifier(&f.envelope, &target, "did:key:test", 1, 2, 1)
+                    p.carry_pin_verifier(&f.envelope, &target, "did:key:test", 1, 2, (1, 2))
                         .await,
                     Err(ErrorCode::Ledger)
                 );
@@ -329,7 +534,7 @@ async fn rotation_verifies_old_records_and_signs_new_records_with_current_key() 
     )
     .unwrap();
     let carried = rotated
-        .carry_pin_verifier(&f.envelope, &target, "did:key:test", 1, 2, 1)
+        .carry_pin_verifier(&f.envelope, &target, "did:key:test", 1, 2, (1, 2))
         .await
         .unwrap();
     assert_eq!(
@@ -361,7 +566,7 @@ async fn rotation_verifies_old_records_and_signs_new_records_with_current_key() 
     assert!(Ledger::verify_chain_with_keys(&records, &f.enrollment(), &verifiers).is_err());
     // Both floor paths also authenticate a mixed-key chain after new appends.
     let carried = rotated
-        .carry_pin_verifier(&f.envelope, &target, "did:key:test", 1, 2, 1)
+        .carry_pin_verifier(&f.envelope, &target, "did:key:test", 1, 2, (1, 2))
         .await
         .unwrap();
     assert_eq!(
@@ -525,7 +730,7 @@ async fn carry_pin_verifier_rejects_every_invalid_binding() {
                 expected_did,
                 source_share_version,
                 target_share_version,
-                1
+                (1, 2)
             )
             .await,
             Err(ErrorCode::Blob),
@@ -570,7 +775,7 @@ async fn carry_pin_verifier_succeeds_and_the_carried_pin_still_releases() {
     )
     .unwrap();
     let carried = p
-        .carry_pin_verifier(&source, &target, "did:key:test", 2, 3, 1)
+        .carry_pin_verifier(&source, &target, "did:key:test", 2, 3, (1, 1))
         .await
         .unwrap();
     assert_ne!(carried.ciphertext, target.ciphertext);
@@ -651,7 +856,7 @@ async fn carry_accumulates_real_source_attempts_and_new_epoch_gets_only_the_rema
     )
     .unwrap();
     let carried = p
-        .carry_pin_verifier(&f.envelope, &target, "did:key:test", 1, 2, 1)
+        .carry_pin_verifier(&f.envelope, &target, "did:key:test", 1, 2, (1, 2))
         .await
         .unwrap();
     assert_eq!(p.decrypt(&carried).unwrap().pin_attempts_floor, Some(3));
@@ -729,11 +934,11 @@ async fn carry_never_lowers_a_floor_when_the_source_chain_is_empty() {
         "test",
     )
     .unwrap();
-    let carried = p
-        .carry_pin_verifier(&source, &target, "did:key:test", 4, 5, 1)
-        .await
-        .unwrap();
-    assert_eq!(p.decrypt(&carried).unwrap().pin_attempts_floor, Some(5));
+    assert_eq!(
+        p.carry_pin_verifier(&source, &target, "did:key:test", 4, 5, (1, 2))
+            .await,
+        Err(ErrorCode::Ledger)
+    );
 }
 
 // P8.3: a source chain that fails signature/link verification is rejected
@@ -769,7 +974,7 @@ async fn carry_rejects_a_tampered_source_chain() {
     )
     .unwrap();
     assert_eq!(
-        p.carry_pin_verifier(&f.envelope, &target, "did:key:test", 1, 2, 1)
+        p.carry_pin_verifier(&f.envelope, &target, "did:key:test", 1, 2, (1, 2))
             .await,
         Err(ErrorCode::Ledger)
     );
@@ -855,14 +1060,14 @@ async fn unknown_key_id_is_the_generic_blob_error() {
         Err(ErrorCode::Blob)
     );
     assert_eq!(
-        p.carry_pin_verifier(&unknown, &f.envelope, "did:key:test", 1, 2, 1)
+        p.carry_pin_verifier(&unknown, &f.envelope, "did:key:test", 1, 2, (1, 2))
             .await,
         Err(ErrorCode::Blob)
     );
     let mut unknown_target = f.envelope.clone();
     unknown_target.key_id = "retired-and-removed".into();
     assert_eq!(
-        p.carry_pin_verifier(&f.envelope, &unknown_target, "did:key:test", 1, 2, 1)
+        p.carry_pin_verifier(&f.envelope, &unknown_target, "did:key:test", 1, 2, (1, 2))
             .await,
         Err(ErrorCode::Blob)
     );
@@ -926,7 +1131,7 @@ async fn carry_pin_verifier_from_a_previous_key_reseals_under_the_current_key_an
     )
     .unwrap();
     let carried = p
-        .carry_pin_verifier(&source, &target, "did:key:test", 2, 3, 1)
+        .carry_pin_verifier(&source, &target, "did:key:test", 2, 3, (1, 2))
         .await
         .unwrap();
     assert_eq!(carried.key_id, "test");
@@ -1339,15 +1544,15 @@ async fn rotation_and_blob_substitution_cannot_reset_enrollment_or_reuse_old_hol
     let mut req = f.request(&hold, "substitute", None);
     req.envelope = &other;
     assert_eq!(p.release(req).await, Err(ErrorCode::Policy));
-    // Even a broken authority accepting a changed blob in the SAME epoch cannot
-    // make an observed ledger history reset its budget or change blob binding.
+    // A genuinely new client blob has its own budget. The authenticated authority
+    // must decide whether it is current; old holds still cannot be transplanted.
     *f.authority.0.lock().unwrap() = Ok(CurrentEnrollment {
         blob_hash: blob_hash(&other).unwrap(),
         ..original
     });
     let mut req = f.create("new-blob", ReleasePolicy::Pin);
     req.envelope = &other;
-    assert_eq!(p.create_hold(req).await, Err(ErrorCode::Ledger));
+    assert!(p.create_hold(req).await.is_ok());
 }
 
 #[tokio::test]

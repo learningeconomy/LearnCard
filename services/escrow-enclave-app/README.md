@@ -11,8 +11,8 @@ so every mutating operation (create/release/cancel a hold) fails closed with
 `Unavailable` until an authenticated, fresh enrollment source is integrated — see
 SECURITY.md's Open Items / Launch Blockers for the remaining gates. Do not point
 production recovery traffic at this build yet. `carryPinVerifier` (P8.1) is the one
-exception: it decrypts/validates/reseals using stateful ledger observation but no
-`EnrollmentSource` or trusted-time dependency, so the policy operation is not gated by
+exception: it decrypts/validates/reseals using stateful ledger observation and a
+trusted-time signed carry append, but no `EnrollmentSource`, so it is not gated by
 BLOCKER-ENROLLMENT — see "Release policy" and "Wire contract" below.
 
 ## Target architecture
@@ -52,36 +52,48 @@ At most 64 records are accepted; exhaustion fails closed, never compacts/resets.
 
 Policy constructs `Enrollment::new(tenant, decrypted_did, epoch, blob_hash)` from
 authenticated inputs. `enrollment_id = SHA-256(UTF-8 decrypted DID)`; the chain ID
-is lowercase SHA-256 hex of `"learncard-ledger-chain-v1\0" || tenant_byte_length
-(u64 big-endian) || tenant || enrollment_id || epoch (u64 big-endian)`. Blob hash
-is NOT in the chain ID: a changed blob in the same epoch fails binding validation
-rather than creating a fresh budget. Authenticating the tenant/current epoch and
-hashing the actual envelope are P1.7 responsibilities, not claims about host DTOs.
+is lowercase SHA-256 hex of `"learncard-ledger-chain-v2\0" || tenant_byte_length
+(u64 big-endian) || tenant || enrollment_id || blob_hash`. Epoch is still in every
+signed record and must match, but changing it cannot select a fresh chain for the
+same blob. New client blobs legitimately start at zero; enclave-produced carry/
+rewrap blobs inherit their floor through a signed `Carried` genesis record.
+Nitro never ran in production; no v1-chain migration is supported.
+`blob_hash` is `crypto::escrow_blob_identity`, not a hash of serialized JSON: it
+covers decoded fields and only the x-coordinate of the ephemeral point, so the
+equivalent `Q`/`-Q` envelopes (identical ECDH secret) and base64/JSON aliases share
+one chain. See SECURITY.md RESOLVED-BLOB-IDENTITY-MALLEABILITY. Authenticating the
+tenant/current epoch is a P1.7 responsibility, not a claim about host DTOs.
 
 The wire record is a CBOR map with these **integer keys**, not JSON field names:
 
-| Key | Field           | CBOR value                                                                |
-| --- | --------------- | ------------------------------------------------------------------------- |
-| 0   | version         | unsigned integer, 1                                                       |
-| 1   | tenant          | identifier text                                                           |
-| 2   | holdId          | identifier text                                                           |
-| 3   | enrollmentEpoch | unsigned integer                                                          |
-| 4   | blobHash        | 32-byte byte string                                                       |
-| 5   | seq             | unsigned integer, 0–63                                                    |
-| 6   | prevHash        | 32-byte byte string                                                       |
-| 7   | event           | array `[code]`, or `[1, attempt_no]`                                      |
-| 8   | requestId       | identifier text                                                           |
-| 9   | measurement     | SHA-256 of the attested PCR tuple, 32-byte byte string                    |
-| 10  | keyId           | identifier text                                                           |
-| 11  | timeEvidence    | `[lo_ms, hi_ms, [[server_id, midpoint_ms, radius_ms, response_hash], …]]` |
-| 12  | payloadHash     | 32-byte byte string                                                       |
-| 13  | policyVersion   | unsigned integer, 1                                                       |
-| 14  | enrollmentId    | 32-byte byte string                                                       |
-| 15  | sig             | 64-byte byte string, ECDSA P-256 `r                                       |     | s`, low-S |
+| Key | Field           | CBOR value                                                                                                         |
+| --- | --------------- | ------------------------------------------------------------------------------------------------------------------ |
+| 0   | version         | unsigned integer, 1                                                                                                |
+| 1   | tenant          | identifier text                                                                                                    |
+| 2   | holdId          | identifier text                                                                                                    |
+| 3   | enrollmentEpoch | unsigned integer                                                                                                   |
+| 4   | blobHash        | 32-byte byte string                                                                                                |
+| 5   | seq             | unsigned integer, 0–63                                                                                             |
+| 6   | prevHash        | 32-byte byte string                                                                                                |
+| 7   | event           | `[code]`, `[1, attempt_no]`, or `[7, sourceChainId(bytes32), sourceHeadHash(bytes32), attemptsCarried(uint 0..10)] |
+| 8   | requestId       | identifier text                                                                                                    |
+| 9   | measurement     | SHA-256 of the attested PCR tuple, 32-byte byte string                                                             |
+| 10  | keyId           | identifier text                                                                                                    |
+| 11  | timeEvidence    | `[lo_ms, hi_ms, [[server_id, midpoint_ms, radius_ms, response_hash], …]]`                                          |
+| 12  | payloadHash     | 32-byte byte string                                                                                                |
+| 13  | policyVersion   | unsigned integer, 1                                                                                                |
+| 14  | enrollmentId    | 32-byte byte string                                                                                                |
+| 15  | sig             | 64-byte byte string, ECDSA P-256 `r                                                                                |     | s`, low-S |
 
 Event codes: 0 HoldCreated, 1 PinAttemptReserved, 2 PinAttemptFailed,
-3 PinAttemptSucceeded, 4 Released, 5 Cancelled, 6 PinLocked. Attempt numbers
-are 1–10 globally across the chain. Reservation 10 immediately sets `locked`,
+3 PinAttemptSucceeded, 4 Released, 5 Cancelled, 6 PinLocked, 7 Carried.
+`Carried` is permitted only as the first record on an empty destination chain;
+even duplicate carry appends are refused. It creates no hold. Its all-zero source
+head denotes an empty prefix with floor zero. Otherwise the source head must be
+in the authenticated source chain. INSERT and sweep verification require
+`attemptsCarried = min(10, sourceCarried + sourceAttemptsUsedUpTo(sourceHeadHash))`.
+No recursive traversal is needed: each source genesis stores its own floor.
+Attempt numbers are local, starting at 1. Floor plus reservations reaching ten sets `locked`,
 even without a subsequent PinLocked/result record; its one comparison may still
 succeed. PinLocked is an optional explicit audit event, not the security boundary.
 
@@ -147,7 +159,7 @@ The policy layer must canonicalize and bound these request bytes (8192 maximum).
    Never recreate it on failure, use multiple instances for one key, or evict
    high-water marks. At 4096 tracked enrollment chains it fails closed.
 2. `transition(store, enrollment, operation, event)` permits HoldCreated,
-   Released, Cancelled and PinLocked only. P1.7 authorizes these actions, including
+   Released, Cancelled, PinLocked and genesis-only Carried. Policy authorizes these actions, including
    delayed release and recipient binding; this ledger does not authorize release.
 3. `verify_pin(store, enrollment, operation, compare)` loads/verifies the chain,
    appends a reservation and reads it back before invoking the synchronous
@@ -172,10 +184,13 @@ at its original sequence, not merely that its new sequence is larger. Therefore
 both truncation and a longer fork are rejected. Pure `verify_chain` has no memory;
 production callers use the stateful APIs, not that pure monitor helper alone.
 This includes `carry_pin_verifier` and `rewrap_escrow_blob`: both use `observe`
-and retain high-water marks in the same Policy instance despite not appending.
+and retain high-water marks in the same Policy instance, then append/read back
+`Carried` on the output blob's chain before returning any ciphertext.
 Once that instance has spent/observed N attempts, empty or truncated histories
 cannot lower the migrated floor. Fresh-boot, parallel-instance, and substituted
-source-epoch limitations remain detection-only (D3); observation is not a freshness oracle.
+history limitations remain detection-only (D3); observation is not a freshness oracle.
+Epoch substitution cannot change the chain. Choosing an older PIN-bearing copy
+with fewer attempts still requires the current-enrollment authority to prevent.
 
 ### HeadStore / P3.3 parent obligations
 
@@ -252,15 +267,15 @@ request parameter. Measurement must likewise come from verified NSM startup.
 
 ### Operations and decisions
 
-| Operation                           | Required checks                                                                                                                                                                                                               | Persisted result before returning                                                                                                                                                 |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `verify_blob`                       | Authenticated envelope/key ID, positive u32 version; compare decrypted DID/version to expectations                                                                                                                            | None; `{ok, has_pin}`, or `Blob` for invalid ciphertext/key/plaintext                                                                                                             |
-| `create_hold`                       | Identity/version, current authenticated enrollment, valid recipient SPKI, unique hold, PIN verifier present for PIN policy, trusted time                                                                                      | `HoldCreated`, then authenticated full-chain readback                                                                                                                             |
-| `release_hold`                      | All signed hold fields and current blob/epoch match; live, uncancelled/unreleased hold; trusted `lo >= createdHi + 604800000`                                                                                                 | `Released` + readback, **then** seal to the signed recipient                                                                                                                      |
-| `release_pin`                       | Same bindings/live hold; PIN policy, verifier and proof present; enrollment budget available                                                                                                                                  | Reserve + readback → fixed-size `subtle` comparison → success/failure + readback; success adds `Released` + readback before sealing; tenth failure adds `PinLocked`               |
-| `cancel_hold`                       | Same authenticated hold/current enrollment; live hold                                                                                                                                                                         | `Cancelled` + readback; subsequent release refused                                                                                                                                |
-| `carry_pin_verifier` (P8.1/P8.3/H1) | DID/version/PIN bindings; target version increases; source epoch in range; statefully observe source chain and add spent attempts to encrypted floor                                                                          | No append; retains high-water memory and returns `{ envelope }` sealed to CURRENT key with fresh ephemeral key, salt and IV; no enrollment/time dependency                        |
-| `rewrap_escrow_blob` (P9.3)         | Envelope's `keyId` is a recognised PREVIOUS key (not current, not unknown); plaintext DID == `expected_did`; version == `expected_share_version`; reads (never writes) the source epoch's ledger chain for the attempts floor | None new — reuses `carry_pin_verifier`'s floor computation; returns `{ envelope }` re-sealed to the CURRENT key with a fresh ephemeral key, salt and IV, same plaintext otherwise |
+| Operation                           | Required checks                                                                                                                                                 | Persisted result before returning                                                                                                                                   |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `verify_blob`                       | Authenticated envelope/key ID, positive u32 version; compare decrypted DID/version to expectations                                                              | None; `{ok, has_pin}`, or `Blob` for invalid ciphertext/key/plaintext                                                                                               |
+| `create_hold`                       | Identity/version, current authenticated enrollment, valid recipient SPKI, unique hold, PIN verifier present for PIN policy, trusted time                        | `HoldCreated`, then authenticated full-chain readback                                                                                                               |
+| `release_hold`                      | All signed hold fields and current blob/epoch match; live, uncancelled/unreleased hold; trusted `lo >= createdHi + 604800000`                                   | `Released` + readback, **then** seal to the signed recipient                                                                                                        |
+| `release_pin`                       | Same bindings/live hold; PIN policy, verifier and proof present; enrollment budget available                                                                    | Reserve + readback → fixed-size `subtle` comparison → success/failure + readback; success adds `Released` + readback before sealing; tenth failure adds `PinLocked` |
+| `cancel_hold`                       | Same authenticated hold/current enrollment; live hold                                                                                                           | `Cancelled` + readback; subsequent release refused                                                                                                                  |
+| `carry_pin_verifier` (P8.1/P8.3/H1) | DID/version/PIN bindings; increasing target version; bounded source/target epochs; statefully observe source blob chain; validate inherited floor; trusted time | Append/read back Carried genesis bound to target epoch and output blob hash before returning a freshly sealed CURRENT-key envelope                                  |
+| `rewrap_escrow_blob` (P9.3)         | Recognised PREVIOUS key; DID/version/source epoch binding; same floor and time checks as carry                                                                  | Append/read back Carried genesis on output blob chain, preserving source epoch and share version                                                                    |
 
 `release` dispatches on the signed policy. A PIN hold never becomes a delayed
 hold, even after seven days; a delayed hold ignores any PIN proof. The duration
@@ -272,7 +287,8 @@ Roughtime's signed processing-time/delayed-delivery limitation described below
 still applies: this comparison is not proof of seven real days since receipt.
 
 All holds in an enrollment share ten lifetime reservations. Success does not
-reset the budget; only authenticated rotation to a new epoch starts a new one.
+reset the budget; epoch changes alone never reset it. New client-created blobs
+start at zero; carry and rewrap outputs inherit the source's spent budget.
 Malformed bounded proofs consume an attempt and produce `PinMismatch`; absent
 proofs produce `Policy`, oversized proofs are rejected before allocation, and
 locked requests do not compare. PIN request commitments are secret-keyed via
@@ -735,29 +751,33 @@ callers must not retry releases. Async deadlines cannot preempt synchronous NSM
 or cryptographic calls. Framed emulator TCP is host-trusted and unauthenticated;
 the HTTP bearer is not protection from other local processes.
 
-| Method                  | Request fields (besides `method`)                                                                                                        | Response fields                                                      |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `attest`                | `nonce` (JSON byte array)                                                                                                                | `mode`, `keyId`, `publicKey`, `measurements`, `document`, `issuedAt` |
-| `createHold`            | `envelope`, `holdId`, `requestId`, `expectedDid`, `expectedShareVersion`, `enrollmentEpoch`, `releasePolicy`, `clientEphemeralPublicKey` | `hold` (`SignedHoldRecord` wrapper)                                  |
-| `verifyBlob`            | `envelope`, `expectedDid`, `expectedShareVersion`                                                                                        | `ok`, `hasPin`, optional `reason` (on failure)                       |
-| `carryPinVerifier`      | `sourceEnvelope`, `targetEnvelope`, `expectedDid`, `sourceShareVersion`, `targetShareVersion`, `sourceEnrollmentEpoch`                   | `envelope` (sealed to the current key)                               |
-| `rewrapEscrowBlob`      | `envelope`, `expectedDid`, `expectedShareVersion`, `sourceEnrollmentEpoch`                                                               | `envelope` (sealed to the current key)                               |
-| `release`               | `envelope`, `hold` (`SignedHoldRecord`), `requestId`, `clientEphemeralPublicKey`, `expectedDid`, optional `pinProof`                     | `sealed` (envelope)                                                  |
-| `cancel`                | `envelope`, `hold` (`SignedHoldRecord`), `requestId`, `clientEphemeralPublicKey`, `expectedDid`                                          | `cancelled` (boolean)                                                |
-| `health`                | none                                                                                                                                     | `ok`                                                                 |
-| `error` (response only) | —                                                                                                                                        | `code`, safe `message`                                               |
+| Method                  | Request fields (besides `method`)                                                                                                               | Response fields                                                      |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `attest`                | `nonce` (JSON byte array)                                                                                                                       | `mode`, `keyId`, `publicKey`, `measurements`, `document`, `issuedAt` |
+| `createHold`            | `envelope`, `holdId`, `requestId`, `expectedDid`, `expectedShareVersion`, `enrollmentEpoch`, `releasePolicy`, `clientEphemeralPublicKey`        | `hold` (`SignedHoldRecord` wrapper)                                  |
+| `verifyBlob`            | `envelope`, `expectedDid`, `expectedShareVersion`                                                                                               | `ok`, `hasPin`, optional `reason` (on failure)                       |
+| `carryPinVerifier`      | `sourceEnvelope`, `targetEnvelope`, `expectedDid`, `sourceShareVersion`, `targetShareVersion`, `sourceEnrollmentEpoch`, `targetEnrollmentEpoch` | `envelope` (sealed to the current key)                               |
+| `rewrapEscrowBlob`      | `envelope`, `expectedDid`, `expectedShareVersion`, `sourceEnrollmentEpoch`                                                                      | `envelope` (sealed to the current key)                               |
+| `release`               | `envelope`, `hold` (`SignedHoldRecord`), `requestId`, `clientEphemeralPublicKey`, `expectedDid`, optional `pinProof`                            | `sealed` (envelope)                                                  |
+| `cancel`                | `envelope`, `hold` (`SignedHoldRecord`), `requestId`, `clientEphemeralPublicKey`, `expectedDid`                                                 | `cancelled` (boolean)                                                |
+| `health`                | none                                                                                                                                            | `ok`                                                                 |
+| `error` (response only) | —                                                                                                                                               | `code`, safe `message`                                               |
 
-`carryPinVerifier` takes no `requestId`: it appends nothing but statefully observes
-the source epoch's ledger to carry forward `pinAttemptsFloor`. Its request includes
-`sourceEnrollmentEpoch`; it has no `EnrollmentSource` or trusted-time dependency.
+`carryPinVerifier` takes no `requestId`: fresh output randomness determines a unique
+destination hash and `carry-<output hash>` operation ID (`holdId` is `carry`). It
+statefully observes the source blob's chain, then appends `Carried` to the empty
+output chain bound to `targetEnrollmentEpoch`. `sourceEnrollmentEpoch` binds the
+source records, never selects them. It requires trusted time but no `EnrollmentSource`.
 Blob binding failures return generic `blob`; invalid/rolled-back history returns
 `ledger`, and storage failure returns `unavailable`. No failure is treated as an
 empty chain. Resealing uses fresh ephemeral keys, salt and IV.
 
-`rewrapEscrowBlob` (P9.3) likewise takes no `requestId`: it never appends to the
-ledger, only reads the source epoch's chain (the same read `carryPinVerifier`'s
-P8.3 accounting does) to compute the migrated copy's PIN attempt floor, using the
-same stateful high-water observation. Binding failures return generic `blob`:
+`rewrapEscrowBlob` (P9.3) likewise takes no `requestId`: it observes the source
+blob chain and appends/readbacks `Carried` on the fresh output chain, preserving
+the source epoch. Both paths refuse nonempty destinations and return no blob on
+append failure (`unavailable`); floor mismatch or invalid chains return `ledger`.
+Positive encrypted floors require matching Carried genesis records for hold/release.
+Binding failures return generic `blob`:
 an envelope keyed to the
 current key (nothing to migrate) or an unrecognised key is indistinguishable
 from a DID/version mismatch or an undecryptable envelope. Ledger/rollback and

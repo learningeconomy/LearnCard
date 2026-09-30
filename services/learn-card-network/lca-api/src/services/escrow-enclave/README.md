@@ -47,7 +47,8 @@ with the same contract described here:
 
 ```ts
 carryPinVerifier({ sourceEnvelope, targetEnvelope, expectedDid,
-    sourceShareVersion, targetShareVersion }): Promise<{ envelope }>
+    sourceShareVersion, targetShareVersion,
+    sourceEnrollmentEpoch, targetEnrollmentEpoch }): Promise<{ envelope }>
 ```
 
 Decrypt both envelopes inside the enclave. Require both DIDs to equal `expectedDid`,
@@ -76,16 +77,20 @@ calls that endpoint the same way `verifyEscrowBlob`/`releaseEscrow` do, with zod
 response validation and the same fail-closed error mapping.
 
 `carry_pin_verifier` decrypts/validates/reseals: unlike `createHold`/`release`/
-`cancelHold`, it needs no `EnrollmentSource` and no trusted time, so it still
+`cancelHold`, it needs no `EnrollmentSource`, but now requires trusted time to
+sign a destination-genesis Carried record. It can still
 works in `remote` mode today even though every other mutating operation fails
 closed with `Unavailable` under the enclave's BLOCKER-ENROLLMENT gate (see
 `services/escrow-enclave-app/README.md`'s intro paragraph and `SECURITY.md`'s
 "Open Items / Launch Blockers").
 
-**P8.3**: it now also reads (never writes) the source epoch's ledger chain, so
+**P8.3 / v2**: it observes the source blob's ledger chain and writes the output
+blob's first Carried record before returning ciphertext, so
 the PIN attempt budget itself carries forward across a rotation instead of
-resetting. `sourceEnrollmentEpoch` (plus the tenant and decrypted source DID)
-locates that chain the same way `release_pin` does; the chain is verified with
+resetting. Tenant, decrypted source DID hash and actual blob hash locate that chain;
+`sourceEnrollmentEpoch` remains a signed record binding, never a chain selector.
+`targetEnrollmentEpoch` binds carry output; rewrap preserves the source epoch.
+The chain is verified with
 the same signature/sequence/binding checks (`Ledger::verify_chain`), and a
 chain that fails that verification is a fail-closed `Ledger`/`Unavailable`
 error, not silently treated as empty. The target's `pinAttemptsFloor` becomes
@@ -95,10 +100,14 @@ floor only permits `10 - floor` further local attempts before locking, so a
 carry — including a carry of a carry — never hands out a fresh budget and
 never lowers whatever floor the source blob already had. `pinAttemptsFloor` is
 stripped (like `pinVerifier`) before any release plaintext reaches the client:
-it is enclave/ledger bookkeeping, not client-facing data.
+it is enclave/ledger bookkeeping, not client-facing data. Positive floors must
+match the chain's Carried genesis. The independent monitor checks source-head
+accounting on inserts and sweeps. Choosing an older PIN-bearing copy with fewer
+attempts still requires an authenticated current-enrollment authority to prevent.
+Nitro never ran in production; there is no legacy-chain migration.
 
-Software mode (`softwareEnclave.ts`) accepts `sourceEnrollmentEpoch` but
-ignores it: software mode has no enclave ledger to reset in the first place,
+Software mode (`softwareEnclave.ts`) accepts both epoch fields but
+ignores them: software mode has no enclave ledger to reset in the first place,
 so there is no epoch-scoped budget to carry — its PIN attempt budget is the
 host's `escrowPin.failedAttempts`/`verifiedFailedAttempts` counters in
 MongoDB, which the enroll route already copies forward unchanged on every

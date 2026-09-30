@@ -219,13 +219,11 @@ impl<'a> Policy<'a> {
     }
 
     /// P8.1/P8.3: transfers a PIN verifier, AND the lifetime attempt budget
-    /// already spent against it, across a share-version rotation. Still a pure
-    /// decrypt/validate/reseal with no `EnrollmentSource` or trusted time — but
-    /// P8.3 adds a READ-ONLY ledger lookup of the source epoch's chain (the same
-    /// signature/sequence/binding verification `release_pin` uses), so it is no
-    /// longer independent of the ledger like `verify_blob`. It still never
-    /// appends/mutates a chain, so it is unaffected by BLOCKER-ENROLLMENT (see
-    /// README.md and SECURITY.md): `EnrollmentSource` is not on this path.
+    /// already spent against it, across a share-version rotation. Observes the
+    /// source blob chain and appends a trusted-time Carried genesis to the fresh
+    /// output chain before returning ciphertext. Epochs bind source/destination
+    /// records but never select their chains. EnrollmentSource is not consulted;
+    /// choosing an older PIN-bearing source remains BLOCKER-ENROLLMENT.
     ///
     /// Rejects with the single generic `Blob` error for every DID/version/PIN-
     /// presence mismatch — same shape as every other blob failure, no
@@ -256,7 +254,7 @@ impl<'a> Policy<'a> {
         expected_did: &str,
         source_share_version: u32,
         target_share_version: u32,
-        source_enrollment_epoch: u64,
+        (source_enrollment_epoch, target_enrollment_epoch): (u64, u64),
     ) -> Result<EscrowEnvelope, ErrorCode> {
         let mut source = self.decrypt(source_envelope)?;
         let mut target = self.decrypt(target_envelope)?;
@@ -269,11 +267,13 @@ impl<'a> Policy<'a> {
             || target.pin_verifier.is_some()
             || source_enrollment_epoch == 0
             || source_enrollment_epoch > JS_MAX_INTEGER
+            || target_enrollment_epoch == 0
+            || target_enrollment_epoch > JS_MAX_INTEGER
         {
             return Err(ErrorCode::Blob);
         }
         let source_hash = blob_hash(source_envelope)?;
-        target.pin_attempts_floor = self
+        let (floor, event, time) = self
             .carried_attempts_floor(
                 &source.did,
                 source_enrollment_epoch,
@@ -281,9 +281,10 @@ impl<'a> Policy<'a> {
                 source.pin_attempts_floor,
             )
             .await?;
+        target.pin_attempts_floor = floor;
         target.pin_verifier = source.pin_verifier.take();
-        crypto::encrypt_escrow_blob(&target, &self.keys.public_key, &self.key_id)
-            .map_err(|_| ErrorCode::Blob)
+        self.seal_carried(&target, target_enrollment_epoch, event, time)
+            .await
     }
 
     /// Shared by `carry_pin_verifier` (P8.3) and `rewrap_escrow_blob` (P9.3):
@@ -301,7 +302,7 @@ impl<'a> Policy<'a> {
         epoch: u64,
         blob_hash: Hash,
         floor: Option<u8>,
-    ) -> Result<Option<u8>, ErrorCode> {
+    ) -> Result<(Option<u8>, Event, TimeEvidence), ErrorCode> {
         let enrollment = Enrollment::new(self.tenant.clone(), did, epoch, blob_hash);
         let records = self
             .store
@@ -312,11 +313,62 @@ impl<'a> Policy<'a> {
             .ledger
             .observe(&records, &enrollment)
             .map_err(ledger_error)?;
+        Self::check_carried_floor(&records, floor)?;
         let used = floor
             .unwrap_or(0)
             .saturating_add(state.attempts_used)
             .min(PIN_BUDGET);
-        Ok((used > 0).then_some(used))
+        let event = Event::Carried {
+            source_chain_id: hex::decode(enrollment.chain_id())
+                .map_err(|_| ErrorCode::Ledger)?
+                .try_into()
+                .map_err(|_| ErrorCode::Ledger)?,
+            source_head_hash: state
+                .head()
+                .map(LedgerRecord::record_hash)
+                .transpose()
+                .map_err(ledger_error)?
+                .unwrap_or([0; 32]),
+            attempts_carried: used,
+        };
+        Ok(((used > 0).then_some(used), event, self.now(&state).await?))
+    }
+
+    fn check_carried_floor(records: &[LedgerRecord], floor: Option<u8>) -> Result<(), ErrorCode> {
+        let recorded = records.first().and_then(|record| match record.event {
+            Event::Carried {
+                attempts_carried, ..
+            } => Some(attempts_carried),
+            _ => None,
+        });
+        if recorded.unwrap_or(0) != floor.unwrap_or(0) {
+            return Err(ErrorCode::Ledger);
+        }
+        Ok(())
+    }
+
+    async fn seal_carried(
+        &mut self,
+        blob: &EscrowBlobPlaintext,
+        epoch: u64,
+        event: Event,
+        time_evidence: TimeEvidence,
+    ) -> Result<EscrowEnvelope, ErrorCode> {
+        let envelope = crypto::encrypt_escrow_blob(blob, &self.keys.public_key, &self.key_id)
+            .map_err(|_| ErrorCode::Blob)?;
+        let hash = blob_hash(&envelope)?;
+        let destination = Enrollment::new(self.tenant.clone(), &blob.did, epoch, hash);
+        let operation = Operation {
+            hold_id: "carry".into(),
+            request_id: format!("carry-{}", hex::encode(hash)),
+            time_evidence,
+            payload_hash: hash,
+        };
+        self.ledger
+            .transition(self.store, &destination, &operation, event)
+            .await
+            .map_err(ledger_error)?;
+        Ok(envelope)
     }
 
     /// P9.3: migrates an escrow copy sealed under a recognised PREVIOUS key
@@ -364,7 +416,7 @@ impl<'a> Policy<'a> {
             return Err(ErrorCode::Blob);
         }
         let hash = blob_hash(envelope)?;
-        blob.pin_attempts_floor = self
+        let (floor, event, time) = self
             .carried_attempts_floor(
                 &blob.did,
                 source_enrollment_epoch,
@@ -372,8 +424,9 @@ impl<'a> Policy<'a> {
                 blob.pin_attempts_floor,
             )
             .await?;
-        crypto::encrypt_escrow_blob(&blob, &self.keys.public_key, &self.key_id)
-            .map_err(|_| ErrorCode::Blob)
+        blob.pin_attempts_floor = floor;
+        self.seal_carried(&blob, source_enrollment_epoch, event, time)
+            .await
     }
 
     async fn enrollment(
@@ -442,6 +495,7 @@ impl<'a> Policy<'a> {
             .enrollment(req.envelope, &blob, req.enrollment_epoch)
             .await?;
         let (records, state) = self.load(&enrollment).await?;
+        Self::check_carried_floor(&records, blob.pin_attempts_floor)?;
         if state.holds.contains_key(req.hold_id) || records.len() >= MAX_CHAIN_RECORDS {
             return Err(ErrorCode::Policy);
         }
@@ -500,6 +554,7 @@ impl<'a> Policy<'a> {
             return Err(ErrorCode::Policy);
         }
         let (records, state) = self.load(&enrollment).await?;
+        Self::check_carried_floor(&records, blob.pin_attempts_floor)?;
         let record = records
             .get(usize::try_from(signed.ledger_seq).map_err(|_| ErrorCode::Policy)?)
             .ok_or(ErrorCode::Policy)?;
@@ -601,10 +656,9 @@ impl<'a> Policy<'a> {
             return Err(ErrorCode::Policy);
         }
         let proof = req.pin_proof.ok_or(ErrorCode::Policy)?;
-        // P8.3: a carried floor lowers the LOCAL budget this epoch's chain may
-        // spend (e.g. floor=3 leaves 7 local reservations before locking), so
-        // the combined total across every epoch a PIN has survived never
-        // exceeds PIN_BUDGET. floor=0 (no carry) reduces to today's behavior.
+        // A carried floor lowers this blob's local budget (floor=3 leaves seven
+        // reservations). This accounts for the selected lineage/presented history,
+        // not attempts against sibling copies; see BLOCKER-ENROLLMENT.
         let floor = verified.blob.pin_attempts_floor.unwrap_or(0);
         let used_before = verified.state.attempts_used.saturating_add(floor);
         // Oversize rejection depends only on public input, never the verifier.
@@ -643,15 +697,8 @@ impl<'a> Policy<'a> {
         match outcome {
             PinOutcome::Compared { matched: true } => self.finish(&req, verified, time).await,
             PinOutcome::Compared { matched: false } => {
-                // The explicit PinLocked audit record needs the LEDGER's own
-                // native lock (local attempt_no reaching PIN_BUDGET): with a
-                // carried floor, the combined budget is exhausted before the
-                // local count ever reaches PIN_BUDGET, so the ledger correctly
-                // has no native "locked" state to attest here. That is fine:
-                // PinLocked is an optional audit record, not the enforcement
-                // boundary (used_before >= PIN_BUDGET already refuses further
-                // attempts on the next call regardless of this event).
-                if verified.state.attempts_used == PIN_BUDGET - 1 {
+                // Ledger lock includes the signed inherited floor.
+                if used_before == PIN_BUDGET - 1 {
                     let locked = self.operation(&req, time, "lock", Some(proof))?;
                     self.ledger
                         .transition(self.store, &verified.enrollment, &locked, Event::PinLocked)
@@ -783,10 +830,9 @@ fn deadline(created_hi: u64, duration: u64) -> Result<u64, ErrorCode> {
         .ok_or(ErrorCode::Time)
 }
 
-/// SHA-256 of the envelope's fixed-order compact JSON struct (not host JSON order).
-/// Call only after crypto has authenticated and bounded the envelope.
+/// Identity is invariant under equivalent ECDH points and serialization aliases.
 fn blob_hash(envelope: &EscrowEnvelope) -> Result<Hash, ErrorCode> {
-    Ok(Sha256::digest(serde_json::to_vec(envelope).map_err(|_| ErrorCode::Blob)?).into())
+    crypto::escrow_blob_identity(envelope).map_err(|_| ErrorCode::Blob)
 }
 
 fn hold_hash(tenant: &str, signed: &SignedHoldRecord) -> Result<Hash, ErrorCode> {

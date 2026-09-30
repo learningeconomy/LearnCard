@@ -33,6 +33,7 @@ pub mod v1 {
             source_share_version: u32,
             target_share_version: u32,
             source_enrollment_epoch: u64,
+            target_enrollment_epoch: u64,
         },
         RewrapEscrowBlob {
             envelope: EscrowEnvelope,

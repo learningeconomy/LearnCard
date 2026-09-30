@@ -28,6 +28,7 @@ pub enum Metric {
     PinAttemptSucceeded,
     PinLocked,
     Cancelled,
+    Carried,
     SweepCompleted,
 }
 impl Metric {
@@ -42,6 +43,7 @@ impl Metric {
             Self::PinAttemptSucceeded => "PinAttemptSucceeded",
             Self::PinLocked => "PinLocked",
             Self::Cancelled => "Cancelled",
+            Self::Carried => "Carried",
             Self::SweepCompleted => "SweepCompleted",
         }
     }
@@ -56,6 +58,7 @@ impl From<Event> for Metric {
             Event::PinAttemptSucceeded => Self::PinAttemptSucceeded,
             Event::PinLocked => Self::PinLocked,
             Event::Cancelled => Self::Cancelled,
+            Event::Carried { .. } => Self::Carried,
         }
     }
 }
@@ -177,6 +180,60 @@ impl<B: Backend> Monitor<B> {
         Ok(records)
     }
 
+    /// Validate one cross-chain edge, not a recursive ancestry walk. Each source
+    /// chain's own first record already commits to its inherited floor.
+    async fn verify_carry(&self, records: &[LedgerRecord]) -> Result<()> {
+        let first = records.first().ok_or(Error::Integrity)?;
+        let Event::Carried {
+            source_chain_id,
+            source_head_hash,
+            attempts_carried,
+        } = first.event
+        else {
+            return Ok(());
+        };
+        let chain = hex::encode(source_chain_id);
+        let bytes = self.backend.chain(&chain).await?;
+        if source_head_hash == [0; 32] {
+            // Zero denotes the empty prefix, which has neither carry nor attempts.
+            // A source may have acquired records since that observation.
+            if attempts_carried != 0 {
+                return Err(Error::Integrity);
+            }
+            if !bytes.is_empty() {
+                let source = self.verify(&chain, &bytes)?;
+                if source[0].enrollment_id != first.enrollment_id
+                    || matches!(source[0].event, Event::Carried { .. })
+                {
+                    return Err(Error::Integrity);
+                }
+            }
+            return Ok(());
+        }
+        let source = self.verify(&chain, &bytes)?;
+        if source[0].enrollment_id != first.enrollment_id {
+            return Err(Error::Integrity);
+        }
+        let index = source
+            .iter()
+            .position(|r| r.record_hash().ok() == Some(source_head_hash))
+            .ok_or(Error::Integrity)?;
+        let floor = match source[0].event {
+            Event::Carried {
+                attempts_carried, ..
+            } => attempts_carried,
+            _ => 0,
+        };
+        let used = source[..=index]
+            .iter()
+            .filter(|r| matches!(r.event, Event::PinAttemptReserved { .. }))
+            .count() as u8;
+        if attempts_carried != floor.saturating_add(used).min(10) {
+            return Err(Error::Integrity);
+        }
+        Ok(())
+    }
+
     /// MODIFY/REMOVE alarm without parsing images or making storage reads.
     pub async fn stream(&self, action: &str, pk: &str, sk: &str, image: &[u8]) -> Result<()> {
         if matches!(action, "MODIFY" | "REMOVE") {
@@ -200,6 +257,7 @@ impl<B: Backend> Monitor<B> {
         let head = self.backend.head(chain).await?.ok_or(Error::Integrity)?;
         let bytes = self.backend.chain(chain).await?;
         let records = self.verify(chain, &bytes)?;
+        self.verify_carry(&records).await?;
         let incoming = LedgerRecord::decode(image).map_err(|_| Error::Integrity)?;
         if sk != format!("SEQ#{:020}", incoming.seq)
             || bytes.get(incoming.seq as usize).map(Vec::as_slice) != Some(image)
@@ -268,6 +326,7 @@ impl<B: Backend> Monitor<B> {
     async fn check_head(&self, head: &Head) -> Result<()> {
         let bytes = self.backend.chain(&head.chain).await?;
         let records = self.verify(&head.chain, &bytes)?;
+        self.verify_carry(&records).await?;
         if records
             .get(head.seq as usize)
             .and_then(|r| r.record_hash().ok())

@@ -53,7 +53,7 @@ It has **no escrow-CMK access, table writes, or lca-api configuration writes**.
 
 Metrics in `LearnCard/EscrowLedger` have **only `Tenant`**, taken from operator
 configuration, never a record-supplied DID, chain ID, hold ID, request ID, or hash.
-All seven signed event types are counted. Delivery is **at least once**: Lambda
+All eight signed event types (including `Carried`) are counted. Delivery is **at least once**: Lambda
 retries can duplicate both metrics and SNS alarms; hourly thresholds are signals,
 not billing or exact forensic counts. No payloads, raw SDK errors, or record
 identifiers are logged; returned errors and alarm messages are fixed strings.
@@ -61,6 +61,18 @@ CloudTrail SNS messages are also constant, not full management-event payloads.
 DLQs may contain source payloads/metadata: restrict operator access accordingly.
 
 ## Trusted key provisioning and configuration
+
+Chain IDs use the shared v2 tenant/identity/blob-hash derivation; epoch is a signed
+record binding, not a selector. On INSERT and sweep, a Carried genesis must name
+an authenticated source head and carry exactly `min(10, sourceCarried + source
+reservations through that head)`. Missing sources/heads and mismatched floors use
+LedgerIntegrityFailure. An all-zero head denotes an empty prefix with floor zero;
+that source may subsequently acquire ordinary hold records. Its own Carried
+genesis cannot be omitted this way. Validation is one hop, not recursive: the
+source's genesis supplies its inherited floor and is checked on its own sweep.
+Nitro never ran in production; no v1-chain migration is supported. An older
+PIN-bearing source copy may still have fewer attempts: preventing its selection
+requires the independently authenticated current-enrollment authority.
 
 Before enabling the monitor, security operators must verify a fresh nonce-bound
 Nitro attestation (AWS trust root, approved PCRs, non-debug, freshness) and extract

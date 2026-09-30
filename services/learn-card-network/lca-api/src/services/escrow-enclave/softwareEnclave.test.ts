@@ -58,6 +58,7 @@ describe('software enclave', () => {
             expectedDid: scenario === 'expected DID' ? 'did:key:other' : did,
             sourceShareVersion: scenario === 'source version' ? 1 : 2,
             targetShareVersion: scenario === 'target version' ? 4 : targetVersion,
+            targetEnrollmentEpoch: 2,
             // Unused in software mode (see softwareEnclave.ts); any value is fine here.
             sourceEnrollmentEpoch: 1,
         });

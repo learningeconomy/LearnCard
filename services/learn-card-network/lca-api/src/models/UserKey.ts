@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { createHash } from 'crypto';
+import { escrowBlobIdentity } from '../services/escrow-enclave/blobIdentity';
 import type { Filter } from 'mongodb';
 import { ESCROW_PIN_MAX_ATTEMPTS } from '@learncard/sss-key-manager';
 import { EscrowPinStatusValidator as SharedEscrowPinStatusValidator } from '@learncard/types';
@@ -745,22 +745,7 @@ export const setEscrowBlobByAuthProvider = async (
         blob
     );
     if (!parsed.success) throw new Error('Invalid escrow payload');
-    const { version, algorithm, keyId, ephemeralPublicKey, salt, iv, ciphertext } =
-        parsed.data.envelope;
-    // policy.rs blob_hash: serde declaration order, compact JSON, not alphabetical order.
-    const blobHash = createHash('sha256')
-        .update(
-            JSON.stringify({
-                version,
-                algorithm,
-                keyId,
-                ephemeralPublicKey,
-                salt,
-                iv,
-                ciphertext,
-            })
-        )
-        .digest('hex');
+    const blobHash = escrowBlobIdentity(parsed.data.envelope);
     const assembled = EscrowBlobValidator.safeParse({
         ...parsed.data,
         blobHash,
@@ -842,7 +827,7 @@ export const setEscrowBlobByAuthProvider = async (
  * assumption), even though this write never touches `escrowPin` itself.
  * Writes the new envelope under the CURRENT `enclaveKeyId`, a fresh
  * Rust-order `blobHash` (identical algorithm to `setEscrowBlobByAuthProvider`),
- * `enrollmentEpoch + 1`, and the SAME `shareVersion` — `escrowPin` is left
+ * the SAME `enrollmentEpoch` and `shareVersion` — `escrowPin` is left
  * exactly as read. Lost race (version bump, opt-out, or any other change
  * since `oldBlob`/`oldPin` were read) -> null, no-op; callers retry on a
  * later job run rather than treating this as an error.
@@ -855,13 +840,7 @@ export const rewrapEscrowBlobByAuthProvider = async (
     identity: Pick<EscrowBlob, 'enclaveKeyId' | 'enclaveMode' | 'measurements'>
 ): Promise<MongoUserKeyType | null> => {
     const now = new Date();
-    const { version, algorithm, keyId, ephemeralPublicKey, salt, iv, ciphertext } = newEnvelope;
-    // policy.rs blob_hash: serde declaration order, compact JSON, not alphabetical order.
-    const blobHash = createHash('sha256')
-        .update(
-            JSON.stringify({ version, algorithm, keyId, ephemeralPublicKey, salt, iv, ciphertext })
-        )
-        .digest('hex');
+    const blobHash = escrowBlobIdentity(newEnvelope);
     const parsed = EscrowBlobValidator.safeParse({
         envelope: newEnvelope,
         enclaveKeyId: identity.enclaveKeyId,
@@ -869,7 +848,7 @@ export const rewrapEscrowBlobByAuthProvider = async (
         measurements: identity.measurements,
         shareVersion: oldBlob.shareVersion,
         blobHash,
-        enrollmentEpoch: oldBlob.enrollmentEpoch + 1,
+        enrollmentEpoch: oldBlob.enrollmentEpoch,
         createdAt: now,
     });
     if (!parsed.success || parsed.data.enclaveKeyId !== parsed.data.envelope.keyId) return null;

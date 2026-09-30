@@ -35,12 +35,19 @@ pub type Hash = [u8; 32];
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Event {
     HoldCreated,
-    PinAttemptReserved { attempt_no: u8 },
+    PinAttemptReserved {
+        attempt_no: u8,
+    },
     PinAttemptFailed,
     PinAttemptSucceeded,
     Released,
     Cancelled,
     PinLocked,
+    Carried {
+        source_chain_id: Hash,
+        source_head_hash: Hash,
+        attempts_carried: u8,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -75,9 +82,9 @@ pub struct Enrollment {
 }
 
 impl Enrollment {
-    /// Policy must pass the authenticated/decrypted identity and current epoch.
-    /// Blob hash is deliberately excluded from chain_id: changing blobs cannot
-    /// silently reset a budget within an epoch (verification instead fails).
+    /// Policy must pass the decrypted identity and actual envelope hash. Epoch
+    /// remains a signed binding, not a host-selectable budget namespace. New
+    /// enclave-produced blobs carry their spent budget into their own chains.
     pub fn new(tenant: String, decrypted_did: &str, epoch: u64, blob_hash: Hash) -> Self {
         Self {
             tenant,
@@ -89,11 +96,11 @@ impl Enrollment {
 
     pub fn chain_id(&self) -> String {
         let mut h = Sha256::new();
-        h.update(b"learncard-ledger-chain-v1\0");
+        h.update(b"learncard-ledger-chain-v2\0");
         h.update((self.tenant.len() as u64).to_be_bytes());
         h.update(self.tenant.as_bytes());
         h.update(self.enrollment_id);
-        h.update(self.epoch.to_be_bytes());
+        h.update(self.blob_hash);
         hex::encode(h.finalize())
     }
 }
@@ -141,6 +148,7 @@ pub struct HoldState {
 
 #[derive(Debug, Clone, Default)]
 pub struct ChainState {
+    pub attempts_carried: u8,
     pub attempts_used: u8,
     pub locked: bool,
     pub holds: BTreeMap<String, HoldState>,
@@ -429,11 +437,18 @@ impl Ledger {
     ) -> Result<LedgerRecord, LedgerError> {
         if !matches!(
             event,
-            Event::HoldCreated | Event::Released | Event::Cancelled | Event::PinLocked
+            Event::HoldCreated
+                | Event::Released
+                | Event::Cancelled
+                | Event::PinLocked
+                | Event::Carried { .. }
         ) {
             return Err(LedgerError::Chain);
         }
         let state = self.load(store, enrollment).await?;
+        if matches!(event, Event::Carried { .. }) && state.head().is_some() {
+            return Err(LedgerError::Chain);
+        }
         if let Some(existing) = state
             .records
             .iter()
@@ -520,6 +535,17 @@ fn same_operation(record: &LedgerRecord, operation: &Operation) -> bool {
 
 impl ChainState {
     fn apply(&mut self, record: &LedgerRecord) -> Result<(), LedgerError> {
+        if let Event::Carried {
+            attempts_carried, ..
+        } = record.event
+        {
+            if !self.records.is_empty() || attempts_carried > PIN_BUDGET {
+                return Err(LedgerError::Chain);
+            }
+            self.attempts_carried = attempts_carried;
+            self.locked = attempts_carried == PIN_BUDGET;
+            return Ok(());
+        }
         let prior = self
             .records
             .iter()
@@ -567,7 +593,7 @@ impl ChainState {
                     return Err(LedgerError::Chain);
                 }
                 self.attempts_used = attempt_no;
-                self.locked = attempt_no == PIN_BUDGET;
+                self.locked = attempt_no.saturating_add(self.attempts_carried) >= PIN_BUDGET;
             }
             Event::PinAttemptSucceeded => hold.pin_succeeded = true,
             Event::PinAttemptFailed => {}
@@ -578,7 +604,7 @@ impl ChainState {
                     return Err(LedgerError::Chain);
                 }
             }
-            Event::HoldCreated => return Err(LedgerError::Chain),
+            Event::HoldCreated | Event::Carried { .. } => return Err(LedgerError::Chain),
         }
         Ok(())
     }

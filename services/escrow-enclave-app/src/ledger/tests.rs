@@ -255,9 +255,9 @@ async fn crash_after_reserve_spends_attempt_across_holds_and_restart() {
         )
         .await
         .unwrap();
-    // Changing blob without a new authenticated epoch is not a budget reset.
+    // Changing epoch for the same blob cannot select a fresh budget.
     let mut changed = enrollment.clone();
-    changed.blob_hash[0] ^= 1;
+    changed.epoch += 1;
     assert_eq!(changed.chain_id(), enrollment.chain_id());
     assert!(reboot
         .verify_pin(&store, &changed, &op("third", "changed"), || panic!(
@@ -486,4 +486,61 @@ fn golden_cbor_and_strict_bounded_decode() {
     let mut bad = record;
     bad.time_evidence.sources.reverse();
     assert!(bad.canonical_bytes().is_err());
+}
+
+#[test]
+fn carried_golden_encoding_and_bounds() {
+    let mut record = golden_record();
+    record.event = Event::Carried {
+        source_chain_id: [1; 32],
+        source_head_hash: [0; 32],
+        attempts_carried: 10,
+    };
+    // Intentional event-schema extension: existing event goldens stay byte-identical;
+    // code 7 introduces a fixed four-element array, not optional map fields.
+    let zero = "00".repeat(32);
+    let source = "01".repeat(32);
+    let golden = format!("b000010161740261680301045820{zero}0500065820{zero}0784075820{source}5820{zero}0a086172095820{zero}0a616b0b8300018284616100015820{zero}84616200015820{zero}0c5820{zero}0d010e5820{zero}0f5840{}", "00".repeat(64));
+    let bytes = hex::decode(golden).unwrap();
+    assert_eq!(record.canonical_bytes().unwrap(), bytes);
+    assert_eq!(LedgerRecord::decode(&bytes).unwrap(), record);
+    let event = bytes.windows(2).position(|w| w == [0x84, 7]).unwrap();
+    for (offset, value) in [(0, 0x83), (3, 31), (70, 11)] {
+        let mut bad = bytes.clone();
+        bad[event + offset] = value;
+        assert!(LedgerRecord::decode(&bad).is_err());
+    }
+}
+
+#[tokio::test]
+async fn carry_requires_empty_destination_and_epoch_cannot_select_another_chain() {
+    let (_, mut ledger, enrollment, store) = setup();
+    let event = Event::Carried {
+        source_chain_id: [2; 32],
+        source_head_hash: [3; 32],
+        attempts_carried: 4,
+    };
+    ledger
+        .transition(&store, &enrollment, &op("carry", "carry"), event)
+        .await
+        .unwrap();
+    // Even an exact duplicate is refused: carry output is never returned on collision.
+    assert_eq!(
+        ledger
+            .transition(&store, &enrollment, &op("carry", "carry"), event)
+            .await,
+        Err(LedgerError::Chain)
+    );
+    let mut epoch = enrollment.clone();
+    epoch.epoch += 1;
+    assert_eq!(epoch.chain_id(), enrollment.chain_id());
+    assert_eq!(
+        ledger
+            .transition(&store, &epoch, &op("h", "create"), Event::HoldCreated)
+            .await,
+        Err(LedgerError::Chain)
+    );
+    let mut blob = enrollment.clone();
+    blob.blob_hash[0] ^= 1;
+    assert_ne!(blob.chain_id(), enrollment.chain_id());
 }

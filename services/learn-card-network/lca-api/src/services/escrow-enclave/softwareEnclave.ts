@@ -1,4 +1,5 @@
-import { timingSafeEqual, createHash } from 'crypto';
+import { timingSafeEqual } from 'crypto';
+import { escrowBlobIdentity } from './blobIdentity';
 import type { EnclaveCreateHoldInput, EscrowHoldRecord, CancelHoldRequest } from './types';
 import {
     decryptEscrowBlob,
@@ -51,22 +52,7 @@ export class SoftwareEnclave implements EscrowEnclave {
             (input.releasePolicy === 'pin' && !blob.pinVerifier)
         )
             throw new EscrowPolicyError();
-        const { version, algorithm, keyId, ephemeralPublicKey, salt, iv, ciphertext } =
-            input.envelope;
-        // Match policy.rs blob_hash's declared field order and compact JSON.
-        const blobHash = createHash('sha256')
-            .update(
-                JSON.stringify({
-                    version,
-                    algorithm,
-                    keyId,
-                    ephemeralPublicKey,
-                    salt,
-                    iv,
-                    ciphertext,
-                })
-            )
-            .digest('hex');
+        const blobHash = escrowBlobIdentity(input.envelope);
         const now = Date.now();
         return {
             holdRecord: {

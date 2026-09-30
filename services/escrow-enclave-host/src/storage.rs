@@ -121,6 +121,13 @@ impl Record {
                 }
             }
             (0 | 2..=6, 1) => {}
+            (7, 4) => {
+                r.bytes::<32>()?;
+                r.bytes::<32>()?;
+                if r.arg(0)? > 10 {
+                    return Err(BAD);
+                }
+            }
             _ => return Err(BAD),
         }
         r.exact(0, 8)?;
@@ -539,6 +546,28 @@ pub mod tests {
             .bytes(&[1; 64])
             .unwrap();
         e.into_writer()
+    }
+
+    #[test]
+    fn carried_record_matches_enclave_codec_and_rejects_bad_bounds() {
+        use escrow_enclave::ledger::{Event, LedgerRecord};
+        let mut carried = LedgerRecord::decode(&record(0, [0; 32])).unwrap();
+        carried.event = Event::Carried {
+            source_chain_id: [1; 32],
+            source_head_hash: [2; 32],
+            attempts_carried: 10,
+        };
+        let bytes = carried.canonical_bytes().unwrap();
+        assert_eq!(
+            Record::decode(&bytes).unwrap().hash,
+            carried.record_hash().unwrap()
+        );
+        let event = bytes.windows(2).position(|w| w == [0x84, 7]).unwrap();
+        for (offset, value) in [(0, 0x83), (3, 31), (70, 11)] {
+            let mut bad = bytes.clone();
+            bad[event + offset] = value;
+            assert!(Record::decode(&bad).is_err());
+        }
     }
     #[tokio::test]
     async fn conditional_append_and_builder() {
