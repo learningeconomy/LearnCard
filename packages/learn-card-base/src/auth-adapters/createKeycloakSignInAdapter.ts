@@ -13,6 +13,11 @@ export type { KeycloakSignInAdapter, KeycloakSignInAdapterConfig } from './keycl
 
 const log = getLogger('keycloak-sign-in');
 
+type PendingSignIn = {
+    resolve: (user: AuthUser) => void;
+    reject: (error: unknown) => void;
+};
+
 /**
  * Login tickets are brokered through Keycloak, never exchanged directly for tokens.
  * A web redirect destroys the initiating JS realm; the next adapter instance completes
@@ -30,12 +35,7 @@ export const createKeycloakSignInAdapter = (
     let listening = false;
     let disposed = false;
     let completingRedirect = false;
-    let pending:
-        | {
-              resolve: (user: AuthUser) => void;
-              reject: (error: unknown) => void;
-          }
-        | undefined;
+    let pending: PendingSignIn | undefined;
 
     const notify = (callback: () => void): void => {
         try {
@@ -103,7 +103,8 @@ export const createKeycloakSignInAdapter = (
         const completion = new Promise<AuthUser>(resolve => {
             pending = { resolve, reject: error => cancel?.(error) };
         });
-        const attempt = pending;
+        const getPending = (): PendingSignIn | undefined => pending;
+        const attempt = getPending();
         const unsubscribe = provider.onRedirectComplete(result => {
             if ('user' in result) attempt?.resolve(result.user);
             else attempt?.reject(result.error);
