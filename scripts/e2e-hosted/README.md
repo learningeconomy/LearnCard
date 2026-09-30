@@ -66,9 +66,21 @@ The app Dockerfile builds with the monorepo image, then copies only the generate
 through index.html, and returns 404 for missing assets. Backend containers continue
 to use the monorepo image.
 
+## Cache writers and cleanup
+
+The browser job and service shards 2/3 restore the Bun dependency cache without
+saving it. Service shard 1 is the sole writer within each E2E run. The shared setup
+action retains cache saving by default for other workflows. This avoids sibling
+jobs compressing the same dependency cache only to lose a cache-key reservation.
+
+Buildx removal is skipped only when `runner.environment` is `github-hosted`:
+GitHub discards that VM after the job. Persistent runners retain builder cleanup.
+Application stack teardown still runs in every job.
+
 ## Measuring changes
 
-Artifacts contain `timings.tsv`, capacity snapshots, Docker build logs, and
+Artifacts contain `timings.tsv` (including capacity snapshot and stack teardown
+durations), capacity snapshots, Docker build logs, and
 Playwright JSON reports. Compare the slowest required job across multiple runs,
 including cold and warm caches. Compare the actual functional test and accessibility
 durations separately from image builds, image loading, setup, and cleanup.

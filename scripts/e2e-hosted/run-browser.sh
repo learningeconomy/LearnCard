@@ -19,7 +19,7 @@ collect_browser_artifacts() {
         [[ ! -e "$path" ]] || cp -R "$path" "$E2E_ARTIFACT_DIR/"
     done
     e2e_snapshot before-cleanup
-    docker compose down --remove-orphans -v
+    e2e_timed stack_teardown docker compose down --remove-orphans -v
     e2e_snapshot after-cleanup
     e2e_render_summary
     exit "$status"
