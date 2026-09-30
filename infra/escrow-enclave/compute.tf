@@ -55,6 +55,8 @@ resource "aws_launch_template" "enclave_host" {
     eif_s3_uri            = var.eif_s3_uri
     enclave_image_version = var.enclave_image_version
     roughtime_servers_csv = join(",", [for s in var.roughtime_servers : "${s.host}:${s.port}"])
+    artifacts_bucket      = aws_s3_bucket.artifacts.bucket
+    sealed_key_object     = var.sealed_key_object
   }))
 
   tag_specifications {

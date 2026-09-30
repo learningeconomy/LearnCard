@@ -67,15 +67,44 @@ data "aws_iam_policy_document" "enclave_host_permissions" {
     resources = [aws_kms_key.s3.arn]
   }
 
-  # Artifacts bucket is single-purpose (EIFs only — storage.tf), so the
-  # whole bucket IS the "EIF prefix": eif_s3_uri's own documented example
-  # (variables.tf) uses a top-level key with no fixed sub-prefix, so
-  # restricting to a "eif/*" key pattern here would reject that example.
+  # Artifacts bucket holds both EIFs (top-level, no fixed sub-prefix —
+  # eif_s3_uri's own documented example in variables.tf uses a top-level
+  # key, so restricting to an "eif/*" pattern here would reject that
+  # example) AND sealed escrow-key objects (sealed-keys/* — see
+  # WriteSealedKey below). GetObject stays bucket-wide so the host can
+  # read either at boot; PutObject is scoped narrower, below.
   statement {
     sid       = "ReadEifArtifacts"
     effect    = "Allow"
     actions   = ["s3:GetObject"]
     resources = ["${aws_s3_bucket.artifacts.arn}/*"]
+  }
+
+  # Sealed escrow key: PutObject scoped ONLY to the sealed-keys/ prefix.
+  # Without this, SealedStore::save_new (services/escrow-enclave-host/
+  # src/storage.rs) can never create the first sealed-key object — first
+  # boot fails closed with AccessDenied and no escrow key can ever be
+  # provisioned (the bug this statement fixes).
+  #
+  # Create-only is enforced in TWO independent layers, deliberately:
+  #   1. The host's own `put_object().if_none_match("*")` call.
+  #   2. storage.tf's DenyUnconditionalSealedKeyWrite bucket policy
+  #      statement, which DENIES any sealed-keys/* PutObject lacking a
+  #      conditional-write header — defense in depth so a compromised or
+  #      buggy host build still cannot silently overwrite an existing
+  #      sealed key even though it holds ordinary PutObject here.
+  #
+  # This role is deliberately never granted s3:DeleteObject or
+  # s3:DeleteObjectVersion on this bucket (confirmed nowhere in this
+  # file) — if an admin ever needs to replace a sealed key, the
+  # artifacts bucket's versioning (storage.tf, already enabled) is the
+  # recovery path: the prior version remains readable, just no longer
+  # current.
+  statement {
+    sid       = "WriteSealedKey"
+    effect    = "Allow"
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.artifacts.arn}/sealed-keys/*"]
   }
 
   # Audit bucket: PutObject only, restricted to the audit/* key prefix that

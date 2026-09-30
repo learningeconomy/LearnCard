@@ -149,10 +149,18 @@ audit/divergence, records MODIFY/REMOVE, heads anomalies and disable API release
 Recovery requires operator reconciliation of exact bytes; restarting is not a fix.
 
 Sealed-key objects are <=16 KiB, read in bounded chunks and created with
-`If-None-Match: *`; existing keys are never overwritten. **Current Terraform IAM
-only grants artifacts GetObject, not PutObject**. Initial sealed-key provisioning
-therefore needs a separately reviewed narrow PutObject permission for this exact
-object or a privileged provisioning workflow. No IAM changes were made here.
+`If-None-Match: *`; existing keys are never overwritten. The object path (the
+current `ESCROW_SEALED_KEY_OBJECT` and every `ESCROW_PREVIOUS_KEY_OBJECTS` entry)
+must start with the `sealed-keys/` prefix — this binary fails closed at startup
+otherwise (`main.rs`). Terraform enforces the same boundary from the AWS side:
+`infra/escrow-enclave/iam.tf` grants this role `s3:PutObject` scoped to
+`sealed-keys/*` only (`WriteSealedKey`), and `infra/escrow-enclave/storage.tf`'s
+artifacts bucket policy independently DENIES any `sealed-keys/*` PutObject that
+lacks a conditional-write header, so an existing sealed key can never be
+silently overwritten even by a compromised or buggy host build. This role has
+no `s3:DeleteObject`/`s3:DeleteObjectVersion` on the bucket; the artifacts
+bucket's versioning (already enabled) is the recovery path if an admin ever
+needs to replace a sealed key object.
 
 ## Configuration / systemd
 
@@ -163,25 +171,25 @@ use a root-owned token file or systemd credentials rather than embedding tokens
 in the unit. No secrets or whole SDK errors are logged. Do not enable SDK tracing,
 HTTP access-body logging, core dumps or request capture in production.
 
-| Variable                                                 | Meaning/default                                                            |
-| -------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `AWS_REGION`                                             | Required region                                                            |
-| `ESCROW_ENCLAVE_EIF_PATH`                                | Required; user-data sets `/opt/escrow-enclave-host/eif/current.eif`        |
-| `ESCROW_ENCLAVE_CPU_COUNT` / `ESCROW_ENCLAVE_MEMORY_MIB` | 2 / 2048                                                                   |
-| `ESCROW_ENCLAVE_CID`                                     | 16, >=4, not u32::MAX                                                      |
-| `ESCROW_ENCLAVE_HEALTH_PORT`                             | 8444                                                                       |
-| `ESCROW_ENCLAVE_TLS_CERT` / `ESCROW_ENCLAVE_TLS_KEY`     | Required PEM paths; restart host to reload                                 |
-| `ESCROW_ENCLAVE_TOKEN_FILE`                              | Preferred bearer token source; whitespace trimmed                          |
-| `ESCROW_ENCLAVE_REMOTE_TOKEN`                            | Fallback bearer; 32–4096 bytes                                             |
-| `ESCROW_LEDGER_RECORDS_TABLE`                            | `escrow-ledger-records-<env>` required                                     |
-| `ESCROW_LEDGER_HEADS_TABLE`                              | `escrow-ledger-heads-<env>` required                                       |
-| `ESCROW_AUDIT_BUCKET` / `ESCROW_ARTIFACTS_BUCKET`        | Required bucket names                                                      |
-| `ESCROW_SEALED_KEY_OBJECT`                               | Required fixed artifacts object key                                        |
-| `ESCROW_KEY_ID`                                          | Required logical key ID, must match measured enclave configuration         |
-| `ESCROW_PREVIOUS_KEY_IDS`                                | Optional, comma-separated, <=3 (P9.1 rotation/lost-key recovery)           |
-| `ESCROW_PREVIOUS_KEY_OBJECTS`                            | Optional, comma-separated artifacts object keys, same order/count as above |
-| `ESCROW_ALLOW_FIRST_BOOT`                                | `false`; explicit `true` enables create-only provisioning                  |
-| `ESCROW_ROUGHTIME_ALLOWLIST_JSON`                        | Optional operator-owned server ID -> host:port map                         |
+| Variable                                                 | Meaning/default                                                                                                                                                        |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AWS_REGION`                                             | Required region                                                                                                                                                        |
+| `ESCROW_ENCLAVE_EIF_PATH`                                | Required; user-data sets `/opt/escrow-enclave-host/eif/current.eif`                                                                                                    |
+| `ESCROW_ENCLAVE_CPU_COUNT` / `ESCROW_ENCLAVE_MEMORY_MIB` | 2 / 2048                                                                                                                                                               |
+| `ESCROW_ENCLAVE_CID`                                     | 16, >=4, not u32::MAX                                                                                                                                                  |
+| `ESCROW_ENCLAVE_HEALTH_PORT`                             | 8444                                                                                                                                                                   |
+| `ESCROW_ENCLAVE_TLS_CERT` / `ESCROW_ENCLAVE_TLS_KEY`     | Required PEM paths; restart host to reload                                                                                                                             |
+| `ESCROW_ENCLAVE_TOKEN_FILE`                              | Preferred bearer token source; whitespace trimmed                                                                                                                      |
+| `ESCROW_ENCLAVE_REMOTE_TOKEN`                            | Fallback bearer; 32–4096 bytes                                                                                                                                         |
+| `ESCROW_LEDGER_RECORDS_TABLE`                            | `escrow-ledger-records-<env>` required                                                                                                                                 |
+| `ESCROW_LEDGER_HEADS_TABLE`                              | `escrow-ledger-heads-<env>` required                                                                                                                                   |
+| `ESCROW_AUDIT_BUCKET` / `ESCROW_ARTIFACTS_BUCKET`        | Required bucket names                                                                                                                                                  |
+| `ESCROW_SEALED_KEY_OBJECT`                               | Required fixed artifacts object key; must start with `sealed-keys/` (fails closed at startup otherwise — the only prefix Terraform grants this role `s3:PutObject` on) |
+| `ESCROW_KEY_ID`                                          | Required logical key ID, must match measured enclave configuration                                                                                                     |
+| `ESCROW_PREVIOUS_KEY_IDS`                                | Optional, comma-separated, <=3 (P9.1 rotation/lost-key recovery)                                                                                                       |
+| `ESCROW_PREVIOUS_KEY_OBJECTS`                            | Optional, comma-separated artifacts object keys, same order/count as above; every entry must also start with `sealed-keys/`                                            |
+| `ESCROW_ALLOW_FIRST_BOOT`                                | `false`; explicit `true` enables create-only provisioning                                                                                                              |
+| `ESCROW_ROUGHTIME_ALLOWLIST_JSON`                        | Optional operator-owned server ID -> host:port map                                                                                                                     |
 
 Roughtime defaults: `cloudflare` -> `roughtime.cloudflare.com:2003`, `google` ->
 `roughtime.sandbox.google.com:2002`. User-data's endpoint-only

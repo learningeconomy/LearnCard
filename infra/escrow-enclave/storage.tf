@@ -153,7 +153,8 @@ resource "aws_s3_bucket_public_access_block" "artifacts" {
 }
 
 # -----------------------------------------------------------------------
-# Shared: deny any non-TLS request against either bucket
+# Shared: deny any non-TLS request against either bucket, plus (artifacts
+# only) deny any sealed-key write that isn't a conditional create.
 # -----------------------------------------------------------------------
 
 data "aws_iam_policy_document" "deny_insecure_transport" {
@@ -182,9 +183,81 @@ data "aws_iam_policy_document" "deny_insecure_transport" {
   }
 }
 
+# Sealed escrow key create-only enforcement (artifacts bucket only).
+#
+# iam.tf's WriteSealedKey statement gives the enclave-host role ordinary
+# s3:PutObject on sealed-keys/*, because IAM identity policies have no way
+# to express "only if the object doesn't already exist" (no equivalent of
+# DynamoDB's ConditionExpression). This bucket policy statement closes
+# that gap independently, at the resource-policy layer: it DENIES any
+# sealed-keys/* PutObject whose request does NOT carry a conditional-write
+# header, regardless of which principal or IAM policy would otherwise
+# allow it. Combined with iam.tf's WriteSealedKey (scope) and the absence
+# of any s3:DeleteObject/s3:DeleteObjectVersion grant anywhere in that
+# role, an existing sealed key can be created but never silently
+# overwritten or deleted by the host — even by a compromised or buggy
+# host build that omits its own `if_none_match("*")` call
+# (services/escrow-enclave-host/src/storage.rs SealedStore::save_new).
+#
+# AWS enforces conditional writes at the bucket-policy level via the
+# `s3:if-none-match` condition key, checked here with the `Null` operator
+# (a request WITHOUT the header has a null/absent value, i.e. `Null` is
+# `true` — this Deny fires exactly when the header is missing). See:
+# https://docs.aws.amazon.com/AmazonS3/latest/userguide/conditional-writes-enforce.html
+# and https://docs.aws.amazon.com/AmazonS3/latest/userguide/conditional-writes.html
+#
+# If an admin ever needs to replace a sealed key despite this Deny (e.g.
+# via a break-glass root/admin identity not subject to this policy), the
+# artifacts bucket's versioning (enabled above) is the recovery path: the
+# prior version remains readable, it is simply no longer "current".
+data "aws_iam_policy_document" "deny_unconditional_sealed_key_write" {
+  statement {
+    sid    = "DenyUnconditionalSealedKeyWrite"
+    effect = "Deny"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.artifacts.arn}/sealed-keys/*"]
+
+    condition {
+      test     = "Null"
+      variable = "s3:if-none-match"
+      values   = ["true"]
+    }
+  }
+}
+
+locals {
+  # Per-bucket extra policy statements merged alongside the shared
+  # DenyInsecureTransport document below. Only the artifacts bucket gets
+  # the sealed-key create-only Deny; the audit bucket's immutability
+  # already comes from Object Lock COMPLIANCE mode, not a bucket policy.
+  bucket_extra_policy_documents = {
+    audit     = []
+    artifacts = [data.aws_iam_policy_document.deny_unconditional_sealed_key_write.json]
+  }
+}
+
+# One merged document per bucket (source_policy_documents combines
+# multiple aws_iam_policy_document JSONs into a single Statement array)
+# so each bucket still gets exactly one aws_s3_bucket_policy resource,
+# never a second, conflicting policy resource on the same bucket.
+data "aws_iam_policy_document" "bucket_policy" {
+  for_each = local.storage_buckets
+
+  source_policy_documents = concat(
+    [data.aws_iam_policy_document.deny_insecure_transport[each.key].json],
+    local.bucket_extra_policy_documents[each.key],
+  )
+}
+
 resource "aws_s3_bucket_policy" "deny_insecure_transport" {
   for_each = local.storage_buckets
 
   bucket = each.value.id
-  policy = data.aws_iam_policy_document.deny_insecure_transport[each.key].json
+  policy = data.aws_iam_policy_document.bucket_policy[each.key].json
 }

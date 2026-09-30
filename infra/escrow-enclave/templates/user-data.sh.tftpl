@@ -10,6 +10,8 @@ ENCLAVE_MEMORY_MIB="${enclave_memory_mib}"
 EIF_S3_URI="${eif_s3_uri}"
 ENCLAVE_IMAGE_VERSION="${enclave_image_version}"
 ROUGHTIME_SERVERS="${roughtime_servers_csv}"
+ARTIFACTS_BUCKET="${artifacts_bucket}"
+SEALED_KEY_OBJECT="${sealed_key_object}"
 KMS_ENDPOINT="kms.$REGION.amazonaws.com"
 
 # 1) Nitro Enclaves CLI. AL2023 ships AWS CLI v2 pre-installed, so only the
@@ -101,6 +103,8 @@ Environment=ESCROW_ENCLAVE_EIF_PATH=/opt/escrow-enclave-host/eif/current.eif
 Environment=ESCROW_ENCLAVE_IMAGE_VERSION=$ENCLAVE_IMAGE_VERSION
 Environment=ESCROW_ROUGHTIME_SERVERS=$ROUGHTIME_SERVERS
 Environment=ESCROW_ENCLAVE_HEALTH_PORT=8444
+Environment=ESCROW_ARTIFACTS_BUCKET=$ARTIFACTS_BUCKET
+Environment=ESCROW_SEALED_KEY_OBJECT=$SEALED_KEY_OBJECT
 
 [Install]
 WantedBy=multi-user.target

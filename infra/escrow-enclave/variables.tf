@@ -116,6 +116,27 @@ variable "enclave_image_version" {
   }
 }
 
+variable "sealed_key_object" {
+  description = <<-EOT
+    S3 key (within the artifacts bucket, storage.tf) the escrow-enclave-host
+    parent reads/writes the KMS-sealed escrow key at (ESCROW_SEALED_KEY_OBJECT
+    in the templated systemd unit, compute.tf). Must start with the
+    "sealed-keys/" prefix — the only prefix iam.tf's WriteSealedKey statement
+    grants s3:PutObject on, and the only prefix storage.tf's bucket policy
+    enforces create-only (conditional s3:if-none-match) writes against.
+    services/escrow-enclave-host/src/main.rs independently enforces this same
+    prefix at application startup (fails closed otherwise), so a value here
+    that violated it would never actually be writable in AWS either way.
+  EOT
+  type        = string
+  default     = "sealed-keys/escrow-enclave-key-v1"
+
+  validation {
+    condition     = startswith(var.sealed_key_object, "sealed-keys/")
+    error_message = "sealed_key_object must start with 'sealed-keys/' — the only prefix granted s3:PutObject (iam.tf) and enforced create-only (storage.tf)."
+  }
+}
+
 variable "enclave_measurements" {
   description = <<-EOT
     Pinned Nitro Enclave measurement tuples this environment's escrow CMK

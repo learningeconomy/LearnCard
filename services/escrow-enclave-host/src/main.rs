@@ -33,6 +33,20 @@ fn previous_list(key: &str) -> Vec<String> {
         .map(String::from)
         .collect()
 }
+/// The only prefix `infra/escrow-enclave/iam.tf`'s WriteSealedKey statement
+/// grants this role s3:PutObject on, and the only prefix storage.tf's bucket
+/// policy enforces create-only writes against. A path outside this prefix
+/// can never be written in AWS regardless, so this fails closed at startup
+/// with a clear config error instead of surfacing as an opaque AccessDenied
+/// the first time `SealedStore::save_new` (storage.rs) actually runs.
+const SEALED_KEY_PREFIX: &str = "sealed-keys/";
+fn sealed_key_path(key: String) -> io::Result<String> {
+    if key.starts_with(SEALED_KEY_PREFIX) {
+        Ok(key)
+    } else {
+        Err(invalid())
+    }
+}
 #[tokio::main]
 async fn main() {
     // Do not install an SDK tracing subscriber: request/response diagnostics can contain secrets.
@@ -75,7 +89,10 @@ async fn start() -> io::Result<()> {
     // comma-separated, read-only decrypt-only keys. Empty when unset, matching
     // today's behaviour exactly (zero previous keys configured).
     let previous_key_ids = previous_list("ESCROW_PREVIOUS_KEY_IDS");
-    let previous_key_objects = previous_list("ESCROW_PREVIOUS_KEY_OBJECTS");
+    let previous_key_objects = previous_list("ESCROW_PREVIOUS_KEY_OBJECTS")
+        .into_iter()
+        .map(sealed_key_path)
+        .collect::<io::Result<Vec<_>>>()?;
     if previous_key_ids.len() > 3
         || previous_key_ids.len() != previous_key_objects.len()
         || previous_key_ids.contains(&key_id)
@@ -105,7 +122,7 @@ async fn start() -> io::Result<()> {
         sealed: SealedStore {
             s3: s3.clone(),
             bucket: artifacts_bucket,
-            key: required("ESCROW_SEALED_KEY_OBJECT")?,
+            key: sealed_key_path(required("ESCROW_SEALED_KEY_OBJECT")?)?,
         },
         key_id,
         allow_first_boot: env::var("ESCROW_ALLOW_FIRST_BOOT").as_deref() == Ok("true"),
@@ -175,5 +192,25 @@ async fn start() -> io::Result<()> {
         result=services::listen(services,cid) => result,
         result=supervisor::run(supervisor) => result,
         _=tokio::signal::ctrl_c() => Ok(()),
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn sealed_key_path_requires_sealed_keys_prefix() {
+        assert_eq!(
+            sealed_key_path("sealed-keys/escrow-enclave-key-v1".to_owned()).unwrap(),
+            "sealed-keys/escrow-enclave-key-v1"
+        );
+        for bad in [
+            "escrow-enclave-key-v1",
+            "eif/escrow-enclave-key-v1",
+            "",
+            "archive/sealed-keys/v1",
+            "sealed-key/v1",
+        ] {
+            assert!(sealed_key_path(bad.to_owned()).is_err());
+        }
     }
 }
