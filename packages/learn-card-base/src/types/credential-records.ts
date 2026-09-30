@@ -34,7 +34,10 @@ export type CredentialRefreshMetadata = {
 
 export type CredentialMetadata = {
     category: CredentialCategory;
-    /** Indicates that category was deliberately selected by the holder. */
+    /**
+     * All holder-driven category changes must set 'manual' so automatic backfills preserve them.
+     * Unmarked historical categories are treated as automatic defaults.
+     */
     categorySource?: 'manual';
     title?: string;
     imgUrl?: string;

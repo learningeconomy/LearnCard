@@ -65,7 +65,7 @@ flowchart LR
 
 Qualifications has its own section after IDs in the wallet and navigation, even when it is empty. It contains professional licenses, certifications, and apprenticeship, journeyman, and master certificates.
 
-- Existing credentials in their original automatic category move to Qualifications when the account opens. Saved manual overrides, explicit credential categories, and custom Boost categories stay unchanged. Older choices without a manual-choice marker are treated as automatic defaults.
+- Existing credentials in their original automatic category move to Qualifications in the background after the account opens; account access does not wait for this scan. Successful scans are remembered for that account and cloud service. Unavailable credentials retry on the next app session, not on every account operation. Saved manual overrides, explicit credential categories, and custom Boost categories stay unchanged. Older choices without a manual-choice marker are treated as automatic defaults.
 - Qualification credentials default to an emerald certificate frame with trophy corners; explicit display settings and recognized achievement types take precedence.
 - Certificate previews keep the issuer's details and seal inside the frame, above the category label.
 - Expiration dates remain visible. An expired qualification stays in the account and can still be opened or shared.

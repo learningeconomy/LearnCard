@@ -1,17 +1,19 @@
 import type { BespokeLearnCard } from '../types/learn-card';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-vi.hoisted(() => {
+const { completionStorage } = vi.hoisted(() => {
+    const completionStorage = new Map<string, string>();
     Object.defineProperty(globalThis, 'window', {
         configurable: true,
         value: {
             location: { hostname: 'localhost' },
             localStorage: {
-                getItem: () => null,
-                setItem: () => undefined,
-                removeItem: () => undefined,
+                getItem: (key: string) => completionStorage.get(key) ?? null,
+                setItem: (key: string, value: string) => completionStorage.set(key, value),
+                removeItem: (key: string) => completionStorage.delete(key),
             },
         },
     });
+    return { completionStorage };
 });
 
 // This index-only test supplies its wallet; don't initialize wallet crypto through helper imports.
@@ -104,8 +106,16 @@ const makeWallet = (name: string, pages: TestRecord[][]) => {
     return { wallet: wallet as unknown as BespokeLearnCard, updates, getPage, update };
 };
 
+const startNewSession = async () => {
+    vi.resetModules();
+    return (await import('./qualificationCategoryBackfill')).reconcileQualificationCategories;
+};
+
 describe('reconcileQualificationCategories', () => {
-    beforeEach(() => vi.clearAllMocks());
+    beforeEach(() => {
+        vi.clearAllMocks();
+        completionStorage.clear();
+    });
 
     it.each([
         ['License', 'ID'],
@@ -181,7 +191,7 @@ describe('reconcileQualificationCategories', () => {
         expect(expired.validUntil).toBe('2000-01-01T00:00:00Z');
     });
 
-    it('retries after update failure and keeps wallet scopes isolated', async () => {
+    it('defers failed updates until the next session and keeps accounts isolated', async () => {
         const record: TestRecord = {
             id: 'retry',
             uri: 'retry-uri',
@@ -193,6 +203,9 @@ describe('reconcileQualificationCategories', () => {
 
         await reconcileQualificationCategories(first.wallet);
         await reconcileQualificationCategories(first.wallet);
+        expect(first.update).toHaveBeenCalledTimes(1);
+        const nextSession = await startNewSession();
+        await nextSession(first.wallet);
 
         const otherRecord = { ...record, id: 'other', uri: 'other-uri', category: 'Work History' };
         const other = makeWallet('other-wallet', [[otherRecord]]);
@@ -212,11 +225,12 @@ describe('reconcileQualificationCategories', () => {
         update.mockResolvedValueOnce(false);
         await reconcileQualificationCategories(wallet);
         expect(record.category).toBe('ID');
-        await reconcileQualificationCategories(wallet);
+        const nextSession = await startNewSession();
+        await nextSession(wallet);
         expect(record.category).toBe('Qualifications');
     });
 
-    it('continues past unavailable credentials and retries them on a later access', async () => {
+    it('continues past unavailable credentials without rescanning until the next session', async () => {
         const unavailable: TestRecord = {
             id: 'unavailable',
             uri: 'credential:unavailable',
@@ -235,6 +249,56 @@ describe('reconcileQualificationCategories', () => {
         expect(unavailable.category).toBe('ID');
         expect(available.category).toBe('Qualifications');
         await reconcileQualificationCategories(wallet);
+        expect(unavailable.category).toBe('ID');
+        expect(wallet.read.get).toHaveBeenCalledTimes(2);
+        const nextSession = await startNewSession();
+        await nextSession(wallet);
         expect(unavailable.category).toBe('Qualifications');
+    });
+
+    it('persists completion across fresh wallet clients and cold sessions', async () => {
+        const record: TestRecord = {
+            id: 'license',
+            uri: 'stored-license',
+            category: 'ID',
+            credential: credential('License'),
+        };
+        const first = makeWallet('completed', [[record]]);
+        await reconcileQualificationCategories(first.wallet, undefined, 'cloud-a');
+        expect(record.category).toBe('Qualifications');
+
+        const coldWallet = {
+            ...first.wallet,
+            index: { LearnCloud: { ...first.wallet.index.LearnCloud, getPage: vi.fn() } },
+        } as unknown as BespokeLearnCard;
+        const nextSession = await startNewSession();
+        await nextSession(coldWallet, undefined, 'cloud-a');
+        expect(coldWallet.index.LearnCloud.getPage).not.toHaveBeenCalled();
+
+        const otherCloudRecord = { ...record, category: 'ID' };
+        const otherCloud = makeWallet('another-cloud', [[otherCloudRecord]]);
+        otherCloud.wallet.id.did = first.wallet.id.did;
+        await nextSession(otherCloud.wallet, undefined, 'cloud-b');
+        expect(otherCloudRecord.category).toBe('Qualifications');
+    });
+
+    it('shares an in-flight scan across concurrent clients for the same account', async () => {
+        const first = makeWallet('concurrent', []);
+        const { promise, resolve: finish } = Promise.withResolvers<{
+            records: TestRecord[];
+            hasMore: boolean;
+            cursor: undefined;
+        }>();
+        first.getPage.mockReturnValueOnce(promise);
+        const anotherClient = {
+            ...first.wallet,
+            index: { LearnCloud: { ...first.wallet.index.LearnCloud, getPage: vi.fn() } },
+        } as unknown as BespokeLearnCard;
+        const firstRun = reconcileQualificationCategories(first.wallet);
+        const secondRun = reconcileQualificationCategories(anotherClient);
+        expect(first.getPage).toHaveBeenCalledTimes(1);
+        expect(anotherClient.index.LearnCloud.getPage).not.toHaveBeenCalled();
+        finish({ records: [], hasMore: false, cursor: undefined });
+        await Promise.all([firstRun, secondRun]);
     });
 });

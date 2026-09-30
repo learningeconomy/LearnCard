@@ -30,7 +30,6 @@ import { getOrFetchConsentedContracts } from './useConsentedContracts';
 import { queueAiInsightCredentialRefresh } from 'learn-card-base/react-query/mutations/ai-passport';
 import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
 import { getLogger } from '../logging/logger';
-import { reconcileQualificationCategories as reconcileWalletQualifications } from 'learn-card-base/helpers/qualificationCategoryBackfill';
 const log = getLogger('use-wallet');
 
 let generating = false; // Mutex flag to allow first init call to acquire a lock
@@ -160,9 +159,6 @@ export const useWallet = () => {
                     didOverride === true ? undefined : didOverride
                 );
 
-                await reconcileWalletQualifications(wallet, queryClient).catch(error =>
-                    log.warn('Wallet category reconciliation failed', error)
-                );
                 generating = false;
                 return wallet;
             }
@@ -170,9 +166,6 @@ export const useWallet = () => {
             const wallet = walletStore.get.wallet();
 
             if (!_privateKey && wallet) {
-                await reconcileWalletQualifications(wallet, queryClient).catch(error =>
-                    log.warn('Wallet category reconciliation failed', error)
-                );
                 return wallet;
             }
 
@@ -186,9 +179,6 @@ export const useWallet = () => {
             );
 
             if (!_privateKey) walletStore.set.wallet(newWallet);
-            await reconcileWalletQualifications(newWallet, queryClient).catch(error =>
-                log.warn('Wallet category reconciliation failed', error)
-            );
             generating = false;
 
             return newWallet;

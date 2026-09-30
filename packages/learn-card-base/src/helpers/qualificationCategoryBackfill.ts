@@ -26,15 +26,31 @@ const legacyCategories: Record<string, true> = {
     Achievement: true,
     'Work History': true,
 };
-const reconciliations = new WeakMap<BespokeLearnCard, Promise<void>>();
+const reconciliations = new Map<string, Promise<void>>();
 
-/** Reconcile legacy index categories without modifying credential content or identity. */
+/**
+ * Reconcile once per account/cloud in the background. Persist only complete scans;
+ * unavailable records retry on the next app session, never on every wallet access.
+ */
 export const reconcileQualificationCategories = async (
     wallet: BespokeLearnCard,
-    queryClient?: QueryClient
+    queryClient?: QueryClient,
+    cloudUrl = ''
 ): Promise<void> => {
-    const existing = reconciliations.get(wallet);
+    const completionKey = `qualification-category-backfill:v1:${cloudUrl}:${wallet.id.did()}`;
+    const existing = reconciliations.get(completionKey);
     if (existing) return existing;
+
+    try {
+        if (
+            typeof window !== 'undefined' &&
+            window.localStorage.getItem(completionKey) === 'complete'
+        ) {
+            return;
+        }
+    } catch (error) {
+        log.debug('Category backfill completion storage unavailable', error);
+    }
 
     const reconciliation = (async () => {
         let cursor: string | undefined;
@@ -48,6 +64,10 @@ export const reconcileQualificationCategories = async (
                     CredentialIndexPage | undefined;
             } catch (error) {
                 log.warn('Failed to scan wallet index for legacy qualification categories', error);
+                incomplete = true;
+                break;
+            }
+            if (!page) {
                 incomplete = true;
                 break;
             }
@@ -122,13 +142,20 @@ export const reconcileQualificationCategories = async (
                 queryClient.invalidateQueries({ queryKey: ['useGetRecordForUri'] }),
             ]).catch(error => log.warn('Failed to invalidate credential category caches', error));
         }
-        if (incomplete) reconciliations.delete(wallet);
+        if (!incomplete) {
+            try {
+                if (typeof window !== 'undefined') {
+                    window.localStorage.setItem(completionKey, 'complete');
+                }
+            } catch (error) {
+                log.debug('Unable to persist category backfill completion', error);
+            }
+        }
     })();
 
     const safeReconciliation = reconciliation.catch(error => {
-        reconciliations.delete(wallet);
         log.warn('Wallet category reconciliation stopped unexpectedly', error);
     });
-    reconciliations.set(wallet, safeReconciliation);
+    reconciliations.set(completionKey, safeReconciliation);
     await safeReconciliation;
 };
