@@ -11,6 +11,7 @@ export enum NotificationTypeEnum {
     Loading = 'loading',
     Membership = 'membership',
     WorkHistory = 'workHistory',
+    Qualifications = 'qualifications',
     Family = 'family',
 
     accomplishment = 'Accomplishment',
@@ -78,6 +79,7 @@ export const CATEGORY_TO_NOTIFICATION_ENUM = {
     [CredentialCategoryEnum.socialBadge]: NotificationTypeEnum.SocialBadges,
     [CredentialCategoryEnum.achievement]: NotificationTypeEnum.Achievement,
     [CredentialCategoryEnum.learningHistory]: NotificationTypeEnum.Learning,
+    [CredentialCategoryEnum.qualifications]: NotificationTypeEnum.Qualifications,
     [CredentialCategoryEnum.workHistory]: NotificationTypeEnum.WorkHistory,
     [CredentialCategoryEnum.id]: NotificationTypeEnum.ID,
     [CredentialCategoryEnum.skill]: NotificationTypeEnum.Skill,
@@ -128,6 +130,14 @@ export const NotificationTypeStyles: {
         textStyles: 'text-pink-400 capitalize',
         iconCircleStyles: 'bg-pink-400',
         typeText: 'Achievement',
+    },
+    [NotificationTypeEnum.Qualifications]: {
+        viewButtonStyles: 'border-emerald-600 text-emerald-600',
+        unclaimedButtonStyles: 'text-white bg-emerald-600 border-emerald-600 shadow-bottom',
+        claimedButtonStyles: 'text-emerald-600 bg-emerald-50 border-emerald-50 cursor-default',
+        textStyles: 'text-emerald-600 capitalize',
+        iconCircleStyles: 'bg-emerald-600',
+        typeText: 'Qualifications',
     },
     [NotificationTypeEnum.Skill]: {
         viewButtonStyles: 'border-indigo-400 text-indigo-400',

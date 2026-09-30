@@ -27,6 +27,7 @@ const NotificationsPage = lazyWithRetry(
 );
 const LoginPage = lazyWithRetry(() => import('./pages/login/LoginPage'));
 const AchievementsPage = lazyWithRetry(() => import('./pages/achievements/AchievementsPage'));
+const QualificationsPage = lazyWithRetry(() => import('./pages/qualifications/QualificationsPage'));
 
 const IdsPage = lazyWithRetry(() => import('./pages/ids/IdsPage'));
 
@@ -259,6 +260,7 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/contacts/search" component={AddressBook} />
                         <PrivateRoute exact path="/socialBadges" component={SocialBadgesPage} />
                         <PrivateRoute exact path="/achievements" component={AchievementsPage} />
+                        <PrivateRoute exact path="/qualifications" component={QualificationsPage} />
                         <PrivateRoute
                             exact
                             path="/accomplishments"
@@ -431,6 +433,7 @@ export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
     '/skills': () => SkillsPage.preload(),
     '/socialBadges': () => SocialBadgesPage.preload(),
     '/achievements': () => AchievementsPage.preload(),
+    '/qualifications': () => QualificationsPage.preload(),
     '/learninghistory': () => LearningHistoryPage.preload(),
     '/accomplishments': () => AccomplishmentsPage.preload(),
     '/accommodations': () => AccommodationsPage.preload(),

@@ -122,6 +122,12 @@ const RibbonCategory: React.FC<{ categoryType: BoostCategoryOptionsEnum }> = ({ 
                     {m['wallet.categoriesSingular.achievements']()}
                 </span>
             );
+        case BoostCategoryOptionsEnum.qualifications:
+            return (
+                <span className="text-[12px] font-semibold text-emerald-700">
+                    {m['wallet.categoriesSingular.qualifications']()}
+                </span>
+            );
         case BoostCategoryOptionsEnum.learningHistory:
             return (
                 <span className="text-[12px] font-semibold text-emerald-600">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { selectedCredsStore, SelectedCredsStoreState } from 'learn-card-base';
+import { selectedCredsStore, SelectedCredsStoreState, useWallet } from 'learn-card-base';
 import { getAllSortedCredentials } from 'learn-card-base/helpers/credentialHelpers';
+import { getCategoryForCredential } from 'learn-card-base/hooks/useWallet';
 import { filterMaybes } from '@learncard/helpers';
 import { SortedCredentials } from 'learn-card-base/stores/selectedCredsStore';
 import { VC } from '@learncard/types';
@@ -16,6 +17,7 @@ export const VC_TYPE = {
     WORK: 'workHistory',
     COURSE: 'courses',
     SKILL: 'skills',
+    QUALIFICATIONS: 'qualifications',
 } as const;
 
 export type VcType = (typeof VC_TYPE)[keyof typeof VC_TYPE];
@@ -30,6 +32,7 @@ export const useShareCredentials = (
 ) => {
     const [loading, setLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState<string>();
+    const { initWallet } = useWallet();
 
     const { data: vcsFromWallet, isLoading: vcsFromWalletLoading } = useGetCredentialsPaginated(
         undefined,
@@ -64,6 +67,10 @@ export const useShareCredentials = (
             selectedIds: selectedCredsStore.useTracked.selectedWorkHistoryIds() ?? [],
             setIds: (ids: string[]) => selectedCredsStore.set.selectedWorkHistoryIds(ids),
         },
+        [VC_TYPE.QUALIFICATIONS]: {
+            selectedIds: selectedCredsStore.useTracked.selectedQualificationIds() ?? [],
+            setIds: (ids: string[]) => selectedCredsStore.set.selectedQualificationIds(ids),
+        },
         [VC_TYPE.SOCIAL_BADGE]: {
             selectedIds: selectedCredsStore.useTracked.selectedSocialBadgeIds() ?? [],
             setIds: (ids: string[]) => selectedCredsStore.set.selectedSocialBadgeIds(ids),
@@ -95,6 +102,10 @@ export const useShareCredentials = (
         [VC_TYPE.WORK]: {
             totalCount: credentials?.workHistory?.length ?? 0,
             selectedCount: vcMap[VC_TYPE.WORK]?.selectedIds?.length ?? 0,
+        },
+        [VC_TYPE.QUALIFICATIONS]: {
+            totalCount: credentials?.qualifications?.length ?? 0,
+            selectedCount: vcMap[VC_TYPE.QUALIFICATIONS]?.selectedIds?.length ?? 0,
         },
         [VC_TYPE.SOCIAL_BADGE]: {
             totalCount: credentials?.socialBadges?.length ?? 0,
@@ -188,17 +199,23 @@ export const useShareCredentials = (
                     return !duplicated;
                 });
 
-                const sortedCredentials = await getAllSortedCredentials(dedupedCredentials ?? []);
+                const wallet = await initWallet();
+                const sortedCredentials = await getAllSortedCredentials(
+                    dedupedCredentials ?? [],
+                    credential => getCategoryForCredential(credential, wallet)
+                );
 
                 let allSkillIds,
                     allCourseIds,
                     allAchievementIds,
                     allIdIds,
                     allWorkHistoryIds,
+                    allQualificationIds,
                     allSocialBadgeIds;
                 if (preSelectedCredentials) {
                     const preSelectedSortedCredentials = await getAllSortedCredentials(
-                        preSelectedCredentials
+                        preSelectedCredentials,
+                        credential => getCategoryForCredential(credential, wallet)
                     );
                     allSkillIds = preSelectedSortedCredentials.skills?.map(vc => getUniqueId(vc));
                     allCourseIds = preSelectedSortedCredentials.courses?.map(vc => getUniqueId(vc));
@@ -207,6 +224,9 @@ export const useShareCredentials = (
                     );
                     allIdIds = preSelectedSortedCredentials.ids?.map(vc => getUniqueId(vc));
                     allWorkHistoryIds = preSelectedSortedCredentials.workHistory?.map(vc =>
+                        getUniqueId(vc)
+                    );
+                    allQualificationIds = preSelectedSortedCredentials.qualifications?.map(vc =>
                         getUniqueId(vc)
                     );
                     allSocialBadgeIds = preSelectedSortedCredentials.socialBadges.map(vc =>
@@ -221,6 +241,10 @@ export const useShareCredentials = (
                     );
                     allIdIds = getCredentialIdsForType(sortedCredentials, VC_TYPE.ID);
                     allWorkHistoryIds = getCredentialIdsForType(sortedCredentials, VC_TYPE.WORK);
+                    allQualificationIds = getCredentialIdsForType(
+                        sortedCredentials,
+                        VC_TYPE.QUALIFICATIONS
+                    );
                     allSocialBadgeIds = getCredentialIdsForType(
                         sortedCredentials,
                         VC_TYPE.SOCIAL_BADGE
@@ -238,6 +262,7 @@ export const useShareCredentials = (
                     selectedAchievementIds: allAchievementIds,
                     selectedIdIds: allIdIds,
                     selectedWorkHistoryIds: allWorkHistoryIds,
+                    selectedQualificationIds: allQualificationIds,
                     selectedSocialBadgeIds: allSocialBadgeIds,
                     allVcIds: allCredentialIds || null,
                     credentials: sortedCredentials,

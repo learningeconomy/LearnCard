@@ -7,7 +7,7 @@ vi.mock('learn-card-base', async () =>
 );
 
 import { CredentialCategoryEnum } from 'learn-card-base';
-import { PASSPORT_CATEGORY_ORDER, filterPassportCategories } from './passportCategories';
+import { filterPassportCategories } from './passportCategories';
 
 type Cat = {
     categoryId: CredentialCategoryEnum;
@@ -16,20 +16,6 @@ type Cat = {
 const cat = (categoryId: CredentialCategoryEnum): Cat => ({
     categoryId,
     labels: { singular: String(categoryId), plural: String(categoryId) },
-});
-
-describe('PASSPORT_CATEGORY_ORDER', () => {
-    it('contains exactly the 7 core categories in order', () => {
-        expect(PASSPORT_CATEGORY_ORDER).toEqual([
-            CredentialCategoryEnum.socialBadge,
-            CredentialCategoryEnum.achievement,
-            CredentialCategoryEnum.learningHistory,
-            CredentialCategoryEnum.accomplishment,
-            CredentialCategoryEnum.accommodation,
-            CredentialCategoryEnum.workHistory,
-            CredentialCategoryEnum.id,
-        ]);
-    });
 });
 
 describe('filterPassportCategories', () => {

@@ -52,6 +52,7 @@ export enum SideMenuLinksEnum {
     skills = CredentialCategoryEnum.skill,
     socialBadges = CredentialCategoryEnum.socialBadge,
     achievements = CredentialCategoryEnum.achievement,
+    qualifications = CredentialCategoryEnum.qualifications,
     studies = CredentialCategoryEnum.learningHistory,
     portfolio = CredentialCategoryEnum.accomplishment,
     assistance = CredentialCategoryEnum.accommodation,
@@ -241,6 +242,13 @@ export const sidemenuLinks: Record<BrandingEnum, SideMenuLinks[]> = {
             IconComponent: AchievementsTwoTonedIcon,
             path: '/achievements',
             type: SideMenuLinksEnum.achievements,
+        },
+        {
+            id: 8,
+            name: 'Qualifications',
+            IconComponent: AchievementsTwoTonedIcon,
+            path: '/qualifications',
+            type: SideMenuLinksEnum.qualifications,
         },
         {
             id: 1,

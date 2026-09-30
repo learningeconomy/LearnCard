@@ -138,6 +138,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
     const bgColors = {
         [CredentialCategoryEnum.socialBadge]: '#3B82F6', // blue-500 - color
         [CredentialCategoryEnum.achievement]: '#EC4899', // pink-500 - color
+        [CredentialCategoryEnum.qualifications]: '#047857', // emerald-700
         [CredentialCategoryEnum.learningHistory]: '#40CBA6', // emerald-500 - subColor
         [CredentialCategoryEnum.accomplishment]: '#EAB308', // yellow-500 - none (color = yellow-400)
         [CredentialCategoryEnum.accommodation]: '#8B5CF6', // violet-500 - subColor

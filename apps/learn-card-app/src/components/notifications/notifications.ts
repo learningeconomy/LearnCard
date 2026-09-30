@@ -8,6 +8,7 @@ import {
     LearnHistoryCategoryTypes,
     WorkHistoryCategoryTypes,
     SocialBadgesCategoryTypes,
+    QualificationsCategoryTypes,
 } from 'learn-card-base/components/IssueVC/constants';
 
 import {
@@ -24,6 +25,7 @@ export enum NotificationTypeEnum {
     Job = 'job',
     Learning = 'learning',
     SocialBadge = 'socialBadge',
+    Qualifications = 'qualifications',
 }
 
 // temporary helper, since all VCs are achievements atm
@@ -52,6 +54,11 @@ export const getNotificationType = (
     if (isCustomBoostType(achievementType)) {
         customTypeCategory = getCategoryTypeFromCustomType(achievementType);
     }
+    if (
+        QualificationsCategoryTypes.includes(achievementType) ||
+        customTypeCategory === BoostCategoryOptionsEnum.qualifications
+    )
+        return NotificationTypeEnum.Qualifications;
 
     if (
         AchievementCategoryTypes.includes(achievementType) ||

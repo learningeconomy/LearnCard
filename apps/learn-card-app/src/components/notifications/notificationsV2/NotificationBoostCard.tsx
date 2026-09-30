@@ -19,6 +19,7 @@ import {
     isEndorsementCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { formatDid } from 'learn-card-base/helpers/didHelpers';
+import { getCategoryForCredential } from 'learn-card-base/hooks/useWallet';
 
 import {
     useGetResolvedCredential,
@@ -31,6 +32,7 @@ import {
     BoostCategoryOptionsEnum,
     getBoostMetadata,
     useGetCredentialWithEdits,
+    useWallet,
 } from 'learn-card-base';
 
 import { ErrorBoundary } from 'react-error-boundary';
@@ -93,6 +95,8 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     const { data, isLoading } = useGetResolvedCredential(notification?.data?.vcUris?.[0]);
     const { mutate, isLoading: acceptCredentialLoading } = useAcceptCredentialMutation();
     const { mutate: updateNotification } = useUpdateNotification();
+    const { initWallet } = useWallet();
+    const [boostCategory, setBoostCategory] = useState<CredentialCategoryEnum>();
 
     const boostVc = data;
     const duplicateLookup = getNotificationDuplicateLookup(boostVc, notification?.data);
@@ -106,8 +110,29 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     }
     const { credentialWithEdits } = useGetCredentialWithEdits(unwrappedCred);
     unwrappedCred = credentialWithEdits ?? unwrappedCred;
+    useEffect(() => {
+        let cancelled = false;
+        setBoostCategory(undefined);
+        if (!unwrappedCred || !boostVc) {
+            return () => {
+                cancelled = true;
+            };
+        }
 
-    const credCategory = boostVc && getDefaultCategoryForCredential(unwrappedCred);
+        void initWallet()
+            .then(wallet => getCategoryForCredential(boostVc, wallet))
+            .then(category => {
+                if (!cancelled && category) setBoostCategory(category as CredentialCategoryEnum);
+            })
+            .catch(() => undefined);
+
+        return () => {
+            cancelled = true;
+        };
+    }, [boostVc, unwrappedCred, initWallet]);
+
+    const credCategory =
+        boostVc && (boostCategory ?? getDefaultCategoryForCredential(unwrappedCred));
     const isEndorsementCredentialType = isEndorsementCredential(unwrappedCred);
 
     const credImgUrl = boostVc && getImageUrlFromCredential(unwrappedCred, credCategory);

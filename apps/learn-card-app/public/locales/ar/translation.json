@@ -195,6 +195,7 @@
             "skills": "المهارات",
             "socialBadges": "الشارات",
             "achievements": "الإنجازات",
+            "qualifications": "المؤهلات",
             "studies": "الدراسات",
             "portfolio": "المحفظة",
             "assistance": "المساعدة",
@@ -677,6 +678,7 @@
                 "all": "الكل",
                 "socialBadge": "شارة",
                 "achievement": "إنجاز",
+                "qualifications": "مؤهل",
                 "learningHistory": "دورة",
                 "accomplishment": "عنصر محفظة",
                 "accommodation": "مساعدة",
@@ -688,6 +690,7 @@
                 "all": "الكل",
                 "socialBadge": "الشارات",
                 "achievement": "الإنجازات",
+                "qualifications": "المؤهلات",
                 "learningHistory": "الدورات",
                 "accomplishment": "المحفظة",
                 "accommodation": "المساعدة",
@@ -708,6 +711,7 @@
             "article": {
                 "socialBadge": "",
                 "achievement": "",
+                "qualifications": "",
                 "learningHistory": "",
                 "accomplishment": "",
                 "accommodation": "",
@@ -878,6 +882,7 @@
             "skills": "المهارات",
             "socialBadges": "الشارات",
             "achievements": "الإنجازات",
+            "qualifications": "المؤهلات",
             "studies": "الدراسات",
             "portfolio": "المحفظة",
             "assistance": "المساعدة",
@@ -885,6 +890,7 @@
             "families": "العائلات",
             "ids": "الهويات"
         },
+        "newQualification": "مؤهل جديد",
         "emptyState": "لا توجد شهادات بعد",
         "credentialCount": "{{count}} شهادة(شهادات)",
         "viewMode": "العرض",
@@ -895,6 +901,7 @@
         "noManaged": "لا توجد شهادات مُدارة",
         "search": "البحث في الشهادات...",
         "expired": "منتهية الصلاحية",
+        "expires": "تنتهي صلاحيتها",
         "invalid": "هوية غير صالحة",
         "expiredId": "هوية منتهية الصلاحية",
         "noTitle": "بدون عنوان",
@@ -925,6 +932,7 @@
             "skills": "مهارة",
             "socialBadges": "شارة",
             "achievements": "إنجاز",
+            "qualifications": "مؤهل",
             "studies": "دراسة",
             "portfolio": "محفظة",
             "assistance": "مساعدة",
@@ -944,6 +952,10 @@
             "achievement": {
                 "lead": "",
                 "link": "أفخر لحظاتك"
+            },
+            "qualifications": {
+                "lead": "",
+                "link": "مؤهلاتك المهنية"
             },
             "accomplishment": {
                 "lead": "",
@@ -3552,6 +3564,7 @@
         },
         "credential": {
             "category": {
+                "qualifications": "مؤهل",
                 "badge": "شارة",
                 "family": "عائلة",
                 "achievement": "إنجاز",
@@ -3564,9 +3577,11 @@
                 "assistance": "مساعدة"
             },
             "lifecycle": {
+                "expired": "منتهية الصلاحية",
                 "revoked": "ملغاة",
                 "suspended": "معلقة"
-            }
+            },
+            "expires": "تنتهي صلاحيتها"
         }
     },
     "sdk": {

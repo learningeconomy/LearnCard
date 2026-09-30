@@ -102,6 +102,15 @@ const getCategoryToConfig = (): Record<string, CategoryConfig> => ({
         searchInputColor: 'pink-500',
         tabBackgroundColor: 'pink-400',
     },
+    [CredentialCategoryEnum.qualifications]: {
+        boostCategory: CredentialCategoryEnum.qualifications,
+        subheaderType: SubheaderTypeEnum.Qualifications,
+        title: m['wallet.categories.qualifications'](),
+        iconColor: 'text-emerald-700',
+        dividerLineColor: 'emerald-300',
+        searchInputColor: 'emerald-500',
+        tabBackgroundColor: 'emerald-400',
+    },
     [CredentialCategoryEnum.id]: {
         boostCategory: CredentialCategoryEnum.id, // category
         subheaderType: SubheaderTypeEnum.ID, // header type
@@ -115,7 +124,7 @@ const getCategoryToConfig = (): Record<string, CategoryConfig> => ({
 });
 
 type CredentialPageProps = {
-    category: keyof typeof CredentialCategoryEnum;
+    category: CredentialCategoryEnum;
 };
 
 const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {

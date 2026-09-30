@@ -13,8 +13,8 @@ export const RESUME_SECTIONS = [
         label: 'Education & Learning',
     },
     {
-        key: CredentialCategoryEnum.achievement,
-        label: 'Achievements',
+        key: CredentialCategoryEnum.qualifications,
+        label: 'Qualifications',
     },
     {
         key: CredentialCategoryEnum.accomplishment,
@@ -83,9 +83,10 @@ export const getResumeCredentialRecordsForSection = (
     allRecords.forEach(record => {
         if (record.category && aliases.has(record.category)) recordsByUri.set(record.uri, record);
 
-        if (!fallbackAliases) return;
-
-        if (!record.vc) return;
+        const shouldInferCategory =
+            !!fallbackAliases ||
+            (sectionKey === CredentialCategoryEnum.qualifications && !record.category);
+        if (!shouldInferCategory || !record.vc) return;
 
         const category = getDefaultCategoryForCredential(record.vc, { skipValidation: true });
 

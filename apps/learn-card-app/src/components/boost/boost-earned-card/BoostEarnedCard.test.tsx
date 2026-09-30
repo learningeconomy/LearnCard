@@ -7,6 +7,7 @@ import type { VC } from '@learncard/types';
 type CardWrapperProps = {
     innerOnClick?: () => void;
     optionsTriggerOnClick?: () => void;
+    dateDisplay?: string;
 };
 
 type PreviewProps = {
@@ -65,11 +66,16 @@ vi.mock('learn-card-base', () => ({
         },
     },
     BoostPageViewMode: { Card: 'card' },
-    BoostGenericCardWrapper: ({ innerOnClick, optionsTriggerOnClick }: CardWrapperProps) => (
+    BoostGenericCardWrapper: ({
+        innerOnClick,
+        optionsTriggerOnClick,
+        dateDisplay,
+    }: CardWrapperProps) => (
         <div>
             <button type="button" onClick={innerOnClick}>
                 Open credential
             </button>
+            <div>{dateDisplay}</div>
             {optionsTriggerOnClick && (
                 <button type="button" onClick={optionsTriggerOnClick}>
                     Card options
@@ -113,7 +119,11 @@ vi.mock('../../clr-transcript', () => ({
     getClrTranscriptKind: () => 'unknown',
     getClrTranscriptIssuerInfo: () => ({}),
 }));
-vi.mock('../boostHelpers', () => ({ getDefaultDisplayType: () => 'badge' }));
+vi.mock('../boostHelpers', () => ({
+    getDefaultDisplayType: () => 'badge',
+    isCredentialExpired: (value?: VC) =>
+        !!value?.expirationDate && new Date(value.expirationDate) < new Date(),
+}));
 vi.mock('../boostCMS/BoostPreview/BoostPreview', () => ({
     default: mocks.boostPreview,
 }));

@@ -169,7 +169,7 @@ export const CATEGORY_MAP: Record<
     'ext:Language': 'Achievement',
     'ext:Upskilling': 'Achievement',
 
-    License: 'ID',
+    License: 'Qualifications',
     Membership: 'ID',
     'Student Buckcard': 'ID',
     PermanentResidentCard: 'ID',
@@ -195,9 +195,9 @@ export const CATEGORY_MAP: Record<
     'ext:StateOrNationalID': 'ID',
     'ext:Passport': 'ID',
 
-    ApprenticeshipCertificate: 'Work History',
-    JourneymanCertificate: 'Work History',
-    MasterCertificate: 'Work History',
+    ApprenticeshipCertificate: 'Qualifications',
+    JourneymanCertificate: 'Qualifications',
+    MasterCertificate: 'Qualifications',
 
     // extending { Work History } category
     'ext:Job': 'Work History',
@@ -250,7 +250,7 @@ export const CATEGORY_MAP: Record<
 
     Competency: 'Achievement',
     Assessment: 'Achievement',
-    Certification: 'Achievement',
+    Certification: 'Qualifications',
     MicroCredential: 'Achievement',
 
     MasterDegree: 'Learning History',
@@ -1060,6 +1060,7 @@ export const getSortedCredentials = async (credentials: VC[]) => {
         socialBadges: [],
         workHistory: [],
         memberships: [],
+        qualifications: [],
         families: [],
     };
 
@@ -1077,6 +1078,8 @@ export const getSortedCredentials = async (credentials: VC[]) => {
                 if (category === 'ID') sortedCredentials.ids.push(vc);
                 if (category === 'Achievement') sortedCredentials.achievements.push(vc);
                 if (category === 'Work History') sortedCredentials.workHistory.push(vc);
+                if (category === CredentialCategoryEnum.qualifications)
+                    sortedCredentials.qualifications.push(vc);
                 if (category === 'Social Badge') sortedCredentials.socialBadges.push(vc);
                 if (category === 'Membership') sortedCredentials.memberships.push(vc);
                 if (category === 'Accomplishment') sortedCredentials.memberships.push(vc);
@@ -1089,7 +1092,10 @@ export const getSortedCredentials = async (credentials: VC[]) => {
     return sortedCredentials;
 };
 
-export const getAllSortedCredentials = async (credentials: VC[]) => {
+export const getAllSortedCredentials = async (
+    credentials: VC[],
+    resolveCategory: (credential: VC) => Promise<string> | string = getDefaultCategoryForCredential
+) => {
     const sortedCredentials: SortedCredentials = {
         ids: [],
         courses: [],
@@ -1097,6 +1103,7 @@ export const getAllSortedCredentials = async (credentials: VC[]) => {
         achievements: [],
         skills: [],
         socialBadges: [],
+        qualifications: [],
         memberships: [],
         families: [],
     };
@@ -1105,7 +1112,7 @@ export const getAllSortedCredentials = async (credentials: VC[]) => {
         // sort credentials by credential category
         await Promise.all(
             credentials.map(async vc => {
-                const category = getDefaultCategoryForCredential(vc);
+                const category = await resolveCategory(vc);
 
                 if (category === 'Learning History') sortedCredentials.courses.push(vc);
                 if (category === 'Work History') {
@@ -1114,6 +1121,8 @@ export const getAllSortedCredentials = async (credentials: VC[]) => {
                 if (category === 'Skill') sortedCredentials.skills.push(vc);
                 if (category === 'ID') sortedCredentials.ids.push(vc);
                 if (category === 'Achievement') sortedCredentials.achievements.push(vc);
+                if (category === CredentialCategoryEnum.qualifications)
+                    sortedCredentials.qualifications.push(vc);
                 if (category === 'Social Badge') sortedCredentials.socialBadges.push(vc);
                 if (category === 'Membership') sortedCredentials.memberships.push(vc);
                 if (category === 'Accomplishment') sortedCredentials.memberships.push(vc);

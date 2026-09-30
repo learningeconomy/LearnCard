@@ -73,6 +73,7 @@ import AiInsightsIcon, {
 export enum CredentialCategoryEnum {
     socialBadge = 'Social Badge',
     achievement = 'Achievement',
+    qualifications = 'Qualifications',
     accomplishment = 'Accomplishment',
     accommodation = 'Accommodation',
     workHistory = 'Work History',
@@ -125,6 +126,7 @@ export enum CredentialCategoryEnum {
 export enum BoostCategoryOptionsEnum {
     socialBadge = 'Social Badge',
     achievement = 'Achievement',
+    qualifications = 'Qualifications',
     course = 'Course',
     job = 'Job', // not in CredentialCategory
     id = 'ID',
@@ -261,6 +263,27 @@ export const boostCategoryMetadata: Record<BoostCategoryOptionsEnum, BoostCatego
         // badge thumbnail
         SolidIconComponent: AchievementsIconSolid,
         badgeBackgroundColor: 'pink-500',
+    },
+    [BoostCategoryOptionsEnum.qualifications]: {
+        displayName: 'Qualification',
+        title: 'Qualifications',
+        titleSingular: 'Qualification',
+        plural: 'Qualifications',
+        credentialType: CredentialCategoryEnum.qualifications,
+        value: BoostCategoryOptionsEnum.qualifications,
+        color: 'emerald-600',
+        darkColor: 'emerald-700',
+        subColor: 'emerald-300',
+        lightColor: 'emerald-100',
+        ShapeIcon: Diamond,
+        WalletIcon: AchievementsIcon,
+        IconComponent: AchievementsIcon,
+        IconWithShape: ThickAchievementsIconWithShape,
+        SolidIconComponent: AchievementsIconSolid,
+        CategoryImage: achievementsGraphic,
+        shapeColor: 'text-emerald-300 w-[35px] h-[35px]',
+        iconStyles: 'h-[35px] w-[35px]',
+        badgeBackgroundColor: 'emerald-600',
     },
     [BoostCategoryOptionsEnum.course]: {
         displayName: 'Course',
@@ -901,6 +924,13 @@ export const categoryMetadata: Record<CredentialCategoryEnum, CredentialMetadata
         defaultImageSrc: achievementsGraphic,
         walletColor: 'spice-300',
         ...boostCategoryMetadata[BoostCategoryOptionsEnum.achievement],
+    },
+    [CredentialCategoryEnum.qualifications]: {
+        boostType: BoostCategoryOptionsEnum.qualifications,
+        walletSubtype: WalletCategoryTypes.qualifications,
+        defaultImageSrc: achievementsGraphic,
+        walletColor: 'emerald-300',
+        ...boostCategoryMetadata[BoostCategoryOptionsEnum.qualifications],
     },
     [CredentialCategoryEnum.family]: {
         boostType: BoostCategoryOptionsEnum.family,

@@ -93,6 +93,7 @@ export const BoostLinkedCredentialsModal: React.FC<{
         [BoostCategoryOptionsEnum.learningHistory]: 'emerald-700',
         [BoostCategoryOptionsEnum.socialBadge]: 'blue-400',
         [BoostCategoryOptionsEnum.achievement]: 'pink-400',
+        [BoostCategoryOptionsEnum.qualifications]: 'emerald-700',
         [BoostCategoryOptionsEnum.accomplishment]: 'yellow-400',
         [BoostCategoryOptionsEnum.workHistory]: 'blue-600',
         [BoostCategoryOptionsEnum.accommodation]: 'violet-500',

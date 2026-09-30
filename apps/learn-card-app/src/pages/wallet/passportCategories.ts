@@ -1,15 +1,16 @@
 import { CredentialCategoryEnum } from 'learn-card-base';
 
 /**
- * The single source of truth for the LC-1919 Passport reorg.
+ * The single source of truth for the Passport page categories.
  *
- * Exactly the 7 core credential categories the Passport page renders, in the
+ * Exactly the 8 core credential categories the Passport page renders, in the
  * fixed display order. Any category not in this list (AI Sessions/Pathways/
  * Insights, Skills, Families, etc.) is intentionally excluded from the Passport.
  */
 export const PASSPORT_CATEGORY_ORDER: CredentialCategoryEnum[] = [
     CredentialCategoryEnum.socialBadge,
     CredentialCategoryEnum.achievement,
+    CredentialCategoryEnum.qualifications,
     CredentialCategoryEnum.learningHistory,
     CredentialCategoryEnum.accomplishment,
     CredentialCategoryEnum.accommodation,

@@ -32,6 +32,10 @@ export const DEFAULT_CATEGORIES: ThemeCategory[] = [
         categoryId: CredentialCategoryEnum.achievement,
     },
     {
+        labels: { singular: 'Qualification', plural: 'Qualifications' },
+        categoryId: CredentialCategoryEnum.qualifications,
+    },
+    {
         labels: { singular: 'Course', plural: 'Courses' },
         categoryId: CredentialCategoryEnum.learningHistory,
     },

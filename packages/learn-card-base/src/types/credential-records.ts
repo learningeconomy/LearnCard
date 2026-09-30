@@ -34,6 +34,8 @@ export type CredentialRefreshMetadata = {
 
 export type CredentialMetadata = {
     category: CredentialCategory;
+    /** Indicates that category was deliberately selected by the holder. */
+    categorySource?: 'manual';
     title?: string;
     imgUrl?: string;
     subcategory?: string;

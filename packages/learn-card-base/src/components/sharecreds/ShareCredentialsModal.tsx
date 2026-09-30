@@ -59,6 +59,7 @@ const ShareCredentialsModal = ({
                 ...(credentials?.ids ?? []),
                 ...(credentials?.skills ?? []),
                 ...(credentials?.workHistory ?? []),
+                ...(credentials?.qualifications ?? []),
                 ...(credentials?.socialBadges ?? []),
             ];
 
@@ -69,6 +70,7 @@ const ShareCredentialsModal = ({
             const selectedSkillIds = payload?.selectedSkillIds ?? [];
             const selectedSocialBadgeIds = payload?.selectedSocialBadgeIds ?? [];
             const selectedWorkHistoryIds = payload?.selectedWorkHistoryIds ?? [];
+            const selectedQualificationIds = payload?.selectedQualificationIds ?? [];
 
             const allSelectedCredIds = [
                 ...selectedAchievementIds,
@@ -77,6 +79,7 @@ const ShareCredentialsModal = ({
                 ...selectedSkillIds,
                 ...selectedSocialBadgeIds,
                 ...selectedWorkHistoryIds,
+                ...selectedQualificationIds,
             ];
 
             const duplicate = new Set();

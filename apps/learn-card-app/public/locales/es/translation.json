@@ -195,6 +195,7 @@
             "skills": "Habilidades",
             "socialBadges": "Insignias",
             "achievements": "Logros",
+            "qualifications": "Cualificaciones",
             "studies": "Estudios",
             "portfolio": "Portafolio",
             "assistance": "Asistencia",
@@ -677,6 +678,7 @@
                 "all": "Todo",
                 "socialBadge": "Insignia",
                 "achievement": "Logro",
+                "qualifications": "Cualificación",
                 "learningHistory": "Curso",
                 "accomplishment": "Elemento de portafolio",
                 "accommodation": "Asistencia",
@@ -688,6 +690,7 @@
                 "all": "Todo",
                 "socialBadge": "Insignias",
                 "achievement": "Logros",
+                "qualifications": "Cualificaciones",
                 "learningHistory": "Cursos",
                 "accomplishment": "Portafolio",
                 "accommodation": "Asistencia",
@@ -708,6 +711,7 @@
             "article": {
                 "socialBadge": "una",
                 "achievement": "un",
+                "qualifications": "una",
                 "learningHistory": "un",
                 "accomplishment": "un",
                 "accommodation": "una",
@@ -878,6 +882,7 @@
             "skills": "Habilidades",
             "socialBadges": "Insignias",
             "achievements": "Logros",
+            "qualifications": "Cualificaciones",
             "studies": "Estudios",
             "portfolio": "Portafolio",
             "assistance": "Asistencia",
@@ -885,6 +890,7 @@
             "families": "Familias",
             "ids": "Identificaciones"
         },
+        "newQualification": "Nueva cualificación",
         "emptyState": "Aún no hay credenciales",
         "credentialCount": "{{count}} credencial(es)",
         "viewMode": "Vista",
@@ -895,6 +901,7 @@
         "noManaged": "Sin credenciales gestionadas",
         "search": "Buscar credenciales...",
         "expired": "Expirada",
+        "expires": "Caduca",
         "invalid": "Identificación inválida",
         "expiredId": "Identificación expirada",
         "noTitle": "Sin título",
@@ -925,6 +932,7 @@
             "skills": "Habilidad",
             "socialBadges": "Insignia",
             "achievements": "Logro",
+            "qualifications": "Cualificación",
             "studies": "Estudio",
             "portfolio": "Portafolio",
             "assistance": "Asistencia",
@@ -944,6 +952,10 @@
             "achievement": {
                 "lead": "Tus",
                 "link": "momentos de orgullo"
+            },
+            "qualifications": {
+                "lead": "Tus",
+                "link": "cualificaciones profesionales"
             },
             "accomplishment": {
                 "lead": "Tus",
@@ -3555,6 +3567,7 @@
         },
         "credential": {
             "category": {
+                "qualifications": "Cualificación",
                 "badge": "Insignia",
                 "family": "Familia",
                 "achievement": "Logro",
@@ -3567,9 +3580,11 @@
                 "assistance": "Asistencia"
             },
             "lifecycle": {
+                "expired": "Expirada",
                 "revoked": "Revocada",
                 "suspended": "Suspendida"
-            }
+            },
+            "expires": "Caduca"
         }
     },
     "sdk": {

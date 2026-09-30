@@ -40,6 +40,7 @@ export const CONTRACT_CATEGORIES: (CredentialCategoryEnum | string)[] = [
     CredentialCategoryEnum.accomplishment,
     CredentialCategoryEnum.accommodation,
     CredentialCategoryEnum.workHistory,
+    CredentialCategoryEnum.qualifications,
     CredentialCategoryEnum.goals,
     CredentialCategoryEnum.professionalTitle,
     CredentialCategoryEnum.roleExperience,

@@ -251,6 +251,14 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             IconDark: withDark(AchievementsIconFormal),
             IconWhite: withWhite(AchievementsIconFormal),
         },
+        [CredentialCategoryEnum.qualifications]: {
+            Icon: AchievementsIcon,
+            IconWithShape: AchievementsIconWithShape,
+            IconWithLightShape: AchievementsIconWithLightShape,
+            IconSolid: AchievementsIconFormal,
+            IconDark: withDark(AchievementsIconFormal),
+            IconWhite: withWhite(AchievementsIconFormal),
+        },
         [CredentialCategoryEnum.learningHistory]: {
             Icon: StudiesIcon,
             IconWithShape: StudiesIconWithShape,
@@ -317,6 +325,7 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             [CredentialCategoryEnum.skill]: SkillsTwoTonedIcon,
             [CredentialCategoryEnum.socialBadge]: BoostsTwoTonedIcon,
             [CredentialCategoryEnum.achievement]: AchievementsTwoTonedIcon,
+            [CredentialCategoryEnum.qualifications]: AchievementsTwoTonedIcon,
             [CredentialCategoryEnum.learningHistory]: StudiesTwoTonedIcon,
             [CredentialCategoryEnum.accomplishment]: PortfolioTwoTonedIcon,
             [CredentialCategoryEnum.accommodation]: AssistanceTwoTonedIcon,
@@ -358,6 +367,11 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             IconWhite: withWhite(BoostsIconFormal),
         },
         [CredentialCategoryEnum.achievement]: {
+            Icon: AchievementsIconFormal,
+            IconDark: withDark(AchievementsIconFormal),
+            IconWhite: withWhite(AchievementsIconFormal),
+        },
+        [CredentialCategoryEnum.qualifications]: {
             Icon: AchievementsIconFormal,
             IconDark: withDark(AchievementsIconFormal),
             IconWhite: withWhite(AchievementsIconFormal),
@@ -408,6 +422,7 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             [CredentialCategoryEnum.skill]: SkillsFormalIcon,
             [CredentialCategoryEnum.socialBadge]: BoostsFormalIcon,
             [CredentialCategoryEnum.achievement]: AchievementsFormalIcon,
+            [CredentialCategoryEnum.qualifications]: AchievementsFormalIcon,
             [CredentialCategoryEnum.learningHistory]: StudiesFormalIcon,
             [CredentialCategoryEnum.accomplishment]: PortfolioFormalIcon,
             [CredentialCategoryEnum.accommodation]: AssistanceFormalIcon,

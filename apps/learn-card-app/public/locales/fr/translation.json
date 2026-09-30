@@ -195,6 +195,7 @@
             "skills": "Compétences",
             "socialBadges": "Badges",
             "achievements": "Réalisations",
+            "qualifications": "Qualifications",
             "studies": "Études",
             "portfolio": "Portfolio",
             "assistance": "Assistance",
@@ -677,6 +678,7 @@
                 "all": "Tout",
                 "socialBadge": "Badge",
                 "achievement": "Réalisation",
+                "qualifications": "Qualification",
                 "learningHistory": "Cours",
                 "accomplishment": "Élément de portfolio",
                 "accommodation": "Assistance",
@@ -688,6 +690,7 @@
                 "all": "Tout",
                 "socialBadge": "Badges",
                 "achievement": "Réalisations",
+                "qualifications": "Qualifications",
                 "learningHistory": "Cours",
                 "accomplishment": "Portfolio",
                 "accommodation": "Assistance",
@@ -708,6 +711,7 @@
             "article": {
                 "socialBadge": "un",
                 "achievement": "une",
+                "qualifications": "une",
                 "learningHistory": "un",
                 "accomplishment": "un",
                 "accommodation": "une",
@@ -878,6 +882,7 @@
             "skills": "Compétences",
             "socialBadges": "Badges",
             "achievements": "Réalisations",
+            "qualifications": "Qualifications",
             "studies": "Études",
             "portfolio": "Portfolio",
             "assistance": "Assistance",
@@ -885,6 +890,7 @@
             "families": "Familles",
             "ids": "Identifiants"
         },
+        "newQualification": "Nouvelle qualification",
         "emptyState": "Aucun titre pour le moment",
         "credentialCount": "{{count}} titre(s)",
         "viewMode": "Vue",
@@ -895,6 +901,7 @@
         "noManaged": "Aucun titre géré",
         "search": "Rechercher des titres...",
         "expired": "Expiré",
+        "expires": "Expire",
         "invalid": "Identifiant invalide",
         "expiredId": "Identifiant expiré",
         "noTitle": "Sans titre",
@@ -925,6 +932,7 @@
             "skills": "Compétence",
             "socialBadges": "Badge",
             "achievements": "Réalisation",
+            "qualifications": "Qualification",
             "studies": "Étude",
             "portfolio": "Portfolio",
             "assistance": "Assistance",
@@ -944,6 +952,10 @@
             "achievement": {
                 "lead": "Vos",
                 "link": "moments de fierté"
+            },
+            "qualifications": {
+                "lead": "Vos",
+                "link": "qualifications professionnelles"
             },
             "accomplishment": {
                 "lead": "Vos",
@@ -3555,6 +3567,7 @@
         },
         "credential": {
             "category": {
+                "qualifications": "Qualification",
                 "badge": "Badge",
                 "family": "Famille",
                 "achievement": "Réussite",
@@ -3567,9 +3580,11 @@
                 "assistance": "Assistance"
             },
             "lifecycle": {
+                "expired": "Expiré",
                 "revoked": "Révoqué",
                 "suspended": "Suspendu"
-            }
+            },
+            "expires": "Expire"
         }
     },
     "sdk": {
