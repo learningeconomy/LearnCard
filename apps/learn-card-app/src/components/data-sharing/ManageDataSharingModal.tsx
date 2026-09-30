@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { PendingContractRequests } from '../contract-requests/ContractRequest';
+import { ContractAudience } from '../contract-requests/ContractAudience';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('manage-data-sharing-modal');
 
@@ -103,7 +105,7 @@ const RevokeAccessConfirmationModal: React.FC<RevokeAccessConfirmationModalProps
                             <TransP
                                 m={m['dataSharing.revokeConfirm.body']}
                                 values={{ name, brand: brandName }}
-                                components={[<span className="font-medium" />]}
+                                components={[<span key="app-name" className="font-medium" />]}
                             />
                         )}
                     </p>
@@ -118,8 +120,8 @@ const RevokeAccessConfirmationModal: React.FC<RevokeAccessConfirmationModalProps
                         {isRevoking || isWorking
                             ? m['dataSharing.revoking']()
                             : isLearnCardAiContract
-                            ? m['dataSharing.disableAiRevoke']()
-                            : m['dataSharing.confirmRevoke']()}
+                              ? m['dataSharing.disableAiRevoke']()
+                              : m['dataSharing.confirmRevoke']()}
                     </button>
 
                     <button
@@ -191,6 +193,7 @@ const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose
                 </p>
             </div>
 
+            <PendingContractRequests />
             {contracts.length === 0 ? (
                 <div className="flex flex-col items-center justify-center px-6 pt-4 pb-10 text-center">
                     <Shield className="w-12 h-12 text-grayscale-300 mb-4" />
@@ -351,10 +354,11 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
 
                 const unsignedDidAuthVp = await wallet.invoke.newPresentation(delegateCredential);
 
-                const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
+                const vp = await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
                     proofPurpose: 'authentication',
                     proofFormat: 'jwt',
-                })) as any as string;
+                });
+                if (typeof vp !== 'string') throw new Error('Expected a signed presentation token');
 
                 urlObj.searchParams.set('vp', vp);
             }
@@ -410,8 +414,8 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
         step === 'edit'
             ? m['dataSharing.editAccess']()
             : step === 'activity'
-            ? m['dataSharing.activityFeed']()
-            : m['dataSharing.appDetails']();
+              ? m['dataSharing.activityFeed']()
+              : m['dataSharing.appDetails']();
 
     return (
         <div className="bg-white rounded-[20px] min-w-[350px] max-w-[450px] w-full h-[80vh] overflow-hidden flex flex-col min-h-0">
@@ -449,6 +453,10 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
                             </p>
                         )}
 
+                        <ContractAudience
+                            contract={contractDetails}
+                            testId="contract-shared-with"
+                        />
                         <h4 className="text-xs font-semibold tracking-wider text-grayscale-500 uppercase mb-2">
                             {m['dataSharing.dataAccess']()}
                         </h4>

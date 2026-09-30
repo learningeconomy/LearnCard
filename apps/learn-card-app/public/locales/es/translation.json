@@ -9327,5 +9327,30 @@
         "saveError": "No se pudieron guardar estas credenciales. Inténtalo de nuevo.",
         "signInToSave": "Inicia sesión para guardar",
         "saveHint": "Guarda esta colección firmada con tus elementos recibidos."
+    },
+    "contractRequests": {
+        "label": "Conectar",
+        "referred": "{{referrer}} te ha referido a {{owner}}.",
+        "invitation": "{{owner}} quiere conectar contigo.",
+        "accept": "Aceptar y conectar",
+        "details": "Ver detalles",
+        "decline": "Rechazar",
+        "declineConfirm": "¿Rechazar esta invitación?",
+        "declined": "Rechazada",
+        "connected": "Conectado",
+        "cancelled": "Cancelada",
+        "notNow": "Ahora no",
+        "dismiss": "Ocultar invitación",
+        "loading": "Cargando invitación...",
+        "working": "Procesando...",
+        "unavailable": "Esta invitación ya no está disponible.",
+        "error": "Algo salió mal. Inténtalo de nuevo.",
+        "sharedWith": "Compartido con",
+        "dataRequested": "Datos solicitados",
+        "outcomes": "Credenciales que puedes recibir",
+        "none": "Ninguno",
+        "reviewFirst": "Revisa y elige tus datos antes de conectar.",
+        "pending": "Invitaciones pendientes",
+        "empty": "No hay invitaciones pendientes."
     }
 }
