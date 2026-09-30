@@ -484,7 +484,7 @@ describe('escrow strategy', () => {
         });
         methods[0].shareVersion = 1;
         expect(await strategy.getEscrowEnrollmentState!(params)).toMatchObject({
-            state: 'not-enrolled',
+            state: 'stale',
         });
         methods[0].shareVersion = version;
         methods[0].confirmedAt = undefined;
@@ -660,6 +660,24 @@ describe('escrow strategy', () => {
         expect(storage.clearAllShares).not.toHaveBeenCalled();
         expect(strategy.hasPendingIdentityRecovery!()).toBe(false);
     });
+    it.each(['set', 'clear'] as const)(
+        'rejects explicit %s PIN on a stale account when the enclave is unreachable',
+        async action => {
+            await strategy.ensureEscrowEnrollment!(params);
+            escrowStale = 'key-rotated';
+            attestationFailure = true;
+            await expect(
+                action === 'set'
+                    ? strategy.setEscrowPin!({ ...params, pin: '135790' })
+                    : strategy.clearEscrowPin!(params)
+            ).rejects.toThrow();
+            expect(version).toBe(2);
+            expect(config.onEscrowError).not.toHaveBeenCalled();
+            // Explicit actions must not consume the automatic repair attempt.
+            await strategy.ensureEscrowEnrollment!(params);
+            expect(config.onEscrowError).toHaveBeenCalledOnce();
+        }
+    );
     const recoverPin = (pin = '135790') =>
         strategy.executeRecovery({
             ...params,

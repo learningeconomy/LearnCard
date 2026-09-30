@@ -727,6 +727,32 @@ describe('AuthCoordinator', () => {
                 }
             );
 
+            it('repairs version-stale enrollment at zero rollout and publishes the repaired state', async () => {
+                const ensureEscrowEnrollment = vi.fn().mockResolvedValue({
+                    enrolled: true,
+                    changed: true,
+                    shareVersion: 3,
+                });
+                // Version mismatches use stale without an enclave-specific staleReason.
+                const getEscrowEnrollmentState = vi
+                    .fn()
+                    .mockResolvedValueOnce({ state: 'stale' })
+                    .mockResolvedValue({ state: 'enrolled' });
+                const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(false);
+                const { coordinator } = setup({
+                    keyDerivation: { ensureEscrowEnrollment, getEscrowEnrollmentState },
+                    config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                });
+                await coordinator.initialize();
+                await vi.waitFor(() =>
+                    expect(coordinator.getState()).toMatchObject({
+                        escrowEnrollment: 'enrolled',
+                    })
+                );
+                expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1);
+                expect(isEscrowEnrollmentAllowed).not.toHaveBeenCalled();
+            });
+
             it.each(['opted-out', 'disabled'] as const)(
                 'always attempts ensureEscrowEnrollment for a %s user, same as before the rollout gate existed',
                 async state => {

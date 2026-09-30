@@ -2143,32 +2143,32 @@
         },
         "cancel": {
             "invalidLink": {
-                "title": "This link isn't valid",
-                "body": "Open the most recent email we sent, or sign in to check on your account.",
-                "signIn": "Sign In"
+                "title": "Este enlace no es válido",
+                "body": "Abre el último correo que te enviamos o inicia sesión para revisar tu cuenta.",
+                "signIn": "Iniciar sesión"
             },
             "confirm": {
-                "title": "Cancel account recovery?",
-                "body": "Someone asked to recover your account. If this wasn't you, cancel it now.",
-                "cancelBtn": "Cancel Recovery",
-                "notNowBtn": "Not now",
-                "cancelling": "Cancelling..."
+                "title": "¿Cancelar la recuperación de tu cuenta?",
+                "body": "Alguien solicitó recuperar tu cuenta. Si no fuiste tú, cancela la solicitud ahora.",
+                "cancelBtn": "Cancelar recuperación",
+                "notNowBtn": "Ahora no",
+                "cancelling": "Cancelando..."
             },
             "success": {
-                "title": "Recovery cancelled. Your account is safe.",
-                "body": "We recommend signing in and reviewing your recovery options.",
-                "doneBtn": "Open LearnCard"
+                "title": "Recuperación cancelada. Tu cuenta está a salvo.",
+                "body": "Te recomendamos iniciar sesión y revisar tus opciones de recuperación.",
+                "doneBtn": "Abrir LearnCard"
             },
             "expired": {
-                "title": "Link expired",
-                "body": "This link has expired or was already used. If you still see a recovery in progress, sign in to cancel it.",
-                "signInBtn": "Sign In"
+                "title": "El enlace ha caducado",
+                "body": "Este enlace ha caducado o ya se ha usado. Si aún hay una recuperación en curso, inicia sesión para cancelarla.",
+                "signInBtn": "Iniciar sesión"
             },
             "error": {
-                "network": "Connection issue. Please check your internet and try again.",
-                "tooMany": "Too many attempts. Please wait a minute and try again.",
-                "generic": "Something went wrong. Please try again.",
-                "tryAgainBtn": "Try Again"
+                "network": "Hay un problema de conexión. Revisa tu conexión a internet e inténtalo de nuevo.",
+                "tooMany": "Demasiados intentos. Espera un minuto e inténtalo de nuevo.",
+                "generic": "Algo salió mal. Inténtalo de nuevo.",
+                "tryAgainBtn": "Intentar de nuevo"
             }
         },
         "automatic": {

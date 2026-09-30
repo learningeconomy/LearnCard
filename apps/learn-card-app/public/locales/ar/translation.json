@@ -2143,32 +2143,32 @@
         },
         "cancel": {
             "invalidLink": {
-                "title": "This link isn't valid",
-                "body": "Open the most recent email we sent, or sign in to check on your account.",
-                "signIn": "Sign In"
+                "title": "هذا الرابط غير صالح",
+                "body": "افتح أحدث رسالة أرسلناها إليك أو سجّل الدخول للتحقق من حسابك.",
+                "signIn": "تسجيل الدخول"
             },
             "confirm": {
-                "title": "Cancel account recovery?",
-                "body": "Someone asked to recover your account. If this wasn't you, cancel it now.",
-                "cancelBtn": "Cancel Recovery",
-                "notNowBtn": "Not now",
-                "cancelling": "Cancelling..."
+                "title": "هل تريد إلغاء استعادة الحساب؟",
+                "body": "طلب شخص ما استعادة حسابك. إذا لم تكن أنت، فألغِ الطلب الآن.",
+                "cancelBtn": "إلغاء الاستعادة",
+                "notNowBtn": "ليس الآن",
+                "cancelling": "جارٍ الإلغاء..."
             },
             "success": {
-                "title": "Recovery cancelled. Your account is safe.",
-                "body": "We recommend signing in and reviewing your recovery options.",
-                "doneBtn": "Open LearnCard"
+                "title": "تم إلغاء الاستعادة. حسابك آمن.",
+                "body": "ننصحك بتسجيل الدخول ومراجعة خيارات استعادة حسابك.",
+                "doneBtn": "فتح LearnCard"
             },
             "expired": {
-                "title": "Link expired",
-                "body": "This link has expired or was already used. If you still see a recovery in progress, sign in to cancel it.",
-                "signInBtn": "Sign In"
+                "title": "انتهت صلاحية الرابط",
+                "body": "انتهت صلاحية هذا الرابط أو تم استخدامه بالفعل. إذا كانت الاستعادة لا تزال جارية، فسجّل الدخول لإلغائها.",
+                "signInBtn": "تسجيل الدخول"
             },
             "error": {
-                "network": "Connection issue. Please check your internet and try again.",
-                "tooMany": "Too many attempts. Please wait a minute and try again.",
-                "generic": "Something went wrong. Please try again.",
-                "tryAgainBtn": "Try Again"
+                "network": "هناك مشكلة في الاتصال. تحقّق من اتصالك بالإنترنت وحاول مجددًا.",
+                "tooMany": "محاولات كثيرة جدًا. انتظر دقيقة وحاول مجددًا.",
+                "generic": "حدث خطأ ما. حاول مجددًا.",
+                "tryAgainBtn": "المحاولة مجددًا"
             }
         },
         "automatic": {

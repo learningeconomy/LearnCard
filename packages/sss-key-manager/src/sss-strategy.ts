@@ -1252,7 +1252,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         // automatic attempt per session, so a still-unreachable enclave doesn't
         // retry on every ensureEscrowEnrollment call within the same session.
         const repairingStaleBlob =
-            currentlyEnrolled && !!status.escrowStale && !staleEscrowReenrollAttempted;
+            pin === undefined &&
+            !forceRotate &&
+            currentlyEnrolled &&
+            !!status.escrowStale &&
+            !staleEscrowReenrollAttempted;
         if (!forceRotate && pin === undefined && currentlyEnrolled && !repairingStaleBlob)
             // Automatic repair preserves current enrollment regardless of PIN status.
             // The enclave can carry an existing verifier when shares rotate.
@@ -1836,17 +1840,19 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             if (!config.escrow?.enabled) return { state: 'disabled' };
             const status = await this.fetchServerKeyStatus(params.token, params.providerType);
             if (status.escrowOptedOut) return { state: 'opted-out', escrowPin: status.escrowPin };
+            const confirmedEscrow = status.recoveryMethods.filter(
+                method =>
+                    method.type === 'escrow' &&
+                    (Boolean(method.confirmedAt) ||
+                        ('confirmationStatus' in method &&
+                            method.confirmationStatus === 'confirmed'))
+            );
             const enrolled =
                 status.shareVersion !== null &&
-                status.recoveryMethods.some(
-                    method =>
-                        method.type === 'escrow' &&
-                        method.shareVersion === status.shareVersion &&
-                        (Boolean(method.confirmedAt) ||
-                            ('confirmationStatus' in method &&
-                                method.confirmationStatus === 'confirmed'))
-                );
-            if (enrolled && status.escrowStale)
+                confirmedEscrow.some(method => method.shareVersion === status.shareVersion);
+            // Previously enrolled accounts must bypass the new-enrollment rollout
+            // even when a rotation succeeded but resealing the escrow blob failed.
+            if (confirmedEscrow.length > 0 && (!enrolled || status.escrowStale))
                 return {
                     state: 'stale',
                     escrowPin: status.escrowPin,
@@ -1908,7 +1914,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             const result = await withRotationLock(() =>
                 ensureEscrowEnrollmentUnguarded(this, { ...params, options: { pin } }, storage)
             );
-            if (!result.enrolled) {
+            if (!result.enrolled || !result.changed) {
                 throw new Error('Automatic recovery is not available for this account.');
             }
         },
@@ -1918,7 +1924,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             const result = await withRotationLock(() =>
                 ensureEscrowEnrollmentUnguarded(this, params, storage, true)
             );
-            if (!result.enrolled) {
+            if (!result.enrolled || !result.changed) {
                 throw new Error('Automatic recovery is not available for this account.');
             }
         },

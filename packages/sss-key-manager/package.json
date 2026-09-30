@@ -10,7 +10,8 @@
         "src"
     ],
     "scripts": {
-        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntrypoint.js ./dist/index.js && tsc --p tsconfig.json",
+        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntrypoint.js ./dist/index.js && tsc --p tsconfig.json && node ./scripts/check-cjs.mjs",
+        "check:cjs": "bun run build",
         "dev": "node ./scripts/build.mjs --watch",
         "test": "vitest run",
         "test:watch": "vitest",
