@@ -58,11 +58,11 @@ resource "aws_security_group" "enclave_host" {
   }
 
   dynamic "egress" {
-    for_each = var.roughtime_servers
+    for_each = toset([for s in var.roughtime_servers : tostring(s.port)])
     content {
-      description = "Roughtime UDP relay egress to ${egress.value.host}:${egress.value.port}"
-      from_port   = egress.value.port
-      to_port     = egress.value.port
+      description = "Roughtime UDP relay egress port ${egress.value}"
+      from_port   = tonumber(egress.value)
+      to_port     = tonumber(egress.value)
       protocol    = "udp"
       cidr_blocks = ["0.0.0.0/0"]
     }

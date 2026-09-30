@@ -281,9 +281,74 @@ async fn fake_and_configuration_guards() {
     );
     assert!(RoughtimeTimeSource::new(vec![a.clone(), a], transport.clone(), 2, 10_000).is_err());
     assert!(RoughtimeTimeSource::new(vec![b], transport.clone(), 2, 10_000).is_err());
-    assert_eq!(servers::published().unwrap().len(), 2);
-    assert_eq!(
-        RoughtimeTimeSource::production(transport).is_ok(),
-        cfg!(feature = "verified-roughtime-keys")
-    );
+    assert_eq!(servers::published().unwrap().len(), 3);
+    assert!(RoughtimeTimeSource::production(transport).is_ok());
+}
+
+struct QuorumTransport {
+    down: Vec<&'static str>,
+    bad_signature: bool,
+    disagree: bool,
+}
+
+impl RoughtimeTransport for QuorumTransport {
+    fn exchange<'a>(&'a self, id: &'a str, request: Vec<u8>) -> TimeFuture<'a, Vec<u8>> {
+        Box::pin(async move {
+            if self.down.contains(&id) {
+                return std::future::pending().await;
+            }
+            let protocol = Protocol::IetfDraft08;
+            let msg = Message::parse(unframe(protocol, &request)?)?;
+            let seed = match id {
+                "a" => 1,
+                "b" => 2,
+                _ => 3,
+            };
+            let mid = if id == "c" && self.disagree { 121 } else { 100 };
+            let wire = response(protocol, seed, msg.get(b"NONC")?, mid, 10, 0, 1000);
+            if id == "c" && self.bad_signature {
+                return Ok(frame(
+                    protocol,
+                    replace(unframe(protocol, &wire)?, &[*b"SIG\0"], &[0; 64]),
+                ));
+            }
+            Ok(wire)
+        })
+    }
+}
+
+#[tokio::test]
+async fn two_of_three_outages_bad_signature_and_dissent() {
+    for (down, bad_signature, disagree, expected) in [
+        (vec!["c"], false, false, Ok(2)),
+        (
+            vec!["b", "c"],
+            false,
+            false,
+            Err(TimeError::InsufficientSources),
+        ),
+        (vec![], true, false, Ok(2)),
+        (vec!["b"], true, false, Err(TimeError::InsufficientSources)),
+        (vec![], false, true, Err(TimeError::Disagreement)),
+        (vec![], false, false, Ok(3)),
+    ] {
+        let source = RoughtimeTimeSource::new(
+            vec![
+                pin("a", Protocol::IetfDraft08, 1),
+                pin("b", Protocol::IetfDraft08, 2),
+                pin("c", Protocol::IetfDraft08, 3),
+            ],
+            Arc::new(QuorumTransport {
+                down,
+                bad_signature,
+                disagree,
+            }),
+            2,
+            10_000,
+        )
+        .unwrap();
+        let start = tokio::time::Instant::now();
+        assert_eq!(source.now(None).await.map(|e| e.sources.len()), expected);
+        assert!(start.elapsed() < Duration::from_secs(3));
+    }
 }

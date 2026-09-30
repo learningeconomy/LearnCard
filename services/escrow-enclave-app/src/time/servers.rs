@@ -3,18 +3,20 @@ use super::{PinnedServer, Protocol, TimeError};
 use base64::{engine::general_purpose::STANDARD, Engine};
 
 /// Cloudflare beta key, published at
-/// https://developers.cloudflare.com/time-services/roughtime/usage/ (2026-09-25).
+/// https://developers.cloudflare.com/time-services/roughtime/usage/ (fetched 2026-09-30).
 pub const CLOUDFLARE_PUBLIC_KEY: &str = "0GD7c3yP8xEc4Zl2zeuN2SlLvDVVocjsPSL8/Rl/7zg=";
-/// Google sandbox key, published in Google's original service repository:
-/// https://roughtime.googlesource.com/roughtime/+/dd529367052d2d4e723407525887310fe866ddd8/roughtime-servers.json
-/// Authoritative historical pin; service availability is NOT guaranteed.
-/// verify before production: current sandbox key/service status is unconfirmed.
-pub const GOOGLE_PUBLIC_KEY: &str = "etPaaIxcBMY1oUeGpwvPMCJMwlRVNxv51KK/tktoJTQ=";
+/// int08h's long-term key, https://int08h.com/post/public-roughtime-server/
+/// (fetched 2026-09-30). Select its Google legacy endpoint explicitly.
+pub const INT08H_PUBLIC_KEY: &str = "AW5uAoTSTDfG5NfY1bTh08GUnOqlRb+HVhbJ3ODJvsE=";
+/// Tanner Ryan's long-term key, https://time.txryan.com/ (fetched 2026-09-30).
+/// Operator implementation: https://github.com/tannerryan/roughtime supports legacy.
+pub const TXRYAN_PUBLIC_KEY: &str = "iBVjxg/1j7y1+kQUTBYdTabxCppesU/07D4PMDJk2WA=";
 
 pub fn published() -> Result<Vec<PinnedServer>, TimeError> {
     [
         ("cloudflare", CLOUDFLARE_PUBLIC_KEY, Protocol::IetfDraft08),
-        ("google", GOOGLE_PUBLIC_KEY, Protocol::GoogleLegacy),
+        ("int08h", INT08H_PUBLIC_KEY, Protocol::GoogleLegacy),
+        ("txryan", TXRYAN_PUBLIC_KEY, Protocol::GoogleLegacy),
     ]
     .into_iter()
     .map(|(id, key, protocol)| {

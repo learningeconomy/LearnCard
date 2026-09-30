@@ -99,20 +99,20 @@ kms:RecipientAttestation:PCR0/1/2` all matching simultaneously
 
 See `variables.tf` for full descriptions/validation. Notable ones:
 
-| Variable                                                                                                           | Notes                                                                                                                                                                       |
-| ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `instance_type`                                                                                                    | Default `m6i.xlarge`. Validation rejects `*.large` and smaller — a 2-vCPU instance cannot host a 2-vCPU enclave (decisions.md D1).                                          |
-| `private_subnet_ids`                                                                                               | >= 2 required by variable validation; a `check` block (plan/apply only) also asserts they span >= 2 distinct AZs and have no public IP on launch.                           |
-| `enclave_measurements`                                                                                             | 1–3 pinned `{label, pcr0, pcr1, pcr2}` tuples (each PCR = 96 hex chars). See `escrow-measurements.tfvars.example` and "Measurement rotation" below.                         |
-| `kms_admin_role_arn`                                                                                               | ARN of the `escrow-kms-admin` role, created **outside** this module. Never grant this to lca-api's role.                                                                    |
-| `instance_profile_name`                                                                                            | Optional override (default `null`) — normally leave unset so `iam.tf`'s created profile is used.                                                                            |
-| `roughtime_servers`                                                                                                | Defaults to Cloudflare + Google per decisions.md D2. Must have >= 2 entries.                                                                                                |
-| `host_binary_s3_uri`                                                                                               | `s3://` URI of the built `escrow-enclave-host` parent binary, in the same artifacts bucket as `eif_s3_uri`.                                                                 |
-| `host_binary_sha256`                                                                                               | Required 64-hex-char SHA-256 of `host_binary_s3_uri`. user-data verifies it and refuses to install/start the service on mismatch.                                           |
-| `escrow_key_id`                                                                                                    | Logical `ESCROW_KEY_ID` the host passes to the parent binary (decisions.md D18 — stable across measurement rotations).                                                      |
-| `escrow_previous_key_ids` / `escrow_previous_key_objects`                                                          | Up to 3 previous key IDs + their sealed-key S3 objects, paired by index, for P9.1 rotation/recovery. Both empty outside an active rotation.                                 |
-| `escrow_allow_first_boot`                                                                                          | `true` only for the one boot that provisions the first sealed key; flip back to `false` and roll the ASG immediately after (see the variable's own description for why).    |
-| `host_bearer_token_parameter_name` / `host_tls_certificate_parameter_name` / `host_tls_private_key_parameter_name` | Absolute SSM Parameter Store (SecureString) names for the host's bearer token and TLS cert/key. Provisioned outside this module; only read-only IAM access is granted here. |
+| Variable                                                                                                           | Notes                                                                                                                                                                                   |
+| ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `instance_type`                                                                                                    | Default `m6i.xlarge`. Validation rejects `*.large` and smaller — a 2-vCPU instance cannot host a 2-vCPU enclave (decisions.md D1).                                                      |
+| `private_subnet_ids`                                                                                               | >= 2 required by variable validation; a `check` block (plan/apply only) also asserts they span >= 2 distinct AZs and have no public IP on launch.                                       |
+| `enclave_measurements`                                                                                             | 1–3 pinned `{label, pcr0, pcr1, pcr2}` tuples (each PCR = 96 hex chars). See `escrow-measurements.tfvars.example` and "Measurement rotation" below.                                     |
+| `kms_admin_role_arn`                                                                                               | ARN of the `escrow-kms-admin` role, created **outside** this module. Never grant this to lca-api's role.                                                                                |
+| `instance_profile_name`                                                                                            | Optional override (default `null`) — normally leave unset so `iam.tf`'s created profile is used.                                                                                        |
+| `roughtime_servers`                                                                                                | Exactly the compiled IDs/endpoints: Cloudflare `:2003`, int08h `:2002`, Tanner Ryan `:2002`. Validation rejects drift; the enclave requires 2-of-3 and intersects every valid response. |
+| `host_binary_s3_uri`                                                                                               | `s3://` URI of the built `escrow-enclave-host` parent binary, in the same artifacts bucket as `eif_s3_uri`.                                                                             |
+| `host_binary_sha256`                                                                                               | Required 64-hex-char SHA-256 of `host_binary_s3_uri`. user-data verifies it and refuses to install/start the service on mismatch.                                                       |
+| `escrow_key_id`                                                                                                    | Logical `ESCROW_KEY_ID` the host passes to the parent binary (decisions.md D18 — stable across measurement rotations).                                                                  |
+| `escrow_previous_key_ids` / `escrow_previous_key_objects`                                                          | Up to 3 previous key IDs + their sealed-key S3 objects, paired by index, for P9.1 rotation/recovery. Both empty outside an active rotation.                                             |
+| `escrow_allow_first_boot`                                                                                          | `true` only for the one boot that provisions the first sealed key; flip back to `false` and roll the ASG immediately after (see the variable's own description for why).                |
+| `host_bearer_token_parameter_name` / `host_tls_certificate_parameter_name` / `host_tls_private_key_parameter_name` | Absolute SSM Parameter Store (SecureString) names for the host's bearer token and TLS cert/key. Provisioned outside this module; only read-only IAM access is granted here.             |
 
 ## Apply procedure (manual/CI — not run by this task)
 
@@ -341,11 +341,18 @@ implementation, not an optional enhancement.
   endpoints exist for KMS/S3/DynamoDB in the target VPC. P3.2 does not add
   them either (out of scope) — tightening egress to the endpoint's
   SG/prefix list remains a safe, independent follow-up.
-- **Roughtime egress is inherently broad.** `roughtime.cloudflare.com` and
-  `roughtime.sandbox.google.com` don't have stable IPs a security group can
+- **Roughtime egress is inherently broad.** `roughtime.cloudflare.com`,
+  `roughtime.int08h.com` and `time.txryan.com` use DNS rather than IPs this module can
   pin, so UDP egress to their ports is `0.0.0.0/0`. The enclave verifies each
   response's signature itself (decisions.md D2), so the relay path being
   network-open is an accepted, documented tradeoff, not an oversight.
+  UDP rules are deduplicated to ports 2002/2003. User-data supplies the exact
+  `cloudflare`/`int08h`/`txryan` ID map, preserving JSON quotes in systemd.
+  Pins/protocols are compiled into the measured enclave, never host-supplied.
+  One unavailable source is tolerated; two or any valid disagreement fail closed.
+  int08h and Tanner were live-verified on 2026-09-30; Cloudflare timed out locally.
+  Confirm staging reachability and obtain Tanner's requested approval for
+  high-volume infrastructure before launch. Public services have no uptime SLA.
 - **First boot requires `escrow_allow_first_boot = true`.** Every other boot
   should run with it `false` — see that variable's description for why
   leaving it `true` is dangerous after the first sealed key exists.

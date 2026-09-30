@@ -191,11 +191,12 @@ HTTP access-body logging, core dumps or request capture in production.
 | `ESCROW_ALLOW_FIRST_BOOT`                                | `false`; explicit `true` enables create-only provisioning                                                                                                              |
 | `ESCROW_ROUGHTIME_ALLOWLIST_JSON`                        | Optional operator-owned server ID -> host:port map                                                                                                                     |
 
-Roughtime defaults: `cloudflare` -> `roughtime.cloudflare.com:2003`, `google` ->
-`roughtime.sandbox.google.com:2002`. User-data's endpoint-only
-`ESCROW_ROUGHTIME_SERVERS` is intentionally not interpreted (it has no IDs); use
-the explicit JSON map for overrides and reconcile enclave pins/security-group
-egress separately. Request JSON <=8192, ID <=128, payload 1–1024; reply is raw
+Roughtime defaults: `cloudflare` -> `roughtime.cloudflare.com:2003`, `int08h` ->
+`roughtime.int08h.com:2002`, `txryan` -> `time.txryan.com:2002`. Terraform renders
+these same IDs/endpoints into `ESCROW_ROUGHTIME_ALLOWLIST_JSON` with systemd-safe
+quoting and UDP egress ports 2002/2003. The enclave pins the keys/protocols in its
+measured code and requires two agreeing sources; the host cannot supply trust roots.
+Request JSON <=8192, ID <=128, payload 1–1024; reply is raw
 1–1024 bytes framed with u32 BE, not JSON. A 1025-byte receive buffer detects
 oversize/truncation, a connected UDP socket filters source, total lifetime is 2s.
 

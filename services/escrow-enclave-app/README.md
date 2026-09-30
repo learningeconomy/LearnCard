@@ -340,7 +340,8 @@ durability/audit and independent monitor/kill-switch integration remain required
 
 `RoughtimeTimeSource::new` requires 2–16 distinct pins, a minimum of two
 successful responses, and an explicit radius cap (`production`: 10 seconds).
-All queries run concurrently with two-second per-source timeouts. Every valid
+Production uses Cloudflare, int08h and Tanner Ryan with `min_sources = 2`.
+All queries run concurrently against one shared two-second deadline. Every valid
 source participates in the intersection; no majority/outlier exclusion occurs.
 Missing/invalid replies count as unavailable; insufficient sources, disjoint
 intervals, or an intersection wholly before the supplied ledger floor fail closed.
@@ -365,23 +366,39 @@ proof; later ledger signing authenticates the enclave's verification result.
   defines the implemented `0x80000008` format: 32-byte nonce, truncated SHA-512
   nonce leaves, seconds, outer VER/NONC, ROUGHTIM framing, and the delegation
   context ending `signature--\0`. This is a documented deployment selection,
-  **not a live UDP interoperability claim**.
-- Google's [original published server list](https://roughtime.googlesource.com/roughtime/+/dd529367052d2d4e723407525887310fe866ddd8/roughtime-servers.json)
-  supplies historical sandbox key `etPaaIxcBMY1oUeGpwvPMCJMwlRVNxv51KK/tktoJTQ=`.
-  Legacy Google format uses 64-byte nonces/SHA-512 hashes, microseconds, PAD-FF,
-  no ROUGHTIM framing and the same signature contexts. Current sandbox key and
-  availability are unconfirmed (Cloudflare's ecosystem lists it unreachable).
+  **not a live UDP interoperability claim**: the 2026-09-30 probe timed out.
+- [int08h](https://int08h.com/post/public-roughtime-server/) publishes
+  `AW5uAoTSTDfG5NfY1bTh08GUnOqlRb+HVhbJ3ODJvsE=` for `roughtime.int08h.com:2002`.
+- [Tanner Ryan](https://time.txryan.com/) publishes
+  `iBVjxg/1j7y1+kQUTBYdTabxCppesU/07D4PMDJk2WA=` for `time.txryan.com:2002`.
+  Both new sources passed live UDP verification on 2026-09-30 using Google
+  legacy (64-byte nonces/SHA-512, microseconds, PAD-FF, no ROUGHTIM framing).
+  Their captured responses are offline golden tests in `src/time/live_tests.rs`.
+  Observed radii were 5s and 3s. The unchanged 10s cap accommodates these and
+  leap smearing, tiny relative to the seven-day hold. No extra tolerance is added:
+  disjoint signed intervals fail closed, even if two other sources agree.
+  Tanner's operator asks for contact before high-volume infrastructure usage;
+  obtain approval and rate-limit deployment traffic before launch.
+- Google's unreachable sandbox is removed. [Netnod's public service page](https://www.netnod.se/free-time-services)
+  advertises NTP/NTS, not Roughtime. No operator-published Roughtime endpoint,
+  protocol version or key was established; no speculative `*.roughtime.netnod.se`
+  pin is included. [roughtime.se](https://roughtime.se/) is a separate STUPI-hosted
+  service advertising draft-19 and key `S3AzfZJ5CjSdkJ21ZJGbxqdYP/SoE8fXKY0+aicsehI=`;
+  it is not selected, not Netnod, and not live-verified here.
 - Latest [IETF draft-19](https://datatracker.ietf.org/doc/html/draft-ietf-ntp-roughtime-19)
   uses `0x8000000c`, full-request-packet leaves, TYPE/VERS and a different
   delegation context. **Not supported and never silently negotiated/downgraded.**
   Current roughenough's request-packet verifier cannot substitute for draft-08
   or Google legacy; using it without compatibility handling would reject them.
 
-`production()` returns `Configuration` unless the build explicitly enables
-`verified-roughtime-keys`. This is a release-review gate, not automatic verification:
-verify Google's current pin/service and both endpoints' actual interoperability
-before enabling it. Pins are never fetched dynamically. Neither beta service is
-an uptime guarantee; unavailable Google means recovery fails closed. Custom pins
+`production()` now uses the reviewed, compiled three-source list without the old
+`verified-roughtime-keys` feature gate (that compatibility feature is no longer
+required). Pins are never fetched dynamically or supplied by the host. One
+unavailable/bad-signature source is tolerated; two unavailable sources fail closed.
+All verified replies participate, so no early return at quorum hides dissent.
+Public services offer no uptime guarantee; only two were live-verified here, so
+Cloudflare availability/interoperability must still be checked from staging.
+Custom pins
 must represent independently operated authorities (distinct keys alone do not
 establish organizational independence).
 
@@ -389,7 +406,8 @@ establish organizational independence).
 dyn compatibility on Rust 1.93; callers still use `.now(...).await` and
 `.exchange(...).await`. `fake-time` enables configurable in-memory time and relay
 drivers; default builds exclude them. Tests construct signed real-format messages
-with test keys and never contact external time services.
+with test keys and historical captures. The ignored live probe is opt-in:
+`cargo test time::live_tests::published_servers_verify_live -- --ignored --nocapture`.
 
 ### Time semantics and integration limits
 
@@ -399,7 +417,9 @@ the local two-second timer is only a resource bound, not an authenticated delay
 bound. Delayed evidence's lower bound stays conservative for release, but a future
 hold-creation policy must not claim an exact real seven-day minimum solely from
 these upper bounds without resolving this delay threat. No local clock value is
-used to advance trusted time. Concurrent intersection is application policy, not
+used to advance trusted time. The enclave hypervisor clock was considered but
+not used: it does not establish the required independent signed time evidence.
+Concurrent intersection is application policy, not
 the IETF sequential nonce-chaining/malfeasance-report algorithm. Retry/backoff and
 rate limiting belong to the caller/parent integration, not an automatic loop here.
 
@@ -419,7 +439,8 @@ One connection carries one request and one response:
    bounds the complete connect/write/read exchange to two seconds.
 
 P3.3 parent must hardcode `cloudflare` → `roughtime.cloudflare.com:2003` and
-`google` → `roughtime.sandbox.google.com:2002`, reject unknown IDs (never accept an
+`int08h` → `roughtime.int08h.com:2002` and `txryan` → `time.txryan.com:2002`,
+reject unknown IDs (never accept an
 arbitrary destination), bound UDP receives and reject oversized/truncated datagrams,
 and relay bytes unchanged. Roughtime's internal draft-08 length is **little-endian**
 after `ROUGHTIM`, unlike the outer relay's big-endian lengths. Parent authentication
@@ -617,8 +638,9 @@ key, and only then binds. Startup configuration is `ESCROW_TENANT`,
 fails closed unless the measured launch configuration explicitly permits first
 boot with `ESCROW_ALLOW_FIRST_BOOT=true`; disable it after provisioning.
 Production remains **blocked** on independently authenticated fresh enrollment
-(D14) and the existing `verified-roughtime-keys` review gate. The default Docker
-feature set cannot pass that time gate. No parent enrollment claims are trusted.
+(D14). The compiled time configuration no longer requires the obsolete
+`verified-roughtime-keys` gate; source availability and service-use approval still
+need staging review. No parent enrollment claims are trusted.
 
 ## Previous keys / key rotation (P9.1)
 
@@ -839,14 +861,16 @@ time authorities, and the separately administered audit monitor/KMS policy roles
 
 ### D2: authenticated time, not the enclave clock
 
-The enclave clock is host-influenced; reading it locally does not authenticate
+The enclave hypervisor clock was considered but not used; reading it locally does not authenticate
 elapsed time. Require fresh nonce-bound signed Roughtime responses from **at least
-two independent pinned sources**, verified inside the enclave. Intersect their
+two independent pinned sources** out of Cloudflare, int08h and Tanner Ryan,
+verified inside the enclave. One outage is tolerated; two fail closed. Intersect all verified
 intervals: `[max(lows), min(highs)]`; disagreement, missing evidence, or time before
 the observable ledger head fails closed. Delayed release requires
 `trusted_now.lower >= hold.created.upper + 7 days`. A parent UDP relay is untrusted
 (the KMS vsock proxy is TCP-only). Public time services have production-readiness
-and uptime caveats; authority selection and outage behavior need security review.
+and uptime caveats; Cloudflare timed out locally and Tanner requires contact for
+high-volume infrastructure. Confirm availability and service-use approval in staging.
 
 ### D3: rollback detection, not prevention
 

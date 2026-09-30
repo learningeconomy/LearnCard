@@ -55,7 +55,7 @@ resource "aws_launch_template" "enclave_host" {
     eif_s3_uri            = var.eif_s3_uri
     enclave_image_version = var.enclave_image_version
     roughtime_allowlist_json = jsonencode({
-      for s in var.roughtime_servers : s.host => "${s.host}:${s.port}"
+      for s in var.roughtime_servers : s.id => "${s.host}:${s.port}"
     })
     artifacts_bucket                    = aws_s3_bucket.artifacts.bucket
     sealed_key_object                   = var.sealed_key_object

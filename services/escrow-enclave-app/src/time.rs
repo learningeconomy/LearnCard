@@ -3,7 +3,10 @@ use std::{future::Future, pin::Pin, sync::Arc, time::Duration};
 
 use rand_core::{OsRng, RngCore};
 use serde::{Deserialize, Serialize};
-use tokio::{task::JoinSet, time::timeout};
+use tokio::{
+    task::JoinSet,
+    time::{timeout_at, Instant},
+};
 
 mod protocol;
 #[cfg(any(target_os = "linux", feature = "fake-time"))]
@@ -135,12 +138,11 @@ impl RoughtimeTimeSource {
         })
     }
 
-    /// Provider-published pins, two required sources, ten-second radius cap.
+    /// Three independently operated, provider-published pins; two required sources.
+    /// Ten-second radius cap accommodates rough/smeared time without relaxing
+    /// intersection: ALL authenticated intervals must overlap, even with a quorum.
     /// This does not assert service availability or production readiness.
     pub fn production(transport: Arc<dyn RoughtimeTransport>) -> Result<Self, TimeError> {
-        if !cfg!(feature = "verified-roughtime-keys") {
-            return Err(TimeError::Configuration);
-        }
         Self::new(servers::published()?, transport, 2, 10_000)
     }
 }
@@ -149,6 +151,9 @@ impl TimeSource for RoughtimeTimeSource {
     fn now(&self, floor_ms: Option<u64>) -> TimeFuture<'_, TimeEvidence> {
         Box::pin(async move {
             let mut queries = JoinSet::new();
+            // One shared deadline, not N serial timeouts. Local timers limit work
+            // only; they are never evidence of trusted elapsed time.
+            let deadline = Instant::now() + Duration::from_secs(2);
             for server in self.servers.clone() {
                 let transport = self.transport.clone();
                 let max_radius = self.max_radius_ms;
@@ -158,12 +163,9 @@ impl TimeSource for RoughtimeTimeSource {
                         .try_fill_bytes(&mut nonce)
                         .map_err(|_| TimeError::Unavailable)?;
                     let request = protocol::request(server.protocol, &nonce)?;
-                    let response = timeout(
-                        Duration::from_secs(2),
-                        transport.exchange(&server.id, request),
-                    )
-                    .await
-                    .map_err(|_| TimeError::Unavailable)??;
+                    let response = timeout_at(deadline, transport.exchange(&server.id, request))
+                        .await
+                        .map_err(|_| TimeError::Unavailable)??;
                     protocol::verify(&server, &nonce, &response, max_radius)
                 });
             }
@@ -199,5 +201,7 @@ fn check_interval(interval: TrustedInterval, floor: Option<u64>) -> Result<(), T
     Ok(())
 }
 
+#[cfg(test)]
+mod live_tests;
 #[cfg(test)]
 mod tests;

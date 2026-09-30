@@ -328,6 +328,16 @@ override_resource {
 run "escrow_kms_key_policy_provenance" {
   command = apply
 
+  assert {
+    condition     = strcontains(base64decode(aws_launch_template.enclave_host.user_data), "ROUGHTIME_ALLOWLIST_JSON='{\"cloudflare\":\"roughtime.cloudflare.com:2003\",\"int08h\":\"roughtime.int08h.com:2002\",\"txryan\":\"time.txryan.com:2002\"}'") && strcontains(base64decode(aws_launch_template.enclave_host.user_data), "Environment='ESCROW_ROUGHTIME_ALLOWLIST_JSON=$ROUGHTIME_ALLOWLIST_JSON'")
+    error_message = "user-data must preserve the exact measured Roughtime IDs/endpoints and JSON systemd quoting"
+  }
+
+  assert {
+    condition     = toset([for rule in aws_security_group.enclave_host.egress : rule.from_port if rule.protocol == "udp"]) == toset([2002, 2003]) && length([for rule in aws_security_group.enclave_host.egress : rule if rule.protocol == "udp"]) == 2
+    error_message = "Roughtime UDP egress must contain exactly ports 2002 and 2003 without duplicate rules"
+  }
+
   # Sanity check: the policy actually rendered as real JSON, not an
   # unknown/placeholder value, and it carries more than one statement (this
   # would fail loudly if the override wiring above were broken).

@@ -20,7 +20,8 @@ impl Default for Relay {
         Self {
             servers: [
                 ("cloudflare".into(), "roughtime.cloudflare.com:2003".into()),
-                ("google".into(), "roughtime.sandbox.google.com:2002".into()),
+                ("int08h".into(), "roughtime.int08h.com:2002".into()),
+                ("txryan".into(), "time.txryan.com:2002".into()),
             ]
             .into(),
         }
@@ -121,6 +122,15 @@ mod tests {
         r.payload.push(0);
         assert!(relay.destination(&r).is_err());
         r.payload = vec![1];
+        for (id, endpoint) in [
+            ("int08h", "roughtime.int08h.com:2002"),
+            ("txryan", "time.txryan.com:2002"),
+        ] {
+            r.server_id = id.into();
+            assert_eq!(relay.destination(&r).unwrap(), endpoint);
+        }
+        r.server_id = "google".into();
+        assert!(relay.destination(&r).is_err());
         r.server_id = "127.0.0.1:80".into();
         assert!(relay.destination(&r).is_err());
     }

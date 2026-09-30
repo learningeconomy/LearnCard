@@ -239,19 +239,27 @@ variable "ledger_monitor_sns_topic_arn" {
 }
 
 variable "roughtime_servers" {
-  description = "Pinned Roughtime servers the enclave-host's UDP relay forwards to (the enclave itself verifies each response's signature — the relay is untrusted, see decisions.md D2). Default is Cloudflare + Google; both must be present for the enclave's overlap-of-intervals check to have >= 2 independent sources."
+  description = "Relay endpoints matching the measured enclave pins exactly. Cloudflare, int08h and Tanner Ryan provide a 2-of-3 quorum; all valid responses must agree. Changes require a coordinated enclave rebuild and pin review."
   type = list(object({
+    id   = string
     host = string
     port = number
   }))
   default = [
-    { host = "roughtime.cloudflare.com", port = 2003 },
-    { host = "roughtime.sandbox.google.com", port = 2002 },
+    { id = "cloudflare", host = "roughtime.cloudflare.com", port = 2003 },
+    { id = "int08h", host = "roughtime.int08h.com", port = 2002 },
+    { id = "txryan", host = "time.txryan.com", port = 2002 },
   ]
 
   validation {
-    condition     = length(var.roughtime_servers) >= 2
-    error_message = "roughtime_servers must list at least 2 independent servers (time-source disagreement must be detectable — decisions.md D2)."
+    condition = length(var.roughtime_servers) == 3 && toset([
+      for s in var.roughtime_servers : "${s.id}=${s.host}:${s.port}"
+      ]) == toset([
+      "cloudflare=roughtime.cloudflare.com:2003",
+      "int08h=roughtime.int08h.com:2002",
+      "txryan=time.txryan.com:2002",
+    ])
+    error_message = "roughtime_servers must exactly match the three compiled enclave IDs and endpoints; host config cannot select trust roots."
   }
 }
 
