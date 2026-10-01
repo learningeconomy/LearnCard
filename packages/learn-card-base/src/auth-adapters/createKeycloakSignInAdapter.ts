@@ -222,9 +222,6 @@ export const createKeycloakSignInAdapter = (
                             'Sign-in cancelled. Please try again.',
                             'no_session'
                         );
-                    if (url.searchParams.get('error') === 'login_required') {
-                        throw new AuthSessionError('Sign-in expired. Please try again.', 'expired');
-                    }
                     if (!user) throw new AuthSessionError('Please sign in again.', 'no_session');
                     emit(user);
                     if (attempt) {
@@ -234,6 +231,7 @@ export const createKeycloakSignInAdapter = (
                     }
                     return user;
                 } catch (error) {
+                    // signinCallback throws for OIDC errors before the success path can run.
                     const failure =
                         url.searchParams.get('error') === 'login_required'
                             ? new AuthSessionError('Sign-in expired. Please try again.', 'expired')
@@ -266,7 +264,8 @@ export const createKeycloakSignInAdapter = (
         confirmNativePhoneOtp: (): Promise<never> => unsupported('confirmNativePhoneOtp'),
         deleteAccount: (): Promise<never> => unsupported('deleteAccount'),
         updateProfile: (): Promise<never> => unsupported('updateProfile'),
-        setSessionPersistence: (): Promise<never> => unsupported('setSessionPersistence'),
+        setSessionPersistence: (sessionOnly): Promise<void> =>
+            provider.setSessionPersistence(sessionOnly),
         onPhoneCodeSent: noSubscription,
         onPhoneVerificationCompleted: noSubscription,
         onPhoneVerificationFailed: noSubscription,
