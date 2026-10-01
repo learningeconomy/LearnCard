@@ -133,6 +133,9 @@ jobs:
 
             - name: Setup Docker Buildx
               uses: docker/setup-buildx-action@v3
+              with:
+                  # Hosted VMs are discarded after the job; retain cleanup on persistent runners.
+                  cleanup: ${{ runner.environment != 'github-hosted' }}
 
             - name: Expose GitHub Actions cache runtime
               uses: crazy-max/ghaction-github-runtime@v3
@@ -144,6 +147,8 @@ jobs:
 
             - name: Setup Bun and dependencies
               uses: ./.github/actions/setup
+              with:
+                  save-cache: 'false'
 
             - name: Run Playwright and accessibility suites
               run: bash scripts/e2e-hosted/run-browser.sh
@@ -237,6 +242,9 @@ jobs:
 
             - name: Setup Docker Buildx
               uses: docker/setup-buildx-action@v3
+              with:
+                  # Hosted VMs are discarded after the job; retain cleanup on persistent runners.
+                  cleanup: ${{ runner.environment != 'github-hosted' }}
 
             - name: Expose GitHub Actions cache runtime
               uses: crazy-max/ghaction-github-runtime@v3
@@ -248,6 +256,9 @@ jobs:
 
             - name: Setup Bun and dependencies
               uses: ./.github/actions/setup
+              with:
+                  # One writer per E2E run avoids sibling jobs compressing the same cache.
+                  save-cache: ${{ matrix.shard == 1 }}
 
             - name: Run tests/e2e
               run: bash scripts/e2e-hosted/run-service.sh

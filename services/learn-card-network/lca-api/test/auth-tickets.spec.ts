@@ -4,10 +4,12 @@ import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT, type JWTPayload
 import { authRouter } from '../src/routes/auth';
 import { setSocialJwksResolverForTests } from '../src/helpers/social-token.helpers';
 import type { MongoAuthSubjectType } from '../src/models/AuthSubject';
+import cache from '@cache';
 
-const { env, store, subjects, mongo } = vi.hoisted(() => ({
+const { env, store, subjects, mongo, expiries } = vi.hoisted(() => ({
     env: { GOOGLE_OAUTH_CLIENT_IDS: 'google-client', APPLE_OAUTH_CLIENT_IDS: 'apple-client' },
     store: new Map<string, string>(),
+    expiries: new Map<string, number>(),
     subjects: new Map<string, MongoAuthSubjectType>(),
     mongo: { failNextUpsert: false },
 }));
@@ -49,12 +51,20 @@ vi.mock('@cache', () => ({
         get: async (key: string) => store.get(key),
         set: async (key: string, value: string) => {
             store.set(key, value);
+            return 'OK';
         },
         delete: async (keys: string[]) => {
             keys.forEach(key => store.delete(key));
         },
         node: {
-            eval: async (_script: string, _count: number, key: string, code: string) => {
+            eval: async (script: string, _count: number, key: string, code: string | number) => {
+                if (script.includes("redis.call('TTL'")) {
+                    if (script.includes("redis.call('INCR'")) {
+                        store.set(key, String(Number(store.get(key) ?? 0) + 1));
+                    }
+                    if (store.has(key) && !expiries.has(key)) expiries.set(key, Number(code));
+                    return store.get(key) ?? null;
+                }
                 if (store.get(key) !== code) return 0;
                 store.delete(key);
                 return 1;
@@ -108,6 +118,7 @@ beforeAll(async () => {
 });
 beforeEach(() => {
     store.clear();
+    expiries.clear();
     subjects.clear();
     mongo.failNextUpsert = false;
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -133,6 +144,24 @@ describe('auth login tickets', () => {
         expect(
             await caller().requestLoginTicket({ email: 'test@example.com', code: '000000' })
         ).toEqual({ success: false, error: 'Invalid or expired code.' });
+    });
+    it('returns no ticket when the cache swallows a failed email ticket write', async () => {
+        vi.spyOn(cache, 'set').mockResolvedValueOnce(undefined);
+        expect(await emailLogin()).toEqual({
+            success: false,
+            error: 'Something went wrong. Please request a new code.',
+        });
+        expect([...store.keys()].some(key => key.startsWith('login-ticket:'))).toBe(false);
+    });
+    it('returns no ticket when a social ticket write fails', async () => {
+        vi.spyOn(cache, 'set').mockResolvedValueOnce(undefined);
+        const result = await caller().requestSocialLoginTicket({
+            provider: 'google',
+            idToken: await sign(),
+        });
+        expect(result.success).toBe(false);
+        expect(result.ticket).toBeUndefined();
+        expect([...store.keys()].some(key => key.startsWith('login-ticket:'))).toBe(false);
     });
     it('rejects a wrong code without consuming the valid code', async () => {
         store.set('login-code:test@example.com', '123456');
@@ -315,13 +344,11 @@ describe('auth login tickets', () => {
             expect(store.get('oidc:rate:social-login-ticket:test-ip')).toBe('50');
         });
         it('sets the window TTL on the first failure only', async () => {
-            const expire = (await import('@cache')).default.node.expire as ReturnType<typeof vi.fn>;
-            expire.mockClear();
             await failEmail();
             await failEmail();
-            expect(expire).toHaveBeenCalledTimes(2);
-            expect(expire).toHaveBeenCalledWith('oidc:rate:email-login-ticket:test-ip', 600);
-            expect(expire).toHaveBeenCalledWith('oidc:rate:email:test@example.com', 600);
+            expect(expiries.size).toBe(2);
+            expect(expiries.get('oidc:rate:email-login-ticket:test-ip')).toBe(600);
+            expect(expiries.get('oidc:rate:email:test@example.com')).toBe(600);
         });
     });
 });

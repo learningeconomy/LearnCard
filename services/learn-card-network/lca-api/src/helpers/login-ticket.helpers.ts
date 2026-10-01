@@ -63,7 +63,8 @@ export const storeAuthorizationCode = async (
     data: AuthorizationCodeData,
     ttl = AUTH_CODE_TTL_SECONDS
 ): Promise<void> => {
-    await cache.set(codeKey(data.code), JSON.stringify(data), ttl);
+    const result = await cache.set(codeKey(data.code), JSON.stringify(data), ttl);
+    if (result !== 'OK') throw new Error('Failed to persist authorization code');
 };
 
 export const consumeAuthorizationCode = async (
@@ -79,7 +80,8 @@ export const storeAccessToken = async (
     data: AccessTokenData,
     ttl = ACCESS_TOKEN_TTL_SECONDS
 ): Promise<void> => {
-    await cache.set(accessKey(accessToken), JSON.stringify(data), ttl);
+    const result = await cache.set(accessKey(accessToken), JSON.stringify(data), ttl);
+    if (result !== 'OK') throw new Error('Failed to persist access token');
 };
 
 export const getAccessToken = async (accessToken: string): Promise<AccessTokenData | null> => {
