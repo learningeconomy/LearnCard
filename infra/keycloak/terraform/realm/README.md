@@ -22,16 +22,18 @@ linux_arm64, darwin_arm64. Resource arguments were checked against the versioned
   both phone attributes are admin-editable only and mapped into tokens/userinfo.
   Unmanaged profile attributes remain disabled. Keycloak 5.9's profile resource
   translates its default DISABLED to the server's absent-value representation.
-- Hidden ticket broker `lca-api` trusts email; social Google/Apple **do not**.
+- Hidden ticket broker `lca-api` trusts email; Google/Apple trust only explicitly verified emails.
   Broker and service-client secrets are distinct. Apple provider ID is `apple`,
   from the installed klausbetz jar, configured through the social resource's
   documented `provider_id` override and `teamId`/`keyId` extra config.
 - Explicitly copied first-broker tree (provider has no copy resource): Review
   Profile configured `off`, unique user creation, collision confirmation and
   verification/reauthentication, conditional 2FA/organization branches unchanged.
-  Stock flows remain untouched. All three IdPs bind to this managed copy.
+  Stock flows remain untouched. Only lca-api binds to this managed copy.
+  Google/Apple use a separate `social first broker login`: disabled Review Profile,
+  then ALTERNATIVE create-if-unique and auto-link, with no SMTP or extra page.
 - Fixture has no required-action overrides: preserve Keycloak's built-in actions,
-  none newly defaulted. No automatic email linking or relaxed collision checks.
+  none newly defaulted. See the [social policy and tradeoff](../../social-broker-decision.md).
 - Brute-force detection enabled; fixture's implicit server lifetimes made explicit:
   access token 5m, code 1m, login 30m, user action 5m, SSO idle 30m / maximum 10h,
   offline idle 30 days / maximum 60 days (maximum enforcement disabled).
@@ -173,7 +175,7 @@ to the pipeline workstream, not this root.
 Build `infra/keycloak/Dockerfile.dev`, start on 8081 with admin/admin,
 `--hostname=http://localhost:8081`, and host.docker.internal host-gateway on Linux.
 Run `terraform init -backend=false`, `terraform apply`, then
-`terraform plan -detailed-exitcode` there. Dev overlay owns only users and ci-tests.
+`terraform plan -detailed-exitcode` there. Dev overlay owns users, ci-tests and the test-only fake-google upstream.
 Start Redis on **6381**, Mongo on 27017 and lca-api on 5100 with **CI=true** (avoids
 requiring the unrelated Metabase secret), plus the env in the new workflow job.
 Run the [live proof commands](../../README.md#firebase-era-mapping-migration-ad-10).

@@ -61,14 +61,11 @@ All three users have password `password`:
 
 `google` (built-in) and `apple` ([klausbetz extension](https://github.com/klausbetz/apple-identity-provider-keycloak),
 providerId `apple`) broker **browser** sign-in for the `learncard-app` client — separate
-from the native ticket-forwarding path described below. Both have `trustEmail: false`
-and reuse the stock `first broker login` flow, so an email collision with an existing
-account always shows Keycloak's one-time "Confirm Link Existing Account" page rather
-than auto-linking; there is currently no opt-in for automatic linking by email, and
-enabling one would need `identityProviderMappers`/flow changes reviewed as a separate
-change. Review Profile ("Update Account Information") is explicitly configured off via
-the `authenticatorConfig` override on that flow — the fixture never shows it, regardless
-of missing name/email attributes.
+from the native ticket-forwarding path described below. Both require an explicit
+`email_verified=true` claim, trust that email, and use `social first broker login`:
+disabled Review Profile, then create-if-unique and auto-link as ALTERNATIVE executions.
+An existing email links automatically without another page or SMTP. The hidden
+lca-api broker retains its existing flow. See the [chosen policy and tradeoff](social-broker-decision.md).
 
 Config placeholders (`${VAR}`, no default — see below): `GOOGLE_CLIENT_ID`,
 `GOOGLE_CLIENT_SECRET`, `APPLE_SERVICE_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`,
@@ -96,7 +93,8 @@ realm still imports cleanly either way; only an actual sign-in attempt would fai
 The `authenticationFlows`/`authenticatorConfig` blocks added for the Review Profile
 override are **not** preserved by `scripts/export-keycloak-realm.sh` (it deletes both
 top-level arrays; see "Export and normalize" below) — if you edit the realm via the
-Admin Console and re-run the export script, manually re-apply the Review Profile
+Admin Console and re-run the export script, manually restore the social flow and its
+Google/Apple bindings as well as the Review Profile
 `authenticatorConfig` override (`update.profile.on.first.login: "off"` on the
 `first broker login` flow's Review Profile execution) before committing.
 
@@ -185,7 +183,8 @@ This provisions a permanent lca-api `AuthSubject`, explicitly links its subject
 to the Keycloak user, and appends its ID to the existing UserKey. It is idempotent
 and refuses to overwrite a different existing link. Without it, the default first-broker-login
 flow correctly shows “Account already exists.” Do **not** disable that protection
-or enable automatic account linking by email. New email addresses are created by
+or enable automatic account linking by email for the hidden lca-api broker. The
+separate Google/Apple web flow deliberately auto-links verified emails. New email addresses are created by
 the broker without this provisioning step; names are already optional in the
 fixture, so no profile-review flow override is needed.
 
@@ -287,8 +286,8 @@ it (also on export failure). It removes generated IDs/timestamps/flows, resets u
 passwords and the two fixture secrets, sorts keys, and replaces the fixture atomically.
 Review the diff before committing: use only synthetic local users, and never export
 a staging/prod realm or real credentials into this directory.
-Only built-in authentication flows are supported by this normalizer; custom flows
-and their bindings must not be added to this local fixture.
+This normalizer drops authentication flows; restore the checked-in custom social
+flow and its bindings after export before committing.
 
 Compose JWKS overrides use the full `/protocol/openid-connect/certs` endpoint,
 not the realm base URL, because the API consumes overrides as literal JWKS URLs.
