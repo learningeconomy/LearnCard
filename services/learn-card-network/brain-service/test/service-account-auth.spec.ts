@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { createHmac, createPrivateKey } from 'node:crypto';
+import { SignJWT, decodeJwt, decodeProtectedHeader } from 'jose';
+import { environment } from '@environment';
 import { ServiceAccount } from '@models';
 import { neogma } from '@instance';
 import { exchangeServiceAccountCredential } from '@accesslayer/service-account/auth';
@@ -11,6 +14,61 @@ import {
 import { getClient } from './helpers/getClient';
 
 describe('ServiceAccount authentication', () => {
+    it.each(['audience', 'expiry', 'tampering'])(
+        'rejects invalid token %s at context creation',
+        async invalid => {
+            const { account, client } = await setupServiceAccount();
+            const issued = await client.installIntent.issueServiceAccountCredential({
+                serviceAccountId: account.id,
+            });
+            const token = await exchangeServiceAccountCredential(account.id, issued.secret);
+            const header = decodeProtectedHeader(token);
+            const payload = decodeJwt(token);
+            const seed = createHmac('sha256', environment.SEED)
+                .update('educationos/v1/integration-signing')
+                .digest();
+            const key = createPrivateKey({
+                key: Buffer.concat([Buffer.from('302e020100300506032b657004220420', 'hex'), seed]),
+                type: 'pkcs8',
+                format: 'der',
+            });
+            let invalidToken = await new SignJWT({
+                ...payload,
+                ...(invalid === 'audience' ? { aud: 'learncard' } : {}),
+                ...(invalid === 'expiry' ? { iat: 0, exp: 1 } : {}),
+            })
+                .setProtectedHeader({ alg: 'EdDSA', typ: header.typ, kid: header.kid })
+                .sign(key);
+            if (invalid === 'tampering') {
+                const parts = invalidToken.split('.');
+                parts[1] = Buffer.from(JSON.stringify({ ...payload, sub: 'forged' })).toString(
+                    'base64url'
+                );
+                invalidToken = parts.join('.');
+            }
+            await expect(partnerContext(invalidToken)).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        }
+    );
+    it('preserves delegated API-token scope restrictions for OWNER credential management', async () => {
+        const { account, profileId } = await setupServiceAccount();
+        const stored = await neogma.queryRunner.run(
+            'MATCH (p:Profile {profileId: $profileId}) RETURN p.did AS did',
+            { profileId }
+        );
+        const restricted = getClient({
+            did: stored.records[0]!.get('did'),
+            isChallengeValid: true,
+            scope: 'profiles:read',
+        });
+        await expect(
+            restricted.installIntent.issueServiceAccountCredential({ serviceAccountId: account.id })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        await expect(
+            restricted.installIntent.emergencyRevokeServiceAccount({ serviceAccountId: account.id })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+    });
     it('issues a once-returned secret, stores only its verifier and exchanges while PROVISIONED', async () => {
         const { account, client } = await setupServiceAccount();
         const issued = await client.installIntent.issueServiceAccountCredential({

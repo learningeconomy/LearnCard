@@ -19,6 +19,7 @@ import {
     exchangeServiceAccountCredential,
 } from '@accesslayer/service-account/auth';
 import { enforceRateLimits } from '@helpers/rateLimit.helpers';
+import { serviceAccountSigningPublicKey } from '@helpers/service-account-auth.helpers';
 import { getListedApps, readAppStoreListingById } from '@accesslayer/app-store-listing/read';
 import {
     readListingVersionById,
@@ -567,7 +568,20 @@ const buildApprovedSpec = async (intent: InstallIntentRecordType): Promise<Insta
 };
 
 export const installIntentsRouter = t.router({
+    integrationSigningKey: openRouteWithoutInputCapture
+        .input(z.object({}).default({}))
+        .output(
+            z.object({
+                kty: z.literal('OKP'),
+                crv: z.literal('Ed25519'),
+                x: z.string(),
+                kid: z.string(),
+                alg: z.literal('EdDSA'),
+            })
+        )
+        .query(() => serviceAccountSigningPublicKey()),
     issueServiceAccountCredential: profileRoute
+        .meta({ requiredScope: 'app-store:write' })
         .input(z.object({ serviceAccountId: z.string().min(1).max(200) }))
         .output(
             z.object({ serviceAccountId: z.string(), secret: z.string(), expiresAt: z.string() })
@@ -582,6 +596,7 @@ export const installIntentsRouter = t.router({
             return issueServiceAccountCredential(account.id, ctx.user.profile.profileId);
         }),
     emergencyRevokeServiceAccount: profileRoute
+        .meta({ requiredScope: 'app-store:write' })
         .input(z.object({ serviceAccountId: z.string().min(1).max(200) }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
