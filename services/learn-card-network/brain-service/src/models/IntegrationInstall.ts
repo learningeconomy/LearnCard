@@ -1,10 +1,13 @@
-import { ModelFactory, NeogmaInstance } from 'neogma';
+import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
+import { ServiceAccount, ServiceAccountInstance } from './ServiceAccount';
 
 import { neogma } from '@instance';
 
 import { IntegrationInstallType } from 'types/install-target';
 
-export type IntegrationInstallRelationships = Record<string, never>;
+export type IntegrationInstallRelationships = {
+    hasServiceAccount: ModelRelatedNodesI<typeof ServiceAccount, ServiceAccountInstance>;
+};
 
 export type IntegrationInstallInstance = NeogmaInstance<
     IntegrationInstallType,
@@ -28,6 +31,13 @@ export const IntegrationInstall = ModelFactory<
             listingId: { type: 'string', required: false },
         },
         primaryKeyField: 'id',
+        relationships: {
+            hasServiceAccount: {
+                model: ServiceAccount,
+                direction: 'out',
+                name: 'HAS_SERVICE_ACCOUNT',
+            },
+        },
     },
     neogma
 );

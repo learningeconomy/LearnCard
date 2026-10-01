@@ -193,6 +193,38 @@ export const IntegrationScopeRequestValidator = z.object({
 });
 export type IntegrationScopeRequest = z.infer<typeof IntegrationScopeRequestValidator>;
 
+/** PROVISIONED carries no operational authority; the enable gate is a separate lifecycle step. */
+export const ServiceAccountStatusEnum = z.enum(['PROVISIONED', 'ENABLED', 'DISABLED', 'REVOKED']);
+export type ServiceAccountStatus = z.infer<typeof ServiceAccountStatusEnum>;
+
+export const ServiceAccountValidator = z.object({
+    id: z.string().min(1),
+    installId: z.string().min(1),
+    ecosystemId: z.string().min(1),
+    status: ServiceAccountStatusEnum,
+    credentialGeneration: z.number().int().nonnegative(),
+    createdAt: z.string().datetime(),
+    revokedAt: z.string().datetime().optional(),
+});
+export type ServiceAccount = z.infer<typeof ServiceAccountValidator>;
+
+/** Dedicated EducationOS authority, never a LearnCard AuthGrant. */
+export const ServiceAccountGrantValidator = z.object({
+    id: z.string().min(1),
+    serviceAccountId: z.string().min(1),
+    installId: z.string().min(1),
+    resource: IntegrationScopeRequestValidator.shape.resource,
+    action: IntegrationScopeRequestValidator.shape.action,
+    selectorKind: IntegrationScopeRequestValidator.shape.selectorKind,
+    selectorValue: z
+        .string()
+        .min(1)
+        .refine(value => !/[*$]/.test(value), {
+            message: 'ServiceAccount grants require resolved, non-wildcard selectors.',
+        }),
+});
+export type ServiceAccountGrant = z.infer<typeof ServiceAccountGrantValidator>;
+
 export const IntegrationExtensionPointEnum = z.enum([
     'roster.import',
     'profile.sync',

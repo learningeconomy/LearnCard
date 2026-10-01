@@ -21,6 +21,8 @@ import { Tenant } from './Tenant';
 import { InstallIntent } from './InstallIntent';
 import { Binding } from './Binding';
 import { IntegrationInstall } from './IntegrationInstall';
+import { ServiceAccount } from './ServiceAccount';
+import { ServiceAccountGrant } from './ServiceAccountGrant';
 import { AppAvailability } from './AppAvailability';
 import { WalletEnablement } from './WalletEnablement';
 import { WorkloadDeployment } from './WorkloadDeployment';
@@ -38,6 +40,8 @@ void GroupAuditEvent;
 void InstallIntent;
 void Binding;
 void IntegrationInstall;
+void ServiceAccount;
+void ServiceAccountGrant;
 void AppAvailability;
 void WalletEnablement;
 void WorkloadDeployment;
@@ -256,6 +260,9 @@ const indexQueries = [
     'CREATE INDEX binding_capability_idx IF NOT EXISTS FOR (b:Binding) ON (b.capability)',
     'CREATE INDEX binding_revision_idx IF NOT EXISTS FOR (b:Binding) ON (b.revision)',
     'CREATE CONSTRAINT integration_install_id_unique IF NOT EXISTS FOR (n:IntegrationInstall) REQUIRE (n.id) IS UNIQUE',
+    'CREATE CONSTRAINT service_account_id_unique IF NOT EXISTS FOR (n:ServiceAccount) REQUIRE (n.id) IS UNIQUE',
+    'CREATE CONSTRAINT service_account_active_install_unique IF NOT EXISTS FOR (n:ServiceAccount) REQUIRE (n.activeInstallId) IS UNIQUE',
+    'CREATE CONSTRAINT service_account_grant_id_unique IF NOT EXISTS FOR (n:ServiceAccountGrant) REQUIRE (n.id) IS UNIQUE',
     'CREATE INDEX integration_install_intent_idx IF NOT EXISTS FOR (n:IntegrationInstall) ON (n.intentId)',
     'CREATE CONSTRAINT app_availability_id_unique IF NOT EXISTS FOR (n:AppAvailability) REQUIRE (n.id) IS UNIQUE',
     'CREATE INDEX app_availability_intent_idx IF NOT EXISTS FOR (n:AppAvailability) ON (n.intentId)',
@@ -357,6 +364,8 @@ export * from './Tenant';
 export * from './InstallIntent';
 export * from './Binding';
 export * from './IntegrationInstall';
+export * from './ServiceAccount';
+export * from './ServiceAccountGrant';
 export * from './AppAvailability';
 export * from './WalletEnablement';
 export * from './WorkloadDeployment';
