@@ -3,6 +3,7 @@ import { neogma } from '@instance';
 export const contractEventMaintenanceSchema = [
     'CREATE CONSTRAINT consent_event_migration_id IF NOT EXISTS FOR (m:ConsentFlowEventMigration) REQUIRE m.id IS UNIQUE',
     'CREATE INDEX consent_event_cleanup IF NOT EXISTS FOR (e:ConsentFlowEvent) ON (e.cleanupPending)',
+    'CREATE INDEX consent_delivery_due IF NOT EXISTS FOR (d:ConsentFlowEventDelivery) ON (d.state, d.nextAttemptAt)',
     'CREATE INDEX consent_delivery_age IF NOT EXISTS FOR (d:ConsentFlowEventDelivery) ON (d.state, d.eventCreatedAt)',
     'CREATE INDEX consent_delivery_attempts IF NOT EXISTS FOR (d:ConsentFlowEventDelivery) ON (d.state, d.attempts)',
 ];
