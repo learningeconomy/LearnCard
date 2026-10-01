@@ -24,6 +24,7 @@ import { getNotificationMessage, type NotificationMessageKey } from './notificat
 import { sanitizeProfileForTier, stripSensitiveProfileListFields } from './profile-privacy.helpers';
 import { getStoredContractRequest } from '@accesslayer/consentflowcontract/read';
 import { resolveRecipientLocale } from './getRecipientLocale.helpers';
+import { ensureContractEventMaintenance } from './contract-event-maintenance.helpers';
 
 type EventKind = ConsentFlowWebhookMetadata['event'];
 const defaultDomain = (): string => environment.DOMAIN_NAME ?? 'network.learncard.com';
@@ -32,6 +33,8 @@ const MAX_DELIVERY_ATTEMPTS = 12;
 const DELIVERY_RETRY_WINDOW_MS = 24 * 60 * 60_000;
 const INITIAL_RETRY_DELAY_MS = 60_000;
 const MAX_RETRY_DELAY_MS = 60 * 60_000;
+// At most 50 data recipients, the owner, and a requester outside the data audience.
+const MAX_INLINE_EVENT_DELIVERIES = 50 + 1 + 1;
 
 export type ContractEventDispatchSummary = {
     delivered: number;
@@ -99,7 +102,7 @@ export const appendConsentEvent = (
         WITH contract, terms, transaction, owner, requestAccepted, collect(DISTINCT recipient.profileId) AS recipientIds
         CREATE (event:ConsentFlowEvent {id: transaction.id, contractId: contract.id, termsId: terms.id,
             fromId: $eventConsenter, ownerId: owner.profileId, domain: $eventDomain,
-            kind: $eventKind, requestAccepted: requestAccepted, messageKey: $eventMessageKey, payload: $eventPayload,
+            kind: $eventKind, requestAccepted: requestAccepted, messageKey: $eventMessageKey, payload: $eventPayload, cleanupPending: true,
             createdAt: transaction.date, requestId: terms.\`referral.requestId\`,
             requestedBy: terms.\`referral.requestedBy\`, externalReferenceId: terms.\`referral.externalReferenceId\`})
         WITH contract, terms, transaction, event, owner,
@@ -110,6 +113,7 @@ export const appendConsentEvent = (
         FOREACH (recipientId IN [id IN deliveries WHERE id <> $eventConsenter] |
         CREATE (event)-[:HAS_DELIVERY]->(delivery:ConsentFlowEventDelivery {
             id: event.id + ':' + recipientId, toId: recipientId, state: 'pending', nextAttemptAt: event.createdAt,
+            eventCreatedAt: event.createdAt, attempts: 0,
             role: CASE WHEN recipientId = owner.profileId THEN 'owner'
                 WHEN recipientId IN audience THEN 'recipient' ELSE 'requester' END}))
         WITH DISTINCT contract, terms, transaction
@@ -124,7 +128,7 @@ export const requestEventCypher = `
     ON CREATE SET event += {contractId: contract.id, fromId: $eventFrom,
         ownerId: owner.profileId, domain: $domain, kind: $eventKind, createdAt: $now,
         requestId: request.requestId, requestedBy: request.requestedBy,
-        externalReferenceId: request.externalReferenceId, message: request.message, fanoutCreated: false}
+        externalReferenceId: request.externalReferenceId, message: request.message, fanoutCreated: false, cleanupPending: true}
     WITH request, event, owner, target,
         CASE WHEN coalesce(event.fanoutCreated, false) THEN []
             WHEN $eventKind = 'request_sent' THEN [target.profileId]
@@ -133,6 +137,7 @@ export const requestEventCypher = `
     FOREACH (recipientId IN [id IN deliveries WHERE id IS NOT NULL AND id <> $eventFrom] |
     MERGE (event)-[:HAS_DELIVERY]->(delivery:ConsentFlowEventDelivery {id: event.id + ':' + recipientId})
     ON CREATE SET delivery += {toId: recipientId, state: 'pending', nextAttemptAt: $now,
+        eventCreatedAt: event.createdAt, attempts: 0,
         role: CASE WHEN $eventKind = 'request_sent' THEN 'target'
             WHEN recipientId = owner.profileId THEN 'owner' ELSE 'requester' END})
     SET event.fanoutCreated = true
@@ -340,29 +345,61 @@ export const dispatchContractEvents = async ({
     const summary = { delivered: 0, pending: 0, skipped: 0, rejected: 0, failed: 0 };
     const retryCutoff = new Date(Date.now() - DELIVERY_RETRY_WINDOW_MS).toISOString();
     const batchLimit = int(Math.max(1, Math.min(100, Math.trunc(limit))));
+    if (!eventId) await ensureContractEventMaintenance();
     // Also recover cleanup after a crash and clear events with no eligible recipients.
     await neogma.queryRunner.run(
         `
-        MATCH (event:ConsentFlowEvent)
-        WHERE ($eventId IS NULL OR event.id = $eventId)
-            AND (event.payload IS NOT NULL OR event.message IS NOT NULL)
+        ${
+            eventId
+                ? 'MATCH (event:ConsentFlowEvent {id: $eventId})'
+                : `MATCH (event:ConsentFlowEvent)
+        USING INDEX event:ConsentFlowEvent(cleanupPending)`
+        }
+        WHERE ${eventId ? '(event.payload IS NOT NULL OR event.message IS NOT NULL OR event.cleanupPending = true)' : 'event.cleanupPending = true'}
             AND NOT EXISTS {
                 MATCH (event)-[:HAS_DELIVERY]->(delivery:ConsentFlowEventDelivery)
                 WHERE delivery.state = 'pending'
             }
         WITH event LIMIT $limit
-        SET event.payload = null, event.message = null
+        SET event.deliveryLock = coalesce(event.deliveryLock, 0) + 1
+        WITH event WHERE NOT EXISTS {
+            MATCH (event)-[:HAS_DELIVERY]->(delivery:ConsentFlowEventDelivery)
+            WHERE delivery.state = 'pending'
+        }
+        SET event.payload = null, event.message = null, event.cleanupPending = null
         `,
         { eventId: eventId ?? null, limit: batchLimit }
     );
     const rows = await neogma.queryRunner.run(
         `
-        MATCH (event:ConsentFlowEvent)-[:HAS_DELIVERY]->(delivery:ConsentFlowEventDelivery)
+        ${
+            eventId
+                ? `MATCH (event:ConsentFlowEvent {id: $eventId})-[:HAS_DELIVERY]->(delivery:ConsentFlowEventDelivery)
         WHERE delivery.state = 'pending'
             AND (delivery.nextAttemptAt <= $now OR event.createdAt <= $retryCutoff
-                OR coalesce(delivery.attempts, 0) >= $maxAttempts)
-            AND (delivery.leaseUntil IS NULL OR delivery.leaseUntil < $now)
-            AND ($eventId IS NULL OR event.id = $eventId)
+                OR coalesce(delivery.attempts, 0) >= $maxAttempts)`
+                : `CALL {
+            MATCH (delivery:ConsentFlowEventDelivery)
+            USING INDEX delivery:ConsentFlowEventDelivery(state, nextAttemptAt)
+            WHERE delivery.state = 'pending' AND delivery.nextAttemptAt <= $now
+            MATCH (event:ConsentFlowEvent)-[:HAS_DELIVERY]->(delivery)
+            RETURN event, delivery
+            UNION
+            MATCH (delivery:ConsentFlowEventDelivery)
+            USING INDEX delivery:ConsentFlowEventDelivery(state, eventCreatedAt)
+            WHERE delivery.state = 'pending' AND delivery.eventCreatedAt <= $retryCutoff
+            MATCH (event:ConsentFlowEvent)-[:HAS_DELIVERY]->(delivery)
+            RETURN event, delivery
+            UNION
+            MATCH (delivery:ConsentFlowEventDelivery)
+            USING INDEX delivery:ConsentFlowEventDelivery(state, attempts)
+            WHERE delivery.state = 'pending' AND delivery.attempts >= $maxAttempts
+            MATCH (event:ConsentFlowEvent)-[:HAS_DELIVERY]->(delivery)
+            RETURN event, delivery
+        }
+        WITH event, delivery WHERE true`
+        }
+        AND (delivery.leaseUntil IS NULL OR delivery.leaseUntil < $now)
         RETURN event, delivery ORDER BY delivery.nextAttemptAt, delivery.id LIMIT $limit
     `,
         {
@@ -462,7 +499,7 @@ export const dispatchContractEvents = async ({
                 MATCH (event)-[:HAS_DELIVERY]->(remaining:ConsentFlowEventDelivery)
                 WHERE remaining.state = 'pending'
             }
-            SET event.payload = null, event.message = null
+            SET event.payload = null, event.message = null, event.cleanupPending = null
         `,
             {
                 id: delivery.id,
@@ -492,7 +529,11 @@ export const dispatchContractEvents = async ({
 /** A committed API mutation must succeed even if dispatch is temporarily unavailable. */
 export const tryDispatchContractEvent = async (eventId: string): Promise<void> => {
     try {
-        await dispatchContractEvents({ eventId, limit: 52, budgetMs: 1_000 });
+        await dispatchContractEvents({
+            eventId,
+            limit: MAX_INLINE_EVENT_DELIVERIES,
+            budgetMs: 1_000,
+        });
     } catch {
         console.warn('contract_events: dispatch_pending');
     }

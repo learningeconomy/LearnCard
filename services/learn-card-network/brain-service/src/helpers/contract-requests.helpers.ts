@@ -63,6 +63,11 @@ export const sendGenericContractRequest = async (
         profile,
         domain
     );
+    if (target.profileId === profile.profileId)
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'You cannot send a request to yourself.',
+        });
     await enforceRateLimits([
         {
             key: `contract-request-rate:${contract.id}:${profile.profileId}`,
@@ -89,7 +94,7 @@ export const sendGenericContractRequest = async (
         contract.id
     ).raw(`
         MATCH (target:Profile {profileId: $targetProfileId})
-        WITH contract, target WHERE EXISTS {
+        WITH contract, target WHERE $targetProfileId <> $senderProfileId AND EXISTS {
             MATCH (contract)-[:CREATED_BY|CAN_WRITE|SHARES_DATA_WITH]->(:Profile {profileId: $senderProfileId})
         } AND CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true ELSE datetime(contract.expiresAt) > datetime($now) END
         AND NOT EXISTS {

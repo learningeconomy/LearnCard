@@ -18,6 +18,7 @@ import {
     dispatchContractEvents,
 } from '@helpers/contract-events.helpers';
 import * as notifications from '@helpers/notifications.helpers';
+import { ensureContractEventMaintenance } from '@helpers/contract-event-maintenance.helpers';
 import { deliverQueuedNotification } from '@helpers/notificationQueue.helpers';
 import type { LCNNotification } from '@learncard/types';
 import { openApiDocument } from '../src/openapi';
@@ -191,6 +192,40 @@ describe('generic contract requests and correlated events', () => {
         await expect(send(uri)).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
         expect(await status(uri)).toBeNull();
         expect(await eventRows(uri)).toEqual([]);
+    });
+
+    it('rejects sender-to-self requests by profile ID or DID without writing an invitation', async () => {
+        const uri = await create();
+        for (const targetProfileId of [writer.profileId, writer.learnCard.id.did()])
+            await expect(
+                writer.clients.fullAuth.contracts.sendContractRequest({
+                    contractUri: uri,
+                    targetProfileId,
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        expect(await getStoredContractRequest(id(uri), writer.profileId)).toBeNull();
+        expect(await eventRows(uri)).toEqual([]);
+        expect(queue).not.toHaveBeenCalled();
+    });
+
+    it('preserves an attributed-request conflict through the legacy AI send route', async () => {
+        const uri = await create();
+        await send(uri);
+        await expect(
+            writer.clients.fullAuth.contracts.sendAiInsightsContractRequest({
+                contractUri: uri,
+                targetProfileId: learner.profileId,
+                shareLink: 'https://synthetic.example',
+            })
+        ).rejects.toMatchObject({
+            code: 'CONFLICT',
+            message: 'An attributed request already exists for this profile.',
+        });
+        expect(await status(uri)).toMatchObject({
+            status: 'pending',
+            requestedBy: writer.profileId,
+        });
+        expect(await eventRows(uri)).toHaveLength(1);
     });
 
     it('deduplicates exact concurrent retries and rejects conflicting sender/reference/message', async () => {
@@ -673,6 +708,63 @@ describe('generic contract requests and correlated events', () => {
         ).toBe(true);
     });
 
+    it('keeps the original accepted referral through withdrawal and re-consent without reopening it', async () => {
+        const uri = await create();
+        await send(uri);
+        const original = (await status(uri))!;
+        const { termsUri } = await accept(uri);
+        await learner.clients.fullAuth.contracts.withdrawConsent({ uri: termsUri });
+        await expect(send(uri, recipient, 'new-referral')).rejects.toMatchObject({
+            code: 'CONFLICT',
+        });
+        delivered.length = 0;
+        await accept(uri);
+        await flush(uri);
+        expect(await status(uri)).toMatchObject({
+            status: 'accepted',
+            requestId: original.requestId,
+            requestedBy: writer.profileId,
+            externalReferenceId: original.externalReferenceId,
+        });
+        const history = await learner.clients.fullAuth.contracts.getTermsTransactionHistory({
+            uri: termsUri,
+        });
+        expect(history.records.filter(t => t.action === 'consent')).toHaveLength(2);
+        expect(history.records.every(t => t.referral?.requestId === original.requestId)).toBe(true);
+        expect(
+            delivered.find(n => n.to.profileId === owner.profileId)?.data?.metadata
+        ).toMatchObject({
+            event: 'consent_created',
+            requestId: original.requestId,
+            externalReferenceId: original.externalReferenceId,
+        });
+        expect(delivered.some(n => n.to.profileId === writer.profileId)).toBe(false);
+    });
+
+    it('gives a removed original referrer only its minimal acceptance decision', async () => {
+        const uri = await create();
+        await send(uri, recipient);
+        await owner.clients.fullAuth.contracts.removeContractRecipient({
+            contractUri: uri,
+            recipient: recipient.profileId,
+        });
+        delivered.length = 0;
+        await accept(uri);
+        await flush(uri);
+        const decision = delivered.find(n => n.to.profileId === recipient.profileId)!;
+        expect(decision.data?.metadata).toMatchObject({
+            event: 'request_accepted',
+            recipientRole: 'requester',
+            externalReferenceId: 'synthetic-ref-123',
+        });
+        expect(decision.data).not.toHaveProperty('transaction');
+        expect(decision.data?.metadata).not.toHaveProperty('termsUri');
+        expect(await authorizeContractNotification(structuredClone(decision))).toBe(true);
+        await expect(
+            recipient.clients.fullAuth.contracts.getConsentedDataForContract({ uri })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+    });
+
     it('serializes consent versus denial without recording a denied request as accepted', async () => {
         const uri = await create();
         await send(uri);
@@ -1056,6 +1148,131 @@ describe('generic contract requests and correlated events', () => {
         await dispatchContractEvents({ eventId });
         expect((await eventRows(uri))[0]!.get('e').properties.message).toBeUndefined();
         expect(queue).not.toHaveBeenCalled();
+    });
+
+    it('backfills older retained payloads once and keeps pending payloads until recovery finishes', async () => {
+        const uri = await create([]);
+        queue.mockRejectedValue(new Error('synthetic outage'));
+        await accept(uri);
+        const eventId = (await eventRows(uri))[0]!.get('e').properties.id;
+        const orphanId = `orphan-${eventId}`;
+        await neogma.queryRunner.run(`
+            MATCH (migration:ConsentFlowEventMigration {id:'indexed-outbox-v1'}) DELETE migration
+        `);
+        await neogma.queryRunner.run(
+            `
+            MATCH (event:ConsentFlowEvent {id:$eventId})-[:HAS_DELIVERY]->(delivery)
+            REMOVE event.cleanupPending, delivery.eventCreatedAt
+            SET delivery.nextAttemptAt = '2999-01-01T00:00:00Z'
+            CREATE (:ConsentFlowEvent {id:$orphanId, createdAt:$now, payload:'{}', message:'Old retained body'})
+        `,
+            { eventId, orphanId, now: new Date().toISOString() }
+        );
+        await Promise.all([ensureContractEventMaintenance(), ensureContractEventMaintenance()]);
+        const marker = await neogma.queryRunner.run(
+            "MATCH (m:ConsentFlowEventMigration {id:'indexed-outbox-v1'}) RETURN m.completedAt AS completedAt"
+        );
+        await dispatchContractEvents({ budgetMs: 0 });
+        const orphan = await neogma.queryRunner.run(
+            'MATCH (e:ConsentFlowEvent {id:$id}) RETURN e',
+            { id: orphanId }
+        );
+        expect(orphan.records[0]!.get('e').properties).not.toHaveProperty('payload');
+        expect(orphan.records[0]!.get('e').properties).not.toHaveProperty('message');
+        expect(orphan.records[0]!.get('e').properties).not.toHaveProperty('cleanupPending');
+        const row = (await eventRows(uri))[0]!;
+        expect(row.get('e').properties.cleanupPending).toBe(true);
+        expect(row.get('e').properties.payload).toBeDefined();
+        expect(row.get('deliveries')[0].properties.eventCreatedAt).toBe(
+            row.get('e').properties.createdAt
+        );
+        await ensureContractEventMaintenance();
+        const repeated = await neogma.queryRunner.run(
+            "MATCH (m:ConsentFlowEventMigration {id:'indexed-outbox-v1'}) RETURN m.completedAt AS completedAt"
+        );
+        expect(repeated.records[0]!.get('completedAt')).toBe(marker.records[0]!.get('completedAt'));
+        queue.mockResolvedValue(undefined);
+        await due(eventId);
+        await dispatchContractEvents();
+        expect((await eventRows(uri))[0]!.get('e').properties).not.toHaveProperty('cleanupPending');
+        await neogma.queryRunner.run('MATCH (e:ConsentFlowEvent {id:$id}) DELETE e', {
+            id: orphanId,
+        });
+    });
+
+    it.each(['expired', 'exhausted'] as const)(
+        'globally recovers %s deliveries even when their next attempt is in the future',
+        async scenario => {
+            const uri = await create([]);
+            queue.mockRejectedValue(new Error('synthetic outage'));
+            await accept(uri);
+            const eventId = (await eventRows(uri))[0]!.get('e').properties.id;
+            const createdAt = new Date(
+                Date.now() - (scenario === 'expired' ? 25 * 3_600_000 : 0)
+            ).toISOString();
+            await neogma.queryRunner.run(
+                `
+            MATCH (e:ConsentFlowEvent {id:$eventId})-[:HAS_DELIVERY]->(d)
+            SET e.createdAt=$createdAt, d.eventCreatedAt=$createdAt,
+                d.nextAttemptAt='2999-01-01T00:00:00Z', d.attempts=$attempts
+        `,
+                { eventId, createdAt, attempts: scenario === 'exhausted' ? 12 : 1 }
+            );
+            queue.mockClear();
+            await dispatchContractEvents();
+            const row = (await eventRows(uri))[0]!;
+            expect(row.get('deliveries')[0].properties).toMatchObject({
+                state: 'failed',
+                failureReason: scenario === 'expired' ? 'retry_expired' : 'retry_exhausted',
+            });
+            expect(row.get('e').properties).not.toHaveProperty('payload');
+            expect(row.get('e').properties).not.toHaveProperty('cleanupPending');
+            expect(queue).not.toHaveBeenCalled();
+        }
+    );
+
+    it('uses indexed cleanup and delivery lookups with a large finished history', async () => {
+        const uri = await create([]);
+        queue.mockRejectedValue(new Error('synthetic outage'));
+        await accept(uri);
+        const eventId = (await eventRows(uri))[0]!.get('e').properties.id;
+        const prefix = `finished-${eventId}-`;
+        await neogma.queryRunner.run(
+            `
+            UNWIND range(1,2000) AS n
+            CREATE (e:ConsentFlowEvent {id:$prefix+toString(n), createdAt:$now})
+            CREATE (e)-[:HAS_DELIVERY]->(:ConsentFlowEventDelivery {id:$prefix+toString(n), state:'delivered'})
+        `,
+            { prefix, now: new Date().toISOString() }
+        );
+        await ensureContractEventMaintenance();
+        await neogma.queryRunner.run('CALL db.awaitIndexes()');
+        const querySpy = vi.spyOn(neogma.queryRunner, 'run');
+        await dispatchContractEvents({ eventId, budgetMs: 0 });
+        await dispatchContractEvents({ budgetMs: 0 });
+        const lookups = querySpy.mock.calls.filter(
+            ([query]) =>
+                String(query).includes('WITH event LIMIT $limit') ||
+                String(query).includes('RETURN event, delivery ORDER BY')
+        );
+        querySpy.mockRestore();
+        expect(lookups).toHaveLength(4);
+        type Plan = { operatorType: string; children?: Plan[] };
+        const operators = (plan: Plan): string[] => [
+            plan.operatorType,
+            ...(plan.children ?? []).flatMap(operators),
+        ];
+        for (const [query, params] of lookups) {
+            const result = await neogma.queryRunner.run(`EXPLAIN ${query}`, params);
+            const plan = operators(result.summary.plan!);
+            expect(plan.some(operator => operator.startsWith('NodeByLabelScan'))).toBe(false);
+            expect(plan.some(operator => operator.includes('Index'))).toBe(true);
+        }
+        await neogma.queryRunner.run(
+            `MATCH (e:ConsentFlowEvent) WHERE e.id STARTS WITH $prefix
+            OPTIONAL MATCH (e)-[:HAS_DELIVERY]->(d) DETACH DELETE e,d`,
+            { prefix }
+        );
     });
 
     it('acknowledges permanent queued contract rejection but retries negative storage acknowledgements', async () => {

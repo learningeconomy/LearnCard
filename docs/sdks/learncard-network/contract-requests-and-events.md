@@ -58,7 +58,7 @@ const status = await referrer.invoke.getRequestStatusForProfile(
 // message, status and readStatus. Legacy requests may omit attribution fields.
 ```
 
-`externalReferenceId` is an opaque integration reference, limited to 256 characters; `message` is limited to 500. Avoid putting sensitive data in either field. Targets may also be addressed by a resolvable network DID. Missing targets return `NOT_FOUND`; email-only invitations are not supported by this endpoint. Requests are limited to 500 per hour per contract and sender.
+`externalReferenceId` is an opaque integration reference, limited to 256 characters; `message` is limited to 500. Avoid putting sensitive data in either field. Targets may also be addressed by a resolvable network DID. Sending a request to yourself returns `BAD_REQUEST`, including when addressed by DID. Missing targets return `NOT_FOUND`; email-only invitations are not supported by this endpoint. Requests are limited to 500 per hour per contract and sender.
 
 There is one request per contract/target pair in this version. An identical pending retry keeps the same request and event IDs. Conflicting sender, reference or message returns `CONFLICT`. Terminal requests and existing legacy requests are not replaced. Sending to a target with an unexpired active consent, including a one-time snapshot, also returns `CONFLICT`.
 
@@ -86,7 +86,7 @@ stateDiagram-v2
     pending --> cancelled: Authorized cancellation
 ```
 
-Denied and cancelled generic requests retain their correlation fields. Withdrawing consent retains an accepted generic request and the referral captured on consent history. It revokes current data access; it does not reset a terminal request to pending.
+Denied and cancelled generic requests retain their correlation fields. Withdrawing consent retains an accepted generic request and the referral captured on consent history. It revokes current data access; it does not reset a terminal request to pending. If the learner later consents again, the original referral remains attached to the consent and subsequent transactions. This does not reopen the request or send another acceptance decision to a requester outside the audience. A legacy AI request cannot replace an attributed request; it returns `CONFLICT`.
 
 ## Webhook events
 
@@ -117,6 +117,8 @@ Configure the receiving profile's `notificationsWebhook` using the existing prof
 
 Each event is deduplicated per recipient, excluding the acting profile. Consenting to a request also changes its status to accepted atomically. A Terms update that accepts a pending request after prior consent expired sends the requester an acceptance decision too.
 
+Explicit writers do not automatically subscribe to other senders' decisions. An original requester removed from the data audience can still receive its own minimal acceptance decision and correlation reference, without a transaction payload, Terms URI or consented data.
+
 `termsUri` appears only on consent events delivered to the data audience. Referral fields are optional for direct or legacy consent, and are preserved on Terms, transaction history, and holder export metadata. The owner, writers with data access, and the original referrer retain `externalReferenceId` on their permitted events. Other data recipients receive consented data and public attribution (`requestId`, `requestedBy`), with the internal reference removed from both metadata and the transaction's `referral`. They do not receive private invitation text. The learner retains the full referral in its own history and export. Use the consented data APIs for current values; notification transactions are not a substitute for permission checks.
 
 ## Delivery and retry
@@ -127,11 +129,15 @@ Delivery is **at least once**. Persist `deliveryKey` with the downstream side ef
 
 Outbox retries start after one minute, double after each failed attempt, and cap at one hour between attempts. A delivery stops after 12 claimed attempts or 24 hours from event creation, whichever comes first. Claims count even if the worker crashes before recording the outcome. A stopped delivery is marked `rejected` for a permanent rejection or `failed` when its retry budget expires; it is not marked delivered. The worker retains a coarse failure reason without recording the notification body in logs.
 
+With a continuously running worker and repeated failures, the delays before attempt 12 total about six hours (363 minutes). The 24-hour ceiling also limits aged or abandoned work; it is not a promise to retry for a full day. Worker downtime and backlog can change when attempts run.
+
 For SQS, a successful enqueue completes the outbox delivery. The queue consumer acknowledges permanent contract webhook rejections so SQS can discard those messages; temporary failures remain subject to the queue's configured retry and retention policy. The outbox's 12-attempt/24-hour limits do not govern SQS retries.
 
 Recipients removed before dispatch are skipped, including events already placed on SQS. Request decisions queued under the former broad audience are also suppressed for unrelated recipients. Queued consent events have private reference fields removed if the recipient no longer has referral management access. These checks run before outbox dispatch and again in the SQS consumer; previously delivered copies cannot be recalled. Expired or withdrawn consent blocks queued data events, and revoked personal values or credential URIs are removed before delivery. A queued invitation is skipped if the request was already decided. Already delivered copies cannot be recalled.
 
 Outbox intents discard their payload and message once every delivery is delivered, skipped, rejected, or failed; stable event/delivery metadata remains for deduplication and diagnostics. Pending intents remain available only within the retry budget. Cleanup also recovers events with no recipients or with already-finished deliveries. Expiration and cleanup require a running worker; they happen on a subsequent pass and can be delayed by a backlog or service downtime. This removes the extra notification copy, while consent history remains available through its existing APIs. Failed notifications are not automatically replayed after configuration is repaired.
+
+Inline dispatch looks up only the current event by ID. The scheduler uses indexed cleanup markers and pending-delivery indexes for due, aged and exhausted work, so finished history is excluded from those recurring scans. On its first global pass, an atomic migration backfills older retained payload markers and pending delivery timestamps once. Allow that migration to finish during rollout and drain older service versions before the backfill; it can take longer on an existing large history. Finished event metadata is retained; automatic history deletion remains a separate retention policy.
 
 ## Legacy compatibility
 
