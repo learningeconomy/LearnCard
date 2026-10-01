@@ -60,9 +60,12 @@ kms:RecipientAttestation:PCR0/1/2` all matching simultaneously
   `GenerateDataKeyPair(WithoutPlaintext)`) — see kms.tf's header comment for
   the full provenance model (C1 fix). The policy also carries a universal
   Deny of `Decrypt`/`GenerateDataKey` when no attestation is present at all,
-  and a Deny of `kms:PutKeyPolicy` without an MFA-authenticated session.
+  and a Deny of `kms:PutKeyPolicy` to the root user without MFA.
   Administration (not Decrypt/GenerateDataKey) is scoped to
-  `var.kms_admin_role_arn` and a narrow root break-glass statement.
+  `var.kms_admin_role_arn` and a root-user break-glass statement. That
+  statement is pinned with `aws:PrincipalArn` = root: a bare account-root
+  principal delegates to every IAM admin in the account, so IAM identity
+  policies grant nothing on this key.
   **lca-api is never named anywhere in this policy.** A Terraform native
   test (`tests/kms_key_policy.tftest.hcl`) asserts this contract offline —
   see "Testing the KMS key policy" below.
@@ -240,9 +243,13 @@ session. The second person is enforced entirely by process:
    tuple is legitimate (matches a signed, reproducibly-built EIF per P2).
 3. **A second person, holding `escrow-kms-admin`, runs `terraform apply`
    from an MFA-authenticated session.** This person should not be the PR
-   author. `kms:PutKeyPolicy` is denied outright without MFA present
-   (`aws:MultiFactorAuthPresent`), so a non-MFA session cannot apply the
-   change even if it merged.
+   author. The role can only be assumed by a listed IAM user with a fresh
+   MFA code (`infra/escrow-enclave-bootstrap/mfa-session.sh`); IAM Identity
+   Center (SSO) sessions hold no key-policy grant. The key policy itself
+   denies `kms:PutKeyPolicy` to the root user without MFA. It cannot do the
+   same for the role: role sessions report `aws:MultiFactorAuthPresent` as
+   false even when assumed with MFA, so an all-principal MFA deny would lock
+   the key and KMS's lockout safety check rejects it.
 4. **Record the change** (PR link, approver, applier, timestamp) in the
    ledger/ops runbook — key-policy changes are exactly the kind of event
    the audit trail this stack builds (`ledger.tf`, `storage.tf`'s audit

@@ -35,7 +35,7 @@ data "aws_iam_policy_document" "enclave_host_assume_role" {
 
 resource "aws_iam_role" "enclave_host" {
   name        = "${local.name_prefix}-host-role"
-  description = "escrow-enclave-host EC2 instance role. kms:Decrypt on the escrow CMK additionally requires a matching Nitro attestation per the CMK's own key policy (kms.tf) — this role's grant alone does not permit reading escrow key material."
+  description = "escrow-enclave-host EC2 instance role. kms:Decrypt on the escrow CMK additionally requires a matching Nitro attestation per the CMK's own key policy (kms.tf) - this role's grant alone does not permit reading escrow key material."
 
   assume_role_policy = data.aws_iam_policy_document.enclave_host_assume_role.json
 
@@ -281,7 +281,7 @@ data "aws_iam_policy_document" "ledger_monitor_assume_role" {
 
 resource "aws_iam_role" "ledger_monitor" {
   name        = "${local.name_prefix}-ledger-monitor-role"
-  description = "escrow-ledger-monitor Lambda execution role: read-only on both ledger tables + the records stream, read on the audit bucket. Deliberately holds NO permission on the escrow CMK (kms.tf) — a compromised monitor cannot decrypt escrow key material."
+  description = "escrow-ledger-monitor Lambda execution role: read-only on both ledger tables + the records stream, read on the audit bucket. Deliberately holds NO permission on the escrow CMK (kms.tf) - a compromised monitor cannot decrypt escrow key material."
 
   assume_role_policy = data.aws_iam_policy_document.ledger_monitor_assume_role.json
 

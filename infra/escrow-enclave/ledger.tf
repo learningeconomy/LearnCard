@@ -71,6 +71,11 @@ resource "aws_dynamodb_table" "heads" {
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "pk"
 
+  attribute {
+    name = "pk"
+    type = "S"
+  }
+
   # A mutable per-chain head pointer (PK "HOLD#<id>") that legitimately
   # advances on every new record — NOT append-only, unlike `records`.
   deletion_protection_enabled = true

@@ -30,8 +30,25 @@ variable "private_subnet_ids" {
 }
 
 variable "lca_api_security_group_id" {
-  description = "Security group ID attached to the lca-api Lambda's VPC ENIs. The ONLY principal allowed to reach the enclave-host API on port 8443."
+  description = "Same-VPC access: security group ID attached to the lca-api Lambda's ENIs, allowed to reach the NLB on 8443. Set exactly one of this or privatelink_allowed_principals."
   type        = string
+  default     = null
+}
+
+variable "privatelink_allowed_principals" {
+  description = "Cross-account access: IAM principal ARNs (e.g. the lca-api account root) allowed to create an interface endpoint to the NLB. Connections still need manual acceptance. Set exactly one of this or lca_api_security_group_id."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = (var.lca_api_security_group_id == null) != (length(var.privatelink_allowed_principals) == 0)
+    error_message = "Set exactly one of lca_api_security_group_id (same VPC) or privatelink_allowed_principals (cross-account PrivateLink)."
+  }
+
+  validation {
+    condition     = alltrue([for p in var.privatelink_allowed_principals : can(regex("^arn:aws[a-zA-Z-]*:iam::[0-9]{12}:(root|role/.+)$", p))])
+    error_message = "privatelink_allowed_principals entries must be account-root or role ARNs; wildcards are not allowed."
+  }
 }
 
 variable "instance_type" {
@@ -53,13 +70,13 @@ variable "instance_type" {
 }
 
 variable "asg_min_size" {
-  description = "Minimum number of enclave-host instances. Must stay >= 2 for AZ-level fault tolerance — escrow release fails closed if the enclave-host fleet is unreachable."
+  description = "Minimum number of enclave-host instances. Production must keep >= 2 for AZ-level fault tolerance (escrow release fails closed if the fleet is unreachable); staging may run 1 to save cost."
   type        = number
   default     = 2
 
   validation {
-    condition     = var.asg_min_size >= 2
-    error_message = "asg_min_size must be >= 2 (design requires >= 2 AZs of enclave-host capacity)."
+    condition     = var.asg_min_size >= (var.environment == "production" ? 2 : 1)
+    error_message = "asg_min_size must be >= 2 in production (>= 2 AZs of enclave-host capacity), and >= 1 elsewhere."
   }
 }
 

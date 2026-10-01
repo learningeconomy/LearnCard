@@ -94,13 +94,6 @@ override_data {
 }
 
 override_data {
-  target = data.aws_vpc.selected
-  values = {
-    cidr_block = "10.0.0.0/16"
-  }
-}
-
-override_data {
   target = data.aws_subnet.selected
 }
 
@@ -257,6 +250,31 @@ override_resource {
 
 override_resource {
   target = aws_security_group.enclave_host
+  values = {
+    id = "sg-0000000000000host"
+  }
+}
+
+override_resource {
+  target = aws_vpc_security_group_ingress_rule.nlb_from_lca_api
+}
+
+override_resource {
+  target = aws_vpc_security_group_egress_rule.nlb_to_hosts
+}
+
+override_resource {
+  target = aws_security_group.nlb
+  values = {
+    id = "sg-00000000000000nlb"
+  }
+}
+
+override_resource {
+  target = aws_vpc_endpoint_service.enclave_host
+  values = {
+    service_name = "com.amazonaws.vpce.us-east-1.vpce-svc-0123456789abcdef0"
+  }
 }
 
 override_resource {
@@ -479,5 +497,136 @@ run "escrow_kms_key_policy_provenance" {
       try(s.Effect, "") == "Deny" && contains(flatten([try(s.Action, [])]), "kms:CreateGrant")
     ])
     error_message = "kms:CreateGrant is no longer explicitly denied: ${data.aws_iam_policy_document.escrow_kms_key_policy.json}"
+  }
+}
+
+run "same_vpc_mode_admits_lca_api_only_through_the_nlb" {
+  command = apply
+
+  assert {
+    condition     = length(aws_vpc_security_group_ingress_rule.nlb_from_lca_api) == 1 && aws_vpc_security_group_ingress_rule.nlb_from_lca_api[0].referenced_security_group_id == "sg-0123456789abcdef0" && aws_vpc_security_group_ingress_rule.nlb_from_lca_api[0].from_port == 8443
+    error_message = "Same-VPC mode must admit 8443 to the NLB from the lca-api security group only"
+  }
+
+  assert {
+    condition     = alltrue([for rule in aws_security_group.enclave_host.ingress : rule.security_groups == toset(["sg-00000000000000nlb"]) && try(length(rule.cidr_blocks), 0) == 0]) && toset([for rule in aws_security_group.enclave_host.ingress : rule.from_port]) == toset([8443, 8444])
+    error_message = "Enclave hosts must admit 8443 and 8444 from the NLB security group only"
+  }
+
+  assert {
+    condition     = length(aws_vpc_endpoint_service.enclave_host) == 0 && output.endpoint_service_name == null
+    error_message = "Same-VPC mode must not create a PrivateLink endpoint service"
+  }
+}
+
+run "privatelink_mode_requires_acceptance_and_named_principals" {
+  command = apply
+
+  variables {
+    lca_api_security_group_id      = null
+    privatelink_allowed_principals = ["arn:aws:iam::206533012615:root"]
+  }
+
+  assert {
+    condition     = length(aws_vpc_endpoint_service.enclave_host) == 1 && aws_vpc_endpoint_service.enclave_host[0].acceptance_required == true && aws_vpc_endpoint_service.enclave_host[0].allowed_principals == toset(["arn:aws:iam::206533012615:root"])
+    error_message = "PrivateLink mode must require manual acceptance and allow only the named principals"
+  }
+
+  assert {
+    condition     = length(aws_vpc_security_group_ingress_rule.nlb_from_lca_api) == 0 && aws_lb.enclave_host.enforce_security_group_inbound_rules_on_private_link_traffic == "off"
+    error_message = "PrivateLink mode must not open the NLB to any security group; admission is the endpoint service"
+  }
+
+  assert {
+    condition     = alltrue([for rule in aws_security_group.enclave_host.ingress : rule.security_groups == toset(["sg-00000000000000nlb"])])
+    error_message = "Enclave hosts must still admit traffic only from the NLB"
+  }
+}
+
+run "rejects_both_access_modes" {
+  command = plan
+
+  variables {
+    privatelink_allowed_principals = ["arn:aws:iam::206533012615:root"]
+  }
+
+  expect_failures = [var.privatelink_allowed_principals]
+}
+
+run "rejects_neither_access_mode" {
+  command = plan
+
+  variables {
+    lca_api_security_group_id = null
+  }
+
+  expect_failures = [var.privatelink_allowed_principals]
+}
+
+run "rejects_wildcard_principals" {
+  command = plan
+
+  variables {
+    lca_api_security_group_id      = null
+    privatelink_allowed_principals = ["*"]
+  }
+
+  expect_failures = [var.privatelink_allowed_principals]
+}
+
+run "aws_facing_descriptions_are_latin1" {
+  command = plan
+
+  # IAM and KMS reject descriptions outside tab/CR/LF, printable ASCII and
+  # Latin-1; mocked providers never call AWS, so assert it here.
+  assert {
+    condition     = alltrue([for d in [aws_iam_role.enclave_host.description, aws_iam_role.ledger_monitor.description, aws_kms_key.escrow.description] : can(regex("^[\\t\\n\\r\\x{20}-\\x{7E}\\x{A1}-\\x{FF}]*$", d))])
+    error_message = "IAM role and KMS key descriptions must contain only characters AWS accepts (no em-dashes or other non-Latin-1 characters)"
+  }
+}
+
+run "put_key_policy_mfa_deny_targets_root_only" {
+  command = apply
+
+  # An MFA deny that also matches escrow-kms-admin locks the key (role
+  # sessions report no MFA), and KMS rejects it. It must target root only.
+  assert {
+    condition = length([
+      for s in jsondecode(data.aws_iam_policy_document.escrow_kms_key_policy.json).Statement : s
+      if s.Sid == "DenyRootPutKeyPolicyWithoutMFA" && s.Effect == "Deny" && s.Action == "kms:PutKeyPolicy" && try(s.Condition.StringEquals["aws:PrincipalArn"], "") == one([for r in jsondecode(data.aws_iam_policy_document.escrow_kms_key_policy.json).Statement : r.Principal.AWS if r.Sid == "RootAccountBreakGlassAdministration"]) && endswith(s.Condition.StringEquals["aws:PrincipalArn"], ":root") && try(s.Condition.BoolIfExists["aws:MultiFactorAuthPresent"], "") == "false"
+    ]) == 1
+    error_message = "DenyRootPutKeyPolicyWithoutMFA must deny kms:PutKeyPolicy only to the root user without MFA"
+  }
+
+  assert {
+    condition = length([
+      for s in jsondecode(data.aws_iam_policy_document.escrow_kms_key_policy.json).Statement : s
+      if s.Effect == "Deny" && contains(flatten([s.Action]), "kms:PutKeyPolicy") && !can(s.Condition.StringEquals["aws:PrincipalArn"])
+    ]) == 0
+    error_message = "No PutKeyPolicy deny may apply to every principal: it would lock escrow-kms-admin out of the key"
+  }
+}
+
+run "no_statement_delegates_key_administration_to_iam" {
+  command = apply
+
+  # A key-policy principal of "arn:...:root" means the whole account, so
+  # without an aws:PrincipalArn condition any IAM admin could rewrite the
+  # policy. Every account-root Allow must be pinned to the root user.
+  assert {
+    condition = alltrue([
+      for s in jsondecode(data.aws_iam_policy_document.escrow_kms_key_policy.json).Statement :
+      try(s.Condition.StringEquals["aws:PrincipalArn"], "") == s.Principal.AWS
+      if s.Effect == "Allow" && endswith(try(tostring(s.Principal.AWS), ""), ":root")
+    ])
+    error_message = "Every Allow naming the account root must be restricted to the root user with aws:PrincipalArn"
+  }
+
+  assert {
+    condition = toset(flatten([
+      for s in jsondecode(data.aws_iam_policy_document.escrow_kms_key_policy.json).Statement : [s.Principal.AWS]
+      if s.Effect == "Allow" && contains(flatten([s.Action]), "kms:PutKeyPolicy")
+    ])) == toset([one([for s in jsondecode(data.aws_iam_policy_document.escrow_kms_key_policy.json).Statement : s.Principal.AWS if s.Sid == "RootAccountBreakGlassAdministration"]), "arn:aws:iam::123456789012:role/escrow-kms-admin"])
+    error_message = "Only the root user and escrow-kms-admin may be granted kms:PutKeyPolicy"
   }
 }

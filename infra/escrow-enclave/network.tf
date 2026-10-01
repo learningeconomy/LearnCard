@@ -1,7 +1,3 @@
-data "aws_vpc" "selected" {
-  id = var.vpc_id
-}
-
 data "aws_subnet" "selected" {
   for_each = toset(var.private_subnet_ids)
 
@@ -27,26 +23,25 @@ check "private_subnets_have_no_public_ip_on_launch" {
 
 resource "aws_security_group" "enclave_host" {
   name        = "${local.name_prefix}-sg"
-  description = "escrow-enclave-host: 8443 from lca-api only, 8444 (NLB health) from VPC, no public ingress"
+  description = "escrow-enclave-host: 8443 and 8444 (health) from the NLB only, no public ingress"
   vpc_id      = var.vpc_id
 
+  # Both ports admit only the NLB's security group: lca-api reaches the API
+  # through the NLB (same VPC or PrivateLink), and health checks come from it.
   ingress {
-    description     = "Enclave-host API (8443), reachable only from the lca-api Lambda security group"
+    description     = "Enclave-host API (8443) from the NLB"
     from_port       = 8443
     to_port         = 8443
     protocol        = "tcp"
-    security_groups = [var.lca_api_security_group_id]
+    security_groups = [aws_security_group.nlb.id]
   }
 
-  # NLB health-check requests always originate from the load balancer's own
-  # node IPs inside the target VPC/subnets, regardless of client source IP
-  # preservation for regular traffic — hence VPC CIDR, not the lca-api SG.
   ingress {
-    description = "NLB TCP health checks (8444) from within the VPC"
-    from_port   = 8444
-    to_port     = 8444
-    protocol    = "tcp"
-    cidr_blocks = [data.aws_vpc.selected.cidr_block]
+    description     = "NLB HTTP health checks (8444)"
+    from_port       = 8444
+    to_port         = 8444
+    protocol        = "tcp"
+    security_groups = [aws_security_group.nlb.id]
   }
 
   egress {

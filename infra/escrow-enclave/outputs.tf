@@ -3,13 +3,18 @@ output "nlb_dns_name" {
   value       = aws_lb.enclave_host.dns_name
 }
 
+output "endpoint_service_name" {
+  description = "PrivateLink endpoint service name for the lca-api interface endpoint (null in same-VPC mode). New connections need manual acceptance."
+  value       = local.privatelink_enabled ? aws_vpc_endpoint_service.enclave_host[0].service_name : null
+}
+
 output "asg_name" {
   description = "Name of the enclave-host Auto Scaling Group."
   value       = aws_autoscaling_group.enclave_host.name
 }
 
 output "security_group_id" {
-  description = "ID of the security group attached to enclave-host instances (ingress: 8443 from lca_api_security_group_id, 8444 from the VPC CIDR)."
+  description = "ID of the security group attached to enclave-host instances (ingress: 8443 and 8444 from the NLB security group only)."
   value       = aws_security_group.enclave_host.id
 }
 

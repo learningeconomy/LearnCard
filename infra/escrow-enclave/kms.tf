@@ -107,25 +107,26 @@ locals {
   # dynamic "statement" block below can never silently collapse two
   # measurement tuples into one key-policy statement.
   enclave_measurements_by_label = { for m in var.enclave_measurements : m.label => m }
+
+  account_root_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root"
 }
 
 data "aws_iam_policy_document" "escrow_kms_key_policy" {
   # ---------------------------------------------------------------------
-  # 1. Root account break-glass — the SAME narrow non-crypto admin action
-  #    list as statement 2, NOT AWS's usual "Enable IAM User Permissions"
-  #    kms:* default template. Purpose is only to avoid permanently
-  #    locking the key if kms_admin_role_arn is ever deleted or
-  #    misconfigured: because this key policy has no IAM-delegation
-  #    statement, it is the ONLY authorization source for every action on
-  #    this key (see statement 2's note), so SOMEONE must always retain
-  #    kms:PutKeyPolicy or the key becomes unmanageable forever.
-  #    Tradeoff: AWS's default kms:* root statement is strictly more
-  #    convenient (any future IAM policy could delegate access to anyone),
-  #    but would mean a compromised or over-permissioned root/IAM-admin
-  #    session could grant itself Decrypt via an ordinary IAM identity
-  #    policy alone, with no key-policy change and thus no two-person
-  #    review required. We deliberately give up that convenience here;
-  #    revisit only with explicit written sign-off.
+  # 1. Root-user break-glass: the SAME narrow non-crypto admin action list
+  #    as statement 2, so the key stays manageable if kms_admin_role_arn is
+  #    ever deleted or misconfigured.
+  #
+  #    A key-policy principal of "arn:...:root" means the whole ACCOUNT,
+  #    not the root user: on its own it delegates these actions (including
+  #    PutKeyPolicy) to every IAM principal whose identity policy allows
+  #    them, e.g. any account admin or OrganizationAccountAccessRole. That
+  #    let a non-MFA admin rewrite this policy (verified in staging,
+  #    2026-10-01). The aws:PrincipalArn condition restricts the statement
+  #    to the actual root user, which statement 10 additionally requires to
+  #    use MFA. With it, this policy grants admin actions to exactly two
+  #    principals (root user, escrow-kms-admin) and IAM identity policies
+  #    can grant nothing on this key.
   # ---------------------------------------------------------------------
   statement {
     sid    = "RootAccountBreakGlassAdministration"
@@ -133,21 +134,26 @@ data "aws_iam_policy_document" "escrow_kms_key_policy" {
 
     principals {
       type        = "AWS"
-      identifiers = ["arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root"]
+      identifiers = [local.account_root_arn]
     }
 
     actions   = local.kms_admin_actions
     resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:PrincipalArn"
+      values   = [local.account_root_arn]
+    }
   }
 
   # ---------------------------------------------------------------------
   # 2. Dedicated escrow-kms-admin role — the intended day-to-day path for
-  #    key administration. Because this key policy does NOT include a
-  #    blanket "Enable IAM User Permissions" (kms:*) statement, IAM
-  #    identity policies attached elsewhere in the account CANNOT grant
-  #    any principal — including lca-api's Lambda execution role —
-  #    kms:Decrypt or kms:Encrypt on this specific key. This key policy is
-  #    the sole authorization source for those two actions. That is what
+  #    key administration. No statement delegates to IAM (statement 1 is
+  #    limited to the root user), so IAM identity policies attached
+  #    elsewhere in the account CANNOT grant any principal, including
+  #    lca-api's Lambda execution role, any action on this key. This key
+  #    policy is the sole authorization source. That is what
   #    makes "no lca-api access" an actual standing invariant rather than
   #    a point-in-time fact some unrelated future IAM change could quietly
   #    break.
@@ -408,21 +414,26 @@ data "aws_iam_policy_document" "escrow_kms_key_policy" {
   }
 
   # ---------------------------------------------------------------------
-  # 10. Deny PutKeyPolicy unless the caller's session is MFA-authenticated.
-  #    Terraform/AWS cannot enforce true two-person approval by itself —
-  #    this condition only proves ONE authenticated human with an MFA
-  #    device pressed "apply". The second person is enforced by process:
-  #    a CODEOWNERS-required security-team review on the PR that changed
-  #    this file, completed BEFORE the MFA-authenticated apply happens.
-  #    See README.md. BoolIfExists (not plain Bool) so a session with NO
-  #    aws:MultiFactorAuthPresent context key at all — true for most
-  #    non-interactive/instance-role sessions, and for some federated
-  #    human sessions depending on IdP configuration — is treated as
-  #    "MFA not present" and denied, rather than silently allowed through
-  #    because the key was missing instead of explicitly "false".
+  # 10. Deny PutKeyPolicy to the ROOT user unless MFA-authenticated.
+  #    Terraform/AWS cannot enforce true two-person approval by itself; the
+  #    second person is enforced by process: a CODEOWNERS-required
+  #    security-team review on the PR that changed this file, completed
+  #    BEFORE the apply. See README.md.
+  #
+  #    Scoped to root on purpose. escrow-kms-admin role sessions do NOT
+  #    carry aws:MultiFactorAuthPresent=true even when the role was assumed
+  #    with MFA (verified in staging, 2026-10-01: CloudTrail logs
+  #    mfaAuthenticated=false, and an MFA deny refused the role's own
+  #    PutKeyPolicy). An all-principal MFA deny therefore makes the key
+  #    unmanageable, and KMS's lockout safety check rejects it. The role is
+  #    MFA-gated at assume time instead (bootstrap trust policy:
+  #    MultiFactorAuthPresent=true and MultiFactorAuthAge < 3600). No other
+  #    principal is granted PutKeyPolicy (this policy has no IAM
+  #    delegation), so root is the only remaining path; BoolIfExists also
+  #    denies root long-term access keys, which carry no MFA key at all.
   # ---------------------------------------------------------------------
   statement {
-    sid    = "DenyPutKeyPolicyWithoutMFA"
+    sid    = "DenyRootPutKeyPolicyWithoutMFA"
     effect = "Deny"
 
     principals {
@@ -434,6 +445,12 @@ data "aws_iam_policy_document" "escrow_kms_key_policy" {
     resources = ["*"]
 
     condition {
+      test     = "StringEquals"
+      variable = "aws:PrincipalArn"
+      values   = [local.account_root_arn]
+    }
+
+    condition {
       test     = "BoolIfExists"
       variable = "aws:MultiFactorAuthPresent"
       values   = ["false"]
@@ -442,7 +459,7 @@ data "aws_iam_policy_document" "escrow_kms_key_policy" {
 }
 
 resource "aws_kms_key" "escrow" {
-  description = "learncard escrow enclave (${var.environment}): symmetric CMK protecting the enclave-generated escrow private key. kms:Decrypt is gated by per-measurement Nitro attestation conditions in this key's policy — this is NOT a general-purpose encryption key and must never be referenced outside the escrow-enclave-host role."
+  description = "learncard escrow enclave (${var.environment}): symmetric CMK protecting the enclave-generated escrow private key. kms:Decrypt is gated by per-measurement Nitro attestation conditions in this key's policy - this is NOT a general-purpose encryption key and must never be referenced outside the escrow-enclave-host role."
 
   key_usage                = "ENCRYPT_DECRYPT"
   customer_master_key_spec = "SYMMETRIC_DEFAULT"
