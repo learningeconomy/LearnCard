@@ -31,6 +31,11 @@ on:
                 required: false
                 type: boolean
                 default: false
+            lockfile_only:
+                description: 'Refresh and validate the WASM lockfile without publishing or creating a PR'
+                required: false
+                type: boolean
+                default: false
 
 concurrency:
     group: update-didkit-wasm-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'publish' }}
@@ -145,9 +150,11 @@ jobs:
             DIDKIT_WASM_BUCKET: ${{ vars.DIDKIT_WASM_S3_BUCKET }}
             DIDKIT_WASM_PUBLIC_BASE_URL: ${{ vars.DIDKIT_WASM_PUBLIC_BASE_URL }}
             FORCE_REBUILD: ${{ inputs.force_rebuild || github.event.client_payload.force_rebuild || 'false' }}
+            LOCKFILE_ONLY: ${{ inputs.lockfile_only || 'false' }}
             SSI_REF: ${{ inputs.ssi_ref || github.event.client_payload.ssi_ref || 'main' }}
         steps:
             - name: Validate publish configuration
+              if: ${{ !inputs.lockfile_only }}
               env:
                   DIDKIT_WASM_AWS_ROLE_ARN: ${{ secrets.DIDKIT_WASM_AWS_ROLE_ARN }}
               run: |
@@ -167,6 +174,10 @@ jobs:
                       echo "::error::Set DIDKIT_WASM_AWS_ROLE_ARN on the didkit-wasm-publish environment."
                       exit 1
                   fi
+
+            - name: Validate source refs
+              run: |
+                  set -euo pipefail
 
                   # repository_dispatch bypasses branch protection, and these refs are checked out
                   # and then compiled, so a Cargo build script runs whatever they point at. Keep
@@ -221,7 +232,8 @@ jobs:
 
                   # Once a hosted artifact exists, unchanged source pointers deliberately skip.
                   # Toolchain-only rebuilds require a manual run with force_rebuild enabled.
-                  if git diff --quiet -- lib/didkit lib/ssi \
+                  if [ "${LOCKFILE_ONLY}" != "true" ] \
+                      && git diff --quiet -- lib/didkit lib/ssi \
                       && [ "${FORCE_REBUILD}" != "true" ] \
                       && grep -Fq "${BASE_URL}/didkit/sha256-" packages/plugins/didkit/src/didkit/index.ts; then
                       echo "has_updates=false" >> "${GITHUB_OUTPUT}"
@@ -230,7 +242,7 @@ jobs:
                   fi
 
             - name: Report current sources
-              if: steps.submodules.outputs.has_updates == 'false'
+              if: ${{ !inputs.lockfile_only && steps.submodules.outputs.has_updates == 'false' }}
               run: echo 'DIDKit and SSI are already current; no WASM update is needed.' >> "${GITHUB_STEP_SUMMARY}"
 
             - name: Setup Bun and install dependencies
@@ -307,7 +319,7 @@ jobs:
               run: bun packages/learn-card-bridge-http/scripts/sync-didkit.ts
 
             - name: Prepare WASM upload metadata
-              if: steps.submodules.outputs.has_updates == 'true'
+              if: ${{ !inputs.lockfile_only && steps.submodules.outputs.has_updates == 'true' }}
               id: wasm
               run: |
                   set -euo pipefail
@@ -324,7 +336,7 @@ jobs:
                   echo "url=${WASM_URL}" >> "${GITHUB_OUTPUT}"
 
             - name: Update default WASM URL
-              if: steps.submodules.outputs.has_updates == 'true'
+              if: ${{ !inputs.lockfile_only && steps.submodules.outputs.has_updates == 'true' }}
               env:
                   WASM_URL: ${{ steps.wasm.outputs.url }}
               run: |
@@ -351,8 +363,16 @@ jobs:
               if: steps.submodules.outputs.has_updates == 'true'
               run: bun packages/plugins/didkit/scripts/smoke-test-wasm.mjs
 
+            - name: Upload DIDKit WASM lockfile
+              if: inputs.lockfile_only
+              uses: actions/upload-artifact@v4
+              with:
+                  name: didkit-wasm-lockfile
+                  path: packages/plugins/didkit/wasm/didkit-wasm.Cargo.lock
+                  if-no-files-found: error
+
             - name: Prepare changeset
-              if: steps.submodules.outputs.has_updates == 'true'
+              if: ${{ !inputs.lockfile_only && steps.submodules.outputs.has_updates == 'true' }}
               id: changes
               env:
                   DIDKIT_SHORT_SHA: ${{ steps.submodules.outputs.didkit_short_sha }}
@@ -383,11 +403,11 @@ jobs:
                   echo "has_changes=true" >> "${GITHUB_OUTPUT}"
 
             - name: Report no generated changes
-              if: steps.changes.outputs.has_changes == 'false'
+              if: ${{ !inputs.lockfile_only && steps.changes.outputs.has_changes == 'false' }}
               run: echo 'The rebuilt artifact matches the current sources; nothing was uploaded.' >> "${GITHUB_STEP_SUMMARY}"
 
             - name: Configure AWS credentials
-              if: steps.changes.outputs.has_changes == 'true'
+              if: ${{ !inputs.lockfile_only && steps.changes.outputs.has_changes == 'true' }}
               uses: aws-actions/configure-aws-credentials@v6
               with:
                   aws-region: ${{ env.AWS_REGION }}
@@ -395,7 +415,7 @@ jobs:
                   role-session-name: learncard-didkit-wasm
 
             - name: Upload DIDKit WASM
-              if: steps.changes.outputs.has_changes == 'true'
+              if: ${{ !inputs.lockfile_only && steps.changes.outputs.has_changes == 'true' }}
               env:
                   S3_KEY: ${{ steps.wasm.outputs.s3_key }}
                   WASM_PATH: ${{ steps.wasm.outputs.path }}
@@ -409,7 +429,7 @@ jobs:
                       --metadata "sha256=${WASM_SHA256}"
 
             - name: Verify CloudFront serves Brotli
-              if: steps.changes.outputs.has_changes == 'true'
+              if: ${{ !inputs.lockfile_only && steps.changes.outputs.has_changes == 'true' }}
               env:
                   WASM_URL: ${{ steps.wasm.outputs.url }}
                   WASM_SHA256: ${{ steps.wasm.outputs.sha256 }}
@@ -446,7 +466,7 @@ jobs:
                   } >> "${GITHUB_STEP_SUMMARY}"
 
             - name: Create pull request
-              if: steps.changes.outputs.has_changes == 'true'
+              if: ${{ !inputs.lockfile_only && steps.changes.outputs.has_changes == 'true' }}
               uses: peter-evans/create-pull-request@v7
               with:
                   token: ${{ secrets.LEARNCARD_BOT_TOKEN || github.token }}
