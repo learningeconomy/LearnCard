@@ -73,6 +73,7 @@ der = { version = "~0.7.10", features = ["alloc", "derive", "oid"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 tokio-vsock = "~0.7.2"
+libc = "~0.2.189"
 
 [profile.release]
 panic = "abort"
