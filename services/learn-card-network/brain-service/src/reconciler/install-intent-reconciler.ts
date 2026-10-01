@@ -22,6 +22,7 @@ import {
     revokeIntentServiceAccounts,
 } from '@accesslayer/service-account/internal';
 import { ServiceAccountProvisioningError } from '@helpers/service-account.helpers';
+import { reconcileServiceAccountHealth } from '@accesslayer/service-account/health';
 import { listBindingsByEcosystem, readBindingById } from '@accesslayer/binding/read';
 import { createBinding, revokeBinding as revokeBindingRecord } from '@accesslayer/binding/write';
 import type { InstallIntentRecordType } from 'types/install-intent';
@@ -469,17 +470,28 @@ const markDrift = async (
 const observeDrift = async (
     intent: InstallIntentRecordType,
     actor?: Pick<ReconcileOptions, 'actorDid' | 'actorProfileId'>,
-    now = new Date()
+    now = new Date(),
+    probeHealth = true
 ): Promise<InstallIntentRecordType> => {
     const observedTargets = await listInstallTargetsByIntentId(intent.intentId);
     const expectedTargets = expectedTargetDescriptors(intent);
 
     // Check all integration authorities before any early return or recovery to READY.
     let authorityDrift: string | undefined;
+    const invalidAuthorities = new Set<string>();
     for (const target of expectedTargets.filter(
         target => target.targetType === 'INTEGRATION_INSTALL'
     )) {
         const cause = await checkIntegrationServiceAccount(intent, target.id);
+        authorityDrift ??= cause;
+        if (cause) invalidAuthorities.add(target.id);
+    }
+
+    for (const target of expectedTargets.filter(
+        target => probeHealth && target.targetType === 'INTEGRATION_INSTALL'
+    )) {
+        if (invalidAuthorities.has(target.id)) continue;
+        const cause = await reconcileServiceAccountHealth(intent, target);
         authorityDrift ??= cause;
     }
     if (authorityDrift) return markDrift(intent, authorityDrift, actor, now);
@@ -668,6 +680,7 @@ const runAuthPass = async (
     const observedTargets = await listInstallTargetsByIntentId(intent.intentId);
     const expectedTargets = expectedTargetDescriptors(intent);
 
+    let authCause: string | undefined;
     for (const expectedTarget of expectedTargets) {
         const observedTarget = observedTargets.find(target => target.id === expectedTarget.id);
 
@@ -676,8 +689,15 @@ const runAuthPass = async (
                 `Target ${expectedTarget.id} has not been materialized yet.`
             );
         }
+        if (expectedTarget.targetType === 'INTEGRATION_INSTALL') {
+            const invariantCause = await checkIntegrationServiceAccount(intent, expectedTarget.id);
+            const cause =
+                invariantCause ?? (await reconcileServiceAccountHealth(intent, expectedTarget));
+            authCause ??= cause;
+        }
     }
 
+    if (authCause) return markDrift(intent, authCause, actor, now);
     return markReady(intent, actor, now);
 };
 
@@ -887,7 +907,7 @@ export const reconcileInstallIntent = async (
                             } else {
                                 intent = await runInstallPass(intent, options);
                                 intent = await runAuthPass(intent, options, now);
-                                intent = await observeDrift(intent, options, now);
+                                intent = await observeDrift(intent, options, now, false);
                             }
 
                             recordLatency(Date.now() - startedAt);

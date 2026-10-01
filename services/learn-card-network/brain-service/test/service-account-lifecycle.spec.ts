@@ -1,4 +1,12 @@
 import { randomUUID } from 'node:crypto';
+import { createServer } from 'node:http';
+import { importJWK, jwtVerify } from 'jose';
+import type { IntegrationManifest } from '@learncard/types';
+import {
+    serviceAccountSigningPublicKey,
+    INTEGRATION_PROBE_TYPE,
+} from '@helpers/service-account-auth.helpers';
+import * as integrationHealth from '@helpers/service-account-health.helpers';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { IntegrationScopeRequest } from '@learncard/types';
 import { ServiceAccountGrantValidator } from '@learncard/types';
@@ -36,7 +44,10 @@ const treeScope: IntegrationScopeRequest = {
     reason: 'Sync approved groups',
 };
 
-const setup = async (scopes: IntegrationScopeRequest[] = [treeScope]) => {
+const setup = async (
+    scopes: IntegrationScopeRequest[] = [treeScope],
+    manifestOverrides: Partial<IntegrationManifest> = {}
+) => {
     const suffix = randomUUID();
     const did = `did:key:service-account-${suffix}`;
     const profileId = `sa-owner-${suffix}`;
@@ -65,7 +76,7 @@ const setup = async (scopes: IntegrationScopeRequest[] = [treeScope]) => {
         listingId,
         versionId,
         kind: 'INTEGRATION',
-        manifestOverrides: { scopes },
+        manifestOverrides: { scopes, ...manifestOverrides },
     });
     const client = getClient({ did, isChallengeValid: true, scope: AUTH_GRANT_FULL_ACCESS_SCOPE });
     const planned = await client.installIntent.planInstallIntent({
@@ -89,7 +100,7 @@ const setup = async (scopes: IntegrationScopeRequest[] = [treeScope]) => {
             ? target.config.declarationId
             : `${target.targetType}_${target.listingId}`
     );
-    return { ecosystem, intent, target, installId };
+    return { ecosystem, intent, target, installId, client };
 };
 
 const accounts = (installId: string) =>
@@ -99,7 +110,330 @@ const grants = (installId: string) =>
 
 afterEach(async () => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
     await resetInstallIntentReconcilerTestState();
+});
+
+describe('ServiceAccount authenticated enable gate and health — §10.2 #5', () => {
+    const withHealthServer = async (
+        run: (endpoint: string, control: { healthy: boolean; probes: number }) => Promise<void>
+    ) => {
+        const control = { healthy: true, probes: 0 };
+        const key = await importJWK(serviceAccountSigningPublicKey(), 'EdDSA');
+        let endpoint = '';
+        const server = createServer(async (request, response) => {
+            control.probes++;
+            try {
+                const token = request.headers['x-educationos-health-challenge'];
+                if (typeof token !== 'string') throw new Error('No challenge');
+                const { payload } = await jwtVerify(token, key, {
+                    algorithms: ['EdDSA'],
+                    typ: INTEGRATION_PROBE_TYPE,
+                    audience: endpoint,
+                    issuer: 'educationos-platform',
+                });
+                if (!control.healthy) {
+                    response.writeHead(503).end();
+                    return;
+                }
+                response.setHeader('x-educationos-health-response', payload.jti!);
+                response.writeHead(200).end();
+            } catch {
+                response.writeHead(401).end();
+            }
+        });
+        await new Promise<void>(resolve => server.listen(0, 'localhost', resolve));
+        const address = server.address();
+        if (!address || typeof address === 'string') throw new Error('Missing server port');
+        endpoint = `http://localhost:${address.port}/health`;
+        try {
+            await run(endpoint, control);
+        } finally {
+            server.closeAllConnections();
+            await new Promise<void>((resolve, reject) =>
+                server.close(error => (error ? reject(error) : resolve()))
+            );
+        }
+    };
+
+    it('fails closed without a credential, without scoped healthUrl, and with invalid config', async () => {
+        const fixture = await setup([treeScope], { endpoints: {} });
+        await reconcileInstallIntent(fixture.intent.intentId);
+        const [account] = await accounts(fixture.installId);
+        expect(account?.status).toBe('PROVISIONED');
+        expect(account?.enableCause).toContain('AUTH');
+        await fixture.client.installIntent.issueServiceAccountCredential({
+            serviceAccountId: account!.id,
+        });
+        await reconcileInstallIntent(fixture.intent.intentId, { operation: 'health' });
+        expect((await accounts(fixture.installId))[0]).toMatchObject({
+            status: 'PROVISIONED',
+            enableCause: expect.stringContaining('healthUrl'),
+        });
+        const invalid = await setup([], {
+            endpoints: {},
+            configSchema: {
+                type: 'object',
+                required: ['apiKey'],
+                properties: { apiKey: { type: 'string' } },
+            },
+        });
+        await reconcileInstallIntent(invalid.intent.intentId);
+        const [invalidAccount] = await accounts(invalid.installId);
+        await invalid.client.installIntent.issueServiceAccountCredential({
+            serviceAccountId: invalidAccount!.id,
+        });
+        await reconcileInstallIntent(invalid.intent.intentId);
+        expect((await accounts(invalid.installId))[0]).toMatchObject({
+            status: 'PROVISIONED',
+            enableCause: expect.stringContaining('CONFIG'),
+        });
+    });
+
+    it('enables zero-grant installs without healthUrl only after credential issuance', async () => {
+        const fixture = await setup([], { endpoints: {} });
+        await reconcileInstallIntent(fixture.intent.intentId);
+        const [account] = await accounts(fixture.installId);
+        expect(account?.status).toBe('PROVISIONED');
+        await fixture.client.installIntent.issueServiceAccountCredential({
+            serviceAccountId: account!.id,
+        });
+        await reconcileInstallIntent(fixture.intent.intentId);
+        expect((await accounts(fixture.installId))[0]?.status).toBe('ENABLED');
+    });
+
+    it('rejects a required config key even when the schema has no properties declarations', async () => {
+        const fixture = await setup([], {
+            endpoints: {},
+            configSchema: { type: 'object', required: ['apiKey'] },
+        });
+        await reconcileInstallIntent(fixture.intent.intentId);
+        const [account] = await accounts(fixture.installId);
+        await fixture.client.installIntent.issueServiceAccountCredential({
+            serviceAccountId: account!.id,
+        });
+        await reconcileInstallIntent(fixture.intent.intentId);
+        expect((await accounts(fixture.installId))[0]).toMatchObject({
+            status: 'PROVISIONED',
+            enableCause: expect.stringContaining('CONFIG'),
+        });
+    });
+
+    it('returns expired credentials to PROVISIONED so operator rotation can rerun the gate', async () => {
+        const fixture = await setup([], { endpoints: {} });
+        await reconcileInstallIntent(fixture.intent.intentId);
+        const [account] = await accounts(fixture.installId);
+        await fixture.client.installIntent.issueServiceAccountCredential({
+            serviceAccountId: account!.id,
+        });
+        await reconcileInstallIntent(fixture.intent.intentId);
+        await neogma.queryRunner.run(
+            'MATCH (sa:ServiceAccount {id: $id}) SET sa.credentialExpiresAt = $expired',
+            { id: account!.id, expired: new Date(0).toISOString() }
+        );
+        await reconcileInstallIntent(fixture.intent.intentId);
+        expect((await accounts(fixture.installId))[0]?.status).toBe('PROVISIONED');
+        await fixture.client.installIntent.issueServiceAccountCredential({
+            serviceAccountId: account!.id,
+        });
+        await reconcileInstallIntent(fixture.intent.intentId);
+        expect((await accounts(fixture.installId))[0]?.status).toBe('ENABLED');
+    });
+
+    it('does not resurrect an account revoked while its enable probe is in flight', async () => {
+        await withHealthServer(async healthUrl => {
+            const fixture = await setup([treeScope], { endpoints: { healthUrl } });
+            await reconcileInstallIntent(fixture.intent.intentId);
+            const [account] = await accounts(fixture.installId);
+            await fixture.client.installIntent.issueServiceAccountCredential({
+                serviceAccountId: account!.id,
+            });
+            let release: (healthy: boolean) => void = () => {};
+            let entered: () => void = () => {};
+            const started = new Promise<void>(resolve => {
+                entered = resolve;
+            });
+            vi.spyOn(integrationHealth, 'probeIntegrationHealth').mockImplementationOnce(
+                async () => {
+                    entered();
+                    return new Promise<boolean>(resolve => {
+                        release = resolve;
+                    });
+                }
+            );
+            const pending = reconcileInstallIntent(fixture.intent.intentId);
+            await started;
+            await fixture.client.installIntent.emergencyRevokeServiceAccount({
+                serviceAccountId: account!.id,
+            });
+            release(true);
+            await pending;
+            expect((await accounts(fixture.installId))[0]).toMatchObject({
+                status: 'DISABLED',
+                disabledCause: 'OPERATOR',
+            });
+        });
+    });
+
+    it('health-checks every bundle member even when an earlier member is operator-disabled', async () => {
+        await withHealthServer(async (healthUrl, control) => {
+            const base = await setup([], { endpoints: {} });
+            const members = [];
+            for (let n = 0; n < 2; n++) {
+                const listingId = `listing_${randomUUID()}`,
+                    versionId = `version_${randomUUID()}`;
+                await createAppStoreListing(
+                    makeListingInput({
+                        listing_id: listingId,
+                        kind: 'INTEGRATION',
+                        app_listing_status: 'LISTED',
+                    })
+                );
+                await createSignedListingVersionForKind({
+                    listingId,
+                    versionId,
+                    kind: 'INTEGRATION',
+                    manifestOverrides: { scopes: [treeScope], endpoints: { healthUrl } },
+                });
+                members.push({
+                    declarationId: `member${n}`,
+                    targetType: 'INTEGRATION_INSTALL' as const,
+                    listingId,
+                    versionId,
+                });
+            }
+            const listingId = `bundle_${randomUUID()}`,
+                versionId = `version_${randomUUID()}`;
+            await createAppStoreListing(
+                makeListingInput({
+                    listing_id: listingId,
+                    kind: 'BUNDLE',
+                    app_listing_status: 'LISTED',
+                })
+            );
+            await createSignedListingVersionForKind({
+                listingId,
+                versionId,
+                kind: 'BUNDLE',
+                manifestOverrides: { contains: members },
+            });
+            const plan = await base.client.installIntent.planInstallIntent({
+                ecosystemId: base.ecosystem.id,
+                listingId,
+                versionId,
+                requestedConfig: {},
+                proposedBindings: [],
+            });
+            await base.client.installIntent.approveInstallIntent({
+                intentId: plan.intentId,
+                planHash: plan.plan.planHash,
+                planRevision: plan.plan.planRevision,
+                consentTiers: [],
+            });
+            await reconcileInstallIntent(plan.intentId);
+            const targets = await listInstallTargetsByIntentId(plan.intentId);
+            const memberAccounts = [];
+            for (const target of targets.filter(
+                item => item.targetType === 'INTEGRATION_INSTALL'
+            )) {
+                const [account] = await accounts(target.id);
+                if (!account) throw new Error('Missing bundle account');
+                memberAccounts.push(account);
+                await base.client.installIntent.issueServiceAccountCredential({
+                    serviceAccountId: account.id,
+                });
+            }
+            expect(memberAccounts).toHaveLength(2);
+            await reconcileInstallIntent(plan.intentId);
+            await base.client.installIntent.emergencyRevokeServiceAccount({
+                serviceAccountId: memberAccounts[0]!.id,
+            });
+            control.healthy = false;
+            for (let n = 0; n < 3; n++) await reconcileInstallIntent(plan.intentId);
+            expect((await accounts(memberAccounts[1]!.installId))[0]).toMatchObject({
+                status: 'DISABLED',
+                disabledCause: 'HEALTH',
+                healthFailures: 3,
+            });
+        });
+    });
+
+    it('three consecutive authenticated probe failures disable authority; recovery requires a successful probe', async () => {
+        await withHealthServer(async (healthUrl, control) => {
+            const fixture = await setup([treeScope], { endpoints: { healthUrl } });
+            await reconcileInstallIntent(fixture.intent.intentId);
+            const [account] = await accounts(fixture.installId);
+            expect(control.probes).toBe(0);
+            await fixture.client.installIntent.issueServiceAccountCredential({
+                serviceAccountId: account!.id,
+            });
+            control.healthy = false;
+            await reconcileInstallIntent(fixture.intent.intentId);
+            expect((await accounts(fixture.installId))[0]?.status).toBe('PROVISIONED');
+            control.healthy = true;
+            await reconcileInstallIntent(fixture.intent.intentId);
+            expect((await accounts(fixture.installId))[0]?.status).toBe('ENABLED');
+            control.healthy = false;
+            for (let n = 1; n <= 3; n++) {
+                const result = await reconcileInstallIntent(fixture.intent.intentId, {
+                    operation: 'health',
+                });
+                expect((await accounts(fixture.installId))[0]?.status).toBe(
+                    n < 3 ? 'ENABLED' : 'DISABLED'
+                );
+                if (n === 3)
+                    expect(result.status).toMatchObject({ phase: 'DEGRADED', cause: 'HEALTH' });
+            }
+            await reconcileInstallIntent(fixture.intent.intentId);
+            expect((await accounts(fixture.installId))[0]?.status).toBe('DISABLED');
+            control.healthy = true;
+            await reconcileInstallIntent(fixture.intent.intentId);
+            expect((await accounts(fixture.installId))[0]).toMatchObject({
+                status: 'ENABLED',
+                healthFailures: 0,
+            });
+            const audit = await getInstallIntentAuditEvents({ intentId: fixture.intent.intentId });
+            expect(
+                audit.some(
+                    event =>
+                        event.action === 'SERVICE_ACCOUNT_HEALTH_TRANSITION' &&
+                        event.afterSummary?.healthy === false
+                )
+            ).toBe(true);
+        });
+    });
+
+    it('reads the failure threshold live, resets consecutive failures, and never recovers emergency revocation', async () => {
+        await withHealthServer(async (healthUrl, control) => {
+            const fixture = await setup([treeScope], { endpoints: { healthUrl } });
+            await reconcileInstallIntent(fixture.intent.intentId);
+            const [account] = await accounts(fixture.installId);
+            await fixture.client.installIntent.issueServiceAccountCredential({
+                serviceAccountId: account!.id,
+            });
+            await reconcileInstallIntent(fixture.intent.intentId);
+            control.healthy = false;
+            await reconcileInstallIntent(fixture.intent.intentId);
+            control.healthy = true;
+            await reconcileInstallIntent(fixture.intent.intentId);
+            expect((await accounts(fixture.installId))[0]?.healthFailures).toBe(0);
+            vi.stubEnv('INSTALL_INTENT_RECONCILER_HEALTH_FAILURE_THRESHOLD', '1');
+            control.healthy = false;
+            await reconcileInstallIntent(fixture.intent.intentId);
+            expect((await accounts(fixture.installId))[0]?.status).toBe('DISABLED');
+            await setInstallIntentReconcilerKillSwitch(true);
+            await fixture.client.installIntent.emergencyRevokeServiceAccount({
+                serviceAccountId: account!.id,
+            });
+            await setInstallIntentReconcilerKillSwitch(false);
+            control.healthy = true;
+            await reconcileInstallIntent(fixture.intent.intentId);
+            expect((await accounts(fixture.installId))[0]).toMatchObject({
+                status: 'DISABLED',
+                disabledCause: 'OPERATOR',
+            });
+        });
+    });
 });
 
 describe('ServiceAccount install aggregate', () => {

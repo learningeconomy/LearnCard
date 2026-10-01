@@ -167,7 +167,7 @@ export const revokeIntentServiceAccounts = async (
              FOREACH (_ IN CASE WHEN sa.status <> 'REVOKED' THEN [1] ELSE [] END |
                SET sa.status = 'REVOKED', sa.revokedAt = $now,
                    sa.credentialGeneration = coalesce(sa.credentialGeneration, 0.0) + 1.0)
-             REMOVE sa.activeInstallId
+             REMOVE sa.activeInstallId, sa.credentialVerifier, sa.credentialExpiresAt
              WITH sa OPTIONAL MATCH (grant:ServiceAccountGrant)
              WHERE grant.serviceAccountId = sa.id OR EXISTS { MATCH (sa)-[:HAS_GRANT]->(grant) }
              DETACH DELETE grant`,
@@ -295,7 +295,7 @@ export const checkIntegrationServiceAccount = async (
         const message = `Drift detected: ServiceAccount invariant violation for ${installId}: ${cause}.`;
         await tx.run(
             `MATCH (sa:ServiceAccount) WHERE sa.id IN $ids AND sa.status <> 'REVOKED'
-        SET sa.status = 'DISABLED'`,
+        SET sa.status = 'DISABLED', sa.disabledCause = 'INVARIANT'`,
             { ids: active.map(row => row.get('sa').properties.id) }
         );
         // Disable and audit are atomic, including missing-principal violations.
