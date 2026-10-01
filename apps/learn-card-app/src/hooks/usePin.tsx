@@ -57,6 +57,14 @@ export const usePin = (onSwitch?: (profile: LCNProfile) => void) => {
         } = options ?? {};
         const parentDid = currentUserStore.get.parentUserDid();
 
+        if (hasParentSwitchedProfiles && !parentDid && !ignorePin) {
+            presentToast(m['family.pinModal.approvalRequiresAdultAccount'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+            return;
+        }
+
         if (hasParentSwitchedProfiles && parentDid) {
             const hasPin = ignorePin ? false : await (await initWallet()).invoke.hasPin(parentDid);
             if (!hasPin) {

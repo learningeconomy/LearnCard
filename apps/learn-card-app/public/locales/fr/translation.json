@@ -3035,7 +3035,8 @@
             "forUser": "pour {{name}}",
             "requiresFiveDigits": "Le code PIN doit comporter 5 chiffres",
             "invalidPin": "Code PIN incorrect. Veuillez réessayer",
-            "approvalRequiresPin": "Un code PIN parental est nécessaire pour cette action. Passez au compte du parent pour en créer un."
+            "approvalRequiresPin": "Un code PIN parental est nécessaire pour cette action. Passez au compte du parent pour en créer un.",
+            "approvalRequiresAdultAccount": "Revenez à un compte adulte avant d'approuver cette action."
         },
         "guardianInvite": {
             "shareTitle": "Invitation de tuteur",

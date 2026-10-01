@@ -70,6 +70,18 @@ describe('usePin parent PIN checks', () => {
         expect(state.modal).not.toHaveBeenCalled();
     });
 
+    it('never verifies an active child PIN when the parent identity is missing', async () => {
+        state.parentDid = '';
+        const onSuccess = vi.fn();
+        const { result } = mount();
+        await act(async () =>
+            result.current.handleVerifyParentPin({ switchToParentAfterPin: false, onSuccess })
+        );
+        expect(state.modal).not.toHaveBeenCalled();
+        expect(onSuccess).not.toHaveBeenCalled();
+        expect(state.switchParent).not.toHaveBeenCalled();
+    });
+
     it('preserves the no-PIN parent-switch fast path and uses stored identity for a mismatched cache', async () => {
         const onSwitch = vi.fn();
         const { result, client } = mount(onSwitch);

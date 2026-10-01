@@ -2772,7 +2772,8 @@
             "forUser": "for {{name}}",
             "requiresFiveDigits": "PIN requires 5 digits",
             "invalidPin": "Invalid PIN. Please try again",
-            "approvalRequiresPin": "A parent PIN is needed for this action. Switch to the parent account to set one up."
+            "approvalRequiresPin": "A parent PIN is needed for this action. Switch to the parent account to set one up.",
+            "approvalRequiresAdultAccount": "Switch back to an adult account before approving this action."
         },
         "guardianInvite": {
             "shareTitle": "Guardian Invite",
