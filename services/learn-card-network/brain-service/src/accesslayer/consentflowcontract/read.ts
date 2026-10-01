@@ -49,16 +49,47 @@ const requestFields = (properties: ContractRequestFields): ContractRequestFields
     ...(properties.message ? { message: properties.message } : {}),
 });
 
-export const getRequestedForList = async (id: string) => {
-    const result = await new QueryBuilder()
+/** Referral management is distinct from permission to receive consented data. */
+export const getContractRequestAccess = async (
+    contractId: string,
+    profileId: string
+): Promise<{ isOwner: boolean; isManager: boolean; isRecipient: boolean }> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (contract:ConsentFlowContract {id:$contractId})
+         RETURN EXISTS {
+             MATCH (contract)-[:CREATED_BY]->(:Profile {profileId:$profileId})
+         } AS isOwner, EXISTS {
+             MATCH (contract)-[:CREATED_BY|CAN_WRITE]->(:Profile {profileId:$profileId})
+         } AS isManager, EXISTS {
+             MATCH (contract)-[:CREATED_BY|SHARES_DATA_WITH]->(:Profile {profileId:$profileId})
+         } AS isRecipient`,
+        { contractId, profileId }
+    );
+    const access = result.records[0];
+    return {
+        isOwner: access?.get('isOwner') === true,
+        isManager: access?.get('isManager') === true,
+        isRecipient: access?.get('isRecipient') === true,
+    };
+};
+
+const requestManagerWhere = `EXISTS {
+    MATCH (c)-[:CREATED_BY|CAN_WRITE]->(:Profile {profileId:$viewerProfileId})
+}`;
+const requestingRecipientWhere = `r.requestedBy = $viewerProfileId AND EXISTS {
+    MATCH (c)-[:SHARES_DATA_WITH]->(:Profile {profileId:$viewerProfileId})
+}`;
+
+export const getRequestedForList = async (id: string, viewerProfileId: string) => {
+    const query = new QueryBuilder(new BindParam({ viewerProfileId }))
         .match({
             model: ConsentFlowContract,
             identifier: 'c',
             where: { id },
         })
         .match('(c)-[r:REQUESTED_FOR]->(p:Profile)')
-        .return(['p', 'r'])
-        .run();
+        .where(`${requestManagerWhere} OR (${requestingRecipientWhere})`);
+    const result = await query.return(['p', 'r']).run();
 
     return result.records.map(rec => {
         const { p, r } = rec.toObject();
@@ -152,17 +183,23 @@ export const getRequestedForByStatus = async (
     });
 };
 
-export const getRequestedForForUser = async (contractId: string, requesterProfileId: string) => {
-    const result = await new QueryBuilder(new BindParam({ requesterProfileId }))
+export const getRequestedForForUser = async (
+    contractId: string,
+    requesterProfileId: string,
+    viewerProfileId: string
+) => {
+    const query = new QueryBuilder(new BindParam({ requesterProfileId, viewerProfileId }))
         .match({
             model: ConsentFlowContract,
             identifier: 'c',
             where: { id: contractId },
         })
         .match('(c)-[r:REQUESTED_FOR]->(p:Profile)')
-        .where('p.profileId = $requesterProfileId')
-        .return(['p', 'r'])
-        .run();
+        .where(
+            `p.profileId = $requesterProfileId AND
+             (p.profileId = $viewerProfileId OR ${requestManagerWhere} OR (${requestingRecipientWhere}))`
+        );
+    const result = await query.return(['p', 'r']).run();
 
     return result.records.map(rec => {
         const { p, r } = rec.toObject();

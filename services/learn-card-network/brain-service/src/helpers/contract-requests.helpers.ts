@@ -2,7 +2,11 @@ import { randomUUID } from 'node:crypto';
 import { BindParam, QueryBuilder } from 'neogma';
 import { TRPCError } from '@trpc/server';
 import type { SendContractRequest } from '@learncard/types';
-import { getContractByUri, getStoredContractRequest } from '@accesslayer/consentflowcontract/read';
+import {
+    getContractByUri,
+    getContractRequestAccess,
+    getStoredContractRequest,
+} from '@accesslayer/consentflowcontract/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { getWritersForContract } from '@accesslayer/consentflowcontract/relationships/read';
 import {
@@ -41,10 +45,11 @@ export const resolveContractRequest = async (
 export const canManageContractRequests = async (
     contract: DbContractType,
     profileId: string,
-    allowRecipients = true
-): Promise<boolean> =>
-    (await getWritersForContract(contract)).some(profile => profile.profileId === profileId) ||
-    (allowRecipients && (await canReadContractData(contract.id, profileId)));
+    allowRecipients = false
+): Promise<boolean> => {
+    const access = await getContractRequestAccess(contract.id, profileId);
+    return access.isManager || (allowRecipients && access.isRecipient);
+};
 
 /** One request per contract/target in v1. Exact pending retries do not create another event. */
 export const sendGenericContractRequest = async (

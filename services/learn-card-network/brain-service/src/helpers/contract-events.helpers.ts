@@ -12,10 +12,9 @@ import {
     type ConsentFlowWebhookMetadata,
     type LCNNotification,
 } from '@learncard/types';
-import { getContractById } from '@accesslayer/consentflowcontract/read';
+import { getContractById, getContractRequestAccess } from '@accesslayer/consentflowcontract/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { getContractTermsById } from '@accesslayer/consentflowcontract/relationships/read';
-import { canReadContractData } from '@accesslayer/consentflowcontract/relationships/recipients';
 import {
     addNotificationToQueue,
     PermanentNotificationDeliveryError,
@@ -121,25 +120,21 @@ export const appendConsentEvent = (
 export const requestEventCypher = `
     WITH contract, request, target
     MATCH (contract)-[:CREATED_BY]->(owner:Profile)
-    OPTIONAL MATCH (contract)-[:SHARES_DATA_WITH]->(recipient:Profile)
-    WITH contract, request, target, owner, collect(DISTINCT recipient.profileId) AS recipientIds
     MERGE (event:ConsentFlowEvent {id: CASE WHEN $eventKind = 'request_sent' THEN request.requestId ELSE request.requestId + ':' + request.status END})
     ON CREATE SET event += {contractId: contract.id, fromId: $eventFrom,
         ownerId: owner.profileId, domain: $domain, kind: $eventKind, createdAt: $now,
         requestId: request.requestId, requestedBy: request.requestedBy,
         externalReferenceId: request.externalReferenceId, message: request.message, fanoutCreated: false}
-    WITH request, event, owner,
-        [owner.profileId] + [id IN recipientIds WHERE id <> owner.profileId] AS audience, target
-    WITH request, event, owner, audience,
+    WITH request, event, owner, target,
         CASE WHEN coalesce(event.fanoutCreated, false) THEN []
             WHEN $eventKind = 'request_sent' THEN [target.profileId]
-            ELSE audience + CASE WHEN NOT request.requestedBy IN audience THEN [request.requestedBy] ELSE [] END END AS deliveries
+            ELSE [owner.profileId] + CASE WHEN request.requestedBy <> owner.profileId
+                THEN [request.requestedBy] ELSE [] END END AS deliveries
     FOREACH (recipientId IN [id IN deliveries WHERE id IS NOT NULL AND id <> $eventFrom] |
     MERGE (event)-[:HAS_DELIVERY]->(delivery:ConsentFlowEventDelivery {id: event.id + ':' + recipientId})
     ON CREATE SET delivery += {toId: recipientId, state: 'pending', nextAttemptAt: $now,
         role: CASE WHEN $eventKind = 'request_sent' THEN 'target'
-            WHEN recipientId = owner.profileId THEN 'owner'
-            WHEN recipientId IN audience THEN 'recipient' ELSE 'requester' END})
+            WHEN recipientId = owner.profileId THEN 'owner' ELSE 'requester' END})
     SET event.fanoutCreated = true
     RETURN DISTINCT request, event.id AS eventId
 `;
@@ -184,14 +179,26 @@ export const authorizeContractNotification = async (
         );
         return request?.requestId === metadata.requestId && request?.status === 'pending';
     }
-    if (metadata.recipientRole !== 'owner' && metadata.recipientRole !== 'recipient') return true;
-    if (
-        !notification.to.profileId ||
-        !(await canReadContractData(getIdFromUri(metadata.contractUri), notification.to.profileId))
-    )
-        return false;
-    if (metadata.event === 'consent_withdrawn' || metadata.event.startsWith('request_'))
-        return true;
+    const toProfileId = notification.to.profileId;
+    if (!toProfileId) return false;
+    const access = await getContractRequestAccess(getIdFromUri(metadata.contractUri), toProfileId);
+    const isRequester = toProfileId === metadata.requestedBy;
+    if (metadata.event.startsWith('request_')) {
+        // Apply the narrowed audience to old pending deliveries and already queued messages too.
+        return access.isOwner || isRequester;
+    }
+    if (!access.isManager && !isRequester) {
+        // Consented data is shared with this recipient, but another referrer's CRM ID is not.
+        if (notification.data?.metadata) {
+            delete notification.data.metadata.externalReferenceId;
+            delete notification.data.metadata.message;
+        }
+        if (notification.data?.transaction?.referral)
+            delete notification.data.transaction.referral.externalReferenceId;
+    }
+    if (metadata.recipientRole !== 'owner' && metadata.recipientRole !== 'recipient') return false;
+    if (!access.isRecipient) return false;
+    if (metadata.event === 'consent_withdrawn') return true;
     if (!metadata.termsUri) return false;
     const relationship = await getContractTermsById(getIdFromUri(metadata.termsUri));
     const parsedTerms = DbTermsValidator.safeParse(relationship?.terms);
