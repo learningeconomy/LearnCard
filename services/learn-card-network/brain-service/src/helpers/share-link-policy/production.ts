@@ -2,7 +2,10 @@ import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { isProfileManaged } from '@accesslayer/profile/relationships/read';
 import type { ShareViewEligibilitySource } from '@accesslayer/share-link/types';
 import type { ShareLinkTransaction } from '@accesslayer/share-link/transaction';
-import { transformProfileId } from '@helpers/profile.helpers';
+import {
+    isServiceProfileExemptFromGuardianship,
+    transformProfileId,
+} from '@helpers/profile.helpers';
 
 import { composeShareLinkPolicy } from './resolver';
 import type { ShareLinkOwnerAge, ShareLinkPolicySnapshot, ShareLinkPolicySource } from './types';
@@ -51,7 +54,10 @@ export const ageFromPersistedProfile = (
 export const createProductionShareLinkPolicySource = (): ShareLinkPolicySource => ({
     resolveOwner: async profileId => {
         const profile = await getProfileByProfileId(profileId);
-        const isServiceProfile = profile?.isServiceProfile === true && profile.type !== 'child';
+        const isServiceProfile = isServiceProfileExemptFromGuardianship(
+            profile?.isServiceProfile,
+            profile?.type
+        );
         return {
             age: ageFromPersistedProfile(profile),
             isServiceProfile,
@@ -80,7 +86,10 @@ export const resolveCurrentShareLinkPolicy = async (
     if (!record) return composeShareLinkPolicy('unknown', true);
 
     const profileType = record.get('profileType');
-    const isServiceProfile = record.get('isServiceProfile') === true && profileType !== 'child';
+    const isServiceProfile = isServiceProfileExemptFromGuardianship(
+        record.get('isServiceProfile'),
+        profileType
+    );
     return composeShareLinkPolicy(
         ageFromPersistedProfile({ dob: record.get('dob'), type: profileType }, now),
         isServiceProfile ? false : record.get('isManaged') !== false,

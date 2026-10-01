@@ -78,7 +78,9 @@ export const useSwitchProfile = (options?: { onSwitch?: () => void }) => {
                 currentUserStore.set.parentLDFlags(cloneDeep(flags));
             }
             await switchProfile(account.did);
-            switchedProfileStore.set.profileType(account.isServiceProfile ? 'service' : 'child');
+            switchedProfileStore.set.profileType(
+                account.type === 'child' ? 'child' : account.isServiceProfile ? 'service' : 'child'
+            );
             currentUserStore.set.updateCurrentUserNameAndImage(
                 account.displayName,
                 account.image ?? ''

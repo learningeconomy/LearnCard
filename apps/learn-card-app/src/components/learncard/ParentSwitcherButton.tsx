@@ -42,7 +42,8 @@ const ParentSwitcherButton: React.FC<ParentSwitcherButtonProps> = ({
     if (hasParentSwitchedProfiles) currentUser = currentUserStore.get.parentUser();
 
     const { currentLCNUser } = useGetCurrentLCNUser();
-    const isServiceProfile = currentLCNUser?.isServiceProfile;
+    const isServiceProfile =
+        currentLCNUser?.type === 'child' ? false : currentLCNUser?.isServiceProfile;
 
     const parentUserDid = currentUserStore.get.parentUserDid();
 

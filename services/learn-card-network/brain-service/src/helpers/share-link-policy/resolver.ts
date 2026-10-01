@@ -18,6 +18,7 @@ export const composeShareLinkPolicy = (
     isManaged: boolean,
     isServiceProfile = false
 ): ShareLinkPolicySnapshot => {
+    // Service age exemption does not establish that the owner is an adult.
     const isMinor = isServiceProfile
         ? false
         : age === 'minor'

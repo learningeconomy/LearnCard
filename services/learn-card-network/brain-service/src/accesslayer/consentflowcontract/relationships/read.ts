@@ -1,3 +1,4 @@
+import { isServiceProfileExemptFromGuardianship } from '@helpers/profile.helpers';
 import { QueryBuilder, BindParam } from 'neogma';
 import mapValues from 'lodash/mapValues';
 import {
@@ -570,7 +571,10 @@ export const getConsentedDataBetweenProfiles = async (
     const isManagedProfile = managers.length > 0;
     const requiresManagerApproval =
         isManagedProfile &&
-        (consenterProfile?.isServiceProfile !== true || consenterProfile?.type === 'child');
+        !isServiceProfileExemptFromGuardianship(
+            consenterProfile?.isServiceProfile,
+            consenterProfile?.type
+        );
     const records: ConsentFlowContractDataForDid[] = [];
     const batchSize = Math.max(limit, 50);
     let offset = 0;

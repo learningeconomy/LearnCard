@@ -54,6 +54,11 @@ const child: LCNProfile = {
     image: 'https://example.com/child.png',
     isServiceProfile: false,
 };
+const legacyChild: LCNProfile = {
+    ...child,
+    type: 'child',
+    isServiceProfile: true,
+};
 const parentKey = ['getProfile', '', undefined];
 let client: QueryClient;
 
@@ -118,6 +123,12 @@ describe('account switch identity', () => {
             name: 'Demo',
             profileImage: parent.image,
         });
+    });
+
+    it('keeps explicit legacy child profiles classified as children', async () => {
+        const { result } = await mount();
+        await act(() => result.current.handleSwitchAccount(legacyChild));
+        expect(switchedProfileStore.get.profileType()).toBe('child');
     });
 
     it('never writes the child response into the retained parent query', async () => {

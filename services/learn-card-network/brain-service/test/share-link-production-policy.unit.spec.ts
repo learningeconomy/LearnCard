@@ -4,6 +4,8 @@ vi.mock('@accesslayer/profile/read', () => ({ getProfileByProfileId: vi.fn() }))
 vi.mock('@accesslayer/profile/relationships/read', () => ({ isProfileManaged: vi.fn() }));
 vi.mock('@helpers/profile.helpers', () => ({
     transformProfileId: (id: string) => id.toLowerCase(),
+    isServiceProfileExemptFromGuardianship: (isServiceProfile: unknown, type: unknown) =>
+        isServiceProfile === true && type !== 'child',
 }));
 
 import {
