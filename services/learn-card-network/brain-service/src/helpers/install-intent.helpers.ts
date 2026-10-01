@@ -12,6 +12,7 @@ import {
 } from '@learncard/types';
 import type { AppStoreListingType } from 'types/app-store-listing';
 import type { ListingVersionType } from 'types/listing-version';
+import type { CatalogReadinessGate } from '@learncard/types';
 import { neogma } from '@instance';
 import { getEcosystemById } from '@accesslayer/ecosystem/read';
 import { getEcosystemMembershipRole } from '@accesslayer/ecosystem/membership';
@@ -58,6 +59,7 @@ type BundleManifest = {
         reason: string;
     }>;
     preflight: Array<{ entitlementKey?: string; isolationTier?: string }>;
+    readiness?: CatalogReadinessGate[];
 };
 
 type ApprovalAuthorityChanges = {
@@ -301,6 +303,14 @@ export const expandBundle = (manifest: BundleManifest): BundleExpansion => {
             return effects.join(' · ');
         })
         .filter(effect => effect.length > 0);
+
+    // Use the existing approver-visible, hash-bound field, including its immutable
+    // approval snapshot. Readiness is evidence only; OPEN gates do not deploy code.
+    infrastructureEffects.push(
+        ...(manifest.readiness ?? []).map(
+            gate => `Readiness [${gate.status}] ${gate.name}: ${gate.note}`
+        )
+    );
 
     return {
         members: memberDeclarations,
