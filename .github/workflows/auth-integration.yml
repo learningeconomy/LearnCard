@@ -8,6 +8,7 @@ on:
             - 'apps/learn-card-app/scripts/keycloak-realm-inputs*'
             - 'apps/learn-card-app/scripts/native-auth-audiences*'
             - 'apps/learn-card-app/environments/**'
+            - 'scripts/export-keycloak-realm*'
             - '.github/workflows/auth-integration.yml'
     workflow_dispatch:
 
@@ -64,6 +65,8 @@ jobs:
             - name: Install test browser
               run: |
                   bunx --cwd tests/smoketests playwright install --with-deps chromium
+            - name: Verify realm export normalization
+              run: node --test scripts/export-keycloak-realm.test.mjs
             - name: Start Keycloak
               run: |
                   docker run -d --name keycloak -p 8081:8080 -p 9000:9000 \

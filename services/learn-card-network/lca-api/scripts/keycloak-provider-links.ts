@@ -10,6 +10,7 @@ export interface FirebaseProvider {
 export interface FirebaseUser {
     uid: string;
     disabled: boolean;
+    emailVerified: boolean;
     email?: string;
     providerData: FirebaseProvider[];
 }
@@ -67,20 +68,15 @@ export const linkFirebaseProviders = async ({
     apply,
     admin,
     log,
+    summary = { linked: 0, alreadyLinked: 0, conflicts: 0, noSocialProvider: 0, wouldLink: 0 },
 }: {
     userId?: string;
     providers: FirebaseProvider[];
     apply: boolean;
     admin: Pick<Awaited<ReturnType<typeof createKeycloakAdmin>>, 'links' | 'request'>;
     log: (message: string) => void;
+    summary?: ProviderLinkSummary;
 }): Promise<ProviderLinkSummary> => {
-    const summary: ProviderLinkSummary = {
-        linked: 0,
-        alreadyLinked: 0,
-        conflicts: 0,
-        noSocialProvider: 0,
-        wouldLink: 0,
-    };
     const social = providers.filter(
         provider => provider.providerId === 'google.com' || provider.providerId === 'apple.com'
     );

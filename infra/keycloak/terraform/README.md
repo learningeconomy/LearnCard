@@ -22,6 +22,14 @@ migration. Read the service runbook's staging rotation drill and live private-ac
 gates before deployment, and the realm runbook's local hostname proof. Production
 user cutover remains a separate workstream.
 
+The service root preserves the groundwork review's fail-closed admin-access intent
+without the old public-host CIDR rules: public admin/master paths always return
+403, and the internal admin ALB admits HTTPS only from the realm-runner and
+access-task security groups. `KC_HOSTNAME_ADMIN` is not an access-control mechanism.
+The old `admin_allowed_cidrs` variable and listener-address `moved` blocks do not
+apply to these never-migrated roots. Run `terraform test` in `service/` for the
+mock-provider regression checks; CI runs them without AWS credentials.
+
 ## lca-api wiring
 
 `deploy.yml` passes these from lca-api's GitHub environment (the `lca_api_env` of the
@@ -69,6 +77,13 @@ reviewers and prevent self-approval. Jobs serialize network/service/image operat
 per environment with no cancellation of a running deployment. GitHub concurrency
 can replace older _pending_ jobs; this is not a FIFO release queue. Bootstrap is
 always human-applied. No static AWS credentials, raw plans or plan artifacts are used.
+
+This supersedes the groundwork's optional OIDC migration: `AWS_DEPLOY_ROLE_ARN`
+is required and role-assumption failure never falls back to static keys. Bootstrap
+restricts trust to `sts.amazonaws.com` and the exact protected environment subject.
+Verify the repository's actual subject format before applying trust policies,
+especially if immutable subject claims are enabled. Retire old IAM keys only after
+an authorized administrator confirms no other workflow still uses them.
 
 ### Required GitHub configuration
 

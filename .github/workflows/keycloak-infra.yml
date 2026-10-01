@@ -67,6 +67,10 @@ jobs:
                   terraform init -backend=false
                   terraform validate
                   tflint --init && tflint
+            - name: Test private admin access rules (mock AWS)
+              if: matrix.root == 'infra/keycloak/terraform/service'
+              working-directory: ${{ matrix.root }}
+              run: terraform test
 
     build-image:
         runs-on: ubuntu-latest

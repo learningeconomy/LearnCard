@@ -21,8 +21,12 @@ docker compose -f apps/learn-card-app/compose-local.yaml up -d keycloak
 
 Admin console: <http://localhost:8081/admin>, `admin` / `admin`.
 ScoutPass has the same service in `apps/scouts/compose-local.yaml`; run only one
-local stack at a time. Preview exposes port 8080 internally only, not on the host;
-it does not configure a public Keycloak route.
+local stack at a time. Preview uses `http://keycloak:8080/realms/learncard` as its
+issuer, reachable only on the per-preview Docker network. The API uses that same
+issuer for verification and JWKS discovery, without an override. Preview has no
+host-port binding, public Keycloak route, or browser Keycloak login in this groundwork.
+Browser integration requires an HTTPS proxy route, matching issuer/client settings,
+and preview redirect URIs together; a JWKS override alone does not enable it.
 
 `--import-realm` is bootstrap-only: it skips existing realms. H2 persists in the
 `keycloak-data` named volume, mounted at `/opt/keycloak/data` so a fresh volume
@@ -217,7 +221,7 @@ during a migration window. Output masks emails and never includes shares or toke
 `--link-providers` defaults on for apply and dry-run, including already-mapped users:
 the existing lca-api `GOOGLE_APPLICATION_CREDENTIAL` service-account JSON must allow
 Firebase user reads. UID lookups run in batches of at most 100 with one-second pacing
-and bounded rate-limit backoff; missing/disabled users or mismatched account emails
+and bounded rate-limit backoff; missing/disabled users or unverified/mismatched account emails
 are refused. Firebase `providerData` subjects pre-link `google`/`apple` in Keycloak;
 existing links are never moved. Output counts linked, already linked, conflicts,
 no-social-provider users, and dry-run would-link plans; conflicts exit 1. Use
@@ -298,6 +302,8 @@ Requires Docker Compose and jq. Export requires a stopped server: the script sto
 Keycloak, exports via a one-off container using the same H2 volume, then restarts
 it (also on export failure). It removes generated IDs/timestamps/flows, resets user
 passwords and the two fixture secrets, sorts keys, and replaces the fixture atomically.
+Normalization fails without replacing the fixture if either expected client is
+missing or duplicated, or any other client contains a secret.
 Review the diff before committing: use only synthetic local users, and never export
 a staging/prod realm or real credentials into this directory.
 This normalizer drops authentication flows; restore the checked-in custom social
@@ -310,3 +316,14 @@ The `Auth Integration (Keycloak)` workflow boots this same fixture and runs the
 opt-in `keycloak-verify.integration.spec.ts` suite. Locally, set
 `KEYCLOAK_INTEGRATION=true`, `KEYCLOAK_ISSUERS=http://localhost:8081/realms/learncard`,
 and `KEYCLOAK_AUDIENCES=learncard-app,ci-tests` before running that spec with Vitest.
+
+JWKS resolvers are reused per issuer and resolved endpoint URL; changing an endpoint
+replaces that issuer's resolver. Service environment configuration is parsed at startup,
+so changes to `KEYCLOAK_JWKS_URL_OVERRIDES` still require restarting the process
+(or deploying a new ECS task definition). Updating an ECS task does not mutate the
+environment of already running tasks.
+
+When `KEYCLOAK_ISSUERS` contains an issuer, configure at least one nonblank
+`KEYCLOAK_AUDIENCES` entry. The API validates this at startup and reports the
+missing configuration directly instead of rejecting every token as invalid.
+Leaving the issuer list empty keeps Keycloak verification disabled.
