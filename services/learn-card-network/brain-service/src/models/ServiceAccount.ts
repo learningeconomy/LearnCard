@@ -5,7 +5,14 @@ import { Ecosystem, EcosystemInstance } from './Ecosystem';
 import { ServiceAccountGrant, ServiceAccountGrantInstance } from './ServiceAccountGrant';
 
 // Neo4j has no partial uniqueness constraints. Only non-revoked accounts hold this key.
-export type StoredServiceAccount = Account & { activeInstallId?: string };
+export type StoredServiceAccount = Account & {
+    activeInstallId?: string;
+    credentialVerifier?: string;
+    credentialExpiresAt?: string;
+    disabledCause?: string;
+    enableCause?: string;
+    healthFailures?: number;
+};
 export type ServiceAccountRelationships = {
     actsFor: ModelRelatedNodesI<typeof Ecosystem, EcosystemInstance>;
     hasGrant: ModelRelatedNodesI<typeof ServiceAccountGrant, ServiceAccountGrantInstance>;
@@ -25,6 +32,11 @@ export const ServiceAccount = ModelFactory<StoredServiceAccount, ServiceAccountR
             ecosystemId: { type: 'string', required: true },
             status: { type: 'string', enum: ServiceAccountStatusEnum.options, required: true },
             credentialGeneration: { type: 'number', required: true },
+            credentialVerifier: { type: 'string', required: false },
+            credentialExpiresAt: { type: 'string', required: false },
+            disabledCause: { type: 'string', required: false },
+            enableCause: { type: 'string', required: false },
+            healthFailures: { type: 'number', required: false },
             createdAt: { type: 'string', required: true },
             revokedAt: { type: 'string', required: false },
         },

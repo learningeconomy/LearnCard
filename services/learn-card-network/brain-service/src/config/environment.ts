@@ -110,6 +110,8 @@ export const brainServiceEnvironmentShape = {
     INSTALL_INTENT_RECONCILER_TENANT_CONCURRENCY: optionalEnvironmentString,
     INSTALL_INTENT_RECONCILER_INTERVAL_MS: optionalEnvironmentString,
     INSTALL_INTENT_RECONCILER_HEALTH_INTERVAL_MS: optionalEnvironmentString,
+    SERVICE_ACCOUNT_CREDENTIAL_DAYS: optionalEnvironmentString,
+    INSTALL_INTENT_RECONCILER_HEALTH_FAILURE_THRESHOLD: optionalEnvironmentString,
 } satisfies z.ZodRawShape;
 
 export const brainServiceEnvironmentSchema = z
@@ -261,6 +263,8 @@ const installIntentReconcilerRuntimeEnvironmentSchema = z
         INSTALL_INTENT_RECONCILER_TENANT_CONCURRENCY: true,
         INSTALL_INTENT_RECONCILER_INTERVAL_MS: true,
         INSTALL_INTENT_RECONCILER_HEALTH_INTERVAL_MS: true,
+        SERVICE_ACCOUNT_CREDENTIAL_DAYS: true,
+        INSTALL_INTENT_RECONCILER_HEALTH_FAILURE_THRESHOLD: true,
     });
 
 export type InstallIntentReconcilerRuntimeEnvironment = z.output<
