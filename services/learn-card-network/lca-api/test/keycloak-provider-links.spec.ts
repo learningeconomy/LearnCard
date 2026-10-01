@@ -177,6 +177,7 @@ describe('Firebase discovery', (): void => {
                 users: identifiers.map(({ uid }) => ({
                     uid,
                     disabled: false,
+                    emailVerified: true,
                     providerData: providers,
                 })),
             }));

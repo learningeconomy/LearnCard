@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
     findOne: vi.fn(),
     updateOne: vi.fn(),
     createSubject: vi.fn(),
+    closeCursor: vi.fn(),
 }));
 vi.mock('../src/mongo', () => ({ client: { close: vi.fn() } }));
 vi.mock('../src/models/UserKey', () => ({ getUserKeysCollection: () => mocks }));
@@ -16,11 +17,12 @@ vi.mock('../src/models/AuthSubject', () => ({
     getAuthSubjectsCollection: () => ({ findOne: mocks.findSubject }),
     getOrCreateAuthSubject: mocks.createSubject,
 }));
-vi.mock('../scripts/keycloak-admin', () => ({
+vi.mock('../scripts/keycloak-admin', async importOriginal => ({
+    ...(await importOriginal<typeof import('../scripts/keycloak-admin')>()),
     createKeycloakAdmin: async () => ({ findUsers: mocks.findUsers }),
 }));
 import { provisionKeycloakUsers } from '../scripts/provision-keycloak-users';
-import type { createKeycloakAdmin } from '../scripts/keycloak-admin';
+import { KeycloakAdminError, type createKeycloakAdmin } from '../scripts/keycloak-admin';
 import type { FirebaseReader } from '../scripts/keycloak-provider-links';
 
 afterEach((): void => {
@@ -48,6 +50,7 @@ const setupUser = (
             [Symbol.asyncIterator]: (): AsyncIterator<typeof row> => {
                 let done = false;
                 return {
+                    return: mocks.closeCursor.mockResolvedValue({ done: true, value: undefined }),
                     next: async (): Promise<IteratorResult<typeof row>> => {
                         if (done) return { done: true, value: undefined };
                         done = true;
@@ -86,6 +89,7 @@ const setupUser = (
                         uid: 'firebase-uid',
                         email: 'person@example.com',
                         disabled: false,
+                        emailVerified: true,
                         providerData: [
                             { providerId: 'google.com', uid: 'google-sub' },
                             { providerId: 'apple.com', uid: 'apple-sub' },
@@ -98,6 +102,71 @@ const setupUser = (
 };
 
 describe('provisioning social providers', (): void => {
+    it.each([
+        { disabled: true, emailVerified: true, email: 'person@example.com' },
+        { disabled: false, emailVerified: false, email: 'person@example.com' },
+        { disabled: false, emailVerified: true, email: 'other@example.com' },
+    ])('refuses unsafe Firebase ownership: %j', async (attributes): Promise<void> => {
+        const dependencies = setupUser(false);
+        vi.mocked(dependencies.firebase.getUsers).mockResolvedValueOnce({
+            users: [{ uid: 'firebase-uid', providerData: [], ...attributes }],
+        });
+        expect(await provisionKeycloakUsers({ apply: true }, dependencies)).toMatchObject({
+            refused: 1,
+            linked: 0,
+        });
+        expect(dependencies.admin.request).not.toHaveBeenCalled();
+        expect(mocks.createSubject).not.toHaveBeenCalled();
+        expect(mocks.updateOne).not.toHaveBeenCalled();
+    });
+
+    it('closes the cursor when Firebase discovery fails without advancing the checkpoint', async (): Promise<void> => {
+        const dependencies = setupUser(true);
+        vi.mocked(dependencies.firebase.getUsers).mockRejectedValueOnce(
+            new Error('discovery failed')
+        );
+        await expect(provisionKeycloakUsers({ apply: true }, dependencies)).rejects.toThrow(
+            'discovery failed'
+        );
+        expect(mocks.closeCursor).toHaveBeenCalledTimes(1);
+        expect(process.stdout.write).toHaveBeenCalledWith(
+            expect.stringContaining('Last processed id: (none)')
+        );
+    });
+
+    it('reports a successful Google link when Apple fails and closes the cursor', async (): Promise<void> => {
+        const dependencies = setupUser(true);
+        vi.mocked(dependencies.admin.request)
+            .mockResolvedValueOnce(new Response(null, { status: 204 }))
+            .mockRejectedValueOnce(new KeycloakAdminError(503));
+        await expect(provisionKeycloakUsers({ apply: true }, dependencies)).rejects.toThrow('503');
+        expect(mocks.closeCursor).toHaveBeenCalledTimes(1);
+        expect(process.stdout.write).toHaveBeenCalledWith(expect.stringContaining('"linked":1'));
+        expect(process.stdout.write).toHaveBeenCalledWith(
+            expect.stringContaining('Last processed id: (none)')
+        );
+    });
+
+    it('reports conflicts in the provisioning summary and continues to the other provider', async (): Promise<void> => {
+        const dependencies = setupUser(true);
+        vi.mocked(dependencies.admin.request).mockRejectedValueOnce(new KeycloakAdminError(409));
+        expect(await provisionKeycloakUsers({ apply: true }, dependencies)).toMatchObject({
+            conflicts: 1,
+            linked: 1,
+        });
+        expect(mocks.updateOne).not.toHaveBeenCalled();
+    });
+
+    it('dry-runs mapped users without writes', async (): Promise<void> => {
+        const dependencies = setupUser(true);
+        expect(await provisionKeycloakUsers({}, dependencies)).toMatchObject({
+            wouldLink: 2,
+            linked: 0,
+        });
+        expect(dependencies.admin.request).not.toHaveBeenCalled();
+        expect(mocks.updateOne).not.toHaveBeenCalled();
+        expect(mocks.createSubject).not.toHaveBeenCalled();
+    });
     it('pre-links already mapped users without rewriting mappings or subjects', async (): Promise<void> => {
         const dependencies = setupUser(true);
         const result = await provisionKeycloakUsers({ apply: true }, dependencies);
