@@ -62,6 +62,7 @@
         "membersCount": "{{count}} members",
         "socialBoosts": "Social Boosts",
         "newChildOrOrganization": "New Child or Organization",
+        "newOrganization": "New Organization",
         "selectProfileType": "Select a Profile Type",
         "organizationProfile": "Organization Profile",
         "organization": "Organization",

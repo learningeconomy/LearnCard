@@ -79,6 +79,7 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
 
     const { familyCredential } = useGetFamilyCredential();
     const familyName = familyCredential?.boostCredential?.name ?? familyCredential?.name;
+    const canCreateChildAccount = Boolean(familyCredential) && !showServiceProfilesOnly;
 
     const { data: profiles, isLoading } = useGetAvailableProfiles();
 
@@ -253,15 +254,18 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
 
                     {showServiceProfiles && profileIsParent && (
                         <NewProfileButton
-                            onClick={() => {
-                                // if the user hasnt created a family credential bypass the profile selector type
-                                // and go directly to the create organization account step
-                                if (!familyCredential || showServiceProfilesOnly) {
-                                    setActiveStep(SwitcherStepEnum.createOrganizationAccount);
-                                    return;
-                                }
-                                setActiveStep(SwitcherStepEnum.selectProfileType);
-                            }}
+                            label={
+                                canCreateChildAccount
+                                    ? m['arabicFixes.newChildOrOrganization']()
+                                    : m['arabicFixes.newOrganization']()
+                            }
+                            onClick={() =>
+                                setActiveStep(
+                                    canCreateChildAccount
+                                        ? SwitcherStepEnum.selectProfileType
+                                        : SwitcherStepEnum.createOrganizationAccount
+                                )
+                            }
                         />
                     )}
                 </div>
