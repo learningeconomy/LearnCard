@@ -13,6 +13,7 @@ import type { ServiceAccount } from '@learncard/types';
 
 export const INTEGRATION_TOKEN_TYPE = 'educationos-integration+jwt';
 export const INTEGRATION_TOKEN_AUDIENCE = 'educationos-integration';
+export const INTEGRATION_PROBE_TYPE = 'educationos-health+jwt';
 const ISSUER = 'educationos-platform';
 
 // Brain's existing deployment seed is the root; domain separation prevents reuse
@@ -99,6 +100,35 @@ export const signServiceAccountToken = async (account: ServiceAccount): Promise<
         .setSubject(account.id)
         .setIssuedAt()
         .setExpirationTime('5m')
+        .sign(privateKey);
+};
+
+/** Public verification material only; partners pin this through operator onboarding. */
+export const serviceAccountSigningPublicKey = () => {
+    const { publicKey, kid } = signingKey();
+    const jwk = publicKey.export({ format: 'jwk' });
+    return { kty: 'OKP' as const, crv: 'Ed25519' as const, x: jwk.x!, kid, alg: 'EdDSA' as const };
+};
+
+/** A probe is not an integration bearer token; it is bound to the exact endpoint. */
+export const signServiceAccountProbe = async (
+    account: ServiceAccount,
+    url: string,
+    nonce: string
+): Promise<string> => {
+    const { privateKey, kid } = signingKey();
+    return new SignJWT({
+        installId: account.installId,
+        ecosystemId: account.ecosystemId,
+        gen: account.credentialGeneration,
+    })
+        .setProtectedHeader({ alg: 'EdDSA', typ: INTEGRATION_PROBE_TYPE, kid })
+        .setIssuer(ISSUER)
+        .setAudience(url)
+        .setSubject(account.id)
+        .setJti(nonce)
+        .setIssuedAt()
+        .setExpirationTime('30s')
         .sign(privateKey);
 };
 

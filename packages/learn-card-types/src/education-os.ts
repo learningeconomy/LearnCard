@@ -321,6 +321,7 @@ export const IntegrationManifestValidator = z
             'registry-adapter',
             'automation',
         ]),
+        configSchema: z.record(z.string(), z.unknown()).optional(),
         scopes: z.array(IntegrationScopeRequestValidator).default([]),
         consentRequirements: z.array(ConsentTierEnum).default([]),
         capabilities: z.object({
