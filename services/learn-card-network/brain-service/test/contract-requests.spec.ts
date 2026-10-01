@@ -101,6 +101,21 @@ describe('generic contract requests and correlated events', () => {
             await dispatchContractEvents({ eventId: row.get('e').properties.id });
     };
 
+    const useDirectWebhook = (webhookUrl?: string): void => {
+        queue.mockRestore();
+        vi.spyOn(runtime, 'getNotificationRuntimeEnvironment').mockReturnValue({
+            ...runtime.getNotificationRuntimeEnvironment(),
+            NODE_ENV: 'development',
+            IS_OFFLINE: false,
+            NOTIFICATIONS_QUEUE_URL: undefined,
+            IS_E2E_TEST: false,
+            NOTIFICATIONS_SERVICE_WEBHOOK_URL: webhookUrl,
+        });
+        vi.spyOn(learnCardHelpers, 'getDidWebLearnCard').mockResolvedValue({
+            invoke: { getDidAuthVp: async () => 'synthetic.auth.jwt' },
+        } as unknown as Awaited<ReturnType<typeof learnCardHelpers.getDidWebLearnCard>>);
+    };
+
     it.each(['owner', 'writer', 'recipient'] as const)(
         'allows %s requests without granting writer data access',
         async role => {
@@ -540,6 +555,258 @@ describe('generic contract requests and correlated events', () => {
         const rows = await eventRows(uri);
         expect(rows[0]!.get('deliveries')[0].properties.state).toBe('delivered');
         expect(rows[0]!.get('e').properties.message).toBeUndefined();
+    });
+
+    it.each([
+        { name: 'HTTP 403', webhook: 'https://synthetic.example/events', httpStatus: 403 },
+        { name: 'missing webhook', webhook: undefined, httpStatus: undefined },
+        { name: 'disabled webhook', webhook: 'false', httpStatus: undefined },
+    ])('stops retrying $name and clears the consent payload', async ({ webhook, httpStatus }) => {
+        const uri = await create([]);
+        useDirectWebhook(webhook);
+        const fetchSpy = vi
+            .spyOn(globalThis, 'fetch')
+            .mockResolvedValue(new Response('{}', { status: httpStatus ?? 200 }));
+        await expect(accept(uri)).resolves.toMatchObject({ termsUri: expect.any(String) });
+        const row = (await eventRows(uri))[0]!;
+        const eventId = row.get('e').properties.id;
+        expect(row.get('deliveries')[0].properties).toMatchObject({
+            state: 'rejected',
+            attempts: expect.anything(),
+        });
+        expect(row.get('deliveries')[0].properties.nextAttemptAt).toBeUndefined();
+        expect(row.get('e').properties.payload).toBeUndefined();
+        expect(fetchSpy).toHaveBeenCalledTimes(httpStatus ? 1 : 0);
+        await due(eventId);
+        await dispatchContractEvents({ eventId });
+        expect(fetchSpy).toHaveBeenCalledTimes(httpStatus ? 1 : 0);
+    });
+
+    it.each([408, 425, 429, 503, 200])(
+        'retries HTTP %s with a negative acknowledgement and keeps its stable delivery key',
+        async httpStatus => {
+            const uri = await create([]);
+            useDirectWebhook('https://synthetic.example/events');
+            const fetchSpy = vi
+                .spyOn(globalThis, 'fetch')
+                .mockResolvedValue(new Response('{"success":false}', { status: httpStatus }));
+            await accept(uri);
+            const row = (await eventRows(uri))[0]!;
+            const eventId = row.get('e').properties.id;
+            expect(row.get('deliveries')[0].properties.state).toBe('pending');
+            expect(JSON.parse(row.get('e').properties.payload)).toMatchObject({
+                action: 'consent',
+            });
+            const firstMetadata = JSON.parse(String(fetchSpy.mock.calls[0]![1]?.body)).data
+                .metadata;
+            fetchSpy.mockResolvedValue(new Response('{"success":true}', { status: 200 }));
+            await due(eventId);
+            await dispatchContractEvents({ eventId });
+            const completed = (await eventRows(uri))[0]!;
+            expect(completed.get('deliveries')[0].properties.state).toBe('delivered');
+            expect(completed.get('e').properties.payload).toBeUndefined();
+            expect(JSON.parse(String(fetchSpy.mock.calls[1]![1]?.body)).data.metadata).toEqual(
+                firstMetadata
+            );
+        }
+    );
+
+    it('keeps pre-request signing failures retryable', async () => {
+        const uri = await create([]);
+        useDirectWebhook('https://synthetic.example/events');
+        vi.mocked(learnCardHelpers.getDidWebLearnCard).mockRejectedValue(
+            new Error('synthetic signing outage')
+        );
+        const fetchSpy = vi.spyOn(globalThis, 'fetch');
+        await accept(uri);
+        const row = (await eventRows(uri))[0]!;
+        expect(row.get('deliveries')[0].properties.state).toBe('pending');
+        expect(row.get('e').properties.payload).toBeDefined();
+        expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('backs off unsuccessful deliveries, stops after 12 claims and clears their payload', async () => {
+        const uri = await create([]);
+        queue.mockResolvedValue(false);
+        await accept(uri);
+        const initial = (await eventRows(uri))[0]!.get('e').properties;
+        const eventId = initial.id;
+        await neogma.queryRunner.run(
+            'MATCH (e:ConsentFlowEvent {id:$eventId}) SET e.payload=$payload',
+            {
+                eventId,
+                payload: JSON.stringify({ ...JSON.parse(initial.payload), terms: normalFullTerms }),
+            }
+        );
+        for (let attempt = 1; attempt <= 12; attempt++) {
+            const row = (await eventRows(uri))[0]!;
+            const delivery = row.get('deliveries')[0].properties;
+            expect(Number(delivery.attempts)).toBe(attempt);
+            if (attempt === 12) {
+                expect(delivery).toMatchObject({
+                    state: 'failed',
+                    failureReason: 'retry_exhausted',
+                });
+                expect(row.get('e').properties.payload).toBeUndefined();
+                expect(delivery.nextAttemptAt).toBeUndefined();
+            } else {
+                expect(delivery.state).toBe('pending');
+                expect(row.get('e').properties.payload).toBeDefined();
+                const delay = Date.parse(delivery.nextAttemptAt) - Date.parse(delivery.updatedAt);
+                const expectedDelay = Math.min(60_000 * 2 ** (attempt - 1), 3_600_000);
+                expect(delay).toBeGreaterThanOrEqual(expectedDelay - 1_000);
+                expect(delay).toBeLessThanOrEqual(expectedDelay + 1_000);
+                await due(eventId);
+                await dispatchContractEvents({ eventId });
+            }
+        }
+        expect(queue).toHaveBeenCalledTimes(12);
+        await due(eventId);
+        await dispatchContractEvents({ eventId });
+        expect(queue).toHaveBeenCalledTimes(12);
+    });
+
+    it.each(['expired', 'abandoned final attempt'])(
+        'clears a pending payload after an %s without another external attempt',
+        async scenario => {
+            const uri = await create([]);
+            queue.mockRejectedValue(new Error('synthetic outage'));
+            await accept(uri);
+            const eventId = (await eventRows(uri))[0]!.get('e').properties.id;
+            await neogma.queryRunner.run(
+                `MATCH (e:ConsentFlowEvent {id:$eventId})-[:HAS_DELIVERY]->(d)
+                 SET e.createdAt = $createdAt, d.nextAttemptAt = $future,
+                     d.attempts = $attempts, d.lease = 'abandoned', d.leaseUntil = $past`,
+                {
+                    eventId,
+                    createdAt:
+                        scenario === 'expired'
+                            ? new Date(Date.now() - 25 * 3_600_000).toISOString()
+                            : new Date().toISOString(),
+                    future: '2999-01-01T00:00:00.000Z',
+                    past: '2000-01-01T00:00:00.000Z',
+                    attempts: scenario === 'expired' ? 1 : 12,
+                }
+            );
+            queue.mockClear();
+            expect(await dispatchContractEvents({ eventId })).toMatchObject({ failed: 1 });
+            const row = (await eventRows(uri))[0]!;
+            expect(row.get('deliveries')[0].properties).toMatchObject({
+                state: 'failed',
+                failureReason: scenario === 'expired' ? 'retry_expired' : 'retry_exhausted',
+            });
+            expect(row.get('e').properties.payload).toBeUndefined();
+            expect(queue).not.toHaveBeenCalled();
+        }
+    );
+
+    it('retains the fan-out payload until the last delivery finishes, including concurrent workers', async () => {
+        const uri = await create();
+        queue.mockRejectedValue(new Error('synthetic outage'));
+        await accept(uri);
+        const eventId = (await eventRows(uri))[0]!.get('e').properties.id;
+        queue.mockImplementation(async notification => {
+            if (notification.to.profileId === owner.profileId)
+                throw new notifications.PermanentNotificationDeliveryError('webhook_rejected', 403);
+            throw new Error('synthetic outage');
+        });
+        await due(eventId);
+        await dispatchContractEvents({ eventId });
+        const partial = (await eventRows(uri))[0]!;
+        expect(
+            partial
+                .get('deliveries')
+                .map((d: { properties: { state: string } }) => d.properties.state)
+                .sort()
+        ).toEqual(['pending', 'pending', 'rejected']);
+        expect(partial.get('e').properties.payload).toBeDefined();
+        queue.mockImplementation(async () => {
+            await new Promise(resolve => setTimeout(resolve, 20));
+            throw new notifications.PermanentNotificationDeliveryError('webhook_rejected', 403);
+        });
+        await due(eventId);
+        await Promise.all([
+            dispatchContractEvents({ eventId }),
+            dispatchContractEvents({ eventId }),
+        ]);
+        const completed = (await eventRows(uri))[0]!;
+        expect(
+            completed
+                .get('deliveries')
+                .every((d: { properties: { state: string } }) => d.properties.state === 'rejected')
+        ).toBe(true);
+        expect(completed.get('e').properties.payload).toBeUndefined();
+    });
+
+    it('fences a worker whose lease was replaced while sending', async () => {
+        const uri = await create([]);
+        queue.mockRejectedValue(new Error('synthetic outage'));
+        await accept(uri);
+        const eventId = (await eventRows(uri))[0]!.get('e').properties.id;
+        queue.mockImplementation(async () => {
+            await neogma.queryRunner.run(
+                `MATCH (:ConsentFlowEvent {id:$eventId})-[:HAS_DELIVERY]->(d)
+                 SET d.lease='replacement', d.leaseUntil='2999-01-01T00:00:00.000Z'`,
+                { eventId }
+            );
+            return undefined;
+        });
+        await due(eventId);
+        await dispatchContractEvents({ eventId });
+        const retained = (await eventRows(uri))[0]!;
+        expect(retained.get('deliveries')[0].properties).toMatchObject({
+            state: 'pending',
+            lease: 'replacement',
+        });
+        expect(retained.get('e').properties.payload).toBeDefined();
+        queue.mockResolvedValue(undefined);
+        await neogma.queryRunner.run(
+            `MATCH (:ConsentFlowEvent {id:$eventId})-[:HAS_DELIVERY]->(d)
+             SET d.leaseUntil='2000-01-01T00:00:00.000Z'`,
+            { eventId }
+        );
+        await dispatchContractEvents({ eventId });
+        const completed = (await eventRows(uri))[0]!;
+        expect(completed.get('deliveries')[0].properties.state).toBe('delivered');
+        expect(completed.get('e').properties.payload).toBeUndefined();
+    });
+
+    it('recovers payload cleanup when all deliveries already finished or no recipients exist', async () => {
+        const uri = await create([]);
+        queue.mockRejectedValue(new Error('synthetic outage'));
+        await accept(uri);
+        const eventId = (await eventRows(uri))[0]!.get('e').properties.id;
+        await neogma.queryRunner.run(
+            `MATCH (:ConsentFlowEvent {id:$eventId})-[:HAS_DELIVERY]->(d) SET d.state='failed'`,
+            { eventId }
+        );
+        queue.mockClear();
+        await dispatchContractEvents({ eventId });
+        expect((await eventRows(uri))[0]!.get('e').properties.payload).toBeUndefined();
+        await neogma.queryRunner.run(
+            `MATCH (e:ConsentFlowEvent {id:$eventId})-[:HAS_DELIVERY]->(d)
+             DETACH DELETE d SET e.message='Synthetic retained message'`,
+            { eventId }
+        );
+        await dispatchContractEvents({ eventId });
+        expect((await eventRows(uri))[0]!.get('e').properties.message).toBeUndefined();
+        expect(queue).not.toHaveBeenCalled();
+    });
+
+    it('acknowledges permanent queued contract rejection but retries negative storage acknowledgements', async () => {
+        const uri = await create([]);
+        await accept(uri);
+        const queued = structuredClone(delivered[0]!);
+        useDirectWebhook('https://synthetic.example/events');
+        const fetchSpy = vi
+            .spyOn(globalThis, 'fetch')
+            .mockResolvedValue(new Response('{}', { status: 403 }));
+        await expect(deliverQueuedNotification(JSON.stringify(queued))).resolves.toBeUndefined();
+        await expect(notifications.sendNotification(structuredClone(queued))).resolves.toBe(false);
+        fetchSpy.mockResolvedValue(new Response('{"success":false}', { status: 200 }));
+        await expect(deliverQueuedNotification(JSON.stringify(queued))).rejects.toThrow(
+            'Notification was not durably stored'
+        );
     });
 
     it('does not widen a decision fan-out when an exact terminal retry follows a recipient addition', async () => {

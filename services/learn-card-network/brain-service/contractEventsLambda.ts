@@ -1,11 +1,14 @@
 import type { Context } from 'aws-lambda';
-import { dispatchContractEvents } from './src/helpers/contract-events.helpers';
+import {
+    dispatchContractEvents,
+    type ContractEventDispatchSummary,
+} from './src/helpers/contract-events.helpers';
 
 /** Recover committed event intents after process failure; scheduler input cannot alter scope. */
 export const contractEventsHandler = async (
     _event: unknown,
     context?: Pick<Context, 'getRemainingTimeInMillis'>
-): Promise<{ delivered: number; pending: number; skipped: number }> =>
+): Promise<ContractEventDispatchSummary> =>
     dispatchContractEvents({
         limit: 100,
         budgetMs: Math.max(

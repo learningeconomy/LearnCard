@@ -16,7 +16,10 @@ import { getContractById } from '@accesslayer/consentflowcontract/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { getContractTermsById } from '@accesslayer/consentflowcontract/relationships/read';
 import { canReadContractData } from '@accesslayer/consentflowcontract/relationships/recipients';
-import { addNotificationToQueue } from './notifications.helpers';
+import {
+    addNotificationToQueue,
+    PermanentNotificationDeliveryError,
+} from './notifications.helpers';
 import { constructUri, getIdFromUri } from './uri.helpers';
 import { getNotificationMessage, type NotificationMessageKey } from './notificationMessages';
 import { sanitizeProfileForTier, stripSensitiveProfileListFields } from './profile-privacy.helpers';
@@ -25,6 +28,19 @@ import { resolveRecipientLocale } from './getRecipientLocale.helpers';
 
 type EventKind = ConsentFlowWebhookMetadata['event'];
 const defaultDomain = (): string => environment.DOMAIN_NAME ?? 'network.learncard.com';
+
+const MAX_DELIVERY_ATTEMPTS = 12;
+const DELIVERY_RETRY_WINDOW_MS = 24 * 60 * 60_000;
+const INITIAL_RETRY_DELAY_MS = 60_000;
+const MAX_RETRY_DELAY_MS = 60 * 60_000;
+
+export type ContractEventDispatchSummary = {
+    delivered: number;
+    pending: number;
+    skipped: number;
+    rejected: number;
+    failed: number;
+};
 
 /** Persist a notification intent WITH the consent transaction, before any external work. */
 export const appendConsentEvent = (
@@ -312,13 +328,32 @@ export const dispatchContractEvents = async ({
     eventId?: string;
     limit?: number;
     budgetMs?: number;
-} = {}): Promise<{ delivered: number; pending: number; skipped: number }> => {
+} = {}): Promise<ContractEventDispatchSummary> => {
     const deadline = Date.now() + budgetMs;
-    const summary = { delivered: 0, pending: 0, skipped: 0 };
+    const summary = { delivered: 0, pending: 0, skipped: 0, rejected: 0, failed: 0 };
+    const retryCutoff = new Date(Date.now() - DELIVERY_RETRY_WINDOW_MS).toISOString();
+    const batchLimit = int(Math.max(1, Math.min(100, Math.trunc(limit))));
+    // Also recover cleanup after a crash and clear events with no eligible recipients.
+    await neogma.queryRunner.run(
+        `
+        MATCH (event:ConsentFlowEvent)
+        WHERE ($eventId IS NULL OR event.id = $eventId)
+            AND (event.payload IS NOT NULL OR event.message IS NOT NULL)
+            AND NOT EXISTS {
+                MATCH (event)-[:HAS_DELIVERY]->(delivery:ConsentFlowEventDelivery)
+                WHERE delivery.state = 'pending'
+            }
+        WITH event LIMIT $limit
+        SET event.payload = null, event.message = null
+        `,
+        { eventId: eventId ?? null, limit: batchLimit }
+    );
     const rows = await neogma.queryRunner.run(
         `
         MATCH (event:ConsentFlowEvent)-[:HAS_DELIVERY]->(delivery:ConsentFlowEventDelivery)
-        WHERE delivery.state = 'pending' AND delivery.nextAttemptAt <= $now
+        WHERE delivery.state = 'pending'
+            AND (delivery.nextAttemptAt <= $now OR event.createdAt <= $retryCutoff
+                OR coalesce(delivery.attempts, 0) >= $maxAttempts)
             AND (delivery.leaseUntil IS NULL OR delivery.leaseUntil < $now)
             AND ($eventId IS NULL OR event.id = $eventId)
         RETURN event, delivery ORDER BY delivery.nextAttemptAt, delivery.id LIMIT $limit
@@ -326,7 +361,9 @@ export const dispatchContractEvents = async ({
         {
             now: new Date().toISOString(),
             eventId: eventId ?? null,
-            limit: int(Math.max(1, Math.min(100, Math.trunc(limit)))),
+            retryCutoff,
+            maxAttempts: int(MAX_DELIVERY_ATTEMPTS),
+            limit: batchLimit,
         }
     );
     for (const row of rows.records) {
@@ -337,41 +374,81 @@ export const dispatchContractEvents = async ({
         const now = new Date().toISOString();
         const claimed = await neogma.queryRunner.run(
             `
-            MATCH (delivery:ConsentFlowEventDelivery {id: $id})
+            MATCH (event:ConsentFlowEvent)-[:HAS_DELIVERY]->(delivery:ConsentFlowEventDelivery {id: $id})
             SET delivery.lock = coalesce(delivery.lock, 0) + 1
-            WITH delivery WHERE delivery.state = 'pending' AND delivery.nextAttemptAt <= $now
+            WITH event, delivery WHERE delivery.state = 'pending'
+                AND (delivery.nextAttemptAt <= $now OR event.createdAt <= $retryCutoff
+                    OR coalesce(delivery.attempts, 0) >= $maxAttempts)
                 AND (delivery.leaseUntil IS NULL OR delivery.leaseUntil < $now)
-            SET delivery.lease = $lease, delivery.leaseUntil = $leaseUntil
-            RETURN delivery.id
+            WITH delivery, coalesce(delivery.attempts, 0) AS previousAttempts
+            SET delivery.lease = $lease, delivery.leaseUntil = $leaseUntil,
+                delivery.attempts = CASE WHEN previousAttempts < $maxAttempts
+                    THEN previousAttempts + 1 ELSE previousAttempts END
+            RETURN previousAttempts
         `,
-            { id: delivery.id, now, lease, leaseUntil: new Date(Date.now() + 60_000).toISOString() }
+            {
+                id: delivery.id,
+                now,
+                lease,
+                leaseUntil: new Date(Date.now() + 60_000).toISOString(),
+                retryCutoff,
+                maxAttempts: int(MAX_DELIVERY_ATTEMPTS),
+            }
         );
         if (!claimed.records.length) continue;
+        // Count claims, including abandoned leases, so crashes cannot reset the retry budget.
+        const previousAttempts = Number(claimed.records[0]!.get('previousAttempts'));
+        const attempts = Math.min(previousAttempts + 1, MAX_DELIVERY_ATTEMPTS);
         let state = 'pending';
+        let failureReason: string | null = null;
         try {
-            const notification = await buildNotification(event, delivery);
-            if (!notification) {
-                state = 'skipped';
-                summary.skipped++;
+            if (event.createdAt <= retryCutoff || previousAttempts >= MAX_DELIVERY_ATTEMPTS) {
+                state = 'failed';
+                failureReason =
+                    event.createdAt <= retryCutoff ? 'retry_expired' : 'retry_exhausted';
+                summary.failed++;
             } else {
-                const delivered = await addNotificationToQueue(notification, {
-                    propagateDirectWebhookTransportErrors: true,
-                });
-                if (delivered === false) throw new Error('Contract notification was not stored');
-                state = 'delivered';
-                summary.delivered++;
+                const notification = await buildNotification(event, delivery);
+                if (!notification) {
+                    state = 'skipped';
+                    summary.skipped++;
+                } else {
+                    const delivered = await addNotificationToQueue(notification, {
+                        propagateDirectWebhookTransportErrors: true,
+                        throwOnPermanentFailure: true,
+                    });
+                    if (delivered === false)
+                        throw new Error('Contract notification was not stored');
+                    state = 'delivered';
+                    summary.delivered++;
+                }
             }
-        } catch {
-            summary.pending++;
+        } catch (error) {
+            if (error instanceof PermanentNotificationDeliveryError) {
+                state = 'rejected';
+                failureReason = error.reason;
+                summary.rejected++;
+            } else if (attempts >= MAX_DELIVERY_ATTEMPTS) {
+                state = 'failed';
+                failureReason = 'retry_exhausted';
+                summary.failed++;
+            } else {
+                summary.pending++;
+            }
             // Never log request references, profile identifiers, or consent payloads.
-            console.warn('contract_events: delivery_pending');
+            console.warn(`contract_events: delivery_${state}`);
         }
-        // History lives on Terms/Transactions; completed intents retain dedupe IDs only.
+        // Serialize fan-out completion so concurrent last deliveries cannot both miss cleanup.
+        // History lives on Terms/Transactions; finished intents retain IDs and coarse outcomes.
         await neogma.queryRunner.run(
             `
-            MATCH (event:ConsentFlowEvent)-[:HAS_DELIVERY]->(delivery:ConsentFlowEventDelivery {id: $id}) WHERE delivery.lease = $lease
+            MATCH (event:ConsentFlowEvent)-[:HAS_DELIVERY]->(delivery:ConsentFlowEventDelivery {id: $id})
+            SET delivery.lock = coalesce(delivery.lock, 0) + 1
+            WITH event, delivery WHERE delivery.lease = $lease
+            SET event.deliveryLock = coalesce(event.deliveryLock, 0) + 1
+            WITH event, delivery WHERE delivery.lease = $lease
             SET delivery.state = $state, delivery.lease = null, delivery.leaseUntil = null,
-                delivery.attempts = coalesce(delivery.attempts, 0) + 1, delivery.updatedAt = $now,
+                delivery.updatedAt = $now, delivery.failureReason = $failureReason,
                 delivery.nextAttemptAt = $nextAttemptAt
             WITH event
             WHERE NOT EXISTS {
@@ -384,8 +461,21 @@ export const dispatchContractEvents = async ({
                 id: delivery.id,
                 lease,
                 state,
+                failureReason,
                 now: new Date().toISOString(),
-                nextAttemptAt: new Date(Date.now() + 60_000).toISOString(),
+                nextAttemptAt:
+                    state === 'pending'
+                        ? new Date(
+                              Math.min(
+                                  Date.now() +
+                                      Math.min(
+                                          INITIAL_RETRY_DELAY_MS * 2 ** (attempts - 1),
+                                          MAX_RETRY_DELAY_MS
+                                      ),
+                                  Date.parse(event.createdAt) + DELIVERY_RETRY_WINDOW_MS
+                              )
+                          ).toISOString()
+                        : null,
             }
         );
     }
