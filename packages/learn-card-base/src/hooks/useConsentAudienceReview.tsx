@@ -89,7 +89,10 @@ export const useConsentAudienceReview = () => {
     return async (contract: ConsentFlowContractDetails): Promise<void> => {
         if (!(contract.audienceVersion ?? 0) && !contract.recipients?.length) return;
         const accepted = await new Promise<boolean>(resolve => {
+            let settled = false;
             const settle = (value: boolean) => {
+                if (settled) return;
+                settled = true;
                 pending.current.delete(settle);
                 resolve(value);
             };

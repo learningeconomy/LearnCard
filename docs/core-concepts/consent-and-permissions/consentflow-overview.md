@@ -182,7 +182,7 @@ After first consent, the audience can only shrink. `removeContractRecipient(cont
 
 ### Encryption and audience acknowledgement
 
-For consent, term updates, and credential synchronization, fetch current contract details and send the returned `audienceVersion`. The server rejects a missing or outdated acknowledgement once the audience has changed. An unchanged legacy owner-only contract accepts calls without this field.
+For consent, term updates, and credential synchronization, fetch current contract details and send the returned `audienceVersion`. The server rejects a missing or outdated acknowledgement once the audience has changed. An unchanged legacy owner-only contract accepts calls without this field. Audience versions record changes monotonically: adding and then removing a recipient before first consent still requires the current version, even when only the owner remains. Such a contract also requires interactive audience review rather than automatic consent.
 
 Encrypt each shared credential for the full current audience: the owner plus all current recipients. Cache encrypted copies by the complete normalized recipient set. An owner-only copy cannot serve a larger audience; after a removal, new copies must exclude that recipient. The shared LearnCard app helpers perform audience review, encryption, and acknowledgement together. Applications using the SDK directly must implement those steps themselves.
 

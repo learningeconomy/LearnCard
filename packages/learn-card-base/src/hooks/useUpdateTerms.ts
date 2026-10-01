@@ -5,7 +5,11 @@ import { getTermsWithSharedUrisForWallet } from './useSharedUrisInTerms';
 import { loadContractAudience } from './consentAudience';
 import { useConsentAudienceReview } from './useConsentAudienceReview';
 
-export const useUpdateTerms = (termsUri: string, _contractOwnerDid: string) => {
+export const useUpdateTerms = (
+    termsUri: string,
+    _contractOwnerDid: string,
+    contractUri?: string
+) => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
 
@@ -22,19 +26,24 @@ export const useUpdateTerms = (termsUri: string, _contractOwnerDid: string) => {
             const wallet = await initWallet();
 
             const { beforeSubmit, ...submission } = _terms;
-            const records: {
-                records: { uri: string; contract: ConsentFlowContractDetails }[];
-                hasMore: boolean;
-                cursor?: string;
-            } = await wallet.invoke.getConsentedContracts();
-            let record = records.records.find(item => item.uri === termsUri);
-            let page = records;
-            while (!record && page.hasMore) {
-                page = await wallet.invoke.getConsentedContracts({ cursor: page.cursor });
-                record = page.records.find(item => item.uri === termsUri);
+            let resolvedContractUri = contractUri;
+            // Older callers can still discover the contract through their consent records.
+            if (!resolvedContractUri) {
+                const records: {
+                    records: { uri: string; contract: ConsentFlowContractDetails }[];
+                    hasMore: boolean;
+                    cursor?: string;
+                } = await wallet.invoke.getConsentedContracts();
+                let record = records.records.find(item => item.uri === termsUri);
+                let page = records;
+                while (!record && page.hasMore) {
+                    page = await wallet.invoke.getConsentedContracts({ cursor: page.cursor });
+                    record = page.records.find(item => item.uri === termsUri);
+                }
+                if (!record) throw new Error('Could not find sharing settings.');
+                resolvedContractUri = record.contract.uri;
             }
-            if (!record) throw new Error('Could not find sharing settings.');
-            const audience = await loadContractAudience(wallet, record.contract.uri);
+            const audience = await loadContractAudience(wallet, resolvedContractUri);
             await reviewAudience(audience.contract);
             const terms = await getTermsWithSharedUrisForWallet(
                 wallet,

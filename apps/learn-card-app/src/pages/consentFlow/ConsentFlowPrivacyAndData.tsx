@@ -87,7 +87,8 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
     // Direct update mutation when we have the termsUri
     const { mutateAsync: directUpdateTerms, isPending: directUpdatingTerms } = useUpdateTerms(
         propTermsUri ?? '',
-        propOwnerDid ?? contractDetails?.owner?.did ?? ''
+        propOwnerDid ?? contractDetails?.owner?.did ?? '',
+        contractDetails?.uri
     );
 
     const hasDirectUri = !!propTermsUri;

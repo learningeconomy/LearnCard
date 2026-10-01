@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import { getUser } from './helpers/getClient';
 import { normalContract, normalFullTerms } from './helpers/contract';
-import { Profile } from '@models';
+import { Profile, ConsentFlowContract } from '@models';
+import { createConsentFlowContract } from '@accesslayer/consentflowcontract/create';
+import { getIdFromUri } from '@helpers/uri.helpers';
 import {
     getContractTermsByUri,
     getConsentedDataForContract,
@@ -56,6 +58,103 @@ describe('contract data recipients', () => {
         expect(result.recipients?.map(profile => profile.profileId)).toEqual([recipient.profileId]);
         expect(result.audienceVersion).toBe(1);
         expect(result.recipients![0]).not.toHaveProperty('email');
+    });
+
+    it('validates writers and autoboosts before creating any contract or audience', async () => {
+        const name = `atomic-validation-${owner.profileId}`;
+        for (const configuration of [
+            { writers: ['missing-writer'] },
+            {
+                autoboosts: [
+                    {
+                        boostUri: 'lc:boost:localhost:missing-boost',
+                        signingAuthority: { endpoint: 'https://example.com', name: 'missing' },
+                    },
+                ],
+            },
+        ]) {
+            await expect(
+                owner.clients.fullAuth.contracts.createConsentFlowContract({
+                    name,
+                    contract: normalContract,
+                    recipients: [recipient.profileId],
+                    ...configuration,
+                })
+            ).rejects.toThrow();
+            expect(await ConsentFlowContract.findMany({ where: { name } })).toHaveLength(0);
+        }
+    });
+
+    it('creates no partial contract if a referenced recipient disappears before the atomic write', async () => {
+        const name = `atomic-missing-${owner.profileId}`;
+        await expect(
+            createConsentFlowContract({
+                name,
+                contract: normalContract,
+                ownerProfileId: owner.profileId,
+                recipientIds: [recipient.profileId, 'missing-recipient'],
+            })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        expect(await ConsentFlowContract.findMany({ where: { name } })).toHaveLength(0);
+    });
+
+    it('rolls back the contract and all relationships if a later configuration write fails', async () => {
+        const boostUri = await owner.clients.fullAuth.boost.createBoost({
+            credential: testUnsignedBoost,
+        });
+        const name = `atomic-rollback-${owner.profileId}`;
+        await expect(
+            createConsentFlowContract({
+                name,
+                contract: normalContract,
+                ownerProfileId: owner.profileId,
+                recipientIds: [recipient.profileId],
+                writerIds: [outsider.profileId],
+                autoboosts: [
+                    {
+                        id: getIdFromUri(boostUri),
+                        signingAuthorityName: 'synthetic',
+                        // Neo4j rejects map-valued properties after the preceding writes.
+                        signingAuthorityEndpoint: { invalid: true } as unknown as string,
+                    },
+                ],
+            })
+        ).rejects.toThrow();
+        expect(await ConsentFlowContract.findMany({ where: { name } })).toHaveLength(0);
+    });
+
+    it('keeps audience versions monotonic when a recipient is added and removed before consent', async () => {
+        const uri = await create();
+        await owner.clients.fullAuth.contracts.addContractRecipient({
+            contractUri: uri,
+            recipient: recipient.profileId,
+        });
+        await owner.clients.fullAuth.contracts.removeContractRecipient({
+            contractUri: uri,
+            recipient: recipient.profileId,
+        });
+        expect((await details(uri)).recipients).toEqual([]);
+        expect((await details(uri)).audienceVersion).toBe(2);
+        await expect(accept(uri)).rejects.toMatchObject({ code: 'CONFLICT' });
+        await accept(uri, 2);
+    });
+
+    it('includes public recipients in consent listings, including empty legacy audiences', async () => {
+        await Profile.update(
+            { email: 'synthetic-private@example.com' },
+            { where: { profileId: recipient.profileId } }
+        );
+        const uri = await create([recipient.profileId]);
+        await accept(uri, 1);
+        const legacyUri = await create();
+        await accept(legacyUri);
+        const records = (await learner.clients.fullAuth.contracts.getConsentedContracts()).records;
+        const listed = records.find(record => record.contract.uri === uri)!.contract;
+        expect(listed.recipients?.map(profile => profile.profileId)).toEqual([recipient.profileId]);
+        expect(listed.recipients![0]).not.toHaveProperty('email');
+        expect(
+            records.find(record => record.contract.uri === legacyUri)!.contract.recipients
+        ).toEqual([]);
     });
 
     it('rejects missing and stale acknowledgments without recording consent', async () => {

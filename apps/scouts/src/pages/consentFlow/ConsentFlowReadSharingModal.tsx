@@ -115,6 +115,8 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
         closeModal();
     };
 
+    // Historical copies identify the original credential for selection only.
+    // Submission materializes it for the current audience before reusing any ciphertext.
     const getAlreadySharedUris = (credential: CredentialRecord<CredentialMetadata>) =>
         Object.values(credential.sharedUris ?? {}).flat();
 

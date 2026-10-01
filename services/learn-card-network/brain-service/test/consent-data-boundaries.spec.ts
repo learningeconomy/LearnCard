@@ -80,6 +80,23 @@ describe('consented data boundaries', () => {
         }
     });
 
+    it.each([
+        [{ name: true }, 1],
+        [{ name: false }, 0],
+        [{ missing: false }, 1],
+        [{ name: true, missing: true }, 0],
+    ] as const)(
+        'filters personal field presence without treating empty strings as absent: %j',
+        async (personal, count) => {
+            const terms = structuredClone(normalFullTerms);
+            terms.read.personal = { ...terms.read.personal, name: '' };
+            const { contractUri } = await consent({ terms });
+            for (const response of await readAll(contractUri, { personal })) {
+                expect(response.records).toHaveLength(count);
+            }
+        }
+    );
+
     it('treats legacy empty expiry strings as no expiry, including category expiry', async () => {
         const terms = structuredClone(normalFullTerms);
         terms.read.credentials.categories.Achievement!.shareUntil = '';

@@ -141,66 +141,71 @@ describe('getOrCreateSharedUriForWallet', () => {
         expect(uploadEncrypted).not.toHaveBeenCalled();
     });
 
-    it('deduplicates shared URIs when replacing terms credential refs', async () => {
-        const credentialUri = 'cred:2';
-        const sharedUri = 'shared:2';
-        const getPage = vi.fn().mockResolvedValue({
-            records: [
-                {
-                    id: 'record-2',
-                    uri: credentialUri,
-                    sharedUris: {
-                        [getConsentAudienceCacheKey(contractOwnerDid)]: [sharedUri],
-                    },
-                },
-            ],
-            hasMore: false,
-        });
-
-        queryClient.setQueryData(['useGetCredentialList', 'did:web:test-user', 'Achievement'], {
-            pages: [
-                {
-                    records: [
-                        {
-                            id: 'record-2',
-                            uri: credentialUri,
-                            sharedUris: {
-                                [getConsentAudienceCacheKey(contractOwnerDid)]: [sharedUri],
-                            },
+    it.each([contractOwnerDid, getConsentAudienceCacheKey(contractOwnerDid)])(
+        'deduplicates and reuses saved terms credential refs with cache key %s',
+        async cacheKey => {
+            const credentialUri = 'cred:2';
+            const sharedUri = 'shared:2';
+            const getPage = vi.fn().mockResolvedValue({
+                records: [
+                    {
+                        id: 'record-2',
+                        uri: credentialUri,
+                        sharedUris: {
+                            [cacheKey]: [sharedUri],
                         },
-                    ],
-                    hasMore: false,
-                },
-            ],
-            pageParams: [undefined],
-        });
+                    },
+                ],
+                hasMore: false,
+            });
 
-        const result = await getTermsWithSharedUrisForWallet(
-            {
-                read: { get: vi.fn() },
-                store: { LearnCloud: { uploadEncrypted: vi.fn() } },
-                index: { LearnCloud: { update: vi.fn(), getPage } },
-            } as unknown as TestWallet,
-            contractOwnerDid,
-            queryClient,
-            {
-                terms: {
-                    read: {
-                        credentials: {
-                            categories: {
-                                Achievement: {
-                                    sharing: true,
-                                    shared: [credentialUri, credentialUri],
+            queryClient.setQueryData(['useGetCredentialList', 'did:web:test-user', 'Achievement'], {
+                pages: [
+                    {
+                        records: [
+                            {
+                                id: 'record-2',
+                                uri: credentialUri,
+                                sharedUris: {
+                                    [cacheKey]: [sharedUri],
+                                },
+                            },
+                        ],
+                        hasMore: false,
+                    },
+                ],
+                pageParams: [undefined],
+            });
+
+            const result = await getTermsWithSharedUrisForWallet(
+                {
+                    read: { get: vi.fn() },
+                    store: { LearnCloud: { uploadEncrypted: vi.fn() } },
+                    index: { LearnCloud: { update: vi.fn(), getPage } },
+                } as unknown as TestWallet,
+                contractOwnerDid,
+                queryClient,
+                {
+                    terms: {
+                        read: {
+                            credentials: {
+                                categories: {
+                                    Achievement: {
+                                        sharing: true,
+                                        shared: [credentialUri, credentialUri],
+                                    },
                                 },
                             },
                         },
                     },
-                },
-            }
-        );
+                }
+            );
 
-        expect(result.terms.read.credentials.categories.Achievement.shared).toEqual([sharedUri]);
-    });
+            expect(result.terms.read.credentials.categories.Achievement.shared).toEqual([
+                sharedUri,
+            ]);
+        }
+    );
 
     const setup = (sharedUris: Record<string, string[]> = {}) => {
         queryClient.setQueryData(['useGetCredentialList', 'did:web:test-user', 'Achievement'], {
@@ -217,6 +222,58 @@ describe('getOrCreateSharedUriForWallet', () => {
             },
         } as any;
     };
+
+    it.each([contractOwnerDid, [contractOwnerDid]])(
+        'reuses legacy owner-keyed copies for the unchanged audience %j',
+        async audience => {
+            const wallet = setup({ [contractOwnerDid]: ['shared:old', 'shared:legacy'] });
+            expect(
+                await getOrCreateSharedUriForWallet(
+                    wallet,
+                    audience,
+                    queryClient,
+                    'shared:legacy',
+                    'Achievement'
+                )
+            ).toBe('shared:legacy');
+            expect(wallet.read.get).not.toHaveBeenCalled();
+            expect(wallet.store.LearnCloud.uploadEncrypted).not.toHaveBeenCalled();
+            expect(wallet.index.LearnCloud.update).not.toHaveBeenCalled();
+        }
+    );
+
+    it('reuses legacy SmartResume copies with the same effective server recipients', async () => {
+        const smartResumeDid = 'did:web:localhost%3A4000:users:smart-resume';
+        const wallet = setup({ [smartResumeDid]: ['shared:smart-resume'] });
+        expect(
+            await getOrCreateSharedUriForWallet(
+                wallet,
+                [smartResumeDid],
+                queryClient,
+                'cred:original',
+                'Achievement'
+            )
+        ).toBe('shared:smart-resume');
+        expect(wallet.store.LearnCloud.uploadEncrypted).not.toHaveBeenCalled();
+    });
+
+    it('does not reuse a legacy copy whose effective audience includes removed SmartResume servers', async () => {
+        const smartResumeDid = 'did:web:localhost%3A4000:users:smart-resume';
+        const wallet = setup({ [smartResumeDid]: ['shared:smart-resume'] });
+        expect(
+            await getOrCreateSharedUriForWallet(
+                wallet,
+                ['did:web:network.learncard.com'],
+                queryClient,
+                'shared:smart-resume',
+                'Achievement'
+            )
+        ).toBe('shared:new');
+        expect(wallet.store.LearnCloud.uploadEncrypted).toHaveBeenCalledWith(
+            { id: 'cred:original' },
+            { recipients: ['did:web:network.learncard.com'] }
+        );
+    });
 
     it('canonicalizes order and duplicates and reuses only the exact audience ciphertext', async () => {
         const audience = [contractOwnerDid, 'did:key:recipient'];
