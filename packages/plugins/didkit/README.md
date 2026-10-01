@@ -159,6 +159,18 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 Please make sure to update tests as appropriate.
 
+### Vendored Rust dependency locks
+
+`wasm/didkit-wasm.Cargo.lock` owns LearnCard's WASM workspace graph independently of
+`lib/didkit/Cargo.lock`. The native addon has its own lock at
+`../didkit-plugin-node/native/Cargo.lock`.
+
+LC-2200 updates DIDKit's required C-header generator to cbindgen 0.29.4 with its
+default CLI features disabled, removing `atty` and `clap 2.x` from the WASM lock.
+The native lock and WASM runtime dependency closure are unchanged. This build-time
+update preserves the committed WASM/glue pair and its content-addressed hosted URL;
+a local rebuild alone does not authorize artifact publication or alert closure.
+
 ## Who is Learning Economy Foundation?
 
 **[Learning Economy Foundation (LEF)](https://www.learningeconomy.io)** is a 501(c)(3) non-profit organization leveraging global standards and web3 protocols to bring quality skills and equal opportunity to every human on earth, and address the persistent inequities that exist around the globe in education and employment. We help you build the future of education and work with:
