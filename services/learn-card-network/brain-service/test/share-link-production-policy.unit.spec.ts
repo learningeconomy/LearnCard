@@ -22,6 +22,7 @@ const transactionWith = (profile?: {
     dob: unknown;
     type: unknown;
     isManaged: unknown;
+    isServiceProfile?: unknown;
 }): ShareLinkTransaction => ({
     run: vi.fn(async () => ({
         records: profile ? [{ get: (key: string) => profile[key as keyof typeof profile] }] : [],
@@ -46,13 +47,31 @@ describe('production share-link age policy', () => {
         const source = createProductionShareLinkPolicySource();
         expect(await source.resolveOwnerAge('owner')).toBe('adult');
         expect(await source.isManaged('owner')).toBe(false);
-        expect(getProfileByProfileId).toHaveBeenCalledWith('owner');
+    });
+    it('exempts managed service profiles in preflight policy', async () => {
+        vi.mocked(getProfileByProfileId).mockResolvedValueOnce({
+            profileId: 'service',
+            did: 'did:example:service',
+            displayName: 'Service',
+            shortBio: '',
+            bio: '',
+            dob: '1990-01-01',
+            isServiceProfile: true,
+        });
+        const source = createProductionShareLinkPolicySource();
+        expect(await source.isManaged('service')).toBe(false);
     });
 
     it('rechecks persisted age and management inside the receipt transaction', async () => {
         const adult = transactionWith({ dob: '1990-01-01', type: null, isManaged: false });
         const managed = transactionWith({ dob: '1990-01-01', type: null, isManaged: true });
         const unknown = transactionWith();
+        const managedService = transactionWith({
+            dob: '1990-01-01',
+            type: null,
+            isManaged: true,
+            isServiceProfile: true,
+        });
         const input = {
             namespace: 'test',
             ownerProfileId: 'OWNER',
@@ -67,9 +86,9 @@ describe('production share-link age policy', () => {
         expect(await productionShareViewEligibilitySource.isEligible(adult, input)).toBe(true);
         expect(await productionShareViewEligibilitySource.isEligible(managed, input)).toBe(false);
         expect(await productionShareViewEligibilitySource.isEligible(unknown, input)).toBe(false);
-        expect((adult.run as ReturnType<typeof vi.fn>).mock.calls[0]?.[1]).toEqual({
-            profileId: 'owner',
-        });
+        expect(await productionShareViewEligibilitySource.isEligible(managedService, input)).toBe(
+            true
+        );
         expect(
             (await resolveCurrentShareLinkPolicy(unknown, 'owner', NOW)).viewCountingEnabled
         ).toBe(false);

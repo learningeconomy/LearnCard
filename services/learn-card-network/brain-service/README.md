@@ -9,16 +9,22 @@ This service exposes the LearnCard Network API and local Neo4j-backed skills flo
 - `termsUri`, `contractUri`, `status` and `terms` identify the current grant and its permissions.
 - `createdAt` is the original grant time when known. `date` is the latest consent update time. No historical timestamp is invented.
 - `contractUpdatedAt` identifies the current contract revision; `contractExpiresAt` and `reasonForAccessing` report existing contract metadata. These fields do not imply acceptance of a new privacy notice.
-- `guardian.required` uses LearnCard's existing manager-based guardian rules, including authorized role-based managers. Persisted guardian approval history keeps this requirement after manager removal.
+- `guardian.required` uses LearnCard's existing manager-based guardian rules for non-service profiles, including authorized role-based managers. A service profile's managers are administrators, not guardians. Explicit approval metadata and persisted guardian approval history still require approval, including after manager removal or a change to service-profile status.
 - `guardian.approved` requires a recorded approval for the current contract revision and a guardian who is still an authorized manager. Approval is server-recorded alongside the exact consent terms and transaction; it is not accepted from client-supplied terms. Raw approval presentations are not retained.
 
-Existing adult grants remain eligible without new guardian or privacy-notice attestations. Existing managed-profile grants without recorded approval return `required: true, approved: false` and need a guardian-confirmed consent update. Consumers must enforce that distinction before AI processing; receipt metadata alone is not an authorization check.
+Existing adult and managed service-profile grants remain eligible without new guardian or privacy-notice attestations unless they have guardian approval history. Existing managed non-service-profile grants without recorded approval return `required: true, approved: false` and need a guardian-confirmed consent update. Consumers must enforce that distinction before AI processing; receipt metadata alone is not an authorization check.
 
 Removing all managers is not an adulthood transition. Guardian approval history survives withdrawal, so withdrawing and consenting again does **not** remove the requirement. Recovery first requires current manager authority: the existing verified-contact / `inbox.claimPendingGuardianLinks` flow can relink a guardian only when their verified email matches an eligible guardian-approved inbox credential for that child. Without that evidence, account/guardian-link recovery is a prerequisite; there is no generic self-service existing-child manager restoration or adult-conversion endpoint here. After authority is restored, obtain fresh approval to update live terms or reconsent withdrawn terms.
 
 Guardian presentations retain a maximum five-minute signed lifetime. The backend permits up to 60 seconds of issuance clock skew, but never accepts a presentation whose signed expiry has passed. The client aligns its cache to the signed expiry and stops reusing it 60 seconds early; final submission rechecks approval after credential preparation. Verification still requires a valid JWS, no verification errors, matching signer/holder/claimed identity, child identity, and current manager authority. Nonfatal verifier warnings do not independently reject a valid approval; diagnostic logs contain fixed reason categories, not presentations or identities. This is LearnCard's existing guardian policy, not a new legal-guardianship determination.
 
 Deploy this producer before an AI Passport consumer that requires the new guardian metadata.
+
+## Managed service profiles and children
+
+`createManagedProfile` supports service profiles for developer/org onboarding and admin tools. It rejects `isServiceProfile: true` when the authenticated manager has a persisted parent Boost with category `Family`, or the requested profile has type `child`. Family child creation cannot use that flag to bypass guardian checks; other managed org creation remains supported.
+
+Share-link policy ignores manager relationships for service owners in both preflight and the transactional recheck. Existing age rules still apply: an adult birthdate permits normal view counting and default expiry, while missing or malformed birthdates stay restricted. Managed non-service owners remain restricted even with an adult birthdate. This change does not automatically loosen policy snapshots on existing links; an explicit edit rechecks current eligibility.
 
 ## Skill framework seeding
 

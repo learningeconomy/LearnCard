@@ -54,7 +54,11 @@ export const createProductionShareLinkPolicySource = (options?: {
     resolveOwnerAge:
         options?.resolveOwnerAge ??
         (async profileId => ageFromPersistedProfile(await getProfileByProfileId(profileId))),
-    isManaged: isProfileManaged,
+    isManaged: async profileId => {
+        const profile = await getProfileByProfileId(profileId);
+        if (profile?.isServiceProfile === true) return false;
+        return isProfileManaged(profileId);
+    },
 });
 
 /** Read current eligibility within the share lock; no request values or network I/O. */
@@ -68,6 +72,7 @@ export const resolveCurrentShareLinkPolicy = async (
          OPTIONAL MATCH (p)-[:MANAGED_BY]->(directManager:Profile)
          OPTIONAL MATCH (manager:ProfileManager)-[:MANAGES]->(p)
          RETURN p.dob AS dob, p.type AS profileType,
+                p.isServiceProfile AS isServiceProfile,
                 (directManager IS NOT NULL OR manager IS NOT NULL) AS isManaged
          LIMIT 1`,
         { profileId: transformProfileId(ownerProfileId) }
@@ -77,7 +82,7 @@ export const resolveCurrentShareLinkPolicy = async (
 
     return composeShareLinkPolicy(
         ageFromPersistedProfile({ dob: record.get('dob'), type: record.get('profileType') }, now),
-        record.get('isManaged') !== false
+        record.get('isServiceProfile') === true ? false : record.get('isManaged') !== false
     );
 };
 
