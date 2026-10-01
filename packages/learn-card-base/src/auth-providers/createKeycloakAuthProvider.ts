@@ -1,4 +1,10 @@
-import { ErrorResponse, InMemoryWebStorage, User, UserManager, WebStorageStateStore } from 'oidc-client-ts';
+import {
+    ErrorResponse,
+    InMemoryWebStorage,
+    User,
+    UserManager,
+    WebStorageStateStore,
+} from 'oidc-client-ts';
 import type {
     INavigator,
     IWindow,
