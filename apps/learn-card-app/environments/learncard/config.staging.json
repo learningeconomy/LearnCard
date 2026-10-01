@@ -30,7 +30,7 @@
         "keyDerivation": "sss",
         "sss": {
             "serverUrl": "https://staging.api.learncard.app/api",
-            "escrowEnclaveMode": "software",
+            "escrowEnclaveMode": "off",
             "escrowEnclavePublicKeys": [
                 "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEdi2P3bj3ZuaVMRl3CKa78AgtRoIB8NcWX5DX+PmIx7SU6ZJGenmhHiLWzNxgvfAIucQtE4y//dS6W1sgkrJ2Tw=="
             ]

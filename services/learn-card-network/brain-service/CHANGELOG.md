@@ -1,5 +1,43 @@
 # @learncard/network-brain-service
 
+## 3.19.1
+
+### Patch Changes
+
+- [#1607](https://github.com/learningeconomy/LearnCard/pull/1607) [`b184f5552abf37a11468d435e5cea07fc35e1993`](https://github.com/learningeconomy/LearnCard/commit/b184f5552abf37a11468d435e5cea07fc35e1993) Thanks [@goblincore](https://github.com/goblincore)! - Make `acceptPresentation` idempotent so retries of a saved collection do not create duplicate relationships. New or replacement share-link passcodes require at least eight characters; existing shorter passcodes remain valid for recipients. Public share resolution can now return `try_later` when passcode verification is unavailable or throttled.
+
+- [#1624](https://github.com/learningeconomy/LearnCard/pull/1624) [`7e5c2b9ce9fabbd5635cf17a2c6eea5c3ce692fa`](https://github.com/learningeconomy/LearnCard/commit/7e5c2b9ce9fabbd5635cf17a2c6eea5c3ce692fa) Thanks [@Custard7](https://github.com/Custard7)! - fix: Stop treating service profiles as child accounts and fix managed-child claim email template
+
+- [#1529](https://github.com/learningeconomy/LearnCard/pull/1529) [`0e262737aafb8248e88e05039c83a3f30be6750f`](https://github.com/learningeconomy/LearnCard/commit/0e262737aafb8248e88e05039c83a3f30be6750f) Thanks [@Custard7](https://github.com/Custard7)! - SSS prod hardening: confirmed recovery enrollment, lost-login identity rebind, and an isolated email relay.
+
+    - Recovery methods now carry `confirmedAt` and must be proven before they count (email confirmation code, phrase challenge words, backup re-decrypt, passkey round trip). New SSS accounts are `active` immediately; web3auth migrations stay `provisional` until a method is confirmed.
+    - New recovery-session flow lets a user whose sign-in identity is gone recover via a verified personal email and bind a new sign-in.
+    - Email recovery shares are encrypted on the client to an isolated relay's public key; `lca-api` never sees plaintext. Provider tokens move from query strings to the `X-Auth-Token` header.
+    - Sensitive key routes require a single-use DID challenge; key records are keyed by immutable provider ID.
+    - `recovery-key` email template now requires `confirmationCode`.
+    - Auth-share initialization requires the provider uniqueness index before inserting, preventing competing first writes from creating duplicate accounts. Existing records with missing or BSON-null auth material retain atomic update protection.
+    - Automatic stale-key cleanup preserves unresolved pending shares for delayed commits; explicit device forgetting still removes them. Custom SSS storage adapters now implement `deleteDeviceShare(id?)` to remove only the selected share and its version.
+
+- [#1614](https://github.com/learningeconomy/LearnCard/pull/1614) [`ae10525fbd0ef284aabe1b03d12db147a1922f2c`](https://github.com/learningeconomy/LearnCard/commit/ae10525fbd0ef284aabe1b03d12db147a1922f2c) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2191] Replace Demo School with standards-pure sample personas, including plain OBv3 ConsentFlow issuance without proprietary `boostId` fields.
+
+- Updated dependencies [[`4b83aa9ee802f0d7a54adc5f053a7376fa103cdd`](https://github.com/learningeconomy/LearnCard/commit/4b83aa9ee802f0d7a54adc5f053a7376fa103cdd), [`2ebda517e9468476f22d3ae3b4ebddf67e8aca78`](https://github.com/learningeconomy/LearnCard/commit/2ebda517e9468476f22d3ae3b4ebddf67e8aca78), [`0e9dd47f4451d776ad1787d0a35dbd54141b9fe3`](https://github.com/learningeconomy/LearnCard/commit/0e9dd47f4451d776ad1787d0a35dbd54141b9fe3), [`b184f5552abf37a11468d435e5cea07fc35e1993`](https://github.com/learningeconomy/LearnCard/commit/b184f5552abf37a11468d435e5cea07fc35e1993), [`0e262737aafb8248e88e05039c83a3f30be6750f`](https://github.com/learningeconomy/LearnCard/commit/0e262737aafb8248e88e05039c83a3f30be6750f), [`ae10525fbd0ef284aabe1b03d12db147a1922f2c`](https://github.com/learningeconomy/LearnCard/commit/ae10525fbd0ef284aabe1b03d12db147a1922f2c), [`d436c39e00994e6d8c77e7b94985a51fe1f42adb`](https://github.com/learningeconomy/LearnCard/commit/d436c39e00994e6d8c77e7b94985a51fe1f42adb)]:
+    - @learncard/types@5.22.0
+    - @learncard/credential-library@2.0.5
+    - @learncard/email-templates@1.2.0
+    - @learncard/helpers@1.6.1
+    - @learncard/core@9.4.37
+    - @learncard/did-web-plugin@1.1.37
+    - @learncard/didkey-plugin@1.1.37
+    - @learncard/didkit-plugin@1.10.2
+    - @learncard/didkit-plugin-node@0.3.2
+    - @learncard/encryption-plugin@1.1.37
+    - @learncard/learn-card-plugin@1.2.37
+    - @learncard/vc-plugin@1.6.3
+    - @learncard/vc-templates-plugin@1.1.37
+    - @learncard/crypto-plugin@1.1.37
+    - @learncard/dynamic-loader-plugin@1.1.37
+    - @learncard/expiration-plugin@1.2.37
+
 ## 3.19.0
 
 ### Minor Changes
