@@ -568,7 +568,9 @@ export const getConsentedDataBetweenProfiles = async (
         getProfileByProfileId(consenterProfileId),
     ]);
     const isManagedProfile = managers.length > 0;
-    const requiresManagerApproval = isManagedProfile && consenterProfile?.isServiceProfile !== true;
+    const requiresManagerApproval =
+        isManagedProfile &&
+        (consenterProfile?.isServiceProfile !== true || consenterProfile?.type === 'child');
     const records: ConsentFlowContractDataForDid[] = [];
     const batchSize = Math.max(limit, 50);
     let offset = 0;

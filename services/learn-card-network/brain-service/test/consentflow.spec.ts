@@ -982,6 +982,25 @@ describe('Consent Flow Contracts', () => {
             });
         });
 
+        it('keeps guardian approval required for legacy service-flagged children', async () => {
+            await Profile.relateTo({
+                alias: 'managedBy',
+                where: { source: { profileId: 'userb' }, target: { profileId: 'userc' } },
+            });
+            await Profile.update(
+                { type: 'child', isServiceProfile: true },
+                { where: { profileId: 'userb' } }
+            );
+
+            const data = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            expect(data.records[0]?.guardian).toEqual({
+                required: true,
+                approved: false,
+            });
+        });
+
         it('should omit withdrawn consent before returning provider-facing data', async () => {
             const activeData = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
                 did: userBDid,
