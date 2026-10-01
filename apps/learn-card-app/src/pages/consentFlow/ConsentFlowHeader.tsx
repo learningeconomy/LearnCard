@@ -2,8 +2,9 @@ import React from 'react';
 import Plus from 'learn-card-base/svgs/Plus';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import EmptyImage from 'learn-card-base/assets/images/empty-image.png';
-import { ConsentFlowContractDetails } from '@learncard/types';
-import { LaunchPadAppListItem, useCurrentUser, UserProfilePicture } from 'learn-card-base';
+import type { ConsentFlowContractDetails } from '@learncard/types';
+import { useCurrentUser, useGetCurrentLCNUser, UserProfilePicture } from 'learn-card-base';
+import type { LaunchPadAppListItem } from 'learn-card-base';
 
 type ConsentFlowHeaderProps = {
     contractDetails?: ConsentFlowContractDetails;
@@ -20,6 +21,7 @@ const ConsentFlowHeader: React.FC<ConsentFlowHeaderProps> = ({
 }) => {
     const { appIcon } = useTenantBrandingAssets();
     const currentUser = useCurrentUser();
+    const { currentLCNUser } = useGetCurrentLCNUser();
 
     const { name: contractName, image: contractImage } = contractDetails ?? {};
     const { name: appName, img: appImage } = app ?? {};
@@ -63,7 +65,12 @@ const ConsentFlowHeader: React.FC<ConsentFlowHeaderProps> = ({
                                         customContainerClass="w-full h-full text-white font-medium text-2xl"
                                         customImageClass="object-cover h-full w-full"
                                         customSize={120}
-                                        user={currentUser}
+                                        user={{
+                                            displayName:
+                                                currentLCNUser?.displayName || currentUser?.name,
+                                            image:
+                                                currentLCNUser?.image || currentUser?.profileImage,
+                                        }}
                                     />
                                 </div>
                             )}
