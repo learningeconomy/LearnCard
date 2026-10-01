@@ -272,7 +272,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
         newModal(<BoostPreview {...earnedBoostIdCardProps} />);
     };
 
-    const rawDateValue = getIssuanceDate(cred) ?? cred?.validFrom ?? '';
+    const rawDateValue = getIssuanceDate(cred) || '';
     const createdAtDate = new Date(rawDateValue);
     const issueDate = Number.isNaN(createdAtDate.getTime())
         ? rawDateValue

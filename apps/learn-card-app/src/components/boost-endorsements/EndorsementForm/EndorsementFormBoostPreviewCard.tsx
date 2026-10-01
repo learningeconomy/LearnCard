@@ -1,7 +1,7 @@
 import React from 'react';
-import moment from 'moment';
 
 import SlimCaretRight from '../../svgs/SlimCaretRight';
+import { formatCredentialDate } from 'learn-card-base/helpers/credentialHelpers';
 import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';
 import BoostPreview from '../../boost/boostCMS/BoostPreview/BoostPreview';
 import NonBoostPreview from '../../boost/boostCMS/BoostPreview/NonBoostPreview';
@@ -86,8 +86,7 @@ export const EndorsementFormBoostPreviewCard: React.FC<{
 
     const isBoost = credential && isBoostCredential(credential);
 
-    const dateValue = credential?.issuanceDate ?? credential?.validFrom;
-    const issueDate = dateValue ? moment(dateValue).format(dateFormat) : '';
+    const issueDate = formatCredentialDate(credential, dateFormat);
 
     const isAwardDisplay = displayType === 'award';
     const isCertDisplayType = displayType === 'certificate';

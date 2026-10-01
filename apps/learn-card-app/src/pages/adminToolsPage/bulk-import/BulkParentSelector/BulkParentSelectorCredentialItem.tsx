@@ -1,5 +1,5 @@
 import React from 'react';
-import moment from 'moment';
+import { formatCredentialDate } from 'learn-card-base/helpers/credentialHelpers';
 
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import BlueCheckMark from 'apps/learn-card-app/src/components/svgs/BlueCheckMark';
@@ -39,8 +39,7 @@ const BulkParentSelectorCredentialItem: React.FC<BulkParentSelectorCredentialIte
     const { subColor } = boostCategoryMetadata[category];
 
     if (!cred?.name) return <></>;
-    const dateValue = cred?.issuanceDate ?? cred?.validFrom;
-    const issueDate = dateValue ? moment(dateValue).format('MM/DD/YYYY') : '';
+    const issueDate = formatCredentialDate(cred, 'MM/DD/YYYY');
     const isSelected = parentUri === boost?.uri;
 
     return (

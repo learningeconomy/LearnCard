@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import moment from 'moment';
 import { useHistory, useLocation } from 'react-router-dom';
+import { formatCredentialDate } from 'learn-card-base/helpers/credentialHelpers';
 import queryString from 'query-string';
 import { VC, VP } from '@learncard/types';
 import { IonContent, IonPage, useIonModal } from '@ionic/react';
@@ -165,8 +165,7 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
     const issuerName = isLCNetworkUrlIssuer ? data?.displayName : getIssuerNameNonBoost(boostVC);
     const issuerImage = isLCNetworkUrlIssuer ? data?.image : getIssuerImageNonBoost(boostVC);
 
-    const dateValue = boostVC?.issuanceDate ?? boostVC?.validFrom;
-    const issueDate = dateValue ? moment(dateValue).format('MMM DD, YYYY') : '';
+    const issueDate = formatCredentialDate(boostVC, 'MMM DD, YYYY');
 
     if (isLoggedIn) {
         return (

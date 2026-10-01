@@ -1,5 +1,5 @@
 import React from 'react';
-import moment from 'moment';
+import { formatCredentialDate } from 'learn-card-base/helpers/credentialHelpers';
 
 import { VC } from '@learncard/types';
 import InfoIcon from '../../svgs/InfoIcon';
@@ -10,8 +10,7 @@ import { m } from '../../../paraglide/messages.js';
 export const FamilyBoostPreviewBackFace: React.FC<{
     credential: VC;
 }> = ({ credential }) => {
-    const dateValue = credential?.issuanceDate ?? credential?.validFrom;
-    const issueDate = dateValue ? moment(dateValue).format('MMMM DD, YYYY') : '';
+    const issueDate = formatCredentialDate(credential);
 
     return (
         <div className="w-full max-w-[400px] pb-[100px] vc-preview-modal-safe-area">
