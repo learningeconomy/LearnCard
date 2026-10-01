@@ -1,4 +1,5 @@
 import { TRPCError } from '@trpc/server';
+import { neogma } from '@instance';
 
 import { InstallIntentStatusCause, InstallIntentStatusPhase } from '@learncard/types';
 import { InstallIntentRecordType, InstallIntentStatusRecordValidator } from 'types/install-intent';
@@ -61,7 +62,30 @@ export const writeInstallIntentStatus = async (
         updatedAt: new Date().toISOString(),
     };
 
-    await writeInstallIntentNode(updated);
+    // Serialize status CAS with aggregate provisioning/revocation on the same node.
+    // A read followed by an unconditional upsert could overwrite REMOVING/REMOVED.
+    const result = await neogma.queryRunner.run(
+        `MATCH (intent:InstallIntent {intentId: $intentId})
+         SET intent.serviceAccountLock = coalesce(intent.serviceAccountLock, 0) + 1
+         WITH intent WHERE intent.statusRevision = $expectedStatusRevision
+           AND intent.specRevision = $specRevision
+         SET intent.status = $status, intent.statusRevision = $statusRevision, intent.updatedAt = $updatedAt
+         RETURN intent.intentId AS id`,
+        {
+            intentId: input.intentId,
+            expectedStatusRevision: input.expectedStatusRevision,
+            specRevision: existing.specRevision,
+            status: JSON.stringify(status),
+            statusRevision: nextStatusRevision,
+            updatedAt: updated.updatedAt,
+        }
+    );
+    if (result.records.length !== 1) {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'InstallIntent status revision is stale.',
+        });
+    }
 
     return updated;
 };

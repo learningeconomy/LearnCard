@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 import type { BundleManifest } from '@learncard/types';
+import { ServiceAccount, ServiceAccountGrant } from '@models';
+import { neogma } from '@instance';
 
 import { createProfile } from '@accesslayer/profile/create';
 import { createEcosystem } from '@accesslayer/ecosystem/create';
@@ -210,9 +212,62 @@ describe('DCC Tools catalog-only bundle', () => {
         }
     });
 
-    // Exact task-requested TODO wording; WORKPLAN now records the authority design
-    // as decided. READY above proves catalog materialization only, not invariant 1.
-    it.todo(
-        'provisions exactly one ServiceAccount for the registry-adapter install (ADR-007 §3.7.1 #1) — pending owner decision 2'
-    );
+    it('provisions exactly one ServiceAccount for the registry-adapter install (ADR-007 §3.7.1 #1)', async () => {
+        const seeded = await seedDccTools('b'.repeat(64));
+        const id = randomUUID();
+        const profileId = `dcc-sa-${id}`;
+        const did = `did:key:dcc-sa-${id}`;
+        await createProfile({
+            profileId,
+            did,
+            displayName: 'DCC ServiceAccount test',
+        } as Parameters<typeof createProfile>[0]);
+        const ecosystem = await createEcosystem({
+            name: 'DCC ServiceAccount',
+            slug: `dcc-sa-${id}`,
+            ownerProfileId: profileId,
+            parentEcosystemId: null,
+            description: undefined,
+            settings: {},
+            status: 'ACTIVE',
+        });
+        const client = getClient({
+            did,
+            isChallengeValid: true,
+            scope: AUTH_GRANT_FULL_ACCESS_SCOPE,
+        });
+        const planned = await client.installIntent.planInstallIntent({
+            ecosystemId: ecosystem.id,
+            listingId: seeded.registryAdapter.listingId,
+            versionId: seeded.registryAdapter.versionId,
+            requestedConfig: {},
+            proposedBindings: [],
+        });
+        const approved = await client.installIntent.approveInstallIntent({
+            intentId: planned.intentId,
+            planHash: planned.plan.planHash,
+            planRevision: planned.plan.planRevision,
+            consentTiers: [],
+        });
+        expect((await reconcileInstallIntent(approved.intentId)).status?.phase).toBe('READY');
+        const install = (await listInstallTargetsByIntentId(approved.intentId)).find(
+            t => t.targetType === 'INTEGRATION_INSTALL'
+        );
+        if (!install) throw new Error('Missing DCC registry-adapter install');
+        const accounts = await ServiceAccount.findMany({
+            where: { installId: install.id },
+            plain: true,
+        });
+        expect(accounts).toHaveLength(1);
+        expect(accounts[0]).toMatchObject({ status: 'PROVISIONED', ecosystemId: ecosystem.id });
+        expect(
+            await ServiceAccountGrant.findMany({ where: { installId: install.id }, plain: true })
+        ).toHaveLength(0);
+        const edges = await neogma.queryRunner.run(
+            `MATCH (:IntegrationInstall {id: $id})-[:HAS_SERVICE_ACCOUNT]->(sa)-[:ACTS_FOR]->(eco)
+            RETURN eco.id AS ecosystemId`,
+            { id: install.id }
+        );
+        expect(edges.records.map(row => row.get('ecosystemId'))).toEqual([ecosystem.id]);
+    });
 });

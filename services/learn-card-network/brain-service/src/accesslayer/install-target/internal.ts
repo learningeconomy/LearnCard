@@ -1,4 +1,6 @@
 import { TRPCError } from '@trpc/server';
+import { neogma } from '@instance';
+export { provisionIntegrationServiceAccount } from '@accesslayer/service-account/internal';
 
 import {
     AppAvailability,
@@ -127,7 +129,11 @@ export const deleteInstallTargetInternal = async (
 ): Promise<void> => {
     switch (input.targetType) {
         case 'INTEGRATION_INSTALL':
-            await IntegrationInstall.delete({ where: { id: input.id } });
+            await neogma.queryRunner.run(
+                `MATCH ()-[install:INSTALLS {installId: $id}]->() DELETE install`,
+                { id: input.id }
+            );
+            await IntegrationInstall.delete({ detach: true, where: { id: input.id } });
             return;
         case 'APP_AVAILABILITY':
             await AppAvailability.delete({ where: { id: input.id } });
@@ -155,6 +161,20 @@ export const createInstallTargetInternal = async (
     switch (input.targetType) {
         case 'INTEGRATION_INSTALL':
             await IntegrationInstall.createOne(input);
+            // Explicit target restoration may reconnect its existing principal, but
+            // never re-enable it or recreate grants. Health itself never repairs edges.
+            await neogma.queryRunner.run(
+                `MATCH (sa:ServiceAccount {installId: $id}) WHERE sa.status <> 'REVOKED'
+                 WITH collect(sa) AS accounts WHERE size(accounts) = 1
+                 MATCH (target:IntegrationInstall {id: $id})
+                 MATCH (eco:Ecosystem {id: target.ecosystemId}), (listing:AppStoreListing {listing_id: target.listingId})
+                 FOREACH (sa IN accounts |
+                   MERGE (target)-[:HAS_SERVICE_ACCOUNT]->(sa)
+                   MERGE (eco)-[install:INSTALLS {installId: $id}]->(listing)
+                   ON CREATE SET install.serviceAccountId = sa.id, install.listingKind = 'INTEGRATION',
+                     install.status = sa.status, install.installedAt = sa.createdAt)`,
+                { id: input.id }
+            );
             return input;
         case 'APP_AVAILABILITY':
             await AppAvailability.createOne(input);

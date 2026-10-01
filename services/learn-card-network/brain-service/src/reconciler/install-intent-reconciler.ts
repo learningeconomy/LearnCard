@@ -15,7 +15,13 @@ import {
     deleteInstallTargetInternal,
     ensureInstallTargetInternal,
     listInstallTargetsByIntentId,
+    provisionIntegrationServiceAccount,
 } from '@accesslayer/install-target/internal';
+import {
+    checkIntegrationServiceAccount,
+    revokeIntentServiceAccounts,
+} from '@accesslayer/service-account/internal';
+import { ServiceAccountProvisioningError } from '@helpers/service-account.helpers';
 import { listBindingsByEcosystem, readBindingById } from '@accesslayer/binding/read';
 import { createBinding, revokeBinding as revokeBindingRecord } from '@accesslayer/binding/write';
 import type { InstallIntentRecordType } from 'types/install-intent';
@@ -468,6 +474,16 @@ const observeDrift = async (
     const observedTargets = await listInstallTargetsByIntentId(intent.intentId);
     const expectedTargets = expectedTargetDescriptors(intent);
 
+    // Check all integration authorities before any early return or recovery to READY.
+    let authorityDrift: string | undefined;
+    for (const target of expectedTargets.filter(
+        target => target.targetType === 'INTEGRATION_INSTALL'
+    )) {
+        const cause = await checkIntegrationServiceAccount(intent, target.id);
+        authorityDrift ??= cause;
+    }
+    if (authorityDrift) return markDrift(intent, authorityDrift, actor, now);
+
     for (const expectedTarget of expectedTargets) {
         const observedTarget = observedTargets.find(target => target.id === expectedTarget.id);
 
@@ -569,6 +585,23 @@ const runInstallPass = async (
 
     for (const target of expectedTargetDescriptors(current)) {
         await assertKillSwitchNotEnabled(current.ecosystemId);
+        if (target.targetType === 'INTEGRATION_INSTALL') {
+            await provisionIntegrationServiceAccount(
+                {
+                    apiVersion: 'lc.install-target/v1',
+                    id: target.id,
+                    intentId: current.intentId,
+                    ecosystemId: current.ecosystemId,
+                    targetType: 'INTEGRATION_INSTALL',
+                    listingId: target.listingId,
+                    status: 'READY',
+                    createdAt: new Date().toISOString(),
+                },
+                current,
+                target
+            );
+            continue;
+        }
         await ensureInstallTargetInternal({
             apiVersion: 'lc.install-target/v1',
             id: target.id,
@@ -688,12 +721,12 @@ const runRemovePass = async (
 
     await maybeConsumeInjectedFailure(current.intentId, 'remove');
 
+    await revokeIntentServiceAccounts(current);
+    await cascadeIntentBindingRevocations(current);
+
     for (const target of expectedTargetDescriptors(current)) {
-        await assertKillSwitchNotEnabled(current.ecosystemId);
         await deleteInstallTargetInternal({ id: target.id, targetType: target.targetType });
     }
-
-    await cascadeIntentBindingRevocations(current);
 
     return writeStatusWithAudit(
         current,
@@ -781,7 +814,9 @@ export const reconcileInstallIntent = async (
 
                     assertExpectedStatusRevision(current, options.expectedStatusRevision);
 
-                    if (await isKillSwitchEnabled(current.ecosystemId)) {
+                    const removing =
+                        options.operation === 'remove' || current.status?.phase === 'REMOVING';
+                    if (!removing && (await isKillSwitchEnabled(current.ecosystemId))) {
                         maybeMarkStuckMetric(current, options.now ?? new Date());
                         return current;
                     }
@@ -821,20 +856,23 @@ export const reconcileInstallIntent = async (
 
                         if (
                             intent.status.phase === 'SUSPENDED' &&
-                            intent.status.cause === 'POLICY'
+                            intent.status.cause === 'POLICY' &&
+                            !removing
                         ) {
                             return intent;
                         }
 
                         if (
                             intent.status.nextAttemptAt &&
-                            new Date(intent.status.nextAttemptAt) > now
+                            new Date(intent.status.nextAttemptAt) > now &&
+                            options.operation !== 'remove'
                         ) {
                             maybeMarkStuckMetric(intent, now);
                             return intent;
                         }
 
                         try {
+                            if (intent.status.phase === 'REMOVED') return intent;
                             if (
                                 options.operation === 'remove' ||
                                 intent.status.phase === 'REMOVING'
@@ -855,6 +893,30 @@ export const reconcileInstallIntent = async (
                             recordLatency(Date.now() - startedAt);
                             return intent;
                         } catch (error) {
+                            if (error instanceof ServiceAccountProvisioningError) {
+                                const latest = await readInstallIntentById(intentId);
+                                if (!latest) throw error;
+                                // A stale apply must never replace removal progress with FAILED.
+                                if (
+                                    latest.status?.phase !== 'APPLYING' ||
+                                    latest.specRevision !== intent.specRevision ||
+                                    latest.statusRevision > intent.statusRevision + 1
+                                )
+                                    return latest;
+                                return writeStatusWithAudit(
+                                    latest,
+                                    {
+                                        intentId,
+                                        expectedStatusRevision: latest.statusRevision,
+                                        phase: 'FAILED',
+                                        cause: 'AUTH',
+                                        message: error.message,
+                                        observedAt: iso(now),
+                                        retryCount: 0,
+                                    },
+                                    options
+                                );
+                            }
                             if (error instanceof RetryableReconcileError) {
                                 const latest = await readInstallIntentById(intentId);
                                 if (!latest?.status) throw error;
