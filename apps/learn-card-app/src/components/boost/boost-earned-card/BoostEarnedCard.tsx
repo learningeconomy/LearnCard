@@ -440,13 +440,12 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         return <>{renderPreviewTrigger(openPreview)}</>;
     }
 
-    const { createdAt } = getInfoFromCredential(cred, 'MMMM DD, YYYY', {
-        uppercaseDate: false,
-    });
-
-    const createdAtDate = new Date(getIssuanceDate(cred) ?? '');
+    const rawDateValue = getIssuanceDate(cred) ?? '';
+    const createdAtDate = new Date(rawDateValue);
     const issueDate = Number.isNaN(createdAtDate.getTime())
-        ? moment(createdAt).locale(getLocale()).format('MMMM DD YYYY')
+        ? rawDateValue
+            ? moment(rawDateValue).locale(getLocale()).format('MMMM DD YYYY')
+            : ''
         : new Intl.DateTimeFormat(getLocale(), {
               month: 'long',
               day: '2-digit',

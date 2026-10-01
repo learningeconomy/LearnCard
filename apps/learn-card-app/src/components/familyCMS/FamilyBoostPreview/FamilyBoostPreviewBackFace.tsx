@@ -5,16 +5,13 @@ import { VC } from '@learncard/types';
 import InfoIcon from '../../svgs/InfoIcon';
 import Checkmark from '../../svgs/Checkmark';
 
-import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import { m } from '../../../paraglide/messages.js';
 
 export const FamilyBoostPreviewBackFace: React.FC<{
     credential: VC;
 }> = ({ credential }) => {
-    const { createdAt } = getInfoFromCredential(credential, 'MMMM DD, YYYY', {
-        uppercaseDate: false,
-    });
-    const issueDate = moment(createdAt).format('MMMM DD, YYYY');
+    const dateValue = credential?.issuanceDate ?? credential?.validFrom;
+    const issueDate = dateValue ? moment(dateValue).format('MMMM DD, YYYY') : '';
 
     return (
         <div className="w-full max-w-[400px] pb-[100px] vc-preview-modal-safe-area">

@@ -41,10 +41,8 @@ const BulkParentSelectorCredentialItem: React.FC<BulkParentSelectorCredentialIte
     const { subColor } = boostCategoryMetadata[category];
 
     if (!cred?.name) return <></>;
-    const { createdAt } = getInfoFromCredential(cred, 'MMMM DD, YYYY', {
-        uppercaseDate: false,
-    });
-    const issueDate = moment(createdAt).format('MM/DD/YYYY');
+    const dateValue = cred?.issuanceDate ?? cred?.validFrom;
+    const issueDate = dateValue ? moment(dateValue).format('MM/DD/YYYY') : '';
     const isSelected = parentUri === boost?.uri;
 
     return (

@@ -38,10 +38,8 @@ const TroopID: React.FC<TroopIDProps> = ({
     subTextOverride,
     issuedDateOverride,
 }) => {
-    const { createdAt } = getInfoFromCredential(credential, 'MMMM DD, YYYY', {
-        uppercaseDate: false,
-    });
-    const issueDate = moment(createdAt).format('MM/D/YYYY');
+    const dateValue = credential?.issuanceDate ?? credential?.validFrom;
+    const issueDate = dateValue ? moment(dateValue).format('MM/D/YYYY') : '';
 
     // const backgroundStyles = getIdBackgroundStyles(undefined, credential);
     const backgroundStyles = {};

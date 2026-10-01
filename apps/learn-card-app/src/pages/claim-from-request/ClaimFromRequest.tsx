@@ -166,10 +166,8 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
     const issuerName = isLCNetworkUrlIssuer ? data?.displayName : getIssuerNameNonBoost(boostVC);
     const issuerImage = isLCNetworkUrlIssuer ? data?.image : getIssuerImageNonBoost(boostVC);
 
-    const { createdAt } = getInfoFromCredential(boostVC, 'MMMM DD, YYYY', {
-        uppercaseDate: false,
-    });
-    const issueDate = moment(createdAt).format('MMM DD, YYYY');
+    const dateValue = boostVC?.issuanceDate ?? boostVC?.validFrom;
+    const issueDate = dateValue ? moment(dateValue).format('MMM DD, YYYY') : '';
 
     if (isLoggedIn) {
         return (

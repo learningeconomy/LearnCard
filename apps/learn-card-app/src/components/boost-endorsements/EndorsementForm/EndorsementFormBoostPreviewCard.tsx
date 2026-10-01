@@ -47,6 +47,7 @@ export const EndorsementFormBoostPreviewCard: React.FC<{
         mobile: ModalTypes.FullScreen,
         desktop: ModalTypes.FullScreen,
     });
+    /* eslint-disable prefer-const */
     let {
         issuerName,
         issuerProfileImageElement,
@@ -83,14 +84,12 @@ export const EndorsementFormBoostPreviewCard: React.FC<{
 
         loading: vcInfoLoading,
     } = useGetVCInfo(credential, categoryType);
-
-    const { createdAt } = getInfoFromCredential(credential, dateFormat, {
-        uppercaseDate: false,
-    });
+    /* eslint-enable prefer-const */
 
     const isBoost = credential && isBoostCredential(credential);
 
-    const issueDate = moment(createdAt).format(dateFormat);
+    const dateValue = credential?.issuanceDate ?? credential?.validFrom;
+    const issueDate = dateValue ? moment(dateValue).format(dateFormat) : '';
 
     const isAwardDisplay = displayType === 'award';
     const isCertDisplayType = displayType === 'certificate';
