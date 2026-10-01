@@ -1,7 +1,14 @@
-import { ErrorResponse, User, UserManager, WebStorageStateStore } from 'oidc-client-ts';
+import {
+    ErrorResponse,
+    InMemoryWebStorage,
+    User,
+    UserManager,
+    WebStorageStateStore,
+} from 'oidc-client-ts';
 import type { UserManagerSettings } from 'oidc-client-ts';
-import { AuthSessionError } from '@learncard/types';
+import { AuthSessionError, UnsupportedSignInOperationError } from '@learncard/types';
 import type { AuthProvider, AuthUser } from '@learncard/types';
+import { createKeycloakUserStorage } from './keycloakUserStorage';
 
 /**
  * Strip trailing slashes from a URL the host app supplies (config, not user
@@ -50,10 +57,14 @@ export interface KeycloakAuthProviderConfig {
     userStore?: OidcStorage;
     /** Injectable SDK boundary for tests and embedding hosts. */
     userManager?: UserManagerLike;
+    /** Custom stores/managers must implement their own persistence migration. */
+    setSessionPersistence?: (sessionOnly: boolean) => Promise<void>;
 }
 
 export interface KeycloakAuthProvider extends AuthProvider {
     userManager: UserManagerLike;
+    /** true uses sessionStorage, false uses localStorage; await before starting sign-in. */
+    setSessionPersistence(sessionOnly: boolean): Promise<void>;
     handleRedirectCallback(url?: string): Promise<AuthUser | null>;
     /** Callback completion is distinct from user-loaded events raised by token renewal. */
     onRedirectComplete(callback: (result: KeycloakRedirectResult) => void): () => void;
@@ -88,6 +99,21 @@ export const createKeycloakAuthProvider = (
     config: KeycloakAuthProviderConfig
 ): KeycloakAuthProvider => {
     const authority = `${trimTrailingSlashes(config.serverUrl)}/realms/${config.realm}`;
+    const browserStorage =
+        !config.userManager && !config.userStore && typeof window !== 'undefined'
+            ? createKeycloakUserStorage(
+                  authority,
+                  config.clientId,
+                  window.localStorage,
+                  window.sessionStorage
+              )
+            : undefined;
+    const setSessionPersistence =
+        config.setSessionPersistence ??
+        browserStorage?.setSessionPersistence ??
+        (async (): Promise<never> => {
+            throw new UnsupportedSignInOperationError('setSessionPersistence', 'keycloak');
+        });
     const userManager =
         config.userManager ??
         new UserManager(
@@ -105,10 +131,15 @@ export const createKeycloakAuthProvider = (
                 filterProtocolClaims: true,
                 revokeTokensOnSignout: true,
                 stateStore: new WebStorageStateStore({
-                    store: config.stateStore ?? window.localStorage,
+                    // PKCE state stays stable across redirects and persistence changes.
+                    store:
+                        config.stateStore ??
+                        (typeof window !== 'undefined'
+                            ? window.localStorage
+                            : new InMemoryWebStorage()),
                 }),
                 userStore: new WebStorageStateStore({
-                    store: config.userStore ?? window.localStorage,
+                    store: config.userStore ?? browserStorage?.store ?? new InMemoryWebStorage(),
                 }),
             },
             undefined,
@@ -156,6 +187,7 @@ export const createKeycloakAuthProvider = (
 
     return {
         userManager,
+        setSessionPersistence,
         onRedirectComplete: (callback): (() => void) => {
             redirectListeners.add(callback);
             return (): void => {
