@@ -2,4 +2,4 @@
 "@learncard/network-brain-service": patch
 ---
 
-Stop treating managed service profiles as children in consent metadata and share-link policy. Preserve guardian approval history and age protections for personal and child profiles. Keep managed organization creation supported while rejecting service-profile flags on Family and explicitly typed child creation paths.
+fix: [LC-2225] Separate managed organizations from child consent and sharing restrictions. Preserve guardian approval history and explicitly typed children's protections, including legacy records with a service flag. Keep organization creation supported while rejecting service flags on Family and explicitly typed child creation paths.
