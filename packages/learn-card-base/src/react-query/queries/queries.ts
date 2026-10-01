@@ -668,8 +668,8 @@ export const useGetConnectionsRequests = () => {
         queryKey: ['getConnectionRequests', switchedDid ?? ''],
         queryFn: async () => {
             const wallet = await initWallet();
-            const data = await wallet.invoke.getConnectionRequests();
-            return Array.isArray(data) ? data : [];
+            const result = await wallet.invoke.getPaginatedConnectionRequests({ limit: 100 });
+            return Array.isArray(result?.records) ? result.records : [];
         },
     });
 };
