@@ -24,6 +24,10 @@ import { federationRouter, FederationRouter } from '@routes/federation';
 import { ecosystemsRouter, EcosystemsRouter } from '@routes/ecosystems';
 import { groupsRouter, GroupsRouter } from '@routes/groups';
 import { installIntentsRouter, InstallIntentsRouter } from '@routes/install-intents';
+import {
+    integrationServiceRouter,
+    type IntegrationServiceRouter,
+} from '@routes/integration-service';
 import { shareLinksRouter, ShareLinksRouter } from '@routes/share-links';
 import { publicShareLinksRouter, PublicShareLinksRouter } from '@routes/public-share-links';
 
@@ -60,6 +64,7 @@ export const appRouter = t.router<{
     ecosystem: EcosystemsRouter;
     group: GroupsRouter;
     installIntent: InstallIntentsRouter;
+    integrationService: IntegrationServiceRouter;
     shareLinks: ShareLinksRouter;
     publicShareLinks: PublicShareLinksRouter;
     test?: TestRouter;
@@ -89,6 +94,7 @@ export const appRouter = t.router<{
     ecosystem: ecosystemsRouter,
     group: groupsRouter,
     installIntent: installIntentsRouter,
+    integrationService: integrationServiceRouter,
     shareLinks: shareLinksRouter,
     publicShareLinks: publicShareLinksRouter,
     test: environment.IS_E2E_TEST ? testRouter : undefined,

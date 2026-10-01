@@ -13,6 +13,7 @@ export class ServiceAccountProvisioningError extends Error {}
 const SAFE_VERBS = new Set([
     'profile:read',
     'group:sync',
+    'group:read',
     'boost:read',
     'boost:issue',
     'registry:read',
