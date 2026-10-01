@@ -660,6 +660,7 @@ export const useGetPaginatedPendingConnections = (
 
 /**
  * Query: Get connection requests.
+ * Fetches all pages to maintain unbounded behavior of the deprecated getConnectionRequests.
  */
 export const useGetConnectionsRequests = () => {
     const { initWallet } = useWallet();
@@ -668,8 +669,21 @@ export const useGetConnectionsRequests = () => {
         queryKey: ['getConnectionRequests', switchedDid ?? ''],
         queryFn: async () => {
             const wallet = await initWallet();
-            const result = await wallet.invoke.getPaginatedConnectionRequests({ limit: 100 });
-            return Array.isArray(result?.records) ? result.records : [];
+            const allRecords: LCNVisibleProfile[] = [];
+            let cursor: string | undefined;
+
+            do {
+                const result = await wallet.invoke.getPaginatedConnectionRequests({
+                    limit: 100,
+                    cursor,
+                });
+                if (Array.isArray(result?.records)) {
+                    allRecords.push(...result.records);
+                }
+                cursor = result?.cursor;
+            } while (cursor);
+
+            return allRecords;
         },
     });
 };
