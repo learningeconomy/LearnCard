@@ -40,7 +40,7 @@ e2e_timed() {
     return "$exit_code"
 }
 
-e2e_snapshot() {
+e2e_collect_snapshot() {
     local phase="${1:?phase required}"
     local output="$E2E_ARTIFACT_DIR/capacity-$phase.txt"
     {
@@ -59,6 +59,11 @@ e2e_snapshot() {
         echo 'docker_buildx_du:'
         docker buildx du 2>&1 || true
     } > "$output"
+}
+
+e2e_snapshot() {
+    local phase="${1:?phase required}"
+    e2e_timed "diagnostics_${phase}" e2e_collect_snapshot "$phase"
 }
 
 e2e_render_summary() {
