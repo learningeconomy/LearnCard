@@ -273,8 +273,7 @@ jobs:
             - name: Sign manifest (cosign keyless, GitHub OIDC)
               run: |
                   cosign sign-blob --yes \
-                      --output-signature "${GITHUB_WORKSPACE}/manifest.json.sig" \
-                      --output-certificate "${GITHUB_WORKSPACE}/manifest.json.pem" \
+                      --bundle "${GITHUB_WORKSPACE}/manifest.json.sigstore.json" \
                       "${GITHUB_WORKSPACE}/manifest.json"
 
             - name: Upload EIF + measurements + manifest + signature
@@ -287,8 +286,7 @@ jobs:
                       ${{ github.workspace }}/build-a/escrow-enclave.eif
                       ${{ github.workspace }}/escrow-measurements.json
                       ${{ github.workspace }}/manifest.json
-                      ${{ github.workspace }}/manifest.json.sig
-                      ${{ github.workspace }}/manifest.json.pem
+                      ${{ github.workspace }}/manifest.json.sigstore.json
 
     # ---------------------------------------------------------------------
     # On a release tag only: publish the verified measurements into the
