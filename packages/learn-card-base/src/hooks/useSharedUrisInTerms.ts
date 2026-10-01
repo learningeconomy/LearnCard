@@ -137,7 +137,14 @@ const getOrCreateSharedUriFromCategoryRecords = async (
     );
 
     if (mainRecord) {
-        const existingSharedUris = mainRecord.sharedUris?.[audienceKey];
+        // Legacy owner-keyed copies are safe only when their complete effective
+        // audience (including SmartResume servers) matches the current audience.
+        const legacyOwnerKey = Object.keys(mainRecord.sharedUris ?? {}).find(
+            key => !key.startsWith('audience:') && getConsentAudienceCacheKey(key) === audienceKey
+        );
+        const existingSharedUris =
+            mainRecord.sharedUris?.[audienceKey] ??
+            (legacyOwnerKey ? mainRecord.sharedUris?.[legacyOwnerKey] : undefined);
         if (existingSharedUris?.length) {
             return { sharedUri: existingSharedUris.at(-1) ?? false, status: 'reused' };
         }

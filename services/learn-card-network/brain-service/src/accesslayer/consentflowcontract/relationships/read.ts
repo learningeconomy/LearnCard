@@ -279,6 +279,7 @@ export const getConsentedContractsForProfile = async (
         owner: LCNProfile;
         terms: DbTermsType;
         autoBoosts: string[];
+        recipients: ProfileType[];
     }[]
 > => {
     let query = new QueryBuilder(
@@ -313,9 +314,19 @@ export const getConsentedContractsForProfile = async (
         owner: LCNProfile;
         terms: FlatDbTermsType;
         boost: any[];
+        recipients: { properties: ProfileType }[];
     }>(
         await query
-            .return('DISTINCT contract, owner, terms, COLLECT(boost) as boost')
+            .with('contract, owner, terms, COLLECT(boost) as boost')
+            .match({
+                optional: true,
+                related: [
+                    { identifier: 'contract' },
+                    ConsentFlowContract.getRelationshipByAlias('sharesDataWith'),
+                    { identifier: 'recipient', model: Profile },
+                ],
+            })
+            .return('contract, owner, terms, boost, COLLECT(DISTINCT recipient) as recipients')
             .orderBy('terms.updatedAt')
             .limit(limit)
             .run()
@@ -323,6 +334,7 @@ export const getConsentedContractsForProfile = async (
 
     return results.map(result => ({
         ...result,
+        recipients: result.recipients.map(recipient => recipient.properties),
         contract: inflateObject(result.contract),
         terms: inflateObject(result.terms),
         autoBoosts: result.boost.map(boost => getBoostUri(boost.properties.id, domain)),
@@ -480,7 +492,10 @@ const projectConsentedData = (
     personal: term.terms.read.personal ?? {},
 });
 
-/** Bounded batches allow invalid or expired grants to be skipped before page limits. */
+/** Filters reduce candidates in Neo4j; batches then reject invalid/expired grants.
+ * Do not cap scanned candidates: doing so would silently hide valid matches later in a page.
+ * Expiry and negative category filters still require the authoritative JS permission check.
+ */
 const getPermittedContractData = async (
     viewerProfileId: string,
     { query = {}, limit, cursor }: { query?: ConsentFlowDataQuery; limit: number; cursor?: string },
@@ -488,10 +503,22 @@ const getPermittedContractData = async (
 ): Promise<ConsentFlowContractData[]> => {
     const now = Date.now();
     const records: ConsentFlowContractData[] = [];
+    const personalFilters = Object.entries(query.personal ?? {}).map(([name, required]) => ({
+        key: `terms.read.personal.${name}`,
+        required,
+    }));
+    const sharedCategories = Object.entries(query.credentials?.categories ?? {})
+        .filter(([, required]) => required)
+        .map(([name]) => ({
+            sharingKey: `terms.read.credentials.categories.${name}.sharing`,
+            sharedKey: `terms.read.credentials.categories.${name}.shared`,
+        }));
     const batchSize = Math.max(limit, 50);
     let offset = 0;
     while (records.length < limit) {
-        const dbQuery = new QueryBuilder(new BindParam({ cursor }))
+        const dbQuery = new QueryBuilder(
+            new BindParam({ cursor, personalFilters, sharedCategories })
+        )
             .match({
                 related: [
                     { identifier: 'terms', model: ConsentFlowTerms },
@@ -507,7 +534,11 @@ const getPermittedContractData = async (
             })
             .where(
                 "(terms.status = 'live' OR (terms.status = 'stale' AND terms.oneTime = true))" +
-                    (cursor ? ' AND terms.updatedAt < $cursor' : '')
+                    (cursor ? ' AND terms.updatedAt < $cursor' : '') +
+                    ' AND all(filter IN $personalFilters WHERE filter.required = (terms[filter.key] IS NOT NULL))' +
+                    ' AND (size($sharedCategories) = 0 OR coalesce(terms.`terms.read.credentials.sharing`, true) = true)' +
+                    ' AND all(category IN $sharedCategories WHERE terms[category.sharingKey] = true AND' +
+                    " (terms[category.sharedKey] IS NOT NULL OR any(key IN keys(terms) WHERE key STARTS WITH category.sharedKey + '.')))"
             );
         const results = convertQueryResultToPropertiesObjectArray<{
             terms: FlatDbTermsType;

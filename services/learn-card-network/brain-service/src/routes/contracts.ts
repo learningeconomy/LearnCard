@@ -3,7 +3,6 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { t, profileRoute, openRoute, guardianGatedRoute } from '@routes';
-import { ConsentFlowContract } from '@models';
 
 import {
     ConsentFlowContractValidator,
@@ -70,11 +69,7 @@ import {
     upsertRequestedForRelationship,
     withdrawTerms,
 } from '@accesslayer/consentflowcontract/relationships/update';
-import {
-    consentToContract,
-    setAutoBoostForContract,
-    setCreatorForContract,
-} from '@accesslayer/consentflowcontract/relationships/create';
+import { consentToContract } from '@accesslayer/consentflowcontract/relationships/create';
 import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/read';
 import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
 import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
@@ -187,28 +182,13 @@ export const contractsRouter = t.router({
                 });
             }
 
-            // Create ConsentFlow instance
-            const createdContract = await createConsentFlowContract({
-                contract,
-                name,
-                subtitle,
-                description,
-                reasonForAccessing,
-                needsGuardianConsent,
-                redirectUrl,
-                frontDoorBoostUri,
-                image,
-                expiresAt,
-            });
+            const preparedAutoBoosts: {
+                id: string;
+                signingAuthorityEndpoint: string;
+                signingAuthorityName: string;
+            }[] = [];
 
-            // Get profile by profileId
-            await setCreatorForContract(createdContract, ctx.user.profile);
-
-            for (const recipientId of recipientIds) {
-                await addRecipientToContract(createdContract.id, recipientId);
-            }
-
-            // Add specified writers
+            // Validate specified writers before creating the contract.
             if (writers && writers.length > 0) {
                 const writerProfiles = await getProfilesByProfileIds(writers);
 
@@ -221,17 +201,6 @@ export const contractsRouter = t.router({
                         message: `Could not find the following writer profiles: ${missingIds.join(
                             ', '
                         )}`,
-                    });
-                }
-
-                // Create CAN_WRITE relationship for each writer using static relateTo
-                for (const writerProfile of writerProfiles) {
-                    await ConsentFlowContract.relateTo({
-                        alias: 'canWrite',
-                        where: {
-                            source: { id: createdContract.id }, // Specify source contract by id
-                            target: { profileId: writerProfile.profileId }, // Specify target profile by profileId
-                        },
                     });
                 }
             }
@@ -282,14 +251,31 @@ export const contractsRouter = t.router({
                         });
                     }
 
-                    await setAutoBoostForContract(
-                        createdContract,
-                        boost,
-                        normalizedSigningAuthority,
-                        ctx.user.profile.profileId
-                    );
+                    preparedAutoBoosts.push({
+                        id: boost.id,
+                        signingAuthorityEndpoint: normalizedSigningAuthority.endpoint,
+                        signingAuthorityName: normalizedSigningAuthority.name,
+                    });
                 }
             }
+
+            // All validation precedes the single atomic creation statement.
+            const createdContract = await createConsentFlowContract({
+                contract,
+                ownerProfileId: ctx.user.profile.profileId,
+                recipientIds,
+                writerIds: writers,
+                autoboosts: preparedAutoBoosts,
+                name,
+                subtitle,
+                description,
+                reasonForAccessing,
+                needsGuardianConsent,
+                redirectUrl,
+                frontDoorBoostUri,
+                image,
+                expiresAt,
+            });
 
             return constructUri('contract', createdContract.id, ctx.domain);
         }),
@@ -1265,39 +1251,37 @@ export const contractsRouter = t.router({
             return {
                 hasMore,
                 cursor: nextCursor,
-                records: await Promise.all(
-                    contracts.map(async record => ({
-                        contract: {
-                            contract: record.contract.contract,
-                            name: record.contract.name,
-                            subtitle: record.contract.subtitle,
-                            description: record.contract.description,
-                            reasonForAccessing: record.contract.reasonForAccessing,
-                            needsGuardianConsent: record.contract.needsGuardianConsent,
-                            redirectUrl: record.contract.redirectUrl,
-                            frontDoorBoostUri: record.contract.frontDoorBoostUri,
-                            image: record.contract.image,
-                            createdAt: record.contract.createdAt,
-                            updatedAt: record.contract.updatedAt,
-                            uri: constructUri('contract', record.contract.id, ctx.domain),
-                            owner: updateDidForProfile(ctx.domain, record.owner),
-                            ...(record.contract.expiresAt
-                                ? { expiresAt: record.contract.expiresAt }
-                                : {}),
-                            autoBoosts: record.autoBoosts,
-                            audienceVersion: Number(record.contract.audienceVersion ?? 0),
-                            recipients: (await getRecipientsForContract(record.contract.id)).map(
-                                recipient => publicContractRecipient(ctx.domain, recipient)
-                            ),
-                        },
-                        uri: constructUri('terms', record.terms.id, ctx.domain),
-                        terms: record.terms.terms,
-                        ...(record.terms.expiresAt ? { expiresAt: record.terms.expiresAt } : {}),
-                        ...(record.terms.oneTime ? { oneTime: record.terms.oneTime } : {}),
-                        consenter: updateDidForProfile(ctx.domain, profile),
-                        status: record.terms.status,
-                    }))
-                ),
+                records: contracts.map(record => ({
+                    contract: {
+                        contract: record.contract.contract,
+                        name: record.contract.name,
+                        subtitle: record.contract.subtitle,
+                        description: record.contract.description,
+                        reasonForAccessing: record.contract.reasonForAccessing,
+                        needsGuardianConsent: record.contract.needsGuardianConsent,
+                        redirectUrl: record.contract.redirectUrl,
+                        frontDoorBoostUri: record.contract.frontDoorBoostUri,
+                        image: record.contract.image,
+                        createdAt: record.contract.createdAt,
+                        updatedAt: record.contract.updatedAt,
+                        uri: constructUri('contract', record.contract.id, ctx.domain),
+                        owner: updateDidForProfile(ctx.domain, record.owner),
+                        ...(record.contract.expiresAt
+                            ? { expiresAt: record.contract.expiresAt }
+                            : {}),
+                        autoBoosts: record.autoBoosts,
+                        audienceVersion: Number(record.contract.audienceVersion ?? 0),
+                        recipients: record.recipients.map(recipient =>
+                            publicContractRecipient(ctx.domain, recipient)
+                        ),
+                    },
+                    uri: constructUri('terms', record.terms.id, ctx.domain),
+                    terms: record.terms.terms,
+                    ...(record.terms.expiresAt ? { expiresAt: record.terms.expiresAt } : {}),
+                    ...(record.terms.oneTime ? { oneTime: record.terms.oneTime } : {}),
+                    consenter: updateDidForProfile(ctx.domain, profile),
+                    status: record.terms.status,
+                })),
             };
         }),
 

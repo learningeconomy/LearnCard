@@ -10,6 +10,8 @@ export const getContractAudienceDids = (contract: ConsentFlowContractDetails): s
         ]),
     ].sort();
 
+/** Background sync may acknowledge fresh metadata because the server freezes additions
+ * after first consent; subsequent audience changes can only remove recipients. */
 export const loadContractAudience = async (wallet: BespokeLearnCard, contractUri: string) => {
     const contract = await wallet.invoke.getContract(contractUri);
     return {
