@@ -12,6 +12,7 @@ import { getNativeAppleIdToken, getNativeGoogleIdToken } from './nativeSocialTok
 import { requestEmailOtpTicket, requestSocialTicket } from './keycloakTickets';
 import { clearKeycloakReauth, readKeycloakReauth, validateKeycloakReauth } from './keycloakReauth';
 import { resolveKeycloakBridgeUrl } from './keycloakBridge';
+import { withSignInPersistence } from './signInPersistence';
 
 /** Register lazily: Firebase tenants never construct a Keycloak session. */
 export const registerKeycloakFactories = (): void => {
@@ -63,29 +64,36 @@ export const registerKeycloakFactories = (): void => {
 
     registerAuthProviderFactory('keycloak', getProvider);
     registerSignInAdapterFactory('keycloak', () =>
-        createKeycloakSignInAdapter({
-            provider: getProvider(),
-            requestEmailOtpTicket,
-            requestSocialTicket,
-            openAuthorization: args => {
-                if (args.extraQueryParams.prompt !== 'login') clearKeycloakReauth();
-                const intent = readKeycloakReauth();
-                // Android/iOS Custom Tabs and SFSafariViewController share the system
-                // browser's Keycloak SSO cookie; without prompt=login, a second
-                // account's ticket could silently resolve to the previous session.
-                const extraQueryParams = native
-                    ? { ...args.extraQueryParams, prompt: 'login' }
-                    : args.extraQueryParams;
-                return getProvider().userManager.signinRedirect({
-                    ...args,
-                    extraQueryParams,
-                    ...(intent ? { state: { reauthId: intent.id } } : {}),
-                });
-            },
-            isNative: () => Capacitor.isNativePlatform(),
-            ...(native
-                ? { nativeSocial: { google: getNativeGoogleIdToken, apple: getNativeAppleIdToken } }
-                : {}),
-        })
+        withSignInPersistence(
+            createKeycloakSignInAdapter({
+                provider: getProvider(),
+                requestEmailOtpTicket,
+                requestSocialTicket,
+                openAuthorization: args => {
+                    if (args.extraQueryParams.prompt !== 'login') clearKeycloakReauth();
+                    const intent = readKeycloakReauth();
+                    // Android/iOS Custom Tabs and SFSafariViewController share the system
+                    // browser's Keycloak SSO cookie; without prompt=login, a second
+                    // account's ticket could silently resolve to the previous session.
+                    const extraQueryParams = native
+                        ? { ...args.extraQueryParams, prompt: 'login' }
+                        : args.extraQueryParams;
+                    return getProvider().userManager.signinRedirect({
+                        ...args,
+                        extraQueryParams,
+                        ...(intent ? { state: { reauthId: intent.id } } : {}),
+                    });
+                },
+                isNative: () => Capacitor.isNativePlatform(),
+                ...(native
+                    ? {
+                          nativeSocial: {
+                              google: getNativeGoogleIdToken,
+                              apple: getNativeAppleIdToken,
+                          },
+                      }
+                    : {}),
+            })
+        )
     );
 };
