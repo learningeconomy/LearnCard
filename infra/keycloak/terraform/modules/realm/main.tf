@@ -21,23 +21,6 @@ resource "keycloak_realm" "this" {
   offline_session_max_lifespan         = "1440h"
   offline_session_max_lifespan_enabled = false
 
-  dynamic "smtp_server" {
-    for_each = var.smtp == null ? [] : [var.smtp]
-    content {
-      host     = smtp_server.value.host
-      port     = smtp_server.value.port
-      from     = smtp_server.value.from
-      starttls = smtp_server.value.starttls
-      dynamic "auth" {
-        for_each = smtp_server.value.auth == null ? [] : [smtp_server.value.auth]
-        content {
-          username = auth.value.username
-          password = auth.value.password
-        }
-      }
-    }
-  }
-
   security_defenses {
     brute_force_detection {
       permanent_lockout                = false

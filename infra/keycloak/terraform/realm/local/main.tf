@@ -23,13 +23,7 @@ provider "keycloak" {
 }
 
 module "realm" {
-  source = "../../modules/realm"
-  smtp = {
-    host     = "host.docker.internal"
-    port     = 1025
-    from     = "keycloak@example.com"
-    starttls = false
-  }
+  source                    = "../../modules/realm"
   realm                     = "learncard"
   ssl_required              = "none"
   redirect_uris             = ["http://localhost:3000/*", "capacitor://localhost/*", "com.learncard.app://login"]

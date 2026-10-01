@@ -44,7 +44,7 @@ resource "keycloak_oidc_google_identity_provider" "google" {
   add_read_token_role_on_create = false
   hide_on_login_page            = false
   link_only                     = false
-  first_broker_login_flow_alias = keycloak_authentication_flow.broker.alias
+  first_broker_login_flow_alias = keycloak_authentication_flow.social.alias
   default_scopes                = "openid profile email"
   sync_mode                     = "IMPORT"
   # Require an explicit upstream assertion; missing claims must not fall back to trust.
@@ -53,7 +53,7 @@ resource "keycloak_oidc_google_identity_provider" "google" {
     claimFilterName  = "email_verified"
     claimFilterValue = "^true$"
   }
-  depends_on = [keycloak_authentication_execution_config.broker]
+  depends_on = [keycloak_authentication_execution.social]
   lifecycle {
     precondition {
       condition     = var.google_client_id != null && nonsensitive(var.secrets.google_client_secret != null)
@@ -78,7 +78,7 @@ resource "keycloak_oidc_google_identity_provider" "apple" {
   add_read_token_role_on_create = false
   hide_on_login_page            = false
   link_only                     = false
-  first_broker_login_flow_alias = keycloak_authentication_flow.broker.alias
+  first_broker_login_flow_alias = keycloak_authentication_flow.social.alias
   default_scopes                = "name%20email"
   sync_mode                     = "IMPORT"
   extra_config = {
@@ -89,7 +89,7 @@ resource "keycloak_oidc_google_identity_provider" "apple" {
     claimFilterValue                   = "^true$"
     tokenExchangeAccountLinkingEnabled = "false"
   }
-  depends_on = [keycloak_authentication_execution_config.broker]
+  depends_on = [keycloak_authentication_execution.social]
   lifecycle {
     precondition {
       condition = var.apple_client_id != null && nonsensitive(alltrue([

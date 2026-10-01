@@ -37,10 +37,8 @@ data "aws_secretsmanager_secret_version" "realm" {
 }
 
 module "realm" {
-  for_each = var.realms
-  source   = "../modules/realm"
-  # Optional nested SMTP object in the existing secret; no new IAM/secret resource.
-  smtp                      = try(local.credentials["${each.key}/lca-api"].smtp, null)
+  for_each                  = var.realms
+  source                    = "../modules/realm"
   realm                     = each.key
   redirect_uris             = each.value.redirect_uris
   web_origins               = each.value.web_origins

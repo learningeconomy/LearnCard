@@ -75,22 +75,3 @@ variable "ssl_required" {
     error_message = "Use all, external or none."
   }
 }
-variable "smtp" {
-  description = "Account-link email delivery. Required for passwordless collisions; absent config fails closed. Credentials enter protected state."
-  sensitive   = true
-  type = object({
-    host     = string
-    port     = optional(number, 587)
-    from     = string
-    starttls = optional(bool, true)
-    auth = optional(object({
-      username = string
-      password = string
-    }))
-  })
-  default = null
-  validation {
-    condition     = var.smtp == null ? true : (var.ssl_required == "none" || (var.smtp.starttls && var.smtp.auth != null))
-    error_message = "Deployed realms require authenticated STARTTLS SMTP. Plaintext SMTP is local-only."
-  }
-}
