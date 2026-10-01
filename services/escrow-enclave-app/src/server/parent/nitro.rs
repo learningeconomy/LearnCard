@@ -55,16 +55,28 @@ fn configured(name: &str) -> io::Result<String> {
 pub(crate) async fn run(port: u32) -> io::Result<()> {
     // Supervision: any forwarder exit also terminates serving.
     tokio::select! {
-        result = crate::kms::vsock_forward::run() => result,
+        result = crate::kms::vsock_forward::run() => step("kms_forwarder", result),
         result = boot_and_serve(port) => result,
     }
 }
+
+/// Logs which startup step failed using a fixed label only (never the error,
+/// which may carry host-supplied or secret-derived detail), then fails closed.
+fn step<T, E>(name: &'static str, result: Result<T, E>) -> io::Result<T> {
+    result.map_err(|_| {
+        tracing::error!(step = name, "enclave startup failed");
+        unavailable()
+    })
+}
+
 async fn boot_and_serve(port: u32) -> io::Result<()> {
-    let nsm = RealNsm::new().map_err(|_| unavailable())?;
-    let measurement = measurement(&nsm)?;
-    let time = RoughtimeTimeSource::production(Arc::new(VsockRoughtimeTransport))
-        .map_err(|_| unavailable())?;
-    let key_id = configured("ESCROW_KEY_ID")?;
+    let nsm = step("nsm_open", RealNsm::new())?;
+    let measurement = step("nsm_measurement", measurement(&nsm))?;
+    let time = step(
+        "roughtime_config",
+        RoughtimeTimeSource::production(Arc::new(VsockRoughtimeTransport)),
+    )?;
+    let key_id = step("config_key_id", configured("ESCROW_KEY_ID"))?;
     // Comma-separated, bounded (P9.1): read-only decrypt keys accepted alongside
     // the current key, for deliberate rotation or a lost-sealed-key recovery.
     let previous_key_ids: Vec<String> = std::env::var("ESCROW_PREVIOUS_KEY_IDS")
@@ -81,38 +93,52 @@ async fn boot_and_serve(port: u32) -> io::Result<()> {
             .enumerate()
             .any(|(i, id)| previous_key_ids[..i].contains(id))
     {
-        return Err(unavailable());
+        return step("config_previous_key_ids", Err(()));
     }
-    let tenant = configured("ESCROW_TENANT")?;
-    let region = configured("ESCROW_KMS_REGION")?;
-    install_kms_hosts(&region)?;
-    let arn = configured("ESCROW_KMS_KEY_ARN")?;
+    let tenant = step("config_tenant", configured("ESCROW_TENANT"))?;
+    let region = step("config_kms_region", configured("ESCROW_KMS_REGION"))?;
+    step("install_kms_hosts", install_kms_hosts(&region))?;
+    let arn = step("config_kms_key_arn", configured("ESCROW_KMS_KEY_ARN"))?;
     let keys = timeout(Duration::from_secs(60), async {
-        let mut boot_material = boot(&mut connect().await?, &key_id).await?;
+        let mut boot_material = step(
+            "parent_boot",
+            boot(&mut step("parent_connect", connect().await)?, &key_id).await,
+        )?;
         let sealed = match &boot_material.sealed {
             Some(blob) if blob.len() <= 24_000 => {
-                Some(STANDARD.decode(blob).map_err(|_| invalid())?)
+                Some(step("sealed_decode", STANDARD.decode(blob))?)
             }
             None if std::env::var("ESCROW_ALLOW_FIRST_BOOT").as_deref() == Ok("true") => None,
-            _ => return Err(unavailable()),
+            Some(_) => return step("sealed_too_large", Err(())),
+            None => return step("sealed_missing_first_boot_disabled", Err(())),
         };
-        let kms = AwsKmsClient::new(
-            Credentials {
-                access_key_id: std::mem::take(&mut boot_material.access_key_id),
-                secret_access_key: std::mem::take(&mut boot_material.secret_access_key),
-                session_token: std::mem::take(&mut boot_material.session_token),
-            },
-            &region,
-            arn,
-        )
-        .map_err(|_| unavailable())?;
-        let recipient = RecipientKey::generate().map_err(|_| unavailable())?;
-        let (keys, new_blob) =
-            unseal_or_generate_escrow_key(&kms, &nsm, &recipient, sealed, &key_id)
-                .await
-                .map_err(|_| unavailable())?;
+        let kms = step(
+            "kms_client",
+            AwsKmsClient::new(
+                Credentials {
+                    access_key_id: std::mem::take(&mut boot_material.access_key_id),
+                    secret_access_key: std::mem::take(&mut boot_material.secret_access_key),
+                    session_token: std::mem::take(&mut boot_material.session_token),
+                },
+                &region,
+                arn,
+            ),
+        )?;
+        let recipient = step("recipient_key", RecipientKey::generate())?;
+        let (keys, new_blob) = step(
+            "kms_unseal_or_generate",
+            unseal_or_generate_escrow_key(&kms, &nsm, &recipient, sealed, &key_id).await,
+        )?;
         if let Some(blob) = new_blob {
-            persist_key(&mut connect().await?, &key_id, &blob).await?;
+            step(
+                "parent_persist_key",
+                persist_key(
+                    &mut step("parent_connect", connect().await)?,
+                    &key_id,
+                    &blob,
+                )
+                .await,
+            )?;
         }
         // Deliberate rotation or a lost-sealed-key recovery (P9.1): the host's
         // `boot` handler is already keyId-generic, so each previous keyId reuses
@@ -125,40 +151,49 @@ async fn boot_and_serve(port: u32) -> io::Result<()> {
         // infra/escrow-enclave/kms.tf), so nothing narrows by reusing them.
         let mut previous_keys = Vec::new();
         for previous_id in &previous_key_ids {
-            let mut previous_boot = boot(&mut connect().await?, previous_id).await?;
+            let mut previous_boot = step(
+                "parent_boot_previous",
+                boot(&mut step("parent_connect", connect().await)?, previous_id).await,
+            )?;
             let Some(sealed) = previous_boot.sealed.take() else {
-                return Err(unavailable());
+                return step("previous_sealed_missing", Err(()));
             };
-            let sealed = STANDARD.decode(sealed).map_err(|_| invalid())?;
-            let (previous, new_blob) =
+            let sealed = step("previous_sealed_decode", STANDARD.decode(sealed))?;
+            let (previous, new_blob) = step(
+                "kms_unseal_previous",
                 unseal_or_generate_escrow_key(&kms, &nsm, &recipient, Some(sealed), previous_id)
-                    .await
-                    .map_err(|_| unavailable())?;
+                    .await,
+            )?;
             if new_blob.is_some() {
-                return Err(unavailable());
+                return step("previous_key_regenerated", Err(()));
             }
             previous_keys.push((previous_id.clone(), previous));
         }
         Ok::<_, io::Error>((keys, previous_keys))
     })
-    .await
-    .map_err(|_| unavailable())??;
-    let (keys, previous_keys) = keys;
+    .await;
+    let (keys, previous_keys) = step("boot_timeout", keys)??;
     let public_key = keys.public_key.clone();
     let store = ParentStore;
     let authority = UnavailableEnrollment;
-    let policy = Policy::new(
-        keys,
-        key_id.clone(),
-        previous_keys,
-        tenant,
-        measurement,
-        &store,
-        &time,
-        &authority,
-    )
-    .map_err(|_| unavailable())?;
-    let listener = VsockListener::bind(VsockAddr::new(u32::MAX, port))?;
+    let policy = step(
+        "policy_init",
+        Policy::new(
+            keys,
+            key_id.clone(),
+            previous_keys,
+            tenant,
+            measurement,
+            &store,
+            &time,
+            &authority,
+        ),
+    )?;
+    let listener = step(
+        "vsock_bind",
+        VsockListener::bind(VsockAddr::new(u32::MAX, port)),
+    )?;
+    tracing::info!("enclave startup complete");
     serve(
         Service {
             policy,
