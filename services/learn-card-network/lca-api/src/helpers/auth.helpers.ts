@@ -50,6 +50,10 @@ export async function verifyFirebaseToken(token: string): Promise<VerifiedUser> 
                 providerType: 'firebase',
             };
         }
+        throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Could not decode Firebase token in offline/E2E mode',
+        });
     }
 
     try {

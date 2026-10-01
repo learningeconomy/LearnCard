@@ -26,14 +26,23 @@ docker compose -f "$compose_file" run --rm --no-deps \
 docker compose -f "$compose_file" start keycloak
 stopped=false
 
-jq -S '
-    walk(if type == "object" then del(.id, .containerId) else . end)
+jq -eS '
+    # Fail closed if a fixture client was removed, renamed, or duplicated.
+    if ([.clients[] | select(.clientId == "lca-api")] | length) != 1
+        or ([.clients[] | select(.clientId == "ci-tests")] | length) != 1
+    then error("Expected exactly one lca-api client and one ci-tests client")
+    else . end
+    | walk(if type == "object" then del(.id, .containerId) else . end)
     | del(.authenticationFlows, .authenticatorConfig, .keycloakVersion)
     | .users |= map(
         del(.createdTimestamp)
         | .credentials = [{type: "password", value: "password", temporary: false}]
       )
-    | (.clients[] | select(.clientId == "lca-api").secret) = "dev-only-secret"
-    | (.clients[] | select(.clientId == "ci-tests").secret) = "ci-tests-dev-only-secret"
+    | .clients |= map(
+        if .clientId == "lca-api" then .secret = "dev-only-secret"
+        elif .clientId == "ci-tests" then .secret = "ci-tests-dev-only-secret"
+        elif has("secret") then error("Unexpected client secret in fixture export")
+        else . end
+      )
 ' "$export_file" > "$normalized_file"
 mv "$normalized_file" "$realm_dir/learncard-dev-realm.json"

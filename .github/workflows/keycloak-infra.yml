@@ -45,6 +45,8 @@ jobs:
             - run: terraform fmt -check -recursive
             - run: terraform init -backend=false
             - run: terraform validate
+            - name: Test admin access rules (mock AWS)
+              run: terraform test
             - uses: terraform-linters/setup-tflint@v4
               with:
                   tflint_version: v0.55.1
@@ -57,6 +59,9 @@ jobs:
     deploy:
         if: github.event_name == 'workflow_dispatch'
         needs: validate
+        permissions:
+            contents: read
+            id-token: write
         runs-on: ubuntu-latest
         environment: ${{ inputs.environment }}
         concurrency:
@@ -80,7 +85,15 @@ jobs:
                   : "${AWS_REGION:?Set AWS_REGION in the GitHub environment}"
                   : "${TF_STATE_BUCKET:?Set TF_STATE_BUCKET in the GitHub environment}"
                   : "${TF_STATE_TABLE:?Set TF_STATE_TABLE in the GitHub environment}"
-            - name: Configure AWS credentials
+            - name: Configure AWS credentials with OIDC
+              if: vars.AWS_ROLE_ARN != ''
+              uses: aws-actions/configure-aws-credentials@v5
+              with:
+                  role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+                  role-session-name: keycloak-${{ github.run_id }}
+                  aws-region: ${{ env.AWS_REGION }}
+            - name: Configure AWS credentials (legacy migration fallback)
+              if: vars.AWS_ROLE_ARN == ''
               uses: aws-actions/configure-aws-credentials@v5
               with:
                   aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
