@@ -91,7 +91,7 @@ export const verifyKeycloakJwt = async (
         throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid Keycloak token' });
     }
     const claims = result.data;
-    const audiences = typeof claims.aud === 'string' ? [claims.aud] : claims.aud ?? [];
+    const audiences = typeof claims.aud === 'string' ? [claims.aud] : (claims.aud ?? []);
     if (claims.azp) audiences.push(claims.azp);
     if (!audiences.some(audience => opts.audiences.includes(audience))) {
         throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid Keycloak token' });

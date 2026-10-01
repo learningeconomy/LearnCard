@@ -171,27 +171,27 @@ before any planned production teardown.
 
 ### ALB and management surface
 
--   Only 80 and 443 are internet-facing; 80 redirects to HTTPS with 301.
--   Priority 10 forwards `/admin` and `/admin/*` only on the admin hostname and
-    allowed source CIDRs. Priority 11 accommodates a third CIDR without
-    exceeding ALB's five match-evaluation limit.
--   Priority 20 returns plain-text 403 for those admin paths otherwise, including
-    requests on the public hostname and disallowed sources on the admin hostname.
--   Priority 30 forwards other admin-host paths for console assets (`/resources/*`)
-    and authentication (`/realms/master/*`), with the same CIDR restriction. Priority
-    40 always denies the remaining admin-host requests;
-    otherwise the default forward would bypass the source restriction.
--   `admin_allowed_cidrs = []` **denies every source on the admin host**.
-    Set operator/VPN egress IPv4 CIDRs to enable admin access
-    (up to three). This restricts the admin **host**, not public realm authentication
-    endpoints; `KC_HOSTNAME_ADMIN` alone is not an access-control mechanism.
--   Target-group stickiness uses a one-day ALB cookie. Readiness is
-    `HTTP :9000/health/ready`, not the login page. The task SG allows 9000 **only from
-    the ALB SG** because the management server owns readiness; there is no listener
-    or route exposing management health/metrics to public clients. External metrics
-    scraping needs its own reviewed private access design.
--   Logs use `/ecs/<name_prefix>-<environment>` rather than `/ecs/<name_prefix>` to
-    avoid staging/production collisions in a shared account. The output is canonical.
+- Only 80 and 443 are internet-facing; 80 redirects to HTTPS with 301.
+- Priority 10 forwards `/admin` and `/admin/*` only on the admin hostname and
+  allowed source CIDRs. Priority 11 accommodates a third CIDR without
+  exceeding ALB's five match-evaluation limit.
+- Priority 20 returns plain-text 403 for those admin paths otherwise, including
+  requests on the public hostname and disallowed sources on the admin hostname.
+- Priority 30 forwards other admin-host paths for console assets (`/resources/*`)
+  and authentication (`/realms/master/*`), with the same CIDR restriction. Priority
+  40 always denies the remaining admin-host requests;
+  otherwise the default forward would bypass the source restriction.
+- `admin_allowed_cidrs = []` **denies every source on the admin host**.
+  Set operator/VPN egress IPv4 CIDRs to enable admin access
+  (up to three). This restricts the admin **host**, not public realm authentication
+  endpoints; `KC_HOSTNAME_ADMIN` alone is not an access-control mechanism.
+- Target-group stickiness uses a one-day ALB cookie. Readiness is
+  `HTTP :9000/health/ready`, not the login page. The task SG allows 9000 **only from
+  the ALB SG** because the management server owns readiness; there is no listener
+  or route exposing management health/metrics to public clients. External metrics
+  scraping needs its own reviewed private access design.
+- Logs use `/ecs/<name_prefix>-<environment>` rather than `/ecs/<name_prefix>` to
+  avoid staging/production collisions in a shared account. The output is canonical.
 
 ## GitHub Actions
 

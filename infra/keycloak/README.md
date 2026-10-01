@@ -40,10 +40,10 @@ All three users have password `password`:
 | `dev-phone`      | Verified `+15555550100`, no email                         |
 | `dev-unverified` | Unverified `dev-unverified@example.com` (API must reject) |
 
--   `learncard-app`: public authorization-code client with S256 PKCE, no password grant.
--   `lca-api`: confidential service account, placeholder secret `dev-only-secret`.
--   `ci-tests`: confidential password-grant client, secret `ci-tests-dev-only-secret`.
-    It lets CI obtain real signed tokens without a browser; **never create it in staging/prod**.
+- `learncard-app`: public authorization-code client with S256 PKCE, no password grant.
+- `lca-api`: confidential service account, placeholder secret `dev-only-secret`.
+- `ci-tests`: confidential password-grant client, secret `ci-tests-dev-only-secret`.
+  It lets CI obtain real signed tokens without a browser; **never create it in staging/prod**.
 
 Keycloak 26's [declarative user profile](https://www.keycloak.org/docs/latest/server_admin/#user-profile)
 disables unmanaged attributes by default. Undeclared phone attributes can silently
