@@ -43,6 +43,8 @@ await referrer.invoke.sendContractRequest({
 
 The owner manages recipients before the first consent. Additions freeze after that point; removals revoke future data discovery and require clients to review the new audience version. Sending a request does not authorize data access.
 
+The owner and explicit writers can manage all referrals for the contract. A referrer that is only a data recipient can list and inspect only the requests it sent; the learner can inspect its own invitations. Other recipients cannot see those requests, including after acceptance. Request status returns `null` for both inaccessible and missing requests.
+
 ## Review and consent
 
 The learner opens the invitation, reviews its purpose, requested permissions, and every receiving organization, then selects data through the consent flow. Accept & Connect opens review. Closing or dismissing leaves the request pending; Decline records a denial. Pending invitations remain accessible in Privacy & Data even after an alert is archived.
@@ -98,9 +100,11 @@ The app retains shared URIs using the entire audience as the cache key. When mem
 
 ## Consume correlated events
 
-Verify the webhook's bearer JWT against the sending brain service's DID document. Persist events before acknowledging `true` (or `{ "success": true }`) and deduplicate by `data.metadata.deliveryKey`. Deliveries are at least once. Use `eventId`, `contractUri`, `requestId`, and `externalReferenceId` to reconcile with the external referral record. Never use display text as a correlation key.
+Verify the webhook's bearer JWT against the sending brain service's DID document. Persist events before acknowledging `true` (or `{ "success": true }`) and deduplicate by `data.metadata.deliveryKey`. Deliveries are at least once. Use `eventId`, `contractUri`, and `requestId` to correlate events. The owner, original referrer, and explicit writers with data access can also use `externalReferenceId` to reconcile with the external referral record. Never use display text as a correlation key.
 
-Owners and current recipients receive consent and permitted sync events. A requester outside the audience receives only the minimal decision metadata. The scheduled/Docker recovery worker retries pending intents; delivery authorization rechecks current audience membership and consent permissions.
+Declines and cancellations notify only the owner and original referrer, excluding whoever performed the action. Owners and current recipients receive consent and permitted sync events, but other recipients do not receive the private referral reference or invitation message. This filtering covers both event metadata and the transaction's referral fields. A requester outside the audience receives only the minimal decision metadata. The learner's own history and export retain the full referral details.
+
+The scheduled/Docker recovery worker retries pending intents; delivery authorization rechecks current audience membership and consent permissions. It also suppresses unrelated recipients' old queued decline/cancellation notifications and removes private referral details from queued consent-data events before delivery.
 
 Withdrawal, expiry, or recipient removal stops future authorized discovery/sharing. Copies already delivered cannot be recalled. One-time consent keeps its permitted snapshot until withdrawal/expiry and does not authorize ongoing sync.
 
