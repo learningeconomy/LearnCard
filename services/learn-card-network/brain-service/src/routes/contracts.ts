@@ -1952,6 +1952,7 @@ export const contractsRouter = t.router({
                     null
                 );
             } catch (error) {
+                if (error instanceof TRPCError && error.code === 'CONFLICT') throw error;
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message: 'Unable to send request',

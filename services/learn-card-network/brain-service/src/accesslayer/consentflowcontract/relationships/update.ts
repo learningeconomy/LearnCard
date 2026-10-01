@@ -1,6 +1,7 @@
 import { termsReferralSnapshotCypher } from '@helpers/consent-referral.helpers';
 import { appendConsentEvent, tryDispatchContractEvent } from '@helpers/contract-events.helpers';
 import { QueryBuilder, BindParam } from 'neogma';
+import { TRPCError } from '@trpc/server';
 import { v4 as uuid } from 'uuid';
 import {
     ConsentFlowTerms as ConsentFlowTermsType,
@@ -799,5 +800,9 @@ export const upsertRequestedForRelationship = async (
     if (readStatus !== undefined) params.readStatus = readStatus;
 
     const result = await neogma.queryRunner.run(cypher, params);
-    if (!result.records.length) throw new Error('A generic request already exists');
+    if (!result.records.length)
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'An attributed request already exists for this profile.',
+        });
 };
