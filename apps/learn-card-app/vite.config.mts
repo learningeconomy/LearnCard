@@ -196,6 +196,7 @@ export default defineConfig(async ({ mode, command }) => {
         build: {
             target: 'esnext',
             outDir: path.join(__dirname, 'build'),
+            modulePreload: false,
             rollupOptions: {
                 onwarn: paraglideMissingKeyOnWarn,
                 output: {
