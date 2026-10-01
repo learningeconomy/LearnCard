@@ -18,6 +18,10 @@ custom:
         number: 3
     config:
         CACHE_INSTANCE_SIZE: cache.t2.micro
+    # Lambda caps each function's environment at 4KB. Escrow config is only read
+    # by the trpc/api handlers, so it is attached per-function (not provider-wide)
+    # and unset keys are omitted entirely.
+    escrowEnvironment: ${file(./serverless.escrow-env.cjs)}
     esbuild:
         # serverless-esbuild does not support Bun as a Lambda artifact packager.
         # Bun remains the repo installer/runner; pnpm is used only for packaging externals.
@@ -145,13 +149,6 @@ provider:
         POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS: ${env:POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS, ''}
         POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS: ${env:POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS, ''}
         POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS: ${env:POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS, ''}
-        ESCROW_RELAY_URL: ${env:ESCROW_RELAY_URL, ''}
-        ESCROW_RELAY_AUTH_TOKEN: ${env:ESCROW_RELAY_AUTH_TOKEN, ''}
-        ESCROW_ENCLAVE_MODE: ${env:ESCROW_ENCLAVE_MODE, ''}
-        ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON: ${env:ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON, ''}
-        ESCROW_ENCLAVE_ACTIVE_KEY_ID: ${env:ESCROW_ENCLAVE_ACTIVE_KEY_ID, ''}
-        ESCROW_HOLD_DURATION_MS: ${env:ESCROW_HOLD_DURATION_MS, ''}
-        ESCROW_HOLD_RESTART_MIN_AGE_MS: ${env:ESCROW_HOLD_RESTART_MIN_AGE_MS, ''}
         POSTMARK_FROM_EMAIL: ${env:POSTMARK_FROM_EMAIL, ''}
         POSTMARK_BRAND_NAME: ${env:POSTMARK_BRAND_NAME, ''}
         PORT: ${opt:httpPort, "3000"}
@@ -181,6 +178,7 @@ functions:
         handler: lambda.trpcHandler
         role: SigningAuthorityExecutionRole
         dependsOn: [SigningAuthoritySeedKeyPolicy]
+        environment: ${self:custom.escrowEnvironment}
         vpc:
             securityGroupIds:
                 - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
@@ -193,6 +191,7 @@ functions:
         handler: lambda.openApiHandler
         role: SigningAuthorityExecutionRole
         dependsOn: [SigningAuthoritySeedKeyPolicy]
+        environment: ${self:custom.escrowEnvironment}
         vpc:
             securityGroupIds:
                 - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
