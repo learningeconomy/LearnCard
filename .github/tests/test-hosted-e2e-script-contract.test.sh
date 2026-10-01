@@ -21,11 +21,11 @@ grep -Fq 'docker buildx bake --file "$BAKE_FILE" browser --load --progress=plain
     || { echo 'browser runner must not bypass the GHA-backed Bake build' >&2; exit 1; }
 grep -Fq 'docker compose up -d --no-build' "$BROWSER_SCRIPT"
 grep -Fq 'E2E_EXTERNAL_STACK=true' "$BROWSER_SCRIPT"
-[[ "$(grep -Ec '^[[:space:]]*E2E_EXTERNAL_STACK=true[[:space:]]+bunx playwright test' "$BROWSER_SCRIPT")" -eq 1 ]] \
+[[ "$(grep -Ec '^[[:space:]]*playwright_command test.*test_files' "$BROWSER_SCRIPT")" -eq 1 ]] \
     || { echo 'browser runner must invoke Playwright exactly once' >&2; exit 1; }
-perl -0ne 'exit !/run_playwright\(\).*?read -r -a test_files <<< "\$E2E_TEST_FILES".*?bunx playwright test "\$\{test_files\[@\]\}"/s' "$BROWSER_SCRIPT" \
+perl -0ne 'exit !/run_playwright\(\).*?read -r -a test_files <<< "\$E2E_TEST_FILES".*?playwright_command test "\$\{test_files\[@\]\}"/s' "$BROWSER_SCRIPT" \
     || { echo 'Playwright must run only the selected browser specs' >&2; exit 1; }
-perl -0ne 'exit !/run_accessibility\(\).*?bun run test:a11y/s' "$BROWSER_SCRIPT" \
+perl -0ne 'exit !/run_accessibility\(\).*?playwright_command test accessibility.spec.ts --config=playwright.a11y.config.ts/s' "$BROWSER_SCRIPT" \
     || { echo 'accessibility suite invocation missing' >&2; exit 1; }
 grep -Fq 'docker compose down --remove-orphans -v' "$BROWSER_SCRIPT"
 
@@ -46,22 +46,22 @@ grep -Fq 'docker compose down --remove-orphans -v' "$SERVICE_SCRIPT"
 BAKE_JSON="$(docker buildx bake --file "$BAKE_FILE" --print browser service)"
 ruby -rjson -e '
   bake = JSON.parse(STDIN.read)
-  required = %w[browser-base browser-app browser-delete service-base]
+  required = %w[dependency-cache browser-base browser-app browser-delete service-base]
   abort "Bake targets missing" unless (required - bake.fetch("target").keys).empty?
-  cached = %w[browser-base service-base browser-delete]
-  uncached = required - cached
-  cached.each do |name|
+  dependency_cache = bake.fetch("target").fetch("dependency-cache")
+  abort "dependency cache must stop before source COPY" unless dependency_cache.fetch("target") == "dependencies"
+  abort "dependency cache must not load another image" unless dependency_cache.fetch("output") == [{"type" => "cacheonly"}]
+  abort "dependency cache must exclude intermediate source layers" unless dependency_cache.fetch("cache-to").all? { |cache| cache["type"] == "gha" && cache["mode"] == "min" }
+  scope = dependency_cache.fetch("cache-to").fetch(0).fetch("scope")
+  %w[browser-base service-base].each do |name|
     target = bake.fetch("target").fetch(name)
-    abort "#{name} missing GHA cache import" unless target.fetch("cache-from").any? { |cache| cache["type"] == "gha" }
-    abort "#{name} missing GHA cache export" unless target.fetch("cache-to").any? { |cache| cache["type"] == "gha" && cache["mode"] == "max" }
+    abort "#{name} must import the dependency cache" unless target.fetch("cache-from").any? { |cache| cache["type"] == "gha" && cache["scope"] == scope }
+    abort "#{name} must not export source layers" if target.key?("cache-to")
   end
-  uncached.each do |name|
-    target = bake.fetch("target").fetch(name)
-    abort "#{name} must not export a build cache: its layers rebuild from source every run, so the export only costs upload time" if target.key?("cache-to")
+  abort "app must not export source layers" if bake.fetch("target").fetch("browser-app").key?("cache-to")
+  %w[browser service].each do |group|
+    abort "#{group} must export dependency cache" unless bake.fetch("group").fetch(group).fetch("targets").include?("dependency-cache")
   end
-  browser_scope = bake.fetch("target").fetch("browser-base").fetch("cache-to").fetch(0).fetch("scope")
-  service_scope = bake.fetch("target").fetch("service-base").fetch("cache-to").fetch(0).fetch("scope")
-  abort "identical monorepo bases must share one cache scope" unless browser_scope == service_scope
   browser_base_tags = bake.fetch("target").fetch("browser-base").fetch("tags")
   abort "browser base tag must match Compose" unless browser_base_tags.include?("learncard-monorepo-local")
 ' <<< "$BAKE_JSON"
