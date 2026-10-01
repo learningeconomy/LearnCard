@@ -213,7 +213,7 @@ during a migration window. Output masks emails and never includes shares or toke
 `--link-providers` defaults on for apply and dry-run, including already-mapped users:
 the existing lca-api `GOOGLE_APPLICATION_CREDENTIAL` service-account JSON must allow
 Firebase user reads. UID lookups run in batches of at most 100 with one-second pacing
-and bounded rate-limit backoff; missing/disabled users or mismatched account emails
+and bounded rate-limit backoff; missing/disabled users or unverified/mismatched account emails
 are refused. Firebase `providerData` subjects pre-link `google`/`apple` in Keycloak;
 existing links are never moved. Output counts linked, already linked, conflicts,
 no-social-provider users, and dry-run would-link plans; conflicts exit 1. Use
