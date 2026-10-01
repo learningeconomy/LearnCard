@@ -161,15 +161,15 @@ Please make sure to update tests as appropriate.
 
 ### Vendored Rust dependency locks
 
-`wasm/didkit-wasm.Cargo.lock` owns LearnCard's WASM workspace graph independently of
-`lib/didkit/Cargo.lock`. The native addon has its own lock at
+WASM builds use DIDKit's committed workspace lock at `lib/didkit/Cargo.lock` with
+`--locked`. DIDKit source updates must include a valid lock; LearnCard does not
+overlay or regenerate it. The native addon has its own lock at
 `../didkit-plugin-node/native/Cargo.lock`.
 
-LC-2200 updates DIDKit's required C-header generator to cbindgen 0.29.4 with its
-default CLI features disabled, removing `atty` and `clap 2.x` from the WASM lock.
-The native lock and WASM runtime dependency closure are unchanged. This build-time
-update preserves the committed WASM/glue pair and its content-addressed hosted URL;
-a local rebuild alone does not authorize artifact publication or alert closure.
+Using DIDKit's lock adopts its dependency versions rather than LearnCard's former
+separate WASM graph. The committed WASM/glue pair and hosted URL are retained until
+the normal source-update workflow builds, tests, and publishes a matching artifact
+pair and updates the URL and bridge integrity pin.
 
 ## Who is Learning Economy Foundation?
 
