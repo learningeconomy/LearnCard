@@ -39,7 +39,7 @@ resource "keycloak_oidc_google_identity_provider" "google" {
   client_id                     = var.google_client_id
   client_secret                 = var.secrets.google_client_secret
   enabled                       = true
-  trust_email                   = false
+  trust_email                   = true
   store_token                   = false
   add_read_token_role_on_create = false
   hide_on_login_page            = false
@@ -47,7 +47,13 @@ resource "keycloak_oidc_google_identity_provider" "google" {
   first_broker_login_flow_alias = keycloak_authentication_flow.broker.alias
   default_scopes                = "openid profile email"
   sync_mode                     = "IMPORT"
-  depends_on                    = [keycloak_authentication_execution_config.broker]
+  # Require an explicit upstream assertion; missing claims must not fall back to trust.
+  extra_config = {
+    filteredByClaim  = "true"
+    claimFilterName  = "email_verified"
+    claimFilterValue = "^true$"
+  }
+  depends_on = [keycloak_authentication_execution_config.broker]
   lifecycle {
     precondition {
       condition     = var.google_client_id != null && nonsensitive(var.secrets.google_client_secret != null)
@@ -67,7 +73,7 @@ resource "keycloak_oidc_google_identity_provider" "apple" {
   client_id                     = var.apple_client_id
   client_secret                 = var.secrets.apple_private_key
   enabled                       = true
-  trust_email                   = false
+  trust_email                   = true
   store_token                   = false
   add_read_token_role_on_create = false
   hide_on_login_page            = false
@@ -76,8 +82,12 @@ resource "keycloak_oidc_google_identity_provider" "apple" {
   default_scopes                = "name%20email"
   sync_mode                     = "IMPORT"
   extra_config = {
-    teamId = var.secrets.apple_team_id
-    keyId  = var.secrets.apple_key_id
+    teamId                             = var.secrets.apple_team_id
+    keyId                              = var.secrets.apple_key_id
+    filteredByClaim                    = "true"
+    claimFilterName                    = "email_verified"
+    claimFilterValue                   = "^true$"
+    tokenExchangeAccountLinkingEnabled = "false"
   }
   depends_on = [keycloak_authentication_execution_config.broker]
   lifecycle {
