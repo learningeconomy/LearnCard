@@ -59,6 +59,7 @@ data "aws_iam_policy_document" "deploy_iam" {
       "${local.iam_prefix}:role/${local.name}-plan",
       "${local.iam_prefix}:role/${local.name}-deploy",
       local.boundary_arn,
+      "${local.iam_prefix}:policy/${local.name}-plan-*",
       "${local.iam_prefix}:policy/${local.name}-deploy-*"
     ]
   }
