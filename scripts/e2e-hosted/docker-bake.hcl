@@ -1,12 +1,20 @@
-# Only the shared base exports a build cache: its `bun install` layer is stable
-# across commits. Leaf targets rebuild from freshly copied source every run, so
-# exporting their layers (mode=max) costs minutes of upload and never hits.
+# Export only the dependency stage. Exporting the source image with mode=max
+# also uploads source-bearing intermediate layers that change on every commit.
+# This cache-only target is shared by browser and service jobs.
+target "dependency-cache" {
+  context    = "."
+  dockerfile = "Dockerfile.monorepo"
+  target     = "dependencies"
+  output     = ["type=cacheonly"]
+  cache-from = ["type=gha,scope=e2e-monorepo-dependencies"]
+  cache-to   = ["type=gha,scope=e2e-monorepo-dependencies,mode=min"]
+}
+
 target "browser-base" {
   context    = "."
   dockerfile = "Dockerfile.monorepo"
   tags       = ["learncard-monorepo-local"]
-  cache-from = ["type=gha,scope=e2e-monorepo-base"]
-  cache-to   = ["type=gha,scope=e2e-monorepo-base,mode=max"]
+  cache-from = ["type=gha,scope=e2e-monorepo-dependencies"]
 }
 
 target "browser-app" {
@@ -31,6 +39,7 @@ target "browser-delete" {
 
 group "browser" {
   targets = [
+    "dependency-cache",
     "browser-base",
     "browser-app",
     "browser-delete",
@@ -41,10 +50,9 @@ target "service-base" {
   context    = "."
   dockerfile = "Dockerfile.monorepo"
   tags       = ["learncard-monorepo-local", "lca-api-service"]
-  cache-from = ["type=gha,scope=e2e-monorepo-base"]
-  cache-to   = ["type=gha,scope=e2e-monorepo-base,mode=max"]
+  cache-from = ["type=gha,scope=e2e-monorepo-dependencies"]
 }
 
 group "service" {
-  targets = ["service-base"]
+  targets = ["dependency-cache", "service-base"]
 }

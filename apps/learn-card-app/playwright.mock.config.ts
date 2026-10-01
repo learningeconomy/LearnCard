@@ -19,6 +19,8 @@ const config: PlaywrightTestConfig = {
     // does a real demo email login against the backend, which this tier avoids.
     globalSetup: undefined,
     retries: 0,
+    workers: 2,
+    fullyParallel: true,
     use: {
         ...base.use,
         baseURL: 'http://localhost:3010',
