@@ -131,7 +131,6 @@ const shouldCreateIndices =
 const indexQueries = [
     'CREATE CONSTRAINT consent_event_id IF NOT EXISTS FOR (e:ConsentFlowEvent) REQUIRE e.id IS UNIQUE',
     'CREATE CONSTRAINT consent_delivery_id IF NOT EXISTS FOR (d:ConsentFlowEventDelivery) REQUIRE d.id IS UNIQUE',
-    'CREATE INDEX consent_delivery_due IF NOT EXISTS FOR (d:ConsentFlowEventDelivery) ON (d.state, d.nextAttemptAt)',
     ...contractEventMaintenanceSchema,
     'CREATE INDEX profileId_idx IF NOT EXISTS FOR (p:Profile) ON (p.profileId)',
     'CREATE INDEX profile_did_idx IF NOT EXISTS FOR (p:Profile) ON (p.did)',
