@@ -169,6 +169,8 @@ moved {
   to   = aws_lb_listener_rule.admin_assets[0]
 }
 
+# The initial groundwork (e59d3f45c) used count on this rule; retain its state
+# when upgrading to an unconditional denial, including with an empty allowlist.
 moved {
   from = aws_lb_listener_rule.deny_admin_host[0]
   to   = aws_lb_listener_rule.deny_admin_host

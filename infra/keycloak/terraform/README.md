@@ -230,6 +230,12 @@ No AWS credentials are exposed to PR validation. No automatic push deployments.
 
 ## Upgrade / rollback runbook
 
+The initial groundwork (`e59d3f45c`) created `deny_admin_host[0]` when the admin
+allowlist was nonempty. The `moved` blocks preserve that rule as `deny_admin_host`
+and move the two allow rules to indexed addresses. Keep these blocks for upgrades
+from that version; Terraform ignores a move when its source is absent on a fresh
+deployment ([Terraform refactoring](https://developer.hashicorp.com/terraform/language/modules/develop/refactoring)).
+
 1. Read Keycloak upgrade notes and test the upgrade against a restored staging DB.
 2. Snapshot Aurora and wait until the snapshot is **available**. Record the old image
    URI, config, DB version, snapshot identifier and restore procedure.
