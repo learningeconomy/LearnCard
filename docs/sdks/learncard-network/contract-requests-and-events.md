@@ -107,13 +107,17 @@ Each event is deduplicated per recipient, excluding the acting profile. Consenti
 
 ## Delivery and retry
 
-State changes and event intents commit in the same Neo4j statement. Notification transport failure does not roll back consent or a request. A leased worker retries pending deliveries once per minute, using the existing SQS/webhook transport. Production uses the scheduled `contractEvents` Lambda; Docker starts the same worker after server readiness and stops it during shutdown. Local Serverless Offline can use the handler directly; it does not start the Docker timer.
+State changes and event intents commit in the same Neo4j statement. Notification transport failure does not roll back consent or a request. A leased worker checks pending deliveries once per minute, using the existing SQS/webhook transport. Production uses the scheduled `contractEvents` Lambda; Docker starts the same worker after server readiness and stops it during shutdown. Local Serverless Offline can use the handler directly; it does not start the Docker timer.
 
-Delivery is **at least once**. Persist `deliveryKey` with the downstream side effect to deduplicate retries, and acknowledge only after durable storage. Return an existing supported acknowledgement such as `{"success": true}`. Transport timeouts, HTTP 503 and explicit unsuccessful acknowledgements remain pending for retry.
+Delivery is **at least once**. Persist `deliveryKey` with the downstream side effect to deduplicate retries, and acknowledge only after durable storage. Return an existing supported acknowledgement such as `{"success": true}`. Direct webhook timeouts, HTTP 5xx, HTTP 408/425/429, and explicit unsuccessful storage acknowledgements are retryable. Other HTTP 4xx responses are final rejections. A missing or disabled webhook also ends direct delivery without retry. These distinctions apply only to contract events; existing notification callers retain their behavior.
+
+Outbox retries start after one minute, double after each failed attempt, and cap at one hour between attempts. A delivery stops after 12 claimed attempts or 24 hours from event creation, whichever comes first. Claims count even if the worker crashes before recording the outcome. A stopped delivery is marked `rejected` for a permanent rejection or `failed` when its retry budget expires; it is not marked delivered. The worker retains a coarse failure reason without recording the notification body in logs.
+
+For SQS, a successful enqueue completes the outbox delivery. The queue consumer acknowledges permanent contract webhook rejections so SQS can discard those messages; temporary failures remain subject to the queue's configured retry and retention policy. The outbox's 12-attempt/24-hour limits do not govern SQS retries.
 
 Recipients removed before dispatch are skipped, including events already placed on SQS. Expired or withdrawn consent blocks queued data events, and revoked personal values or credential URIs are removed before delivery. A queued invitation is skipped if the request was already decided. Already delivered copies cannot be recalled.
 
-Completed outbox intents discard their payload and message after all deliveries finish; stable event/delivery metadata remains for deduplication. Pending intents remain available for recovery.
+Outbox intents discard their payload and message once every delivery is delivered, skipped, rejected, or failed; stable event/delivery metadata remains for deduplication and diagnostics. Pending intents remain available only within the retry budget. Cleanup also recovers events with no recipients or with already-finished deliveries. Expiration and cleanup require a running worker; they happen on a subsequent pass and can be delayed by a backlog or service downtime. This removes the extra notification copy, while consent history remains available through its existing APIs. Failed notifications are not automatically replayed after configuration is repaired.
 
 ## Legacy compatibility
 
