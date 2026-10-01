@@ -5,6 +5,14 @@
     "bruteForceProtected": true,
     "resetPasswordAllowed": false,
     "sslRequired": "none",
+    "smtpServer": {
+        "host": "host.docker.internal",
+        "port": "1025",
+        "from": "keycloak@example.com",
+        "auth": "false",
+        "starttls": "false",
+        "ssl": "false"
+    },
     "components": {
         "org.keycloak.userprofile.UserProfileProvider": [
             {
@@ -415,7 +423,7 @@
             "displayName": "Google",
             "providerId": "google",
             "enabled": true,
-            "trustEmail": false,
+            "trustEmail": true,
             "storeToken": false,
             "addReadTokenRoleOnCreate": false,
             "hideOnLogin": false,
@@ -424,6 +432,9 @@
             "config": {
                 "clientId": "${GOOGLE_CLIENT_ID}",
                 "clientSecret": "${GOOGLE_CLIENT_SECRET}",
+                "filteredByClaim": "true",
+                "claimFilterName": "email_verified",
+                "claimFilterValue": "^true$",
                 "defaultScope": "openid profile email",
                 "syncMode": "IMPORT"
             }
@@ -433,7 +444,7 @@
             "displayName": "Apple",
             "providerId": "apple",
             "enabled": true,
-            "trustEmail": false,
+            "trustEmail": true,
             "storeToken": false,
             "addReadTokenRoleOnCreate": false,
             "hideOnLogin": false,
@@ -442,6 +453,10 @@
             "config": {
                 "clientId": "${APPLE_SERVICE_ID}",
                 "clientSecret": "${APPLE_P8_CONTENT}",
+                "filteredByClaim": "true",
+                "claimFilterName": "email_verified",
+                "claimFilterValue": "^true$",
+                "tokenExchangeAccountLinkingEnabled": "false",
                 "teamId": "${APPLE_TEAM_ID}",
                 "keyId": "${APPLE_KEY_ID}",
                 "defaultScope": "name%20email",
