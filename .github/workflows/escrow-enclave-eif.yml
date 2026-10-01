@@ -158,6 +158,9 @@ jobs:
         needs: test
         if: success() && github.event_name != 'pull_request'
         runs-on: [self-hosted, linux, x64, nitro-enclaves]
+        # Measured config differs per deployment; each environment holds its
+        # own vars and requires an approver before the build runs.
+        environment: escrow-staging
         env:
             # No parent environment is inherited by an EIF. Both builds bake the
             # same reviewed public configuration; missing required vars fail closed.
