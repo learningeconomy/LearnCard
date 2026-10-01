@@ -8,9 +8,7 @@ import moment from 'moment';
 // import LeaderIdThumbPlaceholder from '../../components/svgs/LeaderIdThumbPlaceholder';
 // import NationalAdminIdThumbPlaceholder from '../../components/svgs/NationalAdminIdThumbPlaceholder';
 // import GlobalAdminIdThumbPlaceholder from '../../components/svgs/GlobalAdminIdThumbPlaceholder';
-import CredentialVerificationDisplay, {
-    getInfoFromCredential,
-} from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
+import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 // import { getIdBackgroundStyles, getRoleFromCred } from '../../helpers/troop.helpers';
 import { VC } from '@learncard/types';
 

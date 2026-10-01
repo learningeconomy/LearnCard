@@ -66,7 +66,6 @@ import InboxClaimProfileGate from './InboxClaimProfileGate';
 
 import { AlertCircle, RefreshCw, Home, CheckCircle } from 'lucide-react';
 import LoggedOutRequest from './LoggedOutRequest';
-import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import * as m from '../../paraglide/messages.js';
 import {
     getClaimInteractionBoostUri,

@@ -51,7 +51,6 @@ import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { useLoadingLine } from 'apps/learn-card-app/src/stores/loadingStore';
 import useBoostMenu, { BoostMenuType } from '../hooks/useBoostMenu';
 import { LCR } from 'learn-card-base/types/credential-records';
-import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 
 type BoostEarnedIDCardProps = {
     credential?: VC;

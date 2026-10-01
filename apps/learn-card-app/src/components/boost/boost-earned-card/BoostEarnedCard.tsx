@@ -49,7 +49,6 @@ import type {
 import { getClrLinkedCredentials } from 'learn-card-base/helpers/credentialHelpers';
 import { getClrTranscriptKind, getClrTranscriptIssuerInfo } from '../../clr-transcript';
 
-import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import {
     getIssuanceDate,
     unwrapBoostCredential,

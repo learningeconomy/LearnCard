@@ -15,8 +15,6 @@ import {
 } from 'learn-card-base';
 import useManagedBoost from '../../../../hooks/useManagedBoost';
 
-import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
-
 type BulkParentSelectorCredentialItemProps = {
     boost?: Boost;
     category: BoostCategoryOptionsEnum;

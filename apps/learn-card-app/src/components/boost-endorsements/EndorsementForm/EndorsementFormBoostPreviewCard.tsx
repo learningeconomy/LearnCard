@@ -8,9 +8,7 @@ import NonBoostPreview from '../../boost/boostCMS/BoostPreview/NonBoostPreview';
 import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import BoostLinkedCredentialsBox from '../../boost/boostLinkedCredentials/BoostLinkedCredentialsBox';
 
-import CredentialVerificationDisplay, {
-    getInfoFromCredential,
-} from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
+import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 
 import {
     useModal,
