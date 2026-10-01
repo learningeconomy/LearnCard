@@ -44,7 +44,8 @@ import { CredentialType } from 'types/credential';
 import { getBoostUri } from '@helpers/boost.helpers';
 import { getCredentialUri } from '@helpers/credential.helpers';
 import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
-import { getDidWeb } from '@helpers/did.helpers';
+import { getDidWeb, updateDidForProfile } from '@helpers/did.helpers';
+import { sanitizeProfileForTier } from '@helpers/profile-privacy.helpers';
 
 export const isProfileConsentFlowContractAdmin = async (
     profile: ProfileType,
@@ -424,9 +425,18 @@ export const getHolderExportMetadataForProfile = async (
                     createdAt: record.contract.createdAt,
                     updatedAt: record.contract.updatedAt,
                     uri: constructUri('contract', record.contract.id, domain),
-                    owner: record.owner,
+                    owner: updateDidForProfile(domain, record.owner),
                     ...(record.contract.expiresAt ? { expiresAt: record.contract.expiresAt } : {}),
                     autoBoosts: record.autoBoosts,
+                    // This is the audience at export time, not a historical consent snapshot.
+                    audienceVersion: Number(record.contract.audienceVersion ?? 0),
+                    recipients: record.recipients.map(recipient => {
+                        const publicProfile = updateDidForProfile(domain, recipient);
+                        return {
+                            ...sanitizeProfileForTier(publicProfile, 'unauthenticated'),
+                            did: publicProfile.did,
+                        };
+                    }),
                 },
                 terms: record.terms.terms,
                 ...(record.terms.referral ? { referral: record.terms.referral } : {}),
