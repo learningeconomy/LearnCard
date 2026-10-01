@@ -68,6 +68,7 @@ resource "aws_lb_listener" "https" {
 }
 
 resource "aws_lb_listener_rule" "admin" {
+  count        = length(var.admin_allowed_cidrs) > 0 ? 1 : 0
   listener_arn = aws_lb_listener.https.arn
   priority     = 10
   action {
@@ -83,11 +84,8 @@ resource "aws_lb_listener_rule" "admin" {
   }
   # Split CIDRs into individual rules to stay below ALB's five total match
   # evaluations per rule (host + two paths + up to two source IPs).
-  dynamic "condition" {
-    for_each = length(var.admin_allowed_cidrs) > 0 ? [true] : []
-    content {
-      source_ip { values = slice(var.admin_allowed_cidrs, 0, min(2, length(var.admin_allowed_cidrs))) }
-    }
+  condition {
+    source_ip { values = slice(var.admin_allowed_cidrs, 0, min(2, length(var.admin_allowed_cidrs))) }
   }
 }
 
@@ -127,6 +125,7 @@ resource "aws_lb_listener_rule" "deny_admin_elsewhere" {
 }
 
 resource "aws_lb_listener_rule" "admin_assets" {
+  count        = length(var.admin_allowed_cidrs) > 0 ? 1 : 0
   listener_arn = aws_lb_listener.https.arn
   priority     = 30
   action {
@@ -136,18 +135,14 @@ resource "aws_lb_listener_rule" "admin_assets" {
   condition {
     host_header { values = [var.admin_hostname] }
   }
-  dynamic "condition" {
-    for_each = length(var.admin_allowed_cidrs) > 0 ? [true] : []
-    content {
-      source_ip { values = var.admin_allowed_cidrs }
-    }
+  condition {
+    source_ip { values = var.admin_allowed_cidrs }
   }
 }
 
 # Without this catch-all denial, the listener default would bypass the CIDR
 # restriction for admin-host assets and master realm authentication endpoints.
 resource "aws_lb_listener_rule" "deny_admin_host" {
-  count        = length(var.admin_allowed_cidrs) > 0 ? 1 : 0
   listener_arn = aws_lb_listener.https.arn
   priority     = 40
   action {
@@ -161,4 +156,22 @@ resource "aws_lb_listener_rule" "deny_admin_host" {
   condition {
     host_header { values = [var.admin_hostname] }
   }
+}
+
+# Preserve listener rule addresses when upgrading an existing allowlisted stack.
+moved {
+  from = aws_lb_listener_rule.admin
+  to   = aws_lb_listener_rule.admin[0]
+}
+
+moved {
+  from = aws_lb_listener_rule.admin_assets
+  to   = aws_lb_listener_rule.admin_assets[0]
+}
+
+# The initial groundwork (e59d3f45c) used count on this rule; retain its state
+# when upgrading to an unconditional denial, including with an empty allowlist.
+moved {
+  from = aws_lb_listener_rule.deny_admin_host[0]
+  to   = aws_lb_listener_rule.deny_admin_host
 }

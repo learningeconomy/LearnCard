@@ -1,7 +1,12 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from 'jose';
 import type { JWTPayload } from 'jose';
-import { verifyAuthToken, verifyKeycloakToken } from '../src/helpers/auth.helpers';
+import admin from 'firebase-admin';
+import {
+    verifyFirebaseToken,
+    verifyAuthToken,
+    verifyKeycloakToken,
+} from '../src/helpers/auth.helpers';
 import {
     getKeycloakIssuerJwksUrl,
     getKeycloakJwks,
@@ -89,6 +94,15 @@ describe('Keycloak token verification', () => {
         ).resolves.toMatchObject({ providerType: 'keycloak' });
     });
 
+    it('accepts a verified token without the optional payload typ', async () => {
+        await expect(verifyKeycloakToken(await signToken({ typ: undefined }))).resolves.toEqual({
+            id: 'user-123',
+            email: 'learner@example.com',
+            phone: undefined,
+            providerType: 'keycloak',
+        });
+    });
+
     it.each([
         ['wrong issuer', { iss: 'https://wrong.example/realms/learncard' }],
         ['same-key issuer outside allowlist', { iss: `${issuer}/` }],
@@ -104,7 +118,9 @@ describe('Keycloak token verification', () => {
         ['expired token', { exp: 1 }],
         ['future nbf', { nbf: Math.floor(Date.now() / 1000) + 300 }],
         ['refresh token', { typ: 'Refresh' }],
-        ['missing payload typ', { typ: undefined }],
+        ['offline token', { typ: 'Offline' }],
+        ['unsupported payload typ', { typ: 'bearer' }],
+        ['null payload typ', { typ: null }],
         ['missing subject', { sub: undefined }],
         ['missing audience and azp', { aud: undefined, azp: undefined }],
     ])('rejects %s', async (_label, claims) => {
@@ -228,10 +244,11 @@ describe('Keycloak configuration', () => {
         expect(getKeycloakVerifyOptionsFromEnv()).toBeNull();
     });
 
-    it('fails closed for empty audiences', async () => {
+    it('reports missing audiences as a configuration error', async () => {
         vi.stubEnv('KEYCLOAK_AUDIENCES', ' , ');
         await expect(verifyKeycloakToken(await signToken())).rejects.toMatchObject({
-            code: 'UNAUTHORIZED',
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'KEYCLOAK_AUDIENCES is required when KEYCLOAK_ISSUERS is configured',
         });
     });
 
@@ -248,5 +265,43 @@ describe('Keycloak configuration', () => {
         expect(getKeycloakIssuerJwksUrl('https://other.example')).toBe(
             'https://other.example/protocol/openid-connect/certs'
         );
+    });
+});
+
+describe('offline Firebase verification', () => {
+    it.each(['invalid', 'header.%%.signature', 'header.eyJlbWFpbCI6MTIzfQ.signature'])(
+        'rejects malformed claims without contacting Firebase: %s',
+        async token => {
+            vi.mocked(admin.auth).mockClear();
+            await expect(verifyFirebaseToken(token)).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+                message: 'Could not decode Firebase token in offline/E2E mode',
+            });
+            expect(admin.auth).not.toHaveBeenCalled();
+        }
+    );
+    it('accepts valid offline claims without contacting Firebase', async () => {
+        vi.mocked(admin.auth).mockClear();
+        const payload = Buffer.from(JSON.stringify({ uid: 'offline-id' })).toString('base64url');
+        await expect(verifyFirebaseToken(`header.${payload}.signature`)).resolves.toMatchObject({
+            id: 'offline-id',
+            providerType: 'firebase',
+        });
+        expect(admin.auth).not.toHaveBeenCalled();
+    });
+});
+
+describe('JWKS endpoint cache', () => {
+    it('replaces the resolver when the resolved URL changes and reuses unchanged URLs', () => {
+        setKeycloakJwksResolverForTests(undefined);
+        const original = getKeycloakJwks(issuer);
+        vi.stubEnv('KEYCLOAK_JWKS_URL_OVERRIDES', `${issuer}=http://internal:8080/certs`);
+        const updated = getKeycloakJwks(issuer);
+        expect(updated).not.toBe(original);
+        expect(getKeycloakJwks(issuer)).toBe(updated);
+        vi.stubEnv('KEYCLOAK_JWKS_URL_OVERRIDES', `${issuer}=http://other:8080/certs`);
+        expect(getKeycloakJwks(issuer)).not.toBe(updated);
+        vi.stubEnv('KEYCLOAK_JWKS_URL_OVERRIDES', '');
+        expect(getKeycloakJwks(issuer)).not.toBe(updated);
     });
 });

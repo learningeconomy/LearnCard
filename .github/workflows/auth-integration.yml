@@ -5,6 +5,7 @@ on:
         paths:
             - 'services/learn-card-network/lca-api/**'
             - 'infra/keycloak/**'
+            - 'scripts/export-keycloak-realm*'
             - '.github/workflows/auth-integration.yml'
     workflow_dispatch:
 
@@ -58,6 +59,8 @@ jobs:
               uses: ./.github/actions/setup
             - name: Build Keycloak dev image (adds Apple identity provider)
               run: docker build -f infra/keycloak/Dockerfile.dev -t learncard-keycloak-dev infra/keycloak
+            - name: Verify realm export normalization
+              run: node --test scripts/export-keycloak-realm.test.mjs
             - name: Start Keycloak
               run: |
                   docker run -d --name keycloak -p 8081:8080 -p 9000:9000 \
