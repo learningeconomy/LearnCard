@@ -11,6 +11,7 @@ export default createVitestConfig(brainServicePreset, {
     test: {
         include: [
             'src/helpers/service-account-auth.helpers.test.ts',
+            'src/helpers/ecosystem-access.helpers.test.ts',
             'test/uri-helpers.spec.ts',
             'test/oidc-jwt.spec.ts',
             'test/notificationMessages.spec.ts',
