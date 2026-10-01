@@ -167,9 +167,9 @@ services:
             REDIS_HOST: redis3
             REDIS_PORT: 6379
             METABASE_SECRET_KEY: test-key
-            KEYCLOAK_ISSUERS: http://localhost:8081/realms/learncard
+            # Keycloak is internal-only in this groundwork stack (no browser auth route).
+            KEYCLOAK_ISSUERS: http://keycloak:8080/realms/learncard
             KEYCLOAK_AUDIENCES: learncard-app
-            KEYCLOAK_JWKS_URL_OVERRIDES: http://localhost:8081/realms/learncard=http://keycloak:8080/realms/learncard/protocol/openid-connect/certs
 
     test-embed-app:
         image: node:24.12.0-alpine
@@ -304,7 +304,7 @@ services:
             KC_BOOTSTRAP_ADMIN_USERNAME: admin
             KC_BOOTSTRAP_ADMIN_PASSWORD: admin
             KC_HEALTH_ENABLED: 'true'
-            KC_HOSTNAME: http://localhost:8081
+            KC_HOSTNAME: http://keycloak:8080
             KC_HTTP_ENABLED: 'true'
         expose:
             - 8080

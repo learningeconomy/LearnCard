@@ -17,8 +17,12 @@ docker compose -f apps/learn-card-app/compose-local.yaml up -d keycloak
 
 Admin console: <http://localhost:8081/admin>, `admin` / `admin`.
 ScoutPass has the same service in `apps/scouts/compose-local.yaml`; run only one
-local stack at a time. Preview exposes port 8080 internally only, not on the host;
-it does not configure a public Keycloak route.
+local stack at a time. Preview uses `http://keycloak:8080/realms/learncard` as its
+issuer, reachable only on the per-preview Docker network. The API uses that same
+issuer for verification and JWKS discovery, without an override. Preview has no
+host-port binding, public Keycloak route, or browser Keycloak login in this groundwork.
+Browser integration requires an HTTPS proxy route, matching issuer/client settings,
+and preview redirect URIs together; a JWKS override alone does not enable it.
 
 `--import-realm` is bootstrap-only: it skips existing realms. H2 persists in the
 `keycloak-data` named volume. To re-import a changed fixture:
