@@ -555,6 +555,14 @@ export type BundleManifestPreflightRequirement = z.infer<
     typeof BundleManifestPreflightRequirementValidator
 >;
 
+/** Catalog readiness evidence, not authorization or a workload activation decision. */
+export const CatalogReadinessGateValidator = z.object({
+    name: z.string().min(1),
+    status: z.enum(['OPEN', 'Passable', 'Keep optional']),
+    note: z.string().min(1),
+});
+export type CatalogReadinessGate = z.infer<typeof CatalogReadinessGateValidator>;
+
 export const BundleManifestValidator = z
     .object({
         apiVersion: z.literal('lc.bundle/v1'),
@@ -563,6 +571,7 @@ export const BundleManifestValidator = z
         contains: z.array(BundleManifestMemberValidator),
         defaultBindings: z.array(BundleManifestDefaultBindingValidator).default([]),
         preflight: z.array(BundleManifestPreflightRequirementValidator).default([]),
+        readiness: z.array(CatalogReadinessGateValidator).optional(),
         publisherDid: z.string().startsWith('did:'),
         signature: ManifestSignatureValidator,
     })
