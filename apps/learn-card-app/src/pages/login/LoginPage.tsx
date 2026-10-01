@@ -33,7 +33,8 @@ import { Capacitor } from '@capacitor/core';
 import { useFirebase } from '../../hooks/useFirebase';
 import useLogout from '../../hooks/useLogout';
 
-import { setPublicComputerMode, isPublicComputerMode } from '@learncard/sss-key-manager';
+import { changeSignInPersistence, useSignInPersistence } from '../../auth/signInPersistence';
+import { SignInPersistenceError } from './SignInPersistenceError';
 import { useSignInAdapter } from 'learn-card-base';
 import { readKeycloakReauth } from '../../auth/keycloakReauth';
 import { getConfigCapabilities } from 'learn-card-base/config/authConfig';
@@ -94,7 +95,11 @@ export const LoginContent: React.FC = () => {
     const [qrApproved, setQrApproved] = useState(false);
     const [showLinkedBanner, setShowLinkedBanner] = useState(false);
     const [accountHint, setAccountHint] = useState<string | null>(null);
-    const [isPublicMode, setIsPublicMode] = useState(() => isPublicComputerMode());
+    const {
+        isPublicMode,
+        isUpdating: isUpdatingPersistence,
+        error: persistenceError,
+    } = useSignInPersistence();
 
     const installIntent = redirectStore.use.installIntent();
     const authConfig = getAuthConfig();
@@ -622,23 +627,16 @@ export const LoginContent: React.FC = () => {
                         </IonRow>
                     </IonRow>
 
+                    <div className="w-full max-w-[500px] px-4">
+                        <SignInPersistenceError />
+                    </div>
                     {isWeb && configCapabilities.localKeyPersistence && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center mt-3">
                             <button
-                                onClick={async () => {
-                                    const next = !isPublicMode;
-                                    setIsPublicMode(next);
-                                    setPublicComputerMode(next);
-
-                                    // Switch Firebase persistence: session-only in public
-                                    // mode so the auth session dies with the tab, or
-                                    // IndexedDB (default) when toggling back.
-                                    try {
-                                        await adapter.setSessionPersistence?.(next);
-                                    } catch (e) {
-                                        log.warn('Failed to set Firebase persistence', e);
-                                    }
-                                }}
+                                role="switch"
+                                aria-checked={isPublicMode}
+                                disabled={isUpdatingPersistence || Boolean(persistenceError)}
+                                onClick={() => changeSignInPersistence(adapter, !isPublicMode)}
                                 className="flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-200 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
                                 <div
@@ -666,7 +664,14 @@ export const LoginContent: React.FC = () => {
                                     ${isPublicMode ? 'text-white font-medium' : 'text-white'}
                                 `}
                                 >
-                                    {m['login.sharedComputer']()}
+                                    {isUpdatingPersistence ? (
+                                        <span className="flex items-center gap-2">
+                                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            Setting up...
+                                        </span>
+                                    ) : (
+                                        m['login.sharedComputer']()
+                                    )}
                                 </span>
                             </button>
                         </IonRow>
