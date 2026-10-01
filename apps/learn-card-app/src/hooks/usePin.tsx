@@ -6,16 +6,20 @@ import {
     currentUserStore,
     ModalTypes,
     switchedProfileStore,
+    ToastTypeEnum,
     useModal,
     useSwitchProfile,
+    useToast,
     useWallet,
 } from 'learn-card-base';
 import FamilyPinWrapper, {
     FamilyPinViewModeEnum,
 } from '../components/familyCMS/FamilyBoostPreview/FamilyPin/FamilyPinWrapper';
+import * as m from '../paraglide/messages.js';
 
 export const usePin = (onSwitch?: (profile: LCNProfile) => void) => {
     const { newModalWithToken, forceCloseModalByToken } = useModal();
+    const { presentToast } = useToast();
     const queryClient = useQueryClient();
     const { initWallet } = useWallet();
     const { handleSwitchBackToParentAccount, isSwitching } = useSwitchProfile();
@@ -25,17 +29,18 @@ export const usePin = (onSwitch?: (profile: LCNProfile) => void) => {
         const parentUser = currentUserStore.get.parentUser();
         const parentDid = currentUserStore.get.parentUserDid();
         await handleSwitchBackToParentAccount();
-        return (
-            queryClient.getQueryData<LCNProfile>(['getProfile', '', undefined]) ?? {
-                did: parentDid ?? '',
-                profileId: parentDid?.split(':').at(-1) ?? '',
-                displayName: parentUser?.name ?? '',
-                shortBio: '',
-                bio: '',
-                image: parentUser?.profileImage,
-                isServiceProfile: false,
-            }
-        );
+        const cachedParent = queryClient.getQueryData<LCNProfile>(['getProfile', '', undefined]);
+        return cachedParent?.did === parentDid
+            ? cachedParent
+            : {
+                  did: parentDid ?? '',
+                  profileId: parentDid?.split(':').at(-1) ?? '',
+                  displayName: parentUser?.name ?? '',
+                  shortBio: '',
+                  bio: '',
+                  image: parentUser?.profileImage,
+                  isServiceProfile: false,
+              };
     };
 
     const handleVerifyParentPin = async (options?: {
@@ -55,8 +60,15 @@ export const usePin = (onSwitch?: (profile: LCNProfile) => void) => {
         if (hasParentSwitchedProfiles && parentDid) {
             const hasPin = ignorePin ? false : await (await initWallet()).invoke.hasPin(parentDid);
             if (!hasPin) {
-                if (switchToParentAfterPin) onSwitch?.(await handleSwitch());
-                onSuccess?.();
+                if (switchToParentAfterPin) {
+                    onSwitch?.(await handleSwitch());
+                    onSuccess?.();
+                } else {
+                    presentToast(m['family.pinModal.approvalRequiresPin'](), {
+                        type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
+                    });
+                }
                 return;
             }
         }

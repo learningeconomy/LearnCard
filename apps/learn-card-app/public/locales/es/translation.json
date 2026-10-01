@@ -3034,7 +3034,8 @@
             "verifying": "Verificando...",
             "forUser": "para {{name}}",
             "requiresFiveDigits": "El PIN debe tener 5 dígitos",
-            "invalidPin": "PIN no válido. Inténtalo de nuevo"
+            "invalidPin": "PIN no válido. Inténtalo de nuevo",
+            "approvalRequiresPin": "Necesitas el PIN de un padre o tutor para esta acción. Cambia a su cuenta para configurarlo."
         },
         "guardianInvite": {
             "shareTitle": "Invitación de tutor",

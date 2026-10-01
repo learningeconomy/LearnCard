@@ -45,6 +45,13 @@ may need to install some system dependencies. See the Playwright docs [here](htt
 
 After playwright is set up, you can simply run `bun run test` or `bunx nx test learn-card-app` to run the E2E tests!
 
+## Managed Account Consent
+
+- Consent identity uses the parent account's Family name/photo records. Its cache is separate from profile lists and scoped to the parent account.
+- An explicitly typed child remains a child even if a legacy record has the service-profile flag.
+- Creating a Family requires an adult PIN. Approval-only actions stay on the child account and cannot continue without PIN verification; a missing PIN prompts the adult to set one up.
+- Profile-switch completion callbacks close their own token-scoped modal instead of also closing whichever modal is on top.
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.

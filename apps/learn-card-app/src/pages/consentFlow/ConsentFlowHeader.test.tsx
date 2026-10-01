@@ -1,8 +1,9 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { UserProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
+import { currentUserStore } from 'learn-card-base/stores/currentUserStore';
 import ConsentFlowHeader from './ConsentFlowHeader';
 
 const state = vi.hoisted(() => ({
@@ -52,12 +53,14 @@ describe('consent account avatar', () => {
         state.currentUser = { name: 'cybOrg', profileImage: '' };
         state.currentLCNUser = null;
         state.switchedDid = undefined;
+        currentUserStore.set.parentUserDid(null);
         queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
         state.getAvailableProfiles.mockResolvedValue({ records: [], hasMore: false });
     });
     afterEach(() => {
         cleanup();
         queryClient.clear();
+        currentUserStore.set.parentUserDid(null);
     });
 
     it('shows the selected organization image instead of a stale local-account image', () => {
@@ -114,5 +117,69 @@ describe('consent account avatar', () => {
         expect(avatar.getAttribute('src')).toContain('/child.png');
         fireEvent.load(avatar);
         expect(avatar.classList.contains('opacity-100')).toBe(true);
+    });
+
+    it('loads the child avatar independently of cached available-profile lists', async () => {
+        state.currentUser = { name: '', profileImage: '' };
+        state.currentLCNUser = { displayName: '', image: '', profileId: 'child-id' };
+        state.switchedDid = 'did:web:localhost%3A4000:users:child-id';
+        queryClient.setQueryData(['getAvailableProfiles', '', { profileId: 'child-id' }], {
+            records: [{ profile: { profileId: 'child-id' } }],
+            hasMore: false,
+        });
+        state.getAvailableProfiles.mockResolvedValue({
+            records: [
+                {
+                    profile: { profileId: 'child-id' },
+                    manager: { displayName: 'Lil Demo', image: 'https://example.com/child.png' },
+                },
+            ],
+            hasMore: false,
+        });
+
+        renderHeader();
+
+        expect((await screen.findByRole('img', { name: 'user' })).getAttribute('src')).toContain(
+            '/child.png'
+        );
+    });
+
+    it('refreshes the child avatar when the parent account changes', async () => {
+        state.currentUser = { name: '', profileImage: '' };
+        state.currentLCNUser = { displayName: '', image: '', profileId: 'child-id' };
+        state.switchedDid = 'did:web:localhost%3A4000:users:child-id';
+        currentUserStore.set.parentUserDid('did:web:localhost%3A4000:users:first-parent');
+        state.getAvailableProfiles.mockResolvedValue({
+            records: [
+                {
+                    profile: { profileId: 'child-id' },
+                    manager: { displayName: 'Lil Demo', image: 'https://example.com/first.png' },
+                },
+            ],
+            hasMore: false,
+        });
+        renderHeader();
+        expect((await screen.findByRole('img', { name: 'user' })).getAttribute('src')).toContain(
+            '/first.png'
+        );
+
+        state.getAvailableProfiles.mockResolvedValue({
+            records: [
+                {
+                    profile: { profileId: 'child-id' },
+                    manager: { displayName: 'Lil Demo', image: 'https://example.com/second.png' },
+                },
+            ],
+            hasMore: false,
+        });
+        act(() => {
+            currentUserStore.set.parentUserDid('did:web:localhost%3A4000:users:second-parent');
+        });
+
+        await waitFor(() => {
+            expect(screen.getByRole('img', { name: 'user' }).getAttribute('src')).toContain(
+                '/second.png'
+            );
+        });
     });
 });

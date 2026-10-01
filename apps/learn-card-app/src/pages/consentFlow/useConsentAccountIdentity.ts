@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useWallet } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import useGetCurrentLCNUser from 'learn-card-base/hooks/useGetCurrentLCNUser';
+import { currentUserStore } from 'learn-card-base/stores/currentUserStore';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 
 export const useConsentAccountIdentity = () => {
@@ -9,9 +10,10 @@ export const useConsentAccountIdentity = () => {
     const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
+    const parentDid = currentUserStore.use.parentUserDid();
     const profileId = currentLCNUser?.profileId;
     const { data: managedIdentity, isLoading: managedIdentityLoading } = useQuery({
-        queryKey: ['getAvailableProfiles', '', { profileId }],
+        queryKey: ['consentAccountIdentity', parentDid, profileId],
         enabled:
             !!switchedDid &&
             !!profileId &&
