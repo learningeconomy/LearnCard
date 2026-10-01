@@ -93,12 +93,14 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
         showServiceProfiles || showServiceProfilesOnly
             ? profileRecords
             : profileRecords?.filter?.(
-                  ({ profile }: { profile: LCNProfile }) => !profile.isServiceProfile
+                  ({ profile }: { profile: LCNProfile }) =>
+                      profile.type === 'child' || !profile.isServiceProfile
               );
 
     if (showServiceProfilesOnly) {
         profileRecords = profileRecords?.filter?.(
-            ({ profile }: { profile: LCNProfile }) => profile.isServiceProfile
+            ({ profile }: { profile: LCNProfile }) =>
+                profile.type !== 'child' && profile.isServiceProfile
         );
     }
 
@@ -191,7 +193,8 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
                             const image = profile?.image || manager?.image;
                             const isSelected = currentLCNUser?.did === profile?.did;
 
-                            const isServiceProfile = profile?.isServiceProfile ?? false;
+                            const isServiceProfile =
+                                profile?.type !== 'child' && profile?.isServiceProfile === true;
 
                             return (
                                 <button
@@ -201,6 +204,7 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
                                             did: profile?.did,
                                             profileId: profile?.profileId,
                                             isServiceProfile: profile?.isServiceProfile,
+                                            type: profile?.type,
                                             displayName,
                                             image,
                                         };
