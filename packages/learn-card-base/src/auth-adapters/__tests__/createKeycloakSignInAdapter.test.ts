@@ -397,12 +397,20 @@ describe('createKeycloakSignInAdapter', () => {
             ['confirmNativePhoneOtp', () => adapter.confirmNativePhoneOtp?.('id', 123)],
             ['deleteAccount', () => adapter.deleteAccount()],
             ['updateProfile', () => adapter.updateProfile?.({ displayName: 'Name' })],
-            ['setSessionPersistence', () => adapter.setSessionPersistence?.(true)],
         ];
         for (const [operation, action] of operations) {
             await expect(action()).rejects.toBeInstanceOf(UnsupportedSignInOperationError);
             await expect(action()).rejects.toMatchObject({ operation, providerType: 'keycloak' });
         }
+    });
+    it('delegates both persistence modes to the provider', async (): Promise<void> => {
+        const setPersistence = vi
+            .spyOn(config.provider, 'setSessionPersistence')
+            .mockResolvedValue();
+        const adapter = create();
+        await adapter.setSessionPersistence?.(true);
+        await adapter.setSessionPersistence?.(false);
+        expect(setPersistence.mock.calls).toEqual([[true], [false]]);
     });
     it('reports email links as unsupported hints', async () => {
         const adapter = create();

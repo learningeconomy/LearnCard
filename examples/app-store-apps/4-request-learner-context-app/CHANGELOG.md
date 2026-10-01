@@ -1,5 +1,12 @@
 # @learncard/app-store-demo-request-learner-context
 
+## 1.0.22
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/partner-connect@0.5.2
+
 ## 1.0.21
 
 ### Patch Changes

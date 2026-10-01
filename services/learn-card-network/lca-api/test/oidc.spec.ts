@@ -3,6 +3,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { createLocalJWKSet, exportJWK, generateKeyPair, jwtVerify } from 'jose';
 import { oidcFastifyPlugin } from '../src/oidc';
 import { issueLoginTicket, redeemLoginTicket } from '../src/cache/login-tickets';
+import cache from '@cache';
 
 const { env, entries } = vi.hoisted(() => ({
     env: {
@@ -28,10 +29,24 @@ vi.mock('@cache', () => {
     return {
         default: {
             get,
-            set: async (key: string, value: string, ttl: number): Promise<void> => {
+            set: async (key: string, value: string, ttl: number): Promise<'OK'> => {
                 entries.set(key, { value, expires: Date.now() + ttl * 1000 });
+                return 'OK';
             },
             node: {
+                eval: async (script: string, _count: number, key: string, ttl: number) => {
+                    const value = await get(key);
+                    const attempts = script.includes("redis.call('INCR'")
+                        ? String(Number(value ?? 0) + 1)
+                        : value;
+                    if (attempts !== null) {
+                        entries.set(key, {
+                            value: attempts,
+                            expires: entries.get(key)?.expires ?? Date.now() + ttl * 1000,
+                        });
+                    }
+                    return attempts;
+                },
                 getdel: async (key: string): Promise<string | null> => {
                     const value = await get(key);
                     entries.delete(key);
@@ -158,9 +173,25 @@ beforeEach(async () => {
 });
 afterEach(async () => {
     await app.close();
+    vi.restoreAllMocks();
 });
 
 describe('OIDC provider', () => {
+    it('returns a server error without a code redirect when authorization-code storage fails', async () => {
+        const loginHint = await ticket();
+        vi.spyOn(cache, 'set').mockResolvedValueOnce(undefined);
+        const response = await authorize({ login_hint: loginHint });
+        expect(response.statusCode).toBe(500);
+        expect(response.json()).toEqual({ error: 'server_error' });
+        expect(response.headers.location).toBeUndefined();
+    });
+    it('returns a server error without tokens when access-token storage fails', async () => {
+        const authorizationCode = await code();
+        vi.spyOn(cache, 'set').mockResolvedValueOnce(undefined);
+        const response = await exchange(authorizationCode);
+        expect(response.statusCode).toBe(500);
+        expect(response.json()).toEqual({ error: 'server_error' });
+    });
     it('serves discovery with the exact issuer and userinfo endpoint', async () => {
         const response = await app.inject('/.well-known/openid-configuration');
         expect(response.statusCode).toBe(200);
