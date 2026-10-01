@@ -1,5 +1,10 @@
 import { environment } from '@environment';
 import http from 'node:http';
+import {
+    hasIntegrationTokenType,
+    verifyServiceAccountToken,
+    type ServiceAccountPrincipal,
+} from '@helpers/service-account-auth.helpers';
 
 import { initTRPC, TRPCError } from '@trpc/server';
 import type { APIGatewayProxyEventV2 } from 'aws-lambda';
@@ -45,6 +50,7 @@ export type DidAuthVP = {
 };
 
 export type Context = {
+    serviceAccount?: ServiceAccountPrincipal;
     user?: {
         did: string;
         isChallengeValid: boolean;
@@ -137,6 +143,10 @@ export const createContext = async (
         const [scheme, jwt] = authHeader.split(' ');
 
         if (scheme === 'Bearer' && jwt) {
+            if (hasIntegrationTokenType(jwt)) {
+                const claims = await verifyServiceAccountToken(jwt);
+                return { serviceAccount: { token: jwt, claims }, domain, tenant, sourceIp };
+            }
             const learnCard = await getEmptyLearnCard();
 
             const result = await learnCard.invoke.verifyPresentation(jwt, { proofFormat: 'jwt' });

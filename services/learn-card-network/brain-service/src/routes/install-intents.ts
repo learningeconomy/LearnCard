@@ -11,7 +11,14 @@ import {
     IntegrationManifestValidator,
 } from '@learncard/types';
 
-import { t, profileRoute } from '@routes';
+import { t, profileRoute, openRouteWithoutInputCapture } from '@routes';
+import {
+    readServiceAccount,
+    issueServiceAccountCredential,
+    emergencyRevokeServiceAccount,
+    exchangeServiceAccountCredential,
+} from '@accesslayer/service-account/auth';
+import { enforceRateLimits } from '@helpers/rateLimit.helpers';
 import { getListedApps, readAppStoreListingById } from '@accesslayer/app-store-listing/read';
 import {
     readListingVersionById,
@@ -560,6 +567,61 @@ const buildApprovedSpec = async (intent: InstallIntentRecordType): Promise<Insta
 };
 
 export const installIntentsRouter = t.router({
+    issueServiceAccountCredential: profileRoute
+        .input(z.object({ serviceAccountId: z.string().min(1).max(200) }))
+        .output(
+            z.object({ serviceAccountId: z.string(), secret: z.string(), expiresAt: z.string() })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const account = await readServiceAccount(input.serviceAccountId);
+            if (!account) throw new TRPCError({ code: 'NOT_FOUND' });
+            await requireEcosystemRole(account.ecosystemId, ctx.user.profile.profileId, [
+                'OWNER',
+                'ADMIN',
+            ]);
+            return issueServiceAccountCredential(account.id, ctx.user.profile.profileId);
+        }),
+    emergencyRevokeServiceAccount: profileRoute
+        .input(z.object({ serviceAccountId: z.string().min(1).max(200) }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const account = await readServiceAccount(input.serviceAccountId);
+            if (!account) throw new TRPCError({ code: 'NOT_FOUND' });
+            await requireEcosystemRole(account.ecosystemId, ctx.user.profile.profileId, [
+                'OWNER',
+                'ADMIN',
+            ]);
+            await emergencyRevokeServiceAccount(account.id, ctx.user.profile.profileId);
+            return true;
+        }),
+    exchangeServiceAccountToken: openRouteWithoutInputCapture
+        .input(
+            z.object({
+                serviceAccountId: z.string().min(1).max(200),
+                secret: z.string().min(1).max(200),
+            })
+        )
+        .output(z.object({ token: z.string(), expiresIn: z.literal(300) }))
+        .mutation(async ({ ctx, input }) => {
+            await enforceRateLimits([
+                {
+                    key: `integration-exchange:ip:${ctx.sourceIp ?? 'unknown'}`,
+                    limit: 60,
+                    windowSeconds: 60,
+                    description: 'integration exchange caller',
+                },
+                {
+                    key: `integration-exchange:account:${input.serviceAccountId}`,
+                    limit: 10,
+                    windowSeconds: 60,
+                    description: 'integration exchange account',
+                },
+            ]);
+            return {
+                token: await exchangeServiceAccountCredential(input.serviceAccountId, input.secret),
+                expiresIn: 300 as const,
+            };
+        }),
     planInstallIntent: profileRoute
         .meta({ requiredScope: 'app-store:write' })
         .input(PlanInstallIntentInputValidator)
