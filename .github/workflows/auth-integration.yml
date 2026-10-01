@@ -61,6 +61,9 @@ jobs:
               uses: ./.github/actions/setup
             - name: Build Keycloak dev image (adds Apple identity provider)
               run: docker build -f infra/keycloak/Dockerfile.dev -t learncard-keycloak-dev infra/keycloak
+            - name: Install test browser
+              run: |
+                  bunx --cwd tests/smoketests playwright install --with-deps chromium
             - name: Start Keycloak
               run: |
                   docker run -d --name keycloak -p 8081:8080 -p 9000:9000 \
@@ -75,12 +78,17 @@ jobs:
                     -e APPLE_KEY_ID=ci-apple-key-id \
                     -e APPLE_P8_CONTENT=ci-placeholder-not-a-real-key \
                     -v "$GITHUB_WORKSPACE/infra/keycloak/realms/learncard-dev-realm.json:/opt/keycloak/data/import/learncard-realm.json:ro" \
+                    -v "$GITHUB_WORKSPACE/infra/keycloak/test/fake-google-realm.json:/opt/keycloak/data/import/fake-google-realm.json:ro" \
                     learncard-keycloak-dev start-dev --import-realm
             - name: Wait for Keycloak readiness
               run: |
                   curl --fail --silent --show-error --retry 40 --retry-delay 3 \
                     --retry-all-errors --retry-max-time 120 --max-time 3 \
                     http://localhost:9000/health/ready || { docker logs keycloak; exit 1; }
+            - name: Configure test-only Google upstream
+              run: bun infra/keycloak/test/configure-fake-google.ts
+              env:
+                  KEYCLOAK_INTEGRATION: 'true'
             - name: Start lca-api
               working-directory: services/learn-card-network/lca-api
               run: bun --conditions=development src/docker-entry.ts > "$RUNNER_TEMP/lca-api.log" 2>&1 &
@@ -115,6 +123,7 @@ jobs:
                   bunx vitest run -c vitest.integration.config.ts
                   test/keycloak-broker-roundtrip.integration.spec.ts
                   test/keycloak-migration.integration.spec.ts
+                  test/keycloak-social-broker.integration.spec.ts
               env:
                   KEYCLOAK_INTEGRATION: 'true'
                   KEYCLOAK_ROUNDTRIP: 'true'
@@ -128,6 +137,9 @@ jobs:
                   name: lca-api-auth-integration-logs
                   path: ${{ runner.temp }}/lca-api.log
                   retention-days: 1
+            - name: Remove test containers
+              if: ${{ always() }}
+              run: docker rm -f keycloak
 
     keycloak-realm-tests:
         runs-on: ubuntu-latest
@@ -189,6 +201,9 @@ jobs:
                   curl --fail --silent --show-error --retry 40 --retry-delay 3 \
                     --retry-all-errors --retry-max-time 120 --max-time 3 \
                     http://localhost:9000/health/ready || { docker logs keycloak; exit 1; }
+            - name: Install test browser
+              run: |
+                  bunx --cwd tests/smoketests playwright install --with-deps chromium
             - name: Apply reusable module and dev-only overlay
               working-directory: infra/keycloak/terraform/realm/local
               run: |
@@ -215,6 +230,7 @@ jobs:
                   bunx vitest run -c vitest.integration.config.ts
                   test/keycloak-broker-roundtrip.integration.spec.ts
                   test/keycloak-migration.integration.spec.ts
+                  test/keycloak-social-broker.integration.spec.ts
             - name: Keycloak logs on failure
               if: ${{ always() && failure() }}
               run: docker logs keycloak
@@ -225,3 +241,6 @@ jobs:
                   name: lca-api-realm-integration-logs
                   path: ${{ runner.temp }}/lca-api.log
                   retention-days: 1
+            - name: Remove test containers
+              if: ${{ always() }}
+              run: docker rm -f keycloak

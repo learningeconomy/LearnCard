@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import { ObjectId, type Collection } from 'mongodb';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -30,7 +31,14 @@ describe.runIf(roundtripEnabled)('Firebase-era UserKey migration', () => {
     let mongo: typeof import('./helpers/live-mongo');
     let admin: Awaited<ReturnType<typeof createKeycloakAdmin>>;
     const emails: string[] = [];
-    const ids: string[] = [];
+    const ids: ObjectId[] = [];
+    // Match the real driver's ObjectIds; the model type describes serialized records.
+    const userKeys = (): Collection<
+        Omit<import('../src/models/UserKey').MongoUserKeyType, '_id'>
+    > =>
+        keys.getUserKeysCollection() as unknown as Collection<
+            Omit<import('../src/models/UserKey').MongoUserKeyType, '_id'>
+        >;
     const knownShare = { encryptedData: 'known-firebase-era-auth-share', encryptedDek: '', iv: '' };
 
     beforeAll(async () => {
@@ -50,7 +58,7 @@ describe.runIf(roundtripEnabled)('Firebase-era UserKey migration', () => {
                     .getAuthSubjectsCollection()
                     .deleteOne({ identityKey: `email:${email}` });
             }
-            await keys.getUserKeysCollection().deleteMany({ _id: { $in: ids } });
+            await userKeys().deleteMany({ _id: { $in: ids } });
         } finally {
             await mongo.client.close();
         }
@@ -58,13 +66,14 @@ describe.runIf(roundtripEnabled)('Firebase-era UserKey migration', () => {
 
     const seedKey = async (
         phoneOnly = false
-    ): Promise<import('../src/models/UserKey').MongoUserKeyType> => {
-        const id = randomUUID();
+    ): Promise<
+        Omit<import('../src/models/UserKey').MongoUserKeyType, '_id'> & { _id: ObjectId }
+    > => {
+        const id = new ObjectId();
         const email = `migration-${id}@example.com`;
         ids.push(id);
         if (!phoneOnly) emails.push(email);
         const key = keys.MongoUserKeyValidator.parse({
-            _id: id,
             contactMethod: {
                 type: phoneOnly ? 'phone' : 'email',
                 value: phoneOnly ? `+1555${Date.now().toString().slice(-7)}` : email,
@@ -78,16 +87,14 @@ describe.runIf(roundtripEnabled)('Firebase-era UserKey migration', () => {
             createdAt: new Date(),
             updatedAt: new Date(),
         });
-        await keys.getUserKeysCollection().insertOne(key);
-        return key;
+        const record = { ...key, _id: id };
+        await userKeys().insertOne(record);
+        return record;
     };
     const snapshot = async (email: string): Promise<unknown> => {
         const users = await admin.findUsers(email);
         return {
-            keys: await keys
-                .getUserKeysCollection()
-                .find({ 'contactMethod.value': email })
-                .toArray(),
+            keys: await userKeys().find({ 'contactMethod.value': email }).toArray(),
             subjects: await subjects
                 .getAuthSubjectsCollection()
                 .find({ identityKey: `email:${email}` })
@@ -220,7 +227,7 @@ describe.runIf(roundtripEnabled)('Firebase-era UserKey migration', () => {
         const summary = z.object({ skipped: z.number() }).parse(JSON.parse(serialized!));
         expect(summary.skipped).toBe(phoneCount);
         expect(phoneCount).toBeGreaterThanOrEqual(1);
-        expect(await keys.getUserKeysCollection().findOne({ _id: seeded._id })).toEqual(seeded);
+        expect(await userKeys().findOne({ _id: seeded._id })).toEqual(seeded);
         process.stdout.write(
             `Phone-only skip count=${summary.skipped} (includes one synthetic fixture); no writes.\n`
         );

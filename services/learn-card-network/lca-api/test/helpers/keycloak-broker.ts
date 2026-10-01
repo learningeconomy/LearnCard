@@ -7,7 +7,51 @@ export const roundtripEnabled =
 export const apiOrigin = process.env.OIDC_ISSUER ?? 'http://localhost:5100';
 export const keycloakIssuer =
     process.env.KEYCLOAK_ISSUERS?.split(',')[0] ?? 'http://localhost:8081/realms/learncard';
-const callback = 'http://localhost:3000/login';
+export const callback = 'http://localhost:3000/login';
+
+export const createBrokerAuthorization = (
+    idp: string,
+    loginHint?: string
+): {
+    url: URL;
+    verifier: string;
+    state: string;
+} => {
+    const verifier = randomBytes(32).toString('base64url');
+    const state = randomUUID();
+    const params = new URLSearchParams({
+        client_id: 'learncard-app',
+        response_type: 'code',
+        scope: 'openid email profile phone',
+        redirect_uri: callback,
+        state,
+        code_challenge: createHash('sha256').update(verifier).digest('base64url'),
+        code_challenge_method: 'S256',
+        kc_idp_hint: idp,
+        ...(loginHint ? { login_hint: loginHint } : {}),
+    });
+    return {
+        url: new URL(`${keycloakIssuer}/protocol/openid-connect/auth?${params}`),
+        verifier,
+        state,
+    };
+};
+
+export const exchangeBrokerCode = async (code: string, verifier: string): Promise<string> => {
+    const response = await fetch(`${keycloakIssuer}/protocol/openid-connect/token`, {
+        method: 'POST',
+        signal: AbortSignal.timeout(15_000),
+        body: new URLSearchParams({
+            grant_type: 'authorization_code',
+            client_id: 'learncard-app',
+            code,
+            redirect_uri: callback,
+            code_verifier: verifier,
+        }),
+    });
+    if (!response.ok) throw new Error(`PKCE exchange failed (${response.status})`);
+    return z.object({ id_token: z.string() }).parse(await response.json()).id_token;
+};
 
 export const trpc = async (route: string, input: unknown): Promise<unknown> => {
     const response = await fetch(`${apiOrigin}/trpc/${route}`, {
@@ -128,36 +172,10 @@ export const signInThroughBroker = async (
         await redis.del(key);
         await redis.quit();
     }
-    const verifier = randomBytes(32).toString('base64url');
-    const state = randomUUID();
-    const params = new URLSearchParams({
-        client_id: 'learncard-app',
-        response_type: 'code',
-        scope: 'openid email profile phone',
-        redirect_uri: callback,
-        state,
-        code_challenge: createHash('sha256').update(verifier).digest('base64url'),
-        code_challenge_method: 'S256',
-        kc_idp_hint: 'lca-api',
-        login_hint: ticket,
-    });
-    const result = await walkBrokerRedirects(
-        new URL(`${keycloakIssuer}/protocol/openid-connect/auth?${params}`)
-    );
+    const { url, verifier, state } = createBrokerAuthorization('lca-api', ticket);
+    const result = await walkBrokerRedirects(url);
     if (result.state !== state) throw new Error('Broker state mismatch');
-    const response = await fetch(`${keycloakIssuer}/protocol/openid-connect/token`, {
-        method: 'POST',
-        signal: AbortSignal.timeout(15_000),
-        body: new URLSearchParams({
-            grant_type: 'authorization_code',
-            client_id: 'learncard-app',
-            code: result.code,
-            redirect_uri: callback,
-            code_verifier: verifier,
-        }),
-    });
-    if (!response.ok) throw new Error(`PKCE exchange failed (${response.status})`);
-    const tokens = z.object({ id_token: z.string() }).parse(await response.json());
+    const idToken = await exchangeBrokerCode(result.code, verifier);
     process.stdout.write(`Broker hop trace:\n${result.trace.join('\n')}\n`);
-    return { idToken: tokens.id_token, trace: result.trace };
+    return { idToken, trace: result.trace };
 };
