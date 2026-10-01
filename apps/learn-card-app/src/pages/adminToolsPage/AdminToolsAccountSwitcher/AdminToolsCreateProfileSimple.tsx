@@ -131,10 +131,10 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
     }, [uniqueProfile, uniqueProfileFetching, profileId]);
 
     useEffect(() => {
-        if (families) {
+        if (families?.length) {
             setSelectedFamily({
-                name: families[0]?.boostCredential?.name,
-                picture: families[0]?.boostCredential?.image,
+                name: families[0].name,
+                picture: families[0].image,
                 uri: families[0]?.boostId,
             });
         }
