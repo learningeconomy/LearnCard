@@ -160,7 +160,7 @@ variable "log_retention_days" {
 }
 
 variable "admin_allowed_cidrs" {
-  description = "Up to three IPv4 CIDRs allowed on the admin hostname; empty allows all sources (authentication is still required)"
+  description = "Up to three IPv4 CIDRs allowed on the admin hostname; empty denies all sources"
   type        = list(string)
   default     = []
   validation {
