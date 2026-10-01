@@ -38,7 +38,10 @@ describe('sidebar profile identity', () => {
         };
         state.currentLCNUser = { profileId: 'child', displayName: '', image: '' };
     });
-    afterEach(cleanup);
+    afterEach(() => {
+        cleanup();
+        vi.restoreAllMocks();
+    });
 
     it('uses the switched account image when its network record has no image', () => {
         render(<LearnCardIdView />);
@@ -61,6 +64,25 @@ describe('sidebar profile identity', () => {
         expect(screen.getByRole('img', { name: 'user' }).getAttribute('src')).toContain(
             '/network-child.png'
         );
+    });
+
+    it('shows a cached parent avatar after returning from a loaded child avatar', () => {
+        const { rerender } = render(<LearnCardIdView />);
+        fireEvent.load(screen.getByRole('img', { name: 'user' }));
+
+        // A browser can finish a cached image before the source-change effect runs.
+        vi.spyOn(HTMLImageElement.prototype, 'complete', 'get').mockReturnValue(true);
+        vi.spyOn(HTMLImageElement.prototype, 'naturalWidth', 'get').mockReturnValue(120);
+        state.currentLCNUser = {
+            profileId: 'demo',
+            displayName: 'Demo',
+            image: 'https://example.com/demo.png',
+        };
+        rerender(<LearnCardIdView />);
+
+        const avatar = screen.getByRole('img', { name: 'user' });
+        expect(avatar.getAttribute('src')).toBe('https://example.com/demo.png');
+        expect(avatar.classList.contains('opacity-100')).toBe(true);
     });
 
     it('does not use the signed-in account image when viewing another explicit profile', () => {
