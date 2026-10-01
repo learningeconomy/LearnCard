@@ -72,6 +72,8 @@ Requires Docker Compose and jq. Export requires a stopped server: the script sto
 Keycloak, exports via a one-off container using the same H2 volume, then restarts
 it (also on export failure). It removes generated IDs/timestamps/flows, resets user
 passwords and the two fixture secrets, sorts keys, and replaces the fixture atomically.
+Normalization fails without replacing the fixture if either expected client is
+missing or duplicated, or any other client contains a secret.
 Review the diff before committing: use only synthetic local users, and never export
 a staging/prod realm or real credentials into this directory.
 Only built-in authentication flows are supported by this normalizer; custom flows
