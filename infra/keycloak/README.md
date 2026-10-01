@@ -202,13 +202,27 @@ with verification explicitly false; UserKey has no canonical proof for them. Do 
 cut those users over until phone ownership is verified: the API rejects unverified
 phone claims even if their email is verified.
 
-The default is **dry-run**: Mongo reads and Keycloak Admin GETs only (apart from
+The default is **dry-run**: Mongo/Firebase reads and Keycloak Admin GETs only (apart from
 admin authentication). No AuthSubject upsert, index creation, user creation, link
 or UserKey update occurs. Remove `--apply` from the command above to preview;
 omit `--email` to iterate all Firebase-era UserKeys, or use `--limit N` for a batch.
 Apply is resumable but is not a distributed transaction: rerun dry-run after any
 interruption. Do not run concurrent provisioning jobs or change account identities
 during a migration window. Output masks emails and never includes shares or tokens.
+
+`--link-providers` defaults on for apply and dry-run, including already-mapped users:
+the existing lca-api `GOOGLE_APPLICATION_CREDENTIAL` service-account JSON must allow
+Firebase user reads. UID lookups run in batches of at most 100 with one-second pacing
+and bounded rate-limit backoff; missing/disabled users or mismatched account emails
+are refused. Firebase `providerData` subjects pre-link `google`/`apple` in Keycloak;
+existing links are never moved. Output counts linked, already linked, conflicts,
+no-social-provider users, and dry-run would-link plans; conflicts exit 1. Use
+`--no-link-providers` only for the legacy mapping-only workflow (including synthetic
+local fixtures). Dry-run cannot detect a subject owned by another Keycloak user;
+apply reports the server's conflict without replacing it. Social AuthSubjects are
+unchanged: native sign-in still relies on the same verified email, so different
+Apple relay addresses or missing emails require separate review. Confirm Firebase
+and Keycloak use compatible provider subjects (especially Apple's developer team).
 
 Configuration: `KEYCLOAK_ADMIN_URL` (default `http://localhost:8081`),
 `KEYCLOAK_ADMIN_REALM` (default `master`), `KEYCLOAK_REALM` (target, default
