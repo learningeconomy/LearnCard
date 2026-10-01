@@ -24,6 +24,13 @@
 # normalizes the mtimes of the two files that end up in the final image as
 # defense in depth, so this pipeline's reproducibility does not solely
 # depend on --reproducible working perfectly.
+#
+# nitro-cli itself runs containerized (nitro-cli-container.sh, a pinned
+# Amazon Linux 2023 image reached through this same Docker daemon) rather
+# than requiring Amazon Linux / aws-nitro-enclaves-cli on the build host —
+# `nitro-cli build-enclave` needs no Nitro hardware or kernel driver (see
+# nitro-cli-container.sh's header), only Docker, so this whole pipeline runs
+# on a plain GitHub-hosted runner.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
@@ -63,12 +70,20 @@ Nitro Enclave Image File (.eif) with `nitro-cli build-enclave`, and writes:
   <out>/nitro-cli-stdout.log \ raw nitro-cli output, kept for debugging
   <out>/nitro-cli-stderr.log /
 
-Requires: docker (running daemon), nitro-cli, jq, git, sha256sum.
+Requires: docker (running daemon), jq, git, sha256sum. nitro-cli itself is
+NOT required on the host — `nitro-cli build-enclave` runs containerized via
+nitro-cli-container.sh (a pinned Amazon Linux 2023 image reached through the
+host's Docker socket), which is what lets this run on a plain GitHub-hosted
+Linux runner instead of a self-hosted Amazon Linux / Nitro-capable host. See
+nitro-cli-container.sh / nitro-cli.Dockerfile for the citation trail on why
+`build-enclave` needs no Nitro hardware or kernel driver.
 --source-date-epoch defaults to `git log -1 --format=%ct` (last commit).
 
-This script MUST run on Amazon Linux with aws-nitro-enclaves-cli installed
-(nitro-cli is Linux-only and requires the Nitro Enclaves kernel driver) —
-run it in CI, not on a developer laptop.
+This script requires a Linux Docker daemon reachable from the build host
+(works on GitHub-hosted `ubuntu-latest` runners); run it in CI, not on a
+developer laptop (this crate still cross-compiles to x86_64-unknown-linux-musl
+regardless of host arch via --platform linux/amd64, but has not been
+exercised end-to-end on non-Linux Docker hosts for the full pipeline).
 EOF
 }
 
@@ -137,15 +152,18 @@ for tool in docker jq git sha256sum; do
     fi
 done
 
-if ! command -v nitro-cli >/dev/null 2>&1; then
-    echo "error: nitro-cli not found. This script requires Amazon Linux with" >&2
-    echo "aws-nitro-enclaves-cli; run in CI." >&2
-    exit 1
-fi
-
 if ! docker info >/dev/null 2>&1; then
     echo "error: docker daemon is not reachable (nitro-cli build-enclave" >&2
     echo "requires a running Docker daemon to load the built image)" >&2
+    exit 1
+fi
+
+# nitro-cli itself is deliberately NOT required on PATH / this host: it runs
+# containerized via nitro-cli-container.sh below (pinned Amazon Linux 2023 +
+# aws-nitro-enclaves-cli, reached through this host's own Docker socket).
+NITRO_CLI_CONTAINER_SCRIPT="${SCRIPT_DIR}/nitro-cli-container.sh"
+if [ ! -x "${NITRO_CLI_CONTAINER_SCRIPT}" ]; then
+    echo "error: ${NITRO_CLI_CONTAINER_SCRIPT} not found or not executable" >&2
     exit 1
 fi
 
@@ -194,16 +212,27 @@ rm -f "${EIF_PATH}"
 NITRO_STDOUT="${OUT_DIR}/nitro-cli-stdout.log"
 NITRO_STDERR="${OUT_DIR}/nitro-cli-stderr.log"
 
-echo "==> Running nitro-cli build-enclave" >&2
+echo "==> Running nitro-cli build-enclave (containerized via nitro-cli-container.sh)" >&2
 # nitro-cli writes progress text ("Start building...", "Enclave Image
 # successfully created.") and its final JSON result both to stdout in some
 # versions; capture stdout/stderr separately and fall back to extracting
 # from the first '{' if a direct `jq` parse of the whole stdout fails.
-if ! nitro-cli build-enclave \
+# nitro-cli-container.sh additionally writes its own NITRO_CLI_VERSION /
+# NITRO_CLI_BASE_IMAGE provenance lines to stderr (never stdout), extracted
+# below for measurements.json.
+if ! "${NITRO_CLI_CONTAINER_SCRIPT}" build-enclave \
     --docker-uri "${IMAGE_TAG}" \
     --output-file "${EIF_PATH}" \
     >"${NITRO_STDOUT}" 2>"${NITRO_STDERR}"; then
     echo "error: nitro-cli build-enclave failed; see ${NITRO_STDOUT} / ${NITRO_STDERR}" >&2
+    exit 1
+fi
+
+NITRO_CLI_VERSION="$(grep -m1 '^NITRO_CLI_VERSION: ' "${NITRO_STDERR}" | sed 's/^NITRO_CLI_VERSION: //')"
+NITRO_CLI_BASE_IMAGE="$(grep -m1 '^NITRO_CLI_BASE_IMAGE: ' "${NITRO_STDERR}" | sed 's/^NITRO_CLI_BASE_IMAGE: //')"
+if [ -z "${NITRO_CLI_VERSION}" ] || [ -z "${NITRO_CLI_BASE_IMAGE}" ]; then
+    echo "error: nitro-cli-container.sh did not emit its expected provenance lines" >&2
+    echo "(NITRO_CLI_VERSION / NITRO_CLI_BASE_IMAGE); see ${NITRO_STDERR}" >&2
     exit 1
 fi
 
@@ -241,10 +270,12 @@ jq -n \
     --argjson sourceDateEpoch "${SOURCE_DATE_EPOCH}" \
     --arg gitCommit "${GIT_COMMIT}" \
     --arg eifSha256 "${EIF_SHA256}" \
+    --arg nitroCliVersion "${NITRO_CLI_VERSION}" \
+    --arg nitroCliContainerImage "${NITRO_CLI_BASE_IMAGE}" \
     --arg tenant "$ESCROW_TENANT" --arg keyId "$ESCROW_KEY_ID" \
     --arg kmsRegion "$ESCROW_KMS_REGION" --arg kmsKeyArn "$ESCROW_KMS_KEY_ARN" \
     --arg previousKeyIds "$ESCROW_PREVIOUS_KEY_IDS" --argjson allowFirstBoot "$ESCROW_ALLOW_FIRST_BOOT" \
-    '{pcr0: $pcr0, pcr1: $pcr1, pcr2: $pcr2, imageTag: $imageTag, sourceDateEpoch: $sourceDateEpoch, gitCommit: $gitCommit, eifSha256: $eifSha256, config: {tenant: $tenant, keyId: $keyId, kmsRegion: $kmsRegion, kmsKeyArn: $kmsKeyArn, previousKeyIds: ($previousKeyIds | split(",") | map(select(length > 0))), allowFirstBoot: $allowFirstBoot}}' \
+    '{pcr0: $pcr0, pcr1: $pcr1, pcr2: $pcr2, imageTag: $imageTag, sourceDateEpoch: $sourceDateEpoch, gitCommit: $gitCommit, eifSha256: $eifSha256, nitroCliVersion: $nitroCliVersion, nitroCliContainerImage: $nitroCliContainerImage, config: {tenant: $tenant, keyId: $keyId, kmsRegion: $kmsRegion, kmsKeyArn: $kmsKeyArn, previousKeyIds: ($previousKeyIds | split(",") | map(select(length > 0))), allowFirstBoot: $allowFirstBoot}}' \
     >"${OUT_DIR}/measurements.json"
 
 echo "==> Wrote ${OUT_DIR}/measurements.json and ${EIF_PATH}" >&2

@@ -951,14 +951,22 @@ services/escrow-enclave-app/scripts/build-eif.sh --out /tmp/escrow-eif-out \
   --kms-key-arn arn:aws:kms:us-east-1:123456789012:key/00000000-0000-0000-0000-000000000001
 ```
 
-This requires **Amazon Linux with `aws-nitro-enclaves-cli` and a running
-Docker daemon** — `nitro-cli` is Linux-only and needs the Nitro Enclaves
-kernel driver, so this only runs in CI (or a Nitro-capable EC2 instance),
-never on a developer laptop. `--source-date-epoch` defaults to
-`git log -1 --format=%ct`; pass it explicitly to reproduce a specific
-commit's build later. Output: `escrow-enclave.eif`, `measurements.json`
-(`{pcr0, pcr1, pcr2, imageTag, sourceDateEpoch, gitCommit, eifSha256, config}`), the
-built `image.tar`, and raw `nitro-cli` logs.
+This requires a **Linux Docker daemon** — `nitro-cli` itself does NOT need
+to be installed on the build host: `scripts/nitro-cli-container.sh` runs it
+inside a pinned Amazon Linux 2023 container (`scripts/nitro-cli.Dockerfile`),
+reached through the host's own Docker socket. `nitro-cli build-enclave`
+needs no Nitro Enclaves kernel driver or Nitro-capable hardware — AWS
+documents building EIFs "on any Linux environment, including outside of
+AWS" (only `run-enclave`, i.e. actually launching an enclave, needs real
+hardware) — so this whole pipeline runs on a plain GitHub-hosted CI runner.
+It still needs Linux Docker (not exercised end-to-end on macOS/Windows
+Docker hosts for the full pipeline), so run it in CI, not on a developer
+laptop. `--source-date-epoch` defaults to `git log -1 --format=%ct`; pass it
+explicitly to reproduce a specific commit's build later. Output:
+`escrow-enclave.eif`, `measurements.json` (`{pcr0, pcr1, pcr2, imageTag,
+sourceDateEpoch, gitCommit, eifSha256, nitroCliVersion,
+nitroCliContainerImage, config}`), the built `image.tar`, and raw
+`nitro-cli` logs.
 
 Required flags `--tenant`, `--key-id`, `--kms-region`, `--kms-key-arn` may instead
 come from `ESCROW_TENANT`, `ESCROW_KEY_ID`, `ESCROW_KMS_REGION`, `ESCROW_KMS_KEY_ARN`.
@@ -1003,7 +1011,9 @@ files that end up in the final image before they're copied out.
   `--reproducible` alone.
 - **PCR1** (Linux kernel + bootstrap/init ramfs): comes from `nitro-cli`
   itself, not from this Dockerfile — **pin the exact
-  `aws-nitro-enclaves-cli` package version in the CI runner/AMI**. Two
+  `aws-nitro-enclaves-cli` package version**, in `scripts/nitro-cli.Dockerfile`
+  (not a runner/AMI config, since `nitro-cli` runs containerized — see
+  "How to build" above and `scripts/nitro-cli-container.sh`). Two
   otherwise-identical Docker images built with two different `nitro-cli`
   versions will produce different PCR1 (and thus a different overall
   attestation) even though PCR0 (the image content) matches.

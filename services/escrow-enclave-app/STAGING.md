@@ -21,7 +21,11 @@ a second, MFA-authenticated `escrow-kms-admin` applies).
 
 1. CI (`.github/workflows/escrow-enclave-eif.yml`) builds the EIF twice, diffs PCR0, and publishes
    `escrow-measurements.json` (`{pcr0, pcr1, pcr2, imageTag, sourceDateEpoch, gitCommit,
-eifSha256}`) as a workflow artifact, plus commits it to `security/` on tag.
+eifSha256, nitroCliVersion, nitroCliContainerImage}`) as a workflow artifact, plus commits it to
+   `security/` on tag. The `eif` job runs on a plain GitHub-hosted runner (`ubuntu-latest`) — no
+   self-hosted Nitro-capable runner to provision — because `nitro-cli build-enclave` needs no real
+   Nitro hardware; `nitro-cli` runs containerized against a pinned Amazon Linux 2023 image (see
+   `scripts/nitro-cli-container.sh` and `README.md` "Reproducible build" for the full explanation).
 2. Copy `pcr0`/`pcr1`/`pcr2` into `infra/escrow-enclave/escrow-measurements.tfvars` under
    `enclave_measurements` (add as a new tuple alongside the currently-deployed one during a
    rotation — do not remove the old tuple until every instance has rolled, per the measurement

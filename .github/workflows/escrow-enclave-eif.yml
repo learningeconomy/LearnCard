@@ -139,16 +139,30 @@ jobs:
     # ---------------------------------------------------------------------
     # Reproducible EIF build + PCR measurement + keyless signing.
     #
-    # GitHub-hosted runners cannot run this job: `nitro-cli build-enclave`
-    # requires the Nitro Enclaves kernel driver, which only exists on a
-    # Nitro-capable EC2 instance type with the enclave option enabled — see
-    # security/README.md for the exact self-hosted runner requirements
-    # (AL2023, pinned aws-nitro-enclaves-cli, docker, jq).
+    # Runs on a plain GitHub-hosted runner: `nitro-cli build-enclave` does
+    # NOT require the Nitro Enclaves kernel driver or Nitro-capable EC2
+    # hardware — AWS documents building EIFs "on any Linux environment,
+    # including outside of AWS" (only `run-enclave`, i.e. actually launching
+    # an enclave, needs real hardware). nitro-cli itself runs containerized
+    # (services/escrow-enclave-app/scripts/nitro-cli-container.sh, a pinned
+    # Amazon Linux 2023 image reached through this runner's own Docker
+    # socket) rather than requiring a self-hosted Amazon Linux host — see
+    # that script and nitro-cli.Dockerfile for the citation trail, and
+    # security/README.md for the full rundown of what changed.
     #
-    # Restricted to push (main or an escrow-enclave-v* tag) and
-    # workflow_dispatch — NEVER pull_request, including same-repo PRs: this
-    # runs on a self-hosted runner, and self-hosted runners must never
-    # execute untrusted/PR-supplied code (GitHub's own hardening guidance).
+    # Still restricted to push (main or an escrow-enclave-v* tag) and
+    # workflow_dispatch — NEVER pull_request, including same-repo PRs.
+    # GitHub-hosted runners are ephemeral (a fresh VM per job, destroyed
+    # after), so this is no longer about protecting persistent self-hosted
+    # infrastructure from untrusted PR code. It's restricted because this
+    # job (a) mints a cosign keyless signature under the repository's own
+    # GitHub OIDC identity over the produced measurements — that identity
+    # should only ever attest to builds from reviewed, protected commit
+    # history (a branch push or tag), not an arbitrary PR head/merge commit
+    # nobody has reviewed yet; and (b) requires manual approval against the
+    # `escrow-staging` environment below — gating every open PR behind that
+    # approval would both spam reviewers and let any PR author force
+    # approval-gated compute to run merely by opening a PR.
     # `success() &&` is required in the `if:` below because providing any
     # custom `if:` expression replaces (rather than ANDs with) the implicit
     # `needs`-success check GitHub would otherwise apply.
@@ -157,7 +171,7 @@ jobs:
         name: eif
         needs: test
         if: success() && github.event_name != 'pull_request'
-        runs-on: [self-hosted, linux, x64, nitro-enclaves]
+        runs-on: ubuntu-latest
         # Measured config differs per deployment; each environment holds its
         # own vars and requires an approver before the build runs.
         environment: escrow-staging
@@ -216,17 +230,19 @@ jobs:
                   services/escrow-enclave-app/scripts/check-binary-paths.sh \
                       "${GITHUB_WORKSPACE}/build-a/escrow-enclave-binary"
 
-            # `gitCommit` (git sha) is already present via build-a's own
-            # measurements.json (from build-eif.sh); this adds the two
-            # fields that script has no way to know about itself.
+            # `gitCommit`, `nitroCliVersion` and `nitroCliContainerImage` are
+            # already present via build-a's own measurements.json (written by
+            # build-eif.sh / nitro-cli-container.sh — nitro-cli no longer
+            # runs on this runner directly, so its version can't be queried
+            # here the way it could on the old self-hosted AL2023 runner);
+            # this just adds the one field that script has no way to know
+            # about itself.
             - name: Produce escrow-measurements.json
               run: |
                   set -euo pipefail
-                  nitro_cli_version="$(nitro-cli --version)"
                   jq \
-                      --arg nitroCliVersion "${nitro_cli_version}" \
                       --arg workflowRunId "${GITHUB_RUN_ID}" \
-                      '. + {nitroCliVersion: $nitroCliVersion, workflowRunId: $workflowRunId}' \
+                      '. + {workflowRunId: $workflowRunId}' \
                       "${GITHUB_WORKSPACE}/build-a/measurements.json" \
                       >"${GITHUB_WORKSPACE}/escrow-measurements.json"
 
@@ -243,15 +259,12 @@ jobs:
                       '{eifSha256: $eifSha256, measurementsSha256: $measurementsSha256, gitSha: $gitSha, workflowRunId: $workflowRunId}' \
                       >"${GITHUB_WORKSPACE}/manifest.json"
 
-            # KNOWN RISK (see security/README.md "Known risks"): this
-            # action's own README states "self-hosted runners may not
-            # work". Our self-hosted runner is a repo-controlled AL2023 EC2
-            # instance (not a generic third-party runner), so it may well
-            # work, but this has NOT been exercised end-to-end — no Nitro
-            # hardware is available outside CI. If this step fails on the
-            # first real run, the documented fallback is a manually
-            # installed, checksum-verified `cosign` binary (see
-            # security/README.md) rather than silently dropping signing.
+            # This job now runs on a plain GitHub-hosted `ubuntu-latest`
+            # runner (see the job's header comment), which is exactly what
+            # sigstore/cosign-installer is built for — the previous caveat
+            # here ("self-hosted runners may not work", per the action's own
+            # README) no longer applies. See security/README.md for the
+            # prior self-hosted-runner history and what changed.
             - name: Install cosign
               uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
               with:
