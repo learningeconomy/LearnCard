@@ -166,11 +166,27 @@ Every output is also a `String` parameter at
   IAM simulation must include this documented shared-account lifecycle limitation.
 - Plan trust: **only** `ref:refs/heads/main`, audience STS. A `pull_request`
   subject would let any repository writer assume it from PR-controlled YAML, so
-  PRs get no AWS credentials. The role has ReadOnlyAccess for configuration
-  discovery plus `${name}-plan-data-denies`: no object reads outside the network
-  and service states (never realm state), no parameters outside
+  PRs get no AWS credentials. The customer-managed `${name}-plan-read` policy
+  enumerates configuration reads for the network and service roots and VPC module
+  6.7.3; it does not attach AWS-managed `ReadOnlyAccess`. New AWS APIs are denied
+  by default. IAM reads are namespaced, ALB log bucket reads are bucket-level,
+  and SSM value/tag reads are environment-scoped (`DescribeParameters` requires
+  `Resource = "*"`). Backup/KMS metadata reads also cover the cross-region vault.
+  No ECR or service-discovery resources are read by these roots or the drift
+  workflow, so neither service is granted. The existing state-access policy alone
+  grants infrastructure state reads and lock-file writes/deletes.
+  `${name}-plan-data-denies` remains defense in depth: no object reads outside the network
+  and service states and their `.tflock` objects (never realm state), no parameters outside
   `/learncard-keycloak/<env>/`, and no secret values, KMS decrypt, log contents or
   table/queue/function data.
+  It also explicitly denies DynamoDB PartiQL/stream/replication/vector reads,
+  Kinesis records, Glacier job output, SimpleDB/Cassandra data, RDS log downloads,
+  CloudWatch log-record/field reads, CodeCommit file/blob reads and Athena result
+  streams. This is not an exhaustive data-plane boundary; the allowlist is.
+  When resources or provider/module versions change, review their refresh APIs
+  against `plan-read.tf` and the AWS service-reference action catalog. The managed
+  policy has a compact-JSON 6,144-character precondition; split it if needed rather
+  than broadening actions to wildcards. Deploy cannot mutate `*-plan-*` policies.
 - Deploy trust: **only** `environment:keycloak-<env>`, audience STS. Configure
   GitHub environments manually, main-only deployment branches, production required
   reviewers, and prevent self-approval. `keycloak-infra.yml` now uses OIDC and

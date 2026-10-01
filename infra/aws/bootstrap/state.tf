@@ -68,8 +68,8 @@ data "aws_iam_policy_document" "state_bucket" {
       values   = ["false"]
     }
   }
-  # Managed ReadOnlyAccess includes S3 reads. Explicitly keep bootstrap state
-  # inaccessible to CI even if an AWS-managed policy broadens in the future.
+  # Explicitly keep bootstrap state inaccessible to CI even if another identity
+  # policy grants broader S3 permissions in the future.
   statement {
     sid       = "KeepBootstrapStateHumanManaged"
     effect    = "Deny"
