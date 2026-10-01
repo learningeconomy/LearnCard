@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { neogma } from '@instance';
 import { createInstallIntentAuditEvent } from '@accesslayer/install-intent/audit';
 import { listBindingsByEcosystem } from '@accesslayer/binding/read';
+import { SERVICE_ACCOUNT_AGGREGATE_VALID } from '@accesslayer/service-account/invariants';
 import {
     verifyServiceAccountToken,
     type ServiceAccountPrincipal,
@@ -46,6 +47,7 @@ export const requireServiceAccountAccess = async (input: {
         const result = await neogma.queryRunner.run(
             `MATCH (sa:ServiceAccount {id: $id, installId: $installId, ecosystemId: $ecosystemId})
              WHERE sa.status = 'ENABLED' AND sa.credentialGeneration = $gen
+               AND (${SERVICE_ACCOUNT_AGGREGATE_VALID})
              MATCH (sa)-[:ACTS_FOR]->(installOwner:Ecosystem {id: $ecosystemId})
              MATCH (install:IntegrationInstall {id: $installId})-[:HAS_SERVICE_ACCOUNT]->(sa)
              MATCH (sa)-[:HAS_GRANT]->(grant:ServiceAccountGrant)

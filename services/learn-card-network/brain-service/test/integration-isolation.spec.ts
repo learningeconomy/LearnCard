@@ -110,6 +110,23 @@ const setup = async (selector?: string) => {
 };
 
 describe('Integration isolation — threat model §10.2 #3', () => {
+    it('rejects a broken aggregate immediately, before a health sweep', async () => {
+        const fixture = await setup();
+        await neogma.queryRunner.run(
+            'MATCH (sa:ServiceAccount {id: $id}) CREATE (sa)-[:ACTS_FOR]->(:Ecosystem {id: $other})',
+            { id: fixture.account.id, other: randomUUID() }
+        );
+        await expect(
+            fixture.partner.integrationService.readGroup({ groupId: fixture.groups.install! })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        const missing = await setup();
+        await neogma.queryRunner.run('MATCH ()-[edge:INSTALLS {installId: $id}]->() DELETE edge', {
+            id: missing.account.installId,
+        });
+        await expect(
+            missing.partner.integrationService.readGroup({ groupId: missing.groups.install! })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    });
     it('permits in-tree group:read metadata only and denies sibling, ancestor and unrelated trees', async () => {
         const { partner, groups } = await setup();
         for (const name of ['install', 'descendant'])
