@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@accesslayer/profile/read', () => ({ getProfileByProfileId: vi.fn() }));
 vi.mock('@accesslayer/profile/relationships/read', () => ({ isProfileManaged: vi.fn() }));
@@ -15,6 +15,7 @@ import {
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { isProfileManaged } from '@accesslayer/profile/relationships/read';
 import type { ShareLinkTransaction } from '@accesslayer/share-link/transaction';
+import { createShareLinkPolicyResolver } from '@helpers/share-link-policy/resolver';
 
 const NOW = new Date('2026-09-25T12:00:00.000Z');
 
@@ -25,11 +26,24 @@ const transactionWith = (profile?: {
     isServiceProfile?: unknown;
 }): ShareLinkTransaction => ({
     run: vi.fn(async () => ({
-        records: profile ? [{ get: (key: string) => profile[key as keyof typeof profile] }] : [],
+        records: profile
+            ? [
+                  {
+                      get: (key: string) =>
+                          key === 'profileType'
+                              ? profile.type
+                              : profile[key as keyof typeof profile],
+                  },
+              ]
+            : [],
     })),
 });
 
 describe('production share-link age policy', () => {
+    beforeEach(() => {
+        vi.resetAllMocks();
+    });
+
     it('requires a valid birthdate and an eighteenth birthday before allowing adulthood', () => {
         expect(ageFromPersistedProfile({ dob: '2008-09-25' }, NOW)).toBe('adult');
         expect(ageFromPersistedProfile({ dob: '2008-09-26' }, NOW)).toBe('minor');
@@ -44,30 +58,43 @@ describe('production share-link age policy', () => {
         vi.mocked(getProfileByProfileId).mockResolvedValueOnce({ dob: '1990-01-01' } as never);
         vi.mocked(isProfileManaged).mockResolvedValueOnce(false);
 
-        const source = createProductionShareLinkPolicySource();
-        expect(await source.resolveOwnerAge('owner')).toBe('adult');
-        expect(await source.isManaged('owner')).toBe(false);
+        const resolver = createShareLinkPolicyResolver(createProductionShareLinkPolicySource());
+        expect((await resolver.resolve('owner')).viewCountingEnabled).toBe(true);
     });
-    it('exempts managed service profiles in preflight policy', async () => {
-        vi.mocked(getProfileByProfileId).mockResolvedValueOnce({
-            profileId: 'service',
-            did: 'did:example:service',
-            displayName: 'Service',
-            shortBio: '',
-            bio: '',
-            dob: '1990-01-01',
-            isServiceProfile: true,
-        });
-        const source = createProductionShareLinkPolicySource();
-        expect(await source.isManaged('service')).toBe(false);
-    });
+    it.each([
+        { dob: undefined, type: undefined, isServiceProfile: true, eligible: true },
+        { dob: 'not-a-date', type: undefined, isServiceProfile: true, eligible: true },
+        { dob: '2020-01-01', type: undefined, isServiceProfile: true, eligible: true },
+        { dob: undefined, type: 'child', isServiceProfile: true, eligible: false },
+        { dob: undefined, type: undefined, isServiceProfile: 'true', eligible: false },
+    ])(
+        'uses persisted service classification in preflight and locked policy: $dob / $type / $isServiceProfile',
+        async ({ dob, type, isServiceProfile, eligible }) => {
+            vi.mocked(getProfileByProfileId).mockResolvedValue({
+                dob,
+                type,
+                isServiceProfile,
+            } as never);
+            vi.mocked(isProfileManaged).mockResolvedValue(true);
+            const resolver = createShareLinkPolicyResolver(createProductionShareLinkPolicySource());
+            const preflight = await resolver.resolve('owner');
+            const locked = await resolveCurrentShareLinkPolicy(
+                transactionWith({ dob, type, isServiceProfile, isManaged: true }),
+                'owner',
+                NOW
+            );
+            expect(preflight.viewCountingEnabled).toBe(eligible);
+            expect(locked).toEqual(preflight);
+            expect(locked.defaultExpiryDays).toBe(30);
+        }
+    );
 
     it('rechecks persisted age and management inside the receipt transaction', async () => {
         const adult = transactionWith({ dob: '1990-01-01', type: null, isManaged: false });
         const managed = transactionWith({ dob: '1990-01-01', type: null, isManaged: true });
         const unknown = transactionWith();
         const managedService = transactionWith({
-            dob: '1990-01-01',
+            dob: null,
             type: null,
             isManaged: true,
             isServiceProfile: true,

@@ -1,0 +1,6 @@
+---
+"@learncard/network-brain-service": patch
+"learn-card-app": patch
+---
+
+Enable share-link view tracking for persisted service profiles without requiring a date of birth, including managed organizations. Apply the exemption during creation and transactional view-receipt checks, and show eligible service-profile view statistics in Privacy & Data. Keep child and personal-account age protections, link expiry behavior, and other privacy gates unchanged.

@@ -12,9 +12,9 @@ export type ShareLinkOwnerAge = 'adult' | 'minor' | 'unknown';
 
 /** Immutable policy snapshot persisted with the share under the write lock. */
 export type ShareLinkPolicySnapshot = {
-    /** `true` known minor, `false` known adult, `null` unknown. */
+    /** `true` known minor, `false` known adult/service profile, `null` unknown. */
     isMinor: boolean | null;
-    /** `true` only when the age source returned a known adult/minor value. */
+    /** `true` when age is known or a persisted service profile is age-exempt. */
     policyResolved: boolean;
     defaultExpiryDays: 30 | 365;
     viewCountingEnabled: boolean;
@@ -26,12 +26,15 @@ export type ShareLinkPolicySnapshot = {
  */
 export type ShareLinkPolicySource = {
     /**
-     * Resolve the owner's age. `unknown` is required when no trustworthy source
-     * exists; it must never be inferred from the absence of a manager.
+     * Read age, service classification and management from persisted state.
+     * Service profiles may bypass tracking age checks; explicitly typed children
+     * must never be classified as service profiles here.
      */
-    resolveOwnerAge: (profileId: string) => Promise<ShareLinkOwnerAge>;
-    /** Whether the profile is currently managed by another profile. */
-    isManaged: (profileId: string) => Promise<boolean>;
+    resolveOwner: (profileId: string) => Promise<{
+        age: ShareLinkOwnerAge;
+        isManaged: boolean;
+        isServiceProfile: boolean;
+    }>;
 };
 
 /** Injectable server-side policy resolver used by the coordinator. */

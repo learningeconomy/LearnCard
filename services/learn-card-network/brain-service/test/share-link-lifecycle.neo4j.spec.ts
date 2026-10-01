@@ -34,6 +34,7 @@ import {
     productionShareViewEligibilitySource,
     resolveCurrentShareLinkPolicy,
 } from '../src/helpers/share-link-policy/production';
+import { createShareLinkPolicyResolver } from '../src/helpers/share-link-policy/resolver';
 import type { ShareLinkRecord } from '../src/models/ShareLink';
 
 import {
@@ -1283,7 +1284,7 @@ describe('share-link lifecycle repository (Neo4j)', () => {
         const serviceManagerId = `manager-${uuid()}`;
         const childManagerId = `manager-${uuid()}`;
         await neogma.queryRunner.run(
-            `CREATE (service:Profile {profileId: $serviceId, dob: '1990-01-01', isServiceProfile: true})
+            `CREATE (service:Profile {profileId: $serviceId, isServiceProfile: true})
              CREATE (serviceManager:ProfileManager {id: $serviceManagerId, created: $created})
              CREATE (serviceManager)-[:MANAGES]->(service)
              CREATE (child:Profile {profileId: $childId, dob: '1990-01-01', isServiceProfile: false})
@@ -1341,12 +1342,12 @@ describe('share-link lifecycle repository (Neo4j)', () => {
                 objectRef: reserved.reservation.objectRef,
                 operationId: reserved.reservation.operationId,
             };
-            const preflight = createProductionShareLinkPolicySource();
-            expect(await preflight.isManaged(serviceProfileId)).toBe(false);
-            expect(await preflight.resolveOwnerAge(serviceProfileId)).toBe('adult');
-            expect(await preflight.isManaged(childProfileId)).toBe(true);
-            expect(await preflight.isManaged(unknownServiceId)).toBe(false);
-            expect(await preflight.resolveOwnerAge(unknownServiceId)).toBe('unknown');
+            const preflight = createShareLinkPolicyResolver(
+                createProductionShareLinkPolicySource()
+            );
+            expect((await preflight.resolve(serviceProfileId)).viewCountingEnabled).toBe(true);
+            expect((await preflight.resolve(childProfileId)).viewCountingEnabled).toBe(false);
+            expect((await preflight.resolve(unknownServiceId)).viewCountingEnabled).toBe(true);
             expect(
                 await withShareLinkRead(tx =>
                     resolveCurrentShareLinkPolicy(tx, serviceProfileId, NOW)
@@ -1390,7 +1391,7 @@ describe('share-link lifecycle repository (Neo4j)', () => {
                 await withShareLinkRead(tx =>
                     resolveCurrentShareLinkPolicy(tx, unknownServiceId, NOW)
                 )
-            ).toMatchObject({ viewCountingEnabled: false });
+            ).toMatchObject({ viewCountingEnabled: true });
         } finally {
             await neogma.queryRunner.run(
                 `MATCH (n)

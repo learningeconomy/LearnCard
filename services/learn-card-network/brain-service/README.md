@@ -24,7 +24,7 @@ Deploy this producer before an AI Passport consumer that requires the new guardi
 
 `createManagedProfile` supports service profiles for developer/org onboarding and admin tools. It rejects `isServiceProfile: true` when the authenticated manager has a persisted parent Boost with category `Family`, or the requested profile has type `child`. Family child creation cannot use that flag to bypass guardian checks; other managed org creation remains supported.
 
-Share-link policy ignores manager relationships for service owners in both preflight and the transactional recheck. Existing age rules still apply: an adult birthdate permits normal view counting and default expiry, while missing or malformed birthdates stay restricted. Managed non-service owners remain restricted even with an adult birthdate. This change does not automatically loosen policy snapshots on existing links; an explicit edit rechecks current eligibility.
+Share-link policy ignores manager relationships and the birthdate requirement for persisted service owners in both preflight and the transactional recheck. An explicit `child` type always keeps child protections, even if a legacy record also has the service flag. Personal profiles with missing or malformed birthdates and managed non-service owners remain restricted. This exemption enables view tracking only: existing age-derived default expiry, explicit expiry, AI gates and other privacy settings are unchanged. Existing links retain their stored policy until an explicit edit rechecks current eligibility; creating a fresh link also applies the exemption.
 
 ## Skill framework seeding
 
