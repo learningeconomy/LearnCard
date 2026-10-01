@@ -32,8 +32,8 @@ const ParentSwitcherButton: React.FC<ParentSwitcherButtonProps> = ({
     const { closeModal } = useModal();
     const { handleVerifyParentPin, isSwitching: _isParentSwitching } = usePin(user => {
         onPlayerSwitch?.(user);
-        closeModal();
-        onSwitchComplete?.();
+        if (onSwitchComplete) onSwitchComplete();
+        else closeModal();
     });
 
     let currentUser = currentUserStore.get.currentUser();

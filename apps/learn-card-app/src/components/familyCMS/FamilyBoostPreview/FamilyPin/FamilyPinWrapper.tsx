@@ -101,7 +101,7 @@ export const FamilyPinWrapper: React.FC<FamilyPinWrapperProps> = ({
                 });
 
                 if (isVerified && hasParentSwitchedProfiles) {
-                    handleOnSubmit?.();
+                    await handleOnSubmit?.();
                     return;
                 }
 

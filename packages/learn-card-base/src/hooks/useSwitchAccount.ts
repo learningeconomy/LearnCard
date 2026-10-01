@@ -7,7 +7,7 @@ import { cloneDeep } from 'lodash';
 
 import { switchProfile } from 'learn-card-base/helpers/walletHelpers';
 import type { LCNProfile } from '@learncard/types';
-import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
+import { switchedProfileStore, walletStore } from 'learn-card-base/stores/walletStore';
 
 export const useSwitchProfile = (options?: { onSwitch?: () => void }) => {
     const { onSwitch } = options ?? {};
@@ -68,12 +68,21 @@ export const useSwitchProfile = (options?: { onSwitch?: () => void }) => {
                           }
                         : null
                 );
-                currentUserStore.set.parentUserDid(currentLCNUser?.did ?? null);
+                const parentDid =
+                    currentLCNUser &&
+                    'did' in currentLCNUser &&
+                    typeof currentLCNUser.did === 'string'
+                        ? currentLCNUser.did
+                        : walletStore.get.wallet()?.id.did();
+                currentUserStore.set.parentUserDid(parentDid ?? null);
                 currentUserStore.set.parentLDFlags(cloneDeep(flags));
             }
             await switchProfile(account.did);
             switchedProfileStore.set.profileType(account.isServiceProfile ? 'service' : 'child');
-            currentUserStore.set.updateCurrentUserNameAndImage(account.displayName, account.image);
+            currentUserStore.set.updateCurrentUserNameAndImage(
+                account.displayName,
+                account.image ?? ''
+            );
             // A retained source observer still owns the old account's query key.
             void queryClient.invalidateQueries({
                 queryKey: ['getProfile', account.did, undefined],

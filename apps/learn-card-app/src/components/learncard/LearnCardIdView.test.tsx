@@ -88,7 +88,14 @@ describe('sidebar profile identity', () => {
     it('does not use the signed-in account image when viewing another explicit profile', () => {
         render(
             <LearnCardIdView
-                user={{ profileId: 'bea', displayName: 'Bea', did: 'did:example:bea', image: '' }}
+                user={{
+                    profileId: 'bea',
+                    displayName: 'Bea',
+                    did: 'did:example:bea',
+                    image: '',
+                    shortBio: '',
+                    bio: '',
+                }}
             />
         );
         expect(screen.getByText('Bea')).toBeTruthy();

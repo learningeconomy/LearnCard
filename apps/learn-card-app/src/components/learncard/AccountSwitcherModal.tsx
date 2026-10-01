@@ -35,6 +35,7 @@ type AccountSwitcherModalProps = {
     contractDetails?: ConsentFlowContractDetails;
     showServiceProfiles?: boolean;
     showServiceProfilesOnly?: boolean;
+    onSwitchComplete?: () => void;
     handlePlayerSwitchOverride?: (user: LCNProfile) => void;
     handleBackToGame?: () => void;
     onPlayerSwitch?: (user: LCNProfile) => void;
@@ -58,6 +59,7 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
     onPlayerSwitch,
     showServiceProfiles = false,
     showServiceProfilesOnly = false,
+    onSwitchComplete,
     headerOverrideComponent,
     footerOverrideComponent,
 
@@ -100,9 +102,7 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
         );
     }
 
-    const { handleSwitchAccount, isSwitching } = useSwitchProfile({
-        onSwitch: closeModal,
-    });
+    const { handleSwitchAccount, isSwitching } = useSwitchProfile();
 
     const handleAddPlayer = () => {
         newModal(
@@ -169,7 +169,7 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
                             handlePlayerSwitchOverride={handlePlayerSwitchOverride}
                             onPlayerSwitch={onPlayerSwitch}
                             isSwitching={isSwitching}
-                            onSwitchComplete={closeModal}
+                            onSwitchComplete={onSwitchComplete}
                         />
                     )}
 
@@ -209,6 +209,7 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
                                             handlePlayerSwitchOverride(switchedUser);
                                         } else {
                                             await handleSwitchAccount(switchedUser);
+                                            onSwitchComplete?.();
                                         }
                                         onPlayerSwitch?.(switchedUser);
                                     }}

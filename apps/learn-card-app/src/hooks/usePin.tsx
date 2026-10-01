@@ -1,10 +1,11 @@
 import React from 'react';
-import { LCNProfile } from '@learncard/types';
+import { useQueryClient } from '@tanstack/react-query';
+import type { LCNProfile } from '@learncard/types';
+import type { ModalInstanceToken } from 'learn-card-base/components/modals/types/Modals';
 import {
     currentUserStore,
     ModalTypes,
     switchedProfileStore,
-    useGetCurrentLCNUser,
     useModal,
     useSwitchProfile,
     useWallet,
@@ -14,16 +15,27 @@ import FamilyPinWrapper, {
 } from '../components/familyCMS/FamilyBoostPreview/FamilyPin/FamilyPinWrapper';
 
 export const usePin = (onSwitch?: (profile: LCNProfile) => void) => {
-    const { newModal } = useModal();
+    const { newModalWithToken, forceCloseModalByToken } = useModal();
+    const queryClient = useQueryClient();
     const { initWallet } = useWallet();
     const { handleSwitchBackToParentAccount, isSwitching } = useSwitchProfile();
-    const { currentLCNUser } = useGetCurrentLCNUser();
-
-    const hasParentSwitchedProfiles = switchedProfileStore?.use?.isSwitchedProfile();
+    const hasParentSwitchedProfiles = switchedProfileStore.use.isSwitchedProfile();
 
     const handleSwitch = async () => {
+        const parentUser = currentUserStore.get.parentUser();
+        const parentDid = currentUserStore.get.parentUserDid();
         await handleSwitchBackToParentAccount();
-        onSwitch?.(currentLCNUser);
+        return (
+            queryClient.getQueryData<LCNProfile>(['getProfile', '', undefined]) ?? {
+                did: parentDid ?? '',
+                profileId: parentDid?.split(':').at(-1) ?? '',
+                displayName: parentUser?.name ?? '',
+                shortBio: '',
+                bio: '',
+                image: parentUser?.profileImage,
+                isServiceProfile: false,
+            }
+        );
     };
 
     const handleVerifyParentPin = async (options?: {
@@ -38,33 +50,27 @@ export const usePin = (onSwitch?: (profile: LCNProfile) => void) => {
             onSuccess,
             closeButtonText,
         } = options ?? {};
-
         const parentDid = currentUserStore.get.parentUserDid();
 
         if (hasParentSwitchedProfiles && parentDid) {
-            if (ignorePin) {
-                handleSwitch();
-                return;
-            }
-
-            const wallet = await initWallet();
-            const hasPin = await wallet.invoke.hasPin(parentDid);
-
+            const hasPin = ignorePin ? false : await (await initWallet()).invoke.hasPin(parentDid);
             if (!hasPin) {
-                handleSwitch();
+                if (switchToParentAfterPin) onSwitch?.(await handleSwitch());
+                onSuccess?.();
                 return;
             }
         }
 
-        newModal(
+        const modalRef: { token?: ModalInstanceToken } = {};
+        modalRef.token = newModalWithToken(
             <FamilyPinWrapper
-                viewMode={FamilyPinViewModeEnum?.edit}
+                viewMode={FamilyPinViewModeEnum.edit}
                 skipVerification={false}
                 existingPin={['', '', '', '', '']}
                 handleOnSubmit={async () => {
-                    if (switchToParentAfterPin) {
-                        handleSwitch();
-                    }
+                    const parentProfile = switchToParentAfterPin ? await handleSwitch() : undefined;
+                    if (modalRef.token) forceCloseModalByToken(modalRef.token);
+                    if (parentProfile) onSwitch?.(parentProfile);
                     onSuccess?.();
                 }}
                 familyName={''}

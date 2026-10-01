@@ -41,12 +41,16 @@ const parent: LCNProfile = {
     did: 'did:example:demo',
     profileId: 'demo',
     displayName: 'Demo',
+    shortBio: '',
+    bio: '',
     image: 'https://example.com/demo.png',
 };
 const child: LCNProfile = {
     did: 'did:example:child',
     profileId: 'child',
     displayName: 'Lil Demo',
+    shortBio: '',
+    bio: '',
     image: 'https://example.com/child.png',
     isServiceProfile: false,
 };
@@ -65,7 +69,7 @@ const mount = async (onSwitch?: () => void) => {
             ),
         }
     );
-    await waitFor(() => expect(hook.result.current.profile?.did).toBe(parent.did));
+    await waitFor(() => expect(hook.result.current.profile?.profileId).toBe(parent.profileId));
     return hook;
 };
 
@@ -104,12 +108,12 @@ describe('account switch identity', () => {
     it('keeps the displayed parent image when a later parent response omits it', async () => {
         const { result } = await mount();
         await act(() => result.current.handleSwitchAccount(child));
-        await waitFor(() => expect(result.current.profile?.did).toBe(child.did));
+        await waitFor(() => expect(result.current.profile?.profileId).toBe(child.profileId));
         state.profiles[''] = { ...parent, image: '' };
         client.setQueryData(parentKey, state.profiles['']);
 
         await act(() => result.current.handleSwitchBackToParentAccount());
-        await waitFor(() => expect(result.current.profile?.did).toBe(parent.did));
+        await waitFor(() => expect(result.current.profile?.profileId).toBe(parent.profileId));
         expect(currentUserStore.get.currentUser()).toMatchObject({
             name: 'Demo',
             profileImage: parent.image,
@@ -119,7 +123,7 @@ describe('account switch identity', () => {
     it('never writes the child response into the retained parent query', async () => {
         const { result } = await mount();
         await act(() => result.current.handleSwitchAccount(child));
-        await waitFor(() => expect(result.current.profile?.did).toBe(child.did));
+        await waitFor(() => expect(result.current.profile?.profileId).toBe(child.profileId));
         expect(client.getQueryData(parentKey)).toEqual(parent);
         expect(currentUserStore.get.currentUser()).toMatchObject({
             name: child.displayName,
