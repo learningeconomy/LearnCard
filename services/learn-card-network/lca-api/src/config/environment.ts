@@ -77,6 +77,16 @@ export const lcaApiEnvironmentSchema = z
         };
     })
     .superRefine((environment, context) => {
+        if (
+            environment.KEYCLOAK_ISSUERS?.split(',').some(value => value.trim()) &&
+            !environment.KEYCLOAK_AUDIENCES?.split(',').some(value => value.trim())
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['KEYCLOAK_AUDIENCES'],
+                message: 'Required when KEYCLOAK_ISSUERS is configured',
+            });
+        }
         if (environment.ESCROW_ENCLAVE_MODE === 'software') {
             try {
                 const keys = parseEscrowPrivateKeys(

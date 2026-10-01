@@ -145,14 +145,16 @@ test.describe('Sample persona @mocked', () => {
         }));
         trpc.on('contracts.getCredentialsForContract', () => ({
             hasMore: false,
-            records: autoBoostUris.map((boostUri, index) => ({
-                credentialUri: `lc:cloud:localhost%3A4100/trpc:credential:sample-persona-${index}`,
-                termsUri,
-                contractUri,
-                boostUri,
-                category: 'Achievement',
-                date: '2026-09-17T00:00:00.000Z',
-            })),
+            records: hasSample
+                ? autoBoostUris.map((boostUri, index) => ({
+                      credentialUri: `lc:cloud:localhost%3A4100/trpc:credential:sample-persona-${index}`,
+                      termsUri,
+                      contractUri,
+                      boostUri,
+                      category: 'Achievement',
+                      date: '2026-09-17T00:00:00.000Z',
+                  }))
+                : [],
         }));
         trpc.on('contracts.withdrawConsent', () => {
             hasSample = false;

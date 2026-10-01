@@ -40,10 +40,10 @@ All three users have password `password`:
 | `dev-phone`      | Verified `+15555550100`, no email                         |
 | `dev-unverified` | Unverified `dev-unverified@example.com` (API must reject) |
 
-- `learncard-app`: public authorization-code client with S256 PKCE, no password grant.
-- `lca-api`: confidential service account, placeholder secret `dev-only-secret`.
-- `ci-tests`: confidential password-grant client, secret `ci-tests-dev-only-secret`.
-  It lets CI obtain real signed tokens without a browser; **never create it in staging/prod**.
+-   `learncard-app`: public authorization-code client with S256 PKCE, no password grant.
+-   `lca-api`: confidential service account, placeholder secret `dev-only-secret`.
+-   `ci-tests`: confidential password-grant client, secret `ci-tests-dev-only-secret`.
+    It lets CI obtain real signed tokens without a browser; **never create it in staging/prod**.
 
 Keycloak 26's [declarative user profile](https://www.keycloak.org/docs/latest/server_admin/#user-profile)
 disables unmanaged attributes by default. Undeclared phone attributes can silently
@@ -84,3 +84,14 @@ The `Auth Integration (Keycloak)` workflow boots this same fixture and runs the
 opt-in `keycloak-verify.integration.spec.ts` suite. Locally, set
 `KEYCLOAK_INTEGRATION=true`, `KEYCLOAK_ISSUERS=http://localhost:8081/realms/learncard`,
 and `KEYCLOAK_AUDIENCES=learncard-app,ci-tests` before running that spec with Vitest.
+
+JWKS resolvers are reused per issuer and resolved endpoint URL; changing an endpoint
+replaces that issuer's resolver. Service environment configuration is parsed at startup,
+so changes to `KEYCLOAK_JWKS_URL_OVERRIDES` still require restarting the process
+(or deploying a new ECS task definition). Updating an ECS task does not mutate the
+environment of already running tasks.
+
+When `KEYCLOAK_ISSUERS` contains an issuer, configure at least one nonblank
+`KEYCLOAK_AUDIENCES` entry. The API validates this at startup and reports the
+missing configuration directly instead of rejecting every token as invalid.
+Leaving the issuer list empty keeps Keycloak verification disabled.

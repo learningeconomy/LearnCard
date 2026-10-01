@@ -37,7 +37,7 @@ const claimsSchema = z.object({
     picture: z.string().optional(),
 });
 
-const jwksByIssuer = new Map<string, JWTVerifyGetKey>();
+const jwksByIssuer = new Map<string, { url: string; resolver: JWTVerifyGetKey }>();
 let resolverForTests: ((issuer: string) => JWTVerifyGetKey) | undefined;
 
 /** Replace JWKS resolution in isolated tests; resetting also clears memoized resolvers. */
@@ -62,14 +62,12 @@ export const getKeycloakIssuerJwksUrl = (issuer: string): string => {
 
 /** Reuse remote key caches and rotation handling per trusted issuer. */
 export const getKeycloakJwks = (issuer: string): JWTVerifyGetKey => {
-    let jwks = jwksByIssuer.get(issuer);
-    if (!jwks) {
-        jwks = resolverForTests
-            ? resolverForTests(issuer)
-            : createRemoteJWKSet(new URL(getKeycloakIssuerJwksUrl(issuer)));
-        jwksByIssuer.set(issuer, jwks);
-    }
-    return jwks;
+    const url = getKeycloakIssuerJwksUrl(issuer);
+    const cached = jwksByIssuer.get(issuer);
+    if (cached?.url === url) return cached.resolver;
+    const resolver = resolverForTests ? resolverForTests(issuer) : createRemoteJWKSet(new URL(url));
+    jwksByIssuer.set(issuer, { url, resolver });
+    return resolver;
 };
 
 /** Verify signature and claims, checking the issuer allowlist before resolving keys. */
@@ -93,7 +91,7 @@ export const verifyKeycloakJwt = async (
         throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid Keycloak token' });
     }
     const claims = result.data;
-    const audiences = typeof claims.aud === 'string' ? [claims.aud] : (claims.aud ?? []);
+    const audiences = typeof claims.aud === 'string' ? [claims.aud] : claims.aud ?? [];
     if (claims.azp) audiences.push(claims.azp);
     if (!audiences.some(audience => opts.audiences.includes(audience))) {
         throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid Keycloak token' });
@@ -109,5 +107,13 @@ export const getKeycloakVerifyOptionsFromEnv = (): KeycloakVerifyOptions | null 
             .map(entry => entry.trim())
             .filter(Boolean);
     const issuers = split(environment.KEYCLOAK_ISSUERS);
-    return issuers.length ? { issuers, audiences: split(environment.KEYCLOAK_AUDIENCES) } : null;
+    if (!issuers.length) return null;
+    const audiences = split(environment.KEYCLOAK_AUDIENCES);
+    if (!audiences.length) {
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'KEYCLOAK_AUDIENCES is required when KEYCLOAK_ISSUERS is configured',
+        });
+    }
+    return { issuers, audiences };
 };
