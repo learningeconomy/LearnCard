@@ -16,6 +16,13 @@ export const federatedIdentitySchema = z.object({
 export type KeycloakUser = z.infer<typeof keycloakUserSchema>;
 export type FederatedIdentity = z.infer<typeof federatedIdentitySchema>;
 
+export class KeycloakAdminError extends Error {
+    constructor(public readonly status: number) {
+        super(`Admin operation failed (${status})`);
+        this.name = 'KeycloakAdminError';
+    }
+}
+
 /** Minimal admin client; no tokens or response bodies are included in errors. */
 export const createKeycloakAdmin = async (
     fetchRequest: typeof fetch = fetch,
@@ -76,7 +83,7 @@ export const createKeycloakAdmin = async (
             await refreshToken();
             response = await send();
         }
-        if (!response.ok) throw new Error(`Admin operation failed (${response.status})`);
+        if (!response.ok) throw new KeycloakAdminError(response.status);
         return response;
     };
     return {

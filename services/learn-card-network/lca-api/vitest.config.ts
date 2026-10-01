@@ -10,6 +10,7 @@ export default createVitestConfig(nodePreset, {
         alias: liveBroker ? { '@mongo': require.resolve('./test/helpers/live-mongo.ts') } : {},
         include: [
             'test/keycloak-admin.spec.ts',
+            'test/keycloak-provider-links.spec.ts',
             'test/provision-keycloak-users.spec.ts',
             'src/**/*.test.ts',
             '*Lambda.test.ts',
