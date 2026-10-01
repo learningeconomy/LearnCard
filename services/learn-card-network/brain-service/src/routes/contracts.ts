@@ -2101,14 +2101,17 @@ export const contractsRouter = t.router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
             const isAuthorized = await canManageContractRequests(contractByUri, profile.profileId);
 
-            if (!isAuthorized) {
+            if (
+                !isAuthorized &&
+                !(await canReadContractData(contractByUri.id, profile.profileId))
+            ) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'You do not have permissions to view requests made for this contract.',
                 });
             }
 
-            const requests = await getRequestedForList(contractByUri.id);
+            const requests = await getRequestedForList(contractByUri.id, profile.profileId);
 
             return Promise.all(
                 requests.map(async request => {
@@ -2176,7 +2179,7 @@ export const contractsRouter = t.router({
             if (!isCheckingOwnStatus) {
                 const isAuthorized = await canManageContractRequests(contract, profile.profileId);
 
-                if (!isAuthorized) {
+                if (!isAuthorized && !(await canReadContractData(contract.id, profile.profileId))) {
                     throw new TRPCError({
                         code: 'UNAUTHORIZED',
                         message:
@@ -2185,7 +2188,11 @@ export const contractsRouter = t.router({
                 }
             }
 
-            const requests = await getRequestedForForUser(contract.id, resolvedTargetProfileId);
+            const requests = await getRequestedForForUser(
+                contract.id,
+                resolvedTargetProfileId,
+                profile.profileId
+            );
 
             if (!requests?.[0]) return null;
 

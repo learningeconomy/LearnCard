@@ -12,6 +12,7 @@ import cache from '@cache';
 import { neogma } from '@instance';
 import { getContractTermsByUri } from '@accesslayer/consentflowcontract/relationships/read';
 import { getStoredContractRequest } from '@accesslayer/consentflowcontract/read';
+import * as contractRead from '@accesslayer/consentflowcontract/read';
 import {
     authorizeContractNotification,
     dispatchContractEvents,
@@ -122,7 +123,7 @@ describe('generic contract requests and correlated events', () => {
             const uri = await create();
             const sender = { owner, writer, recipient }[role];
             await expect(send(uri, sender)).resolves.toBe(true);
-            expect(await status(uri, recipient)).toMatchObject({
+            expect(await status(uri, sender)).toMatchObject({
                 status: 'pending',
                 requestedBy: sender.profileId,
                 externalReferenceId: 'synthetic-ref-123',
@@ -243,6 +244,261 @@ describe('generic contract requests and correlated events', () => {
         expect(await status(uri)).toMatchObject({ status: 'pending', readStatus: 'seen' });
     });
 
+    it.each(['pending', 'denied', 'cancelled', 'accepted'] as const)(
+        'hides another recipients %s referral while preserving sender, manager and learner access',
+        async requestStatus => {
+            const uri = await create();
+            await send(uri, recipient);
+            delivered.length = 0;
+            if (requestStatus === 'denied')
+                await learner.clients.fullAuth.contracts.denyContractRequest({ contractUri: uri });
+            if (requestStatus === 'cancelled')
+                await owner.clients.fullAuth.contracts.cancelContractRequest({
+                    contractUri: uri,
+                    targetProfileId: learner.profileId,
+                });
+            if (requestStatus === 'accepted') await accept(uri);
+            await flush(uri);
+            const expected = {
+                requestedBy: recipient.profileId,
+                externalReferenceId: 'synthetic-ref-123',
+                message: 'Synthetic invitation',
+                status: requestStatus,
+            };
+            for (const viewer of [owner, writer, recipient, learner])
+                expect(await status(uri, viewer)).toMatchObject(expected);
+            for (const viewer of [owner, writer, recipient]) {
+                const list = await viewer.clients.fullAuth.contracts.getContractSentRequests({
+                    contractUri: uri,
+                });
+                expect(list).toHaveLength(1);
+                expect(list[0]).toMatchObject(expected);
+            }
+            expect(
+                await otherRecipient.clients.fullAuth.contracts.getContractSentRequests({
+                    contractUri: uri,
+                })
+            ).toEqual([]);
+            expect(await status(uri, otherRecipient)).toBeNull();
+            expect(
+                await otherRecipient.clients.fullAuth.contracts.getRequestStatusForProfile({
+                    contractId: id(uri),
+                    targetProfileId: learner.learnCard.id.did(),
+                })
+            ).toBeNull();
+            expect(
+                await otherRecipient.clients.fullAuth.contracts.getRequestStatusForProfile({
+                    contractUri: uri,
+                    targetProfileId: outsider.profileId,
+                })
+            ).toBeNull();
+            expect(
+                await learner.clients.fullAuth.contracts.getAllContractRequestsForProfile({
+                    targetProfileId: learner.profileId,
+                })
+            ).toEqual([expect.objectContaining(expected)]);
+            if (requestStatus === 'denied' || requestStatus === 'cancelled')
+                expect(delivered.every(n => n.to.profileId !== otherRecipient.profileId)).toBe(
+                    true
+                );
+            if (requestStatus === 'accepted') {
+                const shared = delivered.find(n => n.to.profileId === otherRecipient.profileId)!;
+                expect(shared.data?.metadata?.event).toBe('consent_created');
+                expect(JSON.stringify(shared)).not.toContain('synthetic-ref-123');
+                expect(shared.data?.metadata).not.toHaveProperty('message');
+                const referrer = delivered.find(n => n.to.profileId === recipient.profileId)!;
+                expect(referrer.data?.metadata?.externalReferenceId).toBe('synthetic-ref-123');
+                expect(referrer.data?.transaction?.referral?.externalReferenceId).toBe(
+                    'synthetic-ref-123'
+                );
+                const data =
+                    await otherRecipient.clients.fullAuth.contracts.getConsentedDataForContract({
+                        uri,
+                    });
+                expect(data.records[0]?.personal).toEqual(normalFullTerms.read.personal);
+                expect(JSON.stringify(data)).not.toContain('synthetic-ref-123');
+            }
+        }
+    );
+
+    it('enforces request visibility in the database even if an earlier role lookup is stale', async () => {
+        const uri = await create();
+        await send(uri, recipient);
+        vi.spyOn(contractRead, 'getContractRequestAccess').mockResolvedValue({
+            isOwner: false,
+            isManager: true,
+            isRecipient: true,
+        });
+        expect(
+            await otherRecipient.clients.fullAuth.contracts.getContractSentRequests({
+                contractUri: uri,
+            })
+        ).toEqual([]);
+        expect(await status(uri, otherRecipient)).toBeNull();
+        expect(await status(uri, recipient)).toMatchObject({
+            externalReferenceId: 'synthetic-ref-123',
+        });
+    });
+
+    it('filters a shared contracts request list to each recipients own referrals', async () => {
+        const uri = await create();
+        await send(uri, recipient, 'private-org-a-ref');
+        await otherRecipient.clients.fullAuth.contracts.sendContractRequest({
+            contractUri: uri,
+            targetProfileId: outsider.profileId,
+            externalReferenceId: 'private-org-b-ref',
+            message: 'Private Org B invitation',
+        });
+        for (const [viewer, reference, target] of [
+            [recipient, 'private-org-a-ref', learner],
+            [otherRecipient, 'private-org-b-ref', outsider],
+        ] as const) {
+            const list = await viewer.clients.fullAuth.contracts.getContractSentRequests({
+                contractUri: uri,
+            });
+            expect(list).toEqual([
+                expect.objectContaining({
+                    externalReferenceId: reference,
+                    profile: expect.objectContaining({ profileId: target.profileId }),
+                }),
+            ]);
+        }
+        for (const manager of [owner, writer]) {
+            const list = await manager.clients.fullAuth.contracts.getContractSentRequests({
+                contractUri: uri,
+            });
+            expect(list.map(r => r.externalReferenceId).sort()).toEqual([
+                'private-org-a-ref',
+                'private-org-b-ref',
+            ]);
+        }
+    });
+
+    it.each(['denied', 'cancelled'] as const)(
+        'suppresses old pending and queued %s notifications to an unrelated recipient',
+        async decision => {
+            const uri = await create();
+            await send(uri, recipient);
+            const request = (await status(uri))!;
+            queue.mockRejectedValue(new Error('synthetic outage'));
+            if (decision === 'denied')
+                await learner.clients.fullAuth.contracts.denyContractRequest({ contractUri: uri });
+            else
+                await learner.clients.fullAuth.contracts.cancelContractRequest({
+                    contractUri: uri,
+                    targetProfileId: learner.profileId,
+                });
+            const eventId = `${request.requestId}:${decision}`;
+            await neogma.queryRunner.run(
+                `MATCH (e:ConsentFlowEvent {id:$eventId})
+                 CREATE (e)-[:HAS_DELIVERY]->(:ConsentFlowEventDelivery {
+                    id:$deliveryId, toId:$toId, role:'recipient', state:'pending', nextAttemptAt:$past
+                 })`,
+                {
+                    eventId,
+                    deliveryId: `${eventId}:${otherRecipient.profileId}`,
+                    toId: otherRecipient.profileId,
+                    past: '2000-01-01T00:00:00.000Z',
+                }
+            );
+            delivered.length = 0;
+            queue.mockImplementation(async n => {
+                delivered.push(structuredClone(n));
+                return undefined;
+            });
+            await due(eventId);
+            await dispatchContractEvents({ eventId });
+            expect(delivered.map(n => n.to.profileId).sort()).toEqual(
+                [owner.profileId, recipient.profileId].sort()
+            );
+            const rows = (await eventRows(uri)).find(r => r.get('e').properties.id === eventId)!;
+            const suppressed = rows
+                .get('deliveries')
+                .find(
+                    (d: { properties: { toId: string } }) =>
+                        d.properties.toId === otherRecipient.profileId
+                );
+            expect(suppressed.properties.state).toBe('skipped');
+            const oldQueued = structuredClone(delivered[0]!);
+            oldQueued.to = (await getProfileByProfileId(otherRecipient.profileId))!;
+            oldQueued.data!.metadata!.recipientRole = 'recipient';
+            oldQueued.data!.metadata!.deliveryKey = `${eventId}:${otherRecipient.profileId}`;
+            const sendSpy = vi.spyOn(notifications, 'sendNotification');
+            await expect(
+                deliverQueuedNotification(JSON.stringify(oldQueued))
+            ).resolves.toBeUndefined();
+            expect(sendSpy).not.toHaveBeenCalled();
+        }
+    );
+
+    it('removes private references from already queued consent data after a recipient loses writer access', async () => {
+        const uri = await owner.clients.fullAuth.contracts.createConsentFlowContract({
+            name: 'Synthetic referral',
+            contract: normalContract,
+            writers: [writer.profileId, otherRecipient.profileId],
+            recipients: [recipient.profileId, otherRecipient.profileId],
+        });
+        await send(uri, recipient);
+        delivered.length = 0;
+        const { termsUri } = await accept(uri);
+        await flush(uri);
+        const queued = structuredClone(
+            delivered.find(n => n.to.profileId === otherRecipient.profileId)!
+        );
+        expect(queued.data?.metadata?.externalReferenceId).toBe('synthetic-ref-123');
+        queued.data!.transaction!.terms = structuredClone(normalFullTerms);
+        queued.data!.metadata!.message = 'Private referral text';
+        await neogma.queryRunner.run(
+            `MATCH (:ConsentFlowContract {id:$contractId})-[w:CAN_WRITE]->(:Profile {profileId:$profileId}) DELETE w`,
+            { contractId: id(uri), profileId: otherRecipient.profileId }
+        );
+        const sent: LCNNotification[] = [];
+        vi.spyOn(notifications, 'sendNotification').mockImplementation(async n => {
+            sent.push(structuredClone(n));
+            return true;
+        });
+        await deliverQueuedNotification(JSON.stringify(queued));
+        expect(sent).toHaveLength(1);
+        expect(sent[0]?.data?.transaction?.terms?.read.personal).toEqual(
+            normalFullTerms.read.personal
+        );
+        expect(sent[0]?.data?.metadata).not.toHaveProperty('externalReferenceId');
+        expect(sent[0]?.data?.metadata).not.toHaveProperty('message');
+        expect(sent[0]?.data?.transaction?.referral).not.toHaveProperty('externalReferenceId');
+        expect(JSON.stringify(sent[0])).not.toContain('synthetic-ref-123');
+        expect(await status(uri, otherRecipient)).toBeNull();
+        await expect(
+            otherRecipient.clients.fullAuth.contracts.getTermsTransactionHistory({ uri: termsUri })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        const history = await learner.clients.fullAuth.contracts.getTermsTransactionHistory({
+            uri: termsUri,
+        });
+        expect(history.records[0]?.referral?.externalReferenceId).toBe('synthetic-ref-123');
+        const exported = await getHolderExportMetadataForProfile(
+            (await getProfileByProfileId(learner.profileId))!,
+            'localhost%3A3000'
+        );
+        expect(exported.consentRecords[0]?.referral?.externalReferenceId).toBe('synthetic-ref-123');
+    });
+
+    it('preserves legacy request management for writers without exposing it to recipients', async () => {
+        const uri = await create();
+        await writer.clients.fullAuth.contracts.sendAiInsightsContractRequest({
+            contractUri: uri,
+            targetProfileId: learner.profileId,
+            shareLink: 'https://synthetic.example/legacy',
+        });
+        for (const viewer of [owner, writer, learner])
+            expect(await status(uri, viewer)).toMatchObject({ status: 'pending' });
+        expect(await status(uri, recipient)).toBeNull();
+        expect(
+            await recipient.clients.fullAuth.contracts.getContractSentRequests({ contractUri: uri })
+        ).toEqual([]);
+        expect(
+            await writer.clients.fullAuth.contracts.getContractSentRequests({ contractUri: uri })
+        ).toHaveLength(1);
+    });
+
     it('retains denied history, emits one decision and rejects reopen/other terminal transitions', async () => {
         const uri = await create();
         await send(uri);
@@ -257,7 +513,9 @@ describe('generic contract requests and correlated events', () => {
             externalReferenceId: 'synthetic-ref-123',
         });
         await flush(uri);
-        expect(delivered).toHaveLength(4);
+        expect(delivered.map(n => n.to.profileId).sort()).toEqual(
+            [owner.profileId, writer.profileId].sort()
+        );
         expect(delivered.find(n => n.to.profileId === writer.profileId)?.data).not.toHaveProperty(
             'transaction'
         );
@@ -331,12 +589,17 @@ describe('generic contract requests and correlated events', () => {
         expect(JSON.stringify(minimal)).not.toContain('Full Fullerson');
         expect(JSON.stringify(minimal)).not.toContain('achievement1');
         const audienceEvent = delivered.find(n => n.to.profileId === recipient.profileId)!;
-        expect(audienceEvent.data?.transaction?.referral).toEqual(referral);
+        const publicReferral = { requestId: referral.requestId, requestedBy: referral.requestedBy };
+        expect(audienceEvent.data?.transaction?.referral).toEqual(publicReferral);
         expect(audienceEvent.data?.metadata).toMatchObject({
             event: 'consent_created',
             termsUri,
-            ...referral,
+            ...publicReferral,
         });
+        expect(audienceEvent.data?.metadata).not.toHaveProperty('externalReferenceId');
+        const ownerEvent = delivered.find(n => n.to.profileId === owner.profileId)!;
+        expect(ownerEvent.data?.metadata?.externalReferenceId).toBe('synthetic-ref-123');
+        expect(ownerEvent.data?.transaction?.referral).toEqual(referral);
         expect(new Set(delivered.map(n => n.data?.metadata?.deliveryKey)).size).toBe(4);
         delivered.length = 0;
         await learner.clients.fullAuth.contracts.syncCredentialsToContract({
@@ -360,7 +623,9 @@ describe('generic contract requests and correlated events', () => {
         expect(
             delivered.every(
                 n =>
-                    n.data?.metadata?.externalReferenceId === 'synthetic-ref-123' &&
+                    (n.to.profileId === owner.profileId
+                        ? n.data?.metadata?.externalReferenceId === 'synthetic-ref-123'
+                        : n.data?.metadata?.externalReferenceId === undefined) &&
                     n.data.metadata.event === 'consent_withdrawn'
             )
         ).toBe(true);
@@ -825,7 +1090,7 @@ describe('generic contract requests and correlated events', () => {
         const decision = (await eventRows(uri)).find(
             row => row.get('e').properties.kind === 'request_denied'
         )!;
-        expect(decision.get('deliveries')).toHaveLength(4);
+        expect(decision.get('deliveries')).toHaveLength(2);
     });
 
     it('suppresses pending and already queued data after recipient removal', async () => {

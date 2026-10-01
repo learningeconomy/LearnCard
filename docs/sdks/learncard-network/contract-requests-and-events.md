@@ -10,18 +10,20 @@ The Salesforce Data Mediator, or any other external integration, is a client of 
 
 ## Roles
 
-| Action                                     | Who can perform it                                                             |
-| ------------------------------------------ | ------------------------------------------------------------------------------ |
-| Send a generic request                     | Contract owner, explicit writer, or current data recipient                     |
-| List sent requests / inspect target status | Owner, writer, current recipient; a target may inspect its own status          |
-| List incoming requests                     | The target profile only                                                        |
-| Mark a generic request seen                | The target, for an existing request only                                       |
-| Deny                                       | The target only                                                                |
-| Cancel                                     | Owner, writer, target, or the requesting recipient while still in the audience |
-| Read consented data                        | Owner and current data recipients, under current consent permissions           |
-| Write outcomes                             | Owner or explicit writer, under current write permissions                      |
+| Action                                     | Who can perform it                                                                                 |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| Send a generic request                     | Contract owner, explicit writer, or current data recipient                                         |
+| List sent requests / inspect target status | Owner and writer: all referrals; current recipient: only referrals it sent; target: its own status |
+| List incoming requests                     | The target profile only                                                                            |
+| Mark a generic request seen                | The target, for an existing request only                                                           |
+| Deny                                       | The target only                                                                                    |
+| Cancel                                     | Owner, writer, target, or the requesting recipient while still in the audience                     |
+| Read consented data                        | Owner and current data recipients, under current consent permissions                               |
+| Write outcomes                             | Owner or explicit writer, under current write permissions                                          |
 
 A writer outside the data audience receives only a decision and correlation metadata for a request it sent. Being a writer does not grant read access.
+
+Being a data recipient does not grant access to other organizations' invitations or decisions, even after the learner accepts. Request lists are filtered in the database. Inspecting another sender's request returns `null`, the same as a missing request, without exposing its status, message, internal reference, or target profile. Owners and writers retain management access; legacy writer/target request reads retain their behavior.
 
 ## Send and track a request
 
@@ -88,7 +90,7 @@ Configure the receiving profile's `notificationsWebhook` using the existing prof
     "requestId": "request-id",
     "requestedBy": "referrer-profile-id",
     "externalReferenceId": "referral-123",
-    "recipientRole": "recipient"
+    "recipientRole": "owner"
 }
 ```
 
@@ -96,14 +98,14 @@ Configure the receiving profile's `notificationsWebhook` using the existing prof
 | ------------------------------------- | ------------------------------------------------------------------------------------------- |
 | `request_sent`                        | Target; metadata includes `type: "contract-request"` and optional message                   |
 | `request_accepted`                    | Requester outside the data audience; no transaction payload or Terms URI                    |
-| `request_denied`, `request_cancelled` | Owner, current recipients and non-audience requester; no consent payload                    |
+| `request_denied`, `request_cancelled` | Owner and original requester only; no consent payload                                       |
 | `consent_created`, `consent_updated`  | Owner and data recipients                                                                   |
 | `consent_withdrawn`                   | Owner and data recipients; signals revocation                                               |
 | `credentials_synced`                  | Owner and data recipients; legacy transaction shape retained with permitted credential URIs |
 
 Each event is deduplicated per recipient, excluding the acting profile. Consenting to a request also changes its status to accepted atomically. A Terms update that accepts a pending request after prior consent expired sends the requester an acceptance decision too.
 
-`termsUri` appears only on consent events delivered to the data audience. Referral fields are optional for direct or legacy consent, and are preserved on Terms, transaction history, and holder export metadata. Use the consented data APIs for current values; notification transactions are not a substitute for permission checks.
+`termsUri` appears only on consent events delivered to the data audience. Referral fields are optional for direct or legacy consent, and are preserved on Terms, transaction history, and holder export metadata. The owner, writers with data access, and the original referrer retain `externalReferenceId` on their permitted events. Other data recipients receive consented data and public attribution (`requestId`, `requestedBy`), with the internal reference removed from both metadata and the transaction's `referral`. They do not receive private invitation text. The learner retains the full referral in its own history and export. Use the consented data APIs for current values; notification transactions are not a substitute for permission checks.
 
 ## Delivery and retry
 
@@ -115,7 +117,7 @@ Outbox retries start after one minute, double after each failed attempt, and cap
 
 For SQS, a successful enqueue completes the outbox delivery. The queue consumer acknowledges permanent contract webhook rejections so SQS can discard those messages; temporary failures remain subject to the queue's configured retry and retention policy. The outbox's 12-attempt/24-hour limits do not govern SQS retries.
 
-Recipients removed before dispatch are skipped, including events already placed on SQS. Expired or withdrawn consent blocks queued data events, and revoked personal values or credential URIs are removed before delivery. A queued invitation is skipped if the request was already decided. Already delivered copies cannot be recalled.
+Recipients removed before dispatch are skipped, including events already placed on SQS. Request decisions queued under the former broad audience are also suppressed for unrelated recipients. Queued consent events have private reference fields removed if the recipient no longer has referral management access. These checks run before outbox dispatch and again in the SQS consumer; previously delivered copies cannot be recalled. Expired or withdrawn consent blocks queued data events, and revoked personal values or credential URIs are removed before delivery. A queued invitation is skipped if the request was already decided. Already delivered copies cannot be recalled.
 
 Outbox intents discard their payload and message once every delivery is delivered, skipped, rejected, or failed; stable event/delivery metadata remains for deduplication and diagnostics. Pending intents remain available only within the retry budget. Cleanup also recovers events with no recipients or with already-finished deliveries. Expiration and cleanup require a running worker; they happen on a subsequent pass and can be delayed by a backlog or service downtime. This removes the extra notification copy, while consent history remains available through its existing APIs. Failed notifications are not automatically replayed after configuration is repaired.
 
