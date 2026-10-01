@@ -8,6 +8,18 @@ A contract request invites an existing network profile to review a ConsentFlow c
 
 The Salesforce Data Mediator, or any other external integration, is a client of these APIs and webhooks.
 
+## Verify locally
+
+From a repository checkout with workspace dependencies installed and OrbStack or Docker running:
+
+```bash
+bun run test:referrals
+```
+
+This command starts a disposable Neo4j database, creates synthetic accounts, checks referral actions, privacy and notification retries, then stops the database. It prints a result for each suite and saves detailed logs and JSON results in the operating system's temporary directory. The first run may download the database image. No API servers, environment setup or real accounts are needed.
+
+Use `bun run test:referrals --full` to include consent, credential and legacy-notification regressions. A failed or incomplete run exits with a nonzero status. These checks exercise service routes in-process; app screens, signed HTTP delivery and the external CRM need separate testing.
+
 ## Roles
 
 | Action                                     | Who can perform it                                                                                 |
