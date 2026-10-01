@@ -26,7 +26,8 @@ export interface KeycloakClaims {
 const claimsSchema = z.object({
     sub: z.string().min(1),
     iss: z.string(),
-    typ: z.enum(['ID', 'Bearer']),
+    // The payload typ is a Keycloak extension, not a required OIDC claim.
+    typ: z.enum(['ID', 'Bearer']).optional(),
     azp: z.string().optional(),
     aud: z.union([z.string(), z.array(z.string())]).optional(),
     email: z.string().min(1).optional(),

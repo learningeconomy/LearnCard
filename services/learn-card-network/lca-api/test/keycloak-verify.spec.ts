@@ -94,6 +94,15 @@ describe('Keycloak token verification', () => {
         ).resolves.toMatchObject({ providerType: 'keycloak' });
     });
 
+    it('accepts a verified token without the optional payload typ', async () => {
+        await expect(verifyKeycloakToken(await signToken({ typ: undefined }))).resolves.toEqual({
+            id: 'user-123',
+            email: 'learner@example.com',
+            phone: undefined,
+            providerType: 'keycloak',
+        });
+    });
+
     it.each([
         ['wrong issuer', { iss: 'https://wrong.example/realms/learncard' }],
         ['same-key issuer outside allowlist', { iss: `${issuer}/` }],
@@ -109,7 +118,9 @@ describe('Keycloak token verification', () => {
         ['expired token', { exp: 1 }],
         ['future nbf', { nbf: Math.floor(Date.now() / 1000) + 300 }],
         ['refresh token', { typ: 'Refresh' }],
-        ['missing payload typ', { typ: undefined }],
+        ['offline token', { typ: 'Offline' }],
+        ['unsupported payload typ', { typ: 'bearer' }],
+        ['null payload typ', { typ: null }],
         ['missing subject', { sub: undefined }],
         ['missing audience and azp', { aud: undefined, azp: undefined }],
     ])('rejects %s', async (_label, claims) => {
