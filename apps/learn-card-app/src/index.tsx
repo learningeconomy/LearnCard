@@ -63,6 +63,7 @@ installInsetSimulator();
     const ldOptions = {
         options: {
             logger: basicLogger({ level: 'none' }),
+            diagnosticOptOut: true,
         },
     };
 
