@@ -49,8 +49,8 @@ resource "aws_iam_role" "github" {
   max_session_duration = each.key == "deploy" ? 10800 : 3600
 }
 
-# ReadOnlyAccess also reads application data. The plan role only needs resource
-# configuration, so deny data-plane reads everywhere outside Keycloak's own state.
+# Defense in depth, not the permission boundary: plan_read explicitly allowlists
+# configuration reads. Keep these denies if another policy is ever attached.
 data "aws_iam_policy_document" "plan_data_denies" {
   statement {
     sid    = "NoApplicationData"
@@ -59,16 +59,25 @@ data "aws_iam_policy_document" "plan_data_denies" {
       "secretsmanager:GetSecretValue", "ssm:GetParameterHistory", "kms:Decrypt",
       "logs:GetLogEvents", "logs:FilterLogEvents", "logs:StartQuery", "logs:GetQueryResults", "logs:StartLiveTail",
       "dynamodb:GetItem", "dynamodb:BatchGetItem", "dynamodb:Query", "dynamodb:Scan",
+      "dynamodb:PartiQLSelect", "dynamodb:GetRecords", "dynamodb:GetShardIterator",
+      "dynamodb:ReadDataForReplication", "dynamodb:SearchVectors",
+      "logs:GetLogRecord", "logs:GetLogGroupFields", "rds:DownloadDBLogFilePortion",
+      "kinesis:GetRecords", "kinesis:GetShardIterator", "glacier:GetJobOutput",
+      "sdb:GetAttributes", "sdb:Select", "cassandra:Select",
       "sqs:ReceiveMessage", "lambda:GetFunction", "codecommit:GitPull", "athena:GetQueryResults",
+      "codecommit:GetBlob", "codecommit:GetFile", "codecommit:GetFolder", "codecommit:GetDifferences",
+      "athena:GetQueryResultsStream",
       "ecr:BatchGetImage", "ecr:GetDownloadUrlForLayer",
     ]
     resources = ["*"]
   }
   statement {
-    sid           = "NoObjectReadsOutsideInfraState"
-    effect        = "Deny"
-    actions       = ["s3:GetObject", "s3:GetObjectVersion"]
-    not_resources = [for key in local.plan_state_keys["plan"] : "${aws_s3_bucket.state.arn}/${key}"]
+    sid     = "NoObjectReadsOutsideInfraState"
+    effect  = "Deny"
+    actions = ["s3:GetObject", "s3:GetObjectVersion"]
+    not_resources = flatten([for key in local.plan_state_keys["plan"] : [
+      "${aws_s3_bucket.state.arn}/${key}", "${aws_s3_bucket.state.arn}/${key}.tflock"
+    ]])
   }
   statement {
     sid           = "NoParametersOutsideKeycloak"
@@ -82,11 +91,6 @@ resource "aws_iam_role_policy" "plan_data_denies" {
   name   = "${local.name}-plan-data-denies"
   role   = aws_iam_role.github["plan"].id
   policy = data.aws_iam_policy_document.plan_data_denies.json
-}
-
-resource "aws_iam_role_policy_attachment" "plan_read_only" {
-  role       = aws_iam_role.github["plan"].name
-  policy_arn = "arn:${local.partition}:iam::aws:policy/ReadOnlyAccess"
 }
 
 data "aws_iam_policy_document" "state_access" {
