@@ -107,6 +107,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
     const {
         data: contractDetails,
         isLoading: isLoadingContract,
+        isFetching: isRefreshingContract,
         refetch: refetchContract,
     } = useQuery<ConsentFlowContractDetails | null>({
         queryKey: ['getContract', contractUri],
@@ -494,11 +495,13 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                                 >
                                     {m['appInstall.installFailed']()}
                                     <button
-                                        disabled={isConsenting}
+                                        disabled={isConsenting || isRefreshingContract}
                                         className="px-4 py-3 rounded-[20px] border border-grayscale-300 text-grayscale-700"
                                         onClick={() => void refetchContract()}
                                     >
-                                        {m['common.tryAgain']()}
+                                        {isRefreshingContract
+                                            ? m['appInstall.loadingDataPermissions']()
+                                            : m['common.tryAgain']()}
                                     </button>
                                 </div>
                             ) : contractDetails ? (
