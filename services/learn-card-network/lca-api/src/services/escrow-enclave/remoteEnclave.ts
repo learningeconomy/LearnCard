@@ -1,3 +1,4 @@
+import { Agent } from 'node:https';
 import axios from 'axios';
 import { z } from 'zod';
 import {
@@ -117,11 +118,19 @@ export interface RemoteEnclaveTransport {
     ): Promise<RemoteEnclaveTransportResponse>;
 }
 
-const defaultTransport: RemoteEnclaveTransport = {
-    post: async (url, body, config) => {
-        const response = await axios.post(url, body, { ...config, validateStatus: () => true });
-        return { status: response.status, data: response.data };
-    },
+/** With `caPem`, the connection trusts only that CA (system roots are not consulted). */
+export const createHttpTransport = (caPem?: string): RemoteEnclaveTransport => {
+    const httpsAgent = caPem ? new Agent({ ca: caPem, keepAlive: true }) : undefined;
+    return {
+        post: async (url, body, config) => {
+            const response = await axios.post(url, body, {
+                ...config,
+                httpsAgent,
+                validateStatus: () => true,
+            });
+            return { status: response.status, data: response.data };
+        },
+    };
 };
 
 export interface RemoteEnclaveConfig {
@@ -129,6 +138,8 @@ export interface RemoteEnclaveConfig {
     baseUrl: string;
     token: string;
     timeoutMs: number;
+    /** Private CA pinned for this host (see enclaveTrustAnchors.ts); system roots otherwise. */
+    caPem?: string;
     /** Injectable for tests; defaults to a real HTTP (axios) transport. */
     transport?: RemoteEnclaveTransport;
 }
@@ -144,7 +155,7 @@ export interface RemoteEnclaveConfig {
  * proofs) are never logged anywhere in this module.
  */
 export const createRemoteEnclave = (config: RemoteEnclaveConfig): EscrowEnclave => {
-    const transport = config.transport ?? defaultTransport;
+    const transport = config.transport ?? createHttpTransport(config.caPem);
 
     const call = async <T>(path: string, body: unknown, validator: z.ZodType<T>): Promise<T> => {
         let status: number;

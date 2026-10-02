@@ -7,6 +7,7 @@ import {
 import type { EscrowBlobStaleReason } from '@learncard/types';
 import { SoftwareEnclave } from './softwareEnclave';
 import { createRemoteEnclave } from './remoteEnclave';
+import { pinnedEnclaveCa } from './enclaveTrustAnchors';
 import { EscrowUnavailableError, type EscrowEnclave } from './types';
 
 export * from './types';
@@ -64,6 +65,7 @@ export const getEscrowEnclave = (): EscrowEnclave => {
             baseUrl,
             token,
             timeoutMs: config.ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS,
+            caPem: pinnedEnclaveCa(baseUrl),
         });
         return enclave;
     }
