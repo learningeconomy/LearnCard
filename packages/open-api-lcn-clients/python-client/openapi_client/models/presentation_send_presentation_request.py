@@ -18,20 +18,23 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.presentation_send_presentation_request_presentation import PresentationSendPresentationRequestPresentation
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class PresentationSendPresentationRequest(BaseModel):
     """
     PresentationSendPresentationRequest
     """ # noqa: E501
     presentation: PresentationSendPresentationRequestPresentation
-    __properties: ClassVar[List[str]] = ["presentation"]
+    metadata: Optional[Dict[str, Any]] = None
+    __properties: ClassVar[List[str]] = ["presentation", "metadata"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -43,8 +46,7 @@ class PresentationSendPresentationRequest(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -84,7 +86,8 @@ class PresentationSendPresentationRequest(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "presentation": PresentationSendPresentationRequestPresentation.from_dict(obj["presentation"]) if obj.get("presentation") is not None else None
+            "presentation": PresentationSendPresentationRequestPresentation.from_dict(obj["presentation"]) if obj.get("presentation") is not None else None,
+            "metadata": obj.get("metadata")
         })
         return _obj
 

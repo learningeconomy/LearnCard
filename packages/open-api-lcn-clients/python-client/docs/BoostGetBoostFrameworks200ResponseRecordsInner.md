@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 **description** | **str** |  | [optional] 
 **image** | **str** |  | [optional] 
 **source_uri** | **str** |  | [optional] 
+**is_public** | **bool** |  | [default to False]
 **status** | **str** |  | [default to 'active']
 **created_at** | **str** |  | [optional] 
 **updated_at** | **str** |  | [optional] 

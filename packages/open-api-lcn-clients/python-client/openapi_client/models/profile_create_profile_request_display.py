@@ -21,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ProfileCreateProfileRequestDisplay(BaseModel):
     """
@@ -40,7 +41,8 @@ class ProfileCreateProfileRequestDisplay(BaseModel):
     __properties: ClassVar[List[str]] = ["backgroundColor", "backgroundImage", "fadeBackgroundImage", "repeatBackgroundImage", "fontColor", "accentColor", "accentFontColor", "idBackgroundImage", "fadeIdBackgroundImage", "idBackgroundColor", "repeatIdBackgroundImage"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -52,8 +54,7 @@ class ProfileCreateProfileRequestDisplay(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -88,6 +89,16 @@ class ProfileCreateProfileRequestDisplay(BaseModel):
         if self.background_image is None and "background_image" in self.model_fields_set:
             _dict['backgroundImage'] = None
 
+        # set to None if fade_background_image (nullable) is None
+        # and model_fields_set contains the field
+        if self.fade_background_image is None and "fade_background_image" in self.model_fields_set:
+            _dict['fadeBackgroundImage'] = None
+
+        # set to None if repeat_background_image (nullable) is None
+        # and model_fields_set contains the field
+        if self.repeat_background_image is None and "repeat_background_image" in self.model_fields_set:
+            _dict['repeatBackgroundImage'] = None
+
         # set to None if font_color (nullable) is None
         # and model_fields_set contains the field
         if self.font_color is None and "font_color" in self.model_fields_set:
@@ -108,10 +119,20 @@ class ProfileCreateProfileRequestDisplay(BaseModel):
         if self.id_background_image is None and "id_background_image" in self.model_fields_set:
             _dict['idBackgroundImage'] = None
 
+        # set to None if fade_id_background_image (nullable) is None
+        # and model_fields_set contains the field
+        if self.fade_id_background_image is None and "fade_id_background_image" in self.model_fields_set:
+            _dict['fadeIdBackgroundImage'] = None
+
         # set to None if id_background_color (nullable) is None
         # and model_fields_set contains the field
         if self.id_background_color is None and "id_background_color" in self.model_fields_set:
             _dict['idBackgroundColor'] = None
+
+        # set to None if repeat_id_background_image (nullable) is None
+        # and model_fields_set contains the field
+        if self.repeat_id_background_image is None and "repeat_id_background_image" in self.model_fields_set:
+            _dict['repeatIdBackgroundImage'] = None
 
         return _dict
 

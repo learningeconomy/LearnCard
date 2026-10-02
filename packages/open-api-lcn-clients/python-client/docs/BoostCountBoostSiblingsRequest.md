@@ -6,7 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **uri** | **str** |  | 
-**query** | [**BoostGetBoostsRequestQuery**](BoostGetBoostsRequestQuery.md) |  | [optional] 
+**query** | [**BoostCountBoostsRequestQuery**](BoostCountBoostsRequestQuery.md) |  | [optional] 
 
 ## Example
 

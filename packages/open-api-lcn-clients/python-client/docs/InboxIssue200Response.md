@@ -5,6 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**refresh** | [**InboxIssue200ResponseRefresh**](InboxIssue200ResponseRefresh.md) |  | [optional] 
 **issuance_id** | **str** |  | 
 **status** | **str** |  | 
 **recipient** | [**InboxIssue200ResponseRecipient**](InboxIssue200ResponseRecipient.md) |  | 

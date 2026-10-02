@@ -9,7 +9,7 @@ Name | Type | Description | Notes
 **cursor** | **str** |  | [optional] 
 **sort** | **str** |  | [optional] 
 **uri** | **str** |  | 
-**query** | [**BoostGetBoostsRequestQuery**](BoostGetBoostsRequestQuery.md) |  | [optional] 
+**query** | [**BoostCountBoostsRequestQuery**](BoostCountBoostsRequestQuery.md) |  | [optional] 
 **parent_generations** | [**BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations**](BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.md) |  | [optional] 
 **child_generations** | [**BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations**](BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.md) |  | [optional] 
 **include_extended_family** | **bool** |  | [optional] [default to False]

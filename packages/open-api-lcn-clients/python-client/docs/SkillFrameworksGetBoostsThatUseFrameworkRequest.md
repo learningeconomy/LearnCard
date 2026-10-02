@@ -7,7 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **limit** | **int** |  | [optional] [default to 50]
 **cursor** | **str** |  | [optional] 
-**query** | [**BoostGetBoostsRequestQuery**](BoostGetBoostsRequestQuery.md) |  | [optional] 
+**query** | [**BoostCountBoostsRequestQuery**](BoostCountBoostsRequestQuery.md) |  | [optional] 
 
 ## Example
 

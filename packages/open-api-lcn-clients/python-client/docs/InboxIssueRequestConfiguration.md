@@ -6,10 +6,11 @@ Configuration for the credential issuance. If not provided, the default configur
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**guardian_email** | **str** | Require approval from this guardian before the recipient can claim. Must differ from the recipient email. | [optional] 
 **signing_authority** | [**InboxIssueRequestConfigurationSigningAuthority**](InboxIssueRequestConfigurationSigningAuthority.md) |  | [optional] 
 **webhook_url** | **str** | The webhook URL to receive credential issuance events. | [optional] 
-**expires_in_days** | **float** | The number of days the credential will be valid for. | [optional] 
-**template_data** | **Dict[str, object]** | Template data to render into the boost credential template using Mustache syntax. Only used when boostUri is provided. | [optional] 
+**expires_in_days** | **int** | How many days the encrypted inbox payload remains claimable. This does not change the credential validity period. | [optional] 
+**template_data** | **Dict[str, Optional[object]]** | Template data to render into the boost credential template using Mustache syntax. Only used when boostUri is provided. | [optional] 
 **delivery** | [**InboxIssueRequestConfigurationDelivery**](InboxIssueRequestConfigurationDelivery.md) |  | [optional] 
 
 ## Example

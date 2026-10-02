@@ -6,6 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **presentation** | [**PresentationSendPresentationRequestPresentation**](PresentationSendPresentationRequestPresentation.md) |  | 
+**metadata** | **Dict[str, Optional[object]]** |  | [optional] 
 
 ## Example
 

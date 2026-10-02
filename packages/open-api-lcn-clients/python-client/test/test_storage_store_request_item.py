@@ -54,6 +54,7 @@ class TestStorageStoreRequestItem(unittest.TestCase):
                 status = None,
                 terms_of_use = None,
                 evidence = None,
+                render_method = None,
                 proof = None,
                 verifiable_credential = None,
                 holder = '',
@@ -79,7 +80,9 @@ class TestStorageStoreRequestItem(unittest.TestCase):
                             apv = '', 
                             apu = '', ), 
                         encrypted_key = '', )
-                    ]
+                    ],
+                format = 'w3c-vc-2.0',
+                data = ''
             )
         else:
             return StorageStoreRequestItem(
@@ -94,6 +97,8 @@ class TestStorageStoreRequestItem(unittest.TestCase):
                 iv = '',
                 ciphertext = '',
                 tag = '',
+                format = 'w3c-vc-2.0',
+                data = '',
         )
         """
 

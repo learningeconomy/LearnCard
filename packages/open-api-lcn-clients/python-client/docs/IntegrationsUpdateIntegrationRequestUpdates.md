@@ -11,7 +11,7 @@ Name | Type | Description | Notes
 **rotate_publishable_key** | **bool** |  | [optional] 
 **status** | **str** |  | [optional] 
 **guide_type** | **str** |  | [optional] 
-**guide_state** | **Dict[str, object]** |  | [optional] 
+**guide_state** | **Dict[str, Optional[object]]** |  | [optional] 
 
 ## Example
 

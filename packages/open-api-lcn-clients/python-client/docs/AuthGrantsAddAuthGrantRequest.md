@@ -8,6 +8,7 @@ Name | Type | Description | Notes
 **name** | **str** |  | [optional] 
 **description** | **str** |  | [optional] 
 **scope** | **str** |  | [optional] 
+**act_as** | **str** |  | [optional] 
 **expires_at** | **datetime** |  | [optional] 
 
 ## Example

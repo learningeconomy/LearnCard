@@ -6,7 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **type** | **str** |  | 
-**created** | **str** |  | 
+**created** | **str** |  | [optional] 
 **challenge** | **str** |  | [optional] 
 **domain** | **str** |  | [optional] 
 **nonce** | **str** |  | [optional] 

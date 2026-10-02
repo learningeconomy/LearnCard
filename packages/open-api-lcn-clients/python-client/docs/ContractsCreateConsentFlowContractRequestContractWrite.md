@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**credentials** | [**ContractsCreateConsentFlowContractRequestContractReadCredentials**](ContractsCreateConsentFlowContractRequestContractReadCredentials.md) |  | [optional] 
-**personal** | [**Dict[str, ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue]**](ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue.md) |  | [optional] 
+**credentials** | [**ContractsCreateConsentFlowContractRequestContractWriteCredentials**](ContractsCreateConsentFlowContractRequestContractWriteCredentials.md) |  | [optional] 
+**personal** | [**Dict[str, ContractsCreateConsentFlowContractRequestContractReadPersonalValue]**](ContractsCreateConsentFlowContractRequestContractReadPersonalValue.md) |  | [optional] 
 
 ## Example
 

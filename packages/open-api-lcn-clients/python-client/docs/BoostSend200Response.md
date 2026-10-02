@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 **uri** | **str** |  | 
 **activity_id** | **str** | Links to the activity lifecycle for this issuance | 
 **inbox** | [**BoostSend200ResponseInbox**](BoostSend200ResponseInbox.md) |  | [optional] 
+**refresh** | [**BoostSend200ResponseRefresh**](BoostSend200ResponseRefresh.md) |  | [optional] 
 
 ## Example
 

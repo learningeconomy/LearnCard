@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **email** | **str** |  | [optional] 
 **image** | **str** |  | [optional] 
 **hero_image** | **str** |  | [optional] 
+**manager_type** | **str** |  | [optional] 
 
 ## Example
 

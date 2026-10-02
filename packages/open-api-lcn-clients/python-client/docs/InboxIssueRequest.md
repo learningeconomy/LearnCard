@@ -8,6 +8,8 @@ Name | Type | Description | Notes
 **recipient** | [**InboxIssueRequestRecipient**](InboxIssueRequestRecipient.md) |  | 
 **credential** | [**InboxIssueRequestCredential**](InboxIssueRequestCredential.md) |  | [optional] 
 **template_uri** | **str** | URI of a boost template to use for issuance. The boost credential will be resolved and used. Mutually exclusive with credential field. | [optional] 
+**refresh** | **bool** | Allocate managed refresh before signing. Requires unsigned content and a registered signing authority; binds the holder on claim. | [optional] 
+**idempotency_key** | **str** |  | [optional] 
 **configuration** | [**InboxIssueRequestConfiguration**](InboxIssueRequestConfiguration.md) |  | [optional] 
 
 ## Example

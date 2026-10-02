@@ -21,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ActivityGetActivity200ResponseRecipientProfile(BaseModel):
     """
@@ -28,10 +29,12 @@ class ActivityGetActivity200ResponseRecipientProfile(BaseModel):
     """ # noqa: E501
     profile_id: StrictStr = Field(alias="profileId")
     display_name: Optional[StrictStr] = Field(default=None, alias="displayName")
-    __properties: ClassVar[List[str]] = ["profileId", "displayName"]
+    image: Optional[StrictStr] = None
+    __properties: ClassVar[List[str]] = ["profileId", "displayName", "image"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -43,8 +46,7 @@ class ActivityGetActivity200ResponseRecipientProfile(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -82,7 +84,8 @@ class ActivityGetActivity200ResponseRecipientProfile(BaseModel):
 
         _obj = cls.model_validate({
             "profileId": obj.get("profileId"),
-            "displayName": obj.get("displayName")
+            "displayName": obj.get("displayName"),
+            "image": obj.get("image")
         })
         return _obj
 

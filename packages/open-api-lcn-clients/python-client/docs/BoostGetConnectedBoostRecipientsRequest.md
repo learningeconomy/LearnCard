@@ -9,7 +9,7 @@ Name | Type | Description | Notes
 **cursor** | **str** |  | [optional] 
 **sort** | **str** |  | [optional] 
 **include_unaccepted_boosts** | **bool** |  | [optional] [default to True]
-**query** | [**BoostGetPaginatedBoostRecipientsRequestQuery**](BoostGetPaginatedBoostRecipientsRequestQuery.md) |  | [optional] 
+**query** | [**BoostGetConnectedBoostRecipientsRequestQuery**](BoostGetConnectedBoostRecipientsRequestQuery.md) |  | [optional] 
 
 ## Example
 

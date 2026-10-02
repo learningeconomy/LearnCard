@@ -6,6 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **role** | **str** |  | 
+**can_view** | **bool** |  | [default to True]
 **can_edit** | **bool** |  | 
 **can_issue** | **bool** |  | 
 **can_revoke** | **bool** |  | 

@@ -20,20 +20,23 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.inbox_issue200_response_recipient import InboxIssue200ResponseRecipient
+from openapi_client.models.inbox_issue200_response_refresh import InboxIssue200ResponseRefresh
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class InboxIssue200Response(BaseModel):
     """
     InboxIssue200Response
     """ # noqa: E501
+    refresh: Optional[InboxIssue200ResponseRefresh] = None
     issuance_id: Optional[StrictStr] = Field(alias="issuanceId")
     status: StrictStr
     recipient: InboxIssue200ResponseRecipient
     claim_url: Optional[StrictStr] = Field(default=None, alias="claimUrl")
     recipient_did: Optional[StrictStr] = Field(default=None, alias="recipientDid")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["issuanceId", "status", "recipient", "claimUrl", "recipientDid"]
+    __properties: ClassVar[List[str]] = ["refresh", "issuanceId", "status", "recipient", "claimUrl", "recipientDid"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -43,7 +46,8 @@ class InboxIssue200Response(BaseModel):
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -55,8 +59,7 @@ class InboxIssue200Response(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -83,6 +86,9 @@ class InboxIssue200Response(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of refresh
+        if self.refresh:
+            _dict['refresh'] = self.refresh.to_dict()
         # override the default output from pydantic by calling `to_dict()` of recipient
         if self.recipient:
             _dict['recipient'] = self.recipient.to_dict()
@@ -113,6 +119,7 @@ class InboxIssue200Response(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
+            "refresh": InboxIssue200ResponseRefresh.from_dict(obj["refresh"]) if obj.get("refresh") is not None else None,
             "issuanceId": obj.get("issuanceId"),
             "status": obj.get("status"),
             "recipient": InboxIssue200ResponseRecipient.from_dict(obj["recipient"]) if obj.get("recipient") is not None else None,

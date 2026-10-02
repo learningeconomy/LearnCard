@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
     LearnCloud Network API
 
@@ -11,22 +9,25 @@
     Do not edit the class manually.
 """  # noqa: E501
 
+
 import warnings
 from pydantic import validate_call, Field, StrictFloat, StrictStr, StrictInt
 from typing import Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Annotated
 
 from pydantic import StrictBool, StrictStr
-from typing import Optional
-from openapi_client.models.boost_get_boost_admins200_response import BoostGetBoostAdmins200Response
+from typing import List, Optional
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of3 import BoostGetBoostRecipients200ResponseInnerToAnyOf3
 from openapi_client.models.boost_get_children_profile_managers200_response import BoostGetChildrenProfileManagers200Response
 from openapi_client.models.boost_get_children_profile_managers_request import BoostGetChildrenProfileManagersRequest
 from openapi_client.models.profile_get_available_profiles200_response_records_inner_manager import ProfileGetAvailableProfiles200ResponseRecordsInnerManager
+from openapi_client.models.profile_get_managed_service_profiles200_response import ProfileGetManagedServiceProfiles200Response
 from openapi_client.models.profile_manager_create_child_profile_manager_request import ProfileManagerCreateChildProfileManagerRequest
-from openapi_client.models.profile_manager_create_child_profile_manager_request_profile import ProfileManagerCreateChildProfileManagerRequestProfile
 from openapi_client.models.profile_manager_create_managed_profile_request import ProfileManagerCreateManagedProfileRequest
 from openapi_client.models.profile_manager_create_profile_manager_request import ProfileManagerCreateProfileManagerRequest
 from openapi_client.models.profile_manager_get_managed_profiles_request import ProfileManagerGetManagedProfilesRequest
+from openapi_client.models.profile_manager_remove_manages_relationship_request import ProfileManagerRemoveManagesRelationshipRequest
+from openapi_client.models.profile_manager_update_profile_manager_request import ProfileManagerUpdateProfileManagerRequest
 
 from openapi_client.api_client import ApiClient, RequestSerialized
 from openapi_client.api_response import ApiResponse
@@ -1206,7 +1207,7 @@ class ProfileManagersApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> BoostGetBoostAdmins200Response:
+    ) -> ProfileGetManagedServiceProfiles200Response:
         """Managed Profiles
 
         This route gets all of your managed profiles
@@ -1244,7 +1245,7 @@ class ProfileManagersApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "BoostGetBoostAdmins200Response",
+            '200': "ProfileGetManagedServiceProfiles200Response",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
@@ -1277,7 +1278,7 @@ class ProfileManagersApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> ApiResponse[BoostGetBoostAdmins200Response]:
+    ) -> ApiResponse[ProfileGetManagedServiceProfiles200Response]:
         """Managed Profiles
 
         This route gets all of your managed profiles
@@ -1315,7 +1316,7 @@ class ProfileManagersApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "BoostGetBoostAdmins200Response",
+            '200': "ProfileGetManagedServiceProfiles200Response",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
@@ -1386,7 +1387,7 @@ class ProfileManagersApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "BoostGetBoostAdmins200Response",
+            '200': "ProfileGetManagedServiceProfiles200Response",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
@@ -1461,6 +1462,516 @@ class ProfileManagersApi:
         return self.api_client.param_serialize(
             method='POST',
             resource_path='/profile/managed-profiles',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def profile_manager_get_my_guardians(
+        self,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]:
+        """Get profiles that manage the current user
+
+        Returns all profiles that manage the current profile via a MANAGES relationship.
+
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._profile_manager_get_my_guardians_serialize(
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def profile_manager_get_my_guardians_with_http_info(
+        self,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]]:
+        """Get profiles that manage the current user
+
+        Returns all profiles that manage the current profile via a MANAGES relationship.
+
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._profile_manager_get_my_guardians_serialize(
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def profile_manager_get_my_guardians_without_preload_content(
+        self,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Get profiles that manage the current user
+
+        Returns all profiles that manage the current profile via a MANAGES relationship.
+
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._profile_manager_get_my_guardians_serialize(
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _profile_manager_get_my_guardians_serialize(
+        self,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/profile-manager/my-guardians',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def profile_manager_get_my_managed_children(
+        self,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]:
+        """Get profiles managed by the current user
+
+        Returns all profiles managed via ProfileManagers that the current profile administrates.
+
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._profile_manager_get_my_managed_children_serialize(
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def profile_manager_get_my_managed_children_with_http_info(
+        self,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]]:
+        """Get profiles managed by the current user
+
+        Returns all profiles managed via ProfileManagers that the current profile administrates.
+
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._profile_manager_get_my_managed_children_serialize(
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def profile_manager_get_my_managed_children_without_preload_content(
+        self,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Get profiles managed by the current user
+
+        Returns all profiles managed via ProfileManagers that the current profile administrates.
+
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._profile_manager_get_my_managed_children_serialize(
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _profile_manager_get_my_managed_children_serialize(
+        self,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/profile-manager/my-managed-children',
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -2008,9 +2519,295 @@ class ProfileManagersApi:
 
 
     @validate_call
+    def profile_manager_remove_manages_relationship(
+        self,
+        profile_manager_remove_manages_relationship_request: ProfileManagerRemoveManagesRelationshipRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> bool:
+        """Remove a MANAGES relationship
+
+        Removes the MANAGES relationship between the current profile and a child profile, or between a guardian and the current profile.
+
+        :param profile_manager_remove_manages_relationship_request: (required)
+        :type profile_manager_remove_manages_relationship_request: ProfileManagerRemoveManagesRelationshipRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._profile_manager_remove_manages_relationship_serialize(
+            profile_manager_remove_manages_relationship_request=profile_manager_remove_manages_relationship_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def profile_manager_remove_manages_relationship_with_http_info(
+        self,
+        profile_manager_remove_manages_relationship_request: ProfileManagerRemoveManagesRelationshipRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[bool]:
+        """Remove a MANAGES relationship
+
+        Removes the MANAGES relationship between the current profile and a child profile, or between a guardian and the current profile.
+
+        :param profile_manager_remove_manages_relationship_request: (required)
+        :type profile_manager_remove_manages_relationship_request: ProfileManagerRemoveManagesRelationshipRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._profile_manager_remove_manages_relationship_serialize(
+            profile_manager_remove_manages_relationship_request=profile_manager_remove_manages_relationship_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def profile_manager_remove_manages_relationship_without_preload_content(
+        self,
+        profile_manager_remove_manages_relationship_request: ProfileManagerRemoveManagesRelationshipRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Remove a MANAGES relationship
+
+        Removes the MANAGES relationship between the current profile and a child profile, or between a guardian and the current profile.
+
+        :param profile_manager_remove_manages_relationship_request: (required)
+        :type profile_manager_remove_manages_relationship_request: ProfileManagerRemoveManagesRelationshipRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._profile_manager_remove_manages_relationship_serialize(
+            profile_manager_remove_manages_relationship_request=profile_manager_remove_manages_relationship_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _profile_manager_remove_manages_relationship_serialize(
+        self,
+        profile_manager_remove_manages_relationship_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if profile_manager_remove_manages_relationship_request is not None:
+            _body_params = profile_manager_remove_manages_relationship_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/profile-manager/remove-manages',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
     def profile_manager_update_profile_manager(
         self,
-        profile_manager_create_child_profile_manager_request_profile: ProfileManagerCreateChildProfileManagerRequestProfile,
+        profile_manager_update_profile_manager_request: ProfileManagerUpdateProfileManagerRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2028,8 +2825,8 @@ class ProfileManagersApi:
 
         This route updates the profile of the current profile manager
 
-        :param profile_manager_create_child_profile_manager_request_profile: (required)
-        :type profile_manager_create_child_profile_manager_request_profile: ProfileManagerCreateChildProfileManagerRequestProfile
+        :param profile_manager_update_profile_manager_request: (required)
+        :type profile_manager_update_profile_manager_request: ProfileManagerUpdateProfileManagerRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -2053,7 +2850,7 @@ class ProfileManagersApi:
         """ # noqa: E501
 
         _param = self._profile_manager_update_profile_manager_serialize(
-            profile_manager_create_child_profile_manager_request_profile=profile_manager_create_child_profile_manager_request_profile,
+            profile_manager_update_profile_manager_request=profile_manager_update_profile_manager_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -2081,7 +2878,7 @@ class ProfileManagersApi:
     @validate_call
     def profile_manager_update_profile_manager_with_http_info(
         self,
-        profile_manager_create_child_profile_manager_request_profile: ProfileManagerCreateChildProfileManagerRequestProfile,
+        profile_manager_update_profile_manager_request: ProfileManagerUpdateProfileManagerRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2099,8 +2896,8 @@ class ProfileManagersApi:
 
         This route updates the profile of the current profile manager
 
-        :param profile_manager_create_child_profile_manager_request_profile: (required)
-        :type profile_manager_create_child_profile_manager_request_profile: ProfileManagerCreateChildProfileManagerRequestProfile
+        :param profile_manager_update_profile_manager_request: (required)
+        :type profile_manager_update_profile_manager_request: ProfileManagerUpdateProfileManagerRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -2124,7 +2921,7 @@ class ProfileManagersApi:
         """ # noqa: E501
 
         _param = self._profile_manager_update_profile_manager_serialize(
-            profile_manager_create_child_profile_manager_request_profile=profile_manager_create_child_profile_manager_request_profile,
+            profile_manager_update_profile_manager_request=profile_manager_update_profile_manager_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -2152,7 +2949,7 @@ class ProfileManagersApi:
     @validate_call
     def profile_manager_update_profile_manager_without_preload_content(
         self,
-        profile_manager_create_child_profile_manager_request_profile: ProfileManagerCreateChildProfileManagerRequestProfile,
+        profile_manager_update_profile_manager_request: ProfileManagerUpdateProfileManagerRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2170,8 +2967,8 @@ class ProfileManagersApi:
 
         This route updates the profile of the current profile manager
 
-        :param profile_manager_create_child_profile_manager_request_profile: (required)
-        :type profile_manager_create_child_profile_manager_request_profile: ProfileManagerCreateChildProfileManagerRequestProfile
+        :param profile_manager_update_profile_manager_request: (required)
+        :type profile_manager_update_profile_manager_request: ProfileManagerUpdateProfileManagerRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -2195,7 +2992,7 @@ class ProfileManagersApi:
         """ # noqa: E501
 
         _param = self._profile_manager_update_profile_manager_serialize(
-            profile_manager_create_child_profile_manager_request_profile=profile_manager_create_child_profile_manager_request_profile,
+            profile_manager_update_profile_manager_request=profile_manager_update_profile_manager_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -2218,7 +3015,7 @@ class ProfileManagersApi:
 
     def _profile_manager_update_profile_manager_serialize(
         self,
-        profile_manager_create_child_profile_manager_request_profile,
+        profile_manager_update_profile_manager_request,
         _request_auth,
         _content_type,
         _headers,
@@ -2244,8 +3041,8 @@ class ProfileManagersApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if profile_manager_create_child_profile_manager_request_profile is not None:
-            _body_params = profile_manager_create_child_profile_manager_request_profile
+        if profile_manager_update_profile_manager_request is not None:
+            _body_params = profile_manager_update_profile_manager_request
 
 
         # set the HTTP header `Accept`

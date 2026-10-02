@@ -8,7 +8,7 @@ Name | Type | Description | Notes
 **limit** | **float** |  | [optional] [default to 25]
 **cursor** | **str** |  | [optional] 
 **sort** | **str** |  | [optional] 
-**query** | [**BoostGetPaginatedBoostRecipientsRequestQuery**](BoostGetPaginatedBoostRecipientsRequestQuery.md) |  | [optional] 
+**query** | [**BoostGetConnectedBoostRecipientsRequestQuery**](BoostGetConnectedBoostRecipientsRequestQuery.md) |  | [optional] 
 
 ## Example
 

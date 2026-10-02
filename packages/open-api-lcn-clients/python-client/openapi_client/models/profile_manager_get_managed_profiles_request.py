@@ -19,9 +19,10 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictFloat, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional, Union
-from openapi_client.models.boost_get_paginated_boost_recipients_request_query import BoostGetPaginatedBoostRecipientsRequestQuery
+from openapi_client.models.boost_get_connected_boost_recipients_request_query import BoostGetConnectedBoostRecipientsRequestQuery
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ProfileManagerGetManagedProfilesRequest(BaseModel):
     """
@@ -30,11 +31,12 @@ class ProfileManagerGetManagedProfilesRequest(BaseModel):
     limit: Optional[Union[StrictFloat, StrictInt]] = 25
     cursor: Optional[StrictStr] = None
     sort: Optional[StrictStr] = None
-    query: Optional[BoostGetPaginatedBoostRecipientsRequestQuery] = None
+    query: Optional[BoostGetConnectedBoostRecipientsRequestQuery] = None
     __properties: ClassVar[List[str]] = ["limit", "cursor", "sort", "query"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -46,8 +48,7 @@ class ProfileManagerGetManagedProfilesRequest(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -90,7 +91,7 @@ class ProfileManagerGetManagedProfilesRequest(BaseModel):
             "limit": obj.get("limit") if obj.get("limit") is not None else 25,
             "cursor": obj.get("cursor"),
             "sort": obj.get("sort"),
-            "query": BoostGetPaginatedBoostRecipientsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None
+            "query": BoostGetConnectedBoostRecipientsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None
         })
         return _obj
 

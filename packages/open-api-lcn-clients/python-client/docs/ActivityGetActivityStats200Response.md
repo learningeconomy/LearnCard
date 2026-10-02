@@ -5,12 +5,15 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**total_events** | **float** |  | 
 **total** | **float** |  | 
 **created** | **float** |  | 
 **delivered** | **float** |  | 
 **claimed** | **float** |  | 
 **expired** | **float** |  | 
 **failed** | **float** |  | 
+**revoked** | **float** |  | 
+**suspended** | **float** |  | 
 **claim_rate** | **float** |  | 
 
 ## Example

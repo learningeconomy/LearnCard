@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **challenge** | **str** |  | 
 **status** | **str** |  | 
 **scope** | **str** |  | 
+**act_as** | **str** |  | [optional] 
 **created_at** | **datetime** |  | 
 **expires_at** | **datetime** |  | [optional] 
 

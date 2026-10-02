@@ -17,10 +17,11 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostGetSkillsAvailableForBoost200ResponseInnerFramework(BaseModel):
     """
@@ -31,11 +32,12 @@ class BoostGetSkillsAvailableForBoost200ResponseInnerFramework(BaseModel):
     description: Optional[StrictStr] = None
     image: Optional[StrictStr] = None
     source_uri: Optional[StrictStr] = Field(default=None, alias="sourceURI")
+    is_public: StrictBool = Field(alias="isPublic")
     status: StrictStr
     created_at: Optional[StrictStr] = Field(default=None, alias="createdAt")
     updated_at: Optional[StrictStr] = Field(default=None, alias="updatedAt")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["id", "name", "description", "image", "sourceURI", "status", "createdAt", "updatedAt"]
+    __properties: ClassVar[List[str]] = ["id", "name", "description", "image", "sourceURI", "isPublic", "status", "createdAt", "updatedAt"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -45,7 +47,8 @@ class BoostGetSkillsAvailableForBoost200ResponseInnerFramework(BaseModel):
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -57,8 +60,7 @@ class BoostGetSkillsAvailableForBoost200ResponseInnerFramework(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -137,6 +139,7 @@ class BoostGetSkillsAvailableForBoost200ResponseInnerFramework(BaseModel):
             "description": obj.get("description"),
             "image": obj.get("image"),
             "sourceURI": obj.get("sourceURI"),
+            "isPublic": obj.get("isPublic") if obj.get("isPublic") is not None else False,
             "status": obj.get("status") if obj.get("status") is not None else 'active',
             "createdAt": obj.get("createdAt"),
             "updatedAt": obj.get("updatedAt")

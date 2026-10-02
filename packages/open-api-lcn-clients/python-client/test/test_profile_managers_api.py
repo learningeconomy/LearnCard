@@ -61,6 +61,20 @@ class TestProfileManagersApi(unittest.TestCase):
         """
         pass
 
+    def test_profile_manager_get_my_guardians(self) -> None:
+        """Test case for profile_manager_get_my_guardians
+
+        Get profiles that manage the current user
+        """
+        pass
+
+    def test_profile_manager_get_my_managed_children(self) -> None:
+        """Test case for profile_manager_get_my_managed_children
+
+        Get profiles managed by the current user
+        """
+        pass
+
     def test_profile_manager_get_other_profile_manager(self) -> None:
         """Test case for profile_manager_get_other_profile_manager
 
@@ -72,6 +86,13 @@ class TestProfileManagersApi(unittest.TestCase):
         """Test case for profile_manager_get_profile_manager
 
         Get your profile manager profile information
+        """
+        pass
+
+    def test_profile_manager_remove_manages_relationship(self) -> None:
+        """Test case for profile_manager_remove_manages_relationship
+
+        Remove a MANAGES relationship
         """
         pass
 

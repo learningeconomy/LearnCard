@@ -19,19 +19,25 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class InboxClaimRequestConfiguration(BaseModel):
     """
     InboxClaimRequestConfiguration
     """ # noqa: E501
     publishable_key: Optional[StrictStr] = Field(alias="publishableKey")
+    expires_in_days: Optional[Annotated[int, Field(le=720, strict=True, ge=1)]] = Field(default=None, description="Inbox claim window in days. Defaults to 720; use a shorter window for sensitive records.", alias="expiresInDays")
     signing_authority_name: Optional[StrictStr] = Field(default=None, alias="signingAuthorityName")
-    __properties: ClassVar[List[str]] = ["publishableKey", "signingAuthorityName"]
+    listing_id: Optional[StrictStr] = Field(default=None, alias="listingId")
+    listing_slug: Optional[StrictStr] = Field(default=None, alias="listingSlug")
+    __properties: ClassVar[List[str]] = ["publishableKey", "expiresInDays", "signingAuthorityName", "listingId", "listingSlug"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -43,8 +49,7 @@ class InboxClaimRequestConfiguration(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -79,6 +84,16 @@ class InboxClaimRequestConfiguration(BaseModel):
         if self.signing_authority_name is None and "signing_authority_name" in self.model_fields_set:
             _dict['signingAuthorityName'] = None
 
+        # set to None if listing_id (nullable) is None
+        # and model_fields_set contains the field
+        if self.listing_id is None and "listing_id" in self.model_fields_set:
+            _dict['listingId'] = None
+
+        # set to None if listing_slug (nullable) is None
+        # and model_fields_set contains the field
+        if self.listing_slug is None and "listing_slug" in self.model_fields_set:
+            _dict['listingSlug'] = None
+
         return _dict
 
     @classmethod
@@ -92,7 +107,10 @@ class InboxClaimRequestConfiguration(BaseModel):
 
         _obj = cls.model_validate({
             "publishableKey": obj.get("publishableKey"),
-            "signingAuthorityName": obj.get("signingAuthorityName")
+            "expiresInDays": obj.get("expiresInDays"),
+            "signingAuthorityName": obj.get("signingAuthorityName"),
+            "listingId": obj.get("listingId"),
+            "listingSlug": obj.get("listingSlug")
         })
         return _obj
 

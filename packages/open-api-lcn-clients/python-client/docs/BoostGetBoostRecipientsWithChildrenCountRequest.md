@@ -8,8 +8,8 @@ Name | Type | Description | Notes
 **uri** | **str** |  | 
 **include_unaccepted_boosts** | **bool** |  | [optional] [default to True]
 **number_of_generations** | [**BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations**](BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.md) |  | [optional] 
-**boost_query** | [**BoostGetBoostsRequestQuery**](BoostGetBoostsRequestQuery.md) |  | [optional] 
-**profile_query** | [**BoostGetPaginatedBoostRecipientsRequestQuery**](BoostGetPaginatedBoostRecipientsRequestQuery.md) |  | [optional] 
+**boost_query** | [**BoostCountBoostsRequestQuery**](BoostCountBoostsRequestQuery.md) |  | [optional] 
+**profile_query** | [**BoostGetConnectedBoostRecipientsRequestQuery**](BoostGetConnectedBoostRecipientsRequestQuery.md) |  | [optional] 
 
 ## Example
 

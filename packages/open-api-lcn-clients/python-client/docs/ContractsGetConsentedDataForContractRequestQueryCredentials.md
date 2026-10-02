@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**categories** | **Dict[str, bool]** |  | [optional] 
+**categories** | **Dict[str, Optional[bool]]** |  | [optional] 
 
 ## Example
 

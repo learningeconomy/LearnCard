@@ -21,11 +21,13 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostUpdateBoostPermissionsRequestUpdates(BaseModel):
     """
     BoostUpdateBoostPermissionsRequestUpdates
     """ # noqa: E501
+    can_view: Optional[StrictBool] = Field(default=True, alias="canView")
     can_edit: Optional[StrictBool] = Field(default=None, alias="canEdit")
     can_issue: Optional[StrictBool] = Field(default=None, alias="canIssue")
     can_revoke: Optional[StrictBool] = Field(default=None, alias="canRevoke")
@@ -37,10 +39,11 @@ class BoostUpdateBoostPermissionsRequestUpdates(BaseModel):
     can_manage_children_permissions: Optional[StrictStr] = Field(default=None, alias="canManageChildrenPermissions")
     can_manage_children_profiles: Optional[StrictBool] = Field(default=None, alias="canManageChildrenProfiles")
     can_view_analytics: Optional[StrictBool] = Field(default=None, alias="canViewAnalytics")
-    __properties: ClassVar[List[str]] = ["canEdit", "canIssue", "canRevoke", "canManagePermissions", "canIssueChildren", "canCreateChildren", "canEditChildren", "canRevokeChildren", "canManageChildrenPermissions", "canManageChildrenProfiles", "canViewAnalytics"]
+    __properties: ClassVar[List[str]] = ["canView", "canEdit", "canIssue", "canRevoke", "canManagePermissions", "canIssueChildren", "canCreateChildren", "canEditChildren", "canRevokeChildren", "canManageChildrenPermissions", "canManageChildrenProfiles", "canViewAnalytics"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -52,8 +55,7 @@ class BoostUpdateBoostPermissionsRequestUpdates(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -78,6 +80,26 @@ class BoostUpdateBoostPermissionsRequestUpdates(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if can_edit (nullable) is None
+        # and model_fields_set contains the field
+        if self.can_edit is None and "can_edit" in self.model_fields_set:
+            _dict['canEdit'] = None
+
+        # set to None if can_issue (nullable) is None
+        # and model_fields_set contains the field
+        if self.can_issue is None and "can_issue" in self.model_fields_set:
+            _dict['canIssue'] = None
+
+        # set to None if can_revoke (nullable) is None
+        # and model_fields_set contains the field
+        if self.can_revoke is None and "can_revoke" in self.model_fields_set:
+            _dict['canRevoke'] = None
+
+        # set to None if can_manage_permissions (nullable) is None
+        # and model_fields_set contains the field
+        if self.can_manage_permissions is None and "can_manage_permissions" in self.model_fields_set:
+            _dict['canManagePermissions'] = None
+
         # set to None if can_issue_children (nullable) is None
         # and model_fields_set contains the field
         if self.can_issue_children is None and "can_issue_children" in self.model_fields_set:
@@ -103,6 +125,16 @@ class BoostUpdateBoostPermissionsRequestUpdates(BaseModel):
         if self.can_manage_children_permissions is None and "can_manage_children_permissions" in self.model_fields_set:
             _dict['canManageChildrenPermissions'] = None
 
+        # set to None if can_manage_children_profiles (nullable) is None
+        # and model_fields_set contains the field
+        if self.can_manage_children_profiles is None and "can_manage_children_profiles" in self.model_fields_set:
+            _dict['canManageChildrenProfiles'] = None
+
+        # set to None if can_view_analytics (nullable) is None
+        # and model_fields_set contains the field
+        if self.can_view_analytics is None and "can_view_analytics" in self.model_fields_set:
+            _dict['canViewAnalytics'] = None
+
         return _dict
 
     @classmethod
@@ -115,6 +147,7 @@ class BoostUpdateBoostPermissionsRequestUpdates(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
+            "canView": obj.get("canView") if obj.get("canView") is not None else True,
             "canEdit": obj.get("canEdit"),
             "canIssue": obj.get("canIssue"),
             "canRevoke": obj.get("canRevoke"),

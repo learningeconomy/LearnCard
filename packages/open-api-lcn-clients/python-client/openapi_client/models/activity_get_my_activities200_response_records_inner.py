@@ -23,6 +23,7 @@ from openapi_client.models.activity_get_my_activities200_response_records_inner_
 from openapi_client.models.activity_get_my_activities200_response_records_inner_recipient_profile import ActivityGetMyActivities200ResponseRecordsInnerRecipientProfile
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ActivityGetMyActivities200ResponseRecordsInner(BaseModel):
     """
@@ -32,7 +33,8 @@ class ActivityGetMyActivities200ResponseRecordsInner(BaseModel):
     activity_id: Optional[StrictStr] = Field(alias="activityId")
     event_type: StrictStr = Field(alias="eventType")
     timestamp: Optional[StrictStr]
-    actor_profile_id: Optional[StrictStr] = Field(alias="actorProfileId")
+    actor_profile_id: Optional[StrictStr] = Field(default=None, alias="actorProfileId")
+    on_behalf_of: Optional[StrictStr] = Field(default=None, alias="onBehalfOf")
     recipient_type: StrictStr = Field(alias="recipientType")
     recipient_identifier: Optional[StrictStr] = Field(alias="recipientIdentifier")
     boost_uri: Optional[StrictStr] = Field(default=None, alias="boostUri")
@@ -41,10 +43,11 @@ class ActivityGetMyActivities200ResponseRecordsInner(BaseModel):
     integration_id: Optional[StrictStr] = Field(default=None, alias="integrationId")
     source: StrictStr
     metadata: Optional[Dict[str, Any]] = None
+    status: Optional[StrictStr] = None
     boost: Optional[ActivityGetMyActivities200ResponseRecordsInnerBoost] = None
     recipient_profile: Optional[ActivityGetMyActivities200ResponseRecordsInnerRecipientProfile] = Field(default=None, alias="recipientProfile")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["id", "activityId", "eventType", "timestamp", "actorProfileId", "recipientType", "recipientIdentifier", "boostUri", "credentialUri", "inboxCredentialId", "integrationId", "source", "metadata", "boost", "recipientProfile"]
+    __properties: ClassVar[List[str]] = ["id", "activityId", "eventType", "timestamp", "actorProfileId", "onBehalfOf", "recipientType", "recipientIdentifier", "boostUri", "credentialUri", "inboxCredentialId", "integrationId", "source", "metadata", "status", "boost", "recipientProfile"]
 
     @field_validator('event_type')
     def event_type_validate_enum(cls, value):
@@ -63,12 +66,23 @@ class ActivityGetMyActivities200ResponseRecordsInner(BaseModel):
     @field_validator('source')
     def source_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in set(['send', 'sendBoost', 'sendCredential', 'contract', 'claim', 'inbox', 'claimLink', 'acceptCredential']):
-            raise ValueError("must be one of enum values ('send', 'sendBoost', 'sendCredential', 'contract', 'claim', 'inbox', 'claimLink', 'acceptCredential')")
+        if value not in set(['send', 'sendBoost', 'sendCredential', 'contract', 'claim', 'inbox', 'claimLink', 'acceptCredential', 'appEvent']):
+            raise ValueError("must be one of enum values ('send', 'sendBoost', 'sendCredential', 'contract', 'claim', 'inbox', 'claimLink', 'acceptCredential', 'appEvent')")
+        return value
+
+    @field_validator('status')
+    def status_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['active', 'revoked', 'suspended']):
+            raise ValueError("must be one of enum values ('active', 'revoked', 'suspended')")
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -80,8 +94,7 @@ class ActivityGetMyActivities200ResponseRecordsInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -139,6 +152,11 @@ class ActivityGetMyActivities200ResponseRecordsInner(BaseModel):
         if self.actor_profile_id is None and "actor_profile_id" in self.model_fields_set:
             _dict['actorProfileId'] = None
 
+        # set to None if on_behalf_of (nullable) is None
+        # and model_fields_set contains the field
+        if self.on_behalf_of is None and "on_behalf_of" in self.model_fields_set:
+            _dict['onBehalfOf'] = None
+
         # set to None if recipient_identifier (nullable) is None
         # and model_fields_set contains the field
         if self.recipient_identifier is None and "recipient_identifier" in self.model_fields_set:
@@ -181,6 +199,7 @@ class ActivityGetMyActivities200ResponseRecordsInner(BaseModel):
             "eventType": obj.get("eventType"),
             "timestamp": obj.get("timestamp"),
             "actorProfileId": obj.get("actorProfileId"),
+            "onBehalfOf": obj.get("onBehalfOf"),
             "recipientType": obj.get("recipientType"),
             "recipientIdentifier": obj.get("recipientIdentifier"),
             "boostUri": obj.get("boostUri"),
@@ -189,6 +208,7 @@ class ActivityGetMyActivities200ResponseRecordsInner(BaseModel):
             "integrationId": obj.get("integrationId"),
             "source": obj.get("source"),
             "metadata": obj.get("metadata"),
+            "status": obj.get("status"),
             "boost": ActivityGetMyActivities200ResponseRecordsInnerBoost.from_dict(obj["boost"]) if obj.get("boost") is not None else None,
             "recipientProfile": ActivityGetMyActivities200ResponseRecordsInnerRecipientProfile.from_dict(obj["recipientProfile"]) if obj.get("recipientProfile") is not None else None
         })

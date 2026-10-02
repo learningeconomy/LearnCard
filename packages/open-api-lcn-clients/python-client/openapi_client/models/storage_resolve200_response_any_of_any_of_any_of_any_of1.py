@@ -25,6 +25,7 @@ from openapi_client.models.boost_send_request_template_credential_any_of_proof i
 from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of1_verifiable_credential import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1VerifiableCredential
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1(BaseModel):
     """
@@ -40,7 +41,8 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1(BaseModel):
     __properties: ClassVar[List[str]] = ["@context", "id", "type", "verifiableCredential", "holder", "proof"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -52,8 +54,7 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -84,8 +85,7 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1(BaseModel):
         _items = []
         if self.context:
             for _item_context in self.context:
-                if _item_context:
-                    _items.append(_item_context.to_dict())
+                _items.append(_item_context.to_dict() if _item_context is not None else None)
             _dict['@context'] = _items
         # override the default output from pydantic by calling `to_dict()` of type
         if self.type:

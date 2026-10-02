@@ -43,17 +43,17 @@ class TestContractsGetConsentFlowContractsRequestQuery(unittest.TestCase):
                                 required = True, )
                             }, ), 
                     personal = {
-                        'key' : openapi_client.models.contracts_get_consent_flow_contracts_request_query_read_credentials_categories_value.contracts_getConsentFlowContracts_request_query_read_credentials_categories_value(
+                        'key' : openapi_client.models.contracts_get_consent_flow_contracts_request_query_read_personal_value.contracts_getConsentFlowContracts_request_query_read_personal_value(
                             required = True, )
                         }, ),
                 write = openapi_client.models.contracts_get_consent_flow_contracts_request_query_write.contracts_getConsentFlowContracts_request_query_write(
-                    credentials = openapi_client.models.contracts_get_consent_flow_contracts_request_query_read_credentials.contracts_getConsentFlowContracts_request_query_read_credentials(
+                    credentials = openapi_client.models.contracts_get_consent_flow_contracts_request_query_write_credentials.contracts_getConsentFlowContracts_request_query_write_credentials(
                         categories = {
-                            'key' : openapi_client.models.contracts_get_consent_flow_contracts_request_query_read_credentials_categories_value.contracts_getConsentFlowContracts_request_query_read_credentials_categories_value(
+                            'key' : openapi_client.models.contracts_get_consent_flow_contracts_request_query_read_personal_value.contracts_getConsentFlowContracts_request_query_read_personal_value(
                                 required = True, )
                             }, ), 
                     personal = {
-                        'key' : openapi_client.models.contracts_get_consent_flow_contracts_request_query_read_credentials_categories_value.contracts_getConsentFlowContracts_request_query_read_credentials_categories_value(
+                        'key' : openapi_client.models.contracts_get_consent_flow_contracts_request_query_read_personal_value.contracts_getConsentFlowContracts_request_query_read_personal_value(
                             required = True, )
                         }, )
             )

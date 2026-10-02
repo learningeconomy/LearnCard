@@ -17,11 +17,14 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.contracts_get_consented_data_for_did200_response_records_inner_credentials_inner import ContractsGetConsentedDataForDid200ResponseRecordsInnerCredentialsInner
+from openapi_client.models.contracts_get_consented_data_for_did200_response_records_inner_guardian import ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardian
+from openapi_client.models.storage_resolve200_response_any_of1 import StorageResolve200ResponseAnyOf1
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsGetConsentedDataForDid200ResponseRecordsInner(BaseModel):
     """
@@ -30,12 +33,29 @@ class ContractsGetConsentedDataForDid200ResponseRecordsInner(BaseModel):
     credentials: List[ContractsGetConsentedDataForDid200ResponseRecordsInnerCredentialsInner]
     personal: Dict[str, StrictStr]
     var_date: Optional[StrictStr] = Field(alias="date")
+    created_at: Optional[StrictStr] = Field(default=None, alias="createdAt")
+    contract_updated_at: Optional[StrictStr] = Field(alias="contractUpdatedAt")
+    contract_expires_at: Optional[StrictStr] = Field(default=None, alias="contractExpiresAt")
+    reason_for_accessing: Optional[StrictStr] = Field(default=None, alias="reasonForAccessing")
+    guardian: ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardian
     contract_uri: Optional[StrictStr] = Field(alias="contractUri")
+    terms_uri: Optional[StrictStr] = Field(alias="termsUri")
+    status: StrictStr
+    expires_at: Optional[StrictStr] = Field(default=None, alias="expiresAt")
+    terms: StorageResolve200ResponseAnyOf1
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["credentials", "personal", "date", "contractUri"]
+    __properties: ClassVar[List[str]] = ["credentials", "personal", "date", "createdAt", "contractUpdatedAt", "contractExpiresAt", "reasonForAccessing", "guardian", "contractUri", "termsUri", "status", "expiresAt", "terms"]
+
+    @field_validator('status')
+    def status_validate_enum(cls, value):
+        """Validates the enum"""
+        if value not in set(['live', 'stale', 'withdrawn']):
+            raise ValueError("must be one of enum values ('live', 'stale', 'withdrawn')")
+        return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -47,8 +67,7 @@ class ContractsGetConsentedDataForDid200ResponseRecordsInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -79,9 +98,14 @@ class ContractsGetConsentedDataForDid200ResponseRecordsInner(BaseModel):
         _items = []
         if self.credentials:
             for _item_credentials in self.credentials:
-                if _item_credentials:
-                    _items.append(_item_credentials.to_dict())
+                _items.append(_item_credentials.to_dict() if _item_credentials is not None else None)
             _dict['credentials'] = _items
+        # override the default output from pydantic by calling `to_dict()` of guardian
+        if self.guardian:
+            _dict['guardian'] = self.guardian.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of terms
+        if self.terms:
+            _dict['terms'] = self.terms.to_dict()
         # puts key-value pairs in additional_properties in the top level
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
@@ -92,10 +116,40 @@ class ContractsGetConsentedDataForDid200ResponseRecordsInner(BaseModel):
         if self.var_date is None and "var_date" in self.model_fields_set:
             _dict['date'] = None
 
+        # set to None if created_at (nullable) is None
+        # and model_fields_set contains the field
+        if self.created_at is None and "created_at" in self.model_fields_set:
+            _dict['createdAt'] = None
+
+        # set to None if contract_updated_at (nullable) is None
+        # and model_fields_set contains the field
+        if self.contract_updated_at is None and "contract_updated_at" in self.model_fields_set:
+            _dict['contractUpdatedAt'] = None
+
+        # set to None if contract_expires_at (nullable) is None
+        # and model_fields_set contains the field
+        if self.contract_expires_at is None and "contract_expires_at" in self.model_fields_set:
+            _dict['contractExpiresAt'] = None
+
+        # set to None if reason_for_accessing (nullable) is None
+        # and model_fields_set contains the field
+        if self.reason_for_accessing is None and "reason_for_accessing" in self.model_fields_set:
+            _dict['reasonForAccessing'] = None
+
         # set to None if contract_uri (nullable) is None
         # and model_fields_set contains the field
         if self.contract_uri is None and "contract_uri" in self.model_fields_set:
             _dict['contractUri'] = None
+
+        # set to None if terms_uri (nullable) is None
+        # and model_fields_set contains the field
+        if self.terms_uri is None and "terms_uri" in self.model_fields_set:
+            _dict['termsUri'] = None
+
+        # set to None if expires_at (nullable) is None
+        # and model_fields_set contains the field
+        if self.expires_at is None and "expires_at" in self.model_fields_set:
+            _dict['expiresAt'] = None
 
         return _dict
 
@@ -112,7 +166,16 @@ class ContractsGetConsentedDataForDid200ResponseRecordsInner(BaseModel):
             "credentials": [ContractsGetConsentedDataForDid200ResponseRecordsInnerCredentialsInner.from_dict(_item) for _item in obj["credentials"]] if obj.get("credentials") is not None else None,
             "personal": obj.get("personal"),
             "date": obj.get("date"),
-            "contractUri": obj.get("contractUri")
+            "createdAt": obj.get("createdAt"),
+            "contractUpdatedAt": obj.get("contractUpdatedAt"),
+            "contractExpiresAt": obj.get("contractExpiresAt"),
+            "reasonForAccessing": obj.get("reasonForAccessing"),
+            "guardian": ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardian.from_dict(obj["guardian"]) if obj.get("guardian") is not None else None,
+            "contractUri": obj.get("contractUri"),
+            "termsUri": obj.get("termsUri"),
+            "status": obj.get("status"),
+            "expiresAt": obj.get("expiresAt"),
+            "terms": StorageResolve200ResponseAnyOf1.from_dict(obj["terms"]) if obj.get("terms") is not None else None
         })
         # store additional fields in additional_properties
         for _key in obj.keys():

@@ -12,6 +12,7 @@ Method | HTTP request | Description
 [**profile_blocked**](ProfilesApi.md#profile_blocked) | **GET** /profile/blocked | View blocked profiles
 [**profile_cancel_connection_request**](ProfilesApi.md#profile_cancel_connection_request) | **POST** /profile/{profileId}/cancel-connection-request | Cancel Connection Request
 [**profile_connect_with**](ProfilesApi.md#profile_connect_with) | **POST** /profile/{profileId}/connect | Connect with another profile
+[**profile_connect_with_expired_invite**](ProfilesApi.md#profile_connect_with_expired_invite) | **POST** /profile/{profileId}/connect-expired-invite | Connect with another profile (expired invite)
 [**profile_connect_with_invite**](ProfilesApi.md#profile_connect_with_invite) | **POST** /profile/{profileId}/connect/{challenge} | Connect using an invitation
 [**profile_connection_requests**](ProfilesApi.md#profile_connection_requests) | **GET** /profile/connection-requests | View connection requests
 [**profile_connections**](ProfilesApi.md#profile_connections) | **GET** /profile/connections | View connections
@@ -657,6 +658,87 @@ with openapi_client.ApiClient(configuration) as api_client:
         pprint(api_response)
     except Exception as e:
         print("Exception when calling ProfilesApi->profile_connect_with: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **profile_id** | **str**|  | 
+
+### Return type
+
+**bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **profile_connect_with_expired_invite**
+> bool profile_connect_with_expired_invite(profile_id)
+
+Connect with another profile (expired invite)
+
+Send a connection request triggered from an expired invite link
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ProfilesApi(api_client)
+    profile_id = 'profile_id_example' # str | 
+
+    try:
+        # Connect with another profile (expired invite)
+        api_response = api_instance.profile_connect_with_expired_invite(profile_id)
+        print("The response of ProfilesApi->profile_connect_with_expired_invite:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ProfilesApi->profile_connect_with_expired_invite: %s\n" % e)
 ```
 
 
@@ -1500,7 +1582,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_get_managed_service_profiles**
-> BoostGetBoostAdmins200Response profile_get_managed_service_profiles(limit=limit, cursor=cursor, sort=sort, id=id)
+> ProfileGetManagedServiceProfiles200Response profile_get_managed_service_profiles(limit=limit, cursor=cursor, sort=sort, id=id)
 
 Managed Service Profiles
 
@@ -1512,7 +1594,7 @@ This route gets all of your managed service profiles
 
 ```python
 import openapi_client
-from openapi_client.models.boost_get_boost_admins200_response import BoostGetBoostAdmins200Response
+from openapi_client.models.profile_get_managed_service_profiles200_response import ProfileGetManagedServiceProfiles200Response
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -1564,7 +1646,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**BoostGetBoostAdmins200Response**](BoostGetBoostAdmins200Response.md)
+[**ProfileGetManagedServiceProfiles200Response**](ProfileGetManagedServiceProfiles200Response.md)
 
 ### Authorization
 
@@ -1672,7 +1754,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_get_profile**
-> BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo profile_get_profile()
+> BoostGetBoostRecipients200ResponseInnerToAnyOf3 profile_get_profile()
 
 Get your profile information
 
@@ -1684,7 +1766,7 @@ This route uses the request header to grab the profile of the current user
 
 ```python
 import openapi_client
-from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of3 import BoostGetBoostRecipients200ResponseInnerToAnyOf3
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -1726,7 +1808,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md)
+[**BoostGetBoostRecipients200ResponseInnerToAnyOf3**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md)
 
 ### Authorization
 
@@ -1989,7 +2071,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_manager_get_managed_profiles**
-> BoostGetBoostAdmins200Response profile_manager_get_managed_profiles(profile_manager_get_managed_profiles_request=profile_manager_get_managed_profiles_request)
+> ProfileGetManagedServiceProfiles200Response profile_manager_get_managed_profiles(profile_manager_get_managed_profiles_request=profile_manager_get_managed_profiles_request)
 
 Managed Profiles
 
@@ -2001,7 +2083,7 @@ This route gets all of your managed profiles
 
 ```python
 import openapi_client
-from openapi_client.models.boost_get_boost_admins200_response import BoostGetBoostAdmins200Response
+from openapi_client.models.profile_get_managed_service_profiles200_response import ProfileGetManagedServiceProfiles200Response
 from openapi_client.models.profile_manager_get_managed_profiles_request import ProfileManagerGetManagedProfilesRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
@@ -2048,7 +2130,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**BoostGetBoostAdmins200Response**](BoostGetBoostAdmins200Response.md)
+[**ProfileGetManagedServiceProfiles200Response**](ProfileGetManagedServiceProfiles200Response.md)
 
 ### Authorization
 

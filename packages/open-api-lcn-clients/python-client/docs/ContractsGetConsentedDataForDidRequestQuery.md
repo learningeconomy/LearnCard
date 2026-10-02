@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**credentials** | [**ContractsGetConsentedDataForContractRequestQueryCredentials**](ContractsGetConsentedDataForContractRequestQueryCredentials.md) |  | [optional] 
+**credentials** | [**ContractsGetConsentedDataForDidRequestQueryCredentials**](ContractsGetConsentedDataForDidRequestQueryCredentials.md) |  | [optional] 
 **personal** | **Dict[str, bool]** |  | [optional] 
 **id** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |  | [optional] 
 

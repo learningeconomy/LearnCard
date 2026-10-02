@@ -21,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInnerCredentialQueryInner(BaseModel):
     """
@@ -32,7 +33,8 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQuer
     __properties: ClassVar[List[str]] = ["required", "reason"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -44,8 +46,7 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQuer
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -76,6 +77,11 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQuer
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
+
+        # set to None if required (nullable) is None
+        # and model_fields_set contains the field
+        if self.required is None and "required" in self.model_fields_set:
+            _dict['required'] = None
 
         # set to None if reason (nullable) is None
         # and model_fields_set contains the field

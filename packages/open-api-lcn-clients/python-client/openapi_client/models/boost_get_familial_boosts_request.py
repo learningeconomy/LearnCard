@@ -19,10 +19,11 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictFloat, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional, Union
+from openapi_client.models.boost_count_boosts_request_query import BoostCountBoostsRequestQuery
 from openapi_client.models.boost_get_boost_recipients_with_children_count_request_number_of_generations import BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations
-from openapi_client.models.boost_get_boosts_request_query import BoostGetBoostsRequestQuery
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostGetFamilialBoostsRequest(BaseModel):
     """
@@ -32,14 +33,15 @@ class BoostGetFamilialBoostsRequest(BaseModel):
     cursor: Optional[StrictStr] = None
     sort: Optional[StrictStr] = None
     uri: Optional[StrictStr]
-    query: Optional[BoostGetBoostsRequestQuery] = None
+    query: Optional[BoostCountBoostsRequestQuery] = None
     parent_generations: Optional[BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations] = Field(default=None, alias="parentGenerations")
     child_generations: Optional[BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations] = Field(default=None, alias="childGenerations")
     include_extended_family: Optional[StrictBool] = Field(default=False, alias="includeExtendedFamily")
     __properties: ClassVar[List[str]] = ["limit", "cursor", "sort", "uri", "query", "parentGenerations", "childGenerations", "includeExtendedFamily"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -51,8 +53,7 @@ class BoostGetFamilialBoostsRequest(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -117,7 +118,7 @@ class BoostGetFamilialBoostsRequest(BaseModel):
             "cursor": obj.get("cursor"),
             "sort": obj.get("sort"),
             "uri": obj.get("uri"),
-            "query": BoostGetBoostsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None,
+            "query": BoostCountBoostsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None,
             "parentGenerations": BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.from_dict(obj["parentGenerations"]) if obj.get("parentGenerations") is not None else None,
             "childGenerations": BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.from_dict(obj["childGenerations"]) if obj.get("childGenerations") is not None else None,
             "includeExtendedFamily": obj.get("includeExtendedFamily") if obj.get("includeExtendedFamily") is not None else False

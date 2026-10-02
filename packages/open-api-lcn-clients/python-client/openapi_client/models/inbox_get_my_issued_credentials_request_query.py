@@ -21,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class InboxGetMyIssuedCredentialsRequestQuery(BaseModel):
     """
@@ -45,7 +46,8 @@ class InboxGetMyIssuedCredentialsRequestQuery(BaseModel):
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -57,8 +59,7 @@ class InboxGetMyIssuedCredentialsRequestQuery(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -87,6 +88,16 @@ class InboxGetMyIssuedCredentialsRequestQuery(BaseModel):
         # and model_fields_set contains the field
         if self.id is None and "id" in self.model_fields_set:
             _dict['id'] = None
+
+        # set to None if is_signed (nullable) is None
+        # and model_fields_set contains the field
+        if self.is_signed is None and "is_signed" in self.model_fields_set:
+            _dict['isSigned'] = None
+
+        # set to None if is_accepted (nullable) is None
+        # and model_fields_set contains the field
+        if self.is_accepted is None and "is_accepted" in self.model_fields_set:
+            _dict['isAccepted'] = None
 
         # set to None if issuer_did (nullable) is None
         # and model_fields_set contains the field

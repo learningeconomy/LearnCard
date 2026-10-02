@@ -19,9 +19,10 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictFloat, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional, Union
-from openapi_client.models.boost_get_boosts_request_query import BoostGetBoostsRequestQuery
+from openapi_client.models.boost_count_boosts_request_query import BoostCountBoostsRequestQuery
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostGetBoostChildrenRequest(BaseModel):
     """
@@ -31,12 +32,13 @@ class BoostGetBoostChildrenRequest(BaseModel):
     cursor: Optional[StrictStr] = None
     sort: Optional[StrictStr] = None
     uri: Optional[StrictStr]
-    query: Optional[BoostGetBoostsRequestQuery] = None
+    query: Optional[BoostCountBoostsRequestQuery] = None
     number_of_generations: Optional[Union[StrictFloat, StrictInt]] = Field(default=None, alias="numberOfGenerations")
     __properties: ClassVar[List[str]] = ["limit", "cursor", "sort", "uri", "query", "numberOfGenerations"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -48,8 +50,7 @@ class BoostGetBoostChildrenRequest(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -113,7 +114,7 @@ class BoostGetBoostChildrenRequest(BaseModel):
             "cursor": obj.get("cursor"),
             "sort": obj.get("sort"),
             "uri": obj.get("uri"),
-            "query": BoostGetBoostsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None,
+            "query": BoostCountBoostsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None,
             "numberOfGenerations": obj.get("numberOfGenerations")
         })
         return _obj
