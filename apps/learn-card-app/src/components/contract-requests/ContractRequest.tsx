@@ -16,7 +16,7 @@ import {
 } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import type { ConsentFlowContractDetails } from '@learncard/types';
-import FullScreenConsentFlow from '../../pages/consentFlow/FullScreenConsentFlow';
+import { ReferralConsentReview, useReferralGate, useReferralModal } from './ReferralModal';
 import { useContractRequestsEnabled } from '../../hooks/useContractRequestsEnabled';
 import * as m from '../../paraglide/messages.js';
 import { getLocale } from '../../paraglide/runtime.js';
@@ -55,11 +55,13 @@ export const ContractRequest: React.FC<RequestProps> = ({
     onDismiss,
     details = false,
 }) => {
+    const { enabled, requireEnabled } = useReferralGate();
+    const openReferralModal = useReferralModal();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const profileId = currentLCNUser?.profileId ?? '';
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
-    const { newModal, closeModal } = useModal({
+    const { closeModal } = useModal({
         desktop: ModalTypes.Right,
         mobile: ModalTypes.FullScreen,
     });
@@ -74,33 +76,38 @@ export const ContractRequest: React.FC<RequestProps> = ({
     const [error, setError] = useState(false);
     const request = useQuery({
         queryKey: ['genericContractRequest', profileId, contractUri, requestId],
-        enabled: Boolean(profileId),
+        enabled: enabled && Boolean(profileId),
         refetchInterval: query =>
+            enabled &&
             query.state.status === 'success' &&
             query.state.data?.status.status === 'pending' &&
             !isExpired(query.state.data.contract.expiresAt)
                 ? 30_000
                 : false,
         queryFn: async () => {
+            requireEnabled();
             const wallet = await initWallet();
+            requireEnabled();
             const status = await wallet.invoke.getRequestStatusForProfile(
                 profileId,
                 undefined,
                 contractUri
             );
+            requireEnabled();
             if (!status || status.requestId !== requestId) return null;
             const contract = await wallet.invoke.getContract(contractUri);
+            requireEnabled();
             return { status, contract };
         },
     });
     const { data: referrer } = useGetProfile(
         request.data?.status.requestedBy,
-        Boolean(request.data?.status.requestedBy)
+        enabled && Boolean(request.data?.status.requestedBy)
     );
     const contract = request.data?.contract;
     const status = request.data?.status;
     const expired = isExpired(contract?.expiresAt);
-    const pending = status?.status === 'pending' && !expired && !request.isError;
+    const pending = enabled && status?.status === 'pending' && !expired && !request.isError;
 
     const refresh = useCallback(async () => {
         await Promise.all([
@@ -116,7 +123,9 @@ export const ContractRequest: React.FC<RequestProps> = ({
         let active = true;
         const markSeen = async () => {
             try {
+                requireEnabled();
                 const wallet = await initWallet();
+                requireEnabled();
                 await wallet.invoke.markContractRequestAsSeen(contractUri, profileId);
                 if (active) await refresh();
             } catch {
@@ -127,7 +136,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
         return () => {
             active = false;
         };
-    }, [pending, status?.readStatus, contractUri, profileId, initWallet, refresh]);
+    }, [pending, status?.readStatus, contractUri, profileId, initWallet, refresh, requireEnabled]);
 
     const run = async (
         action: () => Promise<void>,
@@ -137,6 +146,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
         setRetryAction(null);
         setError(false);
         try {
+            requireEnabled();
             await action();
         } catch {
             setError(true);
@@ -146,7 +156,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
         }
     };
 
-    const requirePending = async (): Promise<ConsentFlowContractDetails> => {
+    const readPending = async (): Promise<ConsentFlowContractDetails> => {
         const wallet = await initWallet();
         const current = await wallet.invoke.getRequestStatusForProfile(
             profileId,
@@ -165,24 +175,31 @@ export const ContractRequest: React.FC<RequestProps> = ({
         return fresh;
     };
 
+    const requirePending = async () => {
+        requireEnabled();
+        const fresh = await readPending();
+        requireEnabled();
+        return fresh;
+    };
+
     const accept = () =>
         run(async () => {
             const fresh = await requirePending();
             // The existing flow owns data selection, fresh audience acknowledgment, and guardian approval.
             const flow = (
-                <FullScreenConsentFlow
+                <ReferralConsentReview
                     contractDetails={fresh}
                     disableRedirect
                     expectedRequestId={requestId}
                     beforeSubmit={async () => {
-                        await requirePending();
+                        await readPending();
                     }}
                     successCallback={() => {
                         void refresh();
                     }}
                 />
             );
-            newModal(flow, {}, { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen });
+            openReferralModal(flow, true);
         }, 'accept');
 
     const decline = () =>
@@ -197,6 +214,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
                 return;
             await requirePending();
             const wallet = await initWallet();
+            requireEnabled();
             await wallet.invoke.denyContractRequest(contractUri);
             await refresh();
             presentToast(m['contractRequests.declined'](), { type: ToastTypeEnum.Success });
@@ -212,6 +230,8 @@ export const ContractRequest: React.FC<RequestProps> = ({
                   owner,
               })
             : m['contractRequests.invitation']({ owner });
+
+    if (!enabled) return null;
 
     return (
         <article
@@ -339,7 +359,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
                                     className={secondary}
                                     disabled={busy}
                                     onClick={() =>
-                                        newModal(
+                                        openReferralModal(
                                             <ContractRequest
                                                 contractUri={contractUri}
                                                 requestId={requestId}
@@ -403,7 +423,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
 const PendingRequests: React.FC = () => {
     const { currentLCNUser } = useGetCurrentLCNUser();
     const requests = useAllContractRequestsForProfile(currentLCNUser?.profileId ?? '');
-    const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.FullScreen });
+    const openReferralModal = useReferralModal();
     const pending =
         requests.data?.filter(request => request.requestId && request.status === 'pending') ?? [];
     return (
@@ -439,7 +459,7 @@ const PendingRequests: React.FC = () => {
                     key={request.requestId}
                     className={`${secondary} w-full text-start`}
                     onClick={() =>
-                        newModal(
+                        openReferralModal(
                             <ContractRequest
                                 contractUri={request.contract.uri}
                                 requestId={request.requestId!}
