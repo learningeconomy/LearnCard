@@ -97,8 +97,8 @@ run "admin_access_is_private_and_fail_closed" {
       rule.action[0].type == "fixed-response" && rule.action[0].fixed_response[0].status_code == "403" &&
       rule.priority < aws_lb_listener_rule.public.priority &&
       length(rule.condition) == 1
-    ]) && toset(flatten([for rule in aws_lb_listener_rule.deny_admin : [for condition in rule.condition : [for path in condition.path_pattern : path.values]]])) == toset(["/admin*", "/realms/master", "/realms/master/*"])
-    error_message = "Public admin and master paths must be denied before forwarding, without host or source-IP exceptions."
+    ]) && toset(flatten([for rule in aws_lb_listener_rule.deny_admin : [for condition in rule.condition : [for path in condition.path_pattern : path.values]]])) == toset(["/admin*", "/realms/master", "/realms/master/*", "/realms/*/account", "/realms/*/account/*"])
+    error_message = "Public admin, master and account-console paths must be denied before forwarding, without host or source-IP exceptions."
   }
   assert {
     condition     = aws_lb_listener.https.default_action[0].fixed_response[0].status_code == "404" && aws_lb_listener.admin.default_action[0].fixed_response[0].status_code == "404"

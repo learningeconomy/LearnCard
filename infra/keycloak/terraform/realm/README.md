@@ -27,13 +27,29 @@ linux_arm64, darwin_arm64. Resource arguments were checked against the versioned
   from the installed klausbetz jar, configured through the social resource's
   documented `provider_id` override and `teamId`/`keyId` extra config.
 - Explicitly copied first-broker tree (provider has no copy resource): Review
-  Profile configured `off`, unique user creation, collision confirmation and
-  verification/reauthentication, conditional 2FA/organization branches unchanged.
+  Profile REQUIRED but configured `off`, then a REQUIRED creation subflow containing
+  ALTERNATIVE create-if-unique and auto-link on collision; conditional organization
+  remains unchanged. No confirmation or reauthentication page is shown. lca-api only
+  issues tickets for emails proven by a one-time code or asserted verified by
+  Google/Apple, the same trust level as the web social flow.
   Stock flows remain untouched. Only lca-api binds to this managed copy.
   Google/Apple use a separate `social first broker login`: disabled Review Profile,
   then ALTERNATIVE create-if-unique and auto-link, with no SMTP or extra page.
-- Fixture has no required-action overrides: preserve Keycloak's built-in actions,
-  none newly defaulted. See the [social policy and tradeoff](../../social-broker-decision.md).
+- Disable `UPDATE_PROFILE`, `UPDATE_EMAIL` and `VERIFY_PROFILE` in the module and
+  fixture. Blocking public account routes alone does not block `kc_action` on login
+  routes. In 26.7.4, `update-email` is a default-on feature registering `UPDATE_EMAIL`
+  (initially disabled). `VERIFY_PROFILE` does not support application initiation,
+  but triggers on invalid/missing profile data and inherits the email-editing
+  `UpdateProfile.processAction`, with no password required. This broker-owned realm
+  does not need that completion form; email and names remain optional.
+  **Do not make email admin-only:** the `IDP_REVIEW` context would drop broker email.
+  The pinned provider is `keycloak/keycloak` **5.9.0** (not the old mrparkers source)
+  and supports `keycloak_required_action`. The fixture includes all 14 default
+  actions: 26.7.4's `DefaultExportImportManager` imports a supplied array instead
+  of calling `DefaultRequiredActions.addActions` (except its delete-account fallback).
+  Other actions keep their default priorities/enabled states; none are defaulted.
+  Experimental OID4VCI is not enabled and its action is not included.
+  See the [social policy and tradeoff](../../social-broker-decision.md).
 - Brute-force detection enabled; fixture's implicit server lifetimes made explicit:
   access token 5m, code 1m, login 30m, user action 5m, SSO idle 30m / maximum 10h,
   offline idle 30 days / maximum 60 days (maximum enforcement disabled).

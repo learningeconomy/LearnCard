@@ -98,10 +98,16 @@ resource "aws_lb_listener_certificate" "additional" {
   certificate_arn = each.value
 }
 
+# The account console and its REST API let a signed-in user edit their own profile.
+# The app never links to it, and email edits there would feed social auto-linking.
 resource "aws_lb_listener_rule" "deny_admin" {
-  for_each     = { admin = ["/admin*"], master = ["/realms/master", "/realms/master/*"] }
+  for_each = {
+    admin   = { priority = 10, paths = ["/admin*"] }
+    master  = { priority = 20, paths = ["/realms/master", "/realms/master/*"] }
+    account = { priority = 30, paths = ["/realms/*/account", "/realms/*/account/*"] }
+  }
   listener_arn = aws_lb_listener.https.arn
-  priority     = each.key == "admin" ? 10 : 20
+  priority     = each.value.priority
   action {
     type = "fixed-response"
     fixed_response {
@@ -111,7 +117,7 @@ resource "aws_lb_listener_rule" "deny_admin" {
     }
   }
   condition {
-    path_pattern { values = each.value }
+    path_pattern { values = each.value.paths }
   }
 }
 

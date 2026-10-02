@@ -68,8 +68,8 @@ resource "keycloak_realm_user_profile" "this" {
   }
 }
 
-# No requiredActions override exists in the fixture. Keep server defaults;
-# in particular, do not make profile/email/password actions default for new users.
+# required-actions.tf and the fixture disable self-service profile/email editing.
+# Other built-in actions retain server defaults; none are newly defaulted.
 output "realm_id" {
   description = "Managed realm ID"
   value       = keycloak_realm.this.id
