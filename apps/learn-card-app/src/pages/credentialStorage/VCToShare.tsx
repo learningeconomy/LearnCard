@@ -103,7 +103,12 @@ const VCToShare: React.FC<{
                 protocol: event ? 'chapi' : 'vc-api',
                 titles: visibleCredentialTitles(vcsToShare),
             });
-            const vpToShare = await wallet.invoke.newPresentation(vcsToShare);
+            const firstCredential = vcsToShare[0];
+            if (!firstCredential) return;
+            const vpToShare = {
+                ...(await wallet.invoke.newPresentation(firstCredential)),
+                verifiableCredential: vcsToShare,
+            };
 
             const data = await wallet.invoke.issuePresentation(vpToShare, {
                 challenge,

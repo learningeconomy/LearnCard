@@ -99,15 +99,18 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
 
     const resolvedCredentials = useGetResolvedCredentials(allRecords.map(record => record?.uri));
 
-    const allCredentials = resolvedCredentials.map((vc, index) => ({
-        vc: vc.data,
-        loading: vc.isLoading,
-        record: allRecords[index],
-        category:
+    const allCredentials = resolvedCredentials.map((vc, index) => {
+        const category: string =
             allRecords[index]?.category ||
             (vc.data && getDefaultCategoryForCredential(vc.data)) ||
-            'Achievement',
-    }));
+            'Achievement';
+        return {
+            vc: vc.data,
+            loading: vc.isLoading,
+            record: allRecords[index],
+            category,
+        };
+    });
 
     const vcsToDisplay = allCredentials.filter(credential => {
         if (credential.category === 'Hidden') return false;
@@ -120,10 +123,13 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
 
         if (!searchInput) return true;
 
+        const subject = Array.isArray(credential.vc?.credentialSubject)
+            ? credential.vc.credentialSubject[0]
+            : credential.vc?.credentialSubject;
         return (
-            credential.vc?.boostCredential?.name.toLowerCase().includes(searchInput) ||
+            credential.vc?.boostCredential?.name?.toLowerCase().includes(searchInput) ||
             credential.vc?.name?.toLowerCase().includes(searchInput) ||
-            credential.vc?.credentialSubject?.achievement?.name?.toLowerCase().includes(searchInput)
+            subject?.achievement?.name?.toLowerCase().includes(searchInput)
         );
     });
 
