@@ -189,11 +189,7 @@ export interface SubmitPresentationResult {
 /* -------------------------------------------------------------------------- */
 
 export type VpSubmitErrorCode =
-    | 'invalid_input'
-    | 'no_fetch'
-    | 'network_error'
-    | 'server_error'
-    | 'jarm_encrypt_failed';
+    'invalid_input' | 'no_fetch' | 'network_error' | 'server_error' | 'jarm_encrypt_failed';
 
 export class VpSubmitError extends Error {
     readonly code: VpSubmitErrorCode;
@@ -276,7 +272,6 @@ export const submitPresentation = async (
               idToken: options.idToken,
           });
 
-
     let response: Response;
     try {
         response = await fetchImpl(responseUri, {
@@ -288,21 +283,15 @@ export const submitPresentation = async (
             body,
         });
     } catch (e) {
-        throw new VpSubmitError(
-            'network_error',
-            `Failed to POST to ${responseUri}: ${e instanceof Error ? e.message : String(e)}`,
-            { cause: e }
-        );
+        throw new VpSubmitError('network_error', 'Unable to reach the verifier');
     }
 
     const parsed = await parseResponseBody(response);
 
     if (!response.ok) {
-        throw new VpSubmitError(
-            'server_error',
-            `Verifier returned ${response.status} ${response.statusText || ''}`.trim(),
-            { status: response.status, body: parsed }
-        );
+        throw new VpSubmitError('server_error', `Verifier returned HTTP ${response.status}`, {
+            status: response.status,
+        });
     }
 
     return {
@@ -371,7 +360,7 @@ const encodeJarmBody = async (args: {
     if (!args.clientMetadata) {
         throw new VpSubmitError(
             'invalid_input',
-            'response_mode=direct_post.jwt requires `clientMetadata` (verifier\'s JWKS + JWE algs)'
+            "response_mode=direct_post.jwt requires `clientMetadata` (verifier's JWKS + JWE algs)"
         );
     }
 
@@ -395,10 +384,7 @@ const encodeJarmBody = async (args: {
         // JWE plaintext is safe (it stays a plain object on the
         // wire). Two-step cast through `unknown` to satisfy strict
         // structural-equality narrowing.
-        payload.presentation_submission = args.submission as unknown as Record<
-            string,
-            unknown
-        >;
+        payload.presentation_submission = args.submission as unknown as Record<string, unknown>;
     }
 
     if (typeof args.state === 'string' && args.state.length > 0) {
@@ -422,11 +408,10 @@ const encodeJarmBody = async (args: {
         if (e instanceof JarmEncryptError) {
             throw new VpSubmitError(
                 'jarm_encrypt_failed',
-                `Failed to build JARM response (${e.code}): ${e.message}`,
-                { cause: e }
+                'Unable to encrypt the verifier response'
             );
         }
-        throw e;
+        throw new VpSubmitError('jarm_encrypt_failed', 'Unable to encrypt the verifier response');
     }
 
     const params = new URLSearchParams();

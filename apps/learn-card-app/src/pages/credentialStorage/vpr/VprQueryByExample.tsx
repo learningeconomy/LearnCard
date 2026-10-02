@@ -42,12 +42,16 @@ import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import { filterMaybes } from '@learncard/helpers';
 import type { CredentialRequestEvent } from '@learncard/chapi-plugin';
 import type { VP } from '@learncard/types';
+import type {
+    VerifierPresentationRequest,
+    CredentialDisclosureSubmit,
+} from '../../../helpers/verifier-history/disclosure';
 import * as m from '../../../paraglide/messages.js';
 
 export type VprQueryByExampleProps = {
     event?: CredentialRequestEvent;
-    verifiablePresentationRequest?: any;
-    onSubmit?: (body: { verifiablePresentation: VP }) => void;
+    verifiablePresentationRequest?: VerifierPresentationRequest;
+    onSubmit?: CredentialDisclosureSubmit;
     onReject?: () => void;
     currentUser: CurrentUser | null;
 };
@@ -80,9 +84,11 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
         fetchNextPage,
     } = useGetCredentialList();
 
-    const onScreen = useOnScreen(infiniteScrollRef as any, '-200px', [
-        records?.pages?.[0]?.records?.length,
-    ]);
+    const onScreen = useOnScreen(
+        infiniteScrollRef as React.MutableRefObject<HTMLDivElement>,
+        '-200px',
+        [records?.pages?.[0]?.records?.length]
+    );
 
     const credentialQuery =
         event?.credentialRequestOptions?.web?.VerifiablePresentation?.query ||
@@ -134,7 +140,7 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
         else setSelectedVcs([...selectedVcs, id]);
     };
 
-    const isVcSelected = (id: String) => vcsToShare.some(vc => getUniqueId(vc) === id);
+    const isVcSelected = (id: string) => vcsToShare.some(vc => getUniqueId(vc) === id);
 
     const [presentModal, dismissModal] = useIonModal(VCToShare, {
         vcsToShare: vcsToShare,

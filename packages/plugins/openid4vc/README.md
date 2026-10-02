@@ -2,9 +2,9 @@
 
 OpenID for Verifiable Credentials **holder-side** support for LearnCard:
 
--   **OID4VCI** — accept credential offers, exchange pre-authorized / authorization codes for access tokens, request credentials from issuers.
--   **OID4VP** — parse Authorization Requests, match held credentials against Presentation Definitions (DIF PEX v2), build and sign VP tokens.
--   **SIOPv2** — issue self-issued ID tokens for holder authentication.
+- **OID4VCI** — accept credential offers, exchange pre-authorized / authorization codes for access tokens, request credentials from issuers.
+- **OID4VP** — parse Authorization Requests, match held credentials against Presentation Definitions (DIF PEX v2), build and sign VP tokens.
+- **SIOPv2** — issue self-issued ID tokens for holder authentication.
 
 ## Status
 
@@ -59,10 +59,10 @@ See the California RFP epic for full scope.
 
 ## Spec versions
 
--   **OID4VCI**: [Draft 13](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html). Draft 11 offers are accepted and normalized on ingest.
--   **OID4VP**: [Draft 22](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html).
--   **SIOPv2**: [final](https://openid.net/specs/openid-connect-self-issued-v2-1_0.html).
--   **PEX**: DIF Presentation Exchange v2.
+- **OID4VCI**: [Draft 13](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html). Draft 11 offers are accepted and normalized on ingest.
+- **OID4VP**: [Draft 22](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html).
+- **SIOPv2**: [final](https://openid.net/specs/openid-connect-self-issued-v2-1_0.html).
+- **PEX**: DIF Presentation Exchange v2.
 
 ## Installation
 
@@ -255,9 +255,9 @@ if (parsed.kind === 'by_value') {
 
 Three discriminated variants:
 
--   **`by_value`** — every param was inline; the returned `request` is ready for matching.
--   **`by_reference_request_uri`** — the verifier delegated the request to a signed JWS fetched from `request_uri`. Slice 7.5 verifies the signature per `client_id_scheme` (see below) and inlines the claims.
--   **`by_reference_request_jwt`** — same thing but the JWS is embedded directly via the `request` param.
+- **`by_value`** — every param was inline; the returned `request` is ready for matching.
+- **`by_reference_request_uri`** — the verifier delegated the request to a signed JWS fetched from `request_uri`. Slice 7.5 verifies the signature per `client_id_scheme` (see below) and inlines the claims.
+- **`by_reference_request_jwt`** — same thing but the JWS is embedded directly via the `request` param.
 
 ### Slice 6b — resolve `presentation_definition_uri` over HTTP
 
@@ -327,10 +327,10 @@ const submission = buildPresentationSubmission(request.presentation_definition!,
 
 The matcher is spec-correct for the vast majority of Presentation Definitions seen in the wild. It covers:
 
--   **JSONPath (`field.path[]`)** — root (`$`), dotted (`$.a.b.c`), bracketed (`$['foo bar']`), numeric index (`$.a[0]`), wildcard (`$.a[*]`, `$.a.*`), recursive descent (`$..foo`). Filter predicates (`[?(@.x=='y')]`) and array slicing (`[0:2]`) throw a descriptive error rather than silently missing.
--   **JSON Schema filter (`field.filter`)** — `type`, `const`, `enum`, `pattern`, `minimum` / `maximum` / `exclusiveMinimum` / `exclusiveMaximum`, `minLength` / `maxLength`, `contains`, `items`, `minItems` / `maxItems`. Unknown keywords pass by default (lenient mode) so verifiers introducing new keywords don't block wallet upgrades.
--   **`submission_requirements`** — `rule: 'all'`, `rule: 'pick'` with `count` / `min` / (soft) `max`, and nested `from_nested` groups.
--   **Format designations** — `descriptor.format` takes precedence over `pd.format`; candidates are filtered before JSONPath runs. `jwt_vc_json` credentials are transparently base64url-decoded for matching (paths like `$.credentialSubject.id` work even when the raw credential is a compact JWS).
+- **JSONPath (`field.path[]`)** — root (`$`), dotted (`$.a.b.c`), bracketed (`$['foo bar']`), numeric index (`$.a[0]`), wildcard (`$.a[*]`, `$.a.*`), recursive descent (`$..foo`). Filter predicates (`[?(@.x=='y')]`) and array slicing (`[0:2]`) throw a descriptive error rather than silently missing.
+- **JSON Schema filter (`field.filter`)** — `type`, `const`, `enum`, `pattern`, `minimum` / `maximum` / `exclusiveMinimum` / `exclusiveMaximum`, `minLength` / `maxLength`, `contains`, `items`, `minItems` / `maxItems`. Unknown keywords pass by default (lenient mode) so verifiers introducing new keywords don't block wallet upgrades.
+- **`submission_requirements`** — `rule: 'all'`, `rule: 'pick'` with `count` / `min` / (soft) `max`, and nested `from_nested` groups.
+- **Format designations** — `descriptor.format` takes precedence over `pd.format`; candidates are filtered before JSONPath runs. `jwt_vc_json` credentials are transparently base64url-decoded for matching (paths like `$.credentialSubject.id` work even when the raw credential is a compact JWS).
 
 If your verifier lands a PEX feature we haven't modeled, open an issue with the Presentation Definition — the matcher layer is designed to swap for a full `ajv`-backed implementation without touching the plugin surface.
 
@@ -355,6 +355,8 @@ When a verifier requests `response_mode=direct_post.jwt`, the wallet must encryp
 ## Errors
 
 VCI errors are thrown as `CredentialOfferParseError` / `VciError`; VP errors as `VpError`. Every error carries a stable `code` field so UI can map to friendly copy without string-matching messages.
+
+`submitPresentation` throws `VpSubmitError` with a stable `code` and, for HTTP failures, `status`. Transport errors deliberately omit the response URL, verifier-controlled response body/status text, and nested fetch/encryption causes so logging an error does not disclose request capabilities or presentations. Consumers should use `code` and `status` rather than `body` or `cause`. Successful `SubmitPresentationResult.body` is unchanged and should still be treated as private counterparty data.
 
 ### `CredentialOfferParseError.code`
 
@@ -469,9 +471,9 @@ docker run --rm -p 7002:7002 -p 7003:7003 waltid/issuer-api:0.23.0
 
 #### What the harness does NOT cover
 
--   **No wallet integration.** Credentials are decoded and printed, not persisted. Once Slice 10 wires `acceptAndStoreCredentialOffer` into the wallet UI, use the learn-card-app instead for that part of the flow.
--   **No signature verification.** The harness trusts the issuer's response. Verifying the credential JWT against the issuer's published key is a separate concern handled by the VC plugin on read.
--   **Pre-authorized code only.** The harness drives the pre-authorized flow because it's headless. The plugin itself supports the authorization code flow via `beginCredentialOfferAuthCode` / `completeCredentialOfferAuthCode` (Slice 4); exercising it requires a real browser to bounce through the issuer's authorization endpoint, so it's covered by the wallet app's e2e tests rather than this harness.
+- **No wallet integration.** Credentials are decoded and printed, not persisted. Once Slice 10 wires `acceptAndStoreCredentialOffer` into the wallet UI, use the learn-card-app instead for that part of the flow.
+- **No signature verification.** The harness trusts the issuer's response. Verifying the credential JWT against the issuer's published key is a separate concern handled by the VC plugin on read.
+- **Pre-authorized code only.** The harness drives the pre-authorized flow because it's headless. The plugin itself supports the authorization code flow via `beginCredentialOfferAuthCode` / `completeCredentialOfferAuthCode` (Slice 4); exercising it requires a real browser to bounce through the issuer's authorization endpoint, so it's covered by the wallet app's e2e tests rather than this harness.
 
 ### Driving a real verifier end-to-end — `try-verify` harness
 
@@ -576,7 +578,7 @@ The plugin's `.gitignore` excludes `my-vc.json`, `my-vc*.json`, `*.vc.json`, and
 
 #### What the harness does NOT cover
 
--   **No `client_id_scheme=pre-registered` / `verifier_attestation`.** Both surface `unsupported_client_id_scheme` from the Slice 7.5 verifier. `did` (did:jwk + did:web built-in, others via custom `didResolver`) and `x509_san_dns` (with `trustedX509Roots`) are the supported schemes.
+- **No `client_id_scheme=pre-registered` / `verifier_attestation`.** Both surface `unsupported_client_id_scheme` from the Slice 7.5 verifier. `did` (did:jwk + did:web built-in, others via custom `didResolver`) and `x509_san_dns` (with `trustedX509Roots`) are the supported schemes.
 
     JARM (encrypted `direct_post.jwt`) and DCQL queries are both supported in the plugin and exercised through the wallet's e2e suite, not via this harness.
 
