@@ -10,6 +10,7 @@ import {
     getPinValidator,
 } from './familyPin.helpers';
 import { currentUserStore, switchedProfileStore, useModal, useVerifyPin } from 'learn-card-base';
+import * as m from '../../../../paraglide/messages.js';
 
 export enum FamilyPinViewModeEnum {
     create = 'create',
@@ -101,7 +102,13 @@ export const FamilyPinWrapper: React.FC<FamilyPinWrapperProps> = ({
                 });
 
                 if (isVerified && hasParentSwitchedProfiles) {
-                    await handleOnSubmit?.();
+                    setErrors({});
+                    try {
+                        await handleOnSubmit?.();
+                    } catch (error) {
+                        log.error('Verified PIN action failed', error);
+                        setErrors({ submission: [m['error.generic']()] });
+                    }
                     return;
                 }
 
