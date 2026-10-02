@@ -102,13 +102,15 @@ class InboxGetMyIssuedCredentialsRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "limit": obj.get("limit") if obj.get("limit") is not None else 25,
             "cursor": obj.get("cursor"),
             "sort": obj.get("sort"),
             "query": InboxGetMyIssuedCredentialsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None,
             "recipient": InboxGetMyIssuedCredentialsRequestRecipient.from_dict(obj["recipient"]) if obj.get("recipient") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

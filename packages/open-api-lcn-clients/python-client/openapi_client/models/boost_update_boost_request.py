@@ -98,11 +98,13 @@ class BoostUpdateBoostRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "uri": obj.get("uri"),
             "updates": BoostUpdateBoostRequestUpdates.from_dict(obj["updates"]) if obj.get("updates") is not None else None,
             "skills": [BoostSendRequestTemplateSkillsInner.from_dict(_item) for _item in obj["skills"]] if obj.get("skills") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

@@ -1,17 +1,16 @@
 # InboxGetBatch200ResponseSummary
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**total** | **float** |  | 
-**succeeded** | **float** |  | 
-**failed** | **float** |  | 
-**deduplicated** | **float** |  | 
-**completed** | **float** |  | 
-**pending** | **float** |  | 
-**unconfirmed** | **float** |  | 
+| Name             | Type      | Description | Notes |
+| ---------------- | --------- | ----------- | ----- |
+| **total**        | **float** |             |
+| **succeeded**    | **float** |             |
+| **failed**       | **float** |             |
+| **deduplicated** | **float** |             |
+| **completed**    | **float** |             |
+| **pending**      | **float** |             |
+| **unconfirmed**  | **float** |             |
 
 ## Example
 
@@ -30,6 +29,5 @@ inbox_get_batch200_response_summary_dict = inbox_get_batch200_response_summary_i
 # create an instance of InboxGetBatch200ResponseSummary from a dict
 inbox_get_batch200_response_summary_from_dict = InboxGetBatch200ResponseSummary.from_dict(inbox_get_batch200_response_summary_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

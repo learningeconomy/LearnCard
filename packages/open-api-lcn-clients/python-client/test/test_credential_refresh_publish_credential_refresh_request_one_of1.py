@@ -35,10 +35,28 @@ class TestCredentialRefreshPublishCredentialRefreshRequestOneOf1(unittest.TestCa
         model = CredentialRefreshPublishCredentialRefreshRequestOneOf1()
         if include_optional:
             return CredentialRefreshPublishCredentialRefreshRequestOneOf1(
-                mode = None
+                refresh_id = '0',
+                notify_holder = True,
+                update_summary = '',
+                idempotency_key = '',
+                mode = 'signing-authority',
+                credential = {
+                    'key' : null
+                    },
+                signing_authority = {
+                    'key' : null
+                    }
             )
         else:
             return CredentialRefreshPublishCredentialRefreshRequestOneOf1(
+                refresh_id = '0',
+                mode = 'signing-authority',
+                credential = {
+                    'key' : null
+                    },
+                signing_authority = {
+                    'key' : null
+                    },
         )
         """
 

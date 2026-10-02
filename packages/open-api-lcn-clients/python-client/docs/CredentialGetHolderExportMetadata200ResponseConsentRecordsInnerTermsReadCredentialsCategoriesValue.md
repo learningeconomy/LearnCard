@@ -1,14 +1,13 @@
 # CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentialsCategoriesValue
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**sharing** | **bool** |  | [optional] 
-**shared** | **List[str]** |  | [optional] 
-**share_all** | **bool** |  | [optional] 
-**share_until** | **str** |  | [optional] 
+| Name            | Type          | Description | Notes      |
+| --------------- | ------------- | ----------- | ---------- |
+| **sharing**     | **bool**      |             | [optional] |
+| **shared**      | **List[str]** |             | [optional] |
+| **share_all**   | **bool**      |             | [optional] |
+| **share_until** | **str**       |             | [optional] |
 
 ## Example
 
@@ -27,6 +26,5 @@ credential_get_holder_export_metadata200_response_consent_records_inner_terms_re
 # create an instance of CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentialsCategoriesValue from a dict
 credential_get_holder_export_metadata200_response_consent_records_inner_terms_read_credentials_categories_value_from_dict = CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentialsCategoriesValue.from_dict(credential_get_holder_export_metadata200_response_consent_records_inner_terms_read_credentials_categories_value_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

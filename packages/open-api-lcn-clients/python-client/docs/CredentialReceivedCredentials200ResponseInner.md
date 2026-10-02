@@ -1,16 +1,15 @@
 # CredentialReceivedCredentials200ResponseInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**uri** | **str** |  | 
-**to** | **str** |  | 
-**var_from** | **str** |  | 
-**sent** | **datetime** |  | 
-**received** | **datetime** |  | [optional] 
-**metadata** | **Dict[str, Optional[object]]** |  | [optional] 
+| Name         | Type                            | Description | Notes      |
+| ------------ | ------------------------------- | ----------- | ---------- |
+| **uri**      | **str**                         |             |
+| **to**       | **str**                         |             |
+| **var_from** | **str**                         |             |
+| **sent**     | **datetime**                    |             |
+| **received** | **datetime**                    |             | [optional] |
+| **metadata** | **Dict[str, Optional[object]]** |             | [optional] |
 
 ## Example
 
@@ -29,6 +28,5 @@ credential_received_credentials200_response_inner_dict = credential_received_cre
 # create an instance of CredentialReceivedCredentials200ResponseInner from a dict
 credential_received_credentials200_response_inner_from_dict = CredentialReceivedCredentials200ResponseInner.from_dict(credential_received_credentials200_response_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

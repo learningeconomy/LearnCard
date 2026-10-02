@@ -19,7 +19,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, f
 from typing import Any, List, Optional
 from openapi_client.models.share_links_create200_response_one_of import ShareLinksCreate200ResponseOneOf
 from openapi_client.models.share_links_create200_response_one_of1 import ShareLinksCreate200ResponseOneOf1
-from pydantic import StrictStr, Field
+from pydantic import StrictStr, Field, model_validator
 from typing import Union, List, Set, Optional, Dict
 from typing_extensions import Literal, Self
 
@@ -40,6 +40,14 @@ class ShareLinksCreate200Response(BaseModel):
         validate_assignment=True,
         protected_namespaces=(),
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def parse_raw_oneof(cls, value):
+        """Accept the wire shape as well as explicit actual_instance construction."""
+        if isinstance(value, dict) and "actual_instance" not in value:
+            return {"actual_instance": cls.from_dict(value).actual_instance}
+        return value
 
 
     def __init__(self, *args, **kwargs) -> None:

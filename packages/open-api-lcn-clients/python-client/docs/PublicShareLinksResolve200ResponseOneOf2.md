@@ -1,21 +1,20 @@
 # PublicShareLinksResolve200ResponseOneOf2
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**state** | **str** |  | 
-**id** | **str** |  | 
-**title** | **str** |  | 
-**note** | **str** |  | [optional] 
-**selected_count** | **int** |  | 
-**content_version** | **int** |  | 
-**content_url** | **str** |  | 
-**sharer** | [**PublicShareLinksResolve200ResponseOneOf2Sharer**](PublicShareLinksResolve200ResponseOneOf2Sharer.md) |  | 
-**created_at** | **datetime** |  | 
-**updated_at** | **datetime** |  | 
-**expires_at** | **datetime** |  | 
+| Name                | Type                                                                                                    | Description | Notes      |
+| ------------------- | ------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **state**           | **str**                                                                                                 |             |
+| **id**              | **str**                                                                                                 |             |
+| **title**           | **str**                                                                                                 |             |
+| **note**            | **str**                                                                                                 |             | [optional] |
+| **selected_count**  | **int**                                                                                                 |             |
+| **content_version** | **int**                                                                                                 |             |
+| **content_url**     | **str**                                                                                                 |             |
+| **sharer**          | [**PublicShareLinksResolve200ResponseOneOf2Sharer**](PublicShareLinksResolve200ResponseOneOf2Sharer.md) |             |
+| **created_at**      | **datetime**                                                                                            |             |
+| **updated_at**      | **datetime**                                                                                            |             |
+| **expires_at**      | **datetime**                                                                                            |             |
 
 ## Example
 
@@ -34,6 +33,5 @@ public_share_links_resolve200_response_one_of2_dict = public_share_links_resolve
 # create an instance of PublicShareLinksResolve200ResponseOneOf2 from a dict
 public_share_links_resolve200_response_one_of2_from_dict = PublicShareLinksResolve200ResponseOneOf2.from_dict(public_share_links_resolve200_response_one_of2_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

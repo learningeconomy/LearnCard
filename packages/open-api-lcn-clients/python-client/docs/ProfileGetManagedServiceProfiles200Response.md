@@ -1,13 +1,12 @@
 # ProfileGetManagedServiceProfiles200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**cursor** | **str** |  | [optional] 
-**has_more** | **bool** |  | 
-**records** | [**List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md) |  | 
+| Name         | Type                                                                                                            | Description | Notes      |
+| ------------ | --------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **cursor**   | **str**                                                                                                         |             | [optional] |
+| **has_more** | **bool**                                                                                                        |             |
+| **records**  | [**List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md) |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ profile_get_managed_service_profiles200_response_dict = profile_get_managed_serv
 # create an instance of ProfileGetManagedServiceProfiles200Response from a dict
 profile_get_managed_service_profiles200_response_from_dict = ProfileGetManagedServiceProfiles200Response.from_dict(profile_get_managed_service_profiles200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

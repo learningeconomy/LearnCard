@@ -1,14 +1,13 @@
 # ShareLinksUpdateRequestEnvelope
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**v** | **float** |  | 
-**alg** | **str** |  | 
-**iv** | **str** |  | 
-**ct** | **str** |  | 
+| Name    | Type      | Description | Notes |
+| ------- | --------- | ----------- | ----- |
+| **v**   | **float** |             |
+| **alg** | **str**   |             |
+| **iv**  | **str**   |             |
+| **ct**  | **str**   |             |
 
 ## Example
 
@@ -27,6 +26,5 @@ share_links_update_request_envelope_dict = share_links_update_request_envelope_i
 # create an instance of ShareLinksUpdateRequestEnvelope from a dict
 share_links_update_request_envelope_from_dict = ShareLinksUpdateRequestEnvelope.from_dict(share_links_update_request_envelope_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

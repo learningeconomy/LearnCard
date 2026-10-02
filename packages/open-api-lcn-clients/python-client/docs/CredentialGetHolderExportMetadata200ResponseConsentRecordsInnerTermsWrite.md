@@ -1,12 +1,11 @@
 # CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**credentials** | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWriteCredentials**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWriteCredentials.md) |  | 
-**personal** | **Dict[str, Optional[bool]]** |  | 
+| Name            | Type                                                                                                                                                                                | Description | Notes |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **credentials** | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWriteCredentials**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWriteCredentials.md) |             |
+| **personal**    | **Dict[str, Optional[bool]]**                                                                                                                                                       |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ credential_get_holder_export_metadata200_response_consent_records_inner_terms_wr
 # create an instance of CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite from a dict
 credential_get_holder_export_metadata200_response_consent_records_inner_terms_write_from_dict = CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite.from_dict(credential_get_holder_export_metadata200_response_consent_records_inner_terms_write_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

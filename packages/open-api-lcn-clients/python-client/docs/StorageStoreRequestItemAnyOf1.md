@@ -1,12 +1,11 @@
 # StorageStoreRequestItemAnyOf1
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**format** | **str** |  | 
-**data** | **str** |  | 
+| Name       | Type    | Description | Notes |
+| ---------- | ------- | ----------- | ----- |
+| **format** | **str** |             |
+| **data**   | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ storage_store_request_item_any_of1_dict = storage_store_request_item_any_of1_ins
 # create an instance of StorageStoreRequestItemAnyOf1 from a dict
 storage_store_request_item_any_of1_from_dict = StorageStoreRequestItemAnyOf1.from_dict(storage_store_request_item_any_of1_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

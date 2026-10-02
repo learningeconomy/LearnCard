@@ -1,14 +1,13 @@
 # AppStoreAppEventRequestEventOneOf2
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | **str** |  | 
-**template_alias** | **str** |  | [optional] 
-**boost_uri** | **str** |  | [optional] 
-**recipient** | **str** |  | 
+| Name               | Type    | Description | Notes      |
+| ------------------ | ------- | ----------- | ---------- |
+| **type**           | **str** |             |
+| **template_alias** | **str** |             | [optional] |
+| **boost_uri**      | **str** |             | [optional] |
+| **recipient**      | **str** |             |
 
 ## Example
 
@@ -27,6 +26,5 @@ app_store_app_event_request_event_one_of2_dict = app_store_app_event_request_eve
 # create an instance of AppStoreAppEventRequestEventOneOf2 from a dict
 app_store_app_event_request_event_one_of2_from_dict = AppStoreAppEventRequestEventOneOf2.from_dict(app_store_app_event_request_event_one_of2_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,13 +1,12 @@
 # SkillFrameworksGetAllAvailableFrameworksRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**limit** | **int** |  | [optional] [default to 50]
-**cursor** | **str** |  | [optional] 
-**query** | [**BoostGetBoostFrameworksRequestQuery**](BoostGetBoostFrameworksRequestQuery.md) |  | [optional] 
+| Name       | Type                                                                              | Description | Notes                      |
+| ---------- | --------------------------------------------------------------------------------- | ----------- | -------------------------- |
+| **limit**  | **int**                                                                           |             | [optional] [default to 50] |
+| **cursor** | **str**                                                                           |             | [optional]                 |
+| **query**  | [**BoostGetBoostFrameworksRequestQuery**](BoostGetBoostFrameworksRequestQuery.md) |             | [optional]                 |
 
 ## Example
 
@@ -26,6 +25,5 @@ skill_frameworks_get_all_available_frameworks_request_dict = skill_frameworks_ge
 # create an instance of SkillFrameworksGetAllAvailableFrameworksRequest from a dict
 skill_frameworks_get_all_available_frameworks_request_from_dict = SkillFrameworksGetAllAvailableFrameworksRequest.from_dict(skill_frameworks_get_all_available_frameworks_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,31 +1,30 @@
 # StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1Issuer
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | [optional] 
-**type** | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.md) |  | [optional] 
-**name** | **str** |  | [optional] 
-**url** | **str** |  | [optional] 
-**phone** | **str** |  | [optional] 
-**description** | **str** |  | [optional] 
-**endorsement** | **List[object]** |  | [optional] 
-**image** | [**StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfImage**](StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfImage.md) |  | [optional] 
-**email** | **str** |  | [optional] 
-**address** | [**StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfAddress**](StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfAddress.md) |  | [optional] 
-**other_identifier** | [**List[StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfOtherIdentifierInner]**](StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfOtherIdentifierInner.md) |  | [optional] 
-**official** | **str** |  | [optional] 
-**parent_org** | **object** |  | [optional] 
-**family_name** | **str** |  | [optional] 
-**given_name** | **str** |  | [optional] 
-**additional_name** | **str** |  | [optional] 
-**patronymic_name** | **str** |  | [optional] 
-**honorific_prefix** | **str** |  | [optional] 
-**honorific_suffix** | **str** |  | [optional] 
-**family_name_prefix** | **str** |  | [optional] 
-**date_of_birth** | **str** |  | [optional] 
+| Name                   | Type                                                                                                                                                                                            | Description | Notes      |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **id**                 | **str**                                                                                                                                                                                         |             | [optional] |
+| **type**               | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.md)                                                                         |             | [optional] |
+| **name**               | **str**                                                                                                                                                                                         |             | [optional] |
+| **url**                | **str**                                                                                                                                                                                         |             | [optional] |
+| **phone**              | **str**                                                                                                                                                                                         |             | [optional] |
+| **description**        | **str**                                                                                                                                                                                         |             | [optional] |
+| **endorsement**        | **List[object]**                                                                                                                                                                                |             | [optional] |
+| **image**              | [**StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfImage**](StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfImage.md)                                     |             | [optional] |
+| **email**              | **str**                                                                                                                                                                                         |             | [optional] |
+| **address**            | [**StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfAddress**](StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfAddress.md)                                 |             | [optional] |
+| **other_identifier**   | [**List[StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfOtherIdentifierInner]**](StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfOtherIdentifierInner.md) |             | [optional] |
+| **official**           | **str**                                                                                                                                                                                         |             | [optional] |
+| **parent_org**         | **object**                                                                                                                                                                                      |             | [optional] |
+| **family_name**        | **str**                                                                                                                                                                                         |             | [optional] |
+| **given_name**         | **str**                                                                                                                                                                                         |             | [optional] |
+| **additional_name**    | **str**                                                                                                                                                                                         |             | [optional] |
+| **patronymic_name**    | **str**                                                                                                                                                                                         |             | [optional] |
+| **honorific_prefix**   | **str**                                                                                                                                                                                         |             | [optional] |
+| **honorific_suffix**   | **str**                                                                                                                                                                                         |             | [optional] |
+| **family_name_prefix** | **str**                                                                                                                                                                                         |             | [optional] |
+| **date_of_birth**      | **str**                                                                                                                                                                                         |             | [optional] |
 
 ## Example
 
@@ -44,6 +43,5 @@ storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of1_issuer_di
 # create an instance of StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1Issuer from a dict
 storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of1_issuer_from_dict = StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1Issuer.from_dict(storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of1_issuer_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

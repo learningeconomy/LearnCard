@@ -1,13 +1,12 @@
 # ContractsGetConsentFlowContractsRequestQueryRead
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**anonymize** | **bool** |  | [optional] 
-**credentials** | [**ContractsGetConsentFlowContractsRequestQueryReadCredentials**](ContractsGetConsentFlowContractsRequestQueryReadCredentials.md) |  | [optional] 
-**personal** | [**Dict[str, ContractsGetConsentFlowContractsRequestQueryReadPersonalValue]**](ContractsGetConsentFlowContractsRequestQueryReadPersonalValue.md) |  | [optional] 
+| Name            | Type                                                                                                                                             | Description | Notes      |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- | ---------- |
+| **anonymize**   | **bool**                                                                                                                                         |             | [optional] |
+| **credentials** | [**ContractsGetConsentFlowContractsRequestQueryReadCredentials**](ContractsGetConsentFlowContractsRequestQueryReadCredentials.md)                |             | [optional] |
+| **personal**    | [**Dict[str, ContractsGetConsentFlowContractsRequestQueryReadPersonalValue]**](ContractsGetConsentFlowContractsRequestQueryReadPersonalValue.md) |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ contracts_get_consent_flow_contracts_request_query_read_dict = contracts_get_con
 # create an instance of ContractsGetConsentFlowContractsRequestQueryRead from a dict
 contracts_get_consent_flow_contracts_request_query_read_from_dict = ContractsGetConsentFlowContractsRequestQueryRead.from_dict(contracts_get_consent_flow_contracts_request_query_read_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

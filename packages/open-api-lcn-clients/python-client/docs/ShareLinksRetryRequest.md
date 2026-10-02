@@ -1,12 +1,11 @@
 # ShareLinksRetryRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**operation_id** | **UUID** |  | 
+| Name             | Type     | Description | Notes |
+| ---------------- | -------- | ----------- | ----- |
+| **id**           | **str**  |             |
+| **operation_id** | **UUID** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ share_links_retry_request_dict = share_links_retry_request_instance.to_dict()
 # create an instance of ShareLinksRetryRequest from a dict
 share_links_retry_request_from_dict = ShareLinksRetryRequest.from_dict(share_links_retry_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

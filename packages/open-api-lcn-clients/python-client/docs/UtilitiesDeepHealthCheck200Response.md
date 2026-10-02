@@ -1,17 +1,16 @@
 # UtilitiesDeepHealthCheck200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**healthy** | **bool** |  | 
-**version** | **str** |  | 
-**didkit_engine** | **str** |  | 
-**did** | **str** |  | 
-**vp_verified** | **bool** |  | 
-**verification_errors** | **List[str]** |  | 
-**ms** | **float** |  | 
+| Name                    | Type          | Description | Notes |
+| ----------------------- | ------------- | ----------- | ----- |
+| **healthy**             | **bool**      |             |
+| **version**             | **str**       |             |
+| **didkit_engine**       | **str**       |             |
+| **did**                 | **str**       |             |
+| **vp_verified**         | **bool**      |             |
+| **verification_errors** | **List[str]** |             |
+| **ms**                  | **float**     |             |
 
 ## Example
 
@@ -30,6 +29,5 @@ utilities_deep_health_check200_response_dict = utilities_deep_health_check200_re
 # create an instance of UtilitiesDeepHealthCheck200Response from a dict
 utilities_deep_health_check200_response_from_dict = UtilitiesDeepHealthCheck200Response.from_dict(utilities_deep_health_check200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,12 +1,11 @@
 # CredentialGetHolderExportMetadata200ResponseLimits
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**max_consent_records** | **float** |  | 
-**max_transactions_per_consent_record** | **float** |  | 
+| Name                                    | Type      | Description | Notes |
+| --------------------------------------- | --------- | ----------- | ----- |
+| **max_consent_records**                 | **float** |             |
+| **max_transactions_per_consent_record** | **float** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ credential_get_holder_export_metadata200_response_limits_dict = credential_get_h
 # create an instance of CredentialGetHolderExportMetadata200ResponseLimits from a dict
 credential_get_holder_export_metadata200_response_limits_from_dict = CredentialGetHolderExportMetadata200ResponseLimits.from_dict(credential_get_holder_export_metadata200_response_limits_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

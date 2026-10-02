@@ -1,19 +1,18 @@
 # BoostGetSkillsAvailableForBoost200ResponseInnerFramework
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**name** | **str** |  | 
-**description** | **str** |  | [optional] 
-**image** | **str** |  | [optional] 
-**source_uri** | **str** |  | [optional] 
-**is_public** | **bool** |  | [default to False]
-**status** | **str** |  | [default to 'active']
-**created_at** | **str** |  | [optional] 
-**updated_at** | **str** |  | [optional] 
+| Name            | Type     | Description | Notes                 |
+| --------------- | -------- | ----------- | --------------------- |
+| **id**          | **str**  |             |
+| **name**        | **str**  |             |
+| **description** | **str**  |             | [optional]            |
+| **image**       | **str**  |             | [optional]            |
+| **source_uri**  | **str**  |             | [optional]            |
+| **is_public**   | **bool** |             | [default to False]    |
+| **status**      | **str**  |             | [default to 'active'] |
+| **created_at**  | **str**  |             | [optional]            |
+| **updated_at**  | **str**  |             | [optional]            |
 
 ## Example
 
@@ -32,6 +31,5 @@ boost_get_skills_available_for_boost200_response_inner_framework_dict = boost_ge
 # create an instance of BoostGetSkillsAvailableForBoost200ResponseInnerFramework from a dict
 boost_get_skills_available_for_boost200_response_inner_framework_from_dict = BoostGetSkillsAvailableForBoost200ResponseInnerFramework.from_dict(boost_get_skills_available_for_boost200_response_inner_framework_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

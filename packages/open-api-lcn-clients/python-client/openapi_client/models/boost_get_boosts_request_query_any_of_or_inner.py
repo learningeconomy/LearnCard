@@ -114,7 +114,7 @@ class BoostGetBoostsRequestQueryAnyOfOrInner(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "uri": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["uri"]) if obj.get("uri") is not None else None,
             "name": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["name"]) if obj.get("name") is not None else None,
             "type": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["type"]) if obj.get("type") is not None else None,
@@ -127,7 +127,9 @@ class BoostGetBoostsRequestQueryAnyOfOrInner(BaseModel):
             else None,
             "status": BoostGetBoostsRequestQueryAnyOfOrInnerStatus.from_dict(obj["status"]) if obj.get("status") is not None else None,
             "autoConnectRecipients": obj.get("autoConnectRecipients")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

@@ -1,15 +1,14 @@
 # AuthGrantsAddAuthGrantRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**name** | **str** |  | [optional] 
-**description** | **str** |  | [optional] 
-**scope** | **str** |  | [optional] 
-**act_as** | **str** |  | [optional] 
-**expires_at** | **datetime** |  | [optional] 
+| Name            | Type         | Description | Notes      |
+| --------------- | ------------ | ----------- | ---------- |
+| **name**        | **str**      |             | [optional] |
+| **description** | **str**      |             | [optional] |
+| **scope**       | **str**      |             | [optional] |
+| **act_as**      | **str**      |             | [optional] |
+| **expires_at**  | **datetime** |             | [optional] |
 
 ## Example
 
@@ -28,6 +27,5 @@ auth_grants_add_auth_grant_request_dict = auth_grants_add_auth_grant_request_ins
 # create an instance of AuthGrantsAddAuthGrantRequest from a dict
 auth_grants_add_auth_grant_request_from_dict = AuthGrantsAddAuthGrantRequest.from_dict(auth_grants_add_auth_grant_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

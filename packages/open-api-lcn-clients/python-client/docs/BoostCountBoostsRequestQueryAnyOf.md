@@ -1,11 +1,10 @@
 # BoostCountBoostsRequestQueryAnyOf
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**var_or** | [**List[BoostGetBoostsRequestQueryAnyOf1]**](BoostGetBoostsRequestQueryAnyOf1.md) |  | 
+| Name       | Type                                                                              | Description | Notes |
+| ---------- | --------------------------------------------------------------------------------- | ----------- | ----- |
+| **var_or** | [**List[BoostGetBoostsRequestQueryAnyOf1]**](BoostGetBoostsRequestQueryAnyOf1.md) |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ boost_count_boosts_request_query_any_of_dict = boost_count_boosts_request_query_
 # create an instance of BoostCountBoostsRequestQueryAnyOf from a dict
 boost_count_boosts_request_query_any_of_from_dict = BoostCountBoostsRequestQueryAnyOf.from_dict(boost_count_boosts_request_query_any_of_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

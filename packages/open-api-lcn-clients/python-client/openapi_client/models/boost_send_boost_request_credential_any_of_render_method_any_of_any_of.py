@@ -105,13 +105,15 @@ class BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOfAnyOf(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "type": obj.get("type"),
             "renderSuite": obj.get("renderSuite"),
             "template": obj.get("template"),
             "renderProperty": obj.get("renderProperty"),
             "outputPreference": BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOfAnyOfOutputPreference.from_dict(obj["outputPreference"]) if obj.get("outputPreference") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

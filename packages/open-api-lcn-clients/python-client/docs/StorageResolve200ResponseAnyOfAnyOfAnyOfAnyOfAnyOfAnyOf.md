@@ -1,12 +1,11 @@
 # StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**format** | **str** |  | 
-**data** | **str** |  | 
+| Name       | Type    | Description | Notes |
+| ---------- | ------- | ----------- | ----- |
+| **format** | **str** |             |
+| **data**   | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of_dict = sto
 # create an instance of StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf from a dict
 storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of_from_dict = StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf.from_dict(storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

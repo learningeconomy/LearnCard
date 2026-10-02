@@ -1,11 +1,10 @@
 # BoostGetBoost200ResponseBoostRenderMethodAnyOf1InnerAnyOfOutputPreference
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**media_type** | **str** |  | 
+| Name           | Type    | Description | Notes |
+| -------------- | ------- | ----------- | ----- |
+| **media_type** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ boost_get_boost200_response_boost_render_method_any_of1_inner_any_of_output_pref
 # create an instance of BoostGetBoost200ResponseBoostRenderMethodAnyOf1InnerAnyOfOutputPreference from a dict
 boost_get_boost200_response_boost_render_method_any_of1_inner_any_of_output_preference_from_dict = BoostGetBoost200ResponseBoostRenderMethodAnyOf1InnerAnyOfOutputPreference.from_dict(boost_get_boost200_response_boost_render_method_any_of1_inner_any_of_output_preference_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

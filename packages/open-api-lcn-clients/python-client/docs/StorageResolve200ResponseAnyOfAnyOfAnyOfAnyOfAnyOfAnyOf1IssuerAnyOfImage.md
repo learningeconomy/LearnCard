@@ -1,13 +1,12 @@
 # StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfImage
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**type** | **str** |  | 
-**caption** | **str** |  | [optional] 
+| Name        | Type    | Description | Notes      |
+| ----------- | ------- | ----------- | ---------- |
+| **id**      | **str** |             |
+| **type**    | **str** |             |
+| **caption** | **str** |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of1_issuer_an
 # create an instance of StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfImage from a dict
 storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of1_issuer_any_of_image_from_dict = StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfImage.from_dict(storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of1_issuer_any_of_image_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

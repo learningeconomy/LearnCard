@@ -123,14 +123,16 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeaderEpk(BaseMode
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "kty": obj.get("kty"),
             "crv": obj.get("crv"),
             "x": obj.get("x"),
             "y": obj.get("y"),
             "n": obj.get("n"),
             "d": obj.get("d")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

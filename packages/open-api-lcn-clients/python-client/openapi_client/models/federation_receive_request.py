@@ -107,13 +107,15 @@ class FederationReceiveRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "recipientDid": obj.get("recipientDid"),
             "credential": ContractsWriteCredentialToContractRequestCredential.from_dict(obj["credential"]) if obj.get("credential") is not None else None,
             "issuerDid": obj.get("issuerDid"),
             "issuerDisplayName": obj.get("issuerDisplayName"),
             "configuration": FederationReceiveRequestConfiguration.from_dict(obj["configuration"]) if obj.get("configuration") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

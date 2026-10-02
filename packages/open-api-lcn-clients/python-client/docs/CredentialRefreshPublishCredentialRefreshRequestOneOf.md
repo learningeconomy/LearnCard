@@ -1,11 +1,15 @@
 # CredentialRefreshPublishCredentialRefreshRequestOneOf
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**mode** | **object** |  | [optional] 
+| Name                  | Type                                                                                      | Description | Notes      |
+| --------------------- | ----------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **refresh_id**        | **str**                                                                                   |             |
+| **notify_holder**     | **bool**                                                                                  |             | [optional] |
+| **update_summary**    | **str**                                                                                   |             | [optional] |
+| **idempotency_key**   | **str**                                                                                   |             | [optional] |
+| **mode**              | **str**                                                                                   |             |
+| **signed_credential** | [**BoostSendRequestTemplateCredentialAnyOf**](BoostSendRequestTemplateCredentialAnyOf.md) |             |
 
 ## Example
 
@@ -24,6 +28,5 @@ credential_refresh_publish_credential_refresh_request_one_of_dict = credential_r
 # create an instance of CredentialRefreshPublishCredentialRefreshRequestOneOf from a dict
 credential_refresh_publish_credential_refresh_request_one_of_from_dict = CredentialRefreshPublishCredentialRefreshRequestOneOf.from_dict(credential_refresh_publish_credential_refresh_request_one_of_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

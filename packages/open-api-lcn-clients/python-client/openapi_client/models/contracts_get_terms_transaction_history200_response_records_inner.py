@@ -130,7 +130,7 @@ class ContractsGetTermsTransactionHistory200ResponseRecordsInner(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "expiresAt": obj.get("expiresAt"),
             "oneTime": obj.get("oneTime"),
             "terms": StorageResolve200ResponseAnyOf1.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
@@ -139,7 +139,9 @@ class ContractsGetTermsTransactionHistory200ResponseRecordsInner(BaseModel):
             "action": obj.get("action"),
             "date": obj.get("date"),
             "uris": obj.get("uris")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

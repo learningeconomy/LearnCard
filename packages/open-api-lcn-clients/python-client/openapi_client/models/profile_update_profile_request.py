@@ -205,7 +205,7 @@ class ProfileUpdateProfileRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "profileId": obj.get("profileId"),
             "displayName": obj.get("displayName"),
             "shortBio": obj.get("shortBio"),
@@ -227,7 +227,9 @@ class ProfileUpdateProfileRequest(BaseModel):
             "locale": obj.get("locale"),
             "highlightedCredentials": obj.get("highlightedCredentials"),
             "approved": obj.get("approved")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

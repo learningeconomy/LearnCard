@@ -1,19 +1,18 @@
 # AuthGrantsUpdateAuthGrantRequestUpdates
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | [optional] 
-**name** | **str** |  | [optional] 
-**description** | **str** |  | [optional] 
-**challenge** | **str** |  | [optional] 
-**status** | **str** |  | [optional] 
-**scope** | **str** |  | [optional] 
-**act_as** | **str** |  | [optional] 
-**created_at** | **datetime** |  | [optional] 
-**expires_at** | **datetime** |  | [optional] 
+| Name            | Type         | Description | Notes      |
+| --------------- | ------------ | ----------- | ---------- |
+| **id**          | **str**      |             | [optional] |
+| **name**        | **str**      |             | [optional] |
+| **description** | **str**      |             | [optional] |
+| **challenge**   | **str**      |             | [optional] |
+| **status**      | **str**      |             | [optional] |
+| **scope**       | **str**      |             | [optional] |
+| **act_as**      | **str**      |             | [optional] |
+| **created_at**  | **datetime** |             | [optional] |
+| **expires_at**  | **datetime** |             | [optional] |
 
 ## Example
 
@@ -32,6 +31,5 @@ auth_grants_update_auth_grant_request_updates_dict = auth_grants_update_auth_gra
 # create an instance of AuthGrantsUpdateAuthGrantRequestUpdates from a dict
 auth_grants_update_auth_grant_request_updates_from_dict = AuthGrantsUpdateAuthGrantRequestUpdates.from_dict(auth_grants_update_auth_grant_request_updates_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

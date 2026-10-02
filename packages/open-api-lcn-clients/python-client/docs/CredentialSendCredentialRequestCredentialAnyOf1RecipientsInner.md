@@ -1,12 +1,11 @@
 # CredentialSendCredentialRequestCredentialAnyOf1RecipientsInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**header** | [**CredentialSendCredentialRequestCredentialAnyOf1RecipientsInnerHeader**](CredentialSendCredentialRequestCredentialAnyOf1RecipientsInnerHeader.md) |  | 
-**encrypted_key** | **str** |  | 
+| Name              | Type                                                                                                                                                | Description | Notes |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **header**        | [**CredentialSendCredentialRequestCredentialAnyOf1RecipientsInnerHeader**](CredentialSendCredentialRequestCredentialAnyOf1RecipientsInnerHeader.md) |             |
+| **encrypted_key** | **str**                                                                                                                                             |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ credential_send_credential_request_credential_any_of1_recipients_inner_dict = cr
 # create an instance of CredentialSendCredentialRequestCredentialAnyOf1RecipientsInner from a dict
 credential_send_credential_request_credential_any_of1_recipients_inner_from_dict = CredentialSendCredentialRequestCredentialAnyOf1RecipientsInner.from_dict(credential_send_credential_request_credential_any_of1_recipients_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

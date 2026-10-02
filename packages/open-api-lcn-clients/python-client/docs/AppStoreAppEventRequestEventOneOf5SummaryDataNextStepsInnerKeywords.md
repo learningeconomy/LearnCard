@@ -4,13 +4,13 @@ Optional taxonomy keywords for occupations/careers/jobs/skills/fieldOfStudy. Omi
 
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**occupations** | **List[str]** |  | 
-**careers** | **List[str]** |  | 
-**jobs** | **List[str]** |  | 
-**skills** | **List[str]** |  | 
-**field_of_study** | **str** |  | 
+| Name               | Type          | Description | Notes |
+| ------------------ | ------------- | ----------- | ----- |
+| **occupations**    | **List[str]** |             |
+| **careers**        | **List[str]** |             |
+| **jobs**           | **List[str]** |             |
+| **skills**         | **List[str]** |             |
+| **field_of_study** | **str**       |             |
 
 ## Example
 
@@ -29,6 +29,5 @@ app_store_app_event_request_event_one_of5_summary_data_next_steps_inner_keywords
 # create an instance of AppStoreAppEventRequestEventOneOf5SummaryDataNextStepsInnerKeywords from a dict
 app_store_app_event_request_event_one_of5_summary_data_next_steps_inner_keywords_from_dict = AppStoreAppEventRequestEventOneOf5SummaryDataNextStepsInnerKeywords.from_dict(app_store_app_event_request_event_one_of5_summary_data_next_steps_inner_keywords_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

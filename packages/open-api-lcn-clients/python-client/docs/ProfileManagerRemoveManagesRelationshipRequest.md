@@ -1,11 +1,10 @@
 # ProfileManagerRemoveManagesRelationshipRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**profile_id** | **str** |  | 
+| Name           | Type    | Description | Notes |
+| -------------- | ------- | ----------- | ----- |
+| **profile_id** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ profile_manager_remove_manages_relationship_request_dict = profile_manager_remov
 # create an instance of ProfileManagerRemoveManagesRelationshipRequest from a dict
 profile_manager_remove_manages_relationship_request_from_dict = ProfileManagerRemoveManagesRelationshipRequest.from_dict(profile_manager_remove_manages_relationship_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

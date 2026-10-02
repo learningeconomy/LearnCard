@@ -85,10 +85,12 @@ class InboxIssueRequestConfigurationDelivery(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "suppress": obj.get("suppress") if obj.get("suppress") is not None else False,
             "template": InboxIssueRequestConfigurationDeliveryTemplate.from_dict(obj["template"]) if obj.get("template") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

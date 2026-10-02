@@ -85,10 +85,12 @@ class CredentialSendCredentialRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "credential": CredentialSendCredentialRequestCredential.from_dict(obj["credential"]) if obj.get("credential") is not None else None,
             "metadata": obj.get("metadata")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

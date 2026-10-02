@@ -1,14 +1,13 @@
 # CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerGuardianApproval
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**guardian_profile_id** | **str** |  | 
-**guardian_did** | **str** |  | 
-**approved_at** | **datetime** |  | 
-**contract_updated_at** | **str** |  | 
+| Name                    | Type         | Description | Notes |
+| ----------------------- | ------------ | ----------- | ----- |
+| **guardian_profile_id** | **str**      |             |
+| **guardian_did**        | **str**      |             |
+| **approved_at**         | **datetime** |             |
+| **contract_updated_at** | **str**      |             |
 
 ## Example
 
@@ -27,6 +26,5 @@ credential_get_holder_export_metadata200_response_consent_records_inner_transact
 # create an instance of CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerGuardianApproval from a dict
 credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner_guardian_approval_from_dict = CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerGuardianApproval.from_dict(credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner_guardian_approval_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

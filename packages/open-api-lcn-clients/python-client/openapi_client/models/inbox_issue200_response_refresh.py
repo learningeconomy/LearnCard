@@ -94,14 +94,16 @@ class InboxIssue200ResponseRefresh(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "refreshId": obj.get("refreshId"),
             "refreshService": BoostSend200ResponseInboxRefreshRefreshService.from_dict(obj["refreshService"]) if obj.get("refreshService") is not None else None,
             "credentialId": obj.get("credentialId"),
             "issuerDid": obj.get("issuerDid"),
             "credentialStatus": BoostSendBoostRequestCredentialAnyOfCredentialStatus.from_dict(obj["credentialStatus"]) if obj.get("credentialStatus") is not None else None,
             "holderDid": obj.get("holderDid")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

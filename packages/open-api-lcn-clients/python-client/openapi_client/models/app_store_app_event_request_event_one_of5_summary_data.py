@@ -106,14 +106,16 @@ class AppStoreAppEventRequestEventOneOf5SummaryData(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "title": obj.get("title"),
             "summary": obj.get("summary"),
             "learned": obj.get("learned"),
             "skills": [AppStoreAppEventRequestEventOneOf5SummaryDataSkillsInner.from_dict(_item) for _item in obj["skills"]] if obj.get("skills") is not None else None,
             "nextSteps": [AppStoreAppEventRequestEventOneOf5SummaryDataNextStepsInner.from_dict(_item) for _item in obj["nextSteps"]] if obj.get("nextSteps") is not None else None,
             "reflections": [AppStoreAppEventRequestEventOneOf5SummaryDataReflectionsInner.from_dict(_item) for _item in obj["reflections"]] if obj.get("reflections") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

@@ -1,13 +1,12 @@
 # ContractsCreateConsentFlowContractRequestContractRead
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**anonymize** | **bool** |  | [optional] 
-**credentials** | [**ContractsCreateConsentFlowContractRequestContractReadCredentials**](ContractsCreateConsentFlowContractRequestContractReadCredentials.md) |  | [optional] 
-**personal** | [**Dict[str, ContractsCreateConsentFlowContractRequestContractReadPersonalValue]**](ContractsCreateConsentFlowContractRequestContractReadPersonalValue.md) |  | [optional] 
+| Name            | Type                                                                                                                                                       | Description | Notes      |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **anonymize**   | **bool**                                                                                                                                                   |             | [optional] |
+| **credentials** | [**ContractsCreateConsentFlowContractRequestContractReadCredentials**](ContractsCreateConsentFlowContractRequestContractReadCredentials.md)                |             | [optional] |
+| **personal**    | [**Dict[str, ContractsCreateConsentFlowContractRequestContractReadPersonalValue]**](ContractsCreateConsentFlowContractRequestContractReadPersonalValue.md) |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ contracts_create_consent_flow_contract_request_contract_read_dict = contracts_cr
 # create an instance of ContractsCreateConsentFlowContractRequestContractRead from a dict
 contracts_create_consent_flow_contract_request_contract_read_from_dict = ContractsCreateConsentFlowContractRequestContractRead.from_dict(contracts_create_consent_flow_contract_request_contract_read_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

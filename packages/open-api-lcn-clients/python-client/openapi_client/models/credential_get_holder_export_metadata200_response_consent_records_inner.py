@@ -119,13 +119,15 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInner(BaseModel)
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "termsUri": obj.get("termsUri"),
             "status": obj.get("status"),
             "contract": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContract.from_dict(obj["contract"]) if obj.get("contract") is not None else None,
             "terms": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
             "transactions": [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInner.from_dict(_item) for _item in obj["transactions"]] if obj.get("transactions") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

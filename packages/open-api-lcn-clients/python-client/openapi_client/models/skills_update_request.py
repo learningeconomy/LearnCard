@@ -126,7 +126,7 @@ class SkillsUpdateRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "frameworkId": obj.get("frameworkId"),
             "statement": obj.get("statement"),
             "description": obj.get("description"),
@@ -134,7 +134,9 @@ class SkillsUpdateRequest(BaseModel):
             "icon": obj.get("icon"),
             "type": obj.get("type"),
             "status": obj.get("status")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

@@ -1,16 +1,15 @@
 # InboxGetMyInboxDeliveries200ResponseRecordsInnerCredential
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**protected** | **str** |  | 
-**iv** | **str** |  | 
-**ciphertext** | **str** |  | 
-**tag** | **str** |  | 
-**aad** | **str** |  | [optional] 
-**recipients** | [**List[InboxGetMyInboxDeliveries200ResponseRecordsInnerCredentialRecipientsInner]**](InboxGetMyInboxDeliveries200ResponseRecordsInnerCredentialRecipientsInner.md) |  | [optional] 
+| Name           | Type                                                                                                                                                                | Description | Notes      |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **protected**  | **str**                                                                                                                                                             |             |
+| **iv**         | **str**                                                                                                                                                             |             |
+| **ciphertext** | **str**                                                                                                                                                             |             |
+| **tag**        | **str**                                                                                                                                                             |             |
+| **aad**        | **str**                                                                                                                                                             |             | [optional] |
+| **recipients** | [**List[InboxGetMyInboxDeliveries200ResponseRecordsInnerCredentialRecipientsInner]**](InboxGetMyInboxDeliveries200ResponseRecordsInnerCredentialRecipientsInner.md) |             | [optional] |
 
 ## Example
 
@@ -29,6 +28,5 @@ inbox_get_my_inbox_deliveries200_response_records_inner_credential_dict = inbox_
 # create an instance of InboxGetMyInboxDeliveries200ResponseRecordsInnerCredential from a dict
 inbox_get_my_inbox_deliveries200_response_records_inner_credential_from_dict = InboxGetMyInboxDeliveries200ResponseRecordsInnerCredential.from_dict(inbox_get_my_inbox_deliveries200_response_records_inner_credential_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

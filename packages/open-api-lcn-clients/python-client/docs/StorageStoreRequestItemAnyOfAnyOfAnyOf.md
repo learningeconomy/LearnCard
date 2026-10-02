@@ -1,16 +1,15 @@
 # StorageStoreRequestItemAnyOfAnyOfAnyOf
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**context** | [**List[BoostSendRequestTemplateCredentialAnyOfContextInner]**](BoostSendRequestTemplateCredentialAnyOfContextInner.md) |  | 
-**id** | **str** |  | [optional] 
-**type** | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.md) |  | 
-**verifiable_credential** | [**PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential**](PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential.md) |  | [optional] 
-**holder** | **str** |  | [optional] 
-**proof** | [**BoostSendRequestTemplateCredentialAnyOfProof**](BoostSendRequestTemplateCredentialAnyOfProof.md) |  | 
+| Name                      | Type                                                                                                                                                        | Description | Notes      |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **context**               | [**List[BoostSendRequestTemplateCredentialAnyOfContextInner]**](BoostSendRequestTemplateCredentialAnyOfContextInner.md)                                     |             |
+| **id**                    | **str**                                                                                                                                                     |             | [optional] |
+| **type**                  | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.md)                                     |             |
+| **verifiable_credential** | [**PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential**](PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential.md) |             | [optional] |
+| **holder**                | **str**                                                                                                                                                     |             | [optional] |
+| **proof**                 | [**BoostSendRequestTemplateCredentialAnyOfProof**](BoostSendRequestTemplateCredentialAnyOfProof.md)                                                         |             |
 
 ## Example
 
@@ -29,6 +28,5 @@ storage_store_request_item_any_of_any_of_any_of_dict = storage_store_request_ite
 # create an instance of StorageStoreRequestItemAnyOfAnyOfAnyOf from a dict
 storage_store_request_item_any_of_any_of_any_of_from_dict = StorageStoreRequestItemAnyOfAnyOfAnyOf.from_dict(storage_store_request_item_any_of_any_of_any_of_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

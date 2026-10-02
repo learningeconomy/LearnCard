@@ -1,16 +1,15 @@
 # AppStoreAppEventRequestEventOneOf6
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | **str** |  | 
-**title** | **str** |  | [optional] 
-**body** | **str** |  | [optional] 
-**action_path** | **str** |  | [optional] 
-**category** | **str** |  | [optional] 
-**priority** | **str** |  | [optional] 
+| Name            | Type    | Description | Notes      |
+| --------------- | ------- | ----------- | ---------- |
+| **type**        | **str** |             |
+| **title**       | **str** |             | [optional] |
+| **body**        | **str** |             | [optional] |
+| **action_path** | **str** |             | [optional] |
+| **category**    | **str** |             | [optional] |
+| **priority**    | **str** |             | [optional] |
 
 ## Example
 
@@ -29,6 +28,5 @@ app_store_app_event_request_event_one_of6_dict = app_store_app_event_request_eve
 # create an instance of AppStoreAppEventRequestEventOneOf6 from a dict
 app_store_app_event_request_event_one_of6_from_dict = AppStoreAppEventRequestEventOneOf6.from_dict(app_store_app_event_request_event_one_of6_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

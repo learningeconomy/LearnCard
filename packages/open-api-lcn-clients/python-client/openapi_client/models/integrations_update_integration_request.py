@@ -84,9 +84,11 @@ class IntegrationsUpdateIntegrationRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "updates": IntegrationsUpdateIntegrationRequestUpdates.from_dict(obj["updates"]) if obj.get("updates") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

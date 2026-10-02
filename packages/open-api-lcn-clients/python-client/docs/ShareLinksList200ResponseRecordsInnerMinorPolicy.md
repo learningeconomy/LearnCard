@@ -1,14 +1,13 @@
 # ShareLinksList200ResponseRecordsInnerMinorPolicy
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**is_minor** | **bool** |  | 
-**policy_resolved** | **bool** |  | 
-**default_expiry_days** | **float** |  | 
-**view_counting_enabled** | **bool** |  | 
+| Name                      | Type      | Description | Notes |
+| ------------------------- | --------- | ----------- | ----- |
+| **is_minor**              | **bool**  |             |
+| **policy_resolved**       | **bool**  |             |
+| **default_expiry_days**   | **float** |             |
+| **view_counting_enabled** | **bool**  |             |
 
 ## Example
 
@@ -27,6 +26,5 @@ share_links_list200_response_records_inner_minor_policy_dict = share_links_list2
 # create an instance of ShareLinksList200ResponseRecordsInnerMinorPolicy from a dict
 share_links_list200_response_records_inner_minor_policy_from_dict = ShareLinksList200ResponseRecordsInnerMinorPolicy.from_dict(share_links_list200_response_records_inner_minor_policy_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

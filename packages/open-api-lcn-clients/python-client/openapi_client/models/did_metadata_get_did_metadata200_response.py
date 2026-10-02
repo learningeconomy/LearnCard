@@ -176,7 +176,7 @@ class DidMetadataGetDidMetadata200Response(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "@context": [BoostSendRequestTemplateCredentialAnyOfContextInner.from_dict(_item) for _item in obj["@context"]] if obj.get("@context") is not None else None,
             "id": obj.get("id"),
             "alsoKnownAs": obj.get("alsoKnownAs"),
@@ -190,7 +190,9 @@ class DidMetadataGetDidMetadata200Response(BaseModel):
             "publicKey": [DidMetadataGetDidMetadata200ResponseAuthenticationInner.from_dict(_item) for _item in obj["publicKey"]] if obj.get("publicKey") is not None else None,
             "service": [DidMetadataGetDidMetadata200ResponseServiceInner.from_dict(_item) for _item in obj["service"]] if obj.get("service") is not None else None,
             "proof": BoostSendRequestTemplateCredentialAnyOfProof.from_dict(obj["proof"]) if obj.get("proof") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

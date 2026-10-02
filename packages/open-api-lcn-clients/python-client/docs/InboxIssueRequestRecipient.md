@@ -4,10 +4,10 @@ The recipient of the credential
 
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | **str** |  | 
-**value** | **str** |  | 
+| Name      | Type    | Description | Notes |
+| --------- | ------- | ----------- | ----- |
+| **type**  | **str** |             |
+| **value** | **str** |             |
 
 ## Example
 
@@ -26,6 +26,5 @@ inbox_issue_request_recipient_dict = inbox_issue_request_recipient_instance.to_d
 # create an instance of InboxIssueRequestRecipient from a dict
 inbox_issue_request_recipient_from_dict = InboxIssueRequestRecipient.from_dict(inbox_issue_request_recipient_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

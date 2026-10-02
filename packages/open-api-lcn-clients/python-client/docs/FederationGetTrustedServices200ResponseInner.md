@@ -1,13 +1,12 @@
 # FederationGetTrustedServices200ResponseInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**did** | **str** |  | 
-**name** | **str** |  | 
-**endpoint** | **str** |  | 
+| Name         | Type    | Description | Notes |
+| ------------ | ------- | ----------- | ----- |
+| **did**      | **str** |             |
+| **name**     | **str** |             |
+| **endpoint** | **str** |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ federation_get_trusted_services200_response_inner_dict = federation_get_trusted_
 # create an instance of FederationGetTrustedServices200ResponseInner from a dict
 federation_get_trusted_services200_response_inner_from_dict = FederationGetTrustedServices200ResponseInner.from_dict(federation_get_trusted_services200_response_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

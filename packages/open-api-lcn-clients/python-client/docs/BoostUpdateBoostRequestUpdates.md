@@ -1,20 +1,19 @@
 # BoostUpdateBoostRequestUpdates
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**name** | **str** |  | [optional] 
-**type** | **str** |  | [optional] 
-**category** | **str** |  | [optional] 
-**created** | **str** |  | [optional] 
-**status** | **str** |  | [optional] 
-**auto_connect_recipients** | **bool** |  | [optional] 
-**meta** | **Dict[str, Optional[object]]** |  | [optional] 
-**allow_anyone_to_create_children** | **bool** |  | [optional] 
-**credential** | [**BoostCreateBoostRequestCredential**](BoostCreateBoostRequestCredential.md) |  | [optional] 
-**default_permissions** | [**BoostCreateBoostRequestClaimPermissions**](BoostCreateBoostRequestClaimPermissions.md) |  | [optional] 
+| Name                                | Type                                                                                      | Description | Notes      |
+| ----------------------------------- | ----------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **name**                            | **str**                                                                                   |             | [optional] |
+| **type**                            | **str**                                                                                   |             | [optional] |
+| **category**                        | **str**                                                                                   |             | [optional] |
+| **created**                         | **str**                                                                                   |             | [optional] |
+| **status**                          | **str**                                                                                   |             | [optional] |
+| **auto_connect_recipients**         | **bool**                                                                                  |             | [optional] |
+| **meta**                            | **Dict[str, Optional[object]]**                                                           |             | [optional] |
+| **allow_anyone_to_create_children** | **bool**                                                                                  |             | [optional] |
+| **credential**                      | [**BoostCreateBoostRequestCredential**](BoostCreateBoostRequestCredential.md)             |             | [optional] |
+| **default_permissions**             | [**BoostCreateBoostRequestClaimPermissions**](BoostCreateBoostRequestClaimPermissions.md) |             | [optional] |
 
 ## Example
 
@@ -33,6 +32,5 @@ boost_update_boost_request_updates_dict = boost_update_boost_request_updates_ins
 # create an instance of BoostUpdateBoostRequestUpdates from a dict
 boost_update_boost_request_updates_from_dict = BoostUpdateBoostRequestUpdates.from_dict(boost_update_boost_request_updates_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

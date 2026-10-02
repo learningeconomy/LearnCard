@@ -1,15 +1,14 @@
 # StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1RenderMethod
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | **str** |  | 
-**render_suite** | **str** |  | 
-**template** | **str** |  | 
-**render_property** | **List[str]** |  | [optional] 
-**output_preference** | [**BoostGetBoost200ResponseBoostRenderMethodAnyOf1InnerAnyOfOutputPreference**](BoostGetBoost200ResponseBoostRenderMethodAnyOf1InnerAnyOfOutputPreference.md) |  | [optional] 
+| Name                  | Type                                                                                                                                                          | Description | Notes      |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **type**              | **str**                                                                                                                                                       |             |
+| **render_suite**      | **str**                                                                                                                                                       |             |
+| **template**          | **str**                                                                                                                                                       |             |
+| **render_property**   | **List[str]**                                                                                                                                                 |             | [optional] |
+| **output_preference** | [**BoostGetBoost200ResponseBoostRenderMethodAnyOf1InnerAnyOfOutputPreference**](BoostGetBoost200ResponseBoostRenderMethodAnyOf1InnerAnyOfOutputPreference.md) |             | [optional] |
 
 ## Example
 
@@ -28,6 +27,5 @@ storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of1_render_me
 # create an instance of StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1RenderMethod from a dict
 storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of1_render_method_from_dict = StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1RenderMethod.from_dict(storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of1_render_method_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

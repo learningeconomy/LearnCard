@@ -94,11 +94,13 @@ class InboxIssueRequestConfigurationDeliveryTemplateModel(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "issuer": InboxIssueRequestConfigurationDeliveryTemplateModelIssuer.from_dict(obj["issuer"]) if obj.get("issuer") is not None else None,
             "credential": InboxIssueRequestConfigurationDeliveryTemplateModelCredential.from_dict(obj["credential"]) if obj.get("credential") is not None else None,
             "recipient": InboxIssueRequestConfigurationDeliveryTemplateModelRecipient.from_dict(obj["recipient"]) if obj.get("recipient") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

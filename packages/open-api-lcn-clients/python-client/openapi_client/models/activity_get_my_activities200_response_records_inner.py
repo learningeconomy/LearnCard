@@ -193,7 +193,7 @@ class ActivityGetMyActivities200ResponseRecordsInner(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "id": obj.get("id"),
             "activityId": obj.get("activityId"),
             "eventType": obj.get("eventType"),
@@ -211,7 +211,9 @@ class ActivityGetMyActivities200ResponseRecordsInner(BaseModel):
             "status": obj.get("status"),
             "boost": ActivityGetMyActivities200ResponseRecordsInnerBoost.from_dict(obj["boost"]) if obj.get("boost") is not None else None,
             "recipientProfile": ActivityGetMyActivities200ResponseRecordsInnerRecipientProfile.from_dict(obj["recipientProfile"]) if obj.get("recipientProfile") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

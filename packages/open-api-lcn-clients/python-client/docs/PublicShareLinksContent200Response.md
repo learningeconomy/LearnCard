@@ -1,15 +1,14 @@
 # PublicShareLinksContent200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**content_version** | **int** |  | 
-**envelope** | [**ShareLinksUpdateRequestEnvelope**](ShareLinksUpdateRequestEnvelope.md) |  | 
-**content_url** | **str** |  | 
-**receipt** | **str** |  | 
+| Name                | Type                                                                      | Description | Notes |
+| ------------------- | ------------------------------------------------------------------------- | ----------- | ----- |
+| **id**              | **str**                                                                   |             |
+| **content_version** | **int**                                                                   |             |
+| **envelope**        | [**ShareLinksUpdateRequestEnvelope**](ShareLinksUpdateRequestEnvelope.md) |             |
+| **content_url**     | **str**                                                                   |             |
+| **receipt**         | **str**                                                                   |             |
 
 ## Example
 
@@ -28,6 +27,5 @@ public_share_links_content200_response_dict = public_share_links_content200_resp
 # create an instance of PublicShareLinksContent200Response from a dict
 public_share_links_content200_response_from_dict = PublicShareLinksContent200Response.from_dict(public_share_links_content200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

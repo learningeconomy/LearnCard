@@ -101,13 +101,15 @@ class BoostGetBoostRecipientsWithChildrenCountRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "uri": obj.get("uri"),
             "includeUnacceptedBoosts": obj.get("includeUnacceptedBoosts") if obj.get("includeUnacceptedBoosts") is not None else True,
             "numberOfGenerations": BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.from_dict(obj["numberOfGenerations"]) if obj.get("numberOfGenerations") is not None else None,
             "boostQuery": BoostCountBoostsRequestQuery.from_dict(obj["boostQuery"]) if obj.get("boostQuery") is not None else None,
             "profileQuery": BoostGetConnectedBoostRecipientsRequestQuery.from_dict(obj["profileQuery"]) if obj.get("profileQuery") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

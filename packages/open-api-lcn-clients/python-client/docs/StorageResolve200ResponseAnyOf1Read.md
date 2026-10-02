@@ -1,13 +1,12 @@
 # StorageResolve200ResponseAnyOf1Read
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**anonymize** | **bool** |  | [optional] 
-**credentials** | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentials**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentials.md) |  | 
-**personal** | **Dict[str, str]** |  | 
+| Name            | Type                                                                                                                                                                                                                | Description | Notes      |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **anonymize**   | **bool**                                                                                                                                                                                                            |             | [optional] |
+| **credentials** | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentials**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentials.md) |             |
+| **personal**    | **Dict[str, str]**                                                                                                                                                                                                  |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ storage_resolve200_response_any_of1_read_dict = storage_resolve200_response_any_
 # create an instance of StorageResolve200ResponseAnyOf1Read from a dict
 storage_resolve200_response_any_of1_read_from_dict = StorageResolve200ResponseAnyOf1Read.from_dict(storage_resolve200_response_any_of1_read_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -98,13 +98,15 @@ class BoostGetConnectedBoostRecipientsRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "limit": obj.get("limit") if obj.get("limit") is not None else 25,
             "cursor": obj.get("cursor"),
             "sort": obj.get("sort"),
             "includeUnacceptedBoosts": obj.get("includeUnacceptedBoosts") if obj.get("includeUnacceptedBoosts") is not None else True,
             "query": BoostGetConnectedBoostRecipientsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

@@ -1,11 +1,10 @@
 # PublicShareLinksAcknowledgeView200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**ok** | **bool** |  | 
+| Name   | Type     | Description | Notes |
+| ------ | -------- | ----------- | ----- |
+| **ok** | **bool** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ public_share_links_acknowledge_view200_response_dict = public_share_links_acknow
 # create an instance of PublicShareLinksAcknowledgeView200Response from a dict
 public_share_links_acknowledge_view200_response_from_dict = PublicShareLinksAcknowledgeView200Response.from_dict(public_share_links_acknowledge_view200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

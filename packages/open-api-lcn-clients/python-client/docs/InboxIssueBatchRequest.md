@@ -1,13 +1,12 @@
 # InboxIssueBatchRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**request_id** | **str** |  | [optional] 
-**items** | [**List[InboxIssueBatchRequestItemsInner]**](InboxIssueBatchRequestItemsInner.md) |  | 
-**configuration** | [**InboxIssueBatchRequestConfiguration**](InboxIssueBatchRequestConfiguration.md) |  | [optional] 
+| Name              | Type                                                                              | Description | Notes      |
+| ----------------- | --------------------------------------------------------------------------------- | ----------- | ---------- |
+| **request_id**    | **str**                                                                           |             | [optional] |
+| **items**         | [**List[InboxIssueBatchRequestItemsInner]**](InboxIssueBatchRequestItemsInner.md) |             |
+| **configuration** | [**InboxIssueBatchRequestConfiguration**](InboxIssueBatchRequestConfiguration.md) |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ inbox_issue_batch_request_dict = inbox_issue_batch_request_instance.to_dict()
 # create an instance of InboxIssueBatchRequest from a dict
 inbox_issue_batch_request_from_dict = InboxIssueBatchRequest.from_dict(inbox_issue_batch_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

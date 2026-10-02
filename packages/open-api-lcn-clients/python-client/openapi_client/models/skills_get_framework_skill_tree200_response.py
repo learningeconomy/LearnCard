@@ -94,11 +94,13 @@ class SkillsGetFrameworkSkillTree200Response(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "hasMore": obj.get("hasMore"),
             "cursor": obj.get("cursor"),
             "records": [Schema1.from_dict(_item) for _item in obj["records"]] if obj.get("records") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

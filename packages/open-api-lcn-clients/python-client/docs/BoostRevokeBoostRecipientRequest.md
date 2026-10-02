@@ -1,13 +1,12 @@
 # BoostRevokeBoostRecipientRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**boost_uri** | **str** |  | 
-**recipient_profile_id** | **str** |  | 
-**credential_uri** | **str** |  | [optional] 
+| Name                     | Type    | Description | Notes      |
+| ------------------------ | ------- | ----------- | ---------- |
+| **boost_uri**            | **str** |             |
+| **recipient_profile_id** | **str** |             |
+| **credential_uri**       | **str** |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ boost_revoke_boost_recipient_request_dict = boost_revoke_boost_recipient_request
 # create an instance of BoostRevokeBoostRecipientRequest from a dict
 boost_revoke_boost_recipient_request_from_dict = BoostRevokeBoostRecipientRequest.from_dict(boost_revoke_boost_recipient_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

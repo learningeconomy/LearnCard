@@ -1,12 +1,11 @@
 # InboxIssueBatchRequestConfigurationDelivery
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**suppress** | **bool** |  | [optional] 
-**template** | [**InboxIssueRequestConfigurationDeliveryTemplate**](InboxIssueRequestConfigurationDeliveryTemplate.md) |  | [optional] 
+| Name         | Type                                                                                                    | Description | Notes      |
+| ------------ | ------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **suppress** | **bool**                                                                                                |             | [optional] |
+| **template** | [**InboxIssueRequestConfigurationDeliveryTemplate**](InboxIssueRequestConfigurationDeliveryTemplate.md) |             | [optional] |
 
 ## Example
 
@@ -25,6 +24,5 @@ inbox_issue_batch_request_configuration_delivery_dict = inbox_issue_batch_reques
 # create an instance of InboxIssueBatchRequestConfigurationDelivery from a dict
 inbox_issue_batch_request_configuration_delivery_from_dict = InboxIssueBatchRequestConfigurationDelivery.from_dict(inbox_issue_batch_request_configuration_delivery_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

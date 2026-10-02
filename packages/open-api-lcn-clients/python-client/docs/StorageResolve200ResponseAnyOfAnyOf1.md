@@ -1,12 +1,11 @@
 # StorageResolve200ResponseAnyOfAnyOf1
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**read** | [**StorageResolve200ResponseAnyOfAnyOf1Read**](StorageResolve200ResponseAnyOfAnyOf1Read.md) |  | 
-**write** | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite.md) |  | 
+| Name      | Type                                                                                                                                                                                | Description | Notes |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **read**  | [**StorageResolve200ResponseAnyOfAnyOf1Read**](StorageResolve200ResponseAnyOfAnyOf1Read.md)                                                                                         |             |
+| **write** | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite.md) |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ storage_resolve200_response_any_of_any_of1_dict = storage_resolve200_response_an
 # create an instance of StorageResolve200ResponseAnyOfAnyOf1 from a dict
 storage_resolve200_response_any_of_any_of1_from_dict = StorageResolve200ResponseAnyOfAnyOf1.from_dict(storage_resolve200_response_any_of_any_of1_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

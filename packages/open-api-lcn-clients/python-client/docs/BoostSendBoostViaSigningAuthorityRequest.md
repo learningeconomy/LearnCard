@@ -1,14 +1,13 @@
 # BoostSendBoostViaSigningAuthorityRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**boost_uri** | **str** |  | 
-**signing_authority** | [**BoostSendBoostViaSigningAuthorityRequestSigningAuthority**](BoostSendBoostViaSigningAuthorityRequestSigningAuthority.md) |  | 
-**template_data** | **Dict[str, Optional[object]]** |  | [optional] 
-**options** | [**BoostSendBoostRequestOptions**](BoostSendBoostRequestOptions.md) |  | [optional] 
+| Name                  | Type                                                                                                                        | Description | Notes      |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **boost_uri**         | **str**                                                                                                                     |             |
+| **signing_authority** | [**BoostSendBoostViaSigningAuthorityRequestSigningAuthority**](BoostSendBoostViaSigningAuthorityRequestSigningAuthority.md) |             |
+| **template_data**     | **Dict[str, Optional[object]]**                                                                                             |             | [optional] |
+| **options**           | [**BoostSendBoostRequestOptions**](BoostSendBoostRequestOptions.md)                                                         |             | [optional] |
 
 ## Example
 
@@ -27,6 +26,5 @@ boost_send_boost_via_signing_authority_request_dict = boost_send_boost_via_signi
 # create an instance of BoostSendBoostViaSigningAuthorityRequest from a dict
 boost_send_boost_via_signing_authority_request_from_dict = BoostSendBoostViaSigningAuthorityRequest.from_dict(boost_send_boost_via_signing_authority_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

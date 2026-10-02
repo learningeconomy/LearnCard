@@ -1,11 +1,10 @@
 # ActivityGetMyCredentialLifecycleStatusesRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**uris** | **List[Optional[str]]** |  | 
+| Name     | Type                    | Description | Notes |
+| -------- | ----------------------- | ----------- | ----- |
+| **uris** | **List[Optional[str]]** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ activity_get_my_credential_lifecycle_statuses_request_dict = activity_get_my_cre
 # create an instance of ActivityGetMyCredentialLifecycleStatusesRequest from a dict
 activity_get_my_credential_lifecycle_statuses_request_from_dict = ActivityGetMyCredentialLifecycleStatusesRequest.from_dict(activity_get_my_credential_lifecycle_statuses_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

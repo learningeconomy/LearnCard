@@ -1,12 +1,11 @@
 # AppStoreAppEventRequestEventOneOf8
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | **str** |  | 
-**key** | **str** |  | 
+| Name     | Type    | Description | Notes |
+| -------- | ------- | ----------- | ----- |
+| **type** | **str** |             |
+| **key**  | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ app_store_app_event_request_event_one_of8_dict = app_store_app_event_request_eve
 # create an instance of AppStoreAppEventRequestEventOneOf8 from a dict
 app_store_app_event_request_event_one_of8_from_dict = AppStoreAppEventRequestEventOneOf8.from_dict(app_store_app_event_request_event_one_of8_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

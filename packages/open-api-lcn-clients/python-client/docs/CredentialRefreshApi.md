@@ -1,16 +1,16 @@
 # openapi_client.CredentialRefreshApi
 
-All URIs are relative to *https://network.learncard.com/api*
+All URIs are relative to _/api_
 
-Method | HTTP request | Description
-------------- | ------------- | -------------
-[**credential_refresh_allocate_credential_refresh**](CredentialRefreshApi.md#credential_refresh_allocate_credential_refresh) | **POST** /credential-refresh/allocate | Allocate a managed credential refresh service
-[**credential_refresh_get_credential_refresh_history**](CredentialRefreshApi.md#credential_refresh_get_credential_refresh_history) | **GET** /credential-refresh/history | Get managed credential refresh history
-[**credential_refresh_publish_credential_refresh**](CredentialRefreshApi.md#credential_refresh_publish_credential_refresh) | **POST** /credential-refresh/publish | Publish a managed credential refresh version
-[**credential_refresh_send_refreshable_credential**](CredentialRefreshApi.md#credential_refresh_send_refreshable_credential) | **POST** /credential-refresh/send | Send a refreshable credential
-
+| Method                                                                                                                             | HTTP request                          | Description                                   |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | --------------------------------------------- |
+| [**credential_refresh_allocate_credential_refresh**](CredentialRefreshApi.md#credential_refresh_allocate_credential_refresh)       | **POST** /credential-refresh/allocate | Allocate a managed credential refresh service |
+| [**credential_refresh_get_credential_refresh_history**](CredentialRefreshApi.md#credential_refresh_get_credential_refresh_history) | **GET** /credential-refresh/history   | Get managed credential refresh history        |
+| [**credential_refresh_publish_credential_refresh**](CredentialRefreshApi.md#credential_refresh_publish_credential_refresh)         | **POST** /credential-refresh/publish  | Publish a managed credential refresh version  |
+| [**credential_refresh_send_refreshable_credential**](CredentialRefreshApi.md#credential_refresh_send_refreshable_credential)       | **POST** /credential-refresh/send     | Send a refreshable credential                 |
 
 # **credential_refresh_allocate_credential_refresh**
+
 > CredentialRefreshAllocateCredentialRefresh200Response credential_refresh_allocate_credential_refresh(credential_refresh_allocate_credential_refresh_request)
 
 Allocate a managed credential refresh service
@@ -19,7 +19,7 @@ Allocates an unguessable managed refresh service for a credential before it is s
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -28,10 +28,10 @@ from openapi_client.models.credential_refresh_allocate_credential_refresh_reques
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -48,7 +48,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.CredentialRefreshApi(api_client)
-    credential_refresh_allocate_credential_refresh_request = openapi_client.CredentialRefreshAllocateCredentialRefreshRequest() # CredentialRefreshAllocateCredentialRefreshRequest | 
+    credential_refresh_allocate_credential_refresh_request = openapi_client.CredentialRefreshAllocateCredentialRefreshRequest() # CredentialRefreshAllocateCredentialRefreshRequest |
 
     try:
         # Allocate a managed credential refresh service
@@ -59,14 +59,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling CredentialRefreshApi->credential_refresh_allocate_credential_refresh: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **credential_refresh_allocate_credential_refresh_request** | [**CredentialRefreshAllocateCredentialRefreshRequest**](CredentialRefreshAllocateCredentialRefreshRequest.md)|  | 
+| Name                                                       | Type                                                                                                          | Description | Notes |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **credential_refresh_allocate_credential_refresh_request** | [**CredentialRefreshAllocateCredentialRefreshRequest**](CredentialRefreshAllocateCredentialRefreshRequest.md) |             |
 
 ### Return type
 
@@ -78,22 +75,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **credential_refresh_get_credential_refresh_history**
+
 > CredentialRefreshGetCredentialRefreshHistory200Response credential_refresh_get_credential_refresh_history(refresh_id, cursor=cursor, limit=limit)
 
 Get managed credential refresh history
@@ -102,7 +100,7 @@ Returns cursor-paginated, metadata-only issuer audit history for a managed crede
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -110,10 +108,10 @@ from openapi_client.models.credential_refresh_get_credential_refresh_history200_
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -130,7 +128,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.CredentialRefreshApi(api_client)
-    refresh_id = 'refresh_id_example' # str | 
+    refresh_id = 'refresh_id_example' # str |
     cursor = 'cursor_example' # str |  (optional)
     limit = 56 # int |  (optional)
 
@@ -143,16 +141,13 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling CredentialRefreshApi->credential_refresh_get_credential_refresh_history: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **refresh_id** | **str**|  | 
- **cursor** | **str**|  | [optional] 
- **limit** | **int**|  | [optional] 
+| Name           | Type    | Description | Notes      |
+| -------------- | ------- | ----------- | ---------- |
+| **refresh_id** | **str** |             |
+| **cursor**     | **str** |             | [optional] |
+| **limit**      | **int** |             | [optional] |
 
 ### Return type
 
@@ -164,23 +159,24 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**404** | Not found |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **credential_refresh_publish_credential_refresh**
+
 > CredentialRefreshPublishCredentialRefresh200Response credential_refresh_publish_credential_refresh(credential_refresh_publish_credential_refresh_request)
 
 Publish a managed credential refresh version
@@ -189,7 +185,7 @@ Publishes a new immutable version of a refreshable credential (issuer-signed or 
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -198,10 +194,10 @@ from openapi_client.models.credential_refresh_publish_credential_refresh_request
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -218,7 +214,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.CredentialRefreshApi(api_client)
-    credential_refresh_publish_credential_refresh_request = openapi_client.CredentialRefreshPublishCredentialRefreshRequest() # CredentialRefreshPublishCredentialRefreshRequest | 
+    credential_refresh_publish_credential_refresh_request = openapi_client.CredentialRefreshPublishCredentialRefreshRequest() # CredentialRefreshPublishCredentialRefreshRequest |
 
     try:
         # Publish a managed credential refresh version
@@ -229,14 +225,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling CredentialRefreshApi->credential_refresh_publish_credential_refresh: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **credential_refresh_publish_credential_refresh_request** | [**CredentialRefreshPublishCredentialRefreshRequest**](CredentialRefreshPublishCredentialRefreshRequest.md)|  | 
+| Name                                                      | Type                                                                                                        | Description | Notes |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **credential_refresh_publish_credential_refresh_request** | [**CredentialRefreshPublishCredentialRefreshRequest**](CredentialRefreshPublishCredentialRefreshRequest.md) |             |
 
 ### Return type
 
@@ -248,22 +241,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **credential_refresh_send_refreshable_credential**
+
 > str credential_refresh_send_refreshable_credential(credential_refresh_send_refreshable_credential_request)
 
 Send a refreshable credential
@@ -272,7 +266,7 @@ Binds a signed credential to its allocated refresh aggregate. The credential is 
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -280,10 +274,10 @@ from openapi_client.models.credential_refresh_send_refreshable_credential_reques
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -300,7 +294,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.CredentialRefreshApi(api_client)
-    credential_refresh_send_refreshable_credential_request = openapi_client.CredentialRefreshSendRefreshableCredentialRequest() # CredentialRefreshSendRefreshableCredentialRequest | 
+    credential_refresh_send_refreshable_credential_request = openapi_client.CredentialRefreshSendRefreshableCredentialRequest() # CredentialRefreshSendRefreshableCredentialRequest |
 
     try:
         # Send a refreshable credential
@@ -311,14 +305,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling CredentialRefreshApi->credential_refresh_send_refreshable_credential: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **credential_refresh_send_refreshable_credential_request** | [**CredentialRefreshSendRefreshableCredentialRequest**](CredentialRefreshSendRefreshableCredentialRequest.md)|  | 
+| Name                                                       | Type                                                                                                          | Description | Notes |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **credential_refresh_send_refreshable_credential_request** | [**CredentialRefreshSendRefreshableCredentialRequest**](CredentialRefreshSendRefreshableCredentialRequest.md) |             |
 
 ### Return type
 
@@ -330,18 +321,17 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

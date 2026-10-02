@@ -1,28 +1,27 @@
 # ShareLinksCreate200ResponseOneOfShare
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**title** | **str** |  | 
-**note** | **str** |  | [optional] 
-**selected_count** | **int** |  | 
-**version** | **int** |  | 
-**content_version** | **int** |  | 
-**status** | **str** |  | 
-**content_state** | **str** |  | 
-**created_at** | **datetime** |  | 
-**updated_at** | **datetime** |  | 
-**expires_at** | **datetime** |  | 
-**stopped_at** | **datetime** |  | 
-**last_viewed_at** | **datetime** |  | 
-**view_count** | **int** |  | [optional] 
-**passcode_protected** | **bool** |  | 
-**notify_on_view** | **bool** |  | 
-**minor_policy** | [**ShareLinksCreate200ResponseOneOfShareMinorPolicy**](ShareLinksCreate200ResponseOneOfShareMinorPolicy.md) |  | 
-**content_url** | **str** |  | [optional] 
+| Name                   | Type                                                                                                        | Description | Notes      |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **id**                 | **str**                                                                                                     |             |
+| **title**              | **str**                                                                                                     |             |
+| **note**               | **str**                                                                                                     |             | [optional] |
+| **selected_count**     | **int**                                                                                                     |             |
+| **version**            | **int**                                                                                                     |             |
+| **content_version**    | **int**                                                                                                     |             |
+| **status**             | **str**                                                                                                     |             |
+| **content_state**      | **str**                                                                                                     |             |
+| **created_at**         | **datetime**                                                                                                |             |
+| **updated_at**         | **datetime**                                                                                                |             |
+| **expires_at**         | **datetime**                                                                                                |             |
+| **stopped_at**         | **datetime**                                                                                                |             |
+| **last_viewed_at**     | **datetime**                                                                                                |             |
+| **view_count**         | **int**                                                                                                     |             | [optional] |
+| **passcode_protected** | **bool**                                                                                                    |             |
+| **notify_on_view**     | **bool**                                                                                                    |             |
+| **minor_policy**       | [**ShareLinksCreate200ResponseOneOfShareMinorPolicy**](ShareLinksCreate200ResponseOneOfShareMinorPolicy.md) |             |
+| **content_url**        | **str**                                                                                                     |             | [optional] |
 
 ## Example
 
@@ -41,6 +40,5 @@ share_links_create200_response_one_of_share_dict = share_links_create200_respons
 # create an instance of ShareLinksCreate200ResponseOneOfShare from a dict
 share_links_create200_response_one_of_share_from_dict = ShareLinksCreate200ResponseOneOfShare.from_dict(share_links_create200_response_one_of_share_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

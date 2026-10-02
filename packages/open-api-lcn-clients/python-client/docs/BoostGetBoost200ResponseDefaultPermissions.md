@@ -1,23 +1,22 @@
 # BoostGetBoost200ResponseDefaultPermissions
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**role** | **str** |  | 
-**can_view** | **bool** |  | [default to True]
-**can_edit** | **bool** |  | 
-**can_issue** | **bool** |  | 
-**can_revoke** | **bool** |  | 
-**can_manage_permissions** | **bool** |  | 
-**can_issue_children** | **str** |  | 
-**can_create_children** | **str** |  | 
-**can_edit_children** | **str** |  | 
-**can_revoke_children** | **str** |  | 
-**can_manage_children_permissions** | **str** |  | 
-**can_manage_children_profiles** | **bool** |  | [optional] 
-**can_view_analytics** | **bool** |  | 
+| Name                                | Type     | Description | Notes             |
+| ----------------------------------- | -------- | ----------- | ----------------- |
+| **role**                            | **str**  |             |
+| **can_view**                        | **bool** |             | [default to True] |
+| **can_edit**                        | **bool** |             |
+| **can_issue**                       | **bool** |             |
+| **can_revoke**                      | **bool** |             |
+| **can_manage_permissions**          | **bool** |             |
+| **can_issue_children**              | **str**  |             |
+| **can_create_children**             | **str**  |             |
+| **can_edit_children**               | **str**  |             |
+| **can_revoke_children**             | **str**  |             |
+| **can_manage_children_permissions** | **str**  |             |
+| **can_manage_children_profiles**    | **bool** |             | [optional]        |
+| **can_view_analytics**              | **bool** |             |
 
 ## Example
 
@@ -36,6 +35,5 @@ boost_get_boost200_response_default_permissions_dict = boost_get_boost200_respon
 # create an instance of BoostGetBoost200ResponseDefaultPermissions from a dict
 boost_get_boost200_response_default_permissions_from_dict = BoostGetBoost200ResponseDefaultPermissions.from_dict(boost_get_boost200_response_default_permissions_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

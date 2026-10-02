@@ -4,29 +4,29 @@ The credential to issue, or a { name } reference to resolve a boost template.
 
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**context** | [**List[BoostSendRequestTemplateCredentialAnyOfContextInner]**](BoostSendRequestTemplateCredentialAnyOfContextInner.md) |  | 
-**id** | **str** |  | [optional] 
-**type** | **List[str]** |  | 
-**issuer** | [**BoostSendRequestTemplateCredentialAnyOfIssuer**](BoostSendRequestTemplateCredentialAnyOfIssuer.md) |  | 
-**credential_subject** | [**BoostSendRequestTemplateCredentialAnyOfCredentialSubject**](BoostSendRequestTemplateCredentialAnyOfCredentialSubject.md) |  | 
-**refresh_service** | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md) |  | [optional] 
-**credential_schema** | [**BoostSendRequestTemplateCredentialAnyOfCredentialSchema**](BoostSendRequestTemplateCredentialAnyOfCredentialSchema.md) |  | [optional] 
-**issuance_date** | **str** |  | [optional] 
-**expiration_date** | **str** |  | [optional] 
-**credential_status** | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md) |  | [optional] 
-**name** | **str** |  | 
-**description** | **str** |  | [optional] 
-**valid_from** | **str** |  | [optional] 
-**valid_until** | **str** |  | [optional] 
-**status** | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md) |  | [optional] 
-**terms_of_use** | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md) |  | [optional] 
-**evidence** | [**BoostSendRequestTemplateCredentialAnyOfEvidence**](BoostSendRequestTemplateCredentialAnyOfEvidence.md) |  | [optional] 
-**render_method** | [**BoostSendRequestTemplateCredentialAnyOfRenderMethod**](BoostSendRequestTemplateCredentialAnyOfRenderMethod.md) |  | [optional] 
-**proof** | [**BoostSendRequestTemplateCredentialAnyOfProof**](BoostSendRequestTemplateCredentialAnyOfProof.md) |  | 
-**verifiable_credential** | [**PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential**](PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential.md) |  | [optional] 
-**holder** | **str** |  | [optional] 
+| Name                      | Type                                                                                                                                                        | Description | Notes      |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **context**               | [**List[BoostSendRequestTemplateCredentialAnyOfContextInner]**](BoostSendRequestTemplateCredentialAnyOfContextInner.md)                                     |             |
+| **id**                    | **str**                                                                                                                                                     |             | [optional] |
+| **type**                  | **List[str]**                                                                                                                                               |             |
+| **issuer**                | [**BoostSendRequestTemplateCredentialAnyOfIssuer**](BoostSendRequestTemplateCredentialAnyOfIssuer.md)                                                       |             |
+| **credential_subject**    | [**BoostSendRequestTemplateCredentialAnyOfCredentialSubject**](BoostSendRequestTemplateCredentialAnyOfCredentialSubject.md)                                 |             |
+| **refresh_service**       | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md)                                         |             | [optional] |
+| **credential_schema**     | [**BoostSendRequestTemplateCredentialAnyOfCredentialSchema**](BoostSendRequestTemplateCredentialAnyOfCredentialSchema.md)                                   |             | [optional] |
+| **issuance_date**         | **str**                                                                                                                                                     |             | [optional] |
+| **expiration_date**       | **str**                                                                                                                                                     |             | [optional] |
+| **credential_status**     | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md)                                         |             | [optional] |
+| **name**                  | **str**                                                                                                                                                     |             |
+| **description**           | **str**                                                                                                                                                     |             | [optional] |
+| **valid_from**            | **str**                                                                                                                                                     |             | [optional] |
+| **valid_until**           | **str**                                                                                                                                                     |             | [optional] |
+| **status**                | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md)                                         |             | [optional] |
+| **terms_of_use**          | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md)                                         |             | [optional] |
+| **evidence**              | [**BoostSendRequestTemplateCredentialAnyOfEvidence**](BoostSendRequestTemplateCredentialAnyOfEvidence.md)                                                   |             | [optional] |
+| **render_method**         | [**BoostSendRequestTemplateCredentialAnyOfRenderMethod**](BoostSendRequestTemplateCredentialAnyOfRenderMethod.md)                                           |             | [optional] |
+| **proof**                 | [**BoostSendRequestTemplateCredentialAnyOfProof**](BoostSendRequestTemplateCredentialAnyOfProof.md)                                                         |             |
+| **verifiable_credential** | [**PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential**](PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential.md) |             | [optional] |
+| **holder**                | **str**                                                                                                                                                     |             | [optional] |
 
 ## Example
 
@@ -45,6 +45,5 @@ inbox_claim_request_credential_dict = inbox_claim_request_credential_instance.to
 # create an instance of InboxClaimRequestCredential from a dict
 inbox_claim_request_credential_from_dict = InboxClaimRequestCredential.from_dict(inbox_claim_request_credential_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

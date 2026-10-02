@@ -1,14 +1,13 @@
 # AppStoreAppEventRequestEventOneOf5
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | **str** |  | 
-**session_title** | **str** |  | 
-**summary_data** | [**AppStoreAppEventRequestEventOneOf5SummaryData**](AppStoreAppEventRequestEventOneOf5SummaryData.md) |  | 
-**metadata** | **Dict[str, Optional[object]]** |  | [optional] 
+| Name              | Type                                                                                                  | Description | Notes      |
+| ----------------- | ----------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **type**          | **str**                                                                                               |             |
+| **session_title** | **str**                                                                                               |             |
+| **summary_data**  | [**AppStoreAppEventRequestEventOneOf5SummaryData**](AppStoreAppEventRequestEventOneOf5SummaryData.md) |             |
+| **metadata**      | **Dict[str, Optional[object]]**                                                                       |             | [optional] |
 
 ## Example
 
@@ -27,6 +26,5 @@ app_store_app_event_request_event_one_of5_dict = app_store_app_event_request_eve
 # create an instance of AppStoreAppEventRequestEventOneOf5 from a dict
 app_store_app_event_request_event_one_of5_from_dict = AppStoreAppEventRequestEventOneOf5.from_dict(app_store_app_event_request_event_one_of5_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

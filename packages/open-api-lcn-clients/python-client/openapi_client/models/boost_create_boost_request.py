@@ -150,7 +150,7 @@ class BoostCreateBoostRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "name": obj.get("name"),
             "type": obj.get("type"),
             "category": obj.get("category"),
@@ -163,7 +163,9 @@ class BoostCreateBoostRequest(BaseModel):
             "claimPermissions": BoostCreateBoostRequestClaimPermissions.from_dict(obj["claimPermissions"]) if obj.get("claimPermissions") is not None else None,
             "defaultPermissions": BoostCreateBoostRequestClaimPermissions.from_dict(obj["defaultPermissions"]) if obj.get("defaultPermissions") is not None else None,
             "skills": [BoostSendRequestTemplateSkillsInner.from_dict(_item) for _item in obj["skills"]] if obj.get("skills") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

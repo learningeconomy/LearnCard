@@ -1,13 +1,12 @@
 # CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentials
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**share_all** | **bool** |  | [optional] 
-**sharing** | **bool** |  | [optional] 
-**categories** | [**Dict[str, CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentialsCategoriesValue]**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentialsCategoriesValue.md) |  | 
+| Name           | Type                                                                                                                                                                                                                                                         | Description | Notes      |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- | ---------- |
+| **share_all**  | **bool**                                                                                                                                                                                                                                                     |             | [optional] |
+| **sharing**    | **bool**                                                                                                                                                                                                                                                     |             | [optional] |
+| **categories** | [**Dict[str, CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentialsCategoriesValue]**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentialsCategoriesValue.md) |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ credential_get_holder_export_metadata200_response_consent_records_inner_transact
 # create an instance of CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentials from a dict
 credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner_terms_read_credentials_from_dict = CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentials.from_dict(credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner_terms_read_credentials_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,14 +1,13 @@
 # CredentialRefreshPublishCredentialRefresh200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**refresh_id** | **str** |  | 
-**version** | **int** |  | 
-**published_at** | **str** |  | 
-**notification** | **str** |  | 
+| Name             | Type    | Description | Notes |
+| ---------------- | ------- | ----------- | ----- |
+| **refresh_id**   | **str** |             |
+| **version**      | **int** |             |
+| **published_at** | **str** |             |
+| **notification** | **str** |             |
 
 ## Example
 
@@ -27,6 +26,5 @@ credential_refresh_publish_credential_refresh200_response_dict = credential_refr
 # create an instance of CredentialRefreshPublishCredentialRefresh200Response from a dict
 credential_refresh_publish_credential_refresh200_response_from_dict = CredentialRefreshPublishCredentialRefresh200Response.from_dict(credential_refresh_publish_credential_refresh200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -93,11 +93,13 @@ class ClaimHookGetClaimHooksForBoostRequestQueryData(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "claimUri": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["claimUri"]) if obj.get("claimUri") is not None else None,
             "targetUri": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["targetUri"]) if obj.get("targetUri") is not None else None,
             "permissions": ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions.from_dict(obj["permissions"]) if obj.get("permissions") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

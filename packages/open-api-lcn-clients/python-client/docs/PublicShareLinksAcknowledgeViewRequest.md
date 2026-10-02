@@ -1,11 +1,10 @@
 # PublicShareLinksAcknowledgeViewRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**receipt** | **str** |  | 
+| Name        | Type    | Description | Notes |
+| ----------- | ------- | ----------- | ----- |
+| **receipt** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ public_share_links_acknowledge_view_request_dict = public_share_links_acknowledg
 # create an instance of PublicShareLinksAcknowledgeViewRequest from a dict
 public_share_links_acknowledge_view_request_from_dict = PublicShareLinksAcknowledgeViewRequest.from_dict(public_share_links_acknowledge_view_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

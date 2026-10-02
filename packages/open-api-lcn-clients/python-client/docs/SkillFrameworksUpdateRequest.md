@@ -1,16 +1,15 @@
 # SkillFrameworksUpdateRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**name** | **str** |  | [optional] 
-**description** | **str** |  | [optional] 
-**image** | **str** |  | [optional] 
-**source_uri** | **str** |  | [optional] 
-**is_public** | **bool** |  | [optional] 
-**status** | **str** |  | [optional] 
+| Name            | Type     | Description | Notes      |
+| --------------- | -------- | ----------- | ---------- |
+| **name**        | **str**  |             | [optional] |
+| **description** | **str**  |             | [optional] |
+| **image**       | **str**  |             | [optional] |
+| **source_uri**  | **str**  |             | [optional] |
+| **is_public**   | **bool** |             | [optional] |
+| **status**      | **str**  |             | [optional] |
 
 ## Example
 
@@ -29,6 +28,5 @@ skill_frameworks_update_request_dict = skill_frameworks_update_request_instance.
 # create an instance of SkillFrameworksUpdateRequest from a dict
 skill_frameworks_update_request_from_dict = SkillFrameworksUpdateRequest.from_dict(skill_frameworks_update_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

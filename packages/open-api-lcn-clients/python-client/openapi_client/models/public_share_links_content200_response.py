@@ -114,13 +114,15 @@ class PublicShareLinksContent200Response(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "id": obj.get("id"),
             "contentVersion": obj.get("contentVersion"),
             "envelope": ShareLinksUpdateRequestEnvelope.from_dict(obj["envelope"]) if obj.get("envelope") is not None else None,
             "contentUrl": obj.get("contentUrl"),
             "receipt": obj.get("receipt")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

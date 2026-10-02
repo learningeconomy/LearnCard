@@ -24,9 +24,9 @@ from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
 
-class CredentialRefreshPublishCredentialRefreshRequestSigningAuthority(BaseModel):
+class CredentialRefreshPublishCredentialRefreshRequestOneOf1SigningAuthority(BaseModel):
     """
-    CredentialRefreshPublishCredentialRefreshRequestSigningAuthority
+    CredentialRefreshPublishCredentialRefreshRequestOneOf1SigningAuthority
     """ # noqa: E501
     type: Annotated[str, Field(min_length=1, strict=True)]
     additional_properties: Dict[str, Any] = {}
@@ -50,7 +50,7 @@ class CredentialRefreshPublishCredentialRefreshRequestSigningAuthority(BaseModel
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of CredentialRefreshPublishCredentialRefreshRequestSigningAuthority from a JSON string"""
+        """Create an instance of CredentialRefreshPublishCredentialRefreshRequestOneOf1SigningAuthority from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -82,16 +82,18 @@ class CredentialRefreshPublishCredentialRefreshRequestSigningAuthority(BaseModel
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of CredentialRefreshPublishCredentialRefreshRequestSigningAuthority from a dict"""
+        """Create an instance of CredentialRefreshPublishCredentialRefreshRequestOneOf1SigningAuthority from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "type": obj.get("type")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

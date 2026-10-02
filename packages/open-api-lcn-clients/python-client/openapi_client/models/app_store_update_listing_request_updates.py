@@ -153,7 +153,7 @@ class AppStoreUpdateListingRequestUpdates(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "display_name": obj.get("display_name"),
             "tagline": obj.get("tagline"),
             "full_description": obj.get("full_description"),
@@ -172,7 +172,9 @@ class AppStoreUpdateListingRequestUpdates(BaseModel):
             "min_age": obj.get("min_age"),
             "age_rating": obj.get("age_rating"),
             "contact_email": obj.get("contact_email")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

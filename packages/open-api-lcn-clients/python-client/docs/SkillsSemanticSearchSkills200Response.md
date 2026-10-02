@@ -1,11 +1,10 @@
 # SkillsSemanticSearchSkills200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**records** | [**List[SkillsSemanticSearchSkills200ResponseRecordsInner]**](SkillsSemanticSearchSkills200ResponseRecordsInner.md) |  | 
+| Name        | Type                                                                                                                | Description | Notes |
+| ----------- | ------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **records** | [**List[SkillsSemanticSearchSkills200ResponseRecordsInner]**](SkillsSemanticSearchSkills200ResponseRecordsInner.md) |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ skills_semantic_search_skills200_response_dict = skills_semantic_search_skills20
 # create an instance of SkillsSemanticSearchSkills200Response from a dict
 skills_semantic_search_skills200_response_from_dict = SkillsSemanticSearchSkills200Response.from_dict(skills_semantic_search_skills200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

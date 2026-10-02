@@ -1,13 +1,12 @@
 # BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**var_in** | **List[str]** |  | 
-**regex** | **str** |  | [optional] 
-**var_or** | [**List[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInner]**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInner.md) |  | 
+| Name       | Type                                                                                                                                                                | Description | Notes      |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **var_in** | **List[str]**                                                                                                                                                       |             |
+| **regex**  | **str**                                                                                                                                                             |             | [optional] |
+| **var_or** | [**List[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInner]**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInner.md) |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ boost_search_skills_available_for_boost_request_query_any_of_or_inner_statement_
 # create an instance of BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement from a dict
 boost_search_skills_available_for_boost_request_query_any_of_or_inner_statement_from_dict = BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(boost_search_skills_available_for_boost_request_query_any_of_or_inner_statement_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

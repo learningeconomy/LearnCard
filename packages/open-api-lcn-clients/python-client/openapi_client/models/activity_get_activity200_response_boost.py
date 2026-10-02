@@ -82,11 +82,13 @@ class ActivityGetActivity200ResponseBoost(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "id": obj.get("id"),
             "name": obj.get("name"),
             "category": obj.get("category")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

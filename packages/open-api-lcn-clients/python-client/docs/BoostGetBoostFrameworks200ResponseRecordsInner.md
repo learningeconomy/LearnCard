@@ -1,19 +1,18 @@
 # BoostGetBoostFrameworks200ResponseRecordsInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**name** | **str** |  | 
-**description** | **str** |  | [optional] 
-**image** | **str** |  | [optional] 
-**source_uri** | **str** |  | [optional] 
-**is_public** | **bool** |  | [default to False]
-**status** | **str** |  | [default to 'active']
-**created_at** | **str** |  | [optional] 
-**updated_at** | **str** |  | [optional] 
+| Name            | Type     | Description | Notes                 |
+| --------------- | -------- | ----------- | --------------------- |
+| **id**          | **str**  |             |
+| **name**        | **str**  |             |
+| **description** | **str**  |             | [optional]            |
+| **image**       | **str**  |             | [optional]            |
+| **source_uri**  | **str**  |             | [optional]            |
+| **is_public**   | **bool** |             | [default to False]    |
+| **status**      | **str**  |             | [default to 'active'] |
+| **created_at**  | **str**  |             | [optional]            |
+| **updated_at**  | **str**  |             | [optional]            |
 
 ## Example
 
@@ -32,6 +31,5 @@ boost_get_boost_frameworks200_response_records_inner_dict = boost_get_boost_fram
 # create an instance of BoostGetBoostFrameworks200ResponseRecordsInner from a dict
 boost_get_boost_frameworks200_response_records_inner_from_dict = BoostGetBoostFrameworks200ResponseRecordsInner.from_dict(boost_get_boost_frameworks200_response_records_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

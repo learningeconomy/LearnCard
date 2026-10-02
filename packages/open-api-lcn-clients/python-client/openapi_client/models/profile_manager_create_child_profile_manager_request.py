@@ -90,10 +90,12 @@ class ProfileManagerCreateChildProfileManagerRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "parentUri": obj.get("parentUri"),
             "profile": ProfileManagerCreateChildProfileManagerRequestProfile.from_dict(obj["profile"]) if obj.get("profile") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

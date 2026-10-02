@@ -103,7 +103,7 @@ class Schema0(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "id": obj.get("id"),
             "statement": obj.get("statement"),
             "description": obj.get("description"),
@@ -112,7 +112,9 @@ class Schema0(BaseModel):
             "type": obj.get("type"),
             "status": obj.get("status"),
             "children": [Schema0.from_dict(_item) for _item in obj["children"]] if obj.get("children") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 # TODO: Rewrite to not use raise_errors

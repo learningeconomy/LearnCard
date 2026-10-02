@@ -1,12 +1,11 @@
 # ContractsDeleteCredentialFromAllContracts200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**contracts_updated** | **float** |  | 
-**removed_shared_uris** | **float** |  | 
+| Name                    | Type      | Description | Notes |
+| ----------------------- | --------- | ----------- | ----- |
+| **contracts_updated**   | **float** |             |
+| **removed_shared_uris** | **float** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ contracts_delete_credential_from_all_contracts200_response_dict = contracts_dele
 # create an instance of ContractsDeleteCredentialFromAllContracts200Response from a dict
 contracts_delete_credential_from_all_contracts200_response_from_dict = ContractsDeleteCredentialFromAllContracts200Response.from_dict(contracts_delete_credential_from_all_contracts200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

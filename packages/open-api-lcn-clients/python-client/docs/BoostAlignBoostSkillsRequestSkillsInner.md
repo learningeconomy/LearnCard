@@ -1,13 +1,12 @@
 # BoostAlignBoostSkillsRequestSkillsInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**framework_id** | **str** |  | 
-**id** | **str** |  | 
-**proficiency_level** | **float** |  | [optional] 
+| Name                  | Type      | Description | Notes      |
+| --------------------- | --------- | ----------- | ---------- |
+| **framework_id**      | **str**   |             |
+| **id**                | **str**   |             |
+| **proficiency_level** | **float** |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ boost_align_boost_skills_request_skills_inner_dict = boost_align_boost_skills_re
 # create an instance of BoostAlignBoostSkillsRequestSkillsInner from a dict
 boost_align_boost_skills_request_skills_inner_from_dict = BoostAlignBoostSkillsRequestSkillsInner.from_dict(boost_align_boost_skills_request_skills_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

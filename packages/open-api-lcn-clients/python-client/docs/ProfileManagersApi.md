@@ -1,23 +1,23 @@
 # openapi_client.ProfileManagersApi
 
-All URIs are relative to *https://network.learncard.com/api*
+All URIs are relative to _/api_
 
-Method | HTTP request | Description
-------------- | ------------- | -------------
-[**boost_get_children_profile_managers**](ProfileManagersApi.md#boost_get_children_profile_managers) | **POST** /boost/children-profile-managers | Get Profile Managers that are a child of a boost
-[**profile_manager_create_child_profile_manager**](ProfileManagersApi.md#profile_manager_create_child_profile_manager) | **POST** /profile-manager/create-child | Create a profile manager that is a child of a Boost
-[**profile_manager_create_managed_profile**](ProfileManagersApi.md#profile_manager_create_managed_profile) | **POST** /profile/create-managed-profile | Create a managed profile
-[**profile_manager_create_profile_manager**](ProfileManagersApi.md#profile_manager_create_profile_manager) | **POST** /profile-manager/create | Create a profile manager
-[**profile_manager_get_managed_profiles**](ProfileManagersApi.md#profile_manager_get_managed_profiles) | **POST** /profile/managed-profiles | Managed Profiles
-[**profile_manager_get_my_guardians**](ProfileManagersApi.md#profile_manager_get_my_guardians) | **GET** /profile-manager/my-guardians | Get profiles that manage the current user
-[**profile_manager_get_my_managed_children**](ProfileManagersApi.md#profile_manager_get_my_managed_children) | **GET** /profile-manager/my-managed-children | Get profiles managed by the current user
-[**profile_manager_get_other_profile_manager**](ProfileManagersApi.md#profile_manager_get_other_profile_manager) | **GET** /profile-manager/{id} | Get profile manager information
-[**profile_manager_get_profile_manager**](ProfileManagersApi.md#profile_manager_get_profile_manager) | **GET** /profile-manager | Get your profile manager profile information
-[**profile_manager_remove_manages_relationship**](ProfileManagersApi.md#profile_manager_remove_manages_relationship) | **POST** /profile-manager/remove-manages | Remove a MANAGES relationship
-[**profile_manager_update_profile_manager**](ProfileManagersApi.md#profile_manager_update_profile_manager) | **POST** /profile-manager | Update the profile of your Profile Manager
-
+| Method                                                                                                                 | HTTP request                                 | Description                                         |
+| ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- | --------------------------------------------------- |
+| [**boost_get_children_profile_managers**](ProfileManagersApi.md#boost_get_children_profile_managers)                   | **POST** /boost/children-profile-managers    | Get Profile Managers that are a child of a boost    |
+| [**profile_manager_create_child_profile_manager**](ProfileManagersApi.md#profile_manager_create_child_profile_manager) | **POST** /profile-manager/create-child       | Create a profile manager that is a child of a Boost |
+| [**profile_manager_create_managed_profile**](ProfileManagersApi.md#profile_manager_create_managed_profile)             | **POST** /profile/create-managed-profile     | Create a managed profile                            |
+| [**profile_manager_create_profile_manager**](ProfileManagersApi.md#profile_manager_create_profile_manager)             | **POST** /profile-manager/create             | Create a profile manager                            |
+| [**profile_manager_get_managed_profiles**](ProfileManagersApi.md#profile_manager_get_managed_profiles)                 | **POST** /profile/managed-profiles           | Managed Profiles                                    |
+| [**profile_manager_get_my_guardians**](ProfileManagersApi.md#profile_manager_get_my_guardians)                         | **GET** /profile-manager/my-guardians        | Get profiles that manage the current user           |
+| [**profile_manager_get_my_managed_children**](ProfileManagersApi.md#profile_manager_get_my_managed_children)           | **GET** /profile-manager/my-managed-children | Get profiles managed by the current user            |
+| [**profile_manager_get_other_profile_manager**](ProfileManagersApi.md#profile_manager_get_other_profile_manager)       | **GET** /profile-manager/{id}                | Get profile manager information                     |
+| [**profile_manager_get_profile_manager**](ProfileManagersApi.md#profile_manager_get_profile_manager)                   | **GET** /profile-manager                     | Get your profile manager profile information        |
+| [**profile_manager_remove_manages_relationship**](ProfileManagersApi.md#profile_manager_remove_manages_relationship)   | **POST** /profile-manager/remove-manages     | Remove a MANAGES relationship                       |
+| [**profile_manager_update_profile_manager**](ProfileManagersApi.md#profile_manager_update_profile_manager)             | **POST** /profile-manager                    | Update the profile of your Profile Manager          |
 
 # **boost_get_children_profile_managers**
+
 > BoostGetChildrenProfileManagers200Response boost_get_children_profile_managers(boost_get_children_profile_managers_request)
 
 Get Profile Managers that are a child of a boost
@@ -26,7 +26,7 @@ Get Profile Managers that are a child of a boost
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -35,10 +35,10 @@ from openapi_client.models.boost_get_children_profile_managers_request import Bo
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -55,7 +55,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfileManagersApi(api_client)
-    boost_get_children_profile_managers_request = openapi_client.BoostGetChildrenProfileManagersRequest() # BoostGetChildrenProfileManagersRequest | 
+    boost_get_children_profile_managers_request = openapi_client.BoostGetChildrenProfileManagersRequest() # BoostGetChildrenProfileManagersRequest |
 
     try:
         # Get Profile Managers that are a child of a boost
@@ -66,14 +66,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfileManagersApi->boost_get_children_profile_managers: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **boost_get_children_profile_managers_request** | [**BoostGetChildrenProfileManagersRequest**](BoostGetChildrenProfileManagersRequest.md)|  | 
+| Name                                            | Type                                                                                    | Description | Notes |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------- | ----------- | ----- |
+| **boost_get_children_profile_managers_request** | [**BoostGetChildrenProfileManagersRequest**](BoostGetChildrenProfileManagersRequest.md) |             |
 
 ### Return type
 
@@ -85,22 +82,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_manager_create_child_profile_manager**
+
 > str profile_manager_create_child_profile_manager(profile_manager_create_child_profile_manager_request)
 
 Create a profile manager that is a child of a Boost
@@ -109,7 +107,7 @@ Creates a profile manager that is a child of a Boost
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -117,10 +115,10 @@ from openapi_client.models.profile_manager_create_child_profile_manager_request 
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -137,7 +135,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfileManagersApi(api_client)
-    profile_manager_create_child_profile_manager_request = openapi_client.ProfileManagerCreateChildProfileManagerRequest() # ProfileManagerCreateChildProfileManagerRequest | 
+    profile_manager_create_child_profile_manager_request = openapi_client.ProfileManagerCreateChildProfileManagerRequest() # ProfileManagerCreateChildProfileManagerRequest |
 
     try:
         # Create a profile manager that is a child of a Boost
@@ -148,14 +146,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfileManagersApi->profile_manager_create_child_profile_manager: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_manager_create_child_profile_manager_request** | [**ProfileManagerCreateChildProfileManagerRequest**](ProfileManagerCreateChildProfileManagerRequest.md)|  | 
+| Name                                                     | Type                                                                                                    | Description | Notes |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **profile_manager_create_child_profile_manager_request** | [**ProfileManagerCreateChildProfileManagerRequest**](ProfileManagerCreateChildProfileManagerRequest.md) |             |
 
 ### Return type
 
@@ -167,22 +162,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_manager_create_managed_profile**
+
 > str profile_manager_create_managed_profile(profile_manager_create_managed_profile_request)
 
 Create a managed profile
@@ -191,7 +187,7 @@ Creates a managed profile
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -199,10 +195,10 @@ from openapi_client.models.profile_manager_create_managed_profile_request import
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -219,7 +215,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfileManagersApi(api_client)
-    profile_manager_create_managed_profile_request = openapi_client.ProfileManagerCreateManagedProfileRequest() # ProfileManagerCreateManagedProfileRequest | 
+    profile_manager_create_managed_profile_request = openapi_client.ProfileManagerCreateManagedProfileRequest() # ProfileManagerCreateManagedProfileRequest |
 
     try:
         # Create a managed profile
@@ -230,14 +226,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfileManagersApi->profile_manager_create_managed_profile: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_manager_create_managed_profile_request** | [**ProfileManagerCreateManagedProfileRequest**](ProfileManagerCreateManagedProfileRequest.md)|  | 
+| Name                                               | Type                                                                                          | Description | Notes |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **profile_manager_create_managed_profile_request** | [**ProfileManagerCreateManagedProfileRequest**](ProfileManagerCreateManagedProfileRequest.md) |             |
 
 ### Return type
 
@@ -249,22 +242,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_manager_create_profile_manager**
+
 > str profile_manager_create_profile_manager(profile_manager_create_profile_manager_request)
 
 Create a profile manager
@@ -273,7 +267,7 @@ Creates a profile manager
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -281,10 +275,10 @@ from openapi_client.models.profile_manager_create_profile_manager_request import
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -301,7 +295,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfileManagersApi(api_client)
-    profile_manager_create_profile_manager_request = openapi_client.ProfileManagerCreateProfileManagerRequest() # ProfileManagerCreateProfileManagerRequest | 
+    profile_manager_create_profile_manager_request = openapi_client.ProfileManagerCreateProfileManagerRequest() # ProfileManagerCreateProfileManagerRequest |
 
     try:
         # Create a profile manager
@@ -312,14 +306,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfileManagersApi->profile_manager_create_profile_manager: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_manager_create_profile_manager_request** | [**ProfileManagerCreateProfileManagerRequest**](ProfileManagerCreateProfileManagerRequest.md)|  | 
+| Name                                               | Type                                                                                          | Description | Notes |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **profile_manager_create_profile_manager_request** | [**ProfileManagerCreateProfileManagerRequest**](ProfileManagerCreateProfileManagerRequest.md) |             |
 
 ### Return type
 
@@ -331,22 +322,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_manager_get_managed_profiles**
+
 > ProfileGetManagedServiceProfiles200Response profile_manager_get_managed_profiles(profile_manager_get_managed_profiles_request=profile_manager_get_managed_profiles_request)
 
 Managed Profiles
@@ -355,7 +347,7 @@ This route gets all of your managed profiles
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -364,10 +356,10 @@ from openapi_client.models.profile_manager_get_managed_profiles_request import P
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -395,14 +387,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfileManagersApi->profile_manager_get_managed_profiles: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_manager_get_managed_profiles_request** | [**ProfileManagerGetManagedProfilesRequest**](ProfileManagerGetManagedProfilesRequest.md)|  | [optional] 
+| Name                                             | Type                                                                                      | Description | Notes      |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **profile_manager_get_managed_profiles_request** | [**ProfileManagerGetManagedProfilesRequest**](ProfileManagerGetManagedProfilesRequest.md) |             | [optional] |
 
 ### Return type
 
@@ -414,22 +403,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_manager_get_my_guardians**
+
 > List[BoostGetBoostRecipients200ResponseInnerToAnyOf3] profile_manager_get_my_guardians()
 
 Get profiles that manage the current user
@@ -438,7 +428,7 @@ Returns all profiles that manage the current profile via a MANAGES relationship.
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -446,10 +436,10 @@ from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_o
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -476,8 +466,6 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfileManagersApi->profile_manager_get_my_guardians: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
 This endpoint does not need any parameter.
@@ -492,21 +480,22 @@ This endpoint does not need any parameter.
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_manager_get_my_managed_children**
+
 > List[BoostGetBoostRecipients200ResponseInnerToAnyOf3] profile_manager_get_my_managed_children()
 
 Get profiles managed by the current user
@@ -515,7 +504,7 @@ Returns all profiles managed via ProfileManagers that the current profile admini
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -523,10 +512,10 @@ from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_o
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -553,8 +542,6 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfileManagersApi->profile_manager_get_my_managed_children: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
 This endpoint does not need any parameter.
@@ -569,21 +556,22 @@ This endpoint does not need any parameter.
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_manager_get_other_profile_manager**
+
 > ProfileGetAvailableProfiles200ResponseRecordsInnerManager profile_manager_get_other_profile_manager(id)
 
 Get profile manager information
@@ -592,7 +580,7 @@ This route grabs the profile information of any profile manager, using their id
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -600,10 +588,10 @@ from openapi_client.models.profile_get_available_profiles200_response_records_in
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -620,7 +608,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfileManagersApi(api_client)
-    id = 'id_example' # str | 
+    id = 'id_example' # str |
 
     try:
         # Get profile manager information
@@ -631,14 +619,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfileManagersApi->profile_manager_get_other_profile_manager: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **id** | **str**|  | 
+| Name   | Type    | Description | Notes |
+| ------ | ------- | ----------- | ----- |
+| **id** | **str** |             |
 
 ### Return type
 
@@ -650,23 +635,24 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**404** | Not found |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_manager_get_profile_manager**
+
 > ProfileGetAvailableProfiles200ResponseRecordsInnerManager profile_manager_get_profile_manager()
 
 Get your profile manager profile information
@@ -675,7 +661,7 @@ This route uses the request header to grab the profile manager profile of the cu
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -683,10 +669,10 @@ from openapi_client.models.profile_get_available_profiles200_response_records_in
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -713,8 +699,6 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfileManagersApi->profile_manager_get_profile_manager: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
 This endpoint does not need any parameter.
@@ -729,21 +713,22 @@ This endpoint does not need any parameter.
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_manager_remove_manages_relationship**
+
 > bool profile_manager_remove_manages_relationship(profile_manager_remove_manages_relationship_request)
 
 Remove a MANAGES relationship
@@ -752,7 +737,7 @@ Removes the MANAGES relationship between the current profile and a child profile
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -760,10 +745,10 @@ from openapi_client.models.profile_manager_remove_manages_relationship_request i
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -780,7 +765,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfileManagersApi(api_client)
-    profile_manager_remove_manages_relationship_request = openapi_client.ProfileManagerRemoveManagesRelationshipRequest() # ProfileManagerRemoveManagesRelationshipRequest | 
+    profile_manager_remove_manages_relationship_request = openapi_client.ProfileManagerRemoveManagesRelationshipRequest() # ProfileManagerRemoveManagesRelationshipRequest |
 
     try:
         # Remove a MANAGES relationship
@@ -791,14 +776,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfileManagersApi->profile_manager_remove_manages_relationship: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_manager_remove_manages_relationship_request** | [**ProfileManagerRemoveManagesRelationshipRequest**](ProfileManagerRemoveManagesRelationshipRequest.md)|  | 
+| Name                                                    | Type                                                                                                    | Description | Notes |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **profile_manager_remove_manages_relationship_request** | [**ProfileManagerRemoveManagesRelationshipRequest**](ProfileManagerRemoveManagesRelationshipRequest.md) |             |
 
 ### Return type
 
@@ -810,22 +792,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **profile_manager_update_profile_manager**
+
 > bool profile_manager_update_profile_manager(profile_manager_update_profile_manager_request)
 
 Update the profile of your Profile Manager
@@ -834,7 +817,7 @@ This route updates the profile of the current profile manager
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -842,10 +825,10 @@ from openapi_client.models.profile_manager_update_profile_manager_request import
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -862,7 +845,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfileManagersApi(api_client)
-    profile_manager_update_profile_manager_request = openapi_client.ProfileManagerUpdateProfileManagerRequest() # ProfileManagerUpdateProfileManagerRequest | 
+    profile_manager_update_profile_manager_request = openapi_client.ProfileManagerUpdateProfileManagerRequest() # ProfileManagerUpdateProfileManagerRequest |
 
     try:
         # Update the profile of your Profile Manager
@@ -873,14 +856,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ProfileManagersApi->profile_manager_update_profile_manager: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_manager_update_profile_manager_request** | [**ProfileManagerUpdateProfileManagerRequest**](ProfileManagerUpdateProfileManagerRequest.md)|  | 
+| Name                                               | Type                                                                                          | Description | Notes |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **profile_manager_update_profile_manager_request** | [**ProfileManagerUpdateProfileManagerRequest**](ProfileManagerUpdateProfileManagerRequest.md) |             |
 
 ### Return type
 
@@ -892,18 +872,17 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

@@ -118,7 +118,7 @@ class AppStoreAppEventRequestEventOneOf4(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "type": obj.get("type"),
             "includeCredentials": obj.get("includeCredentials") if obj.get("includeCredentials") is not None else True,
             "includePersonalData": obj.get("includePersonalData") if obj.get("includePersonalData") is not None else False,
@@ -126,7 +126,9 @@ class AppStoreAppEventRequestEventOneOf4(BaseModel):
             "instructions": obj.get("instructions"),
             "detailLevel": obj.get("detailLevel") if obj.get("detailLevel") is not None else 'compact',
             "waitForSync": obj.get("waitForSync") if obj.get("waitForSync") is not None else False
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

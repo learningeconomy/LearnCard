@@ -102,12 +102,14 @@ class ContractsUpdateConsentedContractTermsRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "uri": obj.get("uri"),
             "terms": ContractsUpdateConsentedContractTermsRequestTerms.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
             "expiresAt": obj.get("expiresAt"),
             "oneTime": obj.get("oneTime")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

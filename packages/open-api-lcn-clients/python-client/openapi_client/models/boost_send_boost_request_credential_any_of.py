@@ -187,7 +187,7 @@ class BoostSendBoostRequestCredentialAnyOf(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "@context": [BoostSendBoostRequestCredentialAnyOfContextInner.from_dict(_item) for _item in obj["@context"]] if obj.get("@context") is not None else None,
             "id": obj.get("id"),
             "type": obj.get("type"),
@@ -207,7 +207,9 @@ class BoostSendBoostRequestCredentialAnyOf(BaseModel):
             "evidence": BoostSendBoostRequestCredentialAnyOfEvidence.from_dict(obj["evidence"]) if obj.get("evidence") is not None else None,
             "renderMethod": BoostSendBoostRequestCredentialAnyOfRenderMethod.from_dict(obj["renderMethod"]) if obj.get("renderMethod") is not None else None,
             "proof": BoostSendBoostRequestCredentialAnyOfProof.from_dict(obj["proof"]) if obj.get("proof") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

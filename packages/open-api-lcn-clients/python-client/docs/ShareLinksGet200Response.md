@@ -1,14 +1,13 @@
 # ShareLinksGet200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**status** | **str** |  | 
-**share** | [**ShareLinksList200ResponseRecordsInner**](ShareLinksList200ResponseRecordsInner.md) |  | 
-**id** | **str** |  | 
-**operation_id** | **UUID** |  | 
+| Name             | Type                                                                                  | Description | Notes |
+| ---------------- | ------------------------------------------------------------------------------------- | ----------- | ----- |
+| **status**       | **str**                                                                               |             |
+| **share**        | [**ShareLinksList200ResponseRecordsInner**](ShareLinksList200ResponseRecordsInner.md) |             |
+| **id**           | **str**                                                                               |             |
+| **operation_id** | **UUID**                                                                              |             |
 
 ## Example
 
@@ -27,6 +26,5 @@ share_links_get200_response_dict = share_links_get200_response_instance.to_dict(
 # create an instance of ShareLinksGet200Response from a dict
 share_links_get200_response_from_dict = ShareLinksGet200Response.from_dict(share_links_get200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

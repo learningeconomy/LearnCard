@@ -1,14 +1,13 @@
 # AppStoreGetMyCredentialsFromApp200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**has_more** | **bool** |  | 
-**cursor** | **str** |  | [optional] 
-**records** | [**List[AppStoreGetMyCredentialsFromApp200ResponseRecordsInner]**](AppStoreGetMyCredentialsFromApp200ResponseRecordsInner.md) |  | 
-**total_count** | **float** |  | 
+| Name            | Type                                                                                                                          | Description | Notes      |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **has_more**    | **bool**                                                                                                                      |             |
+| **cursor**      | **str**                                                                                                                       |             | [optional] |
+| **records**     | [**List[AppStoreGetMyCredentialsFromApp200ResponseRecordsInner]**](AppStoreGetMyCredentialsFromApp200ResponseRecordsInner.md) |             |
+| **total_count** | **float**                                                                                                                     |             |
 
 ## Example
 
@@ -27,6 +26,5 @@ app_store_get_my_credentials_from_app200_response_dict = app_store_get_my_creden
 # create an instance of AppStoreGetMyCredentialsFromApp200Response from a dict
 app_store_get_my_credentials_from_app200_response_from_dict = AppStoreGetMyCredentialsFromApp200Response.from_dict(app_store_get_my_credentials_from_app200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,13 +1,12 @@
 # InboxGetMyInboxDeliveries200ResponseRecordsInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**credential** | [**InboxGetMyInboxDeliveries200ResponseRecordsInnerCredential**](InboxGetMyInboxDeliveries200ResponseRecordsInnerCredential.md) |  | 
-**expires_at** | **str** |  | 
+| Name           | Type                                                                                                                            | Description | Notes |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **id**         | **str**                                                                                                                         |             |
+| **credential** | [**InboxGetMyInboxDeliveries200ResponseRecordsInnerCredential**](InboxGetMyInboxDeliveries200ResponseRecordsInnerCredential.md) |             |
+| **expires_at** | **str**                                                                                                                         |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ inbox_get_my_inbox_deliveries200_response_records_inner_dict = inbox_get_my_inbo
 # create an instance of InboxGetMyInboxDeliveries200ResponseRecordsInner from a dict
 inbox_get_my_inbox_deliveries200_response_records_inner_from_dict = InboxGetMyInboxDeliveries200ResponseRecordsInner.from_dict(inbox_get_my_inbox_deliveries200_response_records_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

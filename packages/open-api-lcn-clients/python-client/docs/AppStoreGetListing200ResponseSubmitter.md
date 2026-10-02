@@ -1,13 +1,12 @@
 # AppStoreGetListing200ResponseSubmitter
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**profile_id** | **str** |  | 
-**display_name** | **str** |  | 
-**email** | **str** |  | [optional] 
+| Name             | Type    | Description | Notes      |
+| ---------------- | ------- | ----------- | ---------- |
+| **profile_id**   | **str** |             |
+| **display_name** | **str** |             |
+| **email**        | **str** |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ app_store_get_listing200_response_submitter_dict = app_store_get_listing200_resp
 # create an instance of AppStoreGetListing200ResponseSubmitter from a dict
 app_store_get_listing200_response_submitter_from_dict = AppStoreGetListing200ResponseSubmitter.from_dict(app_store_get_listing200_response_submitter_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

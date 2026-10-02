@@ -1,11 +1,10 @@
 # UtilitiesResolveEmailLocaleRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**email** | **str** |  | 
+| Name      | Type    | Description | Notes |
+| --------- | ------- | ----------- | ----- |
+| **email** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ utilities_resolve_email_locale_request_dict = utilities_resolve_email_locale_req
 # create an instance of UtilitiesResolveEmailLocaleRequest from a dict
 utilities_resolve_email_locale_request_from_dict = UtilitiesResolveEmailLocaleRequest.from_dict(utilities_resolve_email_locale_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

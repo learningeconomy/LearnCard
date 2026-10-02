@@ -1,13 +1,12 @@
 # InboxGetMyInboxDeliveries200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**records** | [**List[InboxGetMyInboxDeliveries200ResponseRecordsInner]**](InboxGetMyInboxDeliveries200ResponseRecordsInner.md) |  | 
-**has_more** | **bool** |  | 
-**cursor** | **str** |  | [optional] 
+| Name         | Type                                                                                                              | Description | Notes      |
+| ------------ | ----------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **records**  | [**List[InboxGetMyInboxDeliveries200ResponseRecordsInner]**](InboxGetMyInboxDeliveries200ResponseRecordsInner.md) |             |
+| **has_more** | **bool**                                                                                                          |             |
+| **cursor**   | **str**                                                                                                           |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ inbox_get_my_inbox_deliveries200_response_dict = inbox_get_my_inbox_deliveries20
 # create an instance of InboxGetMyInboxDeliveries200Response from a dict
 inbox_get_my_inbox_deliveries200_response_from_dict = InboxGetMyInboxDeliveries200Response.from_dict(inbox_get_my_inbox_deliveries200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

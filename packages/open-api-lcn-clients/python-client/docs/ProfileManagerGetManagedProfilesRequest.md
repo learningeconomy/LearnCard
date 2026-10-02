@@ -1,14 +1,13 @@
 # ProfileManagerGetManagedProfilesRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**limit** | **float** |  | [optional] [default to 25]
-**cursor** | **str** |  | [optional] 
-**sort** | **str** |  | [optional] 
-**query** | [**BoostGetConnectedBoostRecipientsRequestQuery**](BoostGetConnectedBoostRecipientsRequestQuery.md) |  | [optional] 
+| Name       | Type                                                                                                | Description | Notes                      |
+| ---------- | --------------------------------------------------------------------------------------------------- | ----------- | -------------------------- |
+| **limit**  | **float**                                                                                           |             | [optional] [default to 25] |
+| **cursor** | **str**                                                                                             |             | [optional]                 |
+| **sort**   | **str**                                                                                             |             | [optional]                 |
+| **query**  | [**BoostGetConnectedBoostRecipientsRequestQuery**](BoostGetConnectedBoostRecipientsRequestQuery.md) |             | [optional]                 |
 
 ## Example
 
@@ -27,6 +26,5 @@ profile_manager_get_managed_profiles_request_dict = profile_manager_get_managed_
 # create an instance of ProfileManagerGetManagedProfilesRequest from a dict
 profile_manager_get_managed_profiles_request_from_dict = ProfileManagerGetManagedProfilesRequest.from_dict(profile_manager_get_managed_profiles_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

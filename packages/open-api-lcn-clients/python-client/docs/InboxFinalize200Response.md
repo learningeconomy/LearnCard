@@ -1,16 +1,15 @@
 # InboxFinalize200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**processed** | **float** |  | 
-**claimed** | **float** |  | 
-**errors** | **float** |  | 
-**guardian_pending** | **float** |  | 
-**verifiable_credentials** | [**List[StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf1]**](StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf1.md) |  | 
-**deliveries** | [**List[WorkflowsParticipateInExchange200ResponseInboxDeliveriesInner]**](WorkflowsParticipateInExchange200ResponseInboxDeliveriesInner.md) |  | 
+| Name                       | Type                                                                                                                                        | Description | Notes |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **processed**              | **float**                                                                                                                                   |             |
+| **claimed**                | **float**                                                                                                                                   |             |
+| **errors**                 | **float**                                                                                                                                   |             |
+| **guardian_pending**       | **float**                                                                                                                                   |             |
+| **verifiable_credentials** | [**List[StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf1]**](StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf1.md)                     |             |
+| **deliveries**             | [**List[WorkflowsParticipateInExchange200ResponseInboxDeliveriesInner]**](WorkflowsParticipateInExchange200ResponseInboxDeliveriesInner.md) |             |
 
 ## Example
 
@@ -29,6 +28,5 @@ inbox_finalize200_response_dict = inbox_finalize200_response_instance.to_dict()
 # create an instance of InboxFinalize200Response from a dict
 inbox_finalize200_response_from_dict = InboxFinalize200Response.from_dict(inbox_finalize200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

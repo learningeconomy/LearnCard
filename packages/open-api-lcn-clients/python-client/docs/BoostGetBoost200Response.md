@@ -1,22 +1,21 @@
 # BoostGetBoost200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**name** | **str** |  | [optional] 
-**type** | **str** |  | [optional] 
-**category** | **str** |  | [optional] 
-**created** | **str** |  | [optional] 
-**status** | **str** |  | [optional] 
-**auto_connect_recipients** | **bool** |  | [optional] 
-**meta** | **Dict[str, Optional[object]]** |  | [optional] 
-**default_permissions** | [**BoostGetBoost200ResponseDefaultPermissions**](BoostGetBoost200ResponseDefaultPermissions.md) |  | [optional] 
-**allow_anyone_to_create_children** | **bool** |  | [optional] 
-**claim_permissions** | [**BoostGetBoost200ResponseClaimPermissions**](BoostGetBoost200ResponseClaimPermissions.md) |  | [optional] 
-**uri** | **str** |  | 
-**boost** | [**BoostGetBoost200ResponseBoost**](BoostGetBoost200ResponseBoost.md) |  | 
+| Name                                | Type                                                                                            | Description | Notes      |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **name**                            | **str**                                                                                         |             | [optional] |
+| **type**                            | **str**                                                                                         |             | [optional] |
+| **category**                        | **str**                                                                                         |             | [optional] |
+| **created**                         | **str**                                                                                         |             | [optional] |
+| **status**                          | **str**                                                                                         |             | [optional] |
+| **auto_connect_recipients**         | **bool**                                                                                        |             | [optional] |
+| **meta**                            | **Dict[str, Optional[object]]**                                                                 |             | [optional] |
+| **default_permissions**             | [**BoostGetBoost200ResponseDefaultPermissions**](BoostGetBoost200ResponseDefaultPermissions.md) |             | [optional] |
+| **allow_anyone_to_create_children** | **bool**                                                                                        |             | [optional] |
+| **claim_permissions**               | [**BoostGetBoost200ResponseClaimPermissions**](BoostGetBoost200ResponseClaimPermissions.md)     |             | [optional] |
+| **uri**                             | **str**                                                                                         |             |
+| **boost**                           | [**BoostGetBoost200ResponseBoost**](BoostGetBoost200ResponseBoost.md)                           |             |
 
 ## Example
 
@@ -35,6 +34,5 @@ boost_get_boost200_response_dict = boost_get_boost200_response_instance.to_dict(
 # create an instance of BoostGetBoost200Response from a dict
 boost_get_boost200_response_from_dict = BoostGetBoost200Response.from_dict(boost_get_boost200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

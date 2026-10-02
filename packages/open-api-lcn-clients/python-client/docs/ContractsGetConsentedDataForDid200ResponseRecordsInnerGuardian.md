@@ -1,13 +1,12 @@
 # ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardian
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**required** | **bool** |  | 
-**approved** | **bool** |  | 
-**approval** | [**ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval**](ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval.md) |  | [optional] 
+| Name         | Type                                                                                                                                                    | Description | Notes      |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **required** | **bool**                                                                                                                                                |             |
+| **approved** | **bool**                                                                                                                                                |             |
+| **approval** | [**ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval**](ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval.md) |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ contracts_get_consented_data_for_did200_response_records_inner_guardian_dict = c
 # create an instance of ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardian from a dict
 contracts_get_consented_data_for_did200_response_records_inner_guardian_from_dict = ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardian.from_dict(contracts_get_consented_data_for_did200_response_records_inner_guardian_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

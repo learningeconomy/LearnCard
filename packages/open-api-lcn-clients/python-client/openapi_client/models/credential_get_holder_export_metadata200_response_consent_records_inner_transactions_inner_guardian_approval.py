@@ -122,12 +122,14 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransaction
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "guardianProfileId": obj.get("guardianProfileId"),
             "guardianDid": obj.get("guardianDid"),
             "approvedAt": obj.get("approvedAt"),
             "contractUpdatedAt": obj.get("contractUpdatedAt")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

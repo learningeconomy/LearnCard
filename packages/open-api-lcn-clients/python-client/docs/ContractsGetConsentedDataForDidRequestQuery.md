@@ -1,13 +1,12 @@
 # ContractsGetConsentedDataForDidRequestQuery
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**credentials** | [**ContractsGetConsentedDataForDidRequestQueryCredentials**](ContractsGetConsentedDataForDidRequestQueryCredentials.md) |  | [optional] 
-**personal** | **Dict[str, bool]** |  | [optional] 
-**id** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |  | [optional] 
+| Name            | Type                                                                                                                                              | Description | Notes      |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **credentials** | [**ContractsGetConsentedDataForDidRequestQueryCredentials**](ContractsGetConsentedDataForDidRequestQueryCredentials.md)                           |             | [optional] |
+| **personal**    | **Dict[str, bool]**                                                                                                                               |             | [optional] |
+| **id**          | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ contracts_get_consented_data_for_did_request_query_dict = contracts_get_consente
 # create an instance of ContractsGetConsentedDataForDidRequestQuery from a dict
 contracts_get_consented_data_for_did_request_query_from_dict = ContractsGetConsentedDataForDidRequestQuery.from_dict(contracts_get_consented_data_for_did_request_query_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

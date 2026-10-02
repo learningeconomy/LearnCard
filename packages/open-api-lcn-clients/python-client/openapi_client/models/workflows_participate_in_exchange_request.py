@@ -84,9 +84,11 @@ class WorkflowsParticipateInExchangeRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "verifiablePresentation": StorageStoreRequestItemAnyOfAnyOfAnyOf.from_dict(obj["verifiablePresentation"]) if obj.get("verifiablePresentation") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

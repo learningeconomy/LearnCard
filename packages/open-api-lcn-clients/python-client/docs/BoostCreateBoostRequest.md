@@ -1,22 +1,21 @@
 # BoostCreateBoostRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**name** | **str** |  | [optional] 
-**type** | **str** |  | [optional] 
-**category** | **str** |  | [optional] 
-**created** | **str** |  | [optional] 
-**status** | **str** |  | [optional] 
-**auto_connect_recipients** | **bool** |  | [optional] 
-**meta** | **Dict[str, Optional[object]]** |  | [optional] 
-**allow_anyone_to_create_children** | **bool** |  | [optional] 
-**credential** | [**BoostCreateBoostRequestCredential**](BoostCreateBoostRequestCredential.md) |  | 
-**claim_permissions** | [**BoostCreateBoostRequestClaimPermissions**](BoostCreateBoostRequestClaimPermissions.md) |  | [optional] 
-**default_permissions** | [**BoostCreateBoostRequestClaimPermissions**](BoostCreateBoostRequestClaimPermissions.md) |  | [optional] 
-**skills** | [**List[BoostSendRequestTemplateSkillsInner]**](BoostSendRequestTemplateSkillsInner.md) |  | [optional] 
+| Name                                | Type                                                                                      | Description | Notes      |
+| ----------------------------------- | ----------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **name**                            | **str**                                                                                   |             | [optional] |
+| **type**                            | **str**                                                                                   |             | [optional] |
+| **category**                        | **str**                                                                                   |             | [optional] |
+| **created**                         | **str**                                                                                   |             | [optional] |
+| **status**                          | **str**                                                                                   |             | [optional] |
+| **auto_connect_recipients**         | **bool**                                                                                  |             | [optional] |
+| **meta**                            | **Dict[str, Optional[object]]**                                                           |             | [optional] |
+| **allow_anyone_to_create_children** | **bool**                                                                                  |             | [optional] |
+| **credential**                      | [**BoostCreateBoostRequestCredential**](BoostCreateBoostRequestCredential.md)             |             |
+| **claim_permissions**               | [**BoostCreateBoostRequestClaimPermissions**](BoostCreateBoostRequestClaimPermissions.md) |             | [optional] |
+| **default_permissions**             | [**BoostCreateBoostRequestClaimPermissions**](BoostCreateBoostRequestClaimPermissions.md) |             | [optional] |
+| **skills**                          | [**List[BoostSendRequestTemplateSkillsInner]**](BoostSendRequestTemplateSkillsInner.md)   |             | [optional] |
 
 ## Example
 
@@ -35,6 +34,5 @@ boost_create_boost_request_dict = boost_create_boost_request_instance.to_dict()
 # create an instance of BoostCreateBoostRequest from a dict
 boost_create_boost_request_from_dict = BoostCreateBoostRequest.from_dict(boost_create_boost_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,14 +1,13 @@
 # ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**guardian_profile_id** | **str** |  | 
-**guardian_did** | **str** |  | 
-**approved_at** | **datetime** |  | 
-**contract_updated_at** | **str** |  | 
+| Name                    | Type         | Description | Notes |
+| ----------------------- | ------------ | ----------- | ----- |
+| **guardian_profile_id** | **str**      |             |
+| **guardian_did**        | **str**      |             |
+| **approved_at**         | **datetime** |             |
+| **contract_updated_at** | **str**      |             |
 
 ## Example
 
@@ -27,6 +26,5 @@ contracts_get_consented_data_for_did200_response_records_inner_guardian_approval
 # create an instance of ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval from a dict
 contracts_get_consented_data_for_did200_response_records_inner_guardian_approval_from_dict = ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval.from_dict(contracts_get_consented_data_for_did200_response_records_inner_guardian_approval_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,15 +1,14 @@
 # BoostGetPaginatedBoostRecipients200ResponseRecordsInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**to** | [**BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md) |  | 
-**var_from** | **str** |  | 
-**received** | **str** |  | [optional] 
-**uri** | **str** |  | [optional] 
-**status** | **str** |  | [optional] 
+| Name         | Type                                                                                                                          | Description | Notes      |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **to**       | [**BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md) |             |
+| **var_from** | **str**                                                                                                                       |             |
+| **received** | **str**                                                                                                                       |             | [optional] |
+| **uri**      | **str**                                                                                                                       |             | [optional] |
+| **status**   | **str**                                                                                                                       |             | [optional] |
 
 ## Example
 
@@ -28,6 +27,5 @@ boost_get_paginated_boost_recipients200_response_records_inner_dict = boost_get_
 # create an instance of BoostGetPaginatedBoostRecipients200ResponseRecordsInner from a dict
 boost_get_paginated_boost_recipients200_response_records_inner_from_dict = BoostGetPaginatedBoostRecipients200ResponseRecordsInner.from_dict(boost_get_paginated_boost_recipients200_response_records_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

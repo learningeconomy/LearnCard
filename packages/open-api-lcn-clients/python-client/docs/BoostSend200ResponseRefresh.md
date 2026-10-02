@@ -4,14 +4,14 @@ Present when managed refresh was requested: issuance metadata the issuer keeps t
 
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**refresh_id** | **str** |  | 
-**refresh_service** | [**BoostSend200ResponseInboxRefreshRefreshService**](BoostSend200ResponseInboxRefreshRefreshService.md) |  | 
-**credential_id** | **str** |  | 
-**issuer_did** | **str** |  | 
-**holder_did** | **str** |  | 
-**credential_status** | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md) |  | [optional] 
+| Name                  | Type                                                                                                                | Description | Notes      |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **refresh_id**        | **str**                                                                                                             |             |
+| **refresh_service**   | [**BoostSend200ResponseInboxRefreshRefreshService**](BoostSend200ResponseInboxRefreshRefreshService.md)             |             |
+| **credential_id**     | **str**                                                                                                             |             |
+| **issuer_did**        | **str**                                                                                                             |             |
+| **holder_did**        | **str**                                                                                                             |             |
+| **credential_status** | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md) |             | [optional] |
 
 ## Example
 
@@ -30,6 +30,5 @@ boost_send200_response_refresh_dict = boost_send200_response_refresh_instance.to
 # create an instance of BoostSend200ResponseRefresh from a dict
 boost_send200_response_refresh_from_dict = BoostSend200ResponseRefresh.from_dict(boost_send200_response_refresh_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

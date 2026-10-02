@@ -27,7 +27,7 @@ from openapi_client.models.app_store_app_event_request_event_one_of6 import AppS
 from openapi_client.models.app_store_app_event_request_event_one_of7 import AppStoreAppEventRequestEventOneOf7
 from openapi_client.models.app_store_app_event_request_event_one_of8 import AppStoreAppEventRequestEventOneOf8
 from openapi_client.models.app_store_app_event_request_event_one_of9 import AppStoreAppEventRequestEventOneOf9
-from pydantic import StrictStr, Field
+from pydantic import StrictStr, Field, model_validator
 from typing import Union, List, Set, Optional, Dict
 from typing_extensions import Literal, Self
 
@@ -64,6 +64,14 @@ class AppStoreAppEventRequestEvent(BaseModel):
         validate_assignment=True,
         protected_namespaces=(),
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def parse_raw_oneof(cls, value):
+        """Accept the wire shape as well as explicit actual_instance construction."""
+        if isinstance(value, dict) and "actual_instance" not in value:
+            return {"actual_instance": cls.from_dict(value).actual_instance}
+        return value
 
 
     def __init__(self, *args, **kwargs) -> None:

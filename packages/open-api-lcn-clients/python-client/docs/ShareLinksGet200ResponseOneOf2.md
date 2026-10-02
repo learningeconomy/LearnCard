@@ -1,12 +1,11 @@
 # ShareLinksGet200ResponseOneOf2
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**status** | **str** |  | 
-**id** | **str** |  | 
+| Name       | Type    | Description | Notes |
+| ---------- | ------- | ----------- | ----- |
+| **status** | **str** |             |
+| **id**     | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ share_links_get200_response_one_of2_dict = share_links_get200_response_one_of2_i
 # create an instance of ShareLinksGet200ResponseOneOf2 from a dict
 share_links_get200_response_one_of2_from_dict = ShareLinksGet200ResponseOneOf2.from_dict(share_links_get200_response_one_of2_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

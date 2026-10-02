@@ -1,11 +1,10 @@
 # ContractsDeleteCredentialFromAllContractsRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**deleted_uris** | **List[str]** |  | 
+| Name             | Type          | Description | Notes |
+| ---------------- | ------------- | ----------- | ----- |
+| **deleted_uris** | **List[str]** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ contracts_delete_credential_from_all_contracts_request_dict = contracts_delete_c
 # create an instance of ContractsDeleteCredentialFromAllContractsRequest from a dict
 contracts_delete_credential_from_all_contracts_request_from_dict = ContractsDeleteCredentialFromAllContractsRequest.from_dict(contracts_delete_credential_from_all_contracts_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

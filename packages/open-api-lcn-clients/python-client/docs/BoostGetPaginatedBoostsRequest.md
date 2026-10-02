@@ -1,14 +1,13 @@
 # BoostGetPaginatedBoostsRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**limit** | **float** |  | [optional] [default to 25]
-**cursor** | **str** |  | [optional] 
-**sort** | **str** |  | [optional] 
-**query** | [**BoostCountBoostsRequestQuery**](BoostCountBoostsRequestQuery.md) |  | [optional] 
+| Name       | Type                                                                | Description | Notes                      |
+| ---------- | ------------------------------------------------------------------- | ----------- | -------------------------- |
+| **limit**  | **float**                                                           |             | [optional] [default to 25] |
+| **cursor** | **str**                                                             |             | [optional]                 |
+| **sort**   | **str**                                                             |             | [optional]                 |
+| **query**  | [**BoostCountBoostsRequestQuery**](BoostCountBoostsRequestQuery.md) |             | [optional]                 |
 
 ## Example
 
@@ -27,6 +26,5 @@ boost_get_paginated_boosts_request_dict = boost_get_paginated_boosts_request_ins
 # create an instance of BoostGetPaginatedBoostsRequest from a dict
 boost_get_paginated_boosts_request_from_dict = BoostGetPaginatedBoostsRequest.from_dict(boost_get_paginated_boosts_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

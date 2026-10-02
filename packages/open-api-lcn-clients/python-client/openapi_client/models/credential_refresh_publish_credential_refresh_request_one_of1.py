@@ -17,8 +17,11 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
+from openapi_client.models.boost_create_boost_request_credential_any_of import BoostCreateBoostRequestCredentialAnyOf
+from openapi_client.models.credential_refresh_publish_credential_refresh_request_one_of1_signing_authority import CredentialRefreshPublishCredentialRefreshRequestOneOf1SigningAuthority
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,13 +30,27 @@ class CredentialRefreshPublishCredentialRefreshRequestOneOf1(BaseModel):
     """
     CredentialRefreshPublishCredentialRefreshRequestOneOf1
     """ # noqa: E501
-    mode: Optional[Any] = None
-    __properties: ClassVar[List[str]] = ["mode"]
+    refresh_id: Annotated[str, Field(min_length=1, strict=True)] = Field(alias="refreshId")
+    notify_holder: Optional[StrictBool] = Field(default=None, alias="notifyHolder")
+    update_summary: Optional[StrictStr] = Field(default=None, alias="updateSummary")
+    idempotency_key: Optional[StrictStr] = Field(default=None, alias="idempotencyKey")
+    mode: StrictStr
+    credential: BoostCreateBoostRequestCredentialAnyOf
+    signing_authority: CredentialRefreshPublishCredentialRefreshRequestOneOf1SigningAuthority = Field(alias="signingAuthority")
+    __properties: ClassVar[List[str]] = ["refreshId", "notifyHolder", "updateSummary", "idempotencyKey", "mode", "credential", "signingAuthority"]
+
+    @field_validator('mode')
+    def mode_validate_enum(cls, value):
+        """Validates the enum"""
+        if value not in set(['signing-authority']):
+            raise ValueError("must be one of enum values ('signing-authority')")
+        return value
 
     model_config = ConfigDict(
         validate_by_name=True,
         validate_by_alias=True,
         validate_assignment=True,
+        extra="forbid",
         protected_namespaces=(),
     )
 
@@ -69,10 +86,26 @@ class CredentialRefreshPublishCredentialRefreshRequestOneOf1(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if mode (nullable) is None
+        # override the default output from pydantic by calling `to_dict()` of credential
+        if self.credential:
+            _dict['credential'] = self.credential.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of signing_authority
+        if self.signing_authority:
+            _dict['signingAuthority'] = self.signing_authority.to_dict()
+        # set to None if notify_holder (nullable) is None
         # and model_fields_set contains the field
-        if self.mode is None and "mode" in self.model_fields_set:
-            _dict['mode'] = None
+        if self.notify_holder is None and "notify_holder" in self.model_fields_set:
+            _dict['notifyHolder'] = None
+
+        # set to None if update_summary (nullable) is None
+        # and model_fields_set contains the field
+        if self.update_summary is None and "update_summary" in self.model_fields_set:
+            _dict['updateSummary'] = None
+
+        # set to None if idempotency_key (nullable) is None
+        # and model_fields_set contains the field
+        if self.idempotency_key is None and "idempotency_key" in self.model_fields_set:
+            _dict['idempotencyKey'] = None
 
         return _dict
 
@@ -85,9 +118,21 @@ class CredentialRefreshPublishCredentialRefreshRequestOneOf1(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
-            "mode": obj.get("mode")
-        })
+        # The wire schema closes this object; never capture forbidden branch fields.
+        for _key in obj:
+            if _key not in cls.__properties:
+                raise ValueError("Unexpected field in CredentialRefreshPublishCredentialRefreshRequestOneOf1: " + _key)
+        _values = {
+            "refreshId": obj.get("refreshId"),
+            "notifyHolder": obj.get("notifyHolder"),
+            "updateSummary": obj.get("updateSummary"),
+            "idempotencyKey": obj.get("idempotencyKey"),
+            "mode": obj.get("mode"),
+            "credential": BoostCreateBoostRequestCredentialAnyOf.from_dict(obj["credential"]) if obj.get("credential") is not None else None,
+            "signingAuthority": CredentialRefreshPublishCredentialRefreshRequestOneOf1SigningAuthority.from_dict(obj["signingAuthority"]) if obj.get("signingAuthority") is not None else None
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

@@ -1,17 +1,16 @@
 # ProfileManagerCreateChildProfileManagerRequestProfile
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**display_name** | **str** |  | [optional] [default to '']
-**short_bio** | **str** |  | [optional] [default to '']
-**bio** | **str** |  | [optional] [default to '']
-**email** | **str** |  | [optional] 
-**image** | **str** |  | [optional] 
-**hero_image** | **str** |  | [optional] 
-**manager_type** | **str** |  | [optional] 
+| Name             | Type    | Description | Notes                      |
+| ---------------- | ------- | ----------- | -------------------------- |
+| **display_name** | **str** |             | [optional] [default to ''] |
+| **short_bio**    | **str** |             | [optional] [default to ''] |
+| **bio**          | **str** |             | [optional] [default to ''] |
+| **email**        | **str** |             | [optional]                 |
+| **image**        | **str** |             | [optional]                 |
+| **hero_image**   | **str** |             | [optional]                 |
+| **manager_type** | **str** |             | [optional]                 |
 
 ## Example
 
@@ -30,6 +29,5 @@ profile_manager_create_child_profile_manager_request_profile_dict = profile_mana
 # create an instance of ProfileManagerCreateChildProfileManagerRequestProfile from a dict
 profile_manager_create_child_profile_manager_request_profile_from_dict = ProfileManagerCreateChildProfileManagerRequestProfile.from_dict(profile_manager_create_child_profile_manager_request_profile_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

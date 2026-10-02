@@ -145,7 +145,7 @@ class BoostGetBoostRecipients200ResponseInnerToAnyOf3(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "profileId": obj.get("profileId"),
             "displayName": obj.get("displayName") if obj.get("displayName") is not None else '',
             "shortBio": obj.get("shortBio") if obj.get("shortBio") is not None else '',
@@ -169,7 +169,9 @@ class BoostGetBoostRecipients200ResponseInnerToAnyOf3(BaseModel):
             "country": obj.get("country"),
             "locale": obj.get("locale"),
             "approved": obj.get("approved")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

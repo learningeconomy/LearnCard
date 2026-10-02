@@ -11,6 +11,7 @@
 
 
 import warnings
+from datetime import timezone
 from pydantic import validate_call, Field, StrictFloat, StrictStr, StrictInt
 from typing import Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Annotated
@@ -916,12 +917,12 @@ class ActivityApi:
             
         if start_date is not None:
             if isinstance(start_date, datetime):
+                if start_date.utcoffset() is None:
+                    raise ValueError("startDate must include a timezone")
                 _query_params.append(
                     (
                         'startDate',
-                        start_date.strftime(
-                            self.api_client.configuration.datetime_format
-                        )
+                        start_date.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
                     )
                 )
             else:
@@ -929,12 +930,12 @@ class ActivityApi:
             
         if end_date is not None:
             if isinstance(end_date, datetime):
+                if end_date.utcoffset() is None:
+                    raise ValueError("endDate must include a timezone")
                 _query_params.append(
                     (
                         'endDate',
-                        end_date.strftime(
-                            self.api_client.configuration.datetime_format
-                        )
+                        end_date.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
                     )
                 )
             else:
@@ -1344,12 +1345,12 @@ class ActivityApi:
             
         if start_date is not None:
             if isinstance(start_date, datetime):
+                if start_date.utcoffset() is None:
+                    raise ValueError("startDate must include a timezone")
                 _query_params.append(
                     (
                         'startDate',
-                        start_date.strftime(
-                            self.api_client.configuration.datetime_format
-                        )
+                        start_date.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
                     )
                 )
             else:
@@ -1357,12 +1358,12 @@ class ActivityApi:
             
         if end_date is not None:
             if isinstance(end_date, datetime):
+                if end_date.utcoffset() is None:
+                    raise ValueError("endDate must include a timezone")
                 _query_params.append(
                     (
                         'endDate',
-                        end_date.strftime(
-                            self.api_client.configuration.datetime_format
-                        )
+                        end_date.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
                     )
                 )
             else:

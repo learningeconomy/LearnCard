@@ -1,12 +1,11 @@
 # CredentialSendCredentialRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**credential** | [**CredentialSendCredentialRequestCredential**](CredentialSendCredentialRequestCredential.md) |  | 
-**metadata** | **Dict[str, Optional[object]]** |  | [optional] 
+| Name           | Type                                                                                          | Description | Notes      |
+| -------------- | --------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **credential** | [**CredentialSendCredentialRequestCredential**](CredentialSendCredentialRequestCredential.md) |             |
+| **metadata**   | **Dict[str, Optional[object]]**                                                               |             | [optional] |
 
 ## Example
 
@@ -25,6 +24,5 @@ credential_send_credential_request_dict = credential_send_credential_request_ins
 # create an instance of CredentialSendCredentialRequest from a dict
 credential_send_credential_request_from_dict = CredentialSendCredentialRequest.from_dict(credential_send_credential_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

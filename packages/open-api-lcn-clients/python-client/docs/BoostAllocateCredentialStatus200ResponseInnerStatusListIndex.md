@@ -1,10 +1,9 @@
 # BoostAllocateCredentialStatus200ResponseInnerStatusListIndex
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
 
 ## Example
 
@@ -23,6 +22,5 @@ boost_allocate_credential_status200_response_inner_status_list_index_dict = boos
 # create an instance of BoostAllocateCredentialStatus200ResponseInnerStatusListIndex from a dict
 boost_allocate_credential_status200_response_inner_status_list_index_from_dict = BoostAllocateCredentialStatus200ResponseInnerStatusListIndex.from_dict(boost_allocate_credential_status200_response_inner_status_list_index_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

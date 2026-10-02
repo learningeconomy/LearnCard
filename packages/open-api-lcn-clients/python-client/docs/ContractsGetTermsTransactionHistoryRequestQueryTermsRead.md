@@ -1,13 +1,12 @@
 # ContractsGetTermsTransactionHistoryRequestQueryTermsRead
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**anonymize** | **bool** |  | [optional] 
-**credentials** | [**ContractsGetTermsTransactionHistoryRequestQueryTermsReadCredentials**](ContractsGetTermsTransactionHistoryRequestQueryTermsReadCredentials.md) |  | [optional] 
-**personal** | **Dict[str, str]** |  | [optional] 
+| Name            | Type                                                                                                                                              | Description | Notes      |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **anonymize**   | **bool**                                                                                                                                          |             | [optional] |
+| **credentials** | [**ContractsGetTermsTransactionHistoryRequestQueryTermsReadCredentials**](ContractsGetTermsTransactionHistoryRequestQueryTermsReadCredentials.md) |             | [optional] |
+| **personal**    | **Dict[str, str]**                                                                                                                                |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ contracts_get_terms_transaction_history_request_query_terms_read_dict = contract
 # create an instance of ContractsGetTermsTransactionHistoryRequestQueryTermsRead from a dict
 contracts_get_terms_transaction_history_request_query_terms_read_from_dict = ContractsGetTermsTransactionHistoryRequestQueryTermsRead.from_dict(contracts_get_terms_transaction_history_request_query_terms_read_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

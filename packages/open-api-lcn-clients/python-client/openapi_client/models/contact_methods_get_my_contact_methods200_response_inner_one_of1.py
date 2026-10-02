@@ -131,7 +131,7 @@ class ContactMethodsGetMyContactMethods200ResponseInnerOneOf1(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "type": obj.get("type"),
             "value": obj.get("value"),
             "id": obj.get("id"),
@@ -139,7 +139,9 @@ class ContactMethodsGetMyContactMethods200ResponseInnerOneOf1(BaseModel):
             "verifiedAt": obj.get("verifiedAt"),
             "isPrimary": obj.get("isPrimary"),
             "createdAt": obj.get("createdAt")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

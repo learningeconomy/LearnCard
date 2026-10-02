@@ -1,12 +1,11 @@
 # PublicShareLinksResolve200ResponseOneOf2Sharer
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**display_name** | **str** |  | 
-**avatar** | **str** |  | [optional] 
+| Name             | Type    | Description | Notes      |
+| ---------------- | ------- | ----------- | ---------- |
+| **display_name** | **str** |             |
+| **avatar**       | **str** |             | [optional] |
 
 ## Example
 
@@ -25,6 +24,5 @@ public_share_links_resolve200_response_one_of2_sharer_dict = public_share_links_
 # create an instance of PublicShareLinksResolve200ResponseOneOf2Sharer from a dict
 public_share_links_resolve200_response_one_of2_sharer_from_dict = PublicShareLinksResolve200ResponseOneOf2Sharer.from_dict(public_share_links_resolve200_response_one_of2_sharer_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

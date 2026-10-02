@@ -1,13 +1,12 @@
 # BoostCountBoostChildrenRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**uri** | **str** |  | 
-**query** | [**BoostCountBoostsRequestQuery**](BoostCountBoostsRequestQuery.md) |  | [optional] 
-**number_of_generations** | [**BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations**](BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.md) |  | [optional] 
+| Name                      | Type                                                                                                                                            | Description | Notes      |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **uri**                   | **str**                                                                                                                                         |             |
+| **query**                 | [**BoostCountBoostsRequestQuery**](BoostCountBoostsRequestQuery.md)                                                                             |             | [optional] |
+| **number_of_generations** | [**BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations**](BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.md) |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ boost_count_boost_children_request_dict = boost_count_boost_children_request_ins
 # create an instance of BoostCountBoostChildrenRequest from a dict
 boost_count_boost_children_request_from_dict = BoostCountBoostChildrenRequest.from_dict(boost_count_boost_children_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

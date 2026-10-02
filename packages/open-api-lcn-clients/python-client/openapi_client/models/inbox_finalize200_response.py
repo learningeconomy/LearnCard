@@ -127,14 +127,16 @@ class InboxFinalize200Response(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "processed": obj.get("processed"),
             "claimed": obj.get("claimed"),
             "errors": obj.get("errors"),
             "guardianPending": obj.get("guardianPending"),
             "verifiableCredentials": [StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf1.from_dict(_item) for _item in obj["verifiableCredentials"]] if obj.get("verifiableCredentials") is not None else None,
             "deliveries": [WorkflowsParticipateInExchange200ResponseInboxDeliveriesInner.from_dict(_item) for _item in obj["deliveries"]] if obj.get("deliveries") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

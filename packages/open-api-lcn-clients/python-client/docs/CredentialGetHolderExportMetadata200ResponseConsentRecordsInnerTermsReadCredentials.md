@@ -1,13 +1,12 @@
 # CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentials
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**share_all** | **bool** |  | [optional] 
-**sharing** | **bool** |  | [optional] 
-**categories** | [**Dict[str, CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentialsCategoriesValue]**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentialsCategoriesValue.md) |  | 
+| Name           | Type                                                                                                                                                                                                                       | Description | Notes      |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **share_all**  | **bool**                                                                                                                                                                                                                   |             | [optional] |
+| **sharing**    | **bool**                                                                                                                                                                                                                   |             | [optional] |
+| **categories** | [**Dict[str, CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentialsCategoriesValue]**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentialsCategoriesValue.md) |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ credential_get_holder_export_metadata200_response_consent_records_inner_terms_re
 # create an instance of CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentials from a dict
 credential_get_holder_export_metadata200_response_consent_records_inner_terms_read_credentials_from_dict = CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentials.from_dict(credential_get_holder_export_metadata200_response_consent_records_inner_terms_read_credentials_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -152,7 +152,7 @@ class AppStoreGetListingsForIntegration200ResponseRecordsInner(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "listing_id": obj.get("listing_id"),
             "slug": obj.get("slug"),
             "display_name": obj.get("display_name"),
@@ -177,7 +177,9 @@ class AppStoreGetListingsForIntegration200ResponseRecordsInner(BaseModel):
             "highlights": obj.get("highlights"),
             "screenshots": obj.get("screenshots"),
             "submitter": AppStoreGetListingsForIntegration200ResponseRecordsInnerSubmitter.from_dict(obj["submitter"]) if obj.get("submitter") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

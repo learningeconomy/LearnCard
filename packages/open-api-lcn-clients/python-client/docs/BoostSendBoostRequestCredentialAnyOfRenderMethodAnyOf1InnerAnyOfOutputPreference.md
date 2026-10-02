@@ -1,11 +1,10 @@
 # BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOf1InnerAnyOfOutputPreference
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**media_type** | **str** |  | 
+| Name           | Type    | Description | Notes |
+| -------------- | ------- | ----------- | ----- |
+| **media_type** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ boost_send_boost_request_credential_any_of_render_method_any_of1_inner_any_of_ou
 # create an instance of BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOf1InnerAnyOfOutputPreference from a dict
 boost_send_boost_request_credential_any_of_render_method_any_of1_inner_any_of_output_preference_from_dict = BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOf1InnerAnyOfOutputPreference.from_dict(boost_send_boost_request_credential_any_of_render_method_any_of1_inner_any_of_output_preference_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

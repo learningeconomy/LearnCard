@@ -1,15 +1,14 @@
 # BoostAllocateCredentialStatus200ResponseInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**type** | **str** |  | 
-**status_purpose** | **str** |  | 
-**status_list_index** | [**BoostAllocateCredentialStatus200ResponseInnerStatusListIndex**](BoostAllocateCredentialStatus200ResponseInnerStatusListIndex.md) |  | 
-**status_list_credential** | **str** |  | 
+| Name                       | Type                                                                                                                                | Description | Notes |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **id**                     | **str**                                                                                                                             |             |
+| **type**                   | **str**                                                                                                                             |             |
+| **status_purpose**         | **str**                                                                                                                             |             |
+| **status_list_index**      | [**BoostAllocateCredentialStatus200ResponseInnerStatusListIndex**](BoostAllocateCredentialStatus200ResponseInnerStatusListIndex.md) |             |
+| **status_list_credential** | **str**                                                                                                                             |             |
 
 ## Example
 
@@ -28,6 +27,5 @@ boost_allocate_credential_status200_response_inner_dict = boost_allocate_credent
 # create an instance of BoostAllocateCredentialStatus200ResponseInner from a dict
 boost_allocate_credential_status200_response_inner_from_dict = BoostAllocateCredentialStatus200ResponseInner.from_dict(boost_allocate_credential_status200_response_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

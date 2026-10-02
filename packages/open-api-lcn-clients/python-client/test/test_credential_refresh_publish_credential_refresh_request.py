@@ -39,7 +39,7 @@ class TestCredentialRefreshPublishCredentialRefreshRequest(unittest.TestCase):
                 notify_holder = True,
                 update_summary = '',
                 idempotency_key = '',
-                mode = 'issuer-signed',
+                mode = 'signing-authority',
                 signed_credential = {
                     'key' : null
                     },
@@ -53,7 +53,16 @@ class TestCredentialRefreshPublishCredentialRefreshRequest(unittest.TestCase):
         else:
             return CredentialRefreshPublishCredentialRefreshRequest(
                 refresh_id = '0',
-                mode = 'issuer-signed',
+                mode = 'signing-authority',
+                signed_credential = {
+                    'key' : null
+                    },
+                credential = {
+                    'key' : null
+                    },
+                signing_authority = {
+                    'key' : null
+                    },
         )
         """
 

@@ -1,11 +1,10 @@
 # ContractsGetConsentFlowContractsRequestQueryReadPersonalValue
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**required** | **bool** |  | [optional] 
+| Name         | Type     | Description | Notes      |
+| ------------ | -------- | ----------- | ---------- |
+| **required** | **bool** |             | [optional] |
 
 ## Example
 
@@ -24,6 +23,5 @@ contracts_get_consent_flow_contracts_request_query_read_personal_value_dict = co
 # create an instance of ContractsGetConsentFlowContractsRequestQueryReadPersonalValue from a dict
 contracts_get_consent_flow_contracts_request_query_read_personal_value_from_dict = ContractsGetConsentFlowContractsRequestQueryReadPersonalValue.from_dict(contracts_get_consent_flow_contracts_request_query_read_personal_value_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

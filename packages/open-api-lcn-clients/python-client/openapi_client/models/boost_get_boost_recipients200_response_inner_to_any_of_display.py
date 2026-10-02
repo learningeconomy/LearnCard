@@ -153,7 +153,7 @@ class BoostGetBoostRecipients200ResponseInnerToAnyOfDisplay(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "backgroundColor": obj.get("backgroundColor"),
             "backgroundImage": obj.get("backgroundImage"),
             "fadeBackgroundImage": obj.get("fadeBackgroundImage"),
@@ -165,7 +165,9 @@ class BoostGetBoostRecipients200ResponseInnerToAnyOfDisplay(BaseModel):
             "fadeIdBackgroundImage": obj.get("fadeIdBackgroundImage"),
             "idBackgroundColor": obj.get("idBackgroundColor"),
             "repeatIdBackgroundImage": obj.get("repeatIdBackgroundImage")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

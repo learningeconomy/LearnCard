@@ -1,12 +1,11 @@
 # InboxApproveGuardianCredential200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**message** | **str** |  | 
-**already_linked** | **bool** |  | 
+| Name               | Type     | Description | Notes |
+| ------------------ | -------- | ----------- | ----- |
+| **message**        | **str**  |             |
+| **already_linked** | **bool** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ inbox_approve_guardian_credential200_response_dict = inbox_approve_guardian_cred
 # create an instance of InboxApproveGuardianCredential200Response from a dict
 inbox_approve_guardian_credential200_response_from_dict = InboxApproveGuardianCredential200Response.from_dict(inbox_approve_guardian_credential200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

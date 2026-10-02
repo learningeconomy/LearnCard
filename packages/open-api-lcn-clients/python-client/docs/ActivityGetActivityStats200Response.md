@@ -1,20 +1,19 @@
 # ActivityGetActivityStats200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**total_events** | **float** |  | 
-**total** | **float** |  | 
-**created** | **float** |  | 
-**delivered** | **float** |  | 
-**claimed** | **float** |  | 
-**expired** | **float** |  | 
-**failed** | **float** |  | 
-**revoked** | **float** |  | 
-**suspended** | **float** |  | 
-**claim_rate** | **float** |  | 
+| Name             | Type      | Description | Notes |
+| ---------------- | --------- | ----------- | ----- |
+| **total_events** | **float** |             |
+| **total**        | **float** |             |
+| **created**      | **float** |             |
+| **delivered**    | **float** |             |
+| **claimed**      | **float** |             |
+| **expired**      | **float** |             |
+| **failed**       | **float** |             |
+| **revoked**      | **float** |             |
+| **suspended**    | **float** |             |
+| **claim_rate**   | **float** |             |
 
 ## Example
 
@@ -33,6 +32,5 @@ activity_get_activity_stats200_response_dict = activity_get_activity_stats200_re
 # create an instance of ActivityGetActivityStats200Response from a dict
 activity_get_activity_stats200_response_from_dict = ActivityGetActivityStats200Response.from_dict(activity_get_activity_stats200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

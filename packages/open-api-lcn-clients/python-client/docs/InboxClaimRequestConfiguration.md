@@ -1,15 +1,14 @@
 # InboxClaimRequestConfiguration
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**publishable_key** | **str** |  | 
-**expires_in_days** | **int** | Inbox claim window in days. Defaults to 720; use a shorter window for sensitive records. | [optional] 
-**signing_authority_name** | **str** |  | [optional] 
-**listing_id** | **str** |  | [optional] 
-**listing_slug** | **str** |  | [optional] 
+| Name                       | Type    | Description                                                                              | Notes      |
+| -------------------------- | ------- | ---------------------------------------------------------------------------------------- | ---------- |
+| **publishable_key**        | **str** |                                                                                          |
+| **expires_in_days**        | **int** | Inbox claim window in days. Defaults to 720; use a shorter window for sensitive records. | [optional] |
+| **signing_authority_name** | **str** |                                                                                          | [optional] |
+| **listing_id**             | **str** |                                                                                          | [optional] |
+| **listing_slug**           | **str** |                                                                                          | [optional] |
 
 ## Example
 
@@ -28,6 +27,5 @@ inbox_claim_request_configuration_dict = inbox_claim_request_configuration_insta
 # create an instance of InboxClaimRequestConfiguration from a dict
 inbox_claim_request_configuration_from_dict = InboxClaimRequestConfiguration.from_dict(inbox_claim_request_configuration_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

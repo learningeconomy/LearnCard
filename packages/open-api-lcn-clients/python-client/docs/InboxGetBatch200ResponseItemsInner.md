@@ -1,13 +1,12 @@
 # InboxGetBatch200ResponseItemsInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**index** | **int** |  | 
-**state** | **str** |  | 
-**result** | [**InboxGetBatch200ResponseItemsInnerResult**](InboxGetBatch200ResponseItemsInnerResult.md) |  | [optional] 
+| Name       | Type                                                                                        | Description | Notes      |
+| ---------- | ------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **index**  | **int**                                                                                     |             |
+| **state**  | **str**                                                                                     |             |
+| **result** | [**InboxGetBatch200ResponseItemsInnerResult**](InboxGetBatch200ResponseItemsInnerResult.md) |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ inbox_get_batch200_response_items_inner_dict = inbox_get_batch200_response_items
 # create an instance of InboxGetBatch200ResponseItemsInner from a dict
 inbox_get_batch200_response_items_inner_from_dict = InboxGetBatch200ResponseItemsInner.from_dict(inbox_get_batch200_response_items_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

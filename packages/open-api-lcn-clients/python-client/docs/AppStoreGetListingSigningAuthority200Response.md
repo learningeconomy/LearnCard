@@ -1,14 +1,13 @@
 # AppStoreGetListingSigningAuthority200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**endpoint** | **str** |  | 
-**name** | **str** |  | 
-**did** | **str** |  | 
-**is_primary** | **bool** |  | 
+| Name           | Type     | Description | Notes |
+| -------------- | -------- | ----------- | ----- |
+| **endpoint**   | **str**  |             |
+| **name**       | **str**  |             |
+| **did**        | **str**  |             |
+| **is_primary** | **bool** |             |
 
 ## Example
 
@@ -27,6 +26,5 @@ app_store_get_listing_signing_authority200_response_dict = app_store_get_listing
 # create an instance of AppStoreGetListingSigningAuthority200Response from a dict
 app_store_get_listing_signing_authority200_response_from_dict = AppStoreGetListingSigningAuthority200Response.from_dict(app_store_get_listing_signing_authority200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,13 +1,12 @@
 # ShareLinksGetContent200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**content_version** | **int** |  | 
-**envelope** | [**ShareLinksUpdateRequestEnvelope**](ShareLinksUpdateRequestEnvelope.md) |  | 
+| Name                | Type                                                                      | Description | Notes |
+| ------------------- | ------------------------------------------------------------------------- | ----------- | ----- |
+| **id**              | **str**                                                                   |             |
+| **content_version** | **int**                                                                   |             |
+| **envelope**        | [**ShareLinksUpdateRequestEnvelope**](ShareLinksUpdateRequestEnvelope.md) |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ share_links_get_content200_response_dict = share_links_get_content200_response_i
 # create an instance of ShareLinksGetContent200Response from a dict
 share_links_get_content200_response_from_dict = ShareLinksGetContent200Response.from_dict(share_links_get_content200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

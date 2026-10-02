@@ -132,7 +132,7 @@ class BoostGetSkillsAvailableForBoost200ResponseInnerSkillsInner(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "id": obj.get("id"),
             "statement": obj.get("statement"),
             "description": obj.get("description"),
@@ -141,7 +141,9 @@ class BoostGetSkillsAvailableForBoost200ResponseInnerSkillsInner(BaseModel):
             "type": obj.get("type") if obj.get("type") is not None else 'skill',
             "status": obj.get("status") if obj.get("status") is not None else 'active',
             "frameworkId": obj.get("frameworkId")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

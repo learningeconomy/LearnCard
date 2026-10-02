@@ -1,27 +1,26 @@
 # ActivityGetMyActivities200ResponseRecordsInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**activity_id** | **str** |  | 
-**event_type** | **str** |  | 
-**timestamp** | **str** |  | 
-**actor_profile_id** | **str** |  | [optional] 
-**on_behalf_of** | **str** |  | [optional] 
-**recipient_type** | **str** |  | 
-**recipient_identifier** | **str** |  | 
-**boost_uri** | **str** |  | [optional] 
-**credential_uri** | **str** |  | [optional] 
-**inbox_credential_id** | **str** |  | [optional] 
-**integration_id** | **str** |  | [optional] 
-**source** | **str** |  | 
-**metadata** | **Dict[str, Optional[object]]** |  | [optional] 
-**status** | **str** |  | [optional] 
-**boost** | [**ActivityGetMyActivities200ResponseRecordsInnerBoost**](ActivityGetMyActivities200ResponseRecordsInnerBoost.md) |  | [optional] 
-**recipient_profile** | [**ActivityGetMyActivities200ResponseRecordsInnerRecipientProfile**](ActivityGetMyActivities200ResponseRecordsInnerRecipientProfile.md) |  | [optional] 
+| Name                     | Type                                                                                                                                    | Description | Notes      |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **id**                   | **str**                                                                                                                                 |             |
+| **activity_id**          | **str**                                                                                                                                 |             |
+| **event_type**           | **str**                                                                                                                                 |             |
+| **timestamp**            | **str**                                                                                                                                 |             |
+| **actor_profile_id**     | **str**                                                                                                                                 |             | [optional] |
+| **on_behalf_of**         | **str**                                                                                                                                 |             | [optional] |
+| **recipient_type**       | **str**                                                                                                                                 |             |
+| **recipient_identifier** | **str**                                                                                                                                 |             |
+| **boost_uri**            | **str**                                                                                                                                 |             | [optional] |
+| **credential_uri**       | **str**                                                                                                                                 |             | [optional] |
+| **inbox_credential_id**  | **str**                                                                                                                                 |             | [optional] |
+| **integration_id**       | **str**                                                                                                                                 |             | [optional] |
+| **source**               | **str**                                                                                                                                 |             |
+| **metadata**             | **Dict[str, Optional[object]]**                                                                                                         |             | [optional] |
+| **status**               | **str**                                                                                                                                 |             | [optional] |
+| **boost**                | [**ActivityGetMyActivities200ResponseRecordsInnerBoost**](ActivityGetMyActivities200ResponseRecordsInnerBoost.md)                       |             | [optional] |
+| **recipient_profile**    | [**ActivityGetMyActivities200ResponseRecordsInnerRecipientProfile**](ActivityGetMyActivities200ResponseRecordsInnerRecipientProfile.md) |             | [optional] |
 
 ## Example
 
@@ -40,6 +39,5 @@ activity_get_my_activities200_response_records_inner_dict = activity_get_my_acti
 # create an instance of ActivityGetMyActivities200ResponseRecordsInner from a dict
 activity_get_my_activities200_response_records_inner_from_dict = ActivityGetMyActivities200ResponseRecordsInner.from_dict(activity_get_my_activities200_response_records_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

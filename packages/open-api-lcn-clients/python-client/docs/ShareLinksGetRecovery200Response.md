@@ -1,11 +1,10 @@
 # ShareLinksGetRecovery200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**recovery** | [**InboxGetMyInboxDeliveries200ResponseRecordsInnerCredential**](InboxGetMyInboxDeliveries200ResponseRecordsInnerCredential.md) |  | 
+| Name         | Type                                                                                                                            | Description | Notes |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **recovery** | [**InboxGetMyInboxDeliveries200ResponseRecordsInnerCredential**](InboxGetMyInboxDeliveries200ResponseRecordsInnerCredential.md) |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ share_links_get_recovery200_response_dict = share_links_get_recovery200_response
 # create an instance of ShareLinksGetRecovery200Response from a dict
 share_links_get_recovery200_response_from_dict = ShareLinksGetRecovery200Response.from_dict(share_links_get_recovery200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

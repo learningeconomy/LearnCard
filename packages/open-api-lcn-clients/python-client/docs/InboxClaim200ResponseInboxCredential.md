@@ -1,32 +1,31 @@
 # InboxClaim200ResponseInboxCredential
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**refresh** | [**InboxIssue200ResponseRefresh**](InboxIssue200ResponseRefresh.md) |  | [optional] 
-**refresh_id** | **str** |  | [optional] 
-**id** | **str** |  | 
-**is_signed** | **bool** |  | 
-**current_status** | **str** |  | 
-**is_accepted** | **bool** |  | [optional] 
-**expires_at** | **str** |  | 
-**created_at** | **str** |  | 
-**finalized_at** | **str** |  | [optional] 
-**expired_at** | **str** |  | [optional] 
-**credential_name** | **str** |  | [optional] 
-**achievement_type** | **str** |  | [optional] 
-**issuer_did** | **str** |  | 
-**webhook_url** | **str** |  | [optional] 
-**boost_uri** | **str** |  | [optional] 
-**activity_id** | **str** |  | [optional] 
-**integration_id** | **str** |  | [optional] 
-**signing_authority** | [**InboxClaim200ResponseInboxCredentialSigningAuthority**](InboxClaim200ResponseInboxCredentialSigningAuthority.md) |  | [optional] 
-**guardian_email** | **str** |  | [optional] 
-**guardian_status** | **str** |  | [optional] 
-**guardian_approved_at** | **str** |  | [optional] 
-**guardian_approved_by_did** | **str** |  | [optional] 
+| Name                         | Type                                                                                                                | Description | Notes      |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **refresh**                  | [**InboxIssue200ResponseRefresh**](InboxIssue200ResponseRefresh.md)                                                 |             | [optional] |
+| **refresh_id**               | **str**                                                                                                             |             | [optional] |
+| **id**                       | **str**                                                                                                             |             |
+| **is_signed**                | **bool**                                                                                                            |             |
+| **current_status**           | **str**                                                                                                             |             |
+| **is_accepted**              | **bool**                                                                                                            |             | [optional] |
+| **expires_at**               | **str**                                                                                                             |             |
+| **created_at**               | **str**                                                                                                             |             |
+| **finalized_at**             | **str**                                                                                                             |             | [optional] |
+| **expired_at**               | **str**                                                                                                             |             | [optional] |
+| **credential_name**          | **str**                                                                                                             |             | [optional] |
+| **achievement_type**         | **str**                                                                                                             |             | [optional] |
+| **issuer_did**               | **str**                                                                                                             |             |
+| **webhook_url**              | **str**                                                                                                             |             | [optional] |
+| **boost_uri**                | **str**                                                                                                             |             | [optional] |
+| **activity_id**              | **str**                                                                                                             |             | [optional] |
+| **integration_id**           | **str**                                                                                                             |             | [optional] |
+| **signing_authority**        | [**InboxClaim200ResponseInboxCredentialSigningAuthority**](InboxClaim200ResponseInboxCredentialSigningAuthority.md) |             | [optional] |
+| **guardian_email**           | **str**                                                                                                             |             | [optional] |
+| **guardian_status**          | **str**                                                                                                             |             | [optional] |
+| **guardian_approved_at**     | **str**                                                                                                             |             | [optional] |
+| **guardian_approved_by_did** | **str**                                                                                                             |             | [optional] |
 
 ## Example
 
@@ -45,6 +44,5 @@ inbox_claim200_response_inbox_credential_dict = inbox_claim200_response_inbox_cr
 # create an instance of InboxClaim200ResponseInboxCredential from a dict
 inbox_claim200_response_inbox_credential_from_dict = InboxClaim200ResponseInboxCredential.from_dict(inbox_claim200_response_inbox_credential_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

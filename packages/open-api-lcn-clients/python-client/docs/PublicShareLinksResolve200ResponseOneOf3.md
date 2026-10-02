@@ -1,13 +1,12 @@
 # PublicShareLinksResolve200ResponseOneOf3
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**state** | **str** |  | 
-**id** | **str** |  | 
-**expires_at** | **datetime** |  | 
+| Name           | Type         | Description | Notes |
+| -------------- | ------------ | ----------- | ----- |
+| **state**      | **str**      |             |
+| **id**         | **str**      |             |
+| **expires_at** | **datetime** |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ public_share_links_resolve200_response_one_of3_dict = public_share_links_resolve
 # create an instance of PublicShareLinksResolve200ResponseOneOf3 from a dict
 public_share_links_resolve200_response_one_of3_from_dict = PublicShareLinksResolve200ResponseOneOf3.from_dict(public_share_links_resolve200_response_one_of3_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

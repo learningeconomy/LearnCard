@@ -94,11 +94,13 @@ class InboxSendGuardianApprovalEmailRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "guardianEmail": obj.get("guardianEmail"),
             "ttlHours": obj.get("ttlHours"),
             "template": InboxSendGuardianApprovalEmailRequestTemplate.from_dict(obj["template"]) if obj.get("template") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

@@ -89,10 +89,12 @@ class ContractsCreateConsentFlowContractRequestContract(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "read": ContractsCreateConsentFlowContractRequestContractRead.from_dict(obj["read"]) if obj.get("read") is not None else None,
             "write": ContractsCreateConsentFlowContractRequestContractWrite.from_dict(obj["write"]) if obj.get("write") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

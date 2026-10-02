@@ -1,11 +1,10 @@
 # PublicShareLinksResolveRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**passcode** | **str** |  | [optional] 
+| Name         | Type    | Description | Notes      |
+| ------------ | ------- | ----------- | ---------- |
+| **passcode** | **str** |             | [optional] |
 
 ## Example
 
@@ -24,6 +23,5 @@ public_share_links_resolve_request_dict = public_share_links_resolve_request_ins
 # create an instance of PublicShareLinksResolveRequest from a dict
 public_share_links_resolve_request_from_dict = PublicShareLinksResolveRequest.from_dict(public_share_links_resolve_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

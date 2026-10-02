@@ -1,19 +1,18 @@
 # AuthGrantsGetAuthGrants200ResponseInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**name** | **str** |  | 
-**description** | **str** |  | [optional] 
-**challenge** | **str** |  | 
-**status** | **str** |  | 
-**scope** | **str** |  | 
-**act_as** | **str** |  | [optional] 
-**created_at** | **datetime** |  | 
-**expires_at** | **datetime** |  | [optional] 
+| Name            | Type         | Description | Notes      |
+| --------------- | ------------ | ----------- | ---------- |
+| **id**          | **str**      |             |
+| **name**        | **str**      |             |
+| **description** | **str**      |             | [optional] |
+| **challenge**   | **str**      |             |
+| **status**      | **str**      |             |
+| **scope**       | **str**      |             |
+| **act_as**      | **str**      |             | [optional] |
+| **created_at**  | **datetime** |             |
+| **expires_at**  | **datetime** |             | [optional] |
 
 ## Example
 
@@ -32,6 +31,5 @@ auth_grants_get_auth_grants200_response_inner_dict = auth_grants_get_auth_grants
 # create an instance of AuthGrantsGetAuthGrants200ResponseInner from a dict
 auth_grants_get_auth_grants200_response_inner_from_dict = AuthGrantsGetAuthGrants200ResponseInner.from_dict(auth_grants_get_auth_grants200_response_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

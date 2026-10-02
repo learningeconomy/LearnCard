@@ -114,7 +114,7 @@ class BoostGetPaginatedBoostRecipientsRequestQuery(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "profileId": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["profileId"]) if obj.get("profileId") is not None else None,
             "displayName": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["displayName"]) if obj.get("displayName") is not None else None,
             "shortBio": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["shortBio"]) if obj.get("shortBio") is not None else None,
@@ -123,7 +123,9 @@ class BoostGetPaginatedBoostRecipientsRequestQuery(BaseModel):
             "websiteLink": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["websiteLink"]) if obj.get("websiteLink") is not None else None,
             "isServiceProfile": obj.get("isServiceProfile"),
             "type": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["type"]) if obj.get("type") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

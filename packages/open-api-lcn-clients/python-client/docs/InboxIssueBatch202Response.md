@@ -1,13 +1,12 @@
 # InboxIssueBatch202Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**batch_id** | **str** |  | 
-**status** | **str** |  | 
-**created_at** | **str** |  | 
+| Name           | Type    | Description | Notes |
+| -------------- | ------- | ----------- | ----- |
+| **batch_id**   | **str** |             |
+| **status**     | **str** |             |
+| **created_at** | **str** |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ inbox_issue_batch202_response_dict = inbox_issue_batch202_response_instance.to_d
 # create an instance of InboxIssueBatch202Response from a dict
 inbox_issue_batch202_response_from_dict = InboxIssueBatch202Response.from_dict(inbox_issue_batch202_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

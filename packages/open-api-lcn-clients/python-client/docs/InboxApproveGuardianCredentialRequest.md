@@ -1,11 +1,10 @@
 # InboxApproveGuardianCredentialRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**otp_code** | **str** |  | 
+| Name         | Type    | Description | Notes |
+| ------------ | ------- | ----------- | ----- |
+| **otp_code** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ inbox_approve_guardian_credential_request_dict = inbox_approve_guardian_credenti
 # create an instance of InboxApproveGuardianCredentialRequest from a dict
 inbox_approve_guardian_credential_request_from_dict = InboxApproveGuardianCredentialRequest.from_dict(inbox_approve_guardian_credential_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

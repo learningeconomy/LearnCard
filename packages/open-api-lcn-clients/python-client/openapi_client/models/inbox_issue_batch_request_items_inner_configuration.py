@@ -110,7 +110,7 @@ class InboxIssueBatchRequestItemsInnerConfiguration(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "guardianEmail": obj.get("guardianEmail"),
             "signingAuthority": InboxIssueBatchRequestItemsInnerConfigurationSigningAuthority.from_dict(obj["signingAuthority"]) if obj.get("signingAuthority") is not None else None,
             "webhookUrl": obj.get("webhookUrl"),
@@ -118,7 +118,9 @@ class InboxIssueBatchRequestItemsInnerConfiguration(BaseModel):
             "templateData": obj.get("templateData"),
             "delivery": InboxIssueBatchRequestItemsInnerConfigurationDelivery.from_dict(obj["delivery"]) if obj.get("delivery") is not None else None,
             "refresh": obj.get("refresh")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

@@ -90,7 +90,7 @@ class CredentialSendCredentialRequestCredentialAnyOf1RecipientsInnerHeader(BaseM
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "alg": obj.get("alg"),
             "iv": obj.get("iv"),
             "tag": obj.get("tag"),
@@ -98,7 +98,9 @@ class CredentialSendCredentialRequestCredentialAnyOf1RecipientsInnerHeader(BaseM
             "kid": obj.get("kid"),
             "apv": obj.get("apv"),
             "apu": obj.get("apu")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

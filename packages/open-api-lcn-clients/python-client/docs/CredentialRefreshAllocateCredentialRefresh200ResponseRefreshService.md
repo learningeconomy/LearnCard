@@ -1,13 +1,12 @@
 # CredentialRefreshAllocateCredentialRefresh200ResponseRefreshService
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**type** | **str** |  | 
-**authorization** | [**BoostSend200ResponseInboxRefreshRefreshServiceAuthorization**](BoostSend200ResponseInboxRefreshRefreshServiceAuthorization.md) |  | 
+| Name              | Type                                                                                                                              | Description | Notes |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **id**            | **str**                                                                                                                           |             |
+| **type**          | **str**                                                                                                                           |             |
+| **authorization** | [**BoostSend200ResponseInboxRefreshRefreshServiceAuthorization**](BoostSend200ResponseInboxRefreshRefreshServiceAuthorization.md) |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ credential_refresh_allocate_credential_refresh200_response_refresh_service_dict 
 # create an instance of CredentialRefreshAllocateCredentialRefresh200ResponseRefreshService from a dict
 credential_refresh_allocate_credential_refresh200_response_refresh_service_from_dict = CredentialRefreshAllocateCredentialRefresh200ResponseRefreshService.from_dict(credential_refresh_allocate_credential_refresh200_response_refresh_service_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

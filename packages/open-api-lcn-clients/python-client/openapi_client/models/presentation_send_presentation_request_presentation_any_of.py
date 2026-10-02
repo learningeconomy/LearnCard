@@ -122,14 +122,16 @@ class PresentationSendPresentationRequestPresentationAnyOf(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "@context": [BoostSendRequestTemplateCredentialAnyOfContextInner.from_dict(_item) for _item in obj["@context"]] if obj.get("@context") is not None else None,
             "id": obj.get("id"),
             "type": BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.from_dict(obj["type"]) if obj.get("type") is not None else None,
             "verifiableCredential": PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential.from_dict(obj["verifiableCredential"]) if obj.get("verifiableCredential") is not None else None,
             "holder": obj.get("holder"),
             "proof": BoostSendRequestTemplateCredentialAnyOfProof.from_dict(obj["proof"]) if obj.get("proof") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

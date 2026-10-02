@@ -90,10 +90,12 @@ class ContactMethodsCreateContactMethodSessionRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "contactMethod": ContactMethodsCreateContactMethodSessionRequestContactMethod.from_dict(obj["contactMethod"]) if obj.get("contactMethod") is not None else None,
             "otpChallenge": obj.get("otpChallenge")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

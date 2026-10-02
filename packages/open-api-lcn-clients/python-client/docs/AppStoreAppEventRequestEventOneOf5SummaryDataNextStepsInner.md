@@ -1,13 +1,12 @@
 # AppStoreAppEventRequestEventOneOf5SummaryDataNextStepsInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**title** | **str** | Title of the suggested next step | 
-**description** | **str** | Description explaining why this next step is recommended | 
-**keywords** | [**AppStoreAppEventRequestEventOneOf5SummaryDataNextStepsInnerKeywords**](AppStoreAppEventRequestEventOneOf5SummaryDataNextStepsInnerKeywords.md) |  | [optional] 
+| Name            | Type                                                                                                                                              | Description                                              | Notes      |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ---------- |
+| **title**       | **str**                                                                                                                                           | Title of the suggested next step                         |
+| **description** | **str**                                                                                                                                           | Description explaining why this next step is recommended |
+| **keywords**    | [**AppStoreAppEventRequestEventOneOf5SummaryDataNextStepsInnerKeywords**](AppStoreAppEventRequestEventOneOf5SummaryDataNextStepsInnerKeywords.md) |                                                          | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ app_store_app_event_request_event_one_of5_summary_data_next_steps_inner_dict = a
 # create an instance of AppStoreAppEventRequestEventOneOf5SummaryDataNextStepsInner from a dict
 app_store_app_event_request_event_one_of5_summary_data_next_steps_inner_from_dict = AppStoreAppEventRequestEventOneOf5SummaryDataNextStepsInner.from_dict(app_store_app_event_request_event_one_of5_summary_data_next_steps_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,13 +1,12 @@
 # FederationReceive200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**issuance_id** | **str** |  | 
-**claim_url** | **str** |  | [optional] 
-**status** | **str** |  | 
+| Name            | Type    | Description | Notes      |
+| --------------- | ------- | ----------- | ---------- |
+| **issuance_id** | **str** |             |
+| **claim_url**   | **str** |             | [optional] |
+| **status**      | **str** |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ federation_receive200_response_dict = federation_receive200_response_instance.to
 # create an instance of FederationReceive200Response from a dict
 federation_receive200_response_from_dict = FederationReceive200Response.from_dict(federation_receive200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

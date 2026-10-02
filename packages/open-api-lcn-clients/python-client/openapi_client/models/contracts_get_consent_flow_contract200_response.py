@@ -177,7 +177,7 @@ class ContractsGetConsentFlowContract200Response(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "contract": StorageResolve200ResponseAnyOfAnyOf1.from_dict(obj["contract"]) if obj.get("contract") is not None else None,
             "owner": BoostGetBoostRecipients200ResponseInnerToAnyOf3.from_dict(obj["owner"]) if obj.get("owner") is not None else None,
             "name": obj.get("name"),
@@ -194,7 +194,9 @@ class ContractsGetConsentFlowContract200Response(BaseModel):
             "expiresAt": obj.get("expiresAt"),
             "autoBoosts": obj.get("autoBoosts"),
             "writers": [BoostGetBoostRecipients200ResponseInnerToAnyOf3.from_dict(_item) for _item in obj["writers"]] if obj.get("writers") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

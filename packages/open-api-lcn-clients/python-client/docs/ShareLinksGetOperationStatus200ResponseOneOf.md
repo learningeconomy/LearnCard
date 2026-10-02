@@ -1,12 +1,11 @@
 # ShareLinksGetOperationStatus200ResponseOneOf
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**status** | **str** |  | 
-**id** | **str** |  | 
+| Name       | Type    | Description | Notes |
+| ---------- | ------- | ----------- | ----- |
+| **status** | **str** |             |
+| **id**     | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ share_links_get_operation_status200_response_one_of_dict = share_links_get_opera
 # create an instance of ShareLinksGetOperationStatus200ResponseOneOf from a dict
 share_links_get_operation_status200_response_one_of_from_dict = ShareLinksGetOperationStatus200ResponseOneOf.from_dict(share_links_get_operation_status200_response_one_of_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

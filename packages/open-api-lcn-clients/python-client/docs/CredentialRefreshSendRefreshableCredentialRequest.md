@@ -1,14 +1,13 @@
 # CredentialRefreshSendRefreshableCredentialRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**refresh_id** | **str** |  | 
-**credential** | [**BoostSendRequestTemplateCredentialAnyOf**](BoostSendRequestTemplateCredentialAnyOf.md) |  | 
-**boost_uri** | **str** |  | [optional] 
-**skip_notification** | **bool** |  | [optional] 
+| Name                  | Type                                                                                      | Description | Notes      |
+| --------------------- | ----------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **refresh_id**        | **str**                                                                                   |             |
+| **credential**        | [**BoostSendRequestTemplateCredentialAnyOf**](BoostSendRequestTemplateCredentialAnyOf.md) |             |
+| **boost_uri**         | **str**                                                                                   |             | [optional] |
+| **skip_notification** | **bool**                                                                                  |             | [optional] |
 
 ## Example
 
@@ -27,6 +26,5 @@ credential_refresh_send_refreshable_credential_request_dict = credential_refresh
 # create an instance of CredentialRefreshSendRefreshableCredentialRequest from a dict
 credential_refresh_send_refreshable_credential_request_from_dict = CredentialRefreshSendRefreshableCredentialRequest.from_dict(credential_refresh_send_refreshable_credential_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

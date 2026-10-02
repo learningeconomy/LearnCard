@@ -1,11 +1,10 @@
 # WorkflowsParticipateInExchangeRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**verifiable_presentation** | [**StorageStoreRequestItemAnyOfAnyOfAnyOf**](StorageStoreRequestItemAnyOfAnyOfAnyOf.md) |  | [optional] 
+| Name                        | Type                                                                                    | Description | Notes      |
+| --------------------------- | --------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **verifiable_presentation** | [**StorageStoreRequestItemAnyOfAnyOfAnyOf**](StorageStoreRequestItemAnyOfAnyOfAnyOf.md) |             | [optional] |
 
 ## Example
 
@@ -24,6 +23,5 @@ workflows_participate_in_exchange_request_dict = workflows_participate_in_exchan
 # create an instance of WorkflowsParticipateInExchangeRequest from a dict
 workflows_participate_in_exchange_request_from_dict = WorkflowsParticipateInExchangeRequest.from_dict(workflows_participate_in_exchange_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

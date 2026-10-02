@@ -1,20 +1,19 @@
 # IntegrationsGetIntegration200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**name** | **str** |  | 
-**description** | **str** |  | [optional] 
-**publishable_key** | **str** |  | 
-**whitelisted_domains** | [**List[IntegrationsAddIntegrationRequestWhitelistedDomainsInner]**](IntegrationsAddIntegrationRequestWhitelistedDomainsInner.md) |  | [default to []]
-**status** | **str** |  | [default to 'setup']
-**guide_type** | **str** |  | [optional] 
-**guide_state** | **Dict[str, Optional[object]]** |  | [optional] 
-**created_at** | **str** |  | [optional] 
-**updated_at** | **str** |  | [optional] 
+| Name                    | Type                                                                                                                              | Description | Notes                |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------- | -------------------- |
+| **id**                  | **str**                                                                                                                           |             |
+| **name**                | **str**                                                                                                                           |             |
+| **description**         | **str**                                                                                                                           |             | [optional]           |
+| **publishable_key**     | **str**                                                                                                                           |             |
+| **whitelisted_domains** | [**List[IntegrationsAddIntegrationRequestWhitelistedDomainsInner]**](IntegrationsAddIntegrationRequestWhitelistedDomainsInner.md) |             | [default to []]      |
+| **status**              | **str**                                                                                                                           |             | [default to 'setup'] |
+| **guide_type**          | **str**                                                                                                                           |             | [optional]           |
+| **guide_state**         | **Dict[str, Optional[object]]**                                                                                                   |             | [optional]           |
+| **created_at**          | **str**                                                                                                                           |             | [optional]           |
+| **updated_at**          | **str**                                                                                                                           |             | [optional]           |
 
 ## Example
 
@@ -33,6 +32,5 @@ integrations_get_integration200_response_dict = integrations_get_integration200_
 # create an instance of IntegrationsGetIntegration200Response from a dict
 integrations_get_integration200_response_from_dict = IntegrationsGetIntegration200Response.from_dict(integrations_get_integration200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

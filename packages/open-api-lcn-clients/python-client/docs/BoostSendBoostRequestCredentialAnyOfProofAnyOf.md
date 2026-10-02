@@ -1,18 +1,17 @@
 # BoostSendBoostRequestCredentialAnyOfProofAnyOf
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | **str** |  | 
-**created** | **str** |  | [optional] 
-**challenge** | **str** |  | [optional] 
-**domain** | **str** |  | [optional] 
-**nonce** | **str** |  | [optional] 
-**proof_purpose** | **str** |  | 
-**verification_method** | **str** |  | 
-**jws** | **str** |  | [optional] 
+| Name                    | Type    | Description | Notes      |
+| ----------------------- | ------- | ----------- | ---------- |
+| **type**                | **str** |             |
+| **created**             | **str** |             | [optional] |
+| **challenge**           | **str** |             | [optional] |
+| **domain**              | **str** |             | [optional] |
+| **nonce**               | **str** |             | [optional] |
+| **proof_purpose**       | **str** |             |
+| **verification_method** | **str** |             |
+| **jws**                 | **str** |             | [optional] |
 
 ## Example
 
@@ -31,6 +30,5 @@ boost_send_boost_request_credential_any_of_proof_any_of_dict = boost_send_boost_
 # create an instance of BoostSendBoostRequestCredentialAnyOfProofAnyOf from a dict
 boost_send_boost_request_credential_any_of_proof_any_of_from_dict = BoostSendBoostRequestCredentialAnyOfProofAnyOf.from_dict(boost_send_boost_request_credential_any_of_proof_any_of_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

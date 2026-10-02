@@ -1,12 +1,11 @@
 # CredentialRefreshAllocateCredentialRefreshRequestHolder
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**profile_id** | **str** |  | [optional] 
-**did** | **str** |  | 
+| Name           | Type    | Description | Notes      |
+| -------------- | ------- | ----------- | ---------- |
+| **profile_id** | **str** |             | [optional] |
+| **did**        | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ credential_refresh_allocate_credential_refresh_request_holder_dict = credential_
 # create an instance of CredentialRefreshAllocateCredentialRefreshRequestHolder from a dict
 credential_refresh_allocate_credential_refresh_request_holder_from_dict = CredentialRefreshAllocateCredentialRefreshRequestHolder.from_dict(credential_refresh_allocate_credential_refresh_request_holder_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

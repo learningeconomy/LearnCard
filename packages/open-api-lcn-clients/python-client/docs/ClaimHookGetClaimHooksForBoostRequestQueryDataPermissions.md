@@ -1,23 +1,22 @@
 # ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**role** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |  | [optional] 
-**can_view** | **bool** |  | [optional] 
-**can_edit** | **bool** |  | [optional] 
-**can_issue** | **bool** |  | [optional] 
-**can_revoke** | **bool** |  | [optional] 
-**can_manage_permissions** | **bool** |  | [optional] 
-**can_issue_children** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |  | [optional] 
-**can_create_children** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |  | [optional] 
-**can_edit_children** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |  | [optional] 
-**can_revoke_children** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |  | [optional] 
-**can_manage_children_permissions** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |  | [optional] 
-**can_manage_children_profiles** | **bool** |  | [optional] 
-**can_view_analytics** | **bool** |  | [optional] 
+| Name                                | Type                                                                                                                                              | Description | Notes      |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **role**                            | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
+| **can_view**                        | **bool**                                                                                                                                          |             | [optional] |
+| **can_edit**                        | **bool**                                                                                                                                          |             | [optional] |
+| **can_issue**                       | **bool**                                                                                                                                          |             | [optional] |
+| **can_revoke**                      | **bool**                                                                                                                                          |             | [optional] |
+| **can_manage_permissions**          | **bool**                                                                                                                                          |             | [optional] |
+| **can_issue_children**              | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
+| **can_create_children**             | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
+| **can_edit_children**               | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
+| **can_revoke_children**             | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
+| **can_manage_children_permissions** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
+| **can_manage_children_profiles**    | **bool**                                                                                                                                          |             | [optional] |
+| **can_view_analytics**              | **bool**                                                                                                                                          |             | [optional] |
 
 ## Example
 
@@ -36,6 +35,5 @@ claim_hook_get_claim_hooks_for_boost_request_query_data_permissions_dict = claim
 # create an instance of ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions from a dict
 claim_hook_get_claim_hooks_for_boost_request_query_data_permissions_from_dict = ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions.from_dict(claim_hook_get_claim_hooks_for_boost_request_query_data_permissions_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

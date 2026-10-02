@@ -1,14 +1,13 @@
 # ContractsGetConsentedDataRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**limit** | **float** |  | [optional] [default to 25]
-**cursor** | **str** |  | [optional] 
-**sort** | **str** |  | [optional] 
-**query** | [**ContractsGetConsentedDataRequestQuery**](ContractsGetConsentedDataRequestQuery.md) |  | [optional] 
+| Name       | Type                                                                                  | Description | Notes                      |
+| ---------- | ------------------------------------------------------------------------------------- | ----------- | -------------------------- |
+| **limit**  | **float**                                                                             |             | [optional] [default to 25] |
+| **cursor** | **str**                                                                               |             | [optional]                 |
+| **sort**   | **str**                                                                               |             | [optional]                 |
+| **query**  | [**ContractsGetConsentedDataRequestQuery**](ContractsGetConsentedDataRequestQuery.md) |             | [optional]                 |
 
 ## Example
 
@@ -27,6 +26,5 @@ contracts_get_consented_data_request_dict = contracts_get_consented_data_request
 # create an instance of ContractsGetConsentedDataRequest from a dict
 contracts_get_consented_data_request_from_dict = ContractsGetConsentedDataRequest.from_dict(contracts_get_consented_data_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,11 +1,10 @@
 # InboxRejectGuardianCredentialInAppRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**inbox_credential_id** | **str** |  | 
+| Name                    | Type    | Description | Notes |
+| ----------------------- | ------- | ----------- | ----- |
+| **inbox_credential_id** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ inbox_reject_guardian_credential_in_app_request_dict = inbox_reject_guardian_cre
 # create an instance of InboxRejectGuardianCredentialInAppRequest from a dict
 inbox_reject_guardian_credential_in_app_request_from_dict = InboxRejectGuardianCredentialInAppRequest.from_dict(inbox_reject_guardian_credential_in_app_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

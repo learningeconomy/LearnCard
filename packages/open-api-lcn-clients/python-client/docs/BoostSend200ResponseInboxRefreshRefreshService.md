@@ -1,13 +1,12 @@
 # BoostSend200ResponseInboxRefreshRefreshService
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**type** | **str** |  | 
-**authorization** | [**BoostSend200ResponseInboxRefreshRefreshServiceAuthorization**](BoostSend200ResponseInboxRefreshRefreshServiceAuthorization.md) |  | [optional] 
+| Name              | Type                                                                                                                              | Description | Notes      |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **id**            | **str**                                                                                                                           |             |
+| **type**          | **str**                                                                                                                           |             |
+| **authorization** | [**BoostSend200ResponseInboxRefreshRefreshServiceAuthorization**](BoostSend200ResponseInboxRefreshRefreshServiceAuthorization.md) |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ boost_send200_response_inbox_refresh_refresh_service_dict = boost_send200_respon
 # create an instance of BoostSend200ResponseInboxRefreshRefreshService from a dict
 boost_send200_response_inbox_refresh_refresh_service_from_dict = BoostSend200ResponseInboxRefreshRefreshService.from_dict(boost_send200_response_inbox_refresh_refresh_service_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

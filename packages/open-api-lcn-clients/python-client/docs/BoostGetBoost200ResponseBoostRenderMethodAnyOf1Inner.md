@@ -1,15 +1,14 @@
 # BoostGetBoost200ResponseBoostRenderMethodAnyOf1Inner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | **str** |  | 
-**render_suite** | **str** |  | 
-**template** | **str** |  | 
-**render_property** | **List[str]** |  | [optional] 
-**output_preference** | [**BoostGetBoost200ResponseBoostRenderMethodAnyOf1InnerAnyOfOutputPreference**](BoostGetBoost200ResponseBoostRenderMethodAnyOf1InnerAnyOfOutputPreference.md) |  | [optional] 
+| Name                  | Type                                                                                                                                                          | Description | Notes      |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **type**              | **str**                                                                                                                                                       |             |
+| **render_suite**      | **str**                                                                                                                                                       |             |
+| **template**          | **str**                                                                                                                                                       |             |
+| **render_property**   | **List[str]**                                                                                                                                                 |             | [optional] |
+| **output_preference** | [**BoostGetBoost200ResponseBoostRenderMethodAnyOf1InnerAnyOfOutputPreference**](BoostGetBoost200ResponseBoostRenderMethodAnyOf1InnerAnyOfOutputPreference.md) |             | [optional] |
 
 ## Example
 
@@ -28,6 +27,5 @@ boost_get_boost200_response_boost_render_method_any_of1_inner_dict = boost_get_b
 # create an instance of BoostGetBoost200ResponseBoostRenderMethodAnyOf1Inner from a dict
 boost_get_boost200_response_boost_render_method_any_of1_inner_from_dict = BoostGetBoost200ResponseBoostRenderMethodAnyOf1Inner.from_dict(boost_get_boost200_response_boost_render_method_any_of1_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

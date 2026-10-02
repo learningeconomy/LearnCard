@@ -1,13 +1,12 @@
 # InboxClaimPendingGuardianLinks200ResponseInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**child_profile_id** | **str** |  | 
-**child_display_name** | **str** |  | 
-**manager_id** | **str** |  | 
+| Name                   | Type    | Description | Notes |
+| ---------------------- | ------- | ----------- | ----- |
+| **child_profile_id**   | **str** |             |
+| **child_display_name** | **str** |             |
+| **manager_id**         | **str** |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ inbox_claim_pending_guardian_links200_response_inner_dict = inbox_claim_pending_
 # create an instance of InboxClaimPendingGuardianLinks200ResponseInner from a dict
 inbox_claim_pending_guardian_links200_response_inner_from_dict = InboxClaimPendingGuardianLinks200ResponseInner.from_dict(inbox_claim_pending_guardian_links200_response_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

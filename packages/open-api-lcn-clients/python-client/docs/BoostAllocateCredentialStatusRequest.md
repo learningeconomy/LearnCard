@@ -1,12 +1,11 @@
 # BoostAllocateCredentialStatusRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**status_purposes** | **List[str]** |  | [optional] 
-**list_size** | **int** |  | [optional] 
+| Name                | Type          | Description | Notes      |
+| ------------------- | ------------- | ----------- | ---------- |
+| **status_purposes** | **List[str]** |             | [optional] |
+| **list_size**       | **int**       |             | [optional] |
 
 ## Example
 
@@ -25,6 +24,5 @@ boost_allocate_credential_status_request_dict = boost_allocate_credential_status
 # create an instance of BoostAllocateCredentialStatusRequest from a dict
 boost_allocate_credential_status_request_from_dict = BoostAllocateCredentialStatusRequest.from_dict(boost_allocate_credential_status_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

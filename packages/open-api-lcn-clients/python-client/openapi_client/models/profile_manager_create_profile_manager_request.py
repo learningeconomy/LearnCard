@@ -106,7 +106,7 @@ class ProfileManagerCreateProfileManagerRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "displayName": obj.get("displayName") if obj.get("displayName") is not None else '',
             "shortBio": obj.get("shortBio") if obj.get("shortBio") is not None else '',
             "bio": obj.get("bio") if obj.get("bio") is not None else '',
@@ -114,7 +114,9 @@ class ProfileManagerCreateProfileManagerRequest(BaseModel):
             "image": obj.get("image"),
             "heroImage": obj.get("heroImage"),
             "managerType": obj.get("managerType")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

@@ -1,20 +1,20 @@
 # openapi_client.CredentialsApi
 
-All URIs are relative to *https://network.learncard.com/api*
+All URIs are relative to _/api_
 
-Method | HTTP request | Description
-------------- | ------------- | -------------
-[**credential_accept_credential**](CredentialsApi.md#credential_accept_credential) | **POST** /credential/accept | Accept a Credential
-[**credential_delete_credential**](CredentialsApi.md#credential_delete_credential) | **DELETE** /credential | Delete a credential
-[**credential_get_holder_export_metadata**](CredentialsApi.md#credential_get_holder_export_metadata) | **GET** /holder-export/metadata | Get holder export metadata
-[**credential_get_revoked_credentials**](CredentialsApi.md#credential_get_revoked_credentials) | **GET** /credentials/revoked | Get revoked credentials
-[**credential_incoming_credentials**](CredentialsApi.md#credential_incoming_credentials) | **GET** /credentials/incoming | Get incoming credentials
-[**credential_received_credentials**](CredentialsApi.md#credential_received_credentials) | **GET** /credentials/received | Get received credentials
-[**credential_send_credential**](CredentialsApi.md#credential_send_credential) | **POST** /credential/send/{profileId} | Send a Credential
-[**credential_sent_credentials**](CredentialsApi.md#credential_sent_credentials) | **GET** /credentials/sent | Get sent credentials
-
+| Method                                                                                               | HTTP request                          | Description                |
+| ---------------------------------------------------------------------------------------------------- | ------------------------------------- | -------------------------- |
+| [**credential_accept_credential**](CredentialsApi.md#credential_accept_credential)                   | **POST** /credential/accept           | Accept a Credential        |
+| [**credential_delete_credential**](CredentialsApi.md#credential_delete_credential)                   | **DELETE** /credential                | Delete a credential        |
+| [**credential_get_holder_export_metadata**](CredentialsApi.md#credential_get_holder_export_metadata) | **GET** /holder-export/metadata       | Get holder export metadata |
+| [**credential_get_revoked_credentials**](CredentialsApi.md#credential_get_revoked_credentials)       | **GET** /credentials/revoked          | Get revoked credentials    |
+| [**credential_incoming_credentials**](CredentialsApi.md#credential_incoming_credentials)             | **GET** /credentials/incoming         | Get incoming credentials   |
+| [**credential_received_credentials**](CredentialsApi.md#credential_received_credentials)             | **GET** /credentials/received         | Get received credentials   |
+| [**credential_send_credential**](CredentialsApi.md#credential_send_credential)                       | **POST** /credential/send/{profileId} | Send a Credential          |
+| [**credential_sent_credentials**](CredentialsApi.md#credential_sent_credentials)                     | **GET** /credentials/sent             | Get sent credentials       |
 
 # **credential_accept_credential**
+
 > bool credential_accept_credential(credential_accept_credential_request)
 
 Accept a Credential
@@ -23,7 +23,7 @@ This endpoint accepts a credential
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -31,10 +31,10 @@ from openapi_client.models.credential_accept_credential_request import Credentia
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -51,7 +51,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.CredentialsApi(api_client)
-    credential_accept_credential_request = openapi_client.CredentialAcceptCredentialRequest() # CredentialAcceptCredentialRequest | 
+    credential_accept_credential_request = openapi_client.CredentialAcceptCredentialRequest() # CredentialAcceptCredentialRequest |
 
     try:
         # Accept a Credential
@@ -62,14 +62,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling CredentialsApi->credential_accept_credential: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **credential_accept_credential_request** | [**CredentialAcceptCredentialRequest**](CredentialAcceptCredentialRequest.md)|  | 
+| Name                                     | Type                                                                          | Description | Notes |
+| ---------------------------------------- | ----------------------------------------------------------------------------- | ----------- | ----- |
+| **credential_accept_credential_request** | [**CredentialAcceptCredentialRequest**](CredentialAcceptCredentialRequest.md) |             |
 
 ### Return type
 
@@ -81,22 +78,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **credential_delete_credential**
+
 > bool credential_delete_credential(uri)
 
 Delete a credential
@@ -105,17 +103,17 @@ This endpoint deletes a credential
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -132,7 +130,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.CredentialsApi(api_client)
-    uri = 'uri_example' # str | 
+    uri = 'uri_example' # str |
 
     try:
         # Delete a credential
@@ -143,14 +141,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling CredentialsApi->credential_delete_credential: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **uri** | **str**|  | 
+| Name    | Type    | Description | Notes |
+| ------- | ------- | ----------- | ----- |
+| **uri** | **str** |             |
 
 ### Return type
 
@@ -162,23 +157,24 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**404** | Not found |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **credential_get_holder_export_metadata**
+
 > CredentialGetHolderExportMetadata200Response credential_get_holder_export_metadata()
 
 Get holder export metadata
@@ -187,7 +183,7 @@ Returns holder-owned continuity metadata such as consent records and transaction
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -195,10 +191,10 @@ from openapi_client.models.credential_get_holder_export_metadata200_response imp
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -225,8 +221,6 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling CredentialsApi->credential_get_holder_export_metadata: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
 This endpoint does not need any parameter.
@@ -241,23 +235,24 @@ This endpoint does not need any parameter.
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**404** | Not found |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **credential_get_revoked_credentials**
+
 > List[str] credential_get_revoked_credentials()
 
 Get revoked credentials
@@ -266,17 +261,17 @@ This endpoint returns credential URIs that have been revoked for the current use
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -303,8 +298,6 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling CredentialsApi->credential_get_revoked_credentials: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
 This endpoint does not need any parameter.
@@ -319,23 +312,24 @@ This endpoint does not need any parameter.
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**404** | Not found |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **credential_incoming_credentials**
+
 > List[CredentialReceivedCredentials200ResponseInner] credential_incoming_credentials(limit=limit, var_from=var_from)
 
 Get incoming credentials
@@ -344,7 +338,7 @@ This endpoint returns the current user's incoming credentials
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -352,10 +346,10 @@ from openapi_client.models.credential_received_credentials200_response_inner imp
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -384,15 +378,12 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling CredentialsApi->credential_incoming_credentials: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **limit** | **int**|  | [optional] [default to 25]
- **var_from** | **str**|  | [optional] 
+| Name         | Type    | Description | Notes                      |
+| ------------ | ------- | ----------- | -------------------------- |
+| **limit**    | **int** |             | [optional] [default to 25] |
+| **var_from** | **str** |             | [optional]                 |
 
 ### Return type
 
@@ -404,23 +395,24 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**404** | Not found |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **credential_received_credentials**
+
 > List[CredentialReceivedCredentials200ResponseInner] credential_received_credentials(limit=limit, var_from=var_from)
 
 Get received credentials
@@ -429,7 +421,7 @@ This endpoint returns the current user's received credentials
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -437,10 +429,10 @@ from openapi_client.models.credential_received_credentials200_response_inner imp
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -469,15 +461,12 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling CredentialsApi->credential_received_credentials: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **limit** | **int**|  | [optional] [default to 25]
- **var_from** | **str**|  | [optional] 
+| Name         | Type    | Description | Notes                      |
+| ------------ | ------- | ----------- | -------------------------- |
+| **limit**    | **int** |             | [optional] [default to 25] |
+| **var_from** | **str** |             | [optional]                 |
 
 ### Return type
 
@@ -489,23 +478,24 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**404** | Not found |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **credential_send_credential**
+
 > str credential_send_credential(profile_id, credential_send_credential_request)
 
 Send a Credential
@@ -514,7 +504,7 @@ This endpoint sends a credential to a user based on their profileId
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -522,10 +512,10 @@ from openapi_client.models.credential_send_credential_request import CredentialS
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -542,8 +532,8 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.CredentialsApi(api_client)
-    profile_id = 'profile_id_example' # str | 
-    credential_send_credential_request = openapi_client.CredentialSendCredentialRequest() # CredentialSendCredentialRequest | 
+    profile_id = 'profile_id_example' # str |
+    credential_send_credential_request = openapi_client.CredentialSendCredentialRequest() # CredentialSendCredentialRequest |
 
     try:
         # Send a Credential
@@ -554,15 +544,12 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling CredentialsApi->credential_send_credential: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **profile_id** | **str**|  | 
- **credential_send_credential_request** | [**CredentialSendCredentialRequest**](CredentialSendCredentialRequest.md)|  | 
+| Name                                   | Type                                                                      | Description | Notes |
+| -------------------------------------- | ------------------------------------------------------------------------- | ----------- | ----- |
+| **profile_id**                         | **str**                                                                   |             |
+| **credential_send_credential_request** | [**CredentialSendCredentialRequest**](CredentialSendCredentialRequest.md) |             |
 
 ### Return type
 
@@ -574,22 +561,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **credential_sent_credentials**
+
 > List[CredentialReceivedCredentials200ResponseInner] credential_sent_credentials(limit=limit, to=to)
 
 Get sent credentials
@@ -598,7 +586,7 @@ This endpoint returns the current user's sent credentials
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -606,10 +594,10 @@ from openapi_client.models.credential_received_credentials200_response_inner imp
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -638,15 +626,12 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling CredentialsApi->credential_sent_credentials: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **limit** | **int**|  | [optional] [default to 25]
- **to** | **str**|  | [optional] 
+| Name      | Type    | Description | Notes                      |
+| --------- | ------- | ----------- | -------------------------- |
+| **limit** | **int** |             | [optional] [default to 25] |
+| **to**    | **str** |             | [optional]                 |
 
 ### Return type
 
@@ -658,19 +643,18 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**404** | Not found |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

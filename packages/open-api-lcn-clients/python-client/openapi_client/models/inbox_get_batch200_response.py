@@ -121,14 +121,16 @@ class InboxGetBatch200Response(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "batchId": obj.get("batchId"),
             "createdAt": obj.get("createdAt"),
             "done": obj.get("done"),
             "status": obj.get("status"),
             "items": [InboxGetBatch200ResponseItemsInner.from_dict(_item) for _item in obj["items"]] if obj.get("items") is not None else None,
             "summary": InboxGetBatch200ResponseSummary.from_dict(obj["summary"]) if obj.get("summary") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

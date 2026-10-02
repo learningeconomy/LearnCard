@@ -1,11 +1,10 @@
 # InboxApproveGuardianCredentialInAppRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**inbox_credential_id** | **str** |  | 
+| Name                    | Type    | Description | Notes |
+| ----------------------- | ------- | ----------- | ----- |
+| **inbox_credential_id** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ inbox_approve_guardian_credential_in_app_request_dict = inbox_approve_guardian_c
 # create an instance of InboxApproveGuardianCredentialInAppRequest from a dict
 inbox_approve_guardian_credential_in_app_request_from_dict = InboxApproveGuardianCredentialInAppRequest.from_dict(inbox_approve_guardian_credential_in_app_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

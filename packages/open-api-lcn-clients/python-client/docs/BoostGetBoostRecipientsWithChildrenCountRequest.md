@@ -1,15 +1,14 @@
 # BoostGetBoostRecipientsWithChildrenCountRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**uri** | **str** |  | 
-**include_unaccepted_boosts** | **bool** |  | [optional] [default to True]
-**number_of_generations** | [**BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations**](BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.md) |  | [optional] 
-**boost_query** | [**BoostCountBoostsRequestQuery**](BoostCountBoostsRequestQuery.md) |  | [optional] 
-**profile_query** | [**BoostGetConnectedBoostRecipientsRequestQuery**](BoostGetConnectedBoostRecipientsRequestQuery.md) |  | [optional] 
+| Name                          | Type                                                                                                                                            | Description | Notes                        |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------------------------- |
+| **uri**                       | **str**                                                                                                                                         |             |
+| **include_unaccepted_boosts** | **bool**                                                                                                                                        |             | [optional] [default to True] |
+| **number_of_generations**     | [**BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations**](BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.md) |             | [optional]                   |
+| **boost_query**               | [**BoostCountBoostsRequestQuery**](BoostCountBoostsRequestQuery.md)                                                                             |             | [optional]                   |
+| **profile_query**             | [**BoostGetConnectedBoostRecipientsRequestQuery**](BoostGetConnectedBoostRecipientsRequestQuery.md)                                             |             | [optional]                   |
 
 ## Example
 
@@ -28,6 +27,5 @@ boost_get_boost_recipients_with_children_count_request_dict = boost_get_boost_re
 # create an instance of BoostGetBoostRecipientsWithChildrenCountRequest from a dict
 boost_get_boost_recipients_with_children_count_request_from_dict = BoostGetBoostRecipientsWithChildrenCountRequest.from_dict(boost_get_boost_recipients_with_children_count_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

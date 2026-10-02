@@ -156,7 +156,7 @@ class BoostGetBoost200Response(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "name": obj.get("name"),
             "type": obj.get("type"),
             "category": obj.get("category"),
@@ -169,7 +169,9 @@ class BoostGetBoost200Response(BaseModel):
             "claimPermissions": BoostGetBoost200ResponseClaimPermissions.from_dict(obj["claimPermissions"]) if obj.get("claimPermissions") is not None else None,
             "uri": obj.get("uri"),
             "boost": BoostGetBoost200ResponseBoost.from_dict(obj["boost"]) if obj.get("boost") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

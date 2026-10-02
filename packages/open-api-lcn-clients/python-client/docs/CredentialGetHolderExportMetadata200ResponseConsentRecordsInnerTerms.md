@@ -1,13 +1,12 @@
 # CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**read** | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsRead**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsRead.md) |  | 
-**write** | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite.md) |  | 
-**denied_writers** | **List[str]** |  | [optional] 
+| Name               | Type                                                                                                                                                          | Description | Notes      |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **read**           | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsRead**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsRead.md)   |             |
+| **write**          | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite.md) |             |
+| **denied_writers** | **List[str]**                                                                                                                                                 |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ credential_get_holder_export_metadata200_response_consent_records_inner_terms_di
 # create an instance of CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms from a dict
 credential_get_holder_export_metadata200_response_consent_records_inner_terms_from_dict = CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms.from_dict(credential_get_holder_export_metadata200_response_consent_records_inner_terms_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

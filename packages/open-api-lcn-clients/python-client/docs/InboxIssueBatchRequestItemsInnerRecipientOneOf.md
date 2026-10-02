@@ -1,12 +1,11 @@
 # InboxIssueBatchRequestItemsInnerRecipientOneOf
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | **str** |  | 
-**value** | **str** |  | 
+| Name      | Type    | Description | Notes |
+| --------- | ------- | ----------- | ----- |
+| **type**  | **str** |             |
+| **value** | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ inbox_issue_batch_request_items_inner_recipient_one_of_dict = inbox_issue_batch_
 # create an instance of InboxIssueBatchRequestItemsInnerRecipientOneOf from a dict
 inbox_issue_batch_request_items_inner_recipient_one_of_from_dict = InboxIssueBatchRequestItemsInnerRecipientOneOf.from_dict(inbox_issue_batch_request_items_inner_recipient_one_of_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

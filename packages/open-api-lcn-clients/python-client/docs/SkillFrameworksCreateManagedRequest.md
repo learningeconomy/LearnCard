@@ -1,19 +1,18 @@
 # SkillFrameworksCreateManagedRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | [optional] 
-**name** | **str** |  | 
-**description** | **str** |  | [optional] 
-**image** | **str** |  | [optional] 
-**source_uri** | **str** |  | [optional] 
-**is_public** | **bool** |  | [optional] 
-**status** | **str** |  | [optional] 
-**skills** | [**List[Schema0]**](Schema0.md) |  | [optional] 
-**boost_uris** | **List[str]** |  | [optional] 
+| Name            | Type                            | Description | Notes      |
+| --------------- | ------------------------------- | ----------- | ---------- |
+| **id**          | **str**                         |             | [optional] |
+| **name**        | **str**                         |             |
+| **description** | **str**                         |             | [optional] |
+| **image**       | **str**                         |             | [optional] |
+| **source_uri**  | **str**                         |             | [optional] |
+| **is_public**   | **bool**                        |             | [optional] |
+| **status**      | **str**                         |             | [optional] |
+| **skills**      | [**List[Schema0]**](Schema0.md) |             | [optional] |
+| **boost_uris**  | **List[str]**                   |             | [optional] |
 
 ## Example
 
@@ -32,6 +31,5 @@ skill_frameworks_create_managed_request_dict = skill_frameworks_create_managed_r
 # create an instance of SkillFrameworksCreateManagedRequest from a dict
 skill_frameworks_create_managed_request_from_dict = SkillFrameworksCreateManagedRequest.from_dict(skill_frameworks_create_managed_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

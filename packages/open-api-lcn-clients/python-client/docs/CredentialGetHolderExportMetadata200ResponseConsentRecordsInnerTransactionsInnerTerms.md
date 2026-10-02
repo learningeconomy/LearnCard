@@ -1,13 +1,12 @@
 # CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTerms
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**read** | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead.md) |  | 
-**write** | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsWrite**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsWrite.md) |  | 
-**denied_writers** | **List[str]** |  | [optional] 
+| Name               | Type                                                                                                                                                                                            | Description | Notes      |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **read**           | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead.md)   |             |
+| **write**          | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsWrite**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsWrite.md) |             |
+| **denied_writers** | **List[str]**                                                                                                                                                                                   |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ credential_get_holder_export_metadata200_response_consent_records_inner_transact
 # create an instance of CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTerms from a dict
 credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner_terms_from_dict = CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTerms.from_dict(credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner_terms_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

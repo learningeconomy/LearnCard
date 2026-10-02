@@ -1,15 +1,14 @@
 # BoostSendRequestTemplateCredentialAnyOfRenderMethod
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | **str** |  | 
-**render_suite** | **str** |  | 
-**template** | **str** |  | 
-**render_property** | **List[str]** |  | [optional] 
-**output_preference** | [**BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOf1InnerAnyOfOutputPreference**](BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOf1InnerAnyOfOutputPreference.md) |  | [optional] 
+| Name                  | Type                                                                                                                                                                        | Description | Notes      |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **type**              | **str**                                                                                                                                                                     |             |
+| **render_suite**      | **str**                                                                                                                                                                     |             |
+| **template**          | **str**                                                                                                                                                                     |             |
+| **render_property**   | **List[str]**                                                                                                                                                               |             | [optional] |
+| **output_preference** | [**BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOf1InnerAnyOfOutputPreference**](BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOf1InnerAnyOfOutputPreference.md) |             | [optional] |
 
 ## Example
 
@@ -28,6 +27,5 @@ boost_send_request_template_credential_any_of_render_method_dict = boost_send_re
 # create an instance of BoostSendRequestTemplateCredentialAnyOfRenderMethod from a dict
 boost_send_request_template_credential_any_of_render_method_from_dict = BoostSendRequestTemplateCredentialAnyOfRenderMethod.from_dict(boost_send_request_template_credential_any_of_render_method_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

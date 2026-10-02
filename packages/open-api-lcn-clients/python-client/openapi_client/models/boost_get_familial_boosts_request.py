@@ -113,7 +113,7 @@ class BoostGetFamilialBoostsRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "limit": obj.get("limit") if obj.get("limit") is not None else 25,
             "cursor": obj.get("cursor"),
             "sort": obj.get("sort"),
@@ -122,7 +122,9 @@ class BoostGetFamilialBoostsRequest(BaseModel):
             "parentGenerations": BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.from_dict(obj["parentGenerations"]) if obj.get("parentGenerations") is not None else None,
             "childGenerations": BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.from_dict(obj["childGenerations"]) if obj.get("childGenerations") is not None else None,
             "includeExtendedFamily": obj.get("includeExtendedFamily") if obj.get("includeExtendedFamily") is not None else False
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

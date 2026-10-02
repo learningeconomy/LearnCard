@@ -1,21 +1,20 @@
 # InboxGetBatch200ResponseItemsInnerResultOneOf
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**refresh** | [**InboxIssue200ResponseRefresh**](InboxIssue200ResponseRefresh.md) |  | [optional] 
-**issuance_id** | **str** |  | 
-**status** | **str** |  | 
-**recipient** | [**InboxGetBatch200ResponseItemsInnerResultOneOfRecipient**](InboxGetBatch200ResponseItemsInnerResultOneOfRecipient.md) |  | 
-**claim_url** | **str** |  | [optional] 
-**recipient_did** | **str** |  | [optional] 
-**success** | **bool** |  | 
-**index** | **int** |  | 
-**deduplicated** | **bool** |  | [optional] 
-**guardian_status** | **str** |  | [optional] 
-**idempotency_key** | **str** |  | [optional] 
+| Name                | Type                                                                                                                    | Description | Notes      |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **refresh**         | [**InboxIssue200ResponseRefresh**](InboxIssue200ResponseRefresh.md)                                                     |             | [optional] |
+| **issuance_id**     | **str**                                                                                                                 |             |
+| **status**          | **str**                                                                                                                 |             |
+| **recipient**       | [**InboxGetBatch200ResponseItemsInnerResultOneOfRecipient**](InboxGetBatch200ResponseItemsInnerResultOneOfRecipient.md) |             |
+| **claim_url**       | **str**                                                                                                                 |             | [optional] |
+| **recipient_did**   | **str**                                                                                                                 |             | [optional] |
+| **success**         | **bool**                                                                                                                |             |
+| **index**           | **int**                                                                                                                 |             |
+| **deduplicated**    | **bool**                                                                                                                |             | [optional] |
+| **guardian_status** | **str**                                                                                                                 |             | [optional] |
+| **idempotency_key** | **str**                                                                                                                 |             | [optional] |
 
 ## Example
 
@@ -34,6 +33,5 @@ inbox_get_batch200_response_items_inner_result_one_of_dict = inbox_get_batch200_
 # create an instance of InboxGetBatch200ResponseItemsInnerResultOneOf from a dict
 inbox_get_batch200_response_items_inner_result_one_of_from_dict = InboxGetBatch200ResponseItemsInnerResultOneOf.from_dict(inbox_get_batch200_response_items_inner_result_one_of_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,12 +1,11 @@
 # InboxGetBatch200ResponseItemsInnerResultOneOfRecipientOneOf
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | **str** |  | 
-**value** | **str** |  | 
+| Name      | Type    | Description | Notes |
+| --------- | ------- | ----------- | ----- |
+| **type**  | **str** |             |
+| **value** | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ inbox_get_batch200_response_items_inner_result_one_of_recipient_one_of_dict = in
 # create an instance of InboxGetBatch200ResponseItemsInnerResultOneOfRecipientOneOf from a dict
 inbox_get_batch200_response_items_inner_result_one_of_recipient_one_of_from_dict = InboxGetBatch200ResponseItemsInnerResultOneOfRecipientOneOf.from_dict(inbox_get_batch200_response_items_inner_result_one_of_recipient_one_of_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

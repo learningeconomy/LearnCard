@@ -90,11 +90,13 @@ class BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInner(Bas
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "type": BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType.from_dict(obj["type"]) if obj.get("type") is not None else None,
             "identifier": obj.get("identifier"),
             "identifierType": BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType.from_dict(obj["identifierType"]) if obj.get("identifierType") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

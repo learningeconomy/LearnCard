@@ -1,31 +1,31 @@
 # openapi_client.UniversalInboxApi
 
-All URIs are relative to *https://network.learncard.com/api*
+All URIs are relative to _/api_
 
-Method | HTTP request | Description
-------------- | ------------- | -------------
-[**federation_receive**](UniversalInboxApi.md#federation_receive) | **POST** /inbox/receive | Receive Federated Inbox Credential
-[**inbox_approve_guardian_credential**](UniversalInboxApi.md#inbox_approve_guardian_credential) | **POST** /inbox/guardian-credential-approval/{token}/approve | Approve Guardian Credential
-[**inbox_approve_guardian_credential_in_app**](UniversalInboxApi.md#inbox_approve_guardian_credential_in_app) | **POST** /inbox/guardian-credential-approval/in-app/approve | Approve Guardian Credential In-App
-[**inbox_approve_guardian_request**](UniversalInboxApi.md#inbox_approve_guardian_request) | **POST** /inbox/guardian-approval/approve | Approve Guardian Request
-[**inbox_approve_guardian_request_by_path**](UniversalInboxApi.md#inbox_approve_guardian_request_by_path) | **GET** /inbox/guardian-approval/{token} | Approve Guardian Request (GET)
-[**inbox_claim**](UniversalInboxApi.md#inbox_claim) | **POST** /inbox/claim | Claim Universal Inbox Credential
-[**inbox_claim_pending_guardian_links**](UniversalInboxApi.md#inbox_claim_pending_guardian_links) | **POST** /inbox/claim-guardian-links | Claim Pending Guardian Links
-[**inbox_finalize**](UniversalInboxApi.md#inbox_finalize) | **POST** /inbox/finalize | Finalize Universal Inbox Credentials
-[**inbox_get_batch**](UniversalInboxApi.md#inbox_get_batch) | **GET** /inbox/batches/{batchId} | Get Inbox Batch Progress
-[**inbox_get_guardian_pending_credential**](UniversalInboxApi.md#inbox_get_guardian_pending_credential) | **GET** /inbox/guardian-credential-approval/{token} | Get Guardian Pending Credential
-[**inbox_get_inbox_credential**](UniversalInboxApi.md#inbox_get_inbox_credential) | **GET** /inbox/credentials/{credentialId} | Get Universal Inbox Credential Details
-[**inbox_get_my_inbox_deliveries**](UniversalInboxApi.md#inbox_get_my_inbox_deliveries) | **POST** /inbox/deliveries | Recover claimed inbox deliveries
-[**inbox_get_my_issued_credentials**](UniversalInboxApi.md#inbox_get_my_issued_credentials) | **POST** /inbox/issued | Get My Issued Universal Inbox Credentials
-[**inbox_issue**](UniversalInboxApi.md#inbox_issue) | **POST** /inbox/issue | Issue Credential to Universal Inbox
-[**inbox_issue_batch**](UniversalInboxApi.md#inbox_issue_batch) | **POST** /inbox/issue-batch | Issue Credentials to Universal Inbox (Batch)
-[**inbox_reject_guardian_credential**](UniversalInboxApi.md#inbox_reject_guardian_credential) | **POST** /inbox/guardian-credential-approval/{token}/reject | Reject Guardian Credential
-[**inbox_reject_guardian_credential_in_app**](UniversalInboxApi.md#inbox_reject_guardian_credential_in_app) | **POST** /inbox/guardian-credential-approval/in-app/reject | Reject Guardian Credential In-App
-[**inbox_send_guardian_approval_email**](UniversalInboxApi.md#inbox_send_guardian_approval_email) | **POST** /inbox/guardian-approval/send | Send Guardian Approval Email
-[**inbox_send_guardian_challenge**](UniversalInboxApi.md#inbox_send_guardian_challenge) | **POST** /inbox/guardian-credential-approval/{token}/challenge | Send Guardian OTP Challenge
-
+| Method                                                                                                        | HTTP request                                                   | Description                                  |
+| ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------- |
+| [**federation_receive**](UniversalInboxApi.md#federation_receive)                                             | **POST** /inbox/receive                                        | Receive Federated Inbox Credential           |
+| [**inbox_approve_guardian_credential**](UniversalInboxApi.md#inbox_approve_guardian_credential)               | **POST** /inbox/guardian-credential-approval/{token}/approve   | Approve Guardian Credential                  |
+| [**inbox_approve_guardian_credential_in_app**](UniversalInboxApi.md#inbox_approve_guardian_credential_in_app) | **POST** /inbox/guardian-credential-approval/in-app/approve    | Approve Guardian Credential In-App           |
+| [**inbox_approve_guardian_request**](UniversalInboxApi.md#inbox_approve_guardian_request)                     | **POST** /inbox/guardian-approval/approve                      | Approve Guardian Request                     |
+| [**inbox_approve_guardian_request_by_path**](UniversalInboxApi.md#inbox_approve_guardian_request_by_path)     | **GET** /inbox/guardian-approval/{token}                       | Approve Guardian Request (GET)               |
+| [**inbox_claim**](UniversalInboxApi.md#inbox_claim)                                                           | **POST** /inbox/claim                                          | Claim Universal Inbox Credential             |
+| [**inbox_claim_pending_guardian_links**](UniversalInboxApi.md#inbox_claim_pending_guardian_links)             | **POST** /inbox/claim-guardian-links                           | Claim Pending Guardian Links                 |
+| [**inbox_finalize**](UniversalInboxApi.md#inbox_finalize)                                                     | **POST** /inbox/finalize                                       | Finalize Universal Inbox Credentials         |
+| [**inbox_get_batch**](UniversalInboxApi.md#inbox_get_batch)                                                   | **GET** /inbox/batches/{batchId}                               | Get Inbox Batch Progress                     |
+| [**inbox_get_guardian_pending_credential**](UniversalInboxApi.md#inbox_get_guardian_pending_credential)       | **GET** /inbox/guardian-credential-approval/{token}            | Get Guardian Pending Credential              |
+| [**inbox_get_inbox_credential**](UniversalInboxApi.md#inbox_get_inbox_credential)                             | **GET** /inbox/credentials/{credentialId}                      | Get Universal Inbox Credential Details       |
+| [**inbox_get_my_inbox_deliveries**](UniversalInboxApi.md#inbox_get_my_inbox_deliveries)                       | **POST** /inbox/deliveries                                     | Recover claimed inbox deliveries             |
+| [**inbox_get_my_issued_credentials**](UniversalInboxApi.md#inbox_get_my_issued_credentials)                   | **POST** /inbox/issued                                         | Get My Issued Universal Inbox Credentials    |
+| [**inbox_issue**](UniversalInboxApi.md#inbox_issue)                                                           | **POST** /inbox/issue                                          | Issue Credential to Universal Inbox          |
+| [**inbox_issue_batch**](UniversalInboxApi.md#inbox_issue_batch)                                               | **POST** /inbox/issue-batch                                    | Issue Credentials to Universal Inbox (Batch) |
+| [**inbox_reject_guardian_credential**](UniversalInboxApi.md#inbox_reject_guardian_credential)                 | **POST** /inbox/guardian-credential-approval/{token}/reject    | Reject Guardian Credential                   |
+| [**inbox_reject_guardian_credential_in_app**](UniversalInboxApi.md#inbox_reject_guardian_credential_in_app)   | **POST** /inbox/guardian-credential-approval/in-app/reject     | Reject Guardian Credential In-App            |
+| [**inbox_send_guardian_approval_email**](UniversalInboxApi.md#inbox_send_guardian_approval_email)             | **POST** /inbox/guardian-approval/send                         | Send Guardian Approval Email                 |
+| [**inbox_send_guardian_challenge**](UniversalInboxApi.md#inbox_send_guardian_challenge)                       | **POST** /inbox/guardian-credential-approval/{token}/challenge | Send Guardian OTP Challenge                  |
 
 # **federation_receive**
+
 > FederationReceive200Response federation_receive(federation_receive_request)
 
 Receive Federated Inbox Credential
@@ -34,7 +34,7 @@ Receives a credential from a federated LearnCard Network instance for delivery t
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -43,10 +43,10 @@ from openapi_client.models.federation_receive_request import FederationReceiveRe
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -63,7 +63,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.UniversalInboxApi(api_client)
-    federation_receive_request = openapi_client.FederationReceiveRequest() # FederationReceiveRequest | 
+    federation_receive_request = openapi_client.FederationReceiveRequest() # FederationReceiveRequest |
 
     try:
         # Receive Federated Inbox Credential
@@ -74,14 +74,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling UniversalInboxApi->federation_receive: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **federation_receive_request** | [**FederationReceiveRequest**](FederationReceiveRequest.md)|  | 
+| Name                           | Type                                                        | Description | Notes |
+| ------------------------------ | ----------------------------------------------------------- | ----------- | ----- |
+| **federation_receive_request** | [**FederationReceiveRequest**](FederationReceiveRequest.md) |             |
 
 ### Return type
 
@@ -93,22 +90,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **inbox_approve_guardian_credential**
+
 > InboxApproveGuardianCredential200Response inbox_approve_guardian_credential(token, inbox_approve_guardian_credential_request)
 
 Approve Guardian Credential
@@ -117,7 +115,7 @@ Guardian approves a pending credential. Requires a valid OTP from sendGuardianCh
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -126,10 +124,10 @@ from openapi_client.models.inbox_approve_guardian_credential_request import Inbo
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -146,8 +144,8 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.UniversalInboxApi(api_client)
-    token = 'token_example' # str | 
-    inbox_approve_guardian_credential_request = openapi_client.InboxApproveGuardianCredentialRequest() # InboxApproveGuardianCredentialRequest | 
+    token = 'token_example' # str |
+    inbox_approve_guardian_credential_request = openapi_client.InboxApproveGuardianCredentialRequest() # InboxApproveGuardianCredentialRequest |
 
     try:
         # Approve Guardian Credential
@@ -158,15 +156,12 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling UniversalInboxApi->inbox_approve_guardian_credential: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **token** | **str**|  | 
- **inbox_approve_guardian_credential_request** | [**InboxApproveGuardianCredentialRequest**](InboxApproveGuardianCredentialRequest.md)|  | 
+| Name                                          | Type                                                                                  | Description | Notes |
+| --------------------------------------------- | ------------------------------------------------------------------------------------- | ----------- | ----- |
+| **token**                                     | **str**                                                                               |             |
+| **inbox_approve_guardian_credential_request** | [**InboxApproveGuardianCredentialRequest**](InboxApproveGuardianCredentialRequest.md) |             |
 
 ### Return type
 
@@ -178,22 +173,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **inbox_approve_guardian_credential_in_app**
+
 > InboxApproveGuardianCredentialInApp200Response inbox_approve_guardian_credential_in_app(inbox_approve_guardian_credential_in_app_request)
 
 Approve Guardian Credential In-App
@@ -202,7 +198,7 @@ Authenticated guardian approves a pending credential. Requires MANAGES relations
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -211,10 +207,10 @@ from openapi_client.models.inbox_approve_guardian_credential_in_app_request impo
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -231,7 +227,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.UniversalInboxApi(api_client)
-    inbox_approve_guardian_credential_in_app_request = openapi_client.InboxApproveGuardianCredentialInAppRequest() # InboxApproveGuardianCredentialInAppRequest | 
+    inbox_approve_guardian_credential_in_app_request = openapi_client.InboxApproveGuardianCredentialInAppRequest() # InboxApproveGuardianCredentialInAppRequest |
 
     try:
         # Approve Guardian Credential In-App
@@ -242,14 +238,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling UniversalInboxApi->inbox_approve_guardian_credential_in_app: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **inbox_approve_guardian_credential_in_app_request** | [**InboxApproveGuardianCredentialInAppRequest**](InboxApproveGuardianCredentialInAppRequest.md)|  | 
+| Name                                                 | Type                                                                                            | Description | Notes |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **inbox_approve_guardian_credential_in_app_request** | [**InboxApproveGuardianCredentialInAppRequest**](InboxApproveGuardianCredentialInAppRequest.md) |             |
 
 ### Return type
 
@@ -261,22 +254,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **inbox_approve_guardian_request**
+
 > ContactMethodsSendChallenge200Response inbox_approve_guardian_request(inbox_approve_guardian_request_request)
 
 Approve Guardian Request
@@ -285,7 +279,7 @@ Consumes a guardian approval token and marks the requesting user profile as appr
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -294,10 +288,10 @@ from openapi_client.models.inbox_approve_guardian_request_request import InboxAp
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -314,7 +308,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.UniversalInboxApi(api_client)
-    inbox_approve_guardian_request_request = openapi_client.InboxApproveGuardianRequestRequest() # InboxApproveGuardianRequestRequest | 
+    inbox_approve_guardian_request_request = openapi_client.InboxApproveGuardianRequestRequest() # InboxApproveGuardianRequestRequest |
 
     try:
         # Approve Guardian Request
@@ -325,14 +319,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling UniversalInboxApi->inbox_approve_guardian_request: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **inbox_approve_guardian_request_request** | [**InboxApproveGuardianRequestRequest**](InboxApproveGuardianRequestRequest.md)|  | 
+| Name                                       | Type                                                                            | Description | Notes |
+| ------------------------------------------ | ------------------------------------------------------------------------------- | ----------- | ----- |
+| **inbox_approve_guardian_request_request** | [**InboxApproveGuardianRequestRequest**](InboxApproveGuardianRequestRequest.md) |             |
 
 ### Return type
 
@@ -344,22 +335,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **inbox_approve_guardian_request_by_path**
+
 > ContactMethodsSendChallenge200Response inbox_approve_guardian_request_by_path(token)
 
 Approve Guardian Request (GET)
@@ -368,7 +360,7 @@ GET endpoint to consume guardian approval token from URL path.
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -376,10 +368,10 @@ from openapi_client.models.contact_methods_send_challenge200_response import Con
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -396,7 +388,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.UniversalInboxApi(api_client)
-    token = 'token_example' # str | 
+    token = 'token_example' # str |
 
     try:
         # Approve Guardian Request (GET)
@@ -407,14 +399,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling UniversalInboxApi->inbox_approve_guardian_request_by_path: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **token** | **str**|  | 
+| Name      | Type    | Description | Notes |
+| --------- | ------- | ----------- | ----- |
+| **token** | **str** |             |
 
 ### Return type
 
@@ -426,23 +415,24 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**404** | Not found |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **inbox_claim**
+
 > InboxClaim200Response inbox_claim(inbox_claim_request)
 
 Claim Universal Inbox Credential
@@ -451,7 +441,7 @@ Claim a credential from the inbox
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -460,10 +450,10 @@ from openapi_client.models.inbox_claim_request import InboxClaimRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -480,7 +470,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.UniversalInboxApi(api_client)
-    inbox_claim_request = openapi_client.InboxClaimRequest() # InboxClaimRequest | 
+    inbox_claim_request = openapi_client.InboxClaimRequest() # InboxClaimRequest |
 
     try:
         # Claim Universal Inbox Credential
@@ -491,14 +481,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling UniversalInboxApi->inbox_claim: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **inbox_claim_request** | [**InboxClaimRequest**](InboxClaimRequest.md)|  | 
+| Name                    | Type                                          | Description | Notes |
+| ----------------------- | --------------------------------------------- | ----------- | ----- |
+| **inbox_claim_request** | [**InboxClaimRequest**](InboxClaimRequest.md) |             |
 
 ### Return type
 
@@ -510,22 +497,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **inbox_claim_pending_guardian_links**
+
 > List[InboxClaimPendingGuardianLinks200ResponseInner] inbox_claim_pending_guardian_links(body)
 
 Claim Pending Guardian Links
@@ -534,7 +522,7 @@ After creating a LearnCard account, call this to automatically establish Profile
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -542,10 +530,10 @@ from openapi_client.models.inbox_claim_pending_guardian_links200_response_inner 
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -562,7 +550,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.UniversalInboxApi(api_client)
-    body = None # object | 
+    body = None # object |
 
     try:
         # Claim Pending Guardian Links
@@ -573,14 +561,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling UniversalInboxApi->inbox_claim_pending_guardian_links: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **body** | **object**|  | 
+| Name     | Type       | Description | Notes |
+| -------- | ---------- | ----------- | ----- |
+| **body** | **object** |             |
 
 ### Return type
 
@@ -592,22 +577,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **inbox_finalize**
+
 > InboxFinalize200Response inbox_finalize(body=body)
 
 Finalize Universal Inbox Credentials
@@ -616,7 +602,7 @@ Sign and issue all pending inbox credentials for verified contact methods of the
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -624,10 +610,10 @@ from openapi_client.models.inbox_finalize200_response import InboxFinalize200Res
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -655,14 +641,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling UniversalInboxApi->inbox_finalize: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **body** | **object**|  | [optional] 
+| Name     | Type       | Description | Notes      |
+| -------- | ---------- | ----------- | ---------- |
+| **body** | **object** |             | [optional] |
 
 ### Return type
 
@@ -674,29 +657,30 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **inbox_get_batch**
+
 > InboxGetBatch200Response inbox_get_batch(batch_id)
 
 Get Inbox Batch Progress
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -704,10 +688,10 @@ from openapi_client.models.inbox_get_batch200_response import InboxGetBatch200Re
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -724,7 +708,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.UniversalInboxApi(api_client)
-    batch_id = 'batch_id_example' # str | 
+    batch_id = 'batch_id_example' # str |
 
     try:
         # Get Inbox Batch Progress
@@ -735,14 +719,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling UniversalInboxApi->inbox_get_batch: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **batch_id** | **str**|  | 
+| Name         | Type    | Description | Notes |
+| ------------ | ------- | ----------- | ----- |
+| **batch_id** | **str** |             |
 
 ### Return type
 
@@ -754,23 +735,24 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**404** | Not found |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **inbox_get_guardian_pending_credential**
+
 > InboxGetGuardianPendingCredential200Response inbox_get_guardian_pending_credential(token)
 
 Get Guardian Pending Credential
@@ -779,7 +761,7 @@ Returns metadata about a credential awaiting guardian approval. Uses the credent
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -787,10 +769,10 @@ from openapi_client.models.inbox_get_guardian_pending_credential200_response imp
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -807,7 +789,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.UniversalInboxApi(api_client)
-    token = 'token_example' # str | 
+    token = 'token_example' # str |
 
     try:
         # Get Guardian Pending Credential
@@ -818,14 +800,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling UniversalInboxApi->inbox_get_guardian_pending_credential: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **token** | **str**|  | 
+| Name      | Type    | Description | Notes |
+| --------- | ------- | ----------- | ----- |
+| **token** | **str** |             |
 
 ### Return type
 
@@ -837,23 +816,24 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**404** | Not found |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **inbox_get_inbox_credential**
+
 > InboxGetMyIssuedCredentials200ResponseRecordsInner inbox_get_inbox_credential(credential_id)
 
 Get Universal Inbox Credential Details
@@ -862,7 +842,7 @@ Get details of a specific inbox credential (if owned by the authenticated profil
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -870,10 +850,10 @@ from openapi_client.models.inbox_get_my_issued_credentials200_response_records_i
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -890,7 +870,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.UniversalInboxApi(api_client)
-    credential_id = 'credential_id_example' # str | 
+    credential_id = 'credential_id_example' # str |
 
     try:
         # Get Universal Inbox Credential Details
@@ -901,14 +881,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling UniversalInboxApi->inbox_get_inbox_credential: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **credential_id** | **str**|  | 
+| Name              | Type    | Description | Notes |
+| ----------------- | ------- | ----------- | ----- |
+| **credential_id** | **str** |             |
 
 ### Return type
 
@@ -920,23 +897,24 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**404** | Not found |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **inbox_get_my_inbox_deliveries**
+
 > InboxGetMyInboxDeliveries200Response inbox_get_my_inbox_deliveries(inbox_get_my_inbox_deliveries_request=inbox_get_my_inbox_deliveries_request)
 
 Recover claimed inbox deliveries
@@ -945,7 +923,7 @@ Returns the same holder-encrypted delivery for seven days after a claim, includi
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -954,10 +932,10 @@ from openapi_client.models.inbox_get_my_inbox_deliveries_request import InboxGet
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -985,14 +963,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling UniversalInboxApi->inbox_get_my_inbox_deliveries: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **inbox_get_my_inbox_deliveries_request** | [**InboxGetMyInboxDeliveriesRequest**](InboxGetMyInboxDeliveriesRequest.md)|  | [optional] 
+| Name                                      | Type                                                                        | Description | Notes      |
+| ----------------------------------------- | --------------------------------------------------------------------------- | ----------- | ---------- |
+| **inbox_get_my_inbox_deliveries_request** | [**InboxGetMyInboxDeliveriesRequest**](InboxGetMyInboxDeliveriesRequest.md) |             | [optional] |
 
 ### Return type
 
@@ -1004,22 +979,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **inbox_get_my_issued_credentials**
+
 > InboxGetMyIssuedCredentials200Response inbox_get_my_issued_credentials(inbox_get_my_issued_credentials_request=inbox_get_my_issued_credentials_request)
 
 Get My Issued Universal Inbox Credentials
@@ -1028,7 +1004,7 @@ Get all inbox credentials issued by the authenticated profile
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -1037,10 +1013,10 @@ from openapi_client.models.inbox_get_my_issued_credentials_request import InboxG
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1068,14 +1044,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling UniversalInboxApi->inbox_get_my_issued_credentials: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **inbox_get_my_issued_credentials_request** | [**InboxGetMyIssuedCredentialsRequest**](InboxGetMyIssuedCredentialsRequest.md)|  | [optional] 
+| Name                                        | Type                                                                            | Description | Notes      |
+| ------------------------------------------- | ------------------------------------------------------------------------------- | ----------- | ---------- |
+| **inbox_get_my_issued_credentials_request** | [**InboxGetMyIssuedCredentialsRequest**](InboxGetMyIssuedCredentialsRequest.md) |             | [optional] |
 
 ### Return type
 
@@ -1087,22 +1060,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **inbox_issue**
+
 > InboxIssue200Response inbox_issue(inbox_issue_request)
 
 Issue Credential to Universal Inbox
@@ -1111,7 +1085,7 @@ Issue a credential to a recipient's inbox. If the recipient exists with a verifi
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -1120,10 +1094,10 @@ from openapi_client.models.inbox_issue_request import InboxIssueRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1140,7 +1114,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.UniversalInboxApi(api_client)
-    inbox_issue_request = openapi_client.InboxIssueRequest() # InboxIssueRequest | 
+    inbox_issue_request = openapi_client.InboxIssueRequest() # InboxIssueRequest |
 
     try:
         # Issue Credential to Universal Inbox
@@ -1151,14 +1125,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling UniversalInboxApi->inbox_issue: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **inbox_issue_request** | [**InboxIssueRequest**](InboxIssueRequest.md)|  | 
+| Name                    | Type                                          | Description | Notes |
+| ----------------------- | --------------------------------------------- | ----------- | ----- |
+| **inbox_issue_request** | [**InboxIssueRequest**](InboxIssueRequest.md) |             |
 
 ### Return type
 
@@ -1170,22 +1141,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **inbox_issue_batch**
+
 > InboxIssueBatch202Response inbox_issue_batch(inbox_issue_batch_request)
 
 Issue Credentials to Universal Inbox (Batch)
@@ -1194,7 +1166,7 @@ Queue 1–100 credentials for background issuance. Returns a durable batch ID; p
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -1203,10 +1175,10 @@ from openapi_client.models.inbox_issue_batch_request import InboxIssueBatchReque
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1223,7 +1195,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.UniversalInboxApi(api_client)
-    inbox_issue_batch_request = openapi_client.InboxIssueBatchRequest() # InboxIssueBatchRequest | 
+    inbox_issue_batch_request = openapi_client.InboxIssueBatchRequest() # InboxIssueBatchRequest |
 
     try:
         # Issue Credentials to Universal Inbox (Batch)
@@ -1234,14 +1206,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling UniversalInboxApi->inbox_issue_batch: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **inbox_issue_batch_request** | [**InboxIssueBatchRequest**](InboxIssueBatchRequest.md)|  | 
+| Name                          | Type                                                    | Description | Notes |
+| ----------------------------- | ------------------------------------------------------- | ----------- | ----- |
+| **inbox_issue_batch_request** | [**InboxIssueBatchRequest**](InboxIssueBatchRequest.md) |             |
 
 ### Return type
 
@@ -1253,22 +1222,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**202** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **202**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **inbox_reject_guardian_credential**
+
 > ContactMethodsSendChallenge200Response inbox_reject_guardian_credential(token, inbox_reject_guardian_credential_request)
 
 Reject Guardian Credential
@@ -1277,7 +1247,7 @@ Guardian rejects a pending credential. Requires a valid OTP from sendGuardianCha
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -1286,10 +1256,10 @@ from openapi_client.models.inbox_reject_guardian_credential_request import Inbox
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1306,8 +1276,8 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.UniversalInboxApi(api_client)
-    token = 'token_example' # str | 
-    inbox_reject_guardian_credential_request = openapi_client.InboxRejectGuardianCredentialRequest() # InboxRejectGuardianCredentialRequest | 
+    token = 'token_example' # str |
+    inbox_reject_guardian_credential_request = openapi_client.InboxRejectGuardianCredentialRequest() # InboxRejectGuardianCredentialRequest |
 
     try:
         # Reject Guardian Credential
@@ -1318,15 +1288,12 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling UniversalInboxApi->inbox_reject_guardian_credential: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **token** | **str**|  | 
- **inbox_reject_guardian_credential_request** | [**InboxRejectGuardianCredentialRequest**](InboxRejectGuardianCredentialRequest.md)|  | 
+| Name                                         | Type                                                                                | Description | Notes |
+| -------------------------------------------- | ----------------------------------------------------------------------------------- | ----------- | ----- |
+| **token**                                    | **str**                                                                             |             |
+| **inbox_reject_guardian_credential_request** | [**InboxRejectGuardianCredentialRequest**](InboxRejectGuardianCredentialRequest.md) |             |
 
 ### Return type
 
@@ -1338,22 +1305,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **inbox_reject_guardian_credential_in_app**
+
 > InboxApproveGuardianCredentialInApp200Response inbox_reject_guardian_credential_in_app(inbox_reject_guardian_credential_in_app_request)
 
 Reject Guardian Credential In-App
@@ -1362,7 +1330,7 @@ Authenticated guardian rejects a pending credential. Requires MANAGES relationsh
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -1371,10 +1339,10 @@ from openapi_client.models.inbox_reject_guardian_credential_in_app_request impor
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1391,7 +1359,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.UniversalInboxApi(api_client)
-    inbox_reject_guardian_credential_in_app_request = openapi_client.InboxRejectGuardianCredentialInAppRequest() # InboxRejectGuardianCredentialInAppRequest | 
+    inbox_reject_guardian_credential_in_app_request = openapi_client.InboxRejectGuardianCredentialInAppRequest() # InboxRejectGuardianCredentialInAppRequest |
 
     try:
         # Reject Guardian Credential In-App
@@ -1402,14 +1370,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling UniversalInboxApi->inbox_reject_guardian_credential_in_app: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **inbox_reject_guardian_credential_in_app_request** | [**InboxRejectGuardianCredentialInAppRequest**](InboxRejectGuardianCredentialInAppRequest.md)|  | 
+| Name                                                | Type                                                                                          | Description | Notes |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **inbox_reject_guardian_credential_in_app_request** | [**InboxRejectGuardianCredentialInAppRequest**](InboxRejectGuardianCredentialInAppRequest.md) |             |
 
 ### Return type
 
@@ -1421,22 +1386,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **inbox_send_guardian_approval_email**
+
 > InboxSendGuardianApprovalEmail200Response inbox_send_guardian_approval_email(inbox_send_guardian_approval_email_request)
 
 Send Guardian Approval Email
@@ -1445,7 +1411,7 @@ Generates a one-time approval token and emails a link to the guardian. When the 
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -1454,10 +1420,10 @@ from openapi_client.models.inbox_send_guardian_approval_email_request import Inb
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1474,7 +1440,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.UniversalInboxApi(api_client)
-    inbox_send_guardian_approval_email_request = openapi_client.InboxSendGuardianApprovalEmailRequest() # InboxSendGuardianApprovalEmailRequest | 
+    inbox_send_guardian_approval_email_request = openapi_client.InboxSendGuardianApprovalEmailRequest() # InboxSendGuardianApprovalEmailRequest |
 
     try:
         # Send Guardian Approval Email
@@ -1485,14 +1451,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling UniversalInboxApi->inbox_send_guardian_approval_email: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **inbox_send_guardian_approval_email_request** | [**InboxSendGuardianApprovalEmailRequest**](InboxSendGuardianApprovalEmailRequest.md)|  | 
+| Name                                           | Type                                                                                  | Description | Notes |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------- | ----------- | ----- |
+| **inbox_send_guardian_approval_email_request** | [**InboxSendGuardianApprovalEmailRequest**](InboxSendGuardianApprovalEmailRequest.md) |             |
 
 ### Return type
 
@@ -1504,22 +1467,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **inbox_send_guardian_challenge**
+
 > ContactMethodsSendChallenge200Response inbox_send_guardian_challenge(token)
 
 Send Guardian OTP Challenge
@@ -1528,7 +1492,7 @@ Sends a 6-digit verification code to the guardian email associated with this app
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -1536,10 +1500,10 @@ from openapi_client.models.contact_methods_send_challenge200_response import Con
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1556,7 +1520,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.UniversalInboxApi(api_client)
-    token = 'token_example' # str | 
+    token = 'token_example' # str |
 
     try:
         # Send Guardian OTP Challenge
@@ -1567,14 +1531,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling UniversalInboxApi->inbox_send_guardian_challenge: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **token** | **str**|  | 
+| Name      | Type    | Description | Notes |
+| --------- | ------- | ----------- | ----- |
+| **token** | **str** |             |
 
 ### Return type
 
@@ -1586,18 +1547,17 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

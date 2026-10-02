@@ -129,12 +129,14 @@ class ContractsGetAllContractRequestsForProfile200ResponseInner(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "contract": ContractsGetAllContractRequestsForProfile200ResponseInnerContract.from_dict(obj["contract"]) if obj.get("contract") is not None else None,
             "profile": BoostGetBoostRecipients200ResponseInnerToAnyOf3.from_dict(obj["profile"]) if obj.get("profile") is not None else None,
             "status": obj.get("status"),
             "readStatus": obj.get("readStatus")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

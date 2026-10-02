@@ -146,7 +146,7 @@ class ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "role": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["role"]) if obj.get("role") is not None else None,
             "canView": obj.get("canView"),
             "canEdit": obj.get("canEdit"),
@@ -160,7 +160,9 @@ class ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions(BaseModel):
             "canManageChildrenPermissions": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["canManageChildrenPermissions"]) if obj.get("canManageChildrenPermissions") is not None else None,
             "canManageChildrenProfiles": obj.get("canManageChildrenProfiles"),
             "canViewAnalytics": obj.get("canViewAnalytics")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

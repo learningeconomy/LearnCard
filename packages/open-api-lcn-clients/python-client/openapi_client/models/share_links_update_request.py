@@ -144,7 +144,7 @@ class ShareLinksUpdateRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "id": obj.get("id"),
             "expectedVersion": obj.get("expectedVersion"),
             "clientRequestId": obj.get("clientRequestId"),
@@ -157,7 +157,9 @@ class ShareLinksUpdateRequest(BaseModel):
             "selectedCount": obj.get("selectedCount"),
             "envelope": ShareLinksUpdateRequestEnvelope.from_dict(obj["envelope"]) if obj.get("envelope") is not None else None,
             "ownerEncryptedRecovery": CredentialSendCredentialRequestCredentialAnyOf1.from_dict(obj["ownerEncryptedRecovery"]) if obj.get("ownerEncryptedRecovery") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

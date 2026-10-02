@@ -1,11 +1,10 @@
 # AppStoreSendAppNotification200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**sent** | **bool** |  | 
+| Name     | Type     | Description | Notes |
+| -------- | -------- | ----------- | ----- |
+| **sent** | **bool** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ app_store_send_app_notification200_response_dict = app_store_send_app_notificati
 # create an instance of AppStoreSendAppNotification200Response from a dict
 app_store_send_app_notification200_response_from_dict = AppStoreSendAppNotification200Response.from_dict(app_store_send_app_notification200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

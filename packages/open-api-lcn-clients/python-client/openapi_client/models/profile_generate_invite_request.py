@@ -88,11 +88,13 @@ class ProfileGenerateInviteRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "expiration": obj.get("expiration") if obj.get("expiration") is not None else 2592000,
             "challenge": obj.get("challenge"),
             "maxUses": obj.get("maxUses") if obj.get("maxUses") is not None else 1
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

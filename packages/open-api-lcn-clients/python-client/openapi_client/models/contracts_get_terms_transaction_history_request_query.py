@@ -105,13 +105,15 @@ class ContractsGetTermsTransactionHistoryRequestQuery(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "terms": ContractsGetTermsTransactionHistoryRequestQueryTerms.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
             "action": ContractsGetTermsTransactionHistoryRequestQueryAction.from_dict(obj["action"]) if obj.get("action") is not None else None,
             "date": ContractsGetTermsTransactionHistoryRequestQueryDate.from_dict(obj["date"]) if obj.get("date") is not None else None,
             "expiresAt": ContractsGetTermsTransactionHistoryRequestQueryExpiresAt.from_dict(obj["expiresAt"]) if obj.get("expiresAt") is not None else None,
             "oneTime": obj.get("oneTime")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

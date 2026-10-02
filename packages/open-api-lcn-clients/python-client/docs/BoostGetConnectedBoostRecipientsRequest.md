@@ -1,15 +1,14 @@
 # BoostGetConnectedBoostRecipientsRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**limit** | **float** |  | [optional] [default to 25]
-**cursor** | **str** |  | [optional] 
-**sort** | **str** |  | [optional] 
-**include_unaccepted_boosts** | **bool** |  | [optional] [default to True]
-**query** | [**BoostGetConnectedBoostRecipientsRequestQuery**](BoostGetConnectedBoostRecipientsRequestQuery.md) |  | [optional] 
+| Name                          | Type                                                                                                | Description | Notes                        |
+| ----------------------------- | --------------------------------------------------------------------------------------------------- | ----------- | ---------------------------- |
+| **limit**                     | **float**                                                                                           |             | [optional] [default to 25]   |
+| **cursor**                    | **str**                                                                                             |             | [optional]                   |
+| **sort**                      | **str**                                                                                             |             | [optional]                   |
+| **include_unaccepted_boosts** | **bool**                                                                                            |             | [optional] [default to True] |
+| **query**                     | [**BoostGetConnectedBoostRecipientsRequestQuery**](BoostGetConnectedBoostRecipientsRequestQuery.md) |             | [optional]                   |
 
 ## Example
 
@@ -28,6 +27,5 @@ boost_get_connected_boost_recipients_request_dict = boost_get_connected_boost_re
 # create an instance of BoostGetConnectedBoostRecipientsRequest from a dict
 boost_get_connected_boost_recipients_request_from_dict = BoostGetConnectedBoostRecipientsRequest.from_dict(boost_get_connected_boost_recipients_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

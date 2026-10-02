@@ -1,16 +1,15 @@
 # CredentialRefreshGetCredentialRefreshHistory200ResponseRecordsInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**version** | **int** |  | 
-**published_at** | **str** |  | 
-**effective_at** | **str** |  | [optional] 
-**etag** | **str** |  | [optional] 
-**signing_mode** | **str** |  | [optional] 
-**update_summary** | **str** |  | [optional] 
+| Name               | Type    | Description | Notes      |
+| ------------------ | ------- | ----------- | ---------- |
+| **version**        | **int** |             |
+| **published_at**   | **str** |             |
+| **effective_at**   | **str** |             | [optional] |
+| **etag**           | **str** |             | [optional] |
+| **signing_mode**   | **str** |             | [optional] |
+| **update_summary** | **str** |             | [optional] |
 
 ## Example
 
@@ -29,6 +28,5 @@ credential_refresh_get_credential_refresh_history200_response_records_inner_dict
 # create an instance of CredentialRefreshGetCredentialRefreshHistory200ResponseRecordsInner from a dict
 credential_refresh_get_credential_refresh_history200_response_records_inner_from_dict = CredentialRefreshGetCredentialRefreshHistory200ResponseRecordsInner.from_dict(credential_refresh_get_credential_refresh_history200_response_records_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

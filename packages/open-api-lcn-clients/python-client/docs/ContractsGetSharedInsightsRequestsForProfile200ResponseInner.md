@@ -1,14 +1,13 @@
 # ContractsGetSharedInsightsRequestsForProfile200ResponseInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**profile** | [**BoostGetBoostRecipients200ResponseInnerToAnyOf3**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md) |  | 
-**status** | **str** |  | 
-**read_status** | **str** |  | [optional] 
-**contract_uri** | **str** |  | [optional] 
+| Name             | Type                                                                                                      | Description | Notes      |
+| ---------------- | --------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **profile**      | [**BoostGetBoostRecipients200ResponseInnerToAnyOf3**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md) |             |
+| **status**       | **str**                                                                                                   |             |
+| **read_status**  | **str**                                                                                                   |             | [optional] |
+| **contract_uri** | **str**                                                                                                   |             | [optional] |
 
 ## Example
 
@@ -27,6 +26,5 @@ contracts_get_shared_insights_requests_for_profile200_response_inner_dict = cont
 # create an instance of ContractsGetSharedInsightsRequestsForProfile200ResponseInner from a dict
 contracts_get_shared_insights_requests_for_profile200_response_inner_from_dict = ContractsGetSharedInsightsRequestsForProfile200ResponseInner.from_dict(contracts_get_shared_insights_requests_for_profile200_response_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

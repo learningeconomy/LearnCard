@@ -1,18 +1,18 @@
 # openapi_client.IntegrationsApi
 
-All URIs are relative to *https://network.learncard.com/api*
+All URIs are relative to _/api_
 
-Method | HTTP request | Description
-------------- | ------------- | -------------
-[**integrations_add_integration**](IntegrationsApi.md#integrations_add_integration) | **POST** /integration/create | Create Integration
-[**integrations_count_integrations**](IntegrationsApi.md#integrations_count_integrations) | **POST** /profile/integrations/count | Count My Integrations
-[**integrations_delete_integration**](IntegrationsApi.md#integrations_delete_integration) | **DELETE** /integration/{id} | Delete Integration
-[**integrations_get_integration**](IntegrationsApi.md#integrations_get_integration) | **GET** /integration/{id} | Get Integration
-[**integrations_get_integrations**](IntegrationsApi.md#integrations_get_integrations) | **POST** /profile/integrations | Get My Integrations
-[**integrations_update_integration**](IntegrationsApi.md#integrations_update_integration) | **POST** /integration/update/{id} | Update Integration
-
+| Method                                                                                    | HTTP request                         | Description           |
+| ----------------------------------------------------------------------------------------- | ------------------------------------ | --------------------- |
+| [**integrations_add_integration**](IntegrationsApi.md#integrations_add_integration)       | **POST** /integration/create         | Create Integration    |
+| [**integrations_count_integrations**](IntegrationsApi.md#integrations_count_integrations) | **POST** /profile/integrations/count | Count My Integrations |
+| [**integrations_delete_integration**](IntegrationsApi.md#integrations_delete_integration) | **DELETE** /integration/{id}         | Delete Integration    |
+| [**integrations_get_integration**](IntegrationsApi.md#integrations_get_integration)       | **GET** /integration/{id}            | Get Integration       |
+| [**integrations_get_integrations**](IntegrationsApi.md#integrations_get_integrations)     | **POST** /profile/integrations       | Get My Integrations   |
+| [**integrations_update_integration**](IntegrationsApi.md#integrations_update_integration) | **POST** /integration/update/{id}    | Update Integration    |
 
 # **integrations_add_integration**
+
 > str integrations_add_integration(integrations_add_integration_request)
 
 Create Integration
@@ -21,7 +21,7 @@ Create a new Integration for your profile
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -29,10 +29,10 @@ from openapi_client.models.integrations_add_integration_request import Integrati
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -49,7 +49,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.IntegrationsApi(api_client)
-    integrations_add_integration_request = openapi_client.IntegrationsAddIntegrationRequest() # IntegrationsAddIntegrationRequest | 
+    integrations_add_integration_request = openapi_client.IntegrationsAddIntegrationRequest() # IntegrationsAddIntegrationRequest |
 
     try:
         # Create Integration
@@ -60,14 +60,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling IntegrationsApi->integrations_add_integration: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **integrations_add_integration_request** | [**IntegrationsAddIntegrationRequest**](IntegrationsAddIntegrationRequest.md)|  | 
+| Name                                     | Type                                                                          | Description | Notes |
+| ---------------------------------------- | ----------------------------------------------------------------------------- | ----------- | ----- |
+| **integrations_add_integration_request** | [**IntegrationsAddIntegrationRequest**](IntegrationsAddIntegrationRequest.md) |             |
 
 ### Return type
 
@@ -79,22 +76,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **integrations_count_integrations**
+
 > float integrations_count_integrations(integrations_count_integrations_request=integrations_count_integrations_request)
 
 Count My Integrations
@@ -103,7 +101,7 @@ Get a count of your Integrations matching a query
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -111,10 +109,10 @@ from openapi_client.models.integrations_count_integrations_request import Integr
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -142,14 +140,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling IntegrationsApi->integrations_count_integrations: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **integrations_count_integrations_request** | [**IntegrationsCountIntegrationsRequest**](IntegrationsCountIntegrationsRequest.md)|  | [optional] 
+| Name                                        | Type                                                                                | Description | Notes      |
+| ------------------------------------------- | ----------------------------------------------------------------------------------- | ----------- | ---------- |
+| **integrations_count_integrations_request** | [**IntegrationsCountIntegrationsRequest**](IntegrationsCountIntegrationsRequest.md) |             | [optional] |
 
 ### Return type
 
@@ -161,22 +156,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **integrations_delete_integration**
+
 > bool integrations_delete_integration(id)
 
 Delete Integration
@@ -185,17 +181,17 @@ Delete an Integration by id
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -212,7 +208,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.IntegrationsApi(api_client)
-    id = 'id_example' # str | 
+    id = 'id_example' # str |
 
     try:
         # Delete Integration
@@ -223,14 +219,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling IntegrationsApi->integrations_delete_integration: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **id** | **str**|  | 
+| Name   | Type    | Description | Notes |
+| ------ | ------- | ----------- | ----- |
+| **id** | **str** |             |
 
 ### Return type
 
@@ -242,23 +235,24 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**404** | Not found |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **integrations_get_integration**
+
 > IntegrationsGetIntegration200Response integrations_get_integration(id)
 
 Get Integration
@@ -267,7 +261,7 @@ Get an Integration by id
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -275,10 +269,10 @@ from openapi_client.models.integrations_get_integration200_response import Integ
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -295,7 +289,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.IntegrationsApi(api_client)
-    id = 'id_example' # str | 
+    id = 'id_example' # str |
 
     try:
         # Get Integration
@@ -306,14 +300,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling IntegrationsApi->integrations_get_integration: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **id** | **str**|  | 
+| Name   | Type    | Description | Notes |
+| ------ | ------- | ----------- | ----- |
+| **id** | **str** |             |
 
 ### Return type
 
@@ -325,23 +316,24 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**404** | Not found |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **integrations_get_integrations**
+
 > IntegrationsGetIntegrations200Response integrations_get_integrations(integrations_get_integrations_request=integrations_get_integrations_request)
 
 Get My Integrations
@@ -350,7 +342,7 @@ Get your Integrations with cursor-based pagination
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -359,10 +351,10 @@ from openapi_client.models.integrations_get_integrations_request import Integrat
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -390,14 +382,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling IntegrationsApi->integrations_get_integrations: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **integrations_get_integrations_request** | [**IntegrationsGetIntegrationsRequest**](IntegrationsGetIntegrationsRequest.md)|  | [optional] 
+| Name                                      | Type                                                                            | Description | Notes      |
+| ----------------------------------------- | ------------------------------------------------------------------------------- | ----------- | ---------- |
+| **integrations_get_integrations_request** | [**IntegrationsGetIntegrationsRequest**](IntegrationsGetIntegrationsRequest.md) |             | [optional] |
 
 ### Return type
 
@@ -409,22 +398,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **integrations_update_integration**
+
 > bool integrations_update_integration(id, integrations_update_integration_request)
 
 Update Integration
@@ -433,7 +423,7 @@ Update an Integration by id
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -441,10 +431,10 @@ from openapi_client.models.integrations_update_integration_request import Integr
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -461,8 +451,8 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.IntegrationsApi(api_client)
-    id = 'id_example' # str | 
-    integrations_update_integration_request = openapi_client.IntegrationsUpdateIntegrationRequest() # IntegrationsUpdateIntegrationRequest | 
+    id = 'id_example' # str |
+    integrations_update_integration_request = openapi_client.IntegrationsUpdateIntegrationRequest() # IntegrationsUpdateIntegrationRequest |
 
     try:
         # Update Integration
@@ -473,15 +463,12 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling IntegrationsApi->integrations_update_integration: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **id** | **str**|  | 
- **integrations_update_integration_request** | [**IntegrationsUpdateIntegrationRequest**](IntegrationsUpdateIntegrationRequest.md)|  | 
+| Name                                        | Type                                                                                | Description | Notes |
+| ------------------------------------------- | ----------------------------------------------------------------------------------- | ----------- | ----- |
+| **id**                                      | **str**                                                                             |             |
+| **integrations_update_integration_request** | [**IntegrationsUpdateIntegrationRequest**](IntegrationsUpdateIntegrationRequest.md) |             |
 
 ### Return type
 
@@ -493,18 +480,17 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

@@ -1,13 +1,12 @@
 # StorageResolve200ResponseAnyOfAnyOf1Read
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**anonymize** | **bool** |  | [optional] 
-**credentials** | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWriteCredentials**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWriteCredentials.md) |  | 
-**personal** | [**Dict[str, CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadPersonalValue]**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadPersonalValue.md) |  | 
+| Name            | Type                                                                                                                                                                                                                   | Description | Notes      |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **anonymize**   | **bool**                                                                                                                                                                                                               |             | [optional] |
+| **credentials** | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWriteCredentials**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWriteCredentials.md)              |             |
+| **personal**    | [**Dict[str, CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadPersonalValue]**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadPersonalValue.md) |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ storage_resolve200_response_any_of_any_of1_read_dict = storage_resolve200_respon
 # create an instance of StorageResolve200ResponseAnyOfAnyOf1Read from a dict
 storage_resolve200_response_any_of_any_of1_read_from_dict = StorageResolve200ResponseAnyOfAnyOf1Read.from_dict(storage_resolve200_response_any_of_any_of1_read_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

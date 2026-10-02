@@ -1,13 +1,12 @@
 # InboxGetBatch200ResponseItemsInnerResultOneOf1Error
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**code** | **str** |  | 
-**message** | **str** |  | 
-**reason** | **str** |  | [optional] 
+| Name        | Type    | Description | Notes      |
+| ----------- | ------- | ----------- | ---------- |
+| **code**    | **str** |             |
+| **message** | **str** |             |
+| **reason**  | **str** |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ inbox_get_batch200_response_items_inner_result_one_of1_error_dict = inbox_get_ba
 # create an instance of InboxGetBatch200ResponseItemsInnerResultOneOf1Error from a dict
 inbox_get_batch200_response_items_inner_result_one_of1_error_from_dict = InboxGetBatch200ResponseItemsInnerResultOneOf1Error.from_dict(inbox_get_batch200_response_items_inner_result_one_of1_error_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,11 +1,10 @@
 # InboxClaimRequestCredentialAnyOf1
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**name** | **str** |  | 
+| Name     | Type    | Description | Notes |
+| -------- | ------- | ----------- | ----- |
+| **name** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ inbox_claim_request_credential_any_of1_dict = inbox_claim_request_credential_any
 # create an instance of InboxClaimRequestCredentialAnyOf1 from a dict
 inbox_claim_request_credential_any_of1_from_dict = InboxClaimRequestCredentialAnyOf1.from_dict(inbox_claim_request_credential_any_of1_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-
