@@ -28,6 +28,31 @@ For now:
 7. alternatively, you can run `bunx cap run ios` ... select a simulator from the terminal + make changes locally, HMR should be enabled as well
 8. Do not commit the following, remove the `server: { url: "http://10.6.17.241:3000" }` config field from `capacitor.config.ts` when not developing this is for local development only (NOT PRODUCTION)!
 
+### iOS simulator architecture and QR testing
+
+Google ML Kit Barcode Scanning 8 does not provide an arm64 simulator slice, and iOS 27 simulators on
+Apple Silicon cannot install an x86_64-only app. The native project therefore substitutes an explicit
+"unsupported" barcode plugin only for simulator SDK builds. Debug and Release physical-device builds
+still compile and link the real ML Kit implementation, preserving native arm64 QR scanning.
+
+Use an iOS simulator for launch, lifecycle, sign-in UI, callback URL, and universal-link checks. Use a
+physical iOS device with either a Debug or Release build for the final camera/QR scan because the
+simulator intentionally uses the unsupported stub.
+
+### Native smoke-test checklist
+
+After `bun scripts/prepare-native-config.ts <tenant> [--stage <stage>]` and `bunx cap sync`:
+
+1. Launch on iOS 27 and an iOS 26 simulator/device, background and foreground the app repeatedly,
+   and confirm there is no scene-lifecycle runtime assertion.
+2. Complete email-code, Apple, and Google sign-in. Cancel or interrupt each flow once, retry it, and
+   confirm the callback returns to the app.
+3. Open one configured custom-scheme URL and one configured universal link from outside the app,
+   both on a cold launch and while the app is already running.
+4. On a physical iOS device, grant camera access and scan a QR code. Cancel and restart the scanner,
+   then scan another code.
+5. Build and launch Android, repeat the sign-in callback/deep-link checks, and scan a QR code.
+
 (android)
 `bun run start-android`
 
