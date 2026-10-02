@@ -42,12 +42,16 @@ import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import { filterMaybes } from '@learncard/helpers';
 import type { CredentialRequestEvent } from '@learncard/chapi-plugin';
 import type { VP } from '@learncard/types';
+import type {
+    VerifierPresentationRequest,
+    CredentialDisclosureSubmit,
+} from '../../../helpers/verifier-history/disclosure';
 import * as m from '../../../paraglide/messages.js';
 
 export type VprQueryByExampleProps = {
     event?: CredentialRequestEvent;
-    verifiablePresentationRequest?: any;
-    onSubmit?: (body: { verifiablePresentation: VP }) => void;
+    verifiablePresentationRequest?: VerifierPresentationRequest;
+    onSubmit?: CredentialDisclosureSubmit;
     onReject?: () => void;
     currentUser: CurrentUser | null;
 };
@@ -80,9 +84,11 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
         fetchNextPage,
     } = useGetCredentialList();
 
-    const onScreen = useOnScreen(infiniteScrollRef as any, '-200px', [
-        records?.pages?.[0]?.records?.length,
-    ]);
+    const onScreen = useOnScreen(
+        infiniteScrollRef as React.MutableRefObject<HTMLDivElement>,
+        '-200px',
+        [records?.pages?.[0]?.records?.length]
+    );
 
     const credentialQuery =
         event?.credentialRequestOptions?.web?.VerifiablePresentation?.query ||
@@ -93,15 +99,18 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
 
     const resolvedCredentials = useGetResolvedCredentials(allRecords.map(record => record?.uri));
 
-    const allCredentials = resolvedCredentials.map((vc, index) => ({
-        vc: vc.data,
-        loading: vc.isLoading,
-        record: allRecords[index],
-        category:
+    const allCredentials = resolvedCredentials.map((vc, index) => {
+        const category: string =
             allRecords[index]?.category ||
             (vc.data && getDefaultCategoryForCredential(vc.data)) ||
-            'Achievement',
-    }));
+            'Achievement';
+        return {
+            vc: vc.data,
+            loading: vc.isLoading,
+            record: allRecords[index],
+            category,
+        };
+    });
 
     const vcsToDisplay = allCredentials.filter(credential => {
         if (credential.category === 'Hidden') return false;
@@ -114,10 +123,13 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
 
         if (!searchInput) return true;
 
+        const subject = Array.isArray(credential.vc?.credentialSubject)
+            ? credential.vc.credentialSubject[0]
+            : credential.vc?.credentialSubject;
         return (
-            credential.vc?.boostCredential?.name.toLowerCase().includes(searchInput) ||
+            credential.vc?.boostCredential?.name?.toLowerCase().includes(searchInput) ||
             credential.vc?.name?.toLowerCase().includes(searchInput) ||
-            credential.vc?.credentialSubject?.achievement?.name?.toLowerCase().includes(searchInput)
+            subject?.achievement?.name?.toLowerCase().includes(searchInput)
         );
     });
 
@@ -134,7 +146,7 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
         else setSelectedVcs([...selectedVcs, id]);
     };
 
-    const isVcSelected = (id: String) => vcsToShare.some(vc => getUniqueId(vc) === id);
+    const isVcSelected = (id: string) => vcsToShare.some(vc => getUniqueId(vc) === id);
 
     const [presentModal, dismissModal] = useIonModal(VCToShare, {
         vcsToShare: vcsToShare,
@@ -152,6 +164,9 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
     const renderCredentialList = vcsToDisplay?.map(credential => {
         if (!credential.record?.uri) return <></>;
 
+        const category =
+            Object.values(CredentialCategoryEnum).find(value => value === credential.category) ??
+            CredentialCategoryEnum.achievement;
         // record.category can be an arbitrary string (e.g. custom contract categories),
         // so fall back to Achievement metadata when it isn't a known category.
         const categoryImgUrl = (
@@ -166,7 +181,7 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
                 credential={credential.vc}
                 record={credential.record}
                 defaultImg={categoryImgUrl}
-                categoryType={credential.category}
+                categoryType={category}
                 verifierState={true}
                 showChecked={true}
                 onCheckMarkClick={() => handleVcSelection(uniqueId)}

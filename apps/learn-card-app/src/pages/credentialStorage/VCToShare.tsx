@@ -7,19 +7,39 @@ import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import BoostEarnedCard from 'apps/learn-card-app/src/components/boost/boost-earned-card/BoostEarnedCard';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { categoryMetadata, chapiStore, redirectStore } from 'learn-card-base';
-import { useWallet } from 'learn-card-base';
+import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
+import {
+    beginVerifierDisclosure,
+    visibleCredentialTitles,
+} from '../../helpers/verifier-history/history';
+import {
+    captureHistoryContext,
+    captureHistoryAccount,
+} from '../../helpers/verifier-history/account';
+import type { VC } from '@learncard/types';
+import type { CredentialRequestEvent } from '@learncard/chapi-plugin';
+import type { CurrentUser } from 'learn-card-base/stores/currentUserStore';
+import type {
+    VerifierPresentationRequest,
+    CredentialDisclosureSubmit,
+} from '../../helpers/verifier-history/disclosure';
+import * as m from '../../paraglide/messages.js';
 
 const VCToShare: React.FC<{
-    vcsToShare: Array<any>;
+    vcsToShare: VC[];
     handleCloseModal: () => void;
-    handleVcSelection: () => void;
-    isVcSelected: () => void;
-    event?: any;
-    onSubmit?: (body: { verifiablePresentation: VP }) => void;
+    handleVcSelection: (id: string) => void;
+    isVcSelected: (id: string) => boolean;
+    event?: Pick<CredentialRequestEvent, 'respondWith'> & {
+        credentialRequestOptions?: {
+            web?: { VerifiablePresentation?: VerifierPresentationRequest };
+        };
+    };
+    onSubmit?: CredentialDisclosureSubmit;
     onReject?: () => void;
-    verifiablePresentationRequest?: any;
-    currentUser: any;
-    getUniqueId: () => void;
+    verifiablePresentationRequest?: VerifierPresentationRequest;
+    currentUser: CurrentUser | null;
+    getUniqueId: (vc: VC) => string;
 }> = ({
     vcsToShare,
     handleCloseModal,
@@ -35,6 +55,7 @@ const VCToShare: React.FC<{
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string>('');
     const { initWallet } = useWallet();
+    const { presentToast } = useToast();
 
     const renderCredentialList = vcsToShare?.map(vc => {
         const categoryFromVc = getDefaultCategoryForCredential(vc);
@@ -61,7 +82,9 @@ const VCToShare: React.FC<{
     const accept = async () => {
         try {
             setIsLoading(true);
+            const isSelectedAccount = captureHistoryAccount();
             const wallet = await initWallet();
+            if (!isSelectedAccount()) throw new Error('Account changed. Please try again.');
 
             const presentation =
                 event?.credentialRequestOptions?.web?.VerifiablePresentation ||
@@ -75,9 +98,17 @@ const VCToShare: React.FC<{
                 log.error(e);
             }
 
-            const vpToShare = await wallet.invoke.newPresentation(vcsToShare as any);
-
-            log.info('✍️ Issuing VP to respond to CHAPI event', vpToShare);
+            const context = captureHistoryContext(wallet);
+            const history = await beginVerifierDisclosure(context, {
+                protocol: event ? 'chapi' : 'vc-api',
+                titles: visibleCredentialTitles(vcsToShare),
+            });
+            const firstCredential = vcsToShare[0];
+            if (!firstCredential) return;
+            const vpToShare = {
+                ...(await wallet.invoke.newPresentation(firstCredential)),
+                verifiableCredential: vcsToShare,
+            };
 
             const data = await wallet.invoke.issuePresentation(vpToShare, {
                 challenge,
@@ -85,8 +116,7 @@ const VCToShare: React.FC<{
                 proofPurpose: 'authentication',
             });
 
-            log.info('✅ Issued VP', data);
-
+            if (!context.isCurrent()) return;
             if (event) {
                 event.respondWith(
                     Promise.resolve({
@@ -94,14 +124,19 @@ const VCToShare: React.FC<{
                         data,
                     })
                 );
-            }
-            if (onSubmit) {
-                onSubmit({ verifiablePresentation: data });
+                void history.finish('handed-off').then(result => {
+                    if (result === 'unavailable' && history.isCurrent())
+                        presentToast(m['verifierHistory.saveFailed'](), {
+                            type: ToastTypeEnum.Error,
+                        });
+                });
+            } else if (onSubmit) {
+                await onSubmit({ verifiablePresentation: data }, history);
             }
             setIsLoading(false);
             handleCloseModal();
         } catch (e) {
-            log.error('share.credentials.failed', e);
+            log.error('share.credentials.failed');
             setIsLoading(false);
             setError('Error sharing credential(s). Please try again.');
         }

@@ -9319,5 +9319,27 @@
         "saveError": "No se pudieron guardar estas credenciales. Inténtalo de nuevo.",
         "signInToSave": "Inicia sesión para guardar",
         "saveHint": "Guarda esta colección firmada con tus elementos recibidos."
+    },
+    "verifierHistory": {
+        "saveFailed": "No se pudo actualizar el historial. No necesitas enviar tu información de nuevo.",
+        "title": "Compartido con verificadores",
+        "description": "Recordatorios privados de la información que decidiste enviar a otras aplicaciones.",
+        "managedUnavailable": "El historial no está disponible para cuentas administradas.",
+        "loading": "Actualizando el historial…",
+        "open": "Abrir historial privado",
+        "record": "Guardar historial privado",
+        "retention": "Guarda hasta 500 recordatorios de los últimos 90 días. Los registros antiguos se eliminan al conectarte.",
+        "limits": "Los títulos no describen todos los datos enviados. Eliminar el historial no retira la información enviada. Desactivar el registro conserva el historial anterior.",
+        "cleanupPending": "No se pudieron eliminar algunos registros antiguos. Conéctate y actualiza para terminar.",
+        "refresh": "Actualizar",
+        "clear": "Borrar historial",
+        "empty": "No hay envíos registrados.",
+        "unknownVerifier": "Aplicación solicitante",
+        "sent": "Enviado; aceptación desconocida",
+        "handedOff": "Entregado a la aplicación; recepción sin confirmar",
+        "credential": "Credencial",
+        "delete": "Eliminar recordatorio",
+        "deleteLabel": "Eliminar recordatorio de {{verifier}}",
+        "loadFailed": "No se pudo cargar o actualizar el historial. Comprueba tu conexión e inténtalo de nuevo."
     }
 }

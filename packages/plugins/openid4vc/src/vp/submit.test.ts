@@ -218,7 +218,7 @@ describe('submitPresentation — error handling', () => {
         ).rejects.toMatchObject({ code: 'network_error' });
     });
 
-    it('throws server_error with status + body on a 4xx response', async () => {
+    it('throws server_error with status and no verifier-controlled diagnostic content on a 4xx response', async () => {
         const { fetchImpl } = mockFetchOk(
             { error: 'invalid_presentation', error_description: 'bad signature' },
             { status: 400 }
@@ -237,10 +237,8 @@ describe('submitPresentation — error handling', () => {
             const err = e as VpSubmitError;
             expect(err.code).toBe('server_error');
             expect(err.status).toBe(400);
-            expect(err.body).toEqual({
-                error: 'invalid_presentation',
-                error_description: 'bad signature',
-            });
+            expect(err.body).toBeUndefined();
+            expect((err as Error & { cause?: unknown }).cause).toBeUndefined();
         }
     });
 
@@ -259,6 +257,32 @@ describe('submitPresentation — error handling', () => {
             const err = e as VpSubmitError;
             expect(err.code).toBe('server_error');
             expect(err.status).toBe(500);
+        }
+    });
+});
+
+describe('transport error privacy', () => {
+    it('excludes response URI, verifier body, status text and nested fetch cause', async () => {
+        for (const fetchImpl of [
+            async () => {
+                throw new Error('FETCH_CAUSE_CANARY');
+            },
+            async () => new Response('BODY_CANARY', { status: 400, statusText: 'STATUS_CANARY' }),
+        ]) {
+            try {
+                await submitPresentation({
+                    responseUri: 'https://verifier.example/PATH_CANARY?token=TOKEN_CANARY',
+                    vpToken: 'VP_CANARY',
+                    fetchImpl: fetchImpl as typeof fetch,
+                });
+                throw new Error('Expected failure');
+            } catch (error) {
+                expect(error).toBeInstanceOf(VpSubmitError);
+                expect(String(error)).not.toContain('CANARY');
+                expect(JSON.stringify(error)).not.toContain('CANARY');
+                expect((error as VpSubmitError).body).toBeUndefined();
+                expect((error as Error & { cause?: unknown }).cause).toBeUndefined();
+            }
         }
     });
 });

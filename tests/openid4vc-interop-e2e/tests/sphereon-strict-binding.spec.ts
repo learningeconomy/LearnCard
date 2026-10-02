@@ -29,7 +29,11 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { getOpenID4VCPlugin } from '@learncard/openid4vc-plugin';
+import {
+    getOpenID4VCPlugin,
+    VpSubmitError,
+    type OpenID4VCPluginMethods,
+} from '@learncard/openid4vc-plugin';
 
 import {
     createIssuerKey,
@@ -37,22 +41,19 @@ import {
     resolveOfferToByValue,
     tamperJwtSignature,
 } from '../setup/walt-id-client';
-import {
-    startSphereonVerifier,
-    type SphereonVerifier,
-} from '../setup/sphereon-verifier';
+import { startSphereonVerifier, type SphereonVerifier } from '../setup/sphereon-verifier';
 import { buildMockLearnCard, type MockLearnCardHandle } from './helpers/mock-learncard';
 
 const ISSUER_BASE_URL = process.env.WALTID_ISSUER_BASE_URL ?? 'http://localhost:7002';
 
-const getPlugin = (mock: MockLearnCardHandle) => {
+const getPlugin = (mock: MockLearnCardHandle): OpenID4VCPluginMethods => {
     const plugin = getOpenID4VCPlugin(mock.learnCard, {});
-    const bound: Record<string, (...args: any[]) => any> = {};
+    const bound = {} as OpenID4VCPluginMethods;
     for (const [name, fn] of Object.entries(plugin.methods)) {
-        bound[name] = (...args: any[]) =>
-            (fn as (...a: any[]) => any)(mock.learnCard, ...args);
+        (bound as Record<string, unknown>)[name] = (...args: unknown[]) =>
+            (fn as (...a: unknown[]) => unknown)(mock.learnCard, ...args);
     }
-    return bound as any;
+    return bound;
 };
 
 const universityDegreePD = {
@@ -78,11 +79,7 @@ const universityDegreePD = {
  * forge `state` without monkey-patching plugin internals. Keep these
  * two copies in lockstep until we extract a shared test helper.
  */
-const encodeFormBody = (args: {
-    vpToken: unknown;
-    submission: unknown;
-    state: string;
-}): string => {
+const encodeFormBody = (args: { vpToken: unknown; submission: unknown; state: string }): string => {
     const params = new URLSearchParams();
     params.set(
         'vp_token',
@@ -93,7 +90,7 @@ const encodeFormBody = (args: {
     return params.toString();
 };
 
-const issueWaltidUniversityDegree = async (plugin: any): Promise<string> => {
+const issueWaltidUniversityDegree = async (plugin: OpenID4VCPluginMethods): Promise<string> => {
     const issuerKey = await createIssuerKey();
     const offerRaw = await mintWaltidOffer({
         issuerBaseUrl: ISSUER_BASE_URL,
@@ -101,7 +98,9 @@ const issueWaltidUniversityDegree = async (plugin: any): Promise<string> => {
     });
     const offer = await resolveOfferToByValue(offerRaw);
     const accepted = await plugin.acceptCredentialOffer(offer);
-    return accepted.credentials[0].credential as string;
+    const credential = accepted.credentials[0]?.credential;
+    if (typeof credential !== 'string') throw new Error('Expected an issued JWT credential');
+    return credential;
 };
 
 describe('interop: Sphereon strict nonce + audience binding', () => {
@@ -147,6 +146,9 @@ describe('interop: Sphereon strict nonce + audience binding', () => {
         expect(sphereon.getStatus(sessionA.state).verificationResult).toBe(true);
 
         // 2) Replay the SAME signed VP to session B by forging `state`.
+        if (!presentA.signed || !presentA.prepared) {
+            throw new Error('Expected a signed PEX presentation and submission');
+        }
         const replayBody = encodeFormBody({
             vpToken: presentA.signed.vpToken,
             submission: presentA.prepared.submission,
@@ -207,6 +209,9 @@ describe('interop: Sphereon strict nonce + audience binding', () => {
         expect(sphereon.getStatus(sessionA.state).verificationResult).toBe(true);
 
         // 2) Replay to B.
+        if (!presentA.signed || !presentA.prepared) {
+            throw new Error('Expected a signed PEX presentation and submission');
+        }
         const replayBody = encodeFormBody({
             vpToken: presentA.signed.vpToken,
             submission: presentA.prepared.submission,
@@ -272,11 +277,16 @@ describe('interop: Sphereon strict nonce + audience binding', () => {
         } catch (e) {
             submitFailed = true;
             // The plugin throws VpSubmitError on non-2xx — that's
-            // exactly the path we expect here. Verify it's a 400
-            // from our verifier and nothing exotic.
-            const err = e as { status?: number; body?: { error?: string } };
+            // exactly the path we expect here. The SDK retains the
+            // status but redacts the private verifier response; the
+            // verifier's session status below proves the signature failure.
+            expect(e).toBeInstanceOf(VpSubmitError);
+            const err = e as VpSubmitError;
+            expect(err.code).toBe('server_error');
             expect(err.status).toBe(400);
-            expect(err.body?.error ?? '').toMatch(/signature/i);
+            expect(err.message).toBe('Verifier returned HTTP 400');
+            expect(err.body).toBeUndefined();
+            expect(err.cause).toBeUndefined();
         }
 
         expect(submitFailed).toBe(true);
@@ -286,9 +296,7 @@ describe('interop: Sphereon strict nonce + audience binding', () => {
         // jose's signature error wording can vary by version
         // ("signature verification failed" / "invalid signature").
         // Match either.
-        expect(
-            status.errors.some(e => /signature/i.test(e) || /invalid/i.test(e))
-        ).toBe(true);
+        expect(status.errors.some(e => /signature/i.test(e) || /invalid/i.test(e))).toBe(true);
     });
 
     /* ----------------- positive: confirm strict mode is real --------------- */

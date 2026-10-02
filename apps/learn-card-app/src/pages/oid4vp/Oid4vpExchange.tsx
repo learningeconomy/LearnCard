@@ -1,3 +1,13 @@
+import {
+    beginVerifierDisclosure,
+    historyOrigin,
+    visibleCredentialTitles,
+} from '../../helpers/verifier-history/history';
+import {
+    captureHistoryContext,
+    captureHistoryAccount,
+} from '../../helpers/verifier-history/account';
+import * as m from '../../paraglide/messages.js';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
@@ -11,6 +21,8 @@ import {
     type VerifierDisplayInfo,
     useIsLoggedIn,
     useWallet,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import {
     sanitizeCounterparty,
@@ -150,6 +162,7 @@ const Oid4vpExchange: React.FC = () => {
     const params = queryString.parse(search);
     const isLoggedIn = useIsLoggedIn();
     const { initWallet } = useWallet();
+    const { presentToast } = useToast();
 
     const requestUri = singleParam(params.request);
 
@@ -209,7 +222,7 @@ const Oid4vpExchange: React.FC = () => {
                     pool,
                 });
             } catch (error) {
-                log.error('OID4VP: failed to resolve request', error);
+                log.error('OID4VP: failed to resolve request');
                 // No `clientInfo` here — we failed before resolving the
                 // request, so we don't yet know who the verifier was.
                 // The error screen falls back to a clean kind-themed
@@ -235,9 +248,10 @@ const Oid4vpExchange: React.FC = () => {
             try {
                 setPhase({ kind: 'submitting', clientInfo });
 
-                const wallet = (await initWallet()) as unknown as {
-                    invoke: WalletOidcVpInvoke;
-                };
+                const isSelectedAccount = captureHistoryAccount();
+                const wallet = await initWallet();
+                if (!isSelectedAccount()) throw new Error('Account changed. Please try again.');
+                const context = captureHistoryContext(wallet);
 
                 const chosen = buildChosenList(
                     currentPhase.selection,
@@ -251,6 +265,17 @@ const Oid4vpExchange: React.FC = () => {
                     );
                 }
 
+                const history = await beginVerifierDisclosure(context, {
+                    protocol: 'oid4vp',
+                    titles: visibleCredentialTitles(chosen.map(c => c.candidate.credential)),
+                    label: clientInfo.display?.name,
+                    origin: historyOrigin(clientInfo.clientId),
+                    purpose:
+                        currentPhase.request.presentation_definition?.purpose ??
+                        currentPhase.request.presentation_definition?.input_descriptors?.find(
+                            d => d.purpose
+                        )?.purpose,
+                });
                 const sharedClaimsBreakdown: SharedClaimsEntry[] = [];
                 const invoke = wallet.invoke as unknown as SdJwtAwareInvoke;
                 if (typeof invoke.parseSdJwtVc === 'function') {
@@ -301,11 +326,13 @@ const Oid4vpExchange: React.FC = () => {
                                     });
                                 }
                             } catch (e) {
-                                console.error('Failed to parse SD-JWT for breakdown', e);
+                                log.warn('Failed to parse SD-JWT for breakdown');
                             }
                         }
                     }
                 }
+
+                if (!context.isCurrent()) return;
 
                 const result: Awaited<ReturnType<WalletOidcVpInvoke['presentCredentials']>> =
                     await resilientPresentCredentials({
@@ -316,6 +343,14 @@ const Oid4vpExchange: React.FC = () => {
                         chosen,
                         callbacks: resilience.callbacks,
                     });
+
+                void history.finish('sent').then(result => {
+                    if (result === 'unavailable' && context.isCurrent())
+                        presentToast(m['verifierHistory.saveFailed'](), {
+                            type: ToastTypeEnum.Error,
+                        });
+                });
+                if (!context.isCurrent()) return;
 
                 // Pull the W3C VCs out of the picked candidates so the
                 // finished screen can render them as `BoostEarnedCard`s.
@@ -334,7 +369,7 @@ const Oid4vpExchange: React.FC = () => {
                     sharedClaimsBreakdown,
                 });
             } catch (error) {
-                log.error('OID4VP: presentation failed', error);
+                log.error('OID4VP: presentation failed');
                 // Carry `clientInfo` through to the error phase so the
                 // failure screen still renders the branded `VerifierHeader`
                 // — the user keeps brand context even when the share fails.
@@ -351,7 +386,7 @@ const Oid4vpExchange: React.FC = () => {
                 });
             }
         },
-        [phase, initWallet, resilience]
+        [phase, initWallet, resilience, presentToast]
     );
 
     const handleCancel = useCallback(() => {

@@ -30,6 +30,7 @@ import { useAnalytics } from '../../analytics';
 import * as m from '../../paraglide/messages.js';
 import { useLocale } from '../../i18n';
 import DataSharingCenterView from './DataSharingCenterView';
+import VerifierHistorySection from './components/VerifierHistorySection';
 import ShareLinkCreate from '../../components/share-links/ShareLinkCreate';
 import ShareLinkOwnerPreview from '../../components/share-links/ShareLinkOwnerPreview';
 import SavedCollectionPreview from '../../components/share-links/SavedCollectionPreview';
@@ -287,7 +288,10 @@ const PrivacySettingsPage: React.FC = () => {
     return (
         <IonPage>
             <IonContent>
-                <DataSharingCenterView vm={vm} />
+                <DataSharingCenterView
+                    vm={vm}
+                    verifierHistory={<VerifierHistorySection eligible={!isMinor} />}
+                />
             </IonContent>
         </IonPage>
     );

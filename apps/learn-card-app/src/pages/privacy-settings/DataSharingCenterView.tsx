@@ -15,9 +15,10 @@ import './dataSharingCenter.scss';
 
 type DataSharingCenterViewProps = {
     vm: DataSharingCenterViewModel;
+    verifierHistory?: React.ReactNode;
 };
 
-const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({ vm }) => {
+const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({ vm, verifierHistory }) => {
     const { isLoading, isMinor, contracts, onContractsUpdate, ai, profile, diagnostics, shared } =
         vm;
 
@@ -51,6 +52,7 @@ const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({ vm }) => 
                         <TrustSummaryCard contracts={contracts} />
 
                         {shared && <SharedLinksSection vm={shared} delay={60} />}
+                        {verifierHistory}
 
                         <ConnectedAppsSection
                             contracts={contracts}
