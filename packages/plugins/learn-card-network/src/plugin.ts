@@ -30,6 +30,7 @@ import {
     getCredentialStatusArray,
     injectManagedRefreshService as injectSharedManagedRefreshService,
     isVC2Format,
+    isEncrypted,
     resolveStorageReadResult,
 } from '@learncard/helpers';
 import Mustache from 'mustache';
@@ -2750,10 +2751,30 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.inbox.getInboxCredential.query({ credentialId: id });
             },
-            finalizeInboxCredentials: async _learnCard => {
+            finalizeInboxCredentials: async learnCard => {
                 await ensureUser();
-
-                return client.inbox.finalize.mutate();
+                const result = await client.inbox.finalize.mutate();
+                const results = await Promise.allSettled(
+                    result.deliveries.map(async delivery => ({
+                        ...delivery,
+                        credential: VCValidator.parse(
+                            isEncrypted(delivery.credential)
+                                ? await learnCard.invoke.decryptDagJwe(delivery.credential, [
+                                      learnCard.id.keypair(),
+                                  ])
+                                : delivery.credential
+                        ),
+                    }))
+                );
+                const deliveries = results.flatMap(delivery =>
+                    delivery.status === 'fulfilled' ? [delivery.value] : []
+                );
+                return {
+                    ...result,
+                    deliveries,
+                    verifiableCredentials: deliveries.map(delivery => delivery.credential),
+                    errors: result.errors + results.length - deliveries.length,
+                };
             },
             recoverInboxCredentials: async (learnCard, options = {}) => {
                 const result = await client.inbox.getMyInboxDeliveries.query(options);
