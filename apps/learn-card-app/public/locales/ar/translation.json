@@ -1875,7 +1875,8 @@
             "name": "الاسم",
             "email": "البريد الإلكتروني",
             "profilePicture": "صورة الملف الشخصي"
-        }
+        },
+        "retryPublication": "تم حفظ خيارات المشاركة. حاول مرة أخرى لإكمال إرسالها."
     },
     "recovery": {
         "pin": {
@@ -3539,7 +3540,6 @@
             "confirm": "تأكيد المشاركة",
             "cancel": "إلغاء"
         },
-
         "verification": {
             "selfIssued": "صادر ذاتياً",
             "trustedIssuer": "جهة إصدار موثوقة",

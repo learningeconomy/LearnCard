@@ -7,11 +7,13 @@ const mocks = vi.hoisted(() => ({
     consent: vi.fn(),
     review: vi.fn(),
     materialize: vi.fn(),
+    did: 'did:example:holder',
 }));
 vi.mock('learn-card-base', () => ({
     switchedProfileStore: { get: { switchedDid: () => 'learner' } },
     useWallet: () => ({
         initWallet: async () => ({
+            id: { did: () => mocks.did },
             invoke: {
                 getContract: mocks.getContract,
                 consentToContract: mocks.consent,
@@ -21,7 +23,10 @@ vi.mock('learn-card-base', () => ({
 }));
 vi.mock('@tanstack/react-query', () => ({
     useQueryClient: () => ({}),
-    useMutation: (options: unknown) => options,
+    useMutation: (options: { mutationFn: (input: unknown) => Promise<unknown> }) => ({
+        ...options,
+        mutateAsync: options.mutationFn,
+    }),
 }));
 vi.mock('../useConsentAudienceReview', () => ({ useConsentAudienceReview: () => mocks.review }));
 vi.mock('../useSharedUrisInTerms', () => ({ getTermsWithSharedUrisForWallet: mocks.materialize }));
@@ -52,6 +57,7 @@ const selection: ConsentSubmission = {
 describe('interactive consent audience boundary', () => {
     beforeEach(() => {
         vi.resetAllMocks();
+        mocks.did = 'did:example:holder';
         mocks.getContract.mockResolvedValue(contract);
         mocks.materialize.mockResolvedValue(selection);
         mocks.consent.mockResolvedValue({ termsUri: 'urn:terms' });
@@ -137,5 +143,76 @@ describe('interactive consent audience boundary', () => {
         ).rejects.toThrow('Audience conflict');
         expect(mocks.consent).toHaveBeenCalledOnce();
         expect(mocks.getContract).toHaveBeenCalledOnce();
+    });
+    it('retries the same prepared publication without another audience review or encryption', async () => {
+        const prepared = {
+            ...selection,
+            expiresAt: '2027-01-01T00:00:00Z',
+            oneTime: true,
+            terms: {
+                ...selection.terms,
+                read: {
+                    ...selection.terms.read,
+                    personal: { name: 'Alex' },
+                    credentials: {
+                        categories: { Achievement: { shared: ['urn:encrypted'], sharing: true } },
+                    },
+                },
+            },
+        };
+        mocks.materialize.mockResolvedValue(prepared);
+        mocks.consent.mockRejectedValueOnce(
+            Object.assign(new Error('Upload failed'), { data: { code: 'BAD_GATEWAY' } })
+        );
+        const hook = renderHook(() =>
+            useConsentToContract('urn:contract', 'did:key:owner', 'recipient-token')
+        );
+        await expect(
+            (hook.result.current as unknown as MutationHarness).mutationFn(selection)
+        ).rejects.toThrow('Upload failed');
+        await vi.waitFor(() => expect(hook.result.current.publicationRetryAvailable).toBe(true));
+        const guard = vi.fn().mockResolvedValue(undefined);
+        await hook.result.current.retrySmartResumePublication(guard);
+        expect(mocks.consent.mock.calls[1]).toEqual(mocks.consent.mock.calls[0]);
+        expect(mocks.consent.mock.calls[1]![1]).toEqual({ ...prepared, audienceVersion: 3 });
+        expect(mocks.materialize).toHaveBeenCalledOnce();
+        expect(mocks.review).toHaveBeenCalledOnce();
+        expect(guard).toHaveBeenCalled();
+        await vi.waitFor(() => expect(hook.result.current.publicationRetryAvailable).toBe(false));
+    });
+    it('does not replay a publication under a different holder', async () => {
+        mocks.consent.mockRejectedValueOnce(
+            Object.assign(new Error('Upload failed'), { data: { code: 'BAD_GATEWAY' } })
+        );
+        const hook = renderHook(() =>
+            useConsentToContract('urn:contract', 'did:key:owner', 'token')
+        );
+        await expect(
+            (hook.result.current as unknown as MutationHarness).mutationFn(selection)
+        ).rejects.toThrow();
+        mocks.did = 'did:example:other-holder';
+        await expect(hook.result.current.retrySmartResumePublication()).rejects.toThrow(
+            'unavailable'
+        );
+        expect(mocks.consent).toHaveBeenCalledOnce();
+    });
+    it('retains server fingerprint and audience validation on a retry conflict', async () => {
+        mocks.consent.mockRejectedValueOnce(
+            Object.assign(new Error('Upload failed'), { data: { code: 'BAD_GATEWAY' } })
+        );
+        const hook = renderHook(() =>
+            useConsentToContract('urn:contract', 'did:key:owner', 'token')
+        );
+        await expect(
+            (hook.result.current as unknown as MutationHarness).mutationFn(selection)
+        ).rejects.toThrow();
+        mocks.consent.mockRejectedValueOnce(
+            Object.assign(new Error('Audience changed'), { data: { code: 'CONFLICT' } })
+        );
+        await expect(hook.result.current.retrySmartResumePublication()).rejects.toThrow(
+            'Audience changed'
+        );
+        expect(mocks.consent.mock.calls[1]).toEqual(mocks.consent.mock.calls[0]);
+        await vi.waitFor(() => expect(hook.result.current.publicationRetryAvailable).toBe(false));
     });
 });

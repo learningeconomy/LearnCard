@@ -1875,7 +1875,8 @@
             "name": "nom",
             "email": "e-mail",
             "profilePicture": "photo de profil"
-        }
+        },
+        "retryPublication": "Vos choix de partage sont enregistrés. Réessayez pour terminer leur envoi."
     },
     "recovery": {
         "pin": {
@@ -3542,7 +3543,6 @@
             "confirm": "Confirmer le partage",
             "cancel": "Annuler"
         },
-
         "verification": {
             "selfIssued": "Auto-émis",
             "trustedIssuer": "Émetteur de confiance",

@@ -1875,7 +1875,8 @@
             "name": "name",
             "email": "email",
             "profilePicture": "profile picture"
-        }
+        },
+        "retryPublication": "Your sharing choices are saved. Try again to finish sending them."
     },
     "recovery": {
         "automatic": {
@@ -3593,7 +3594,6 @@
             "confirm": "Confirm Sharing",
             "cancel": "Cancel"
         },
-
         "verification": {
             "selfIssued": "Self Issued",
             "trustedIssuer": "Trusted Issuer",
