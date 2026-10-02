@@ -1086,6 +1086,7 @@ dependencies = [
  "ed25519-dalek",
  "hex",
  "hkdf",
+ "libc",
  "p256",
  "p384",
  "rand",

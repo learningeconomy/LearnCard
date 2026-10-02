@@ -26,3 +26,15 @@ impl Event {
         eprintln!("{}", self.message());
     }
 }
+
+/// Enclave startup labels are fixed identifiers in enclave code. Anything not
+/// shaped like one is refused (returns false) and never logged.
+pub fn log_enclave_boot_failed(step: &str) -> bool {
+    let static_shaped = !step.is_empty()
+        && step.len() <= 48
+        && step.bytes().all(|b| b.is_ascii_lowercase() || b == b'_');
+    if static_shaped {
+        eprintln!("enclave_boot_failed step={step}");
+    }
+    static_shaped
+}

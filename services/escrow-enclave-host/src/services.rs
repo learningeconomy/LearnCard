@@ -67,6 +67,7 @@ enum Request {
     Append { chain_id: String, record: String },
     Boot { key_id: String },
     PersistKey { key_id: String, sealed: String },
+    BootFailed { step: String },
 }
 pub struct Services<S = SealedStore> {
     pub store: Arc<dyn HeadStore>,
@@ -132,6 +133,13 @@ impl<S: SealedStorage> Services<S> {
                     };
                     stream.write_u8(status).await?;
                     stream.flush().await
+                }
+                Request::BootFailed { step } => {
+                    if crate::log_enclave_boot_failed(&step) {
+                        Ok(())
+                    } else {
+                        Err(invalid())
+                    }
                 }
             }
         })
@@ -233,6 +241,29 @@ mod tests {
         assert_eq!(enclave.read_u32().await.unwrap(), 1);
         assert_eq!(framing::read(&mut enclave, 8192).await.unwrap(), bytes);
         task.await.unwrap().unwrap();
+    }
+    #[tokio::test]
+    async fn boot_failed_accepts_only_static_step_labels() {
+        let services = Arc::new(services());
+        for (step, ok) in [
+            ("kms_unseal_or_generate", true),
+            ("", false),
+            ("Step", false),
+            ("step=x\nforged", false),
+            (&*"a".repeat(49), false),
+        ] {
+            let (mut parent, mut enclave) = tokio::io::duplex(4096);
+            let service = services.clone();
+            let task = tokio::spawn(async move { service.serve(&mut parent).await });
+            framing::write(
+                &mut enclave,
+                &serde_json::to_vec(&json!({"method":"bootFailed","step":step})).unwrap(),
+                4096,
+            )
+            .await
+            .unwrap();
+            assert_eq!(task.await.unwrap().is_ok(), ok, "{step}");
+        }
     }
     #[tokio::test]
     async fn oversized_chain_rejected_before_output() {

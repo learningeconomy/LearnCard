@@ -53,6 +53,15 @@ pub async fn persist_key<S: AsyncRead + AsyncWrite + Unpin>(
     }
 }
 
+/// Best-effort: tells the parent which fixed startup step failed. No response.
+#[cfg(all(target_os = "linux", feature = "nitro", feature = "kms"))]
+pub async fn boot_failed<S: AsyncWrite + Unpin>(
+    stream: &mut S,
+    step: &'static str,
+) -> io::Result<()> {
+    request(stream, json!({"method":"bootFailed", "step":step})).await
+}
+
 pub async fn get_chain<S: AsyncRead + AsyncWrite + Unpin>(
     stream: &mut S,
     chain_id: &str,

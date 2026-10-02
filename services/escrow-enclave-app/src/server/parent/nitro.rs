@@ -1,7 +1,7 @@
 //! Parent boot/storage protocol, CID 3 port 5002. Parent data is never authority
 //! for enrollment freshness or signed ledger contents.
 use super::super::*;
-use super::{append, boot, get_chain, persist_key};
+use super::{append, boot, boot_failed, get_chain, persist_key};
 use crate::{
     kms::{unseal_or_generate_escrow_key, AwsKmsClient, Credentials, RecipientKey},
     ledger::{AppendError, HeadStore, LedgerRecord, StoreFuture},
@@ -9,6 +9,7 @@ use crate::{
     policy::{EnrollmentFuture, EnrollmentSource},
     time::{RoughtimeTimeSource, VsockRoughtimeTransport},
 };
+use std::sync::OnceLock;
 use tokio::time::timeout;
 use tokio_vsock::{VsockAddr, VsockListener, VsockStream};
 
@@ -54,17 +55,29 @@ fn configured(name: &str) -> io::Result<String> {
 }
 pub(crate) async fn run(port: u32) -> io::Result<()> {
     // Supervision: any forwarder exit also terminates serving.
-    tokio::select! {
+    let result = tokio::select! {
         result = crate::kms::vsock_forward::run() => step("kms_forwarder", result),
         result = boot_and_serve(port) => result,
+    };
+    if let Some(name) = FAILED_STEP.get() {
+        let _ = timeout(Duration::from_secs(2), async {
+            boot_failed(&mut connect().await?, name).await
+        })
+        .await;
     }
+    result
 }
+
+static FAILED_STEP: OnceLock<&'static str> = OnceLock::new();
 
 /// Logs which startup step failed using a fixed label only (never the error,
 /// which may carry host-supplied or secret-derived detail), then fails closed.
+/// The first label is also reported to the parent, since production enclaves
+/// have no console.
 fn step<T, E>(name: &'static str, result: Result<T, E>) -> io::Result<T> {
     result.map_err(|_| {
         tracing::error!(step = name, "enclave startup failed");
+        let _ = FAILED_STEP.set(name);
         unavailable()
     })
 }
