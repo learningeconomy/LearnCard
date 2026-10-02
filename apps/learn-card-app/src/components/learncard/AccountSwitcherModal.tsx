@@ -35,6 +35,7 @@ type AccountSwitcherModalProps = {
     contractDetails?: ConsentFlowContractDetails;
     showServiceProfiles?: boolean;
     showServiceProfilesOnly?: boolean;
+    /** Modal hosts close their own instance here; inline hosts use handlePlayerSwitchOverride. */
     onSwitchComplete?: () => void;
     handlePlayerSwitchOverride?: (user: LCNProfile) => void;
     handleBackToGame?: () => void;
