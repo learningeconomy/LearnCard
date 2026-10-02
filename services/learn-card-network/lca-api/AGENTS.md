@@ -105,6 +105,8 @@ Existing AuthSubjects are read, not upserted, so repeat apply does not alter las
 The final global email mapping coverage gate must pass before cutover. Phone-only
 accounts remain a separately reported deferred cohort.
 
+`bun run test:oidc:e2e` also covers the complete email-code broker round-trip in Playwright, with real lca-api and disposable Keycloak/Redis/Mongo. Keep its cleanup contract: exact per-test user/subject deletion, private transient stores, and runner teardown on success/failure/signals. Never point it at shared environments.
+
 ### Keycloak broker gotchas
 
 - **Client secret encoding.** Keycloak's broker sends `client_secret_basic` credentials **raw** (not form-url-encoded, contrary to RFC 6749 §2.3.1). `/oidc/token` therefore compares the raw pair first and only falls back to the URL-decoded pair. Secrets containing `+` or `%` are fine.

@@ -247,3 +247,28 @@ jobs:
             - name: Remove test containers
               if: ${{ always() }}
               run: docker rm -f keycloak
+
+    oidc-broker-e2e:
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - uses: actions/checkout@v7
+            - uses: ./.github/actions/setup
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: '24'
+            - name: Install Chromium
+              working-directory: tests/smoketests
+              run: bunx playwright install --with-deps chromium
+            - name: Typecheck browser tests
+              working-directory: services/learn-card-network/lca-api
+              run: bun run typecheck:oidc:e2e
+            - name: Complete login tickets through the real Keycloak broker
+              working-directory: services/learn-card-network/lca-api
+              run: bun run test:oidc:e2e
+            - name: Remove isolated test services even after cancellation
+              if: always()
+              run: >-
+                  docker compose -p learncard-oidc-e2e
+                  -f services/learn-card-network/lca-api/test/oidc-e2e/compose.yaml
+                  down --volumes --remove-orphans
