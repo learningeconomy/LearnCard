@@ -172,17 +172,17 @@ before any planned production teardown.
 ### ALB and management surface
 
 - Only 80 and 443 are internet-facing; 80 redirects to HTTPS with 301.
-- Priority 10 forwards `/admin` and `/admin/*` only on the admin hostname and,
-  when set, allowed source CIDRs. Priority 11 accommodates a third CIDR without
+- Priority 10 forwards `/admin` and `/admin/*` only on the admin hostname and
+  allowed source CIDRs. Priority 11 accommodates a third CIDR without
   exceeding ALB's five match-evaluation limit.
 - Priority 20 returns plain-text 403 for those admin paths otherwise, including
   requests on the public hostname and disallowed sources on the admin hostname.
 - Priority 30 forwards other admin-host paths for console assets (`/resources/*`)
   and authentication (`/realms/master/*`), with the same CIDR restriction. Priority
-  40 denies the remaining admin-host requests when a CIDR allowlist is configured;
+  40 always denies the remaining admin-host requests;
   otherwise the default forward would bypass the source restriction.
-- `admin_allowed_cidrs = []` **allows every source on the admin host**; it does not
-  bypass Keycloak authentication. Set operator/VPN egress IPv4 CIDRs in production
+- `admin_allowed_cidrs = []` **denies every source on the admin host**.
+  Set operator/VPN egress IPv4 CIDRs to enable admin access
   (up to three). This restricts the admin **host**, not public realm authentication
   endpoints; `KC_HOSTNAME_ADMIN` alone is not an access-control mechanism.
 - Target-group stickiness uses a one-day ALB cookie. Readiness is
@@ -196,7 +196,7 @@ before any planned production teardown.
 ## GitHub Actions
 
 `.github/workflows/keycloak-infra.yml` validates changed infrastructure/image files
-on PRs with format, backend-free initialization, validation, **blocking TFLint**,
+on PRs with format, backend-free initialization, validation, mock-provider admin access tests, **blocking TFLint**,
 and a pinned-version Docker build. The same checks gate manual deployment.
 
 Create GitHub environments `keycloak-staging` and `keycloak-production`, with
@@ -206,6 +206,7 @@ apply. Configure each environment:
 
 | Name                    | Kind               | Purpose                                                      |
 | ----------------------- | ------------------ | ------------------------------------------------------------ |
+| `AWS_ROLE_ARN`          | Variable           | Preferred OIDC deploy role (see migration below)             |
 | `AWS_ACCESS_KEY_ID`     | Secret             | Scoped deploy identity, matching `deploy.yml`                |
 | `AWS_SECRET_ACCESS_KEY` | Secret             | Deploy identity secret                                       |
 | `AWS_REGION`            | Variable or secret | Resource and backend region                                  |
@@ -228,6 +229,12 @@ Per-environment concurrency and DynamoDB locking prevent simultaneous applies.
 No AWS credentials are exposed to PR validation. No automatic push deployments.
 
 ## Upgrade / rollback runbook
+
+The initial groundwork (`e59d3f45c`) created `deny_admin_host[0]` when the admin
+allowlist was nonempty. The `moved` blocks preserve that rule as `deny_admin_host`
+and move the two allow rules to indexed addresses. Keep these blocks for upgrades
+from that version; Terraform ignores a move when its source is absent on a fresh
+deployment ([Terraform refactoring](https://developer.hashicorp.com/terraform/language/modules/develop/refactoring)).
 
 1. Read Keycloak upgrade notes and test the upgrade against a restored staging DB.
 2. Snapshot Aurora and wait until the snapshot is **available**. Record the old image
@@ -252,3 +259,30 @@ the secret. Never set the master password manually outside RDS. Configure alerts
 failures, DB capacity/connections and backup failures in the organization's
 monitoring stack before go-live; this root enables Container Insights and logs but
 does not define organization-specific alert destinations.
+
+### Migrate deployment credentials to OIDC
+
+Before setting `AWS_ROLE_ARN` in each GitHub environment, an AWS administrator must
+configure the GitHub OIDC provider (`https://token.actions.githubusercontent.com`)
+and a least-privilege deploy role. Restrict its trust policy to audience
+`sts.amazonaws.com` and the exact subject
+`repo:learningeconomy/LearnCard:environment:keycloak-staging` or
+`repo:learningeconomy/LearnCard:environment:keycloak-production`, respectively.
+Keep GitHub environment approvals and deployment branch restrictions enabled.
+Grant only the state/lock and infrastructure permissions required for that environment.
+These AWS changes require separate review and are not applied by this workflow.
+
+With `AWS_ROLE_ARN` configured, deployment uses short-lived OIDC credentials and
+never falls back to static keys if role assumption fails. Without it, the existing
+static credential path remains for migration compatibility and its long-lived key
+risk remains. Validate a staging plan using OIDC first, migrate production, then
+remove the old GitHub secrets and revoke the associated IAM access keys through
+an authorized administrator. Do not remove keys used by other workflows until
+those workflows have also migrated.
+
+Run `terraform test` with Terraform 1.7+ to verify admin access rules using a mock
+AWS provider without credentials. CI uses Terraform 1.9.8.
+
+OIDC setup reference: [GitHub documentation](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-aws).
+Verify the actual subject format before configuring trust; repositories that opt into
+immutable subject claims include owner/repository IDs in the subject.

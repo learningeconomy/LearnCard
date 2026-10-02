@@ -26,6 +26,7 @@ awk -F '\t' 'NR == 1 { if (NF != 6) exit 1; next } NR == 2 { if (NF != 6 || $1 !
 
 e2e_snapshot test-phase
 [[ -s "$E2E_ARTIFACT_DIR/capacity-test-phase.txt" ]]
+grep -Fq $'diagnostics_test-phase\tpassed' "$E2E_ARTIFACT_DIR/timings.tsv"
 grep -Fq 'filesystem:' "$E2E_ARTIFACT_DIR/capacity-test-phase.txt"
 grep -Fq 'memory:' "$E2E_ARTIFACT_DIR/capacity-test-phase.txt"
 grep -Fq 'workspace:' "$E2E_ARTIFACT_DIR/capacity-test-phase.txt"

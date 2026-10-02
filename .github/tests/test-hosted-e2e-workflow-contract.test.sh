@@ -65,6 +65,20 @@ abort 'shard total must derive from the matrix, not a hardcoded literal' unless 
 abort 'shard artifacts must not collide' unless service.fetch('steps').any? { |step|
   step.dig('with', 'name').to_s.include?('matrix.shard')
 }
+[browser, service].each do |job|
+  buildx = job.fetch('steps').find { |step| step['name'] == 'Setup Docker Buildx' }
+  abort 'Buildx cleanup must remain enabled for persistent runners' unless buildx.dig('with', 'cleanup') == "${{ runner.environment != 'github-hosted' }}"
+end
+browser_setup = browser.fetch('steps').find { |step| step['uses'] == './.github/actions/setup' }
+service_setup = service.fetch('steps').find { |step| step['uses'] == './.github/actions/setup' }
+abort 'browser must be a cache consumer' unless browser_setup.dig('with', 'save-cache') == 'false'
+abort 'exactly the first service shard must write the cache' unless service_setup.dig('with', 'save-cache') == '${{ matrix.shard == 1 }}'
+setup = YAML.load_file(File.join(File.dirname(ARGV[0]), '../actions/setup/action.yml'))
+abort 'other setup consumers must retain cache saving by default' unless setup.dig('inputs', 'save-cache', 'default') == 'true'
+restore = setup.fetch('runs').fetch('steps').find { |step| step['uses'] == 'actions/cache/restore@v6' }
+save = setup.fetch('runs').fetch('steps').find { |step| step['uses'] == 'actions/cache@v6' }
+abort 'cache reader/writer paths and keys must match' unless restore.fetch('with') == save.fetch('with')
+abort 'cache modes must be mutually exclusive' unless restore.fetch('if') == "${{ inputs.save-cache != 'true' }}" && save.fetch('if') == "${{ inputs.save-cache == 'true' }}"
 abort 'aggregate required-gate name must be stable' unless aggregate.fetch('name') == 'E2E'
 
 expected_browser_specs = 'consent-flow-race.spec.ts app-store.spec.ts wallet-credentials.spec.ts'

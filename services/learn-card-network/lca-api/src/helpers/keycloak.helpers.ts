@@ -26,7 +26,8 @@ export interface KeycloakClaims {
 const claimsSchema = z.object({
     sub: z.string().min(1),
     iss: z.string(),
-    typ: z.enum(['ID', 'Bearer']),
+    // The payload typ is a Keycloak extension, not a required OIDC claim.
+    typ: z.enum(['ID', 'Bearer']).optional(),
     azp: z.string().optional(),
     aud: z.union([z.string(), z.array(z.string())]).optional(),
     email: z.string().min(1).optional(),
@@ -37,7 +38,7 @@ const claimsSchema = z.object({
     picture: z.string().optional(),
 });
 
-const jwksByIssuer = new Map<string, JWTVerifyGetKey>();
+const jwksByIssuer = new Map<string, { url: string; resolver: JWTVerifyGetKey }>();
 let resolverForTests: ((issuer: string) => JWTVerifyGetKey) | undefined;
 
 /** Replace JWKS resolution in isolated tests; resetting also clears memoized resolvers. */
@@ -62,14 +63,12 @@ export const getKeycloakIssuerJwksUrl = (issuer: string): string => {
 
 /** Reuse remote key caches and rotation handling per trusted issuer. */
 export const getKeycloakJwks = (issuer: string): JWTVerifyGetKey => {
-    let jwks = jwksByIssuer.get(issuer);
-    if (!jwks) {
-        jwks = resolverForTests
-            ? resolverForTests(issuer)
-            : createRemoteJWKSet(new URL(getKeycloakIssuerJwksUrl(issuer)));
-        jwksByIssuer.set(issuer, jwks);
-    }
-    return jwks;
+    const url = getKeycloakIssuerJwksUrl(issuer);
+    const cached = jwksByIssuer.get(issuer);
+    if (cached?.url === url) return cached.resolver;
+    const resolver = resolverForTests ? resolverForTests(issuer) : createRemoteJWKSet(new URL(url));
+    jwksByIssuer.set(issuer, { url, resolver });
+    return resolver;
 };
 
 /** Verify signature and claims, checking the issuer allowlist before resolving keys. */
@@ -109,5 +108,13 @@ export const getKeycloakVerifyOptionsFromEnv = (): KeycloakVerifyOptions | null 
             .map(entry => entry.trim())
             .filter(Boolean);
     const issuers = split(environment.KEYCLOAK_ISSUERS);
-    return issuers.length ? { issuers, audiences: split(environment.KEYCLOAK_AUDIENCES) } : null;
+    if (!issuers.length) return null;
+    const audiences = split(environment.KEYCLOAK_AUDIENCES);
+    if (!audiences.length) {
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'KEYCLOAK_AUDIENCES is required when KEYCLOAK_ISSUERS is configured',
+        });
+    }
+    return { issuers, audiences };
 };

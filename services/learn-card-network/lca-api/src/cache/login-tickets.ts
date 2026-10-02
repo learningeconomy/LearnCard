@@ -15,7 +15,8 @@ export interface LoginTicketPayload {
 
 export const issueLoginTicket = async (payload: LoginTicketPayload): Promise<string> => {
     const ticket = randomBytes(32).toString('base64url');
-    await cache.set(`login-ticket:${ticket}`, JSON.stringify(payload), 60);
+    const result = await cache.set(`login-ticket:${ticket}`, JSON.stringify(payload), 60);
+    if (result !== 'OK') throw new Error('Failed to persist login ticket');
     return ticket;
 };
 

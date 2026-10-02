@@ -1,5 +1,16 @@
 # learn-card-core
 
+## 3.0.1
+
+### Patch Changes
+
+- [#1607](https://github.com/learningeconomy/LearnCard/pull/1607) [`b184f5552abf37a11468d435e5cea07fc35e1993`](https://github.com/learningeconomy/LearnCard/commit/b184f5552abf37a11468d435e5cea07fc35e1993) Thanks [@goblincore](https://github.com/goblincore)! - Make `acceptPresentation` idempotent so retries of a saved collection do not create duplicate relationships. New or replacement share-link passcodes require at least eight characters; existing shorter passcodes remain valid for recipients. Public share resolution can now return `try_later` when passcode verification is unavailable or throttled.
+
+- Updated dependencies [[`d436c39e00994e6d8c77e7b94985a51fe1f42adb`](https://github.com/learningeconomy/LearnCard/commit/d436c39e00994e6d8c77e7b94985a51fe1f42adb)]:
+    - @learncard/helpers@1.6.1
+    - @learncard/core@9.4.37
+    - @learncard/network-brain-client@2.5.58
+
 ## 3.0.0
 
 ### Major Changes
