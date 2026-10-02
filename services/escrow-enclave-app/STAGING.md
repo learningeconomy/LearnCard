@@ -90,22 +90,66 @@ without it). Leaving it set is a standing risk: any future accidental S3 object 
 silently regenerate a _new_ escrow keypair rather than failing closed, invalidating every
 previously-enrolled user's escrow blob.
 
-## 5. Non-root `/dev/nsm` access (open item from the P2.1 review)
+`WriteSealedKey` is only granted while `escrow_allow_first_boot = true`, so the permission check
+above applies to the first-boot apply only; a steady-state host role has no PutObject on
+`sealed-keys/`.
 
-The Dockerfile runs the enclave process as `USER 65532:65532` (non-root). Whether `/dev/nsm` and
-the enclave's vsock socket are accessible to that non-root UID **inside a real running Nitro
-Enclave** is **UNVERIFIED** — this could not be tested during development (no Nitro hardware, no
-`nitro-cli`, no EC2). This is the first thing to check on the very first real staging boot:
+## 4a. First staging bring-up: procedure and lessons (2026-10-02)
 
-1. After `nitro-cli run-enclave`, check the enclave's own logs (via the CloudWatch log group, or
-   `nitro-cli console --enclave-id <id>`) for any permission-denied error touching `/dev/nsm` or
-   the vsock device.
-2. If access fails under UID 65532, the fallback is an explicit, reviewed `USER 0:0` in the
-   Dockerfile — this is a deliberate revert, not a silent patch. Flag it back to the orchestrator /
-   security review rather than changing it unilaterally, since it changes the container's
-   privilege posture.
-3. If access succeeds, record that confirmation here (update this section) so future readers don't
-   re-litigate it.
+The first real bring-up (account `217358003896`) followed this order. Each step was a separate,
+reviewed apply.
+
+1. **Bootstrap and network stacks** (`infra/escrow-enclave-bootstrap`, `infra/escrow-enclave-network`).
+2. **Stage 1, targeted** (`-target` on the CMKs, buckets, tables and host role) with placeholder
+   all-`ff` measurements. The EIF cannot be built before the CMK exists because the CMK ARN is
+   measured into it. A full apply at this point would create the ASG against placeholder artifacts.
+3. **Artifacts.** EIF from CI; host binary and monitor zip built in the pinned
+   `amazonlinux:2023` image for `linux/amd64` (glibc 2.34). Every upload uses
+   `put-object --if-none-match '*'` and is read back to compare the SHA-256.
+4. **TLS and secrets.** A staging CA name-constrained to `escrow-enclave.staging.internal` (so
+   trusting it via `NODE_EXTRA_CA_CERTS` cannot vouch for any other host), plus SSM
+   `bearer-token`, `tls-cert`, `tls-key`. The CA key is kept in SSM (`ca-key`), which the host role
+   cannot read.
+5. **Full apply with the first-boot EIF** and `escrow_allow_first_boot = true`.
+6. **Ledger trust anchor.** Call `/v1/attest` with a fresh nonce, verify it with
+   `scripts/verify-attestation.py`, and write the printed key to
+   `/learncard/escrow-enclave/<env>/ledger-public-key` as `{"<keyId>":"<130 hex>"}`. Never take
+   this key from an unverified response.
+7. **Steady state.** Build the EIF again with `ESCROW_ALLOW_FIRST_BOOT=false` (the
+   `escrow-staging` environment variable), add its PCRs as a second measurement, set
+   `escrow_allow_first_boot = false`, roll, and confirm CloudTrail shows one recipient
+   `Decrypt` and no `GenerateDataKey`, the sealed-key object still has one version, and a fresh
+   attestation gives the same ledger key. Then remove the first-boot measurement.
+
+Operational notes:
+
+- **Credentials.** Terraform cannot use `aws login` sessions directly; export them first with
+  `eval "$(aws configure export-credentials --format env)"`. Key-policy changes need the MFA
+  admin session from `infra/escrow-enclave-bootstrap/mfa-session.sh <TOTP>` (profile
+  `escrow-kms-admin-session`, one hour). Check `aws sts get-caller-identity` before every write;
+  SSO sign-ins can land in a different account.
+- **Debug mode cannot test boot.** A `--debug-mode` enclave reports all-zero PCRs, so the app
+  correctly refuses at the `nsm_measurement` step before reaching KMS. Production enclaves have no
+  console; instead the enclave sends the first failing startup step to the host, which logs
+  `enclave_boot_failed step=<label>` to its journal.
+- **Loopback starts down** inside the enclave. The KMS forwarder brings `lo` up before binding
+  `127.0.0.1:8000`.
+- **KMS `CiphertextForRecipient` is BER** (indefinite lengths, sometimes chunked
+  `encryptedContent`), not DER. `kms/ber.rs` normalises it before the strict CMS checks.
+- **Diagnosing boot without a console.** CloudTrail on the escrow CMK (`GenerateDataKey` /
+  `Decrypt` from the host role, with `recipient` in `additionalEventData`) shows whether the
+  enclave reached KMS; `strace` on the host process shows whether it connected to vsock 5001/5002.
+  Suspend `ReplaceUnhealthy` and `HealthCheck` on the ASG while debugging so the host is not
+  replaced underneath you, and resume them afterwards.
+- **Monitor.** Until the ledger key parameter exists the monitor exits at cold start and its
+  scheduled sweeps land in the DLQ. Purge the DLQ once the parameter is in place and a manual
+  sweep succeeds.
+
+## 5. Non-root `/dev/nsm` access
+
+**Verified on 2026-10-02:** the enclave process runs as `USER 65532:65532` and `/dev/nsm`
+attestation and vsock both work under that UID on a real Nitro host (first boot sealed the key and
+`/v1/attest` returned a valid NSM document). No `USER 0:0` fallback is needed.
 
 ## 6. Run the e2e spec against staging
 
