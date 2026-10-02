@@ -5,10 +5,21 @@ import {
     UserManager,
     WebStorageStateStore,
 } from 'oidc-client-ts';
-import type { UserManagerSettings } from 'oidc-client-ts';
+import type {
+    INavigator,
+    IWindow,
+    NavigateParams,
+    NavigateResponse,
+    RevokeTokensTypes,
+    SigninSilentArgs,
+    UserManagerSettings,
+} from 'oidc-client-ts';
 import { AuthSessionError, UnsupportedSignInOperationError } from '@learncard/types';
 import type { AuthProvider, AuthUser } from '@learncard/types';
+import { getLogger } from '../logging/logger';
 import { createKeycloakUserStorage } from './keycloakUserStorage';
+
+const log = getLogger('keycloak-auth-provider');
 
 /**
  * Strip trailing slashes from a URL the host app supplies (config, not user
@@ -29,10 +40,18 @@ export interface UserManagerLike {
     getUser(): Promise<User | null>;
     storeUser(user: User | null): Promise<void>;
     signinSilent(): Promise<User | null>;
-    signinRedirect(args: { extraQueryParams: Record<string, string> }): Promise<void>;
+    signinRedirect(args: {
+        extraQueryParams: Record<string, string>;
+        state?: unknown;
+    }): Promise<void>;
     signinCallback(url?: string): Promise<User | undefined>;
-    signoutRedirect(args: { post_logout_redirect_uri: string }): Promise<void>;
+    signoutRedirect(args: {
+        post_logout_redirect_uri: string;
+        id_token_hint?: string;
+    }): Promise<void>;
     removeUser(): Promise<void>;
+    /** Best-effort on hosts that never reach end_session (e.g. native sign-out). */
+    revokeTokens?(types?: RevokeTokensTypes): Promise<void>;
     events: {
         addUserLoaded(callback: (user: User) => void): unknown;
         removeUserLoaded(callback: (user: User) => void): void;
@@ -57,12 +76,34 @@ export interface KeycloakAuthProviderConfig {
     userStore?: OidcStorage;
     /** Injectable SDK boundary for tests and embedding hosts. */
     userManager?: UserManagerLike;
+    /** Validate app-owned OIDC state and returning identity before notifying consumers. */
+    validateRedirectUser?: (user: AuthUser, state: unknown) => void;
+    /**
+     * Native hosts: open `url` in a system auth sheet and resolve only after the
+     * callback URL has been passed to handleRedirectCallback. Web omits this and
+     * uses the SDK's redirect navigator.
+     */
+    navigate?: (url: string) => Promise<void>;
     /** Custom stores/managers must implement their own persistence migration. */
     setSessionPersistence?: (sessionOnly: boolean) => Promise<void>;
 }
 
+/** Routes the SDK's redirect-navigator through a host-supplied system auth sheet. */
+const createNativeRedirectNavigator = (navigate: (url: string) => Promise<void>): INavigator => ({
+    prepare: async (): Promise<IWindow> => ({
+        navigate: async (params: NavigateParams): Promise<NavigateResponse> => {
+            await navigate(params.url);
+            return { url: params.url };
+        },
+        close: (): void => {},
+    }),
+    callback: async (): Promise<void> => {},
+});
+
 export interface KeycloakAuthProvider extends AuthProvider {
     userManager: UserManagerLike;
+    /** Finish host cleanup before navigating away; the ID token is captured first. */
+    signOut(beforeRedirect?: () => Promise<void>): Promise<void>;
     /** true uses sessionStorage, false uses localStorage; await before starting sign-in. */
     setSessionPersistence(sessionOnly: boolean): Promise<void>;
     handleRedirectCallback(url?: string): Promise<AuthUser | null>;
@@ -99,6 +140,54 @@ export const createKeycloakAuthProvider = (
     config: KeycloakAuthProviderConfig
 ): KeycloakAuthProvider => {
     const authority = `${trimTrailingSlashes(config.serverUrl)}/realms/${config.realm}`;
+    let signOutRevision = 0;
+    let redirectRevision: number | undefined;
+    let previousRedirectUser: User | null = null;
+
+    // The SDK stores tokens before raising UserLoaded. Validate at that boundary,
+    // not after signinCallback, so other tabs never see a rejected identity.
+    class ValidatingUserManager extends UserManager {
+        private renewalRevision: number | undefined;
+        private renewal: Promise<User | null> | undefined;
+
+        override signinSilent(args?: SigninSilentArgs): Promise<User | null> {
+            if (this.renewal) return this.renewal;
+            this.renewalRevision = signOutRevision;
+            this.renewal = super.signinSilent(args).finally(() => {
+                this.renewal = undefined;
+                this.renewalRevision = undefined;
+            });
+            return this.renewal;
+        }
+
+        override async storeUser(user: User | null): Promise<void> {
+            const revision = this.renewalRevision ?? signOutRevision;
+            if (user && revision !== signOutRevision) {
+                throw new AuthSessionError('Sign-in cancelled. Please try again.', 'no_session');
+            }
+            if (user && redirectRevision !== undefined) {
+                const current = await this.getUser();
+                if (
+                    signOutRevision !== redirectRevision ||
+                    current?.profile.sub !== previousRedirectUser?.profile.sub
+                ) {
+                    throw new AuthSessionError(
+                        'Sign-in cancelled. Please try again.',
+                        'no_session'
+                    );
+                }
+                const mapped = keycloakUserToAuthUser(user);
+                if (!mapped) throw new AuthSessionError('Please sign in again.', 'no_session');
+                config.validateRedirectUser?.(mapped, user.state);
+            }
+            await super.storeUser(user);
+            // Async host stores can finish after sign-out. Never let the SDK publish UserLoaded.
+            if (user && revision !== signOutRevision) {
+                await super.storeUser(null);
+                throw new AuthSessionError('Sign-in cancelled. Please try again.', 'no_session');
+            }
+        }
+    }
     const browserStorage =
         !config.userManager && !config.userStore && typeof window !== 'undefined'
             ? createKeycloakUserStorage(
@@ -116,7 +205,7 @@ export const createKeycloakAuthProvider = (
         });
     const userManager =
         config.userManager ??
-        new UserManager(
+        new ValidatingUserManager(
             {
                 authority,
                 client_id: config.clientId,
@@ -129,7 +218,8 @@ export const createKeycloakAuthProvider = (
                 loadUserInfo: false,
                 monitorSession: false,
                 filterProtocolClaims: true,
-                revokeTokensOnSignout: true,
+                // Keycloak end-session ends the session and invalidates tokens without prior revocation.
+                revokeTokensOnSignout: false,
                 stateStore: new WebStorageStateStore({
                     // PKCE state stays stable across redirects and persistence changes.
                     store:
@@ -142,7 +232,7 @@ export const createKeycloakAuthProvider = (
                     store: config.userStore ?? browserStorage?.store ?? new InMemoryWebStorage(),
                 }),
             },
-            undefined,
+            config.navigate ? createNativeRedirectNavigator(config.navigate) : undefined,
             undefined,
             {
                 // Automatic renewal calls the SDK directly. Reject its iframe fallback too.
@@ -156,9 +246,9 @@ export const createKeycloakAuthProvider = (
         );
     const redirectListeners = new Set<(result: KeycloakRedirectResult) => void>();
     let reauthenticating = false;
-    let signOutRevision = 0;
 
     const renew = async (): Promise<User> => {
+        const revision = signOutRevision;
         // Never fall back to iframe silent SSO when there is no refresh token.
         if (!(await userManager.getUser())?.refresh_token) {
             throw new AuthSessionError('Sign-in expired. Please try again.', 'expired');
@@ -166,6 +256,10 @@ export const createKeycloakAuthProvider = (
         let user: User | null;
         try {
             user = await userManager.signinSilent();
+            if (revision !== signOutRevision) {
+                await userManager.removeUser();
+                throw new AuthSessionError('Sign-in cancelled. Please try again.', 'no_session');
+            }
         } catch (error) {
             if (
                 error instanceof ErrorResponse &&
@@ -252,27 +346,71 @@ export const createKeycloakAuthProvider = (
                 reauthenticating = false;
             }
         },
-        signOut: async (): Promise<void> => {
+        signOut: async (beforeRedirect?: () => Promise<void>): Promise<void> => {
             signOutRevision++;
-            if (config.postLogoutRedirectUri) {
+            const user = await userManager.getUser();
+            if (!config.postLogoutRedirectUri || !user?.id_token) {
+                // No end_session redirect will happen on this path (native and
+                // no-redirect-URI hosts), so the refresh token is never otherwise
+                // revoked server-side. Revoke before clearing local state: revocation
+                // reads the token from storage and is a no-op once it's gone.
+                try {
+                    await userManager.revokeTokens?.();
+                } catch (error) {
+                    log.debug('Unable to revoke Keycloak tokens on sign-out', error);
+                }
+                await userManager.removeUser();
+                return;
+            }
+            try {
+                // A redirect unloads the page before the coordinator can run its normal cleanup.
+                await beforeRedirect?.();
                 await userManager.signoutRedirect({
                     post_logout_redirect_uri: config.postLogoutRedirectUri,
+                    id_token_hint: user.id_token,
                 });
-            } else {
+            } catch {
+                // Still clear local auth when host cleanup, discovery, or navigation fails.
                 await userManager.removeUser();
             }
         },
         handleRedirectCallback: async (url?: string): Promise<AuthUser | null> => {
             // Snapshot before awaiting: an older callback must never settle a later attempt.
             const listeners = [...redirectListeners];
+            if (redirectRevision !== undefined) {
+                throw new AuthSessionError('Sign-in is already in progress.', 'no_session');
+            }
+            redirectRevision = signOutRevision;
             try {
-                const user = await handleRedirectCallback(userManager, url);
+                const previousUser = await userManager.getUser();
+                previousRedirectUser = previousUser;
+                const oidcUser = await userManager.signinCallback(url);
+                const user = keycloakUserToAuthUser(oidcUser);
                 if (!user) throw new AuthSessionError('Please sign in again.', 'no_session');
+                try {
+                    if (signOutRevision !== redirectRevision) {
+                        throw new AuthSessionError(
+                            'Sign-in cancelled. Please try again.',
+                            'no_session'
+                        );
+                    }
+                    config.validateRedirectUser?.(user, oidcUser?.state);
+                } catch (error) {
+                    // Injected managers may publish before validation. Production validates
+                    // inside storeUser above, before storage or UserLoaded can change.
+                    if (config.userManager && signOutRevision === redirectRevision) {
+                        await userManager.storeUser(previousUser);
+                    }
+                    throw error;
+                }
                 for (const listener of listeners) listener({ user });
                 return user;
             } catch (error) {
                 for (const listener of listeners) listener({ error });
                 throw error;
+            } finally {
+                redirectRevision = undefined;
+                previousRedirectUser = null;
             }
         },
     };

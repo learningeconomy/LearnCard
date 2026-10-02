@@ -13,6 +13,7 @@
         "migrate:sa-seeds": "node scripts/migrate-signing-authority-seeds.mjs",
         "check:sa-infra": "node scripts/check-seed-encryption-infrastructure.mjs",
         "check:sa-redis": "node scripts/check-signing-authority-redis.mjs",
+        "provision:keycloak": "bun --conditions=development scripts/provision-keycloak-users.ts",
         "test": "vitest run --config vitest.config.ts",
         "test:watch": "vitest --config vitest.config.ts",
         "test:coverage": "vitest run --coverage --config vitest.config.ts",

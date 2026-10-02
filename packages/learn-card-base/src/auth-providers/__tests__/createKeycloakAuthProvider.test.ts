@@ -56,6 +56,127 @@ const create = (
 ): KeycloakAuthProvider => createKeycloakAuthProvider({ ...keycloakConfig, userManager, ...extra });
 
 describe('createKeycloakAuthProvider', () => {
+    it.each(['automatic', 'manual'])(
+        'rejects %s renewal completing after sign-out before storage or UserLoaded',
+        async mode => {
+            const sdk = await vi.importActual<typeof import('oidc-client-ts')>('oidc-client-ts');
+            let finish: (() => void) | undefined;
+            const pending = new Promise<void>(resolve => {
+                finish = resolve;
+            });
+            const silent = vi
+                .spyOn(sdk.UserManager.prototype, 'signinSilent')
+                .mockImplementation(async function () {
+                    await pending;
+                    const user = createUser();
+                    // oidc-client-ts _useRefreshToken stores before emitting UserLoaded.
+                    await this.storeUser(user);
+                    await this.events.load(user);
+                    return user;
+                });
+            const storage = new InMemoryWebStorage();
+            const provider = createKeycloakAuthProvider({
+                ...keycloakConfig,
+                stateStore: storage,
+                userStore: storage,
+            });
+            await provider.userManager.storeUser(createUser());
+            const loaded = vi.fn();
+            provider.userManager.events.addUserLoaded(loaded);
+            vi.spyOn(provider.userManager, 'revokeTokens').mockResolvedValue(undefined);
+            try {
+                const renewing =
+                    mode === 'automatic'
+                        ? provider.userManager.signinSilent()
+                        : provider.getIdToken(true);
+                const rejected = expect(renewing).rejects.toBeInstanceOf(AuthSessionError);
+                await vi.waitFor(() => expect(silent).toHaveBeenCalled());
+                await provider.signOut();
+                finish?.();
+                await rejected;
+                expect(await provider.userManager.getUser()).toBeNull();
+                expect(await provider.getCurrentUser()).toBeNull();
+                expect(loaded).not.toHaveBeenCalled();
+            } finally {
+                silent.mockRestore();
+            }
+        }
+    );
+    it('rejects the identity at the SDK storage boundary before publishing tokens', async () => {
+        const storage = new InMemoryWebStorage();
+        const previous = createUser();
+        const returned = createUser({ profile: { ...previous.profile, sub: 'other-user' } });
+        const provider = createKeycloakAuthProvider({
+            ...keycloakConfig,
+            stateStore: storage,
+            userStore: storage,
+            validateRedirectUser: user => {
+                if (user.id !== previous.profile.sub) throw new Error('Wrong account');
+            },
+        });
+        const manager = provider.userManager;
+        await manager.storeUser(previous);
+        vi.spyOn(manager, 'signinCallback').mockImplementation(async () => {
+            await manager.storeUser(returned);
+            return returned;
+        });
+        await expect(provider.handleRedirectCallback()).rejects.toThrow('Wrong account');
+        expect(await manager.getUser()).toHaveProperty('profile.sub', previous.profile.sub);
+        expect(await provider.getIdToken()).toBe(previous.id_token);
+    });
+
+    it('does not resurrect a session when logout happens during the callback', async () => {
+        const storage = new InMemoryWebStorage();
+        const provider = createKeycloakAuthProvider({
+            ...keycloakConfig,
+            stateStore: storage,
+            userStore: storage,
+        });
+        const manager = provider.userManager;
+        await manager.storeUser(createUser());
+        let finish: (() => void) | undefined;
+        vi.spyOn(manager, 'signinCallback').mockImplementation(async () => {
+            await new Promise<void>(resolve => {
+                finish = resolve;
+            });
+            const user = createUser();
+            await manager.storeUser(user);
+            return user;
+        });
+        const callback = provider.handleRedirectCallback();
+        const rejected = expect(callback).rejects.toBeInstanceOf(AuthSessionError);
+        await vi.waitFor(() => expect(manager.signinCallback).toHaveBeenCalled());
+        await provider.signOut();
+        finish?.();
+        await rejected;
+        expect(await manager.getUser()).toBeNull();
+    });
+
+    it('validates redirect identity and restores the prior session on mismatch', async () => {
+        const previous = createUser();
+        const manager = createManager(previous);
+        const returned = createUser({
+            profile: { ...previous.profile, sub: 'other-user' },
+            userState: { reauthId: 'attempt' },
+        });
+        vi.mocked(manager.signinCallback).mockImplementation(async () => {
+            await manager.storeUser(returned);
+            return returned;
+        });
+        const validateRedirectUser = vi.fn(() => {
+            throw new Error('Wrong account');
+        });
+        const provider = create(manager, { validateRedirectUser });
+        const completed = vi.fn();
+        provider.onRedirectComplete(completed);
+        await expect(provider.handleRedirectCallback()).rejects.toThrow('Wrong account');
+        expect(validateRedirectUser).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 'other-user' }),
+            { reauthId: 'attempt' }
+        );
+        expect(await manager.getUser()).toBe(previous);
+        expect(completed).toHaveBeenCalledWith({ error: expect.any(Error) });
+    });
     it('builds PKCE authorization-code settings and injectable stores without iframe/session monitoring', () => {
         const storage = new InMemoryWebStorage();
         const provider = createKeycloakAuthProvider({
@@ -74,7 +195,7 @@ describe('createKeycloakAuthProvider', () => {
             loadUserInfo: false,
             monitorSession: false,
             filterProtocolClaims: true,
-            revokeTokensOnSignout: true,
+            revokeTokensOnSignout: false,
             disablePKCE: false,
             stateStore: expect.any(WebStorageStateStore),
             userStore: expect.any(WebStorageStateStore),
@@ -92,6 +213,46 @@ describe('createKeycloakAuthProvider', () => {
             userStore: storage,
         });
         expect(provider.userManager.settings).toHaveProperty('scope', 'openid email');
+    });
+
+    it('wires a native navigate hook as the redirect navigator', async () => {
+        const storage = new InMemoryWebStorage();
+        const navigate = vi.fn().mockResolvedValue(undefined);
+        createKeycloakAuthProvider({
+            ...keycloakConfig,
+            stateStore: storage,
+            userStore: storage,
+            navigate,
+        });
+        const redirectNavigator = constructed.mock.lastCall?.[1];
+        expect(redirectNavigator).toBeDefined();
+        const handle = await redirectNavigator.prepare({});
+        const response = await handle.navigate({ url: 'https://auth.example.org/authorize?x=1' });
+        expect(navigate).toHaveBeenCalledWith('https://auth.example.org/authorize?x=1');
+        expect(response).toEqual({ url: 'https://auth.example.org/authorize?x=1' });
+        expect(() => handle.close()).not.toThrow();
+    });
+
+    it('rejects if the native navigate hook fails, without swallowing the error', async () => {
+        const storage = new InMemoryWebStorage();
+        const navigate = vi.fn().mockRejectedValue(new Error('sheet dismissed'));
+        createKeycloakAuthProvider({
+            ...keycloakConfig,
+            stateStore: storage,
+            userStore: storage,
+            navigate,
+        });
+        const redirectNavigator = constructed.mock.lastCall?.[1];
+        const handle = await redirectNavigator.prepare({});
+        await expect(
+            handle.navigate({ url: 'https://auth.example.org/authorize' })
+        ).rejects.toThrow('sheet dismissed');
+    });
+
+    it('omits a redirect navigator on web (no navigate hook)', () => {
+        const storage = new InMemoryWebStorage();
+        createKeycloakAuthProvider({ ...keycloakConfig, stateStore: storage, userStore: storage });
+        expect(constructed.mock.lastCall?.[1]).toBeUndefined();
     });
 
     it('blocks iframe fallback even when the SDK initiates automatic renewal', async () => {
@@ -175,6 +336,16 @@ describe('createKeycloakAuthProvider', () => {
             await expect(create(manager).getIdToken(true)).rejects.toBeInstanceOf(AuthSessionError);
         }
     );
+    it('clears local auth if host cleanup rejects without navigating with stale app state', async () => {
+        const manager = createManager();
+        const cleanup = vi.fn().mockRejectedValue(new Error('cleanup failed'));
+        await create(manager, { postLogoutRedirectUri: keycloakConfig.redirectUri }).signOut(
+            cleanup
+        );
+        expect(manager.removeUser).toHaveBeenCalledOnce();
+        expect(manager.signoutRedirect).not.toHaveBeenCalled();
+        expect(await manager.getUser()).toBeNull();
+    });
     it('rejects missing cached ID tokens', async () => {
         await expect(
             create(createManager(createUser({ id_token: undefined }))).getIdToken()
@@ -261,6 +432,7 @@ describe('createKeycloakAuthProvider', () => {
         }).signOut();
         expect(manager.signoutRedirect).toHaveBeenCalledWith({
             post_logout_redirect_uri: 'https://app.example.org/logout',
+            id_token_hint: 'id',
         });
         expect(manager.removeUser).not.toHaveBeenCalled();
     });
@@ -269,6 +441,63 @@ describe('createKeycloakAuthProvider', () => {
         await create(manager).signOut();
         expect(manager.removeUser).toHaveBeenCalledOnce();
         expect(manager.signoutRedirect).not.toHaveBeenCalled();
+    });
+    it('best-effort revokes tokens before clearing local state when there is no end-session redirect', async () => {
+        const manager = createManager();
+        const order: string[] = [];
+        manager.revokeTokens = vi.fn(async () => {
+            order.push('revoke');
+        });
+        vi.mocked(manager.removeUser).mockImplementation(async () => {
+            order.push('remove');
+        });
+        await create(manager).signOut();
+        expect(manager.revokeTokens).toHaveBeenCalledOnce();
+        expect(order).toEqual(['revoke', 'remove']);
+    });
+    it('continues sign-out when token revocation fails (best-effort)', async () => {
+        const manager = createManager();
+        manager.revokeTokens = vi.fn().mockRejectedValue(new Error('offline'));
+        await expect(create(manager).signOut()).resolves.toBeUndefined();
+        expect(manager.removeUser).toHaveBeenCalledOnce();
+    });
+    it('does not revoke tokens when redirecting to end-session', async () => {
+        const manager = createManager();
+        manager.revokeTokens = vi.fn();
+        await create(manager, { postLogoutRedirectUri: keycloakConfig.redirectUri }).signOut();
+        expect(manager.revokeTokens).not.toHaveBeenCalled();
+    });
+    it('falls back to local logout when the redirect rejects', async () => {
+        const manager = createManager();
+        vi.mocked(manager.signoutRedirect).mockRejectedValue(new Error('offline'));
+        const provider = create(manager, { postLogoutRedirectUri: keycloakConfig.redirectUri });
+        await expect(provider.signOut()).resolves.toBeUndefined();
+        expect(manager.removeUser).toHaveBeenCalledOnce();
+        expect(await provider.getCurrentUser()).toBeNull();
+    });
+    it.each([null, createUser({ id_token: undefined })])(
+        'removes local state without redirecting when no ID token is available',
+        async user => {
+            const manager = createManager(user);
+            await create(manager, { postLogoutRedirectUri: keycloakConfig.redirectUri }).signOut();
+            expect(manager.removeUser).toHaveBeenCalledOnce();
+            expect(manager.signoutRedirect).not.toHaveBeenCalled();
+        }
+    );
+    it('captures the ID token before awaiting host cleanup that clears storage', async () => {
+        const manager = createManager();
+        const cleanup = vi.fn(async () => {
+            expect(manager.signoutRedirect).not.toHaveBeenCalled();
+            await manager.removeUser();
+        });
+        await create(manager, { postLogoutRedirectUri: keycloakConfig.redirectUri }).signOut(
+            cleanup
+        );
+        expect(cleanup).toHaveBeenCalledOnce();
+        expect(manager.signoutRedirect).toHaveBeenCalledWith({
+            post_logout_redirect_uri: keycloakConfig.redirectUri,
+            id_token_hint: 'id',
+        });
     });
     it('delegates redirect callback validation to the SDK', async () => {
         const manager: UserManagerLike = createManager();
