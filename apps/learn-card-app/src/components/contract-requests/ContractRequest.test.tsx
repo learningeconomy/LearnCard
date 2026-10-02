@@ -30,7 +30,10 @@ const state = vi.hoisted(() => ({
                 personal: {},
                 credentials: { categories: { Achievement: { required: false } } },
             },
-            write: { personal: {}, credentials: { categories: { Achievement: true } } },
+            write: {
+                personal: {},
+                credentials: { categories: { Achievement: { required: true } } },
+            },
         },
         expiresAt: '',
         needsGuardianConsent: false,
