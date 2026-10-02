@@ -278,3 +278,102 @@ fn cms_roundtrip_and_fail_closed_algorithms_and_parameters() {
         Err(KmsError::Crypto)
     ));
 }
+
+/// Real KMS `CiphertextForRecipient` (BER, indefinite lengths, chunked
+/// encryptedContent) from edgebitio/nitro-enclaves-sdk-go crypto/cms/cms_test.go.
+const KMS_BER_SAMPLE: &str = "MIAGCSqGSIb3DQEHA6CAMIACAQIxggFrMIIBZwIBAoAgljGgxlmRCtWqvB/s/Aw+ZNTDlc6Uka86SLVmlNmFGAMwPAYJKoZIhvcNAQEHMC+gDzANBglghkgBZQMEAgEFAKEcMBoGCSqGSIb3DQEBCDANBglghkgBZQMEAgEFAASCAQAXmjTiHpg+OcYaf2ISaDNpQcEOq61Sm3re3v+5z2hZPe8eoUGhmMS6pCuC+BRW7RpkjwDaXQzzR/jExnraEET3lj9oyAMMwKIahhHHIZ33qOTq1c/9NtMVZmm/j4UfyCpP8WMAFb2hvwIJbjnAGO9Xbw+NzWaQdvEyNDGUX+bPIuSDc75jjGH5KtdFLopk5k6nsTdU26qLkVE6Mg9Y//s0OJCvmYFgfw15IXDb50xJupWxCwbqGXWmfTBEo9M9AhelVbOXkitZR7hbnT6BZnsfpS2acZRNL4XxC+gg4Ml9fOiYsGWqSK8Lkwlp22rtL70CIHnggbb+oIE4ObR4TV8qMIAGCSqGSIb3DQEHATAdBglghkgBZQMEASoEEEMr/6uiZK+CzgfJvr61JTGggAQwfp0W0Q/QPYmg6AoC3DkE5+beNswVOX9ct5IIgIsvaAhTF9IiHdbX7yLa8YS2WQ/FAAAAAAAAAAAAAA==";
+
+/// Re-encodes DER as KMS-style BER: every constructed element indefinite, and
+/// the primitive `encryptedContent` split into a constructed `[0]` of chunks.
+fn to_kms_ber(node: &ber::Node, out: &mut Vec<u8>) {
+    match node {
+        ber::Node::Primitive(0x80, content) if content.len() > 16 => {
+            out.extend_from_slice(&[0xa0, 0x80]);
+            for chunk in content.chunks(16) {
+                ber::encode(&ber::Node::Primitive(0x04, chunk.to_vec()), out);
+            }
+            out.extend_from_slice(&[0, 0]);
+        }
+        ber::Node::Primitive(..) => ber::encode(node, out),
+        ber::Node::Constructed(tag, children) => {
+            out.extend_from_slice(&[*tag, 0x80]);
+            for child in children {
+                to_kms_ber(child, out);
+            }
+            out.extend_from_slice(&[0, 0]);
+        }
+    }
+}
+
+#[test]
+fn real_kms_ber_sample_parses_to_the_expected_envelope() {
+    let sample = STANDARD.decode(KMS_BER_SAMPLE).unwrap();
+    assert_eq!(&sample[..4], &[0x30, 0x80, 0x06, 0x09]);
+    assert!(ContentInfo::from_der(&sample).is_err());
+    let envelope = parse_ciphertext_for_recipient(&sample).unwrap();
+    assert_eq!(envelope.encrypted_key.len(), 256);
+    assert_eq!(envelope.iv.len(), 16);
+    assert_eq!(envelope.ciphertext.len(), 48);
+    assert!(matches!(
+        open_ciphertext_for_recipient(&sample, recipient()),
+        Err(KmsError::Crypto)
+    ));
+}
+
+#[test]
+fn der_input_normalizes_to_itself() {
+    let cms = fake::wrap(b"seed", &recipient().public_key_der().unwrap()).unwrap();
+    assert_eq!(ber::normalize_kms_cms(&cms).unwrap(), cms);
+}
+
+#[test]
+fn kms_style_ber_with_chunked_content_roundtrips() {
+    let plaintext = [7u8; 32];
+    let cms = fake::wrap(&plaintext, &recipient().public_key_der().unwrap()).unwrap();
+    let mut indefinite = Vec::new();
+    to_kms_ber(&ber::parse(&cms).unwrap(), &mut indefinite);
+    assert!(indefinite.windows(4).any(|w| w == [0xa0, 0x80, 0x04, 0x10]));
+    assert_eq!(ber::normalize_kms_cms(&indefinite).unwrap(), cms);
+    assert_eq!(
+        &*open_ciphertext_for_recipient(&indefinite, recipient()).unwrap(),
+        &plaintext
+    );
+    let mut trailing = indefinite.clone();
+    trailing.push(0);
+    assert!(open_ciphertext_for_recipient(&trailing, recipient()).is_err());
+    assert!(
+        open_ciphertext_for_recipient(&indefinite[..indefinite.len() - 2], recipient()).is_err()
+    );
+}
+
+#[test]
+fn malformed_ber_is_rejected() {
+    let nested = |depth: usize| {
+        let mut bytes = Vec::new();
+        for _ in 0..depth {
+            bytes.extend_from_slice(&[0x30, 0x80]);
+        }
+        bytes.extend(std::iter::repeat_n(0u8, depth * 2));
+        bytes
+    };
+    assert!(ber::parse(&nested(16)).is_ok());
+    let wide: Vec<u8> = [&[0x30u8, 0x80][..], &[0x05, 0x00].repeat(300), &[0, 0]].concat();
+    for bad in [
+        nested(18),
+        wide,
+        vec![0x1f, 0x01, 0x00],
+        vec![0x04, 0x80, 0x00, 0x00],
+        vec![0x30, 0x83, 0x00, 0x00, 0x01],
+        vec![0x30, 0x05, 0x05, 0x00],
+        vec![0x30, 0x80, 0x05, 0x00],
+        vec![0x24, 0x80, 0x02, 0x01, 0x00, 0x00, 0x00],
+        vec![0x30, 0x03, 0x05, 0x00, 0x00, 0x00],
+        vec![0x00, 0x00],
+    ] {
+        assert!(ber::parse(&bad).is_err(), "{bad:02x?}");
+    }
+    assert_eq!(
+        ber::parse(&[0x24, 0x80, 0x04, 0x01, 0xaa, 0x04, 0x01, 0xbb, 0x00, 0x00]).unwrap(),
+        ber::Node::Primitive(0x04, vec![0xaa, 0xbb])
+    );
+}

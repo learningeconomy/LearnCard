@@ -23,6 +23,7 @@ use crate::{
 
 #[cfg(feature = "kms")]
 mod aws;
+mod ber;
 #[cfg(feature = "kms")]
 pub use aws::{AwsKmsClient, Credentials};
 #[cfg(any(test, feature = "fake-kms"))]
@@ -149,16 +150,18 @@ fn validate_oaep(alg: &AlgorithmIdentifierOwned) -> Result<(), KmsError> {
     Ok(())
 }
 
-/// Strict DER CMS, one RSA-OAEP SHA-256 recipient, AES-256-CBC and PKCS#7 only.
-/// No fallback to direct RSA, legacy padding, SHA-1 or another content cipher.
-pub fn open_ciphertext_for_recipient(
-    cms_der: &[u8],
-    recipient: &RecipientKey,
-) -> Result<Zeroizing<Vec<u8>>, KmsError> {
-    if cms_der.len() > 16_384 {
-        return Err(KmsError::Encoding);
-    }
-    let info = ContentInfo::from_der(cms_der).map_err(|_| KmsError::Encoding)?;
+struct RecipientEnvelope {
+    encrypted_key: Vec<u8>,
+    iv: Vec<u8>,
+    ciphertext: Vec<u8>,
+}
+
+/// KMS BER normalised to DER, then strict CMS: one RSA-OAEP SHA-256 recipient,
+/// AES-256-CBC and PKCS#7 only. No fallback to direct RSA, legacy padding,
+/// SHA-1 or another content cipher.
+fn parse_ciphertext_for_recipient(cms_ber: &[u8]) -> Result<RecipientEnvelope, KmsError> {
+    let cms_der = ber::normalize_kms_cms(cms_ber)?;
+    let info = ContentInfo::from_der(&cms_der).map_err(|_| KmsError::Encoding)?;
     if info.content_type != ENVELOPED {
         return Err(KmsError::Encoding);
     }
@@ -187,20 +190,32 @@ pub fn open_ciphertext_for_recipient(
     if iv.as_bytes().len() != 16 {
         return Err(KmsError::Encoding);
     }
-    let encrypted = content
+    let ciphertext = content
         .encrypted_content
         .as_ref()
         .ok_or(KmsError::Encoding)?;
+    Ok(RecipientEnvelope {
+        encrypted_key: key.enc_key.as_bytes().to_vec(),
+        iv: iv.as_bytes().to_vec(),
+        ciphertext: ciphertext.as_bytes().to_vec(),
+    })
+}
+
+pub fn open_ciphertext_for_recipient(
+    cms_ber: &[u8],
+    recipient: &RecipientKey,
+) -> Result<Zeroizing<Vec<u8>>, KmsError> {
+    let envelope = parse_ciphertext_for_recipient(cms_ber)?;
     let cek = Zeroizing::new(
         recipient
             .0
-            .decrypt_blinded(&mut OsRng, Oaep::new::<Sha256>(), key.enc_key.as_bytes())
+            .decrypt_blinded(&mut OsRng, Oaep::new::<Sha256>(), &envelope.encrypted_key)
             .map_err(|_| KmsError::Crypto)?,
     );
-    let cipher = cbc::Decryptor::<aes::Aes256>::new_from_slices(&cek, iv.as_bytes())
+    let cipher = cbc::Decryptor::<aes::Aes256>::new_from_slices(&cek, &envelope.iv)
         .map_err(|_| KmsError::Crypto)?;
     // In-place unpadding keeps even failed plaintext in a zeroizing allocation.
-    let mut plaintext = Zeroizing::new(encrypted.as_bytes().to_vec());
+    let mut plaintext = Zeroizing::new(envelope.ciphertext);
     let len = cipher
         .decrypt_padded_mut::<Pkcs7>(&mut plaintext)
         .map_err(|_| KmsError::Crypto)?
@@ -212,8 +227,6 @@ pub fn open_ciphertext_for_recipient(
     Ok(plaintext)
 }
 
-/// Caller must durably persist the returned new blob via the parent before serving.
-/// A failed unseal NEVER falls back to generating a replacement key.
 pub async fn unseal_or_generate_escrow_key(
     kms: &dyn KmsClient,
     nsm: &dyn NsmDriver,
