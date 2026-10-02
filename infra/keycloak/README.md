@@ -54,7 +54,7 @@ Browser redirects and `OIDC_ISSUER` use `http://localhost:5100`; backchannel tok
 JWKS and userinfo calls use `host.docker.internal` to reach the host from Docker.
 The compose/CI host-gateway entry makes that hostname work on Linux too.
 The gated integration test checks discovery and the real broker redirect/import,
-not the complete ticket-to-Keycloak-session round-trip (TODO: Redis/Mongo-backed CI).
+while the Playwright suite below covers the complete ticket-to-Keycloak-session round-trip.
 
 > **Phone login is deferred.** The current login-ticket flow covers email codes and
 > native Google/Apple only. The `dev-phone` user and the `phone_number*` attributes/mappers
@@ -99,3 +99,52 @@ The `Auth Integration (Keycloak)` workflow boots this same fixture and runs the
 opt-in `keycloak-verify.integration.spec.ts` suite. Locally, set
 `KEYCLOAK_INTEGRATION=true`, `KEYCLOAK_ISSUERS=http://localhost:8081/realms/learncard`,
 and `KEYCLOAK_AUDIENCES=learncard-app,ci-tests` before running that spec with Vitest.
+
+## Browser sign-in end-to-end test
+
+From `services/learn-card-network/lca-api` on the PR branch:
+
+```bash
+bunx playwright install chromium
+bun run typecheck:oidc:e2e
+bun run test:oidc:e2e
+```
+
+Requires Docker Compose, Bun, and Node. No pre-running services or local `.env` are
+needed. The runner starts the actual `src/docker-entry.ts` HTTP server, a small
+callback page, and private MongoDB, Redis 7.4, and Keycloak 26.7.4 containers on
+ephemeral host ports. It copies the canonical realm fixture, changing only the
+realm name, test users, callback URI, and local provider URLs. Authentication flows
+and provider settings remain the fixture's real configuration.
+
+Playwright uses a fresh browser context for every sign-in. It covers new and
+returning users, migrated users with a pre-seeded federated identity, rejected
+reused/expired tickets, and atomic email-code redemption after a wrong guess.
+Successful sign-ins must reach the callback without filling any Keycloak form,
+exchange a real authorization code using PKCE, verify the ID token signature,
+issuer, audience, state and nonce, and call Keycloak userinfo with the access token.
+Only email delivery is bypassed by inserting a synthetic code into the private
+Redis instance. Expiry tests verify the real 60-second ticket TTL before shortening
+one ticket's TTL to exercise Redis expiry promptly. Native social login and the
+production frontend/migration script are outside this suite's scope.
+
+### Isolation and cleanup
+
+- The fixed Docker project `learncard-oidc-e2e` is reserved for this suite. An
+  exclusive local lock prevents overlapping runs. The runner never uses the
+  developer's `learncard` realm, Redis, MongoDB, or `.env`.
+- Each test removes its exact Keycloak user (including sessions and federated
+  links) and Mongo subject, then clears its private Redis store. Cleanup asserts
+  that these records are gone, including after a failed assertion.
+- All database directories are ephemeral `tmpfs`; no named data volumes are
+  created. The runner stops API/browser/callback processes and removes containers,
+  the Compose network, temporary fixture, credentials, and browser artifacts in
+  `finally`, also on SIGINT/SIGTERM. Cleanup failures fail the command.
+- An uncatchable SIGKILL or machine crash cannot run teardown. The next invocation
+  removes this suite's stale stack before starting; the fixed project prevents
+  accumulating stacks/users. CI also runs Compose teardown with `if: always()`.
+- Optional `--grep <pattern>`, `--grep-invert <pattern>`, and `--headed` are supported.
+  Worker/config overrides are deliberately disallowed to preserve serial cleanup.
+
+The `Auth Integration (Keycloak)` workflow runs the browser suite independently of
+the smaller Vitest broker-import and token-verification checks.
