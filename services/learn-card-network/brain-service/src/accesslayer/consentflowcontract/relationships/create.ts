@@ -85,6 +85,7 @@ export const consentToContract = async (
         oneTime,
         guardianApproval,
         audienceVersion,
+        smartResumeFingerprint,
     }: {
         terms: ConsentFlowTermsType;
         expiresAt?: string;
@@ -92,6 +93,7 @@ export const consentToContract = async (
         oneTime?: boolean;
         guardianApproval?: ConsentFlowGuardianApproval;
         audienceVersion?: number;
+        smartResumeFingerprint?: string;
     },
     domain: string
 ) => {
@@ -133,7 +135,14 @@ export const consentToContract = async (
     if (existing.length > 0) {
         return reconsentTerms(
             { terms: inflateObject(existing[0]!.terms), consenter, contract, contractOwner },
-            { terms, expiresAt, oneTime, guardianApproval, audienceVersion },
+            {
+                terms,
+                expiresAt,
+                oneTime,
+                guardianApproval,
+                audienceVersion,
+                smartResumeFingerprint,
+            },
             domain
         );
     }
@@ -154,6 +163,13 @@ export const consentToContract = async (
                 new BindParam({
                     params: flattenObject({
                         terms,
+                        ...(smartResumeFingerprint
+                            ? {
+                                  smartResumeFingerprint,
+                                  smartResumePublicationStatus: 'pending',
+                                  smartResumeMutationVersion: 0,
+                              }
+                            : {}),
                         ...(guardianApproval ? { guardianApproval } : {}),
                     }),
                     audienceVersion: audienceVersion ?? null,

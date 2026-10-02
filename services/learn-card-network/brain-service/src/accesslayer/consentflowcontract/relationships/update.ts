@@ -44,12 +44,14 @@ export const reconsentTerms = async (
         oneTime,
         guardianApproval,
         audienceVersion,
+        smartResumeFingerprint,
     }: {
         terms: ConsentFlowTermsType;
         expiresAt?: string;
         oneTime?: boolean;
         guardianApproval?: ConsentFlowGuardianApproval;
         audienceVersion?: number;
+        smartResumeFingerprint?: string;
     },
     domain: string
 ): Promise<boolean> => {
@@ -81,6 +83,17 @@ export const reconsentTerms = async (
                     params: {
                         ...newFlat,
                         ...removedProperties,
+                        ...(smartResumeFingerprint
+                            ? {
+                                  smartResumeFingerprint,
+                                  smartResumePublicationStatus: 'pending',
+                                  smartResumeMutationVersion:
+                                      Number(relationship.terms.mutationVersion ?? 0) + 1,
+                                  smartResumeLeaseId: null,
+                                  smartResumeLeaseUntil: null,
+                                  smartResumeRedirectUrl: null,
+                              }
+                            : {}),
                         updatedAt: transaction.date,
                         status: oneTime ? 'stale' : 'live',
                         ...(typeof expiresAt === 'string' ? { expiresAt } : {}),
@@ -665,8 +678,8 @@ export const syncCredentialsToContract = async (
             })
             .where(
                 `coalesce(terms.mutationVersion, 0) = $termsMutationVersion AND terms.status = 'live'
-            AND (CASE WHEN terms.expiresAt IS NULL OR terms.expiresAt = '' THEN true ELSE datetime(terms.expiresAt) > datetime($now) END)
-            AND (CASE WHEN contract.expiresAt IS NULL OR contract.expiresAt = '' THEN true ELSE datetime(contract.expiresAt) > datetime($now) END)`
+            AND (CASE WHEN terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' THEN true ELSE datetime(terms.expiresAt) > datetime($now) END)
+            AND (CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true ELSE datetime(contract.expiresAt) > datetime($now) END)`
             )
             .set('terms += $params')
             .set('terms.mutationVersion = coalesce(terms.mutationVersion, 0) + 1')

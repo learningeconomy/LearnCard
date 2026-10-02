@@ -460,6 +460,8 @@ const matchesConsentedDataQuery = (
     query: ConsentFlowDataQuery,
     now: number
 ): boolean =>
+    // Legacy boolean data queries test field presence, including an explicit false value.
+    (query.anonymize === undefined || query.anonymize === (term.terms.read.anonymize != null)) &&
     Object.entries(query.personal ?? {}).every(
         ([key, required]) => required === (term.terms.read.personal?.[key] != null)
     ) &&

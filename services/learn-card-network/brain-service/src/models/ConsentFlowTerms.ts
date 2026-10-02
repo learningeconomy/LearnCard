@@ -19,6 +19,12 @@ export const ConsentFlowTerms = ModelFactory<FlatDbTermsType, ConsentFlowTermsRe
     {
         label: 'ConsentFlowTerms',
         schema: {
+            smartResumeFingerprint: { type: 'string', required: false },
+            smartResumePublicationStatus: { type: 'string', required: false },
+            smartResumeLeaseId: { type: 'string', required: false },
+            smartResumeLeaseUntil: { type: 'number', required: false },
+            smartResumeMutationVersion: { type: 'number', required: false },
+            smartResumeRedirectUrl: { type: 'string', required: false },
             id: { type: 'string', required: true },
             status: { type: 'string', required: true },
             createdAt: { type: 'string', required: false },
