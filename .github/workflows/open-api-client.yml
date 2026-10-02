@@ -7,11 +7,11 @@ on:
             - 'packages/open-api-lcn-clients/**'
             - '.github/workflows/open-api*.yml'
             - 'services/learn-card-network/brain-service/src/openapi.ts'
-            - 'services/learn-card-network/brain-service/src/routes/activity.ts'
+            - 'services/learn-card-network/brain-service/src/routes/**'
             - 'services/learn-card-network/brain-service/scripts/export-openapi.ts'
             - 'services/learn-card-network/brain-service/scripts/offline-schema-environment.ts'
             - 'services/learn-card-network/brain-service/scripts/verify-python-contracts.ts'
-            - 'packages/learn-card-types/src/credential-refresh.ts'
+            - 'packages/learn-card-types/src/**'
     merge_group:
         types: [checks_requested]
 
