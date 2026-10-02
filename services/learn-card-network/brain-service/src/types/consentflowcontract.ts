@@ -54,6 +54,12 @@ export type FlatDbTransactionType = Omit<DbTransactionType, 'guardianApproval' |
     FlatGuardianApproval;
 
 export const DbTermsValidator = z.object({
+    smartResumeFingerprint: z.string().optional(),
+    smartResumePublicationStatus: z.enum(['pending', 'sending', 'failed', 'succeeded']).optional(),
+    smartResumeLeaseId: z.string().optional(),
+    smartResumeLeaseUntil: z.coerce.number().optional(),
+    smartResumeMutationVersion: z.coerce.number().optional(),
+    smartResumeRedirectUrl: z.string().optional(),
     mutationVersion: z.coerce.number().int().nonnegative().optional(),
     id: z.string(),
     status: ConsentFlowTermsStatusValidator,

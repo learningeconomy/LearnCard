@@ -7,6 +7,8 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('app-install-consent-modal');
 
 import {
+    isAlreadyConsentedError,
+    isConsentConflict,
     useModal,
     useWallet,
     useCurrentUser,
@@ -102,21 +104,24 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
     const validPermissions = permissions.filter((p): p is AppPermission => p in PERMISSION_KEY);
 
     // Fetch contract details if contractUri is provided
-    const { data: contractDetails, isLoading: isLoadingContract } =
-        useQuery<ConsentFlowContractDetails | null>({
-            queryKey: ['getContract', contractUri],
-            queryFn: async () => {
-                if (!contractUri) return null;
-                try {
-                    const wallet = await initWallet();
-                    return await wallet.invoke.getContract(contractUri);
-                } catch (error) {
-                    log.error('Failed to fetch contract:', error);
-                    return null;
-                }
-            },
-            enabled: !!contractUri,
-        });
+    const {
+        data: contractDetails,
+        isLoading: isLoadingContract,
+        refetch: refetchContract,
+    } = useQuery<ConsentFlowContractDetails | null>({
+        queryKey: ['getContract', contractUri],
+        queryFn: async () => {
+            if (!contractUri) return null;
+            try {
+                const wallet = await initWallet();
+                return await wallet.invoke.getContract(contractUri);
+            } catch (error) {
+                log.error('Failed to fetch contract:', error);
+                return null;
+            }
+        },
+        enabled: !!contractUri,
+    });
 
     // Initialize terms when contract is loaded
     const [terms, setTerms] = useImmer<ConsentFlowTerms | null>(null);
@@ -236,20 +241,19 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
             } catch (error) {
                 const data =
                     error && typeof error === 'object' && 'data' in error ? error.data : undefined;
-                const shape =
-                    error && typeof error === 'object' && 'shape' in error
-                        ? error.shape
-                        : undefined;
                 const dataCode =
                     data && typeof data === 'object' && 'code' in data ? data.code : undefined;
-                const shapeCode =
-                    shape && typeof shape === 'object' && 'code' in shape ? shape.code : undefined;
                 const message = error instanceof Error ? error.message : '';
-                // If the user has already consented, ignore the error.
-                const isAlreadyConsented =
-                    dataCode === 'CONFLICT' ||
-                    shapeCode === 'CONFLICT' ||
-                    message.includes('already consented');
+                const isAlreadyConsented = isAlreadyConsentedError(error);
+                if (!isAlreadyConsented && isConsentConflict(error)) {
+                    await refetchContract();
+                    setIsConsenting(false);
+                    presentToast(m['consentFlow.reviewChanged'](), {
+                        type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
+                    });
+                    return;
+                }
 
                 if (dataCode === 'FORBIDDEN' && /guardian|manager/i.test(message)) {
                     setIsConsenting(false);

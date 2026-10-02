@@ -3,6 +3,8 @@ import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
 
 import {
+    isAlreadyConsentedError,
+    isConsentConflict,
     useModal,
     useToast,
     useWallet,
@@ -58,7 +60,7 @@ type FullScreenConsentFlowProps = {
 };
 
 const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
-    contractDetails,
+    contractDetails: initialContractDetails,
     app,
     isPostConsent,
     isPreview,
@@ -75,6 +77,11 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
     const history = useHistory();
     const location = useLocation();
     const { initWallet } = useWallet();
+    const [refreshedContract, setRefreshedContract] = useState<ConsentFlowContractDetails>();
+    const contractDetails =
+        refreshedContract?.uri === initialContractDetails?.uri
+            ? refreshedContract
+            : initialContractDetails;
     const { presentToast } = useToast();
     const { newModal, closeModal, closeAllModals } = useModal();
     const { handleSwitchAccount, handleSwitchBackToParentAccount } = useSwitchProfile();
@@ -223,9 +230,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
         } catch (e) {
             const message = e instanceof Error ? e.message : String(e);
             const data = e && typeof e === 'object' && 'data' in e ? e.data : undefined;
-            const isAlreadyConsented =
-                (data && typeof data === 'object' && 'code' in data && data.code === 'CONFLICT') ||
-                message.includes('already consented');
+            const isAlreadyConsented = isAlreadyConsentedError(e);
 
             if (isAlreadyConsented) {
                 successCallback?.();
@@ -241,6 +246,22 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                     await handleSwitchBackToParentAccount();
                 }
 
+                return;
+            }
+
+            if (isConsentConflict(e)) {
+                try {
+                    const wallet = await initWallet();
+                    const updated = await wallet.invoke.getContract(contractDetails!.uri);
+                    setRefreshedContract(updated);
+                } catch {
+                    /* Keep the review open if refreshing fails. */
+                }
+                presentToast(m['consentFlow.reviewChanged'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+                setStep(ConsentFlowStep.confirmation);
                 return;
             }
 
@@ -289,6 +310,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
         ),
         [ConsentFlowStep.confirmation]: (
             <ConsentFlowConfirmation
+                key={`${contractDetails?.uri}:${contractDetails?.audienceVersion}`}
                 contractDetails={contractDetails}
                 app={app}
                 handleAccept={handleAccept}

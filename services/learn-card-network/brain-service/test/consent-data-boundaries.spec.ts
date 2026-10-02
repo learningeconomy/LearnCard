@@ -117,6 +117,49 @@ describe('consented data boundaries', () => {
         });
     });
 
+    it.each([true, false, undefined] as const)(
+        'preserves anonymize presence filters for stored value %s',
+        async anonymize => {
+            const terms = structuredClone(normalFullTerms);
+            if (anonymize === undefined) delete terms.read.anonymize;
+            else terms.read.anonymize = anonymize;
+            const { contractUri } = await consent({ terms });
+            for (const filter of [true, false, undefined]) {
+                // The per-DID query does not expose anonymize; check its two supported routes.
+                const query = filter === undefined ? {} : { anonymize: filter };
+                for (const response of [
+                    await owner.clients.fullAuth.contracts.getConsentedDataForContract({
+                        uri: contractUri,
+                        query,
+                        limit: 1,
+                    }),
+                    await owner.clients.fullAuth.contracts.getConsentedData({ query, limit: 1 }),
+                ]) {
+                    expect(response.records).toHaveLength(
+                        filter === undefined || filter === (anonymize !== undefined) ? 1 : 0
+                    );
+                    expect(response.hasMore).toBe(false);
+                }
+            }
+        }
+    );
+
+    it.each(['terms', 'contract'] as const)(
+        'allows locked sync when %s expiry contains only whitespace',
+        async kind => {
+            const { contractUri, termsUri } = await consent();
+            const model = kind === 'terms' ? ConsentFlowTerms : ConsentFlowContract;
+            const uri = kind === 'terms' ? termsUri : contractUri;
+            await model.update({ expiresAt: '   ' }, { where: { id: uri.split(':').at(-1)! } });
+            await expect(
+                learner.clients.fullAuth.contracts.syncCredentialsToContract({
+                    termsUri,
+                    categories: { Achievement: ['urn:whitespace-expiry:copy'] },
+                })
+            ).resolves.toBe(true);
+        }
+    );
+
     it('excludes withdrawn consent while retaining its audit history', async () => {
         const { contractUri, termsUri } = await consent();
         await learner.clients.fullAuth.contracts.withdrawConsent({ uri: termsUri });

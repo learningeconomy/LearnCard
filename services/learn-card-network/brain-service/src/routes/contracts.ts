@@ -1,4 +1,9 @@
 import { environment } from '@environment';
+import {
+    smartResumeFingerprint,
+    publishSmartResume,
+} from '@accesslayer/consentflowcontract/relationships/smartResume';
+import { uploadSmartResume } from '@helpers/smartResume.helpers';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
@@ -46,7 +51,7 @@ import {
     isProfileConsentFlowContractAdmin,
     getWritersForContract,
 } from '@accesslayer/consentflowcontract/relationships/read';
-import { constructUri, getIdFromUri, resolveUri } from '@helpers/uri.helpers';
+import { constructUri, getIdFromUri } from '@helpers/uri.helpers';
 import {
     getContractByUri,
     getConsentFlowContractById,
@@ -1006,7 +1011,30 @@ export const contractsRouter = t.router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
             }
 
-            if (await hasProfileConsentedToContract(profile, contractDetails.contract)) {
+            const isSmartResume =
+                contractUri === environment.SMART_RESUME_CONTRACT_URI ||
+                contractUri ===
+                    'lc:network:network.learncard.com/trpc:contract:55b738f0-49f4-4b33-b6c1-afa99b605cd6';
+            if (isSmartResume && !recipientToken) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Missing recipientToken for SmartResume',
+                });
+            }
+            const previousTerms = await getContractTermsForProfile(
+                profile,
+                contractDetails.contract
+            );
+            const retrySmartResume =
+                isSmartResume &&
+                Boolean(previousTerms?.smartResumeFingerprint) &&
+                (previousTerms?.status === 'live' ||
+                    (previousTerms?.status === 'stale' && previousTerms.oneTime));
+
+            if (
+                !retrySmartResume &&
+                (await hasProfileConsentedToContract(profile, contractDetails.contract))
+            ) {
                 try {
                     await upsertRequestedForRelationship(
                         contractDetails.contract.id,
@@ -1021,10 +1049,6 @@ export const contractsRouter = t.router({
             }
 
             if (!guardianIdentity) {
-                const previousTerms = await getContractTermsForProfile(
-                    profile,
-                    contractDetails.contract
-                );
                 if (previousTerms && (await hasGuardianApprovalHistory(previousTerms))) {
                     throw new TRPCError({
                         code: 'FORBIDDEN',
@@ -1045,149 +1069,36 @@ export const contractsRouter = t.router({
                 );
             }
 
-            let redirectUrl: string | undefined;
-            // SmartResume handling
-            const isSmartResume =
-                contractUri === environment.SMART_RESUME_CONTRACT_URI ||
-                contractUri ===
-                    'lc:network:network.learncard.com/trpc:contract:55b738f0-49f4-4b33-b6c1-afa99b605cd6'; // hardcode for quick fix purposes
-            if (isSmartResume) {
-                if (!recipientToken) {
-                    throw new Error('Missing recipientToken for SmartResume');
-                }
-
-                const isProduction = !environment.IS_OFFLINE;
-
-                const srUrl = isProduction
-                    ? 'https://my.smartresume.com/'
-                    : 'https://mystage.smartresume.com/';
-                const clientId = environment.SMART_RESUME_CLIENT_ID;
-                const accessKey = environment.SMART_RESUME_ACCESS_KEY;
-
-                const accessTokenResponse = (await fetch(`${srUrl}api/v1/token`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        Authorization: `Basic ${btoa(`${clientId}:${accessKey}`)}`,
+            const fingerprint = isSmartResume
+                ? smartResumeFingerprint({
+                      terms,
+                      expiresAt,
+                      oneTime,
+                      audienceVersion,
+                      recipientToken,
+                  })
+                : undefined;
+            if (!retrySmartResume)
+                await consentToContract(
+                    profile,
+                    contractDetails,
+                    {
+                        terms,
+                        expiresAt,
+                        oneTime,
+                        audienceVersion,
+                        smartResumeFingerprint: fingerprint,
+                        guardianApproval: guardianIdentity
+                            ? {
+                                  guardianProfileId: guardianIdentity.profileId,
+                                  guardianDid: guardianIdentity.did,
+                                  approvedAt: new Date().toISOString(),
+                                  contractUpdatedAt: contractDetails.contract.updatedAt,
+                              }
+                            : undefined,
                     },
-                    body: new URLSearchParams({
-                        grant_type: 'client_credentials',
-                        scope: 'delete readonly replace',
-                    }),
-                }).then(res => res.json())) as { access_token?: string };
-
-                const accessToken = accessTokenResponse.access_token;
-                if (!accessToken) throw new Error('Missing access_token for SmartResume');
-
-                const parsedTerms = ConsentFlowTermsValidator.parse(terms);
-
-                const categories = parsedTerms.read.credentials.categories;
-                const categoryValues = Object.values(categories) as Array<{ shared?: string[] }>;
-
-                const allSharedCredentialUris = [
-                    // filter out duplicates
-                    ...new Set(categoryValues.flatMap(({ shared }) => shared ?? [])),
-                ];
-
-                const resolvedCredentials = await Promise.all(
-                    allSharedCredentialUris.map(async uri => {
-                        try {
-                            return await resolveUri(uri);
-                        } catch (error) {
-                            console.error(`Error resolving URI ${uri}:`, error);
-                            return undefined;
-                        }
-                    })
+                    ctx.domain
                 );
-
-                type ResolvedCredential = {
-                    issuer?: string | { id: string };
-                    id?: string;
-                    boostCredential?: Record<string, unknown>;
-                } & Record<string, unknown>;
-
-                const credentials = resolvedCredentials
-                    .filter(
-                        (cred): cred is ResolvedCredential =>
-                            typeof cred === 'object' && cred !== null
-                    )
-                    .map(cred =>
-                        cred.boostCredential && typeof cred.boostCredential === 'object'
-                            ? ({ ...cred.boostCredential, id: cred.id } as ResolvedCredential) // unwrap credential, preserve id
-                            : cred
-                    );
-
-                const transformedCredentials = credentials.map(cred => {
-                    const issuer =
-                        typeof cred.issuer === 'string'
-                            ? { id: cred.issuer }
-                            : cred.issuer || { id: '' };
-
-                    return {
-                        ...cred,
-                        issuer,
-                    };
-                });
-
-                const { name, email } = parsedTerms.read.personal;
-
-                const body = JSON.stringify({
-                    '@context': [
-                        'https://www.w3.org/ns/credentials/v2',
-                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
-                        'https://w3id.org/security/suites/ed25519-2020/v1',
-                    ],
-                    recipienttoken: recipientToken,
-                    recipient: {
-                        id: ctx.user.did,
-                        givenName: name && name !== 'Anonymous' ? name : '',
-                        familyName: '', // this is neecessary in order for givenName to be respected
-                        email: email && email !== 'anonymous@hidden.com' ? email : '',
-                    },
-                    credentials: transformedCredentials,
-                });
-
-                try {
-                    const response = await fetch(`${srUrl}api/v1/credentials`, {
-                        method: 'POST',
-                        headers: {
-                            Authorization: `Bearer ${accessToken}`,
-                            'Content-Type': 'application/json',
-                        },
-                        body,
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`Error (${response.status}): ${await response.text()}`);
-                    }
-
-                    const result = (await response.json()) as { redirect_url?: string };
-                    redirectUrl = result.redirect_url;
-                } catch (error) {
-                    console.error('Error uploading credentials to SmartResume:', error);
-                    throw error;
-                }
-            }
-
-            await consentToContract(
-                profile,
-                contractDetails,
-                {
-                    terms,
-                    expiresAt,
-                    oneTime,
-                    audienceVersion,
-                    guardianApproval: guardianIdentity
-                        ? {
-                              guardianProfileId: guardianIdentity.profileId,
-                              guardianDid: guardianIdentity.did,
-                              approvedAt: new Date().toISOString(),
-                              contractUpdatedAt: contractDetails.contract.updatedAt,
-                          }
-                        : undefined,
-                },
-                ctx.domain
-            );
 
             try {
                 await updateRequestedForStatusIfExists(
@@ -1209,6 +1120,17 @@ export const contractsRouter = t.router({
                 });
             }
 
+            const redirectUrl = isSmartResume
+                ? await publishSmartResume({
+                      contractId: contractDetails.contract.id,
+                      profileId: profile.profileId,
+                      termsId: relationship.id,
+                      fingerprint: fingerprint!,
+                      audienceVersion,
+                      upload: acceptedTerms =>
+                          uploadSmartResume(acceptedTerms, ctx.user.did, recipientToken!),
+                  })
+                : undefined;
             return { termsUri: constructUri('terms', relationship.id, ctx.domain), redirectUrl };
         }),
 

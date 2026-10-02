@@ -203,3 +203,11 @@ await learnCard.invoke.consentToContract(contractUri, {
 ```
 
 The API enforces current read permissions and audience acknowledgement. It does not decrypt and inspect an application's encrypted payload; the application is responsible for encrypting for the disclosed audience.
+
+### Conflicts and external connections
+
+A `CONFLICT` response does not mean consent succeeded. Only the explicit "You've already consented to this contract" response identifies an existing consent. If the audience or consent changed, refresh the contract and ask the user to review it again before retrying. Do not install an app, show a success message, or redirect after a rejected decision.
+
+The SmartResume integration saves consent and checks the current audience before uploading selected information. If the upload fails, consent remains saved and the connection request returns an error. Retry with the same terms, recipient token, expiry, one-time setting, and audience version to finish the upload. A completed retry reuses its saved redirect, and simultaneous retries cannot start separate uploads. Changes to the audience or saved terms require another review. If a process stops mid-upload, its upload reservation expires after two minutes so the connection can be retried; an interrupted external request may already have reached SmartResume.
+
+The legacy `anonymize` data-query filter checks whether that field exists in the saved read terms: `true` selects records where it is present (including an explicitly stored `false`), `false` selects records where it is absent, and omitting it applies no filter.
