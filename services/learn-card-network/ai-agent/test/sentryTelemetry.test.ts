@@ -10,8 +10,10 @@ vi.mock('openai', () => ({
 }));
 
 import { createOpenAIProvider } from '../src/agent/openAIProvider';
-import { runAgent } from '../src/agent/runAgent';
+import { registerSensitiveContent, runAgent } from '../src/agent/runAgent';
 import type { AgentProvider, AgentToolDefinition } from '../src/agent/types';
+import { createLearnCardWalletTool } from '../src/tools/learnCardWallet';
+import type { AgentNetworkWallet } from '../src/helpers/learnCard.helpers';
 import {
     createAgentRunTelemetry,
     flushObservability,
@@ -900,6 +902,309 @@ describe('Sentry final SDK envelopes', () => {
             value: 'Agent run exceeded its configured token limit.',
         });
     });
+
+    it('keeps malformed retrospective previews out of persisted audits and final SDK envelopes', async () => {
+        const privateOutput = 'SyntheticRetrospectiveNarrativeWithoutJson';
+        const runConfig = {
+            ...config,
+            selfImprovementEnabled: true,
+            retroModel: 'retro-model',
+            retroInputTokenCostUsdPerMillion: 1,
+            retroOutputTokenCostUsdPerMillion: 2,
+        };
+        const retroResults = createInMemoryRetroResultRepository();
+        const runtime = createSelfImprovementRuntime({
+            config: runConfig,
+            mongoRuntime: createMongoRuntime({ mongoDbName: 'unused' }),
+            services: {
+                userDocs: createUserDocService(createInMemoryUserDocRepository()),
+                runTraces: createRunTraceService(createInMemoryRunTraceRepository()),
+                retroResults,
+            },
+            retroProvider: {
+                complete: async () => ({
+                    message: { role: 'assistant', content: privateOutput },
+                    usage,
+                }),
+            },
+        });
+        const result = await runChatRequest({
+            body: { messages: [{ role: 'user', content: 'Please complete this operation' }] },
+            ownerDid,
+            runId,
+            config: runConfig,
+            provider: successfulProvider,
+            tools: [],
+            selfImprovementRuntime: runtime,
+        });
+        expect(result.status).toBe(200);
+        const postRunError = await result.afterResponse!().catch((error: Error) => error);
+        expect(postRunError).toBeInstanceOf(Error);
+        const parseError = (postRunError as Error).cause;
+        expect(parseError).toBeInstanceOf(SyntaxError);
+        expect(Object.hasOwn(parseError as Error, 'cause')).toBe(false);
+        const audits = await retroResults.findByRunId(runId);
+        expect(audits).toMatchObject([{ status: 'error', error: (parseError as Error).message }]);
+        await flushObservability();
+        expect(failures('agent.post-run')[0]?.exception?.values).toMatchObject([
+            { type: 'SyntaxError', value: expect.stringContaining('malformed JSON') },
+            { type: 'Error', value: 'Retrospective failed; its audit result has been persisted.' },
+        ]);
+        expect(failures('agent.post-run')[0]?.exception?.values).toHaveLength(2);
+        const payload = JSON.stringify({ events: memory.events, audits });
+        for (const forbidden of [
+            privateOutput,
+            privateOutput.slice(0, 10),
+            privateOutput.slice(-10),
+        ])
+            expect(payload).not.toContain(forbidden);
+        expect(expectSafeLogStream().map(record => record.event)).toContain(
+            'agent.post-run.failed'
+        );
+    });
+
+    it('captures actual wallet failures without flattening private properties or raw frames, even after recovery', async () => {
+        const upstream = Object.assign(new TypeError('Backend refused'), {
+            credentialSubject: {
+                name: 'SyntheticAmberLark',
+                assessment: 'SyntheticPrivateAssessment',
+            },
+        });
+        upstream.stack =
+            'TypeError: Backend refused\n    at SyntheticPrivateFunction (/srv/SyntheticPrivateDirectory/file.ts:7:3)';
+        const walletTool = createLearnCardWalletTool({
+            getWallet: async () =>
+                ({
+                    invoke: {
+                        issueCredential: async () => {
+                            throw upstream;
+                        },
+                    },
+                }) as unknown as AgentNetworkWallet,
+        });
+        let calls = 0;
+        const result = await runChatRequest({
+            body: { messages: [{ role: 'user', content: 'Please complete this operation' }] },
+            ownerDid,
+            runId,
+            config,
+            tools: [walletTool],
+            provider: {
+                complete: async ({ messages }) => {
+                    if (++calls === 1) {
+                        return {
+                            message: {
+                                role: 'assistant',
+                                content: '',
+                                toolCalls: [
+                                    {
+                                        id: 'wallet-call',
+                                        name: walletTool.name,
+                                        arguments: { path: 'invoke.issueCredential', args: [{}] },
+                                    },
+                                ],
+                            },
+                            usage,
+                        };
+                    }
+                    const toolError = JSON.parse(
+                        messages.find(message => message.role === 'tool')!.content
+                    );
+                    expect(toolError.error).toContain('Wallet method call failed');
+                    expect(JSON.stringify(toolError)).not.toMatch(
+                        /SyntheticAmberLark|SyntheticPrivateAssessment|stackPreview/
+                    );
+                    return { message: { role: 'assistant', content: 'Recovered' }, usage };
+                },
+            },
+        });
+        expect(result.status).toBe(200);
+        expect(result.payload).toMatchObject({ message: 'Recovered' });
+        await result.afterResponse?.();
+        await flushObservability();
+        const exception = failures('agent.tool')[0]?.exception?.values;
+        expect(exception).toMatchObject([
+            {
+                type: 'TypeError',
+                value: 'Backend refused',
+                stacktrace: {
+                    frames: [
+                        {
+                            filename: expect.stringMatching(/^sha256:/),
+                            function: expect.stringMatching(/^sha256:/),
+                            lineno: 7,
+                            colno: 3,
+                        },
+                    ],
+                },
+            },
+            { type: 'Error', value: expect.stringContaining('Wallet method call failed') },
+        ]);
+        expect(exception).toHaveLength(2);
+        expect(
+            memory.events.find(event => event.message === 'agent.run.succeeded')?.tags
+        ).toMatchObject({
+            toolFailures: 1,
+            modelCalls: 2,
+        });
+        expect(failures('agent.run')).toEqual([]);
+        expect(JSON.stringify(memory.events)).not.toMatch(
+            /SyntheticAmberLark|SyntheticPrivateAssessment|SyntheticPrivateFunction|SyntheticPrivateDirectory|stackPreview|credentialSubject/
+        );
+        expect(JSON.stringify(applicationLogEvents())).not.toContain('Backend refused');
+    });
+
+    it('registers private dictionary keys serialized by real runAgent before provider failure', async () => {
+        const key = 'SyntheticPrivateLearnerName';
+        const run = telemetry();
+        let calls = 0;
+        let failure: Error | undefined;
+        await expect(
+            runAgent({
+                runId,
+                model: config.model,
+                messages: [{ role: 'user', content: 'Please complete this operation' }],
+                observer: run.observer,
+                tools: [
+                    {
+                        name: 'readDictionary',
+                        description: 'Synthetic dictionary result',
+                        parameters: {},
+                        execute: async () => ({ [key]: { score: 1 } }),
+                    },
+                ],
+                provider: {
+                    complete: async ({ messages }) => {
+                        if (++calls === 1)
+                            return {
+                                message: {
+                                    role: 'assistant',
+                                    content: '',
+                                    toolCalls: [
+                                        {
+                                            id: 'dictionary-call',
+                                            name: 'readDictionary',
+                                            arguments: {},
+                                        },
+                                    ],
+                                },
+                                usage,
+                            };
+                        const dictionary = JSON.parse(
+                            messages.find(message => message.role === 'tool')!.content
+                        );
+                        expect(Object.keys(dictionary)).toEqual([key]);
+                        failure = new Error(`Provider rejected ${Object.keys(dictionary)[0]}`);
+                        throw failure;
+                    },
+                },
+            })
+        ).rejects.toBeInstanceOf(Error);
+        expect(failure).toBeInstanceOf(Error);
+        run.failed(failure, 1);
+        await flushObservability();
+        for (const component of ['agent.model', 'agent.run'])
+            expect(failures(component)[0]?.exception?.values?.[0]).toMatchObject({
+                type: 'Error',
+                value: 'Provider rejected [REDACTED]',
+            });
+        expect(JSON.stringify(memory.events)).not.toContain(key);
+    });
+
+    it('fails closed on unavailable accessor content without invoking the getter during registration', async () => {
+        let getterCalls = 0;
+        const result = Object.defineProperty({}, 'SyntheticDictionaryKey', {
+            enumerable: true,
+            get: () => {
+                getterCalls += 1;
+                return 'SyntheticGetterPrivateValue';
+            },
+        });
+        const run = telemetry();
+        registerSensitiveContent(result, run.observer);
+        expect(getterCalls).toBe(0);
+        run.failed(new Error('Provider echoed SyntheticGetterPrivateValue'), 1);
+        await flushObservability();
+        expect(failures('agent.run')[0]?.exception?.values?.[0]?.value).toMatch(/Message withheld/);
+        expect(JSON.stringify(memory.events)).not.toContain('SyntheticGetterPrivateValue');
+    });
+
+    it.each(['own-key limit', 'key traversal limit', 'key character limit'])(
+        'fails closed when dictionary registration exceeds its %s, without changing model content',
+        async boundary => {
+            const key =
+                boundary === 'key character limit'
+                    ? 'K'.repeat(16_385)
+                    : 'SyntheticBoundedDictionaryKey';
+            const dictionary =
+                boundary === 'own-key limit'
+                    ? Object.fromEntries(
+                          Array.from({ length: 513 }, (_, index) => [
+                              index ? `key${index}` : key,
+                              1,
+                          ])
+                      )
+                    : boundary === 'key traversal limit'
+                      ? Object.fromEntries(
+                            Array.from({ length: 300 }, (_, index) => [
+                                `row${index}`,
+                                { [key]: 1, a: 1, b: 1, c: 1, d: 1, e: 1, f: 1 },
+                            ])
+                        )
+                      : { [key]: 1 };
+            const run = telemetry();
+            let calls = 0;
+            const failure = new Error(`Provider rejected ${key}`);
+            await expect(
+                runAgent({
+                    runId,
+                    model: config.model,
+                    messages: [{ role: 'user', content: 'Please complete this operation' }],
+                    observer: run.observer,
+                    tools: [
+                        {
+                            name: 'readDictionary',
+                            description: 'Synthetic bounded dictionary',
+                            parameters: {},
+                            execute: async () => dictionary,
+                        },
+                    ],
+                    provider: {
+                        complete: async ({ messages }) => {
+                            if (++calls === 1)
+                                return {
+                                    message: {
+                                        role: 'assistant',
+                                        content: '',
+                                        toolCalls: [
+                                            {
+                                                id: 'dictionary-call',
+                                                name: 'readDictionary',
+                                                arguments: {},
+                                            },
+                                        ],
+                                    },
+                                    usage,
+                                };
+                            expect(
+                                JSON.parse(
+                                    messages.find(message => message.role === 'tool')!.content
+                                )
+                            ).toEqual(dictionary);
+                            throw failure;
+                        },
+                    },
+                })
+            ).rejects.toBe(failure);
+            run.failed(failure, 1);
+            await flushObservability();
+            for (const component of ['agent.model', 'agent.run'])
+                expect(failures(component)[0]?.exception?.values?.[0]?.value).toMatch(
+                    /Message withheld/
+                );
+            expect(JSON.stringify(memory.events)).not.toContain(key.slice(0, 20));
+        }
+    );
 
     it('retains the real retrospective failure as the post-run cause and registers retro content', async () => {
         const runConfig = {

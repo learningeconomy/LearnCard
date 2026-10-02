@@ -239,7 +239,15 @@ const parseDecision = (content: string): RetroDecision => {
         firstBrace >= 0 && lastBrace > firstBrace
             ? trimmed.slice(firstBrace, lastBrace + 1)
             : trimmed;
-    const parsed = JSON.parse(jsonText) as unknown;
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(jsonText) as unknown;
+    } catch (error) {
+        if (!(error instanceof SyntaxError)) throw error;
+        // Node includes a partial private response in native parser errors.
+        // eslint-disable-next-line preserve-caught-error -- the native cause contains model output
+        throw new SyntaxError('Retrospective returned malformed JSON.');
+    }
 
     return normalizeDecisionName(RetroDecisionValidator.parse(parsed));
 };

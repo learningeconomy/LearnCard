@@ -328,6 +328,8 @@ const SAFE_INTERNAL_DIAGNOSTICS: Record<string, true> = {
     'Retrospective exceeded the run token or output limit.': true,
     'Retrospective exceeded the run cost limit.': true,
     'Model returned malformed tool arguments.': true,
+    'Retrospective returned malformed JSON.': true,
+    'Wallet method call failed.': true,
     'Invalid time value': true,
     'Invalid Date': true,
 };

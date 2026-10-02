@@ -67,8 +67,8 @@ const notifyObserver = (callback: (() => void) | undefined): void => {
     }
 };
 
-// Register string leaves (including custom response fields) before observers can
-// capture errors. Never invoke toJSON/getters, and never inspect thrown objects.
+// Register string keys and leaves (including custom response fields) before
+// errors are captured. Never invoke toJSON/getters or inspect thrown objects.
 export const registerSensitiveContent = (
     value: unknown,
     observer: AgentRunRequest['observer']
@@ -96,6 +96,9 @@ export const registerSensitiveContent = (
                     return;
                 }
                 for (const key of keys) {
+                    // Keys reach JSON model messages too; count them within the
+                    // same pending/visited bounds as values.
+                    if (typeof key === 'string') pending.push(key);
                     const descriptor = Object.getOwnPropertyDescriptor(current, key);
                     if (descriptor && 'value' in descriptor) pending.push(descriptor.value);
                     else notifyObserver(() => observer.onSensitiveContent?.(undefined));
