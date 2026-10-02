@@ -310,6 +310,33 @@ describe('guardian approval at the consent submission boundary', () => {
         }
     );
 
+    it('forwards the reviewed invitation ID through credential preparation and guardian validation', async () => {
+        state.child = false;
+        showFlow({ expectedRequestId: 'reviewed-request' });
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() => expect(state.consent).toHaveBeenCalledOnce());
+        expect(state.consent.mock.calls[0][1]).toMatchObject({
+            expectedRequestId: 'reviewed-request',
+        });
+    });
+    it('returns to review on an invitation conflict instead of reporting success', async () => {
+        state.child = false;
+        const success = vi.fn();
+        state.consent.mockRejectedValue({
+            data: { code: 'CONFLICT' },
+            message: 'The sharing audience or consent changed. Review the contract and try again.',
+        });
+        showFlow({ expectedRequestId: 'cancelled-request', successCallback: success });
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() =>
+            expect(state.presentToast).toHaveBeenCalledWith(
+                expect.any(String),
+                expect.objectContaining({ type: 'error' })
+            )
+        );
+        expect(success).not.toHaveBeenCalled();
+        expect(screen.getByRole('button', { name: 'Connect' })).toBeVisible();
+    });
     it('blocks an update when its post-preparation approval rejects', async () => {
         const { result } = renderHook(() => useUpdateTerms('lc:terms', 'did:example:owner'), {
             wrapper,

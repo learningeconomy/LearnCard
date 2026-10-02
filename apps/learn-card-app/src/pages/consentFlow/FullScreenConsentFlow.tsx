@@ -56,6 +56,7 @@ type FullScreenConsentFlowProps = {
     };
     disableRedirect?: boolean;
     beforeSubmit?: () => Promise<void>;
+    expectedRequestId?: string;
     onCloseCallback?: () => void;
     onBackCallback?: () => void;
 };
@@ -73,6 +74,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
     childInsightsProfile,
     disableRedirect = false,
     beforeSubmit,
+    expectedRequestId,
     onCloseCallback,
     onBackCallback,
 }) => {
@@ -293,6 +295,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 terms,
                 expiresAt: shareDuration.customDuration,
                 oneTime: shareDuration.oneTimeShare,
+                expectedRequestId,
                 beforeSubmit,
             })
         );

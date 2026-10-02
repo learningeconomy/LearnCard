@@ -996,6 +996,7 @@ export const contractsRouter = t.router({
                 expiresAt: z.string().optional(),
                 oneTime: z.boolean().optional(),
                 audienceVersion: z.number().int().nonnegative().optional(),
+                expectedRequestId: z.string().min(1).optional(),
                 recipientToken: z.string().optional(), // SmartResume recipientToken needed for API call
             })
         )
@@ -1011,8 +1012,15 @@ export const contractsRouter = t.router({
                 });
             }
 
-            const { terms, contractUri, expiresAt, oneTime, recipientToken, audienceVersion } =
-                input;
+            const {
+                terms,
+                contractUri,
+                expiresAt,
+                oneTime,
+                recipientToken,
+                audienceVersion,
+                expectedRequestId,
+            } = input;
 
             const contractDetails = await getContractDetailsByUri(contractUri);
 
@@ -1020,6 +1028,13 @@ export const contractsRouter = t.router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
             }
 
+            if (
+                contractDetails.contract.expiresAt?.trim() &&
+                (!Number.isFinite(Date.parse(contractDetails.contract.expiresAt)) ||
+                    Date.parse(contractDetails.contract.expiresAt) <= Date.now())
+            ) {
+                throw new TRPCError({ code: 'CONFLICT', message: 'This contract has expired.' });
+            }
             const isSmartResume =
                 contractUri === environment.SMART_RESUME_CONTRACT_URI ||
                 contractUri ===
@@ -1085,6 +1100,7 @@ export const contractsRouter = t.router({
                       oneTime,
                       audienceVersion,
                       recipientToken,
+                      expectedRequestId,
                   })
                 : undefined;
             // A completed one-time snapshot can be followed by a new reviewed decision.
@@ -1104,6 +1120,7 @@ export const contractsRouter = t.router({
                         expiresAt,
                         oneTime,
                         audienceVersion,
+                        expectedRequestId,
                         smartResumeFingerprint: fingerprint,
                         guardianApproval: guardianIdentity
                             ? {
@@ -1136,6 +1153,7 @@ export const contractsRouter = t.router({
                       termsId: relationship.id,
                       fingerprint: fingerprint!,
                       audienceVersion,
+                      expectedRequestId,
                       upload: acceptedTerms =>
                           uploadSmartResume(acceptedTerms, ctx.user.did, recipientToken!),
                   })

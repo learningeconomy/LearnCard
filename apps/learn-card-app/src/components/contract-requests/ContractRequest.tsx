@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import { closeOutline, alertCircleOutline } from 'ionicons/icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -12,12 +12,29 @@ import {
     useConfirmation,
     useToast,
     ToastTypeEnum,
+    contractCategoryNameToCategoryMetadata,
 } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import type { ConsentFlowContractDetails } from '@learncard/types';
 import FullScreenConsentFlow from '../../pages/consentFlow/FullScreenConsentFlow';
 import { useContractRequestsEnabled } from '../../hooks/useContractRequestsEnabled';
 import * as m from '../../paraglide/messages.js';
+import { getLocale } from '../../paraglide/runtime.js';
+import { localizeCategoryTitle } from '../../i18n/categoryTitle';
+import { localizeContractPersonalField } from '../../i18n/contractPersonalField';
+import { ContractAudience } from './ContractAudience';
+
+const isExpired = (expiresAt?: string): boolean =>
+    Boolean(
+        expiresAt?.trim() &&
+        (!Number.isFinite(Date.parse(expiresAt)) || Date.parse(expiresAt) <= Date.now())
+    );
+const categoryLabel = (category: string): string =>
+    localizeCategoryTitle(contractCategoryNameToCategoryMetadata(category)?.title ?? category);
+const formatLabels = (labels: string[]): string =>
+    labels.length
+        ? new Intl.ListFormat(getLocale(), { style: 'long', type: 'conjunction' }).format(labels)
+        : m['contractRequests.none']();
 
 const primary =
     'py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed';
@@ -49,12 +66,21 @@ export const ContractRequest: React.FC<RequestProps> = ({
     const confirm = useConfirmation();
     const { presentToast } = useToast();
     const branding = useBrandingConfig();
-    const [busy, setBusy] = useState(false);
+    const [busyAction, setBusyAction] = useState<'accept' | 'decline' | 'dismiss' | 'retry' | null>(
+        null
+    );
+    const busy = busyAction !== null;
+    const [retryAction, setRetryAction] = useState<(() => Promise<void>) | null>(null);
     const [error, setError] = useState(false);
     const request = useQuery({
         queryKey: ['genericContractRequest', profileId, contractUri, requestId],
         enabled: Boolean(profileId),
-        refetchInterval: 30_000,
+        refetchInterval: query =>
+            query.state.status === 'success' &&
+            query.state.data?.status.status === 'pending' &&
+            !isExpired(query.state.data.contract.expiresAt)
+                ? 30_000
+                : false,
         queryFn: async () => {
             const wallet = await initWallet();
             const status = await wallet.invoke.getRequestStatusForProfile(
@@ -73,20 +99,17 @@ export const ContractRequest: React.FC<RequestProps> = ({
     );
     const contract = request.data?.contract;
     const status = request.data?.status;
-    const expires = contract?.expiresAt;
-    const expired = Boolean(
-        expires && (!Number.isFinite(Date.parse(expires)) || Date.parse(expires) <= Date.now())
-    );
+    const expired = isExpired(contract?.expiresAt);
     const pending = status?.status === 'pending' && !expired && !request.isError;
 
-    const refresh = async () => {
+    const refresh = useCallback(async () => {
         await Promise.all([
             queryClient.invalidateQueries({ queryKey: ['genericContractRequest', profileId] }),
             queryClient.invalidateQueries({
                 queryKey: ['useAllContractRequestsForProfile', profileId],
             }),
         ]);
-    };
+    }, [queryClient, profileId]);
 
     useEffect(() => {
         if (!pending || status?.readStatus === 'seen') return;
@@ -104,17 +127,22 @@ export const ContractRequest: React.FC<RequestProps> = ({
         return () => {
             active = false;
         };
-    }, [pending, status?.readStatus, contractUri, profileId, initWallet]);
+    }, [pending, status?.readStatus, contractUri, profileId, initWallet, refresh]);
 
-    const run = async (action: () => Promise<void>) => {
-        setBusy(true);
+    const run = async (
+        action: () => Promise<void>,
+        actionName: NonNullable<typeof busyAction> = 'retry'
+    ) => {
+        setBusyAction(actionName);
+        setRetryAction(null);
         setError(false);
         try {
             await action();
         } catch {
             setError(true);
+            setRetryAction(() => action);
         } finally {
-            setBusy(false);
+            setBusyAction(null);
         }
     };
 
@@ -130,11 +158,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
             throw new Error('Request is no longer pending');
         }
         const fresh = await wallet.invoke.getContract(contractUri);
-        if (
-            fresh.expiresAt &&
-            (!Number.isFinite(Date.parse(fresh.expiresAt)) ||
-                Date.parse(fresh.expiresAt) <= Date.now())
-        ) {
+        if (isExpired(fresh.expiresAt)) {
             await refresh();
             throw new Error('Request has expired');
         }
@@ -149,6 +173,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
                 <FullScreenConsentFlow
                     contractDetails={fresh}
                     disableRedirect
+                    expectedRequestId={requestId}
                     beforeSubmit={async () => {
                         await requirePending();
                     }}
@@ -158,7 +183,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
                 />
             );
             newModal(flow, {}, { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen });
-        });
+        }, 'accept');
 
     const decline = () =>
         run(async () => {
@@ -175,9 +200,9 @@ export const ContractRequest: React.FC<RequestProps> = ({
             await wallet.invoke.denyContractRequest(contractUri);
             await refresh();
             presentToast(m['contractRequests.declined'](), { type: ToastTypeEnum.Success });
-        });
+        }, 'decline');
 
-    const unavailable = !request.isPending && (!request.data || expired);
+    const unavailable = !request.isPending && !request.isError && (!request.data || expired);
     const owner =
         contract?.owner?.displayName || contract?.owner?.profileId || contract?.name || '';
     const title =
@@ -187,7 +212,6 @@ export const ContractRequest: React.FC<RequestProps> = ({
                   owner,
               })
             : m['contractRequests.invitation']({ owner });
-    const audience = contract ? [contract.owner, ...(contract.recipients ?? [])] : [];
 
     return (
         <article
@@ -202,10 +226,18 @@ export const ContractRequest: React.FC<RequestProps> = ({
                     <button
                         aria-label={m['contractRequests.dismiss']()}
                         disabled={busy}
-                        onClick={() => void run(onDismiss)}
+                        onClick={() => void run(onDismiss, 'dismiss')}
                         className="p-2 rounded-[20px] text-grayscale-700"
                     >
-                        <IonIcon icon={closeOutline} />
+                        {busyAction === 'dismiss' ? (
+                            <span
+                                role="status"
+                                aria-label={m['contractRequests.working']()}
+                                className="block w-4 h-4 border-2 border-grayscale-300 border-t-grayscale-900 rounded-full animate-spin"
+                            />
+                        ) : (
+                            <IonIcon icon={closeOutline} />
+                        )}
                     </button>
                 )}
             </div>
@@ -221,7 +253,11 @@ export const ContractRequest: React.FC<RequestProps> = ({
                         />
                     )}
                     <h3 className="text-xl font-semibold">
-                        {unavailable ? m['contractRequests.unavailable']() : title}
+                        {unavailable
+                            ? m['contractRequests.unavailable']()
+                            : request.isError && !contract
+                              ? m['error.generic']()
+                              : title}
                     </h3>
                     <p className="text-sm text-grayscale-600 leading-relaxed">
                         {contract?.description}
@@ -234,38 +270,35 @@ export const ContractRequest: React.FC<RequestProps> = ({
                             {status?.message && (
                                 <p className="text-sm text-grayscale-600">{status.message}</p>
                             )}
-                            <div data-testid="contract-request-shared-with">
-                                <h4 className="text-sm font-medium">
-                                    {m['contractRequests.sharedWith']()}
-                                </h4>
-                                <ul className="text-sm text-grayscale-600">
-                                    {audience.map(profile => (
-                                        <li key={profile.did}>
-                                            {profile.displayName || profile.profileId}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
+                            <ContractAudience
+                                contract={contract}
+                                testId="contract-request-shared-with"
+                                alwaysShowOwner
+                            />
                             <div className="text-sm text-grayscale-600">
                                 <h4 className="font-medium text-grayscale-900">
                                     {m['contractRequests.dataRequested']()}
                                 </h4>
                                 <p>
-                                    {Object.keys(contract.contract.read.personal)
-                                        .concat(
-                                            Object.keys(
-                                                contract.contract.read.credentials.categories
+                                    {formatLabels(
+                                        Object.keys(contract.contract.read.personal)
+                                            .map(localizeContractPersonalField)
+                                            .concat(
+                                                Object.keys(
+                                                    contract.contract.read.credentials.categories
+                                                ).map(categoryLabel)
                                             )
-                                        )
-                                        .join(', ') || m['contractRequests.none']()}
+                                    )}
                                 </p>
                                 <h4 className="font-medium text-grayscale-900 mt-3">
                                     {m['contractRequests.outcomes']()}
                                 </h4>
                                 <p>
-                                    {Object.keys(
-                                        contract.contract.write.credentials.categories
-                                    ).join(', ') || m['contractRequests.none']()}
+                                    {formatLabels(
+                                        Object.keys(
+                                            contract.contract.write.credentials.categories
+                                        ).map(categoryLabel)
+                                    )}
                                 </p>
                             </div>
                             <p className="text-sm text-grayscale-600">
@@ -289,7 +322,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
                                 disabled={busy}
                                 onClick={() => void accept()}
                             >
-                                {busy ? (
+                                {busyAction === 'accept' ? (
                                     <span className="flex items-center justify-center gap-2">
                                         <span
                                             aria-hidden="true"
@@ -324,7 +357,9 @@ export const ContractRequest: React.FC<RequestProps> = ({
                                     disabled={busy}
                                     onClick={() => void decline()}
                                 >
-                                    {m['contractRequests.decline']()}
+                                    {busyAction === 'decline'
+                                        ? m['contractRequests.working']()
+                                        : m['contractRequests.decline']()}
                                 </button>
                             )}
                         </div>
@@ -347,12 +382,17 @@ export const ContractRequest: React.FC<RequestProps> = ({
                         disabled={busy || request.isFetching}
                         className="text-sm underline"
                         onClick={() =>
-                            void run(async () => {
-                                await request.refetch({ throwOnError: true });
-                            })
+                            void run(
+                                retryAction ??
+                                    (async () => {
+                                        await request.refetch({ throwOnError: true });
+                                    })
+                            )
                         }
                     >
-                        {m['common.tryAgain']()}
+                        {busyAction === 'retry'
+                            ? m['contractRequests.working']()
+                            : m['common.tryAgain']()}
                     </button>
                 </div>
             )}

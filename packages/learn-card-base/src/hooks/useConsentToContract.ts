@@ -27,6 +27,7 @@ export const useConsentToContract = (
                   expiresAt?: string;
                   oneTime?: boolean;
                   audienceVersion: number;
+                  expectedRequestId?: string;
               };
           }
         | undefined
@@ -45,6 +46,7 @@ export const useConsentToContract = (
             expiresAt?: string;
             oneTime?: boolean;
             skipSharedUriMaterialization?: boolean;
+            expectedRequestId?: string;
             /** Explicitly resend the retained SmartResume publication; never rematerialize it. */
             retryPreparedPublication?: boolean;
             /** Runs after credential preparation, immediately before submitting consent. */
@@ -55,6 +57,7 @@ export const useConsentToContract = (
                 beforeSubmit,
                 skipSharedUriMaterialization,
                 retryPreparedPublication,
+                expectedRequestId,
                 ...submission
             } = _terms;
             if (retryPreparedPublication) {
@@ -124,6 +127,7 @@ export const useConsentToContract = (
             const prepared = structuredClone({
                 ...terms,
                 audienceVersion: audience.audienceVersion,
+                expectedRequestId,
             });
             const holderDid = recipientToken ? await wallet.id.did() : undefined;
             await beforeSubmit?.();

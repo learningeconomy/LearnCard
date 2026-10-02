@@ -20,7 +20,13 @@ const loopback = (value: string): URL => {
     return url;
 };
 
-export const runReferralLab = async () => {
+export const runReferralLab = async ({
+    webhookHost = process.env.LC2226_WEBHOOK_HOST ?? '127.0.0.1',
+}: { webhookHost?: string } = {}) => {
+    assert(
+        ['127.0.0.1', 'host.docker.internal'].includes(webhookHost),
+        'Webhook host must be 127.0.0.1 or host.docker.internal'
+    );
     const network = loopback(process.env.LC2226_NETWORK_URL ?? 'http://localhost:4000/trpc');
     const cloud = loopback(process.env.LC2226_CLOUD_URL ?? 'http://localhost:4100/trpc');
     const api = loopback(process.env.LC2226_API_URL ?? 'http://localhost:5200/trpc');
@@ -52,7 +58,9 @@ export const runReferralLab = async () => {
             res.end('false');
         }
     });
-    await new Promise<void>(resolve => receiver.listen(0, '127.0.0.1', resolve));
+    await new Promise<void>(resolve =>
+        receiver.listen(0, webhookHost === '127.0.0.1' ? '127.0.0.1' : '0.0.0.0', resolve)
+    );
     const address = receiver.address();
     assert(address && typeof address !== 'string');
     try {
@@ -71,7 +79,7 @@ export const runReferralLab = async () => {
                     displayName: `LC-2226 ${role}`,
                     shortBio: '',
                     bio: '',
-                    notificationsWebhook: `http://127.0.0.1:${address.port}/${role}`,
+                    notificationsWebhook: `http://${webhookHost}:${address.port}/${role}`,
                 });
                 return wallet.addPlugin(await getLCAPlugin(wallet, api.href));
             })
@@ -160,10 +168,17 @@ export const runReferralLab = async () => {
                 ),
                 true
             );
+            const invitation = await learner.invoke.getRequestStatusForProfile(
+                learnerProfile.profileId,
+                undefined,
+                contractUri
+            );
+            assert(invitation?.requestId);
             const details = await learner.invoke.getContract(contractUri);
             const { termsUri } = await learner.invoke.consentToContract(contractUri, {
                 terms: structuredClone(terms),
                 audienceVersion: details.audienceVersion,
+                expectedRequestId: invitation.requestId,
             });
             assert.equal(
                 (
