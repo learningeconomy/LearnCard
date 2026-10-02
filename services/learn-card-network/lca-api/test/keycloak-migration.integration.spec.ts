@@ -14,7 +14,12 @@ const exec = promisify(execFile);
 const runProvision = async (...args: string[]): Promise<string> => {
     const { stdout } = await exec(
         'bun',
-        ['--conditions=development', 'scripts/provision-keycloak-users.ts', ...args],
+        [
+            '--conditions=development',
+            'scripts/provision-keycloak-users.ts',
+            '--no-link-providers',
+            ...args,
+        ],
         {
             cwd: fileURLToPath(new URL('../', import.meta.url)),
             env: { ...process.env, NODE_ENV: 'development' },
