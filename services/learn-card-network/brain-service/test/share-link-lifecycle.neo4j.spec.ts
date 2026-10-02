@@ -1,10 +1,16 @@
 import { randomBytes } from 'node:crypto';
 
+import {
+    consumeShareViewReceipt,
+    persistShareViewReceipt,
+} from '../src/accesslayer/share-link/receipt';
+
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { v4 as uuid } from 'uuid';
 
 import { computeShareLinkRequestHash } from '@helpers/share-link-lifecycle';
 import { neogma } from '@instance';
+import { withShareLinkRead } from '../src/accesslayer/share-link/transaction';
 
 import {
     abandonReservation,
@@ -23,7 +29,12 @@ import {
 import { ensureShareLinkConstraints } from '../src/models/share-link-constraints';
 import { toOwnerShareLink } from '../src/helpers/share-link-owner-projection';
 import type { ShareLinkPolicySnapshot } from '../src/helpers/share-link-policy/types';
-import { resolveCurrentShareLinkPolicy } from '../src/helpers/share-link-policy/production';
+import {
+    createProductionShareLinkPolicySource,
+    productionShareViewEligibilitySource,
+    resolveCurrentShareLinkPolicy,
+} from '../src/helpers/share-link-policy/production';
+import { createShareLinkPolicyResolver } from '../src/helpers/share-link-policy/resolver';
 import type { ShareLinkRecord } from '../src/models/ShareLink';
 
 import {
@@ -1262,6 +1273,138 @@ describe('share-link lifecycle repository (Neo4j)', () => {
                  OPTIONAL MATCH (p)-[:MANAGED_BY]->(manager:Profile)
                  DETACH DELETE p, manager`,
                 { profileId: ownerProfileId }
+            );
+        }
+    });
+
+    it('exempts managed service owners but keeps managed child owners restricted in Neo4j', async () => {
+        const serviceProfileId = `service-policy-${uuid()}`;
+        const childProfileId = `child-policy-${uuid()}`;
+        const unknownServiceId = `service-unknown-${uuid()}`;
+        const serviceManagerId = `manager-${uuid()}`;
+        const childManagerId = `manager-${uuid()}`;
+        await neogma.queryRunner.run(
+            `CREATE (service:Profile {profileId: $serviceId, isServiceProfile: true})
+             CREATE (serviceManager:ProfileManager {id: $serviceManagerId, created: $created})
+             CREATE (serviceManager)-[:MANAGES]->(service)
+             CREATE (child:Profile {profileId: $childId, dob: '1990-01-01', isServiceProfile: false})
+             CREATE (child)-[:MANAGED_BY]->(guardian:Profile {profileId: $childManagerId})
+             CREATE (serviceManager)-[:ADMINISTRATED_BY]->(guardian)
+             CREATE (:Profile {profileId: $unknownServiceId, isServiceProfile: true})`,
+            {
+                serviceId: serviceProfileId,
+                serviceManagerId,
+                childId: childProfileId,
+                childManagerId,
+                unknownServiceId,
+                created: NOW.toISOString(),
+            }
+        );
+        try {
+            const shareId = nextShareId();
+            const requestId = uuid();
+            const policy: ShareLinkPolicySnapshot = {
+                isMinor: false,
+                policyResolved: true,
+                defaultExpiryDays: 365,
+                viewCountingEnabled: true,
+            };
+            const reserved = await reserveCreate({
+                namespace: NAMESPACE,
+                ownerProfileId: serviceProfileId,
+                clientRequestId: requestId,
+                shareId,
+                title: 'Service policy integration',
+                note: null,
+                expiresAt: null,
+                selectedCount: 1,
+                content: contentBinding(shareId),
+                requestHash: computeShareLinkRequestHash('create', {
+                    id: shareId,
+                    title: 'Service policy integration',
+                }),
+                leaseOwner: 'worker-1',
+                policy,
+                now: NOW,
+            });
+            if (reserved.outcome !== 'reserved' || !reserved.reservation.objectRef) {
+                throw new Error('expected service share reservation');
+            }
+            const finalized = await finalizeReservation({
+                ...reserved.reservation,
+                resolveCurrentPolicy: resolveCurrentShareLinkPolicy,
+                now: NOW,
+            });
+            const created = {
+                namespace: NAMESPACE,
+                shareId,
+                committed: finalized.share,
+                objectRef: reserved.reservation.objectRef,
+                operationId: reserved.reservation.operationId,
+            };
+            const preflight = createShareLinkPolicyResolver(
+                createProductionShareLinkPolicySource()
+            );
+            expect((await preflight.resolve(serviceProfileId)).viewCountingEnabled).toBe(true);
+            expect((await preflight.resolve(childProfileId)).viewCountingEnabled).toBe(false);
+            expect((await preflight.resolve(unknownServiceId)).viewCountingEnabled).toBe(true);
+            expect(
+                await withShareLinkRead(tx =>
+                    resolveCurrentShareLinkPolicy(tx, serviceProfileId, NOW)
+                )
+            ).toMatchObject({ viewCountingEnabled: true });
+            const receipt = randomBytes(32).toString('base64url');
+            expect(
+                await persistShareViewReceipt({
+                    receipt,
+                    namespace: created.namespace,
+                    ownerProfileId: serviceProfileId,
+                    shareId: created.shareId,
+                    shareVersion: created.committed.version,
+                    contentVersion: created.committed.contentVersion,
+                    objectRef: created.objectRef,
+                    operationId: created.operationId,
+                    ttlSeconds: 60,
+                    eligibilitySource: productionShareViewEligibilitySource,
+                    now: () => NOW,
+                })
+            ).toBe(true);
+            expect(
+                await consumeShareViewReceipt({
+                    receipt,
+                    namespace: created.namespace,
+                    eligibilitySource: productionShareViewEligibilitySource,
+                    now: () => NOW,
+                })
+            ).toBe('consumed');
+            const counted = await neogma.queryRunner.run(
+                'MATCH (s:ShareLink {id: $shareId}) RETURN s.viewCount AS viewCount',
+                { shareId: created.shareId }
+            );
+            expect(Number(counted.records[0]?.get('viewCount'))).toBe(1);
+            expect(
+                await withShareLinkRead(tx =>
+                    resolveCurrentShareLinkPolicy(tx, childProfileId, NOW)
+                )
+            ).toMatchObject({ viewCountingEnabled: false });
+            expect(
+                await withShareLinkRead(tx =>
+                    resolveCurrentShareLinkPolicy(tx, unknownServiceId, NOW)
+                )
+            ).toMatchObject({ viewCountingEnabled: true });
+        } finally {
+            await neogma.queryRunner.run(
+                `MATCH (n)
+                 WHERE (n:Profile AND n.profileId IN [$serviceId, $childId, $unknownServiceId, $childManagerId])
+                    OR (n:ProfileManager AND n.id = $serviceManagerId)
+                 DETACH DELETE n`,
+                {
+                    serviceId: serviceProfileId,
+                    childId: childProfileId,
+                    unknownServiceId,
+                    serviceManagerId,
+                    childManagerId,
+                }
             );
         }
     });

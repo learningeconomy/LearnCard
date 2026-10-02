@@ -1,3 +1,4 @@
+import { isServiceProfileExemptFromGuardianship } from '@helpers/profile.helpers';
 import { QueryBuilder, BindParam } from 'neogma';
 import mapValues from 'lodash/mapValues';
 import {
@@ -45,6 +46,7 @@ import { getBoostUri } from '@helpers/boost.helpers';
 import { getCredentialUri } from '@helpers/credential.helpers';
 import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
 import { getDidWeb } from '@helpers/did.helpers';
+import { getProfileByProfileId } from '@accesslayer/profile/read';
 
 export const isProfileConsentFlowContractAdmin = async (
     profile: ProfileType,
@@ -562,7 +564,17 @@ export const getConsentedDataBetweenProfiles = async (
     const { whereClause: contractWhereClause, params: contractQueryParams } =
         buildWhereForQueryBuilder('contract', convertedContractQuery as any);
     const now = Date.now();
-    const managers = await getProfilesThatManageAProfile(consenterProfileId);
+    const [managers, consenterProfile] = await Promise.all([
+        getProfilesThatManageAProfile(consenterProfileId),
+        getProfileByProfileId(consenterProfileId),
+    ]);
+    const isManagedProfile = managers.length > 0;
+    const requiresManagerApproval =
+        isManagedProfile &&
+        !isServiceProfileExemptFromGuardianship(
+            consenterProfile?.isServiceProfile,
+            consenterProfile?.type
+        );
     const records: ConsentFlowContractDataForDid[] = [];
     const batchSize = Math.max(limit, 50);
     let offset = 0;
@@ -653,7 +665,7 @@ AND ${contractWhereClause}
             );
             const approval = parsedApproval.success ? parsedApproval.data : undefined;
             const required =
-                managers.length > 0 || !!term.guardianApproval || result.hadGuardianApproval;
+                requiresManagerApproval || !!term.guardianApproval || result.hadGuardianApproval;
             const approved =
                 !!approval &&
                 approval.contractUpdatedAt === contract.updatedAt &&

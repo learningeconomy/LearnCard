@@ -2,14 +2,17 @@ import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { isProfileManaged } from '@accesslayer/profile/relationships/read';
 import type { ShareViewEligibilitySource } from '@accesslayer/share-link/types';
 import type { ShareLinkTransaction } from '@accesslayer/share-link/transaction';
-import { transformProfileId } from '@helpers/profile.helpers';
+import {
+    isServiceProfileExemptFromGuardianship,
+    transformProfileId,
+} from '@helpers/profile.helpers';
 
 import { composeShareLinkPolicy } from './resolver';
 import type { ShareLinkOwnerAge, ShareLinkPolicySnapshot, ShareLinkPolicySource } from './types';
 
 const ADULT_AGE = 18;
 
-/** A missing or malformed birthdate never grants view tracking. */
+/** Classify persisted human age without inventing a birthdate for service profiles. */
 export const ageFromPersistedProfile = (
     profile: { dob?: unknown; type?: unknown } | null,
     now: Date = new Date()
@@ -45,16 +48,22 @@ export const ageFromPersistedProfile = (
 };
 
 /**
- * Profile birthdate is persisted server-side, but self-reported rather than
- * independently verified. Unknown dates and child profiles stay restricted.
+ * Personal profiles require a valid persisted birthdate for tracking. Service
+ * profiles are age-exempt, but an explicit child type always keeps protections.
  */
-export const createProductionShareLinkPolicySource = (options?: {
-    resolveOwnerAge?: (profileId: string) => Promise<ShareLinkOwnerAge>;
-}): ShareLinkPolicySource => ({
-    resolveOwnerAge:
-        options?.resolveOwnerAge ??
-        (async profileId => ageFromPersistedProfile(await getProfileByProfileId(profileId))),
-    isManaged: isProfileManaged,
+export const createProductionShareLinkPolicySource = (): ShareLinkPolicySource => ({
+    resolveOwner: async profileId => {
+        const profile = await getProfileByProfileId(profileId);
+        const isServiceProfile = isServiceProfileExemptFromGuardianship(
+            profile?.isServiceProfile,
+            profile?.type
+        );
+        return {
+            age: ageFromPersistedProfile(profile),
+            isServiceProfile,
+            isManaged: isServiceProfile ? false : await isProfileManaged(profileId),
+        };
+    },
 });
 
 /** Read current eligibility within the share lock; no request values or network I/O. */
@@ -68,6 +77,7 @@ export const resolveCurrentShareLinkPolicy = async (
          OPTIONAL MATCH (p)-[:MANAGED_BY]->(directManager:Profile)
          OPTIONAL MATCH (manager:ProfileManager)-[:MANAGES]->(p)
          RETURN p.dob AS dob, p.type AS profileType,
+                p.isServiceProfile AS isServiceProfile,
                 (directManager IS NOT NULL OR manager IS NOT NULL) AS isManaged
          LIMIT 1`,
         { profileId: transformProfileId(ownerProfileId) }
@@ -75,9 +85,15 @@ export const resolveCurrentShareLinkPolicy = async (
     const record = result.records[0];
     if (!record) return composeShareLinkPolicy('unknown', true);
 
+    const profileType = record.get('profileType');
+    const isServiceProfile = isServiceProfileExemptFromGuardianship(
+        record.get('isServiceProfile'),
+        profileType
+    );
     return composeShareLinkPolicy(
-        ageFromPersistedProfile({ dob: record.get('dob'), type: record.get('profileType') }, now),
-        record.get('isManaged') !== false
+        ageFromPersistedProfile({ dob: record.get('dob'), type: profileType }, now),
+        isServiceProfile ? false : record.get('isManaged') !== false,
+        isServiceProfile
     );
 };
 

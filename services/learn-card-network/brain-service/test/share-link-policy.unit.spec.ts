@@ -42,13 +42,24 @@ describe('share-link policy decision table', () => {
         expect(composeShareLinkPolicy('unknown', false)).toEqual(DEFAULT_SHARE_LINK_POLICY);
         expect(composeShareLinkPolicy('unknown', true)).toEqual(DEFAULT_SHARE_LINK_POLICY);
     });
+
+    it.each(['unknown', 'minor'] as const)(
+        'allows service tracking with %s age without changing the expiry default',
+        age => {
+            expect(composeShareLinkPolicy(age, false, true)).toEqual({
+                isMinor: false,
+                policyResolved: true,
+                defaultExpiryDays: 30,
+                viewCountingEnabled: true,
+            });
+        }
+    );
 });
 
 describe('createShareLinkPolicyResolver', () => {
     it('fails closed to the conservative default when a source throws', async () => {
         const resolver = createShareLinkPolicyResolver({
-            resolveOwnerAge: vi.fn().mockRejectedValue(new Error('age source down')),
-            isManaged: vi.fn().mockResolvedValue(false),
+            resolveOwner: vi.fn().mockRejectedValue(new Error('profile source down')),
         });
 
         await expect(resolver.resolve('owner-1')).resolves.toEqual(DEFAULT_SHARE_LINK_POLICY);
@@ -56,8 +67,11 @@ describe('createShareLinkPolicyResolver', () => {
 
     it('never returns an adult policy when the age source is unknown', async () => {
         const resolver = createShareLinkPolicyResolver({
-            resolveOwnerAge: vi.fn().mockResolvedValue('unknown'),
-            isManaged: vi.fn().mockResolvedValue(false),
+            resolveOwner: vi.fn().mockResolvedValue({
+                age: 'unknown',
+                isManaged: false,
+                isServiceProfile: false,
+            }),
         });
 
         const policy = await resolver.resolve('owner-1');
