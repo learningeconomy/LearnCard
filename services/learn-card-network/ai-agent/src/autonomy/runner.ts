@@ -8,6 +8,8 @@ export interface RunScheduledAgentRequestOptions {
     runtime: AgentServiceRuntime;
     signal?: AbortSignal;
     correlationId?: string;
+    /** Identifies failures already reported by runChatRequest's run/post-run telemetry. */
+    onRunFailureReported?: (error: unknown) => void;
 }
 
 const normalizeWhitespace = (value: string): string => value.replace(/\s+/g, ' ').trim();
@@ -18,6 +20,7 @@ export const runScheduledAgentRequest = async ({
     runtime,
     signal,
     correlationId,
+    onRunFailureReported,
 }: RunScheduledAgentRequestOptions): Promise<RunChatResult> => {
     const prompt = [
         `Scheduled task: ${schedule.name}`,
@@ -43,7 +46,10 @@ export const runScheduledAgentRequest = async ({
     });
 
     if (result.status !== 200 || !('message' in result.payload)) {
-        if ('failure' in result) throw result.failure;
+        if ('failure' in result) {
+            onRunFailureReported?.(result.failure);
+            throw result.failure;
+        }
         throw new Error(
             'error' in result.payload ? result.payload.error : 'Scheduled agent request failed.'
         );
@@ -53,7 +59,12 @@ export const runScheduledAgentRequest = async ({
     }
 
     signal?.throwIfAborted();
-    await result.afterResponse(signal);
+    try {
+        await result.afterResponse(signal);
+    } catch (error) {
+        onRunFailureReported?.(error);
+        throw error;
+    }
     signal?.throwIfAborted();
 
     const wroteAssistantCard = result.payload.toolRuns.some(toolRun =>

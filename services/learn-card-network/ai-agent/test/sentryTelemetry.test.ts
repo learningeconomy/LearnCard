@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import * as Sentry from '@sentry/node';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -585,8 +586,8 @@ describe('Sentry final SDK envelopes', () => {
             expect(failure?.exception?.values?.[0]?.stacktrace?.frames).toEqual(
                 expect.arrayContaining([
                     expect.objectContaining({
-                        filename: expect.stringMatching(/\/provider\.ts$/),
-                        function: 'complete',
+                        filename: `sha256:${createHash('sha256').update('/home/AmberLark/provider.ts').digest('hex').slice(0, 24)}`,
+                        function: `sha256:${createHash('sha256').update('complete').digest('hex').slice(0, 24)}`,
                         lineno: 18,
                         colno: 7,
                     }),
@@ -777,10 +778,22 @@ describe('Sentry final SDK envelopes', () => {
         expect(result.failure).toBeInstanceOf(SyntaxError);
         await flushObservability();
         for (const component of ['agent.model', 'agent.run']) {
-            expect(failures(component)[0]?.exception?.values?.[0]?.type).toBe('SyntaxError');
+            expect(failures(component)[0]?.exception?.values).toEqual([
+                expect.objectContaining({
+                    type: 'SyntaxError',
+                    value: 'Model returned malformed tool arguments.',
+                }),
+            ]);
         }
         expect(JSON.stringify(memory.events)).not.toContain(privateOutput);
         expect(JSON.stringify(memory.events)).not.toContain('Generated private prose');
+        // Node's native SyntaxError quotes a prefix rather than the whole word.
+        // Check partial previews too, including the structured application logs.
+        expect(JSON.stringify(memory.events)).not.toContain(privateOutput.slice(0, 10));
+        expect(JSON.stringify(memory.events)).not.toContain(privateOutput.slice(-10));
+        expect(JSON.stringify(applicationLogEvents())).not.toMatch(
+            /NewPrivate|NarrativeFrom|Model returned malformed tool arguments/
+        );
     });
 
     it('hashes caller UUID credentials and scrubs custom error names in both types and tags', async () => {
@@ -813,6 +826,68 @@ describe('Sentry final SDK envelopes', () => {
             errorLogs.mockRestore();
         }
     });
+
+    it('retains diagnostics after many distinct prompt, output, tool and retrospective words', async () => {
+        const content = ['Prompt', 'Output', 'Tool', 'Retro'].map(prefix =>
+            Array.from({ length: 300 }, (_, index) => `${prefix}SyntheticPrivateWord${index}`).join(
+                ' '
+            )
+        );
+        const run = telemetry([content[0]!]);
+        for (const value of content.slice(1)) run.observer.onSensitiveContent?.(value);
+        const original = new Error(`Provider unavailable: ${content[2]!.split(' ')[250]}`);
+        original.name = 'SyntheticProviderError';
+        original.stack =
+            'SyntheticProviderError: unavailable\n    at SyntheticFunction (/home/SyntheticPerson/provider.ts:18:7)';
+        run.observer.onModelError?.({
+            runId,
+            model: config.model,
+            round: 0,
+            durationMs: 1,
+            error: original,
+        });
+        run.failed(original, 2);
+        run.postRunStarted();
+        run.postRunFailed(original, 3);
+        await flushObservability();
+        for (const component of ['agent.model', 'agent.run', 'agent.post-run']) {
+            const exception = failures(component)[0]?.exception?.values?.[0];
+            expect(exception).toMatchObject({
+                type: `sha256:${createHash('sha256').update(original.name).digest('hex').slice(0, 24)}`,
+                value: 'Provider unavailable: [REDACTED]',
+                stacktrace: {
+                    frames: [
+                        {
+                            filename: `sha256:${createHash('sha256').update('/home/SyntheticPerson/provider.ts').digest('hex').slice(0, 24)}`,
+                            function: `sha256:${createHash('sha256').update('SyntheticFunction').digest('hex').slice(0, 24)}`,
+                            lineno: 18,
+                            colno: 7,
+                        },
+                    ],
+                },
+            });
+        }
+        expect(JSON.stringify(memory.events)).not.toMatch(
+            /SyntheticPrivateWord|SyntheticPerson|SyntheticFunction|SyntheticProviderError/
+        );
+    });
+
+    it.each([8_193, 20_000, 80_000])(
+        'withholds oversized %i-character diagnostics before regex processing',
+        async length => {
+            // A cut-off email local part must not become a diagnostic preview.
+            const email = `${'Z'.repeat(length)}@synthetic.example`;
+            const run = telemetry();
+            run.failed(new Error(email), 1);
+            await flushObservability();
+            expect(failures('agent.run')[0]?.exception?.values?.[0]).toMatchObject({
+                type: 'Error',
+                value: '[Message withheld: diagnostic exceeded length limit]',
+            });
+            expect(JSON.stringify(memory.events)).not.toContain('Z'.repeat(20));
+            expect(JSON.stringify(memory.events)).not.toContain('synthetic.example');
+        }
+    );
 
     it('withholds uncertain diagnostics after capacity overflow but retains safe token-limit evidence', async () => {
         const run = telemetry(['Private'.repeat(3_000)]);

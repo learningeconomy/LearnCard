@@ -113,6 +113,12 @@ export const createAutonomousScheduler = ({
         if (signal?.aborted) abortFromSignal();
         else signal?.addEventListener('abort', abortFromSignal, { once: true });
         let heartbeatError: Error | undefined;
+        let runFailureReported = false;
+        let reportedRunFailure: unknown;
+        const onRunFailureReported = (error: unknown): void => {
+            runFailureReported = true;
+            reportedRunFailure = error;
+        };
 
         const handleHeartbeatError = (error: unknown): void => {
             if (heartbeatError) return;
@@ -232,6 +238,7 @@ export const createAutonomousScheduler = ({
                     runtime,
                     signal: abortController.signal,
                     correlationId: runId,
+                    onRunFailureReported,
                 });
             } finally {
                 clearInterval(heartbeatTimer);
@@ -244,7 +251,10 @@ export const createAutonomousScheduler = ({
             await renewLease();
 
             if (result.status !== 200 || !('message' in result.payload)) {
-                if ('failure' in result) throw result.failure;
+                if ('failure' in result) {
+                    onRunFailureReported(result.failure);
+                    throw result.failure;
+                }
                 throw new Error(
                     'error' in result.payload
                         ? result.payload.error
@@ -278,11 +288,15 @@ export const createAutonomousScheduler = ({
             };
         } catch (error) {
             const failure = heartbeatError ?? error;
-            recordServiceError('autonomy.occurrence', failure, {
-                runId,
-                ownerDid: candidate.ownerDid,
-                phase: 'autonomy',
-            });
+            // Only the exact failure reported by this invocation is owned by run telemetry.
+            // Heartbeat failures remain scheduler-owned, even when they abort the agent.
+            if (heartbeatError || !runFailureReported || !Object.is(failure, reportedRunFailure)) {
+                recordServiceError('autonomy.occurrence', failure, {
+                    runId,
+                    ownerDid: candidate.ownerDid,
+                    phase: 'autonomy',
+                });
+            }
             if (runCreated) {
                 await runRepository.markFailed(
                     runId,

@@ -253,10 +253,7 @@ const errorProperty = (error: unknown, key: string): unknown => {
     }
 };
 
-const getSafeErrorFields = (
-    error: unknown,
-    redactName?: (value: string) => string
-): TelemetryFields => {
+const getSafeErrorFields = (error: unknown): TelemetryFields => {
     const name = errorProperty(error, 'name');
     let errorType = 'UnknownError';
     try {
@@ -278,9 +275,7 @@ const getSafeErrorFields = (
                                 ? 'AggregateError'
                                 : typeof name === 'string' &&
                                     /^[A-Za-z][A-Za-z0-9_.-]{0,55}(?:Error|Exception)$/.test(name)
-                                  ? redactName
-                                      ? redactName(name)
-                                      : hashIdentifier(name)
+                                  ? hashIdentifier(name)
                                   : 'Error';
         }
     } catch {
@@ -299,8 +294,14 @@ const safeIdentifier = (value: string): string =>
         ? value
         : hashIdentifier(value);
 
-const scrubText = (value: string): string =>
-    value
+const MAX_DIAGNOSTIC_CHARACTERS = 8_192;
+const OVERSIZED_DIAGNOSTIC = '[Message withheld: diagnostic exceeded length limit]';
+
+const scrubText = (value: string): string => {
+    // Do not run unanchored patterns on unbounded provider bodies or expose
+    // a private token truncated at the output boundary.
+    if (value.length > MAX_DIAGNOSTIC_CHARACTERS) return OVERSIZED_DIAGNOSTIC;
+    return value
         .replace(/https?:\/\/[^\s)]+/gi, '[URL]')
         .replace(/mongodb(?:\+srv)?:\/\/[^\s)]+/gi, '[URL]')
         .replace(/did:[^\s"',;]+/gi, '[DID]')
@@ -313,8 +314,8 @@ const scrubText = (value: string): string =>
             /\b(?:password|secret|token|api[-_ ]?key|seed|mnemonic|authorization)\s*[:=]\s*["']?[^"',;\n]+/gi,
             '[SECRET]'
         )
-        .replace(/\/(?:home|Users)\/[^/\s]+/g, '/home/[USER]')
-        .slice(0, 8_192);
+        .replace(/\/(?:home|Users)\/[^/\s]+/g, '/home/[USER]');
+};
 
 const SAFE_INTERNAL_DIAGNOSTICS: Record<string, true> = {
     'Agent run exceeded its configured token limit.': true,
@@ -326,6 +327,7 @@ const SAFE_INTERNAL_DIAGNOSTICS: Record<string, true> = {
     'Retrospective exceeded the run time limit.': true,
     'Retrospective exceeded the run token or output limit.': true,
     'Retrospective exceeded the run cost limit.': true,
+    'Model returned malformed tool arguments.': true,
     'Invalid time value': true,
     'Invalid Date': true,
 };
@@ -335,6 +337,8 @@ const createContentRedactor = (initial: string[] = [], config = activeConfig) =>
     const fragments = new Set<string>();
     let orderedFragments: string[] | undefined;
     let registeredCharacters = 0;
+    // The character budget bounds registry size; ordinary conversations must
+    // not fail closed merely because they contain more than 256 distinct words.
     let overflowed = false;
     const register = (content: string | undefined): void => {
         if (overflowed || content === '') return;
@@ -356,11 +360,6 @@ const createContentRedactor = (initial: string[] = [], config = activeConfig) =>
         // an echoed prompt/tool fragment have no trusted provenance distinction.
         for (const fragment of content.match(/[\p{L}\p{N}_@./:+-]{3,}/gu) ?? []) {
             fragments.add(fragment);
-            if (fragments.size > 256) {
-                overflowed = true;
-                fragments.clear();
-                return;
-            }
         }
     };
     initial.forEach(register);
@@ -418,6 +417,7 @@ const createContentRedactor = (initial: string[] = [], config = activeConfig) =>
         // large VC/tool content forces the rest of the boundary to fail closed.
         if (Object.hasOwn(SAFE_INTERNAL_DIAGNOSTICS, text)) return text;
         if (overflowed) return '[Message withheld: sensitive content exceeded redaction capacity]';
+        if (text.length > MAX_DIAGNOSTIC_CHARACTERS) return OVERSIZED_DIAGNOSTIC;
         let result = text;
         orderedFragments ??= [...fragments].sort((a, b) => b.length - a.length);
         for (const fragment of orderedFragments) {
@@ -455,15 +455,11 @@ const sanitizedExceptions = (
                       .map(frame => ({
                           filename:
                               typeof frame.filename === 'string'
-                                  ? includeMessage
-                                      ? redact(frame.filename)
-                                      : hashIdentifier(frame.filename)
+                                  ? hashIdentifier(frame.filename)
                                   : undefined,
                           function:
                               typeof frame.function === 'string'
-                                  ? includeMessage
-                                      ? redact(frame.function)
-                                      : hashIdentifier(frame.function)
+                                  ? hashIdentifier(frame.function)
                                   : undefined,
                           lineno: frame.lineno,
                           colno: frame.colno,
@@ -471,9 +467,7 @@ const sanitizedExceptions = (
                       }))
                 : undefined;
         values.unshift({
-            type: String(
-                getSafeErrorFields(current, includeMessage ? redact : undefined).errorType
-            ),
+            type: String(getSafeErrorFields(current).errorType),
             value:
                 includeMessage && typeof message === 'string'
                     ? redact(message)

@@ -90,6 +90,7 @@ const runtimePinFiles = walkFiles('.').filter(path => {
         name === '.node-version' ||
         name === 'netlify.toml' ||
         name.startsWith('Dockerfile') ||
+        workflowPathPattern.test(path) ||
         path === 'packages/learn-card-bridge-http/cli/Info.tsx' ||
         path === 'preview/docker-compose.preview.yaml'
     );
@@ -114,8 +115,32 @@ for (const path of runtimePinFiles) {
         `${path} contains an unpinned Bun installer`
     );
 
-    for (const match of contents.matchAll(/npm (?:install|i) -g bun@([^\s\\]+)/g)) {
+    for (const match of contents.matchAll(/npm (?:install|i) -g bun@([^\s\\"'`]+)/g)) {
         expect(match[1] === '1.4.2', `${path} must install Bun 1.4.2`);
+    }
+
+    const stages = [
+        ...contents.matchAll(
+            /^[ \t]*FROM[ \t]+(?:--platform=\S+[ \t]+)?(\S+)(?:[ \t]+AS[ \t]+([^\s#]+))?/gim
+        ),
+    ];
+    for (const [index, stage] of stages.entries()) {
+        const image = stage[1];
+        if (image !== 'oven/bun' && !image.startsWith('oven/bun:')) continue;
+
+        // Only the final local-service runtime may retain the host-gateway workaround.
+        // Dependency installation and every standalone service image stay on Bun 1.4.2.
+        const isLocalRuntime =
+            path === 'Dockerfile.monorepo' &&
+            index === stages.length - 1 &&
+            image === 'oven/bun:1.3.14' &&
+            stage[2] === 'source';
+        expect(
+            isLocalRuntime ||
+                image === 'oven/bun:1.4.2' ||
+                (path !== 'Dockerfile.monorepo' && image === 'oven/bun:1.4.2-alpine'),
+            `${path} must use oven/bun:1.4.2 or 1.4.2-alpine (only its final monorepo source stage may use 1.3.14)`
+        );
     }
 }
 
@@ -128,7 +153,7 @@ for (const path of runtimePinFiles) {
     for (const match of setupMatches) {
         const setupBlock = contents.slice(match.index, match.index + 180);
         expect(
-            /bun-version:\s*1\.4\.2/.test(setupBlock),
+            /bun-version:\s*['"]?1\.4\.2['"]?(?:\s|$)/.test(setupBlock),
             `${path} has setup-bun without bun-version 1.4.2`
         );
     }

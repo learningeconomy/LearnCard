@@ -38,7 +38,10 @@ const config = {
     mongoUri,
 };
 const ownerDid = 'did:key:offline-private-owner';
-const prompt = 'EchoPrivateNarrative about a confidential learning situation; retry the connection';
+const prompt = [
+    'EchoPrivateNarrative about a confidential learning situation; retry the connection',
+    ...Array.from({ length: 300 }, (_, index) => `PrivateWord${index}`),
+].join(' ');
 const secret = 'SyntheticWalletSeedNotRecognizableByRegex';
 const priorSeed = process.env.AI_AGENT_WALLET_SEED;
 process.env.AI_AGENT_WALLET_SEED = secret;
@@ -423,6 +426,7 @@ try {
         prompt,
         'EchoPrivateNarrative',
         secret,
+        'PrivateWord',
         sdkKey,
         mongoUri,
         rawMongoUsername,
@@ -495,6 +499,7 @@ try {
                 'full safe run-log streams with model/tool/main/post-run records',
                 'run-correlated service errors and autonomy occurrences',
                 'configured LaunchDarkly and Mongo userinfo redaction',
+                'diagnostic retention beyond 256 private words',
             ],
             result: 'passed',
         })
