@@ -630,3 +630,32 @@ run "no_statement_delegates_key_administration_to_iam" {
     error_message = "Only the root user and escrow-kms-admin may be granted kms:PutKeyPolicy"
   }
 }
+
+run "sealed_key_write_is_granted_only_during_first_boot" {
+  command = apply
+
+  variables {
+    escrow_allow_first_boot = true
+  }
+
+  assert {
+    condition     = contains([for s in jsondecode(data.aws_iam_policy_document.enclave_host_permissions.json).Statement : s.Sid], "WriteSealedKey")
+    error_message = "First boot must be able to persist the sealed key"
+  }
+}
+
+run "steady_state_host_cannot_write_sealed_keys" {
+  command = apply
+
+  variables {
+    escrow_allow_first_boot = false
+  }
+
+  assert {
+    condition = !anytrue([
+      for s in jsondecode(data.aws_iam_policy_document.enclave_host_permissions.json).Statement :
+      contains(flatten([s.Action]), "s3:PutObject") && anytrue([for r in flatten([s.Resource]) : strcontains(r, "sealed-keys")])
+    ])
+    error_message = "With first boot disabled the host role must hold no PutObject on sealed-keys/"
+  }
+}

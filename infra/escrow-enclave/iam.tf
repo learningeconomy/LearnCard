@@ -137,11 +137,17 @@ data "aws_iam_policy_document" "enclave_host_permissions" {
   # artifacts bucket's versioning (storage.tf, already enabled) is the
   # recovery path: the prior version remains readable, just no longer
   # current.
-  statement {
-    sid       = "WriteSealedKey"
-    effect    = "Allow"
-    actions   = ["s3:PutObject"]
-    resources = ["${aws_s3_bucket.artifacts.arn}/sealed-keys/*"]
+  #
+  # Granted only while escrow_allow_first_boot is true: once the key is
+  # sealed, the steady-state host has no legitimate reason to write here.
+  dynamic "statement" {
+    for_each = var.escrow_allow_first_boot ? [1] : []
+    content {
+      sid       = "WriteSealedKey"
+      effect    = "Allow"
+      actions   = ["s3:PutObject"]
+      resources = ["${aws_s3_bucket.artifacts.arn}/sealed-keys/*"]
+    }
   }
 
   # Audit bucket: PutObject only, restricted to the audit/* key prefix that
