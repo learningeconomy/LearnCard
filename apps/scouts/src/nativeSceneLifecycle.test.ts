@@ -11,9 +11,7 @@ describe('ScoutPass iOS scene lifecycle contract', () => {
     const infoPlist = readNativeFile('ios/App/App/Info.plist');
     const xcodeProject = readNativeFile('ios/App/App.xcodeproj/project.pbxproj');
     const podfile = readNativeFile('ios/App/Podfile');
-    const barcodeSimulatorStub = readNativeFile(
-        'ios/App/App/BarcodeScannerPluginSimulator.swift'
-    );
+    const barcodeSimulatorStub = readNativeFile('ios/App/App/BarcodeScannerPluginSimulator.swift');
 
     it('declares and registers the scene lifecycle', () => {
         expect(infoPlist).toContain('<key>UIApplicationSceneManifest</key>');

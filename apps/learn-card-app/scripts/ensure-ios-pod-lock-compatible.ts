@@ -35,8 +35,7 @@ const TRANSITIVE_PODS: PodDependency[] = [
     },
 ];
 
-const escapeRegExp = (value: string): string =>
-    value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export const getLockedPodMajor = (lockfile: string, podName: string): number | undefined => {
     const match = lockfile.match(new RegExp(`^\\s+- ${escapeRegExp(podName)} \\((\\d+)\\.`, 'm'));
@@ -46,9 +45,7 @@ export const getLockedPodMajor = (lockfile: string, podName: string): number | u
 
 export const getRequiredPodMajor = (podspec: string, podName: string): number | undefined => {
     const match = podspec.match(
-        new RegExp(
-            `s\\.dependency\\s+['"]${escapeRegExp(podName)}['"][^\\n]*~>\\s*(\\d+)\\.`
-        )
+        new RegExp(`s\\.dependency\\s+['"]${escapeRegExp(podName)}['"][^\\n]*~>\\s*(\\d+)\\.`)
     );
 
     return match ? Number(match[1]) : undefined;
