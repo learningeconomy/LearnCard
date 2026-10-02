@@ -10,6 +10,7 @@ import { createKeycloakAdmin } from './keycloak-admin';
 import { setTimeout } from 'node:timers/promises';
 import {
     fetchFirebaseUsers,
+    findProviderLinkConflicts,
     linkFirebaseProviders,
     type FirebaseReader,
     type FirebaseUser,
@@ -228,6 +229,19 @@ export const provisionKeycloakUsers = async (
                             continue;
                         }
                         const links = user ? await admin.links(user.id) : [];
+                        if (linkProviders) {
+                            const conflicts = findProviderLinkConflicts(
+                                firebaseRecords.flatMap(record => record?.providerData ?? []),
+                                links
+                            );
+                            if (conflicts.length) {
+                                summary.conflicts += conflicts.length;
+                                refuse(
+                                    `${conflicts.join(', ')} identity differs; manual review required`
+                                );
+                                continue;
+                            }
+                        }
                         const link = links.find(item => item.identityProvider === 'lca-api');
                         if (link && link.userId !== subject?.subject) {
                             refuse('existing lca-api link differs');

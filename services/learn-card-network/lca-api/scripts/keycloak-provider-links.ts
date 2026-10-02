@@ -61,6 +61,22 @@ export const fetchFirebaseUsers = async (
     return users;
 };
 
+/** Read-only preflight: reject the whole user before adding any provider links. */
+export const findProviderLinkConflicts = (
+    providers: FirebaseProvider[],
+    links: { identityProvider: string; userId: string }[]
+): string[] =>
+    ['google', 'apple'].filter(alias => {
+        const matches = providers.filter(provider => provider.providerId === `${alias}.com`);
+        if (!matches.length) return false;
+        const existing = links.find(link => link.identityProvider === alias);
+        return (
+            matches.some(provider => !provider.uid) ||
+            new Set(matches.map(provider => provider.uid)).size > 1 ||
+            Boolean(existing && existing.userId !== matches[0]!.uid)
+        );
+    });
+
 /** Only add identities; never remove or reassign a provider link, even on conflicts. */
 export const linkFirebaseProviders = async ({
     userId,
@@ -85,20 +101,18 @@ export const linkFirebaseProviders = async ({
         return summary;
     }
     const links = userId ? await admin.links(userId) : [];
+    const conflicts = findProviderLinkConflicts(providers, links);
+    if (conflicts.length) {
+        summary.conflicts += conflicts.length;
+        for (const alias of conflicts)
+            log(`CONFLICT: ${alias} identity differs; manual review required`);
+        return summary;
+    }
     for (const alias of ['google', 'apple']) {
         const matches = social.filter(provider => provider.providerId === `${alias}.com`);
         if (!matches.length) continue;
         const provider = matches[0]!;
         const existing = links.find(link => link.identityProvider === alias);
-        if (
-            !provider.uid ||
-            new Set(matches.map(match => match.uid)).size > 1 ||
-            (existing && existing.userId !== provider.uid)
-        ) {
-            summary.conflicts++;
-            log(`CONFLICT: ${alias} identity differs; manual review required`);
-            continue;
-        }
         if (existing) {
             summary.alreadyLinked++;
             continue;
