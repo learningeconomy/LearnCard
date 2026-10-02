@@ -259,28 +259,28 @@
       "name": "scoutpass-app",
       "version": "1.90.37",
       "dependencies": {
-        "@capacitor-community/sqlite": "8.1.0",
-        "@capacitor-firebase/analytics": "8.2.0",
-        "@capacitor-firebase/authentication": "^8.2.0",
-        "@capacitor-mlkit/barcode-scanning": "^8.0.1",
-        "@capacitor/android": "^8.3.1",
-        "@capacitor/app": "^8.1.0",
-        "@capacitor/browser": "^8.0.3",
-        "@capacitor/camera": "^8.2.0",
+        "@capacitor-community/sqlite": "8.1.1",
+        "@capacitor-firebase/analytics": "8.5.2",
+        "@capacitor-firebase/authentication": "^8.5.2",
+        "@capacitor-mlkit/barcode-scanning": "^8.2.1",
+        "@capacitor/android": "8.5.2",
+        "@capacitor/app": "^8.1.2",
+        "@capacitor/browser": "^8.0.5",
+        "@capacitor/camera": "^8.2.5",
         "@capacitor/clipboard": "^8.0.1",
-        "@capacitor/core": "8.3.1",
-        "@capacitor/device": "^8.0.0",
+        "@capacitor/core": "8.5.2",
+        "@capacitor/device": "^8.0.3",
         "@capacitor/haptics": "^8.0.2",
-        "@capacitor/ios": "^8.3.1",
-        "@capacitor/keyboard": "^8.0.3",
-        "@capacitor/local-notifications": "^8.0.2",
+        "@capacitor/ios": "8.5.2",
+        "@capacitor/keyboard": "^8.0.6",
+        "@capacitor/local-notifications": "^8.3.1",
         "@capacitor/network": "^8.0.1",
-        "@capacitor/push-notifications": "^8.0.3",
-        "@capacitor/share": "^8.0.1",
-        "@capacitor/splash-screen": "^8.0.1",
-        "@capacitor/status-bar": "^8.0.2",
-        "@capawesome/capacitor-badge": "8.0.2",
-        "@capgo/capacitor-updater": "8.47.7",
+        "@capacitor/push-notifications": "^8.1.3",
+        "@capacitor/share": "^8.0.3",
+        "@capacitor/splash-screen": "^8.0.2",
+        "@capacitor/status-bar": "^8.0.4",
+        "@capawesome/capacitor-badge": "8.0.3",
+        "@capgo/capacitor-updater": "8.52.1",
         "@datadog/browser-logs": "^4.50.1",
         "@emoji-mart/data": "^1.2.1",
         "@emoji-mart/react": "^1.1.1",
@@ -309,8 +309,8 @@
         "@web3auth/single-factor-auth": "^9.5.0",
         "async": "^3.2.6",
         "buffer": "^6.0.3",
-        "capacitor-native-settings": "^8.1.0",
-        "capacitor-plugin-safe-area": "^5.0.0",
+        "capacitor-native-settings": "^8.2.0",
+        "capacitor-plugin-safe-area": "^5.0.1",
         "capacitor-standard-version": "^1.1.21",
         "cordova-res": "^0.15.4",
         "crypto-js": "^4.2.0",
@@ -355,7 +355,7 @@
         "zustand": "^3.7.2",
       },
       "devDependencies": {
-        "@capacitor/cli": "^8.3.1",
+        "@capacitor/cli": "8.5.2",
         "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
         "@inlang/paraglide-js": "2.20.2",
         "@ionic/cli": "^7.2.1",
@@ -12504,16 +12504,6 @@
 
     "schema-utils/ajv": ["ajv@8.20.0", "", { "dependencies": { "fast-deep-equal": "^3.1.3", "fast-uri": "^3.0.1", "json-schema-traverse": "^1.0.0", "require-from-string": "^2.0.2" } }, "sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA=="],
 
-    "scoutpass-app/@capacitor-community/sqlite": ["@capacitor-community/sqlite@8.1.0", "", { "dependencies": { "jeep-sqlite": "^2.7.2" }, "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-yhKZDAVPDPcM3QE6UGB3LXyV25a6Rve1SjZ1aUpTE0E2isnYTVM0PG9+JOI241f+NdsHzPTE7ESJiYSqKsKnuA=="],
-
-    "scoutpass-app/@capacitor-firebase/analytics": ["@capacitor-firebase/analytics@8.2.0", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0", "firebase": "^12.6.0" }, "optionalPeers": ["firebase"] }, "sha512-WHXMee80NTduTAHLtNrZdMRpsO/LnV63cMs5c3iK0lSm1lEcnagzpML5IbueqzO92zTjzTP3rZyHy7DHlORr2A=="],
-
-    "scoutpass-app/@capacitor/core": ["@capacitor/core@8.3.1", "", { "dependencies": { "tslib": "^2.1.0" } }, "sha512-UF8ItlHguU1Z6GXfPTeT2gakf+ctNI8pAS1kwSBQlsJMlfD4OPoto/SmKnOxKCQvnF4WRcdWeg6C0zREUNaAQg=="],
-
-    "scoutpass-app/@capawesome/capacitor-badge": ["@capawesome/capacitor-badge@8.0.2", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-4ZnRyFvViaokupdrOi3OkoBurH+23hnxni+PYq5C1ObNLYbhty/WK8BzMtndCv0S47XjGBLjQ9DJsYj3JDVxGQ=="],
-
-    "scoutpass-app/@capgo/capacitor-updater": ["@capgo/capacitor-updater@8.47.7", "", { "peerDependencies": { "@capacitor/core": "^8.0.0" } }, "sha512-Gi9onxH1ysaS40jirR9q69oS1qRidw13oAFzc7rvION+Omc/OLNkC2tqgEw55oVQloIokJKevRNQl4vjcmTliA=="],
-
     "scoutpass-app/@testing-library/react": ["@testing-library/react@11.2.7", "", { "dependencies": { "@babel/runtime": "^7.12.5", "@testing-library/dom": "^7.28.1" }, "peerDependencies": { "react": "*", "react-dom": "*" } }, "sha512-tzRNp7pzd5QmbtXNG/mhdcl7Awfu/Iz1RaVHY75zTdOkmHCuzMhRL83gWHSgOAcjS3CCbyfwUHMZgRJb4kAfpA=="],
 
     "scoutpass-app/@testing-library/user-event": ["@testing-library/user-event@12.8.3", "", { "dependencies": { "@babel/runtime": "^7.12.5" }, "peerDependencies": { "@testing-library/dom": ">=7.21.4" } }, "sha512-IR0iWbFkgd56Bu5ZI/ej8yQwrkCv8Qydx6RzwbKz9faXazR/+5tvYKsZQgyXJiwgpcva127YO6JcWy7YlCfofQ=="],
@@ -15184,8 +15174,6 @@
 
     "schema-utils/ajv/json-schema-traverse": ["json-schema-traverse@1.0.0", "", {}, "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug=="],
 
-    "scoutpass-app/@capacitor-community/sqlite/jeep-sqlite": ["jeep-sqlite@2.8.0", "", { "dependencies": { "@stencil/core": "^4.20.0", "browser-fs-access": "^0.35.0", "jszip": "^3.10.1", "localforage": "^1.10.0", "sql.js": "^1.11.0" } }, "sha512-FWNUP6OAmrUHwiW7H1xH5YUQ8tN2O4l4psT1sLd7DQtHd5PfrA1nvNdeKPNj+wQBtu7elJa8WoUibTytNTaaCg=="],
-
     "scoutpass-app/@testing-library/react/@testing-library/dom": ["@testing-library/dom@7.31.2", "", { "dependencies": { "@babel/code-frame": "^7.10.4", "@babel/runtime": "^7.12.5", "@types/aria-query": "^4.2.0", "aria-query": "^4.2.2", "chalk": "^4.1.0", "dom-accessibility-api": "^0.5.6", "lz-string": "^1.4.4", "pretty-format": "^26.6.2" } }, "sha512-3UqjCpey6HiTZT92vODYLPxTBWlM8ZOOjr3LX5F37/VRipW2M1kX6I/Cm4VXzteZqfGfagg8yXywpcOgQBlNsQ=="],
 
     "scoutpass-app/tailwindcss/arg": ["arg@5.0.2", "", {}, "sha512-PYjyFOLKQ9y57JvQ6QLo8dAgNqswh8M1RMJYdQduT6xbWSgK36P/Z/v+p888pM69jMMfS8Xd8F6I1kQ/I9HUGg=="],
@@ -16605,8 +16593,6 @@
     "sane/micromatch/braces/extend-shallow": ["extend-shallow@2.0.1", "", { "dependencies": { "is-extendable": "^0.1.0" } }, "sha512-zCnTtlxNoAiDc3gqY2aYAWFx7XWWiasuF2K8Me5WbN8otHKTUKBwjPtNpRs/rbUZm7KxWAaNj7P1a/p52GbVug=="],
 
     "sane/micromatch/braces/fill-range": ["fill-range@4.0.0", "", { "dependencies": { "extend-shallow": "^2.0.1", "is-number": "^3.0.0", "repeat-string": "^1.6.1", "to-regex-range": "^2.1.0" } }, "sha512-VcpLTWqWDiTerugjj8e3+esbg+skS3M9e54UuR3iCeIDMXCLTsAH8hTSzDQU/X6/6t3eYkOKoZSef2PlU6U1XQ=="],
-
-    "scoutpass-app/@capacitor-community/sqlite/jeep-sqlite/browser-fs-access": ["browser-fs-access@0.35.0", "", {}, "sha512-sLoadumpRfsjprP8XzVjpQc0jK8yqHBx0PtUTGYj2fftT+P/t+uyDAQdMgGAPKD011in/O+YYGh7fIs0oG/viw=="],
 
     "scoutpass-app/@testing-library/react/@testing-library/dom/@types/aria-query": ["@types/aria-query@4.2.2", "", {}, "sha512-HnYpAE1Y6kRyKM/XkEuiRQhTHvkzMBurTHnpFLYLBGPIylZNPs9jJcuOOYWxPLJCSEtmZT0Y8rHDokKN7rRTig=="],
 
