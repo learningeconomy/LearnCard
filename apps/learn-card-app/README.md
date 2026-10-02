@@ -49,7 +49,7 @@ After playwright is set up, you can simply run `bun run test` or `bunx nx test l
 
 - Consent identity uses the parent account's Family name/photo records. Its cache is separate from profile lists and scoped to the parent account.
 - An explicitly typed child remains a child even if a legacy record has the service-profile flag. Child pickers retain these accounts, organization pickers exclude them, and account switching preserves the persisted profile type rather than the manager's metadata.
-- Creating a Family requires an adult PIN. Approval-only actions stay on the child account and cannot continue without PIN verification; a missing PIN prompts the adult to set one up. If a switched account has lost its parent identity, PIN-dependent actions stop before opening verification and direct the user back to an adult account.
+- Creating a Family requires an adult PIN. Approval-only actions stay on the child account and cannot continue without PIN verification; a missing PIN prompts the adult to set one up. Every switched-account request requires a known parent identity, including PIN-exempt service returns. Missing identity stops the request before verification and asks the user to sign in again.
 - After a correct PIN, a failed account action shows a retryable action error rather than a PIN-validation error. Verification remains busy until the action settles.
 - Profile-switch completion callbacks close their own token-scoped modal instead of also closing whichever modal is on top.
 

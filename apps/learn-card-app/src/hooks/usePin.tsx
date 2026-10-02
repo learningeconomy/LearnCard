@@ -57,8 +57,8 @@ export const usePin = (onSwitch?: (profile: LCNProfile) => void) => {
         } = options ?? {};
         const parentDid = currentUserStore.get.parentUserDid();
 
-        if (hasParentSwitchedProfiles && !parentDid && !ignorePin) {
-            presentToast(m['family.pinModal.approvalRequiresAdultAccount'](), {
+        if (hasParentSwitchedProfiles && !parentDid) {
+            presentToast(m['family.pinModal.parentIdentityUnavailable'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

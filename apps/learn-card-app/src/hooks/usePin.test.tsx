@@ -82,6 +82,25 @@ describe('usePin parent PIN checks', () => {
         expect(state.switchParent).not.toHaveBeenCalled();
     });
 
+    it('blocks a PIN-exempt account return when the parent identity is missing', async () => {
+        state.parentDid = '';
+        const onSuccess = vi.fn();
+        const { result } = mount(vi.fn());
+        await act(async () => result.current.handleVerifyParentPin({ ignorePin: true, onSuccess }));
+        expect(state.modal).not.toHaveBeenCalled();
+        expect(state.switchParent).not.toHaveBeenCalled();
+        expect(onSuccess).not.toHaveBeenCalled();
+    });
+
+    it('still returns PIN-exempt service accounts to a known parent without verification', async () => {
+        state.hasPinCheck.mockResolvedValue(true);
+        const { result } = mount(vi.fn());
+        await act(async () => result.current.handleVerifyParentPin({ ignorePin: true }));
+        expect(state.switchParent).toHaveBeenCalledOnce();
+        expect(state.modal).not.toHaveBeenCalled();
+        expect(state.hasPinCheck).not.toHaveBeenCalled();
+    });
+
     it('preserves the no-PIN parent-switch fast path and uses stored identity for a mismatched cache', async () => {
         const onSwitch = vi.fn();
         const { result, client } = mount(onSwitch);
