@@ -1,5 +1,14 @@
 # @learncard/helpers
 
+## 1.6.1
+
+### Patch Changes
+
+- [#1605](https://github.com/learningeconomy/LearnCard/pull/1605) [`d436c39e00994e6d8c77e7b94985a51fe1f42adb`](https://github.com/learningeconomy/LearnCard/commit/d436c39e00994e6d8c77e7b94985a51fe1f42adb) Thanks [@goblincore](https://github.com/goblincore)! - Share the strict C1 request serializer between credential-link signing and verification.
+
+- Updated dependencies [[`4b83aa9ee802f0d7a54adc5f053a7376fa103cdd`](https://github.com/learningeconomy/LearnCard/commit/4b83aa9ee802f0d7a54adc5f053a7376fa103cdd), [`b184f5552abf37a11468d435e5cea07fc35e1993`](https://github.com/learningeconomy/LearnCard/commit/b184f5552abf37a11468d435e5cea07fc35e1993), [`0e262737aafb8248e88e05039c83a3f30be6750f`](https://github.com/learningeconomy/LearnCard/commit/0e262737aafb8248e88e05039c83a3f30be6750f)]:
+    - @learncard/types@5.22.0
+
 ## 1.6.0
 
 ### Minor Changes

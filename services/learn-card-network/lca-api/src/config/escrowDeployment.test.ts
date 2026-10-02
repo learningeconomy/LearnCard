@@ -7,12 +7,23 @@ const require = createRequire(import.meta.url);
 const serverlessRequire = createRequire(require.resolve('serverless/package.json'));
 const yaml: { load: (source: string) => unknown } = serverlessRequire('js-yaml');
 
+const escrowEnvironment = require('../../serverless.escrow-env.cjs') as () => Record<
+    string,
+    string
+>;
+
+const ESCROW_FUNCTIONS = ['trpc', 'api', 'escrowHoldReminders', 'escrowBlobRewrap'];
+
 describe('escrow deployment wiring', () => {
+    const settings = Object.keys(lcaApiEnvironmentShape).filter(name => name.startsWith('ESCROW_'));
+
     it('forwards every schema ESCROW_* setting through GitHub and Serverless', () => {
         const serverless = yaml.load(
             readFileSync(new URL('../../serverless.yml', import.meta.url), 'utf8')
         ) as {
+            custom: { escrowEnvironment: string };
             provider: { environment: Record<string, string> };
+            functions: Record<string, { environment?: string }>;
         };
         const workflow = yaml.load(
             readFileSync(
@@ -30,14 +41,35 @@ describe('escrow deployment wiring', () => {
             'ESCROW_ENCLAVE_REMOTE_TOKEN',
             'ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON',
         ]);
-        for (const name of Object.keys(lcaApiEnvironmentShape).filter(name =>
-            name.startsWith('ESCROW_')
-        )) {
-            expect(serverless.provider.environment[name], name).toBe(`\${env:${name}, ''}`);
+
+        expect(serverless.custom.escrowEnvironment).toBe('${file(./serverless.escrow-env.cjs)}');
+        for (const name of ESCROW_FUNCTIONS) {
+            expect(serverless.functions[name]?.environment, name).toBe(
+                '${self:custom.escrowEnvironment}'
+            );
+        }
+        for (const name of settings) {
+            expect(serverless.provider.environment[name], name).toBeUndefined();
             expect(deploy.env?.[name], name).toBe(
                 `\${{ ${secrets.has(name) ? 'secrets' : 'vars'}.${name} }}`
             );
         }
         expect(serverless.provider.environment.LAMBDA_STAGE).toBe('${opt:stage, "dev"}');
+    });
+
+    it('emits every set ESCROW_* setting, and only relay settings while escrow is off', () => {
+        const saved = { ...process.env };
+        try {
+            for (const name of settings) process.env[name] = `value-of-${name}`;
+            expect(Object.keys(escrowEnvironment()).sort()).toEqual([...settings].sort());
+
+            delete process.env.ESCROW_ENCLAVE_MODE;
+            expect(Object.keys(escrowEnvironment()).sort()).toEqual([
+                'ESCROW_RELAY_AUTH_TOKEN',
+                'ESCROW_RELAY_URL',
+            ]);
+        } finally {
+            process.env = saved;
+        }
     });
 });
