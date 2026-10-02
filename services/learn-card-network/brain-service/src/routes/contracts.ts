@@ -1078,7 +1078,15 @@ export const contractsRouter = t.router({
                       recipientToken,
                   })
                 : undefined;
-            if (!retrySmartResume)
+            // A completed one-time snapshot can be followed by a new reviewed decision.
+            // Identical submissions still replay the completed upload instead.
+            const newDecisionAfterOneTime =
+                retrySmartResume &&
+                previousTerms?.status === 'stale' &&
+                previousTerms.oneTime &&
+                previousTerms.smartResumePublicationStatus === 'succeeded' &&
+                fingerprint !== previousTerms.smartResumeFingerprint;
+            if (!retrySmartResume || newDecisionAfterOneTime)
                 await consentToContract(
                     profile,
                     contractDetails,

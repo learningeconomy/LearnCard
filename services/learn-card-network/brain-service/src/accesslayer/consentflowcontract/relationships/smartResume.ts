@@ -51,7 +51,7 @@ export const publishSmartResume = async ({
     const leaseId = randomUUID();
     // Token request and credentials POST each time out after 30s. URI resolution
     // must also finish before this lease expires, or publication must be retried.
-    const leaseUntil = Date.now() + 120_000;
+    const leaseDurationMs = 120_000;
     const result = await runAudienceMutation(
         lockContractAudience(
             new QueryBuilder(
@@ -61,8 +61,7 @@ export const publishSmartResume = async ({
                     fingerprint,
                     audienceVersion: audienceVersion ?? null,
                     leaseId,
-                    leaseUntil,
-                    now: Date.now(),
+                    leaseDurationMs,
                 })
             ),
             contractId
@@ -75,14 +74,14 @@ export const publishSmartResume = async ({
                 `terms.smartResumeFingerprint = $fingerprint
                 AND terms.smartResumeMutationVersion = coalesce(terms.mutationVersion, 0)
                 AND (terms.status = 'live' OR (terms.status = 'stale' AND terms.oneTime = true))
-                AND CASE WHEN terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' THEN true ELSE datetime(terms.expiresAt) > datetime() END
-                AND CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true ELSE datetime(contract.expiresAt) > datetime() END
+                AND CASE WHEN terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' THEN true ELSE datetime(terms.expiresAt) > datetime.realtime() END
+                AND CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true ELSE datetime(contract.expiresAt) > datetime.realtime() END
                 AND (terms.smartResumePublicationStatus IN ['pending', 'failed', 'succeeded']
-                    OR (terms.smartResumePublicationStatus = 'sending' AND terms.smartResumeLeaseUntil < $now))`
+                    OR (terms.smartResumePublicationStatus = 'sending' AND terms.smartResumeLeaseUntil < datetime.realtime().epochMillis))`
             )
             .set(
                 `terms.smartResumeLeaseId = CASE WHEN terms.smartResumePublicationStatus = 'succeeded' THEN terms.smartResumeLeaseId ELSE $leaseId END,
-                terms.smartResumeLeaseUntil = CASE WHEN terms.smartResumePublicationStatus = 'succeeded' THEN terms.smartResumeLeaseUntil ELSE $leaseUntil END,
+                terms.smartResumeLeaseUntil = CASE WHEN terms.smartResumePublicationStatus = 'succeeded' THEN terms.smartResumeLeaseUntil ELSE datetime.realtime().epochMillis + $leaseDurationMs END,
                 terms.smartResumePublicationStatus = CASE WHEN terms.smartResumePublicationStatus = 'succeeded' THEN 'succeeded' ELSE 'sending' END`
             )
             .return('terms')
