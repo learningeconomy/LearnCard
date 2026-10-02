@@ -10,6 +10,7 @@ import {
     exchangeBrokerCode,
     keycloakIssuer,
     roundtripEnabled,
+    signInThroughBroker,
     trpc,
 } from './helpers/keycloak-broker';
 
@@ -157,6 +158,20 @@ describe.runIf(roundtripEnabled)('web social broker ownership policy', () => {
             expect(users[0]!.emailVerified).toBe(true);
             expect(await admin.links(users[0]!.id)).toContainEqual(
                 expect.objectContaining({ identityProvider: 'fake-google' })
+            );
+            // A fresh ticket hop has no browser SSO cookies and must link the existing
+            // web-social user rather than rendering an account confirmation page.
+            expect(await admin.links(users[0]!.id)).not.toContainEqual(
+                expect.objectContaining({ identityProvider: 'lca-api' })
+            );
+            const emailLogin = await signInThroughBroker(email);
+            expect(decodeJwt(emailLogin.idToken).sub).toBe(users[0]!.id);
+            expect(await admin.findUsers(email)).toHaveLength(1);
+            expect(await admin.links(users[0]!.id)).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({ identityProvider: 'fake-google' }),
+                    expect.objectContaining({ identityProvider: 'lca-api' }),
+                ])
             );
         } finally {
             await context.close();

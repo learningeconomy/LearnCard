@@ -4,6 +4,7 @@ import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT, type JWTPayload
 import { authRouter } from '../src/routes/auth';
 import { setSocialJwksResolverForTests } from '../src/helpers/social-token.helpers';
 import type { MongoAuthSubjectType } from '../src/models/AuthSubject';
+import { getOrCreateAuthSubject } from '../src/models/AuthSubject';
 import cache from '@cache';
 
 const { env, store, subjects, mongo, expiries } = vi.hoisted(() => ({
@@ -313,18 +314,83 @@ describe('auth login tickets', () => {
         );
         expect(second.subject).toBe(first.subject);
     });
-    it('never rewrites an already-existing social identity onto a later-created email identity', async () => {
+    it('unifies native Google first, then email code', async () => {
         const socialFirst = payload(
             (await caller().requestSocialLoginTicket({ provider: 'google', idToken: await sign() }))
                 .ticket
         );
         const emailSecond = payload((await emailLogin()).ticket);
-        expect(emailSecond.subject).not.toBe(socialFirst.subject);
+        expect(emailSecond.subject).toBe(socialFirst.subject);
         const socialAgain = payload(
             (await caller().requestSocialLoginTicket({ provider: 'google', idToken: await sign() }))
                 .ticket
         );
         expect(socialAgain.subject).toBe(socialFirst.subject);
+    });
+    it('unifies native Google then native Apple with the same verified email', async () => {
+        const google = payload(
+            (await caller().requestSocialLoginTicket({ provider: 'google', idToken: await sign() }))
+                .ticket
+        );
+        const apple = payload(
+            (
+                await caller().requestSocialLoginTicket({
+                    provider: 'apple',
+                    idToken: await sign({ iss: 'https://appleid.apple.com', aud: 'apple-client' }),
+                })
+            ).ticket
+        );
+        expect(apple.subject).toBe(google.subject);
+        expect(subjects.get('email:test@example.com')?.subject).toBe(google.subject);
+    });
+    it('does not link an unverified social email to an existing email identity', async () => {
+        const email = payload((await emailLogin()).ticket);
+        const result = await caller().requestSocialLoginTicket({
+            provider: 'google',
+            idToken: await sign({ email_verified: false }),
+        });
+        expect(result.success).toBe(false);
+        expect(result.ticket).toBeUndefined();
+        expect(subjects.has('google:social-sub')).toBe(false);
+        expect(subjects.get('email:test@example.com')?.subject).toBe(email.subject);
+        expect(subjects.size).toBe(1);
+    });
+    it('backfills the normalized email key for a legacy social identity', async () => {
+        const legacy = await getOrCreateAuthSubject('google:social-sub', { emailVerified: true });
+        const social = payload(
+            (
+                await caller().requestSocialLoginTicket({
+                    provider: 'google',
+                    idToken: await sign({ email: ' Test@Example.com ' }),
+                })
+            ).ticket
+        );
+        expect(social.subject).toBe(legacy.subject);
+        expect(subjects.get('email:test@example.com')).toMatchObject({
+            subject: legacy.subject,
+            email: 'test@example.com',
+            emailVerified: true,
+        });
+        expect(payload((await emailLogin()).ticket).subject).toBe(legacy.subject);
+    });
+    it('preserves conflicting legacy subjects and warns without PII', async () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const legacy = await getOrCreateAuthSubject('google:social-sub', { emailVerified: true });
+        const email = payload((await emailLogin()).ticket);
+        expect(email.subject).not.toBe(legacy.subject);
+        const social = payload(
+            (
+                await caller().requestSocialLoginTicket({
+                    provider: 'google',
+                    idToken: await sign(),
+                })
+            ).ticket
+        );
+        expect(social.subject).toBe(legacy.subject);
+        expect(subjects.get('email:test@example.com')?.subject).toBe(email.subject);
+        expect(warn).toHaveBeenCalledExactlyOnceWith(
+            'Social and email authentication subjects conflict; preserving both subjects.'
+        );
     });
     it('returns a distinct server error and logs when ticket issuance fails after the code is consumed', async () => {
         mongo.failNextUpsert = true;
