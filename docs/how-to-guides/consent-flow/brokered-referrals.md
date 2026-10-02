@@ -6,6 +6,32 @@ description: Invite a learner to a partner, issue outcomes, and receive permissi
 
 This workflow uses an existing LearnCard network profile for each partner, referrer, and learner. An email address alone cannot receive a generic request. The Salesforce Data Mediator is an external client of this workflow.
 
+## Try the flow in the local demo
+
+The `examples/consent-referral-demo` app sets up three synthetic accounts: Hire Heroes USA, Alex Morgan, and Hiring Our Heroes. Its buttons call the checkout's real local APIs; the evidence panel shows what each organization can read and which verified signed updates arrived.
+
+With workspace dependencies installed and OrbStack/Docker running, start it from the repository root:
+
+```bash
+bun --conditions=development examples/consent-referral-demo/start.ts
+```
+
+Open http://localhost:8812 and choose **Set up demo**. If the demo is already running and set up, use **Fresh scenario** to start again.
+
+| View              | Action                                                       | What to check                                                                                                          |
+| ----------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| Hire Heroes USA   | Send referral                                                | The invitation is pending; neither organization has consented data yet.                                                |
+| Veteran           | Accept & Connect, select permissions, then Confirm & Connect | Review both receiving organizations. Only selected fields appear in their data snapshots.                              |
+| Hiring Our Heroes | Record enrollment outcome                                    | The outcome is pending for Alex and absent from both organizations' shared data.                                       |
+| Veteran           | Claim & share outcome                                        | With outcome sharing enabled, both organizations can decrypt the approved copy and receive a correlated signed update. |
+| Veteran           | Stop sharing                                                 | Both organization snapshots return no consented records. Previously delivered copies may remain.                       |
+
+Use **Fresh scenario** for each alternative: decline the referral, dismiss and reopen the pending invitation, or remove Hire Heroes USA through the partner's controls after consent. To check cancellation during review, open the veteran's permission review, expand **Test cancellation during review**, cancel the invitation, and try **Confirm & Connect**. Confirmation should fail without recording consent.
+
+The default launcher starts disposable databases and API containers. Ports 4000/4100/5200/8812/8813 must be free; Ctrl+C stops that stack and removes its database volumes. Add `--services-running` when the three synthetic local APIs are already running. The example README covers reusing an existing test database network.
+
+This is a custom API test interface inspired by the VetPass mockup. Use the actual app for guardian approval, production invitation screens, automatic claim synchronization, locales, and rollout flags. The existing `examples/consent-flow-test` still tests direct consent links and callbacks into LearnCard. Salesforce remains external to both examples.
+
 ## Configure the audience and request
 
 The partner owns the contract. Include the referrer as a data recipient when it should receive approved outcomes. A writer can issue outcomes but does not automatically receive data. Use a separate contract for each partner's audience.
