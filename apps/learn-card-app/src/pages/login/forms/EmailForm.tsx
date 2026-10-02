@@ -188,8 +188,8 @@ const EmailForm: React.FC<EmailFormProps> = ({
 
     const { track } = useAnalytics();
 
-    // Call the adapter directly so native failures reach this form's catch.
-    const completeKeycloakNativeSignIn = async (ticket: string): Promise<void> => {
+    // Call the adapter directly so web and native failures reach this form's catch.
+    const completeKeycloakSignIn = async (ticket: string): Promise<void> => {
         await (adapter as KeycloakSignInAdapter).signInWithCustomToken(ticket);
         authStore.set.typeOfLogin(SocialLoginTypes.passwordless);
         try {
@@ -221,9 +221,9 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 );
                 if (response?.success && response?.token) {
                     try {
-                        if (adapter.providerType === 'keycloak' && Capacitor.isNativePlatform()) {
-                            await completeKeycloakNativeSignIn(response.token);
-                            setKeycloakOverlayPhase('setting-up');
+                        if (adapter.providerType === 'keycloak') {
+                            await completeKeycloakSignIn(response.token);
+                            if (Capacitor.isNativePlatform()) setKeycloakOverlayPhase('setting-up');
                         } else {
                             await signInWithCustomFirebaseToken(response.token);
                         }
@@ -238,9 +238,9 @@ const EmailForm: React.FC<EmailFormProps> = ({
                         return;
                     } catch (signInError) {
                         setKeycloakOverlayPhase(null);
-                        console.error('[handleVerifyCode] Sign-in error:', signInError);
                         log.error('Sign-in failed:', signInError);
                         setCodeError('Sign-in failed. Please try again.');
+                        setHasVerificationFailed(true);
                         setIsLoading(false);
                     }
                     return;
