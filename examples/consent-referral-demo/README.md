@@ -14,6 +14,8 @@ If the three local test APIs are already running, add `--services-running`. To r
 
 ## Try the flow
 
+If this demo is already running and set up, choose **Fresh scenario** instead of launching it again. Start with the **Hire Heroes USA** tab.
+
 1. Set up creates three synthetic profiles and a partner-owned contract naming the referrer as a recipient. No consent is recorded yet.
 2. In **Hire Heroes USA**, choose **Send referral**.
 3. In **Veteran**, use **View Details** or **Accept & Connect**, choose data permissions, then **Confirm & Connect**. The live organization snapshots should include selected fields only.
