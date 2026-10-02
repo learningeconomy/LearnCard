@@ -65,7 +65,7 @@
         },
         {
             "clientId": "lca-api",
-            "description": "Dev fixture placeholder; never use this secret outside local/CI",
+            "description": "Dev fixture placeholder secret; never use outside local/CI",
             "protocol": "openid-connect",
             "enabled": true,
             "publicClient": false,
@@ -142,6 +142,58 @@
             "email": "dev-unverified@example.com",
             "emailVerified": false,
             "credentials": [{ "type": "password", "value": "password", "temporary": false }]
+        }
+    ],
+    "identityProviders": [
+        {
+            "alias": "lca-api",
+            "displayName": "LearnCard",
+            "providerId": "oidc",
+            "enabled": true,
+            "trustEmail": true,
+            "storeToken": false,
+            "addReadTokenRoleOnCreate": false,
+            "hideOnLogin": true,
+            "linkOnly": false,
+            "firstBrokerLoginFlowAlias": "first broker login",
+            "config": {
+                "clientId": "keycloak-broker",
+                "clientSecret": "dev-only-broker-secret",
+                "clientAuthMethod": "client_secret_basic",
+                "issuer": "http://localhost:5100",
+                "authorizationUrl": "http://localhost:5100/oidc/authorize",
+                "tokenUrl": "http://host.docker.internal:5100/oidc/token",
+                "jwksUrl": "http://host.docker.internal:5100/oidc/jwks",
+                "userInfoUrl": "http://host.docker.internal:5100/oidc/userinfo",
+                "useJwksUrl": "true",
+                "validateSignature": "true",
+                "defaultScope": "openid email profile phone",
+                "loginHint": "true",
+                "pkceEnabled": "false",
+                "syncMode": "IMPORT"
+            }
+        }
+    ],
+    "identityProviderMappers": [
+        {
+            "name": "phone_number",
+            "identityProviderAlias": "lca-api",
+            "identityProviderMapper": "oidc-user-attribute-idp-mapper",
+            "config": {
+                "claim": "phone_number",
+                "user.attribute": "phone_number",
+                "syncMode": "INHERIT"
+            }
+        },
+        {
+            "name": "phone_number_verified",
+            "identityProviderAlias": "lca-api",
+            "identityProviderMapper": "oidc-user-attribute-idp-mapper",
+            "config": {
+                "claim": "phone_number_verified",
+                "user.attribute": "phone_number_verified",
+                "syncMode": "INHERIT"
+            }
         }
     ]
 }

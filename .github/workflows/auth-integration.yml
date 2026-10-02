@@ -26,6 +26,7 @@ jobs:
             - name: Start Keycloak
               run: |
                   docker run -d --name keycloak -p 8081:8080 -p 9000:9000 \
+                    --add-host=host.docker.internal:host-gateway \
                     -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin \
                     -e KC_HEALTH_ENABLED=true -e KC_HOSTNAME=http://localhost:8081 \
                     -e KC_HTTP_ENABLED=true \
@@ -38,6 +39,19 @@ jobs:
                     http://localhost:9000/health/ready || { docker logs keycloak; exit 1; }
             - name: Install dependencies
               run: bun install --frozen-lockfile
+            - name: Verify self-issued OIDC provider (unit)
+              working-directory: services/learn-card-network/lca-api
+              run: >-
+                  bunx vitest run --config vitest.config.ts
+                  test/oidc.spec.ts test/auth-tickets.spec.ts
+            - name: Verify OIDC login-ticket + silent-hop flow (integration)
+              working-directory: services/learn-card-network/lca-api
+              run: bunx vitest run test/oidc.integration.spec.ts
+              env:
+                  KEYCLOAK_INTEGRATION: 'true'
+                  OIDC_ISSUER: http://localhost:5100
+                  OIDC_CLIENT_ID: keycloak-broker
+                  OIDC_CLIENT_SECRET: dev-only-broker-secret
             - name: Verify real Keycloak tokens
               working-directory: services/learn-card-network/lca-api
               run: bunx vitest run test/keycloak-verify.integration.spec.ts
@@ -48,3 +62,27 @@ jobs:
             - name: Keycloak logs on failure
               if: ${{ always() && failure() }}
               run: docker logs keycloak
+
+    oidc-broker-e2e:
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - uses: actions/checkout@v7
+            - uses: ./.github/actions/setup
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: '24'
+            - name: Install Chromium
+              run: bunx playwright install --with-deps chromium
+            - name: Typecheck browser tests
+              working-directory: services/learn-card-network/lca-api
+              run: bun run typecheck:oidc:e2e
+            - name: Complete login tickets through the real Keycloak broker
+              working-directory: services/learn-card-network/lca-api
+              run: bun run test:oidc:e2e
+            - name: Remove isolated test services even after cancellation
+              if: always()
+              run: >-
+                  docker compose -p learncard-oidc-e2e
+                  -f services/learn-card-network/lca-api/test/oidc-e2e/compose.yaml
+                  down --volumes --remove-orphans
