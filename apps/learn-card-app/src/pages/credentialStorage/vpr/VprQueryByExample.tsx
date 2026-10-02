@@ -164,6 +164,9 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
     const renderCredentialList = vcsToDisplay?.map(credential => {
         if (!credential.record?.uri) return <></>;
 
+        const category =
+            Object.values(CredentialCategoryEnum).find(value => value === credential.category) ??
+            CredentialCategoryEnum.achievement;
         // record.category can be an arbitrary string (e.g. custom contract categories),
         // so fall back to Achievement metadata when it isn't a known category.
         const categoryImgUrl = (
@@ -178,7 +181,7 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
                 credential={credential.vc}
                 record={credential.record}
                 defaultImg={categoryImgUrl}
-                categoryType={credential.category}
+                categoryType={category}
                 verifierState={true}
                 showChecked={true}
                 onCheckMarkClick={() => handleVcSelection(uniqueId)}
