@@ -63,8 +63,8 @@ jobs:
             - name: Build Keycloak dev image (adds Apple identity provider)
               run: docker build -f infra/keycloak/Dockerfile.dev -t learncard-keycloak-dev infra/keycloak
             - name: Install test browser
-              run: |
-                  bunx --cwd tests/smoketests playwright install --with-deps chromium
+              run: bunx playwright install --with-deps chromium
+              working-directory: tests/smoketests
             - name: Verify realm export normalization
               run: node --test scripts/export-keycloak-realm.test.mjs
             - name: Start Keycloak
@@ -205,8 +205,8 @@ jobs:
                     --retry-all-errors --retry-max-time 120 --max-time 3 \
                     http://localhost:9000/health/ready || { docker logs keycloak; exit 1; }
             - name: Install test browser
-              run: |
-                  bunx --cwd tests/smoketests playwright install --with-deps chromium
+              run: bunx playwright install --with-deps chromium
+              working-directory: tests/smoketests
             - name: Apply reusable module and dev-only overlay
               working-directory: infra/keycloak/terraform/realm/local
               run: |
