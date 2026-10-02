@@ -166,6 +166,22 @@ describe('SmartResume consent before publication', () => {
             ).records
         ).toHaveLength(1);
     });
+    it('allows a new one-time decision after a completed one-time upload', async () => {
+        const first = await accept({ oneTime: true });
+        const terms = structuredClone(normalFullTerms);
+        terms.read.personal.name = 'Updated synthetic name';
+        const second = await accept({ oneTime: true, terms });
+        expect(second.termsUri).toBe(first.termsUri);
+        expect(upload).toHaveBeenCalledTimes(2);
+        expect(
+            (
+                await learner.clients.fullAuth.contracts.getTermsTransactionHistory({
+                    uri: second.termsUri,
+                })
+            ).records
+        ).toHaveLength(2);
+    });
+
     it('does not publish a retry after terms were changed or expired', async () => {
         upload.mockRejectedValueOnce(new Error('Synthetic outage'));
         await expect(accept()).rejects.toMatchObject({ code: 'BAD_GATEWAY' });
