@@ -52,15 +52,11 @@ const isUnauthorized = (error: unknown): boolean =>
     error instanceof TRPCError && error.code === 'UNAUTHORIZED';
 
 /**
- * Unify a native social sign-in with an existing email-code identity, so a user who
- * signed in by email code first and later signs in natively with Google/Apple using the
- * same verified email lands on one Keycloak user instead of "Account already exists".
- * Only applies when the IdP itself asserts the email is verified (see
- * `verifySocialIdToken`, which never returns an unverified email); an unlinked
- * `${provider}:${sub}` identity otherwise keeps its own independent subject, matching
- * `requestLoginTicket`'s `email:<address>` keying exactly (never auto-linked otherwise).
+ * Share one subject across email-code and verified native social sign-ins, regardless
+ * of sign-in order. Existing subjects are permanent; conflicting legacy identities
+ * are reported without automatically merging accounts.
  */
-const resolveSocialAuthSubject = (
+const resolveSocialAuthSubject = async (
     provider: SocialProviderId,
     claims: SocialClaims
 ): Promise<MongoAuthSubjectType> => {
@@ -72,12 +68,26 @@ const resolveSocialAuthSubject = (
         pictureUrl: claims.picture,
     };
     if (claims.email && claims.email_verified) {
-        const emailIdentityKey = `email:${claims.email.trim().toLowerCase()}`;
-        return findAuthSubjectByIdentityKey(emailIdentityKey).then(existing =>
-            existing
-                ? getOrCreateAuthSubjectLinkedTo(identityKey, existing.subject, attrs)
-                : getOrCreateAuthSubject(identityKey, attrs)
-        );
+        const email = claims.email.trim().toLowerCase();
+        const emailIdentityKey = `email:${email}`;
+        const emailAttrs = { email, emailVerified: true };
+        const existing = await findAuthSubjectByIdentityKey(identityKey);
+        if (existing) {
+            const emailRecord = await getOrCreateAuthSubjectLinkedTo(
+                emailIdentityKey,
+                existing.subject,
+                emailAttrs
+            );
+            if (emailRecord.subject !== existing.subject) {
+                console.warn(
+                    'Social and email authentication subjects conflict; preserving both subjects.'
+                );
+            }
+            return getOrCreateAuthSubject(identityKey, attrs);
+        }
+        // Create the shared email identity first so concurrent providers adopt its winner.
+        const emailRecord = await getOrCreateAuthSubject(emailIdentityKey, emailAttrs);
+        return getOrCreateAuthSubjectLinkedTo(identityKey, emailRecord.subject, attrs);
     }
     return getOrCreateAuthSubject(identityKey, attrs);
 };
