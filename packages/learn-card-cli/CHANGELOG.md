@@ -1,5 +1,23 @@
 # @learncard/cli
 
+## 3.6.1
+
+### Patch Changes
+
+- Updated dependencies [[`4b83aa9ee802f0d7a54adc5f053a7376fa103cdd`](https://github.com/learningeconomy/LearnCard/commit/4b83aa9ee802f0d7a54adc5f053a7376fa103cdd), [`b184f5552abf37a11468d435e5cea07fc35e1993`](https://github.com/learningeconomy/LearnCard/commit/b184f5552abf37a11468d435e5cea07fc35e1993), [`0e262737aafb8248e88e05039c83a3f30be6750f`](https://github.com/learningeconomy/LearnCard/commit/0e262737aafb8248e88e05039c83a3f30be6750f)]:
+    - @learncard/types@5.22.0
+    - @learncard/holder-continuity@0.2.20
+    - @learncard/core@9.4.37
+    - @learncard/init@2.5.1
+    - @learncard/network-brain-client@2.5.58
+    - @learncard/didkit-plugin@1.10.2
+    - @learncard/lca-api-plugin@2.0.7
+    - @learncard/learn-cloud-plugin@2.3.43
+    - @learncard/ler-rs-plugin@0.1.28
+    - @learncard/linked-claims-plugin@0.2.37
+    - @learncard/open-badge-v2-plugin@1.1.38
+    - @learncard/render-method-plugin@9.0.0
+
 ## 3.6.0
 
 ### Minor Changes

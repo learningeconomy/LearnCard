@@ -1,5 +1,54 @@
 # learn-card-base
 
+## 0.6.0
+
+### Minor Changes
+
+- [#1529](https://github.com/learningeconomy/LearnCard/pull/1529) [`0e262737aafb8248e88e05039c83a3f30be6750f`](https://github.com/learningeconomy/LearnCard/commit/0e262737aafb8248e88e05039c83a3f30be6750f) Thanks [@Custard7](https://github.com/Custard7)! - SSS prod hardening: confirmed recovery enrollment, lost-login identity rebind, and an isolated email relay.
+
+    - Recovery methods now carry `confirmedAt` and must be proven before they count (email confirmation code, phrase challenge words, backup re-decrypt, passkey round trip). New SSS accounts are `active` immediately; web3auth migrations stay `provisional` until a method is confirmed.
+    - New recovery-session flow lets a user whose sign-in identity is gone recover via a verified personal email and bind a new sign-in.
+    - Email recovery shares are encrypted on the client to an isolated relay's public key; `lca-api` never sees plaintext. Provider tokens move from query strings to the `X-Auth-Token` header.
+    - Sensitive key routes require a single-use DID challenge; key records are keyed by immutable provider ID.
+    - `recovery-key` email template now requires `confirmationCode`.
+    - Auth-share initialization requires the provider uniqueness index before inserting, preventing competing first writes from creating duplicate accounts. Existing records with missing or BSON-null auth material retain atomic update protection.
+    - Automatic stale-key cleanup preserves unresolved pending shares for delayed commits; explicit device forgetting still removes them. Custom SSS storage adapters now implement `deleteDeviceShare(id?)` to remove only the selected share and its version.
+
+### Patch Changes
+
+- [#1601](https://github.com/learningeconomy/LearnCard/pull/1601) [`3850da277fe17d421bc055cef3cac65616b7626d`](https://github.com/learningeconomy/LearnCard/commit/3850da277fe17d421bc055cef3cac65616b7626d) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-2207] Limit wrong code attempts on email login verification
+
+- [#1565](https://github.com/learningeconomy/LearnCard/pull/1565) [`4b83aa9ee802f0d7a54adc5f053a7376fa103cdd`](https://github.com/learningeconomy/LearnCard/commit/4b83aa9ee802f0d7a54adc5f053a7376fa103cdd) Thanks [@Custard7](https://github.com/Custard7)! - Escrow PIN fast release: an optional PIN release policy on the existing escrow-recovery substrate.
+
+    - The escrow recovery share now supports a second release policy alongside the 7-day hold: `pin`. A user who sets an optional 6-12 digit PIN can recover immediately by presenting it, instead of waiting for the hold. Custodianship is unchanged — this adds a release policy on the already-sealed blob, not a second custodial share.
+    - PIN verifier lives inside the enclave-sealed envelope (`EscrowBlobPlaintext.pinVerifier`); a leaked DB alone yields nothing to brute force. Client derives the proof with Argon2id and the enclave constant-time compares.
+    - 10 lifetime failed attempts locks the PIN (`EscrowPinLockedError`); the 7-day hold path is always available as a fallback. Setting/changing a PIN rotates the escrow share.
+    - Carry the sealed PIN verifier across share rotations while preserving its salt and attempt counters; explicit removal and unavailable carry still enroll without a PIN.
+    - New app UI: recovery PIN setup overlay after first setup (skippable), a Recovery PIN row in recovery settings (set/change/remove), and a PIN-first step in the recovery flow with fallback to the existing hold.
+
+- [#1559](https://github.com/learningeconomy/LearnCard/pull/1559) [`f7b54c45cf495e14cc7b2824653c8f0a63b61660`](https://github.com/learningeconomy/LearnCard/commit/f7b54c45cf495e14cc7b2824653c8f0a63b61660) Thanks [@Custard7](https://github.com/Custard7)! - Escrow recovery client hardening.
+
+    - `logout()` / `forgetDevice()` wait at most 10s for in-flight escrow writes; escrow, DID-challenge and auth-share requests carry a 30s abort timeout so a stalled socket can no longer block session end.
+    - Share rotations are serialized behind a single lock (`withRotationLock`) and concurrent enrollment repairs share one rotation; a failed escrow enrollment POST is retried with the same shares instead of burning another share version.
+    - Pending 7-day recovery requests use the same device-secret storage as the SSS device share (`createDeviceShareStorage`: encrypted SQLite on native Capacitor, adaptive IndexedDB/sessionStorage on web). New optional `clearPendingEscrowRecovery` coordinator hook lets apps wipe it on forget-device.
+    - Email-link completion rotates through `atomicUpdateShares` instead of separate device/server writes.
+    - Recovery UI: "Keep this page open until your account is restored." hint while finishing a hold; automatic-recovery card shows contextual turning on/off copy and "Not turned on" instead of a static "Setting up...".
+
+- [#1623](https://github.com/learningeconomy/LearnCard/pull/1623) [`06649f1f9995c0a0eeee91b793fc174cf5e4a239`](https://github.com/learningeconomy/LearnCard/commit/06649f1f9995c0a0eeee91b793fc174cf5e4a239) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-2193] Change technical url to "Resume Builder"
+
+- [#1612](https://github.com/learningeconomy/LearnCard/pull/1612) [`6c27d772ae41ccbd8fdac6f9d40f93ed22569416`](https://github.com/learningeconomy/LearnCard/commit/6c27d772ae41ccbd8fdac6f9d40f93ed22569416) Thanks [@goblincore](https://github.com/goblincore)! - fix(LC-2182): verify connectivity and warn on slow or unstable connections
+
+- [#1614](https://github.com/learningeconomy/LearnCard/pull/1614) [`ae10525fbd0ef284aabe1b03d12db147a1922f2c`](https://github.com/learningeconomy/LearnCard/commit/ae10525fbd0ef284aabe1b03d12db147a1922f2c) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2191] Replace Demo School with standards-pure sample personas, including plain OBv3 ConsentFlow issuance without proprietary `boostId` fields.
+
+- Updated dependencies [[`4b83aa9ee802f0d7a54adc5f053a7376fa103cdd`](https://github.com/learningeconomy/LearnCard/commit/4b83aa9ee802f0d7a54adc5f053a7376fa103cdd), [`f7b54c45cf495e14cc7b2824653c8f0a63b61660`](https://github.com/learningeconomy/LearnCard/commit/f7b54c45cf495e14cc7b2824653c8f0a63b61660), [`dab95a1313b10f0339a4284cb5dcdc2f459dcdd5`](https://github.com/learningeconomy/LearnCard/commit/dab95a1313b10f0339a4284cb5dcdc2f459dcdd5), [`b184f5552abf37a11468d435e5cea07fc35e1993`](https://github.com/learningeconomy/LearnCard/commit/b184f5552abf37a11468d435e5cea07fc35e1993), [`0e262737aafb8248e88e05039c83a3f30be6750f`](https://github.com/learningeconomy/LearnCard/commit/0e262737aafb8248e88e05039c83a3f30be6750f), [`d436c39e00994e6d8c77e7b94985a51fe1f42adb`](https://github.com/learningeconomy/LearnCard/commit/d436c39e00994e6d8c77e7b94985a51fe1f42adb)]:
+    - @learncard/sss-key-manager@0.2.0
+    - @learncard/types@5.22.0
+    - @learncard/helpers@1.6.1
+    - @learncard/lca-api-plugin@2.0.7
+    - @learncard/learn-card-plugin@1.2.37
+    - @learncard/ler-rs-plugin@0.1.28
+    - @learncard/render-method-plugin@9.0.0
+
 ## 0.5.0
 
 ### Minor Changes

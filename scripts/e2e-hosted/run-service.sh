@@ -15,7 +15,7 @@ collect_service_artifacts() {
     cd "$SERVICE_DIR"
     docker compose logs --no-color > "$E2E_ARTIFACT_DIR/docker-compose.log" 2>&1
     e2e_snapshot before-cleanup
-    docker compose down --remove-orphans -v
+    e2e_timed stack_teardown docker compose down --remove-orphans -v
     e2e_snapshot after-cleanup
     e2e_render_summary
     exit "$status"
