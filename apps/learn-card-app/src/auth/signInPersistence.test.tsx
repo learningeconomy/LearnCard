@@ -2,7 +2,7 @@ import React from 'react';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SignInAdapter } from '@learncard/types';
-import { User, UserManager, WebStorageStateStore } from 'oidc-client-ts';
+import { InMemoryWebStorage, User, UserManager, WebStorageStateStore } from 'oidc-client-ts';
 import { createKeycloakUserStorage } from '../../../../packages/learn-card-base/src/auth-providers/keycloakUserStorage';
 
 vi.mock('learn-card-base', () => ({ getLogger: () => ({ warn: vi.fn(), info: vi.fn() }) }));
@@ -38,6 +38,7 @@ const createSession = (): {
     });
     // Only the SDK entry points exercised here are needed; real OIDC token storage is retained.
     const adapter = {
+        providerType: 'keycloak',
         setSessionPersistence: storage.setSessionPersistence,
         signInWithCustomToken: signIn,
         signInWithGoogle: signIn,
@@ -58,6 +59,46 @@ afterEach((): void => {
 });
 
 describe('Shared Computer sign-in persistence', (): void => {
+    it('does not show a blocking error for Firebase persistence failures', async () => {
+        const { changeSignInPersistence, useSignInPersistence } =
+            await import('./signInPersistence');
+        const { adapter } = createSession();
+        const firebase = {
+            ...adapter,
+            providerType: 'firebase',
+            setSessionPersistence: vi.fn().mockRejectedValue(new Error('storage denied')),
+        };
+        await changeSignInPersistence(firebase, true);
+        expect(useSignInPersistence.getState().error).toBeNull();
+        expect(useSignInPersistence.getState().isUpdating).toBe(false);
+    });
+    it('keeps tab A session tokens private when tab B chooses persistent sign-in', async () => {
+        const { changeSignInPersistence, withSignInPersistence } =
+            await import('./signInPersistence');
+        const { setPublicComputerMode } = await import('@learncard/sss-key-manager');
+        const first = createSession();
+        await changeSignInPersistence(first.adapter, true);
+        await first.signIn();
+        const second = createKeycloakUserStorage(
+            authority,
+            clientId,
+            localStorage,
+            new InMemoryWebStorage()
+        );
+        await second.setSessionPersistence(false);
+        second.store.setItem(userKey, 'tab-b-token');
+        setPublicComputerMode(false);
+        await first.signIn();
+        expect(localStorage.getItem(userKey)).toBe('tab-b-token');
+        expect(sessionStorage.getItem(userKey)).toContain('test-token');
+        await withSignInPersistence(first.adapter).signInWithGoogle();
+        expect(sessionStorage.getItem(userKey)).toContain('test-token');
+        expect(localStorage.getItem(userKey)).not.toBe(expect.stringContaining('test-token'));
+        const reloaded = createSession();
+        await reloaded.signIn();
+        expect(sessionStorage.getItem(userKey)).toContain('test-token');
+        expect(localStorage.getItem(userKey)).not.toBe(expect.stringContaining('test-token'));
+    });
     it('stores only session tokens and is signed out after closing and reopening', async (): Promise<void> => {
         const { changeSignInPersistence, withSignInPersistence } =
             await import('./signInPersistence');
@@ -70,7 +111,7 @@ describe('Shared Computer sign-in persistence', (): void => {
         expect(localStorage.getItem(userKey)).toBeNull();
         expect(sessionStorage.getItem(userKey)).not.toBeNull();
         expect(localStorage.getItem(modeKey)).toBe('session');
-        expect(localStorage.getItem(`${modeKey}:revision`)).not.toBeNull();
+        expect(sessionStorage.getItem(modeKey)).toBe('session');
         sessionStorage.clear();
         const reopened = createSession();
         expect(await reopened.manager.getUser()).toBeNull();

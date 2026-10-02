@@ -56,6 +56,52 @@ const create = (
 ): KeycloakAuthProvider => createKeycloakAuthProvider({ ...keycloakConfig, userManager, ...extra });
 
 describe('createKeycloakAuthProvider', () => {
+    it.each(['automatic', 'manual'])(
+        'rejects %s renewal completing after sign-out before storage or UserLoaded',
+        async mode => {
+            const sdk = await vi.importActual<typeof import('oidc-client-ts')>('oidc-client-ts');
+            let finish: (() => void) | undefined;
+            const pending = new Promise<void>(resolve => {
+                finish = resolve;
+            });
+            const silent = vi
+                .spyOn(sdk.UserManager.prototype, 'signinSilent')
+                .mockImplementation(async function () {
+                    await pending;
+                    const user = createUser();
+                    // oidc-client-ts _useRefreshToken stores before emitting UserLoaded.
+                    await this.storeUser(user);
+                    await this.events.load(user);
+                    return user;
+                });
+            const storage = new InMemoryWebStorage();
+            const provider = createKeycloakAuthProvider({
+                ...keycloakConfig,
+                stateStore: storage,
+                userStore: storage,
+            });
+            await provider.userManager.storeUser(createUser());
+            const loaded = vi.fn();
+            provider.userManager.events.addUserLoaded(loaded);
+            vi.spyOn(provider.userManager, 'revokeTokens').mockResolvedValue(undefined);
+            try {
+                const renewing =
+                    mode === 'automatic'
+                        ? provider.userManager.signinSilent()
+                        : provider.getIdToken(true);
+                const rejected = expect(renewing).rejects.toBeInstanceOf(AuthSessionError);
+                await vi.waitFor(() => expect(silent).toHaveBeenCalled());
+                await provider.signOut();
+                finish?.();
+                await rejected;
+                expect(await provider.userManager.getUser()).toBeNull();
+                expect(await provider.getCurrentUser()).toBeNull();
+                expect(loaded).not.toHaveBeenCalled();
+            } finally {
+                silent.mockRestore();
+            }
+        }
+    );
     it('rejects the identity at the SDK storage boundary before publishing tokens', async () => {
         const storage = new InMemoryWebStorage();
         const previous = createUser();

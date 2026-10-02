@@ -11,6 +11,7 @@ import type {
     NavigateParams,
     NavigateResponse,
     RevokeTokensTypes,
+    SigninSilentArgs,
     UserManagerSettings,
 } from 'oidc-client-ts';
 import { AuthSessionError, UnsupportedSignInOperationError } from '@learncard/types';
@@ -146,7 +147,24 @@ export const createKeycloakAuthProvider = (
     // The SDK stores tokens before raising UserLoaded. Validate at that boundary,
     // not after signinCallback, so other tabs never see a rejected identity.
     class ValidatingUserManager extends UserManager {
+        private renewalRevision: number | undefined;
+        private renewal: Promise<User | null> | undefined;
+
+        override signinSilent(args?: SigninSilentArgs): Promise<User | null> {
+            if (this.renewal) return this.renewal;
+            this.renewalRevision = signOutRevision;
+            this.renewal = super.signinSilent(args).finally(() => {
+                this.renewal = undefined;
+                this.renewalRevision = undefined;
+            });
+            return this.renewal;
+        }
+
         override async storeUser(user: User | null): Promise<void> {
+            const revision = this.renewalRevision ?? signOutRevision;
+            if (user && revision !== signOutRevision) {
+                throw new AuthSessionError('Sign-in cancelled. Please try again.', 'no_session');
+            }
             if (user && redirectRevision !== undefined) {
                 const current = await this.getUser();
                 if (
@@ -163,6 +181,11 @@ export const createKeycloakAuthProvider = (
                 config.validateRedirectUser?.(mapped, user.state);
             }
             await super.storeUser(user);
+            // Async host stores can finish after sign-out. Never let the SDK publish UserLoaded.
+            if (user && revision !== signOutRevision) {
+                await super.storeUser(null);
+                throw new AuthSessionError('Sign-in cancelled. Please try again.', 'no_session');
+            }
         }
     }
     const browserStorage =
@@ -225,6 +248,7 @@ export const createKeycloakAuthProvider = (
     let reauthenticating = false;
 
     const renew = async (): Promise<User> => {
+        const revision = signOutRevision;
         // Never fall back to iframe silent SSO when there is no refresh token.
         if (!(await userManager.getUser())?.refresh_token) {
             throw new AuthSessionError('Sign-in expired. Please try again.', 'expired');
@@ -232,6 +256,10 @@ export const createKeycloakAuthProvider = (
         let user: User | null;
         try {
             user = await userManager.signinSilent();
+            if (revision !== signOutRevision) {
+                await userManager.removeUser();
+                throw new AuthSessionError('Sign-in cancelled. Please try again.', 'no_session');
+            }
         } catch (error) {
             if (
                 error instanceof ErrorResponse &&
