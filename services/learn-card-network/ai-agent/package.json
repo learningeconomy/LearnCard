@@ -4,6 +4,10 @@
     "private": true,
     "description": "Production LearnCard AI agent service with DID-authenticated wallet, memory, and assistant APIs.",
     "main": "dist/index.js",
+    "engines": {
+        "node": ">=24.18 <25",
+        "bun": ">=1.4.2"
+    },
     "scripts": {
         "build": "rm -rf dist && bun build src/index.ts --target=bun --conditions=development --outfile=dist/index.js --external='@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'",
         "dev": "bun --conditions=development --watch src/index.ts",
@@ -15,6 +19,8 @@
         "start": "bun --conditions=development src/index.ts",
         "start:docker": "bun --conditions=development src/index.ts",
         "smoke:staging": "bun --conditions=development scripts/smoke.ts",
+        "smoke:feed-wasm": "bun --conditions=development scripts/assistant-feed-wasm-regression.ts",
+        "smoke:sentry": "bun --conditions=development scripts/sentry-telemetry-smoke.ts",
         "test": "bunx vitest"
     },
     "keywords": [],
@@ -28,7 +34,7 @@
         "@learncard/init": "workspace:*",
         "@learncard/network-brain-client": "workspace:*",
         "@sentry/node": "7.61.0",
-        "@trigger.dev/sdk": "4.5.4",
+        "@trigger.dev/sdk": "4.5.7",
         "cors": "^2.8.5",
         "croner": "^10.0.1",
         "dotenv": "^16.0.3",
@@ -39,11 +45,11 @@
         "zod": "4.1.13"
     },
     "devDependencies": {
-        "@trigger.dev/build": "4.5.4",
+        "@trigger.dev/build": "4.5.7",
         "@types/cors": "^2.8.13",
         "@types/express": "^4.17.15",
-        "@types/node": "^18.0.0",
-        "trigger.dev": "4.5.4",
+        "@types/node": "^24.0.0",
+        "trigger.dev": "4.5.7",
         "vitest": "^4.1.11"
     },
     "repository": {

@@ -6,6 +6,7 @@ import {
     createLearnCardAssistantFeedService,
     createLearnCardAssistantFeedRuntime,
     createLearnCardAssistantFeedTools,
+    toLearnCardAssistantCardResponse,
 } from '../src/assistantFeed';
 import type { MongoRuntime } from '../src/mongo';
 import { createStorageTestEncryption } from './helpers/storageEncryption';
@@ -223,5 +224,35 @@ describe('LearnCard Assistant feed', () => {
 
         expect(updated.feedback).toMatchObject({ type: 'thumbs-down' });
         expect(updated.feedback?.createdAt).toBeInstanceOf(Date);
+    });
+
+    it('preserves an unknown feedback time while marking a card read', async () => {
+        const timestamp = new Date('2026-07-15T12:00:00.000Z');
+        const service = createLearnCardAssistantFeedService(
+            createInMemoryLearnCardAssistantFeedRepository([
+                {
+                    id: 'unknown-feedback-time',
+                    ownerDid: 'did:key:user',
+                    origin: 'autonomous',
+                    type: 'message',
+                    title: 'Feedback already noted',
+                    description: 'The original feedback time was lost.',
+                    priority: 'normal',
+                    feedback: { type: 'thumbs-down', createdAt: null },
+                    createdAt: timestamp,
+                    updatedAt: timestamp,
+                },
+            ])
+        );
+
+        const updated = await service.markItemRead('did:key:user', 'unknown-feedback-time');
+        expect(updated.readAt).toBeInstanceOf(Date);
+        expect(updated.feedback).toEqual({ type: 'thumbs-down', createdAt: null });
+        const [latest] = await service.listLatest('did:key:user');
+        expect(latest).toBeDefined();
+        expect(toLearnCardAssistantCardResponse(latest!).feedback).toEqual({
+            type: 'thumbs-down',
+            createdAt: null,
+        });
     });
 });
