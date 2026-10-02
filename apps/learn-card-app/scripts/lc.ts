@@ -1152,7 +1152,7 @@ const nativeSync = async (tenantId?: string, stageId?: string) => {
     execBlocking(VITE_BUILD_COMMAND, 'Building web app');
 
     // 3. Copy fresh build/ into native projects
-    execBlocking('bunx cap sync', 'Running Capacitor sync');
+    execBlocking('bun run native:sync', 'Running Capacitor sync');
 
     // 4. Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
     execBlocking(
@@ -1200,7 +1200,7 @@ const nativeOpen = async (platform?: Platform, tenantId?: string, stageId?: stri
         execBlocking(VITE_BUILD_COMMAND, 'Building web app');
 
         // 3. Copy fresh build/ into native projects
-        execBlocking('bunx cap sync', 'Running Capacitor sync');
+        execBlocking('bun run native:sync', 'Running Capacitor sync');
 
         // 4. Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
         execBlocking(
@@ -1247,7 +1247,7 @@ const nativeRun = async (tenantId?: string, platform?: Platform) => {
     execBlocking(VITE_BUILD_COMMAND, 'Building web app');
 
     // 3. Copy fresh build/ into native projects
-    execBlocking('bunx cap sync', 'Running Capacitor sync');
+    execBlocking('bun run native:sync', 'Running Capacitor sync');
 
     // 4. Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
     execBlocking(
@@ -1300,7 +1300,7 @@ const nativeDev = async (tenantId?: string, platform?: Platform) => {
     patchCapConfigSource(serverUrl);
 
     // Step 2: Cap sync (reads from the patched TS source → generates platform JSONs with server.url)
-    execBlocking('bunx cap sync', 'Step 2/6 — Capacitor sync (with live-reload URL)');
+    execBlocking('bun run native:sync', 'Step 2/6 — Capacitor sync (with live-reload URL)');
 
     // Step 3: Restore the original capacitor.config.ts so git stays clean
     log.info('');
@@ -1456,7 +1456,7 @@ const nativeBuild = async (tenantId?: string, platform?: Platform, lane?: Fastla
     execBlocking(VITE_BUILD_COMMAND, 'Building web app');
 
     // Step 3: Cap sync (copies fresh build/ into native projects)
-    execBlocking('bunx cap sync', 'Running Capacitor sync');
+    execBlocking('bun run native:sync', 'Running Capacitor sync');
 
     // Step 4: Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
     execBlocking(
