@@ -21,9 +21,20 @@ const state = vi.hoisted(() => ({
         updatedAt: '2026-10-02T00:00:00.000Z',
         description: 'Get career support',
         reasonForAccessing: 'To provide career services',
-        owner: { did: 'did:key:partner', profileId: 'partner', displayName: 'Partner Org' },
+        owner: {
+            did: 'did:key:partner',
+            profileId: 'partner',
+            displayName: 'Partner Org',
+            shortBio: '',
+            bio: '',
+        },
         recipients: [
-            { did: 'did:key:referrer', profileId: 'referrer', displayName: 'Referrer Org' },
+            {
+                did: 'did:key:referrer',
+                profileId: 'referrer',
+                displayName: 'Referrer Org',
+                shortBio: '',
+            },
         ],
         contract: {
             read: {
