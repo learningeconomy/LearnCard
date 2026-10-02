@@ -9,7 +9,7 @@ import { useGetCredentialList } from 'learn-card-base';
 
 import { AiFeatureGate } from '../ai-feature-gate/AiFeatureGate';
 import AiSessionsPage from '../../pages/ai-sessions/AiSessionsPage';
-import NewAiSessionContainer from '../new-ai-session/NewAiSessionContainer';
+import NewAiSessionContainer from '../new-ai-session/LazyNewAiSessionContainer';
 
 import { NewAiSessionStepEnum } from '../new-ai-session/newAiSession.helpers';
 

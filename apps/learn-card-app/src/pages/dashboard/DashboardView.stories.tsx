@@ -2,6 +2,7 @@ import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { MemoryRouter } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { resolvedCredentialQueryKey } from 'learn-card-base/react-query/queries/credentialResolution';
 
 import DashboardView from './DashboardView';
 import { DASHBOARD_PERSONAS, personaCredentials } from './dashboard.personas';
@@ -36,13 +37,13 @@ const FreezeClock: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 // Primes the cache with persona VCs so the wallet-less Storybook env resolves
-// credential rows. Key must match useGetResolvedCredential's ['useGetResolvedCredential', uri].
+// credential rows under the disabled reader’s empty account scope.
 const SeedCredentials: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const queryClient = useQueryClient();
     const seeded = React.useRef(false);
     if (!seeded.current) {
         Object.entries(personaCredentials).forEach(([uri, vc]) => {
-            queryClient.setQueryData(['useGetResolvedCredential', uri], vc);
+            queryClient.setQueryData(resolvedCredentialQueryKey(uri, ''), vc);
         });
         seeded.current = true;
     }

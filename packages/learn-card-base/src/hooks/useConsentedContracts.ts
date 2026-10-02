@@ -1,52 +1,23 @@
-import { useQuery, QueryClient } from '@tanstack/react-query';
-import { switchedProfileStore, useWallet } from 'learn-card-base';
-import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
-import { PaginatedConsentFlowTerms } from '@learncard/types';
+import { useQuery, type QueryClient } from '@tanstack/react-query';
+import { switchedProfileStore, walletStore } from '../stores/walletStore';
+import type { BespokeLearnCard } from '../types/learn-card';
+import { consentedContractsQueryOptions } from '../react-query/queries/consentedContracts';
 
 export const useConsentedContracts = () => {
-    const { initWallet } = useWallet();
+    const wallet = walletStore.use.wallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
-
+    const reader = switchedDid && wallet?.id.did() !== switchedDid ? null : wallet;
     return useQuery({
-        queryKey: ['useConsentedContracts', switchedDid ?? ''],
-        queryFn: async () => {
-            const wallet = await initWallet();
-
-            let result = await wallet.invoke.getConsentedContracts();
-
-            const contracts = [...result.records];
-
-            while (result.hasMore) {
-                result = await wallet.invoke.getConsentedContracts({ cursor: result.cursor });
-
-                contracts.push(...result.records);
-            }
-
-            return contracts;
-        },
+        ...consentedContractsQueryOptions(reader, switchedDid),
+        enabled: Boolean(reader),
     });
 };
 
-// Helper to get consented contracts from cache or fetch manually and cache result
-export const getOrFetchConsentedContracts = async (
+/** Uses the same freshness window and in-flight request as the hook. */
+export const getOrFetchConsentedContracts = (
     queryClient: QueryClient,
     learnCard: BespokeLearnCard
-) => {
-    const queryKey = ['useConsentedContracts', switchedProfileStore.get.switchedDid() ?? ''];
-    return queryClient.fetchQuery<PaginatedConsentFlowTerms['records']>({
-        queryKey,
-        queryFn: async () => {
-            let result = await learnCard.invoke.getConsentedContracts();
-
-            const contracts = [...result.records];
-
-            while (result.hasMore) {
-                result = await learnCard.invoke.getConsentedContracts({ cursor: result.cursor });
-
-                contracts.push(...result.records);
-            }
-
-            return contracts;
-        },
-    });
-};
+) =>
+    queryClient.fetchQuery(
+        consentedContractsQueryOptions(learnCard, switchedProfileStore.get.switchedDid())
+    );

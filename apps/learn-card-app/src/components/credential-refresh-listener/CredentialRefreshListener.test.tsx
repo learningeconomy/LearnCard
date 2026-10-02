@@ -4,6 +4,9 @@ import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
+import { QueryClient } from '@tanstack/react-query';
+import { resolvedCredentialQueryKey } from 'learn-card-base/react-query/queries/credentialResolution';
+
 import type { LCR } from 'learn-card-base/types/credential-records';
 
 /**
@@ -15,6 +18,12 @@ import type { LCR } from 'learn-card-base/types/credential-records';
  * run against the fake wallet, so 24-hour staleness, lazy `refreshService`
  * discovery, and per-record isolation are genuinely exercised.
  */
+
+const queryHost = vi.hoisted(() => ({ client: undefined as unknown }));
+vi.mock('@tanstack/react-query', async importOriginal => ({
+    ...(await importOriginal<typeof import('@tanstack/react-query')>()),
+    useQueryClient: () => queryHost.client,
+}));
 
 const flags = vi.hoisted(() => ({ value: {} as Record<string, unknown> }));
 
@@ -157,6 +166,7 @@ const flushMicrotasks = async () => {
 
 describe('CredentialRefreshListener', () => {
     beforeEach(() => {
+        queryHost.client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
         vi.clearAllMocks();
         resetCredentialRefreshSessionForTests();
 
@@ -292,6 +302,18 @@ describe('CredentialRefreshListener', () => {
 
         expect(refreshedIds).toEqual(expect.arrayContaining(['rec-stale', 'rec-never-checked']));
         expect(refreshedIds).not.toContain('rec-fresh');
+    });
+
+    it('reuses documents already resolved by the current account UI during discovery', async () => {
+        const record = makeRecord({ id: 'cached', uri: 'lc:cloud:cached' });
+        walletHost.indexGet.mockResolvedValue([record]);
+        (queryHost.client as QueryClient).setQueryData(
+            resolvedCredentialQueryKey(record.uri, walletHost.did),
+            makeRefreshableVc()
+        );
+        render(<CredentialRefreshListener />);
+        await waitFor(() => expect(mutationHost.mutateAsync).toHaveBeenCalledTimes(1));
+        expect(walletHost.readGet).not.toHaveBeenCalled();
     });
 
     it('discovers refreshable credentials lazily from records without refresh metadata', async () => {
