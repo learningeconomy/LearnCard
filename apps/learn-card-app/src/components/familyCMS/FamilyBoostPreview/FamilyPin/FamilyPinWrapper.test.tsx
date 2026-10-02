@@ -20,11 +20,8 @@ vi.mock('./ForgotPinConfirmation', () => ({ default: () => null }));
 import FamilyPinWrapper, { FamilyPinViewModeEnum } from './FamilyPinWrapper';
 
 const enterPin = () => {
-    for (const digit of '12345')
-        fireEvent.click(screen.getByRole('button', { name: digit, exact: true }));
-    fireEvent.click(
-        screen.getByRole('button', { name: m['family.pinModal.verifyTitle'](), exact: true })
-    );
+    for (const digit of '12345') fireEvent.click(screen.getByRole('button', { name: digit }));
+    fireEvent.click(screen.getByRole('button', { name: m['family.pinModal.verifyTitle']() }));
 };
 const mount = (handleOnSubmit: () => Promise<void>) =>
     render(
@@ -61,7 +58,7 @@ describe('verified family PIN action completion', () => {
         expect(screen.queryByText(m['family.pinModal.invalidPin']())).toBeNull();
         expect(
             screen
-                .getByRole('button', { name: m['family.pinModal.verifyTitle'](), exact: true })
+                .getByRole('button', { name: m['family.pinModal.verifyTitle']() })
                 .hasAttribute('disabled')
         ).toBe(false);
     });
