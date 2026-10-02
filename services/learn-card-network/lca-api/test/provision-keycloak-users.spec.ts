@@ -229,7 +229,12 @@ describe('provisioning social providers', (): void => {
 });
 
 describe('provisioning resume', (): void => {
-    it('uses an exclusive ObjectId cursor and cheaply skips mapped records', async (): Promise<void> => {
+    const skippedRow = {
+        contactMethod: { type: 'phone', value: '+15555550100' },
+        authProviders: [{ type: 'firebase', id: 'firebase-id' }],
+    };
+
+    it('uses an exclusive ObjectId cursor', async (): Promise<void> => {
         const ids = [1, 2, 3].map(value => new ObjectId(value.toString().padStart(24, '0')));
         const output = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
         const sort = vi.fn();
@@ -237,8 +242,7 @@ describe('provisioning resume', (): void => {
             const rows = ids.filter(id => id.toHexString() > filter._id.$gt.toHexString());
             sort.mockReturnValue({
                 async *[Symbol.asyncIterator]() {
-                    for (const _id of rows)
-                        yield { _id, authProviders: [{ type: 'keycloak', id: 'mapped' }] };
+                    for (const _id of rows) yield { _id, ...skippedRow };
                 },
             });
             return { sort };
@@ -263,7 +267,7 @@ describe('provisioning resume', (): void => {
         mocks.find.mockReturnValue({
             sort: () => ({
                 async *[Symbol.asyncIterator]() {
-                    yield { _id: id, authProviders: [{ type: 'keycloak', id: 'mapped' }] };
+                    yield { _id: id, ...skippedRow };
                     throw new Error('connection lost');
                 },
             }),

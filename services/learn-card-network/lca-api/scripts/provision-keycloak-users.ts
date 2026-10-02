@@ -150,13 +150,6 @@ export const provisionKeycloakUsers = async (
                     let failed = false;
                     try {
                         summary.processed++;
-                        if (
-                            !linkProviders &&
-                            key.authProviders.some(provider => provider.type === 'keycloak')
-                        ) {
-                            summary.skipped++;
-                            continue;
-                        }
                         if (key.contactMethod.type !== 'email') {
                             summary.skipped++;
                             log('[phone-only]\tSKIP: phone OTP deferred');
@@ -363,7 +356,7 @@ export const provisionKeycloakUsers = async (
         );
         return summary;
     } finally {
-        log(`Summary (counts so far if interrupted): ${JSON.stringify(summary)}`);
+        log(`Summary: ${JSON.stringify(summary)}`);
         log(
             `Last processed id: ${lastProcessedId ?? '(none)'}${lastProcessedId ? `; resume with --after ${lastProcessedId}` : ''}`
         );
