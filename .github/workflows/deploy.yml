@@ -748,6 +748,9 @@ jobs:
                   ESCROW_ENCLAVE_REMOTE_URL: ${{ vars.ESCROW_ENCLAVE_REMOTE_URL }}
                   ESCROW_ENCLAVE_REMOTE_TOKEN: ${{ secrets.ESCROW_ENCLAVE_REMOTE_TOKEN }}
                   ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS: ${{ vars.ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS }}
+                  # PrivateLink to the escrow enclave account; empty = no endpoint/zone resources.
+                  ESCROW_ENCLAVE_ENDPOINT_SERVICE_NAME: ${{ vars.ESCROW_ENCLAVE_ENDPOINT_SERVICE_NAME }}
+                  ESCROW_ENCLAVE_HOSTNAME: ${{ vars.ESCROW_ENCLAVE_HOSTNAME }}
                   ESCROW_RELEASE_KILL_SWITCH: ${{ vars.ESCROW_RELEASE_KILL_SWITCH }}
                   ESCROW_ENCLAVE_ACTIVE_KEY_ID: ${{ vars.ESCROW_ENCLAVE_ACTIVE_KEY_ID }}
                   ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON: ${{ secrets.ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON }}

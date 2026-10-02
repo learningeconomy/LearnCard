@@ -269,6 +269,13 @@ functions:
             - schedule: rate(1 hour)
 
 resources:
+    # Escrow enclave over PrivateLink: created only when the stage sets
+    # ESCROW_ENCLAVE_ENDPOINT_SERVICE_NAME (the enclave account's endpoint
+    # service). TLS trust for the hostname is pinned in enclaveTrustAnchors.ts.
+    Conditions:
+        EscrowEnclavePrivateLink:
+            Fn::Not:
+                - Fn::Equals: ['${env:ESCROW_ENCLAVE_ENDPOINT_SERVICE_NAME, ""}', '']
     Outputs:
         SigningAuthoritySeedKeyArn:
             Value:
@@ -379,6 +386,67 @@ resources:
             Type: AWS::EC2::VPC
             Properties:
                 CidrBlock: '10.0.0.0/16'
+                # A private hosted zone needs DNS hostnames; left at the default elsewhere.
+                EnableDnsHostnames:
+                    Fn::If: [EscrowEnclavePrivateLink, true, Ref: AWS::NoValue]
+        EscrowEnclaveEndpointSecurityGroup:
+            Type: AWS::EC2::SecurityGroup
+            Condition: EscrowEnclavePrivateLink
+            Properties:
+                GroupDescription: Escrow enclave PrivateLink endpoint, 8443 from lca-api only
+                VpcId:
+                    Ref: VPC
+                SecurityGroupIngress:
+                    - IpProtocol: tcp
+                      FromPort: 8443
+                      ToPort: 8443
+                      SourceSecurityGroupId:
+                          Ref: ServerlessSecurityGroup
+        EscrowEnclaveEndpoint:
+            Type: AWS::EC2::VPCEndpoint
+            Condition: EscrowEnclavePrivateLink
+            Properties:
+                VpcEndpointType: Interface
+                ServiceName: ${env:ESCROW_ENCLAVE_ENDPOINT_SERVICE_NAME, ''}
+                VpcId:
+                    Ref: VPC
+                SubnetIds:
+                    - Ref: PrivateSubnetA
+                SecurityGroupIds:
+                    - Ref: EscrowEnclaveEndpointSecurityGroup
+                PrivateDnsEnabled: false
+        EscrowEnclaveHostedZone:
+            Type: AWS::Route53::HostedZone
+            Condition: EscrowEnclavePrivateLink
+            Properties:
+                Name: ${env:ESCROW_ENCLAVE_HOSTNAME, ''}
+                VPCs:
+                    - VPCId:
+                          Ref: VPC
+                      VPCRegion: ${self:provider.region}
+        EscrowEnclaveDnsRecord:
+            Type: AWS::Route53::RecordSet
+            Condition: EscrowEnclavePrivateLink
+            Properties:
+                HostedZoneId:
+                    Ref: EscrowEnclaveHostedZone
+                Name: ${env:ESCROW_ENCLAVE_HOSTNAME, ''}
+                Type: A
+                # DnsEntries[0] is "<hosted zone id>:<regional endpoint DNS name>".
+                AliasTarget:
+                    HostedZoneId:
+                        Fn::Select:
+                            - 0
+                            - Fn::Split:
+                                  - ':'
+                                  - Fn::Select: [0, Fn::GetAtt: [EscrowEnclaveEndpoint, DnsEntries]]
+                    DNSName:
+                        Fn::Select:
+                            - 1
+                            - Fn::Split:
+                                  - ':'
+                                  - Fn::Select: [0, Fn::GetAtt: [EscrowEnclaveEndpoint, DnsEntries]]
+                    EvaluateTargetHealth: false
         IP:
             Type: AWS::EC2::EIP
             Properties:
