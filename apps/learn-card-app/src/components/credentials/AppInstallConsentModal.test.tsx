@@ -15,7 +15,10 @@ const state = vi.hoisted(() => ({
 vi.mock('learn-card-base', async () => ({
     ...(await import('learn-card-base/helpers/consentErrors')),
     useWallet: () => ({
-        initWallet: async () => ({ invoke: { getContract: state.fetchContract } }),
+        initWallet: async () => ({
+            invoke: { getContract: state.fetchContract },
+            id: { did: () => 'did:example:learner' },
+        }),
     }),
     useCurrentUser: () => state.user,
     useConsentToContract: () => ({ mutateAsync: state.consent }),
@@ -97,4 +100,33 @@ it('preserves installation for an explicit existing consent', async () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'Install' }));
     await waitFor(() => expect(state.accept).toHaveBeenCalledOnce());
+});
+
+it('keeps installation blocked through a conflict and failed refresh, then recovers after fresh consent', async () => {
+    const initial = { uri: 'lc:synthetic', owner: { did: 'did:example:owner' }, contract: {} };
+    state.fetchContract.mockResolvedValueOnce(initial).mockRejectedValue(new Error('Network'));
+    state.consent.mockRejectedValueOnce(
+        Object.assign(new Error('Audience changed'), {
+            data: { code: 'CONFLICT', httpStatus: 409 },
+        })
+    );
+    show();
+    const install = await screen.findByRole('button', { name: 'Install' });
+    await waitFor(() => expect(install).toBeEnabled());
+    fireEvent.click(install);
+    await screen.findByRole('alert');
+    await waitFor(() => expect(state.toast).toHaveBeenCalledOnce());
+    fireEvent.click(install);
+    await waitFor(() => expect(state.fetchContract).toHaveBeenCalledTimes(3));
+    expect(state.accept).not.toHaveBeenCalled();
+    expect(state.enqueue).not.toHaveBeenCalled();
+    expect(state.consent).toHaveBeenCalledOnce();
+    state.fetchContract.mockResolvedValue(initial);
+    fireEvent.click(screen.getByRole('button', { name: 'Try Again' }));
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+    state.consent.mockResolvedValue({ termsUri: 'lc:terms' });
+    fireEvent.click(install);
+    await waitFor(() => expect(state.accept).toHaveBeenCalledOnce());
+    expect(state.consent).toHaveBeenCalledTimes(2);
+    expect(state.enqueue).toHaveBeenCalledOnce();
 });

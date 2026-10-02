@@ -200,6 +200,15 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
     const doInstall = async (beforeSubmit?: () => Promise<void>) => {
         const installStartedAt = Date.now();
 
+        // A linked contract must load successfully before installation can proceed.
+        if (contractUri && (!contractDetails || !terms)) {
+            presentToast(m['appInstall.installFailed'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+            await refetchContract();
+            return;
+        }
         // If there's a contract, consent to it first
         if (contractUri && contractDetails && terms) {
             setIsConsenting(true);
@@ -477,6 +486,20 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                                     <span className="text-sm text-grayscale-500">
                                         {m['appInstall.loadingDataPermissions']()}
                                     </span>
+                                </div>
+                            ) : !contractDetails ? (
+                                <div
+                                    role="alert"
+                                    className="p-3 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-700"
+                                >
+                                    {m['appInstall.installFailed']()}
+                                    <button
+                                        disabled={isConsenting}
+                                        className="px-4 py-3 rounded-[20px] border border-grayscale-300 text-grayscale-700"
+                                        onClick={() => void refetchContract()}
+                                    >
+                                        {m['common.tryAgain']()}
+                                    </button>
                                 </div>
                             ) : contractDetails ? (
                                 <div className="space-y-3">

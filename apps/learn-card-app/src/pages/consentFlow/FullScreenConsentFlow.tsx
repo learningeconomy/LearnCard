@@ -129,20 +129,20 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
         },
     });
 
-    const { mutateAsync: consentToContract, isPending: consentingToContract } =
-        useConsentToContract(
-            contractDetails?.uri ?? '',
-            contractDetails?.owner?.did ?? '',
-            recipientToken as string // For SmartResume only
-        );
+    const {
+        mutateAsync: consentToContract,
+        isPending: consentingToContract,
+        publicationRetryAvailable,
+        retrySmartResumePublication,
+    } = useConsentToContract(
+        contractDetails?.uri ?? '',
+        contractDetails?.owner?.did ?? '',
+        recipientToken as string // For SmartResume only
+    );
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
 
-    const handleAccept = async (
-        terms: ConsentFlowTerms,
-        shareDuration: {
-            oneTimeShare: boolean;
-            customDuration: string;
-        }
+    const handleSubmit = async (
+        submit: (beforeSubmit: () => Promise<void>) => ReturnType<typeof consentToContract>
     ) => {
         const { prompted } = await gate();
         if (prompted) return;
@@ -156,11 +156,8 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
             await guardedAction(async () => {
                 setStep(ConsentFlowStep.connecting);
 
-                const { redirectUrl } = await consentToContract({
-                    terms,
-                    expiresAt: shareDuration.customDuration,
-                    oneTime: shareDuration.oneTimeShare,
-                    beforeSubmit: () => guardedAction(() => {}),
+                const { redirectUrl } = await submit(async () => {
+                    await guardedAction(() => {});
                 });
 
                 // Sync any auto-boost credentials (if any). No need to wait.
@@ -284,6 +281,19 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
         }
     };
 
+    const handleAccept = (
+        terms: ConsentFlowTerms,
+        shareDuration: { oneTimeShare: boolean; customDuration: string }
+    ) =>
+        handleSubmit(beforeSubmit =>
+            consentToContract({
+                terms,
+                expiresAt: shareDuration.customDuration,
+                oneTime: shareDuration.oneTimeShare,
+                beforeSubmit,
+            })
+        );
+
     const handleNextStep = async () => {
         if (step === ConsentFlowStep.getAnAdult) {
             try {
@@ -341,6 +351,32 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
             />
         ),
     };
+
+    if (publicationRetryAvailable && step === ConsentFlowStep.confirmation) {
+        return (
+            <div
+                role="alert"
+                className="font-poppins p-6 bg-white rounded-[20px] space-y-4 text-grayscale-900"
+            >
+                <p className="text-sm text-grayscale-600 leading-relaxed">
+                    {m['consentFlow.retryPublication']()}
+                </p>
+                <button
+                    className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm disabled:opacity-40"
+                    disabled={consentingToContract}
+                    onClick={() => void handleSubmit(retrySmartResumePublication)}
+                >
+                    {m['common.tryAgain']()}
+                </button>
+                <button
+                    className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm"
+                    onClick={closeModal}
+                >
+                    {m['common.cancel']()}
+                </button>
+            </div>
+        );
+    }
 
     // If this is an inline insights request, render the confirmation page
     // in a minimal view
