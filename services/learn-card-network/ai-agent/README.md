@@ -276,8 +276,9 @@ temporary database.
 Production retains its environment approval; no separate action dispatch is required.
 See [RUNBOOK.md](./RUNBOOK.md) for CI, release metadata, environment setup, and controlled rollout.
 
-Trigger tasks explicitly use **Node.js 24.18.0** (`runtime: 'node-24'`), while the ECS HTTP
-service and repository dependency installation use **Bun 1.4.2**. ECS builds the
+Local and CI AI Agent commands pin **Node.js 24.18.0**. Trigger tasks select the stable
+**Node.js 24** major (`runtime: 'node-24'`); the hosted platform selects its minor version.
+The ECS HTTP service and repository dependency installation use **Bun 1.4.2**. ECS builds the
 service's own Dockerfile and uses Fargate `awsvpc` networking, without an
 `extra_hosts`/`host-gateway` override. Local Compose instead uses
 `Dockerfile.monorepo`: dependencies install on 1.4.2, but its final `source`
@@ -286,9 +287,9 @@ Agent startup runs `dev`, not `bun install`.
 Trigger SDK/build/CLI are pinned to 4.5.7, the first release with stable Node 24 support; see the
 [release notes](https://trigger.dev/changelog/v4-5-7) and
 [platform runtime versions](https://trigger.dev/docs/config/config-file#nodejs-versions).
-The service-local `.nvmrc`, package engines, and AI Agent PR/validation/deployment jobs agree
-with the Trigger runtime; unrelated monorepo Node pins are unchanged. Use the service's
-Node pin for local Trigger commands and native-package readiness checks.
+The service-local `.nvmrc`, package engines, and AI Agent PR/validation/deployment jobs
+use the service's Node pin; unrelated monorepo Node pins are unchanged. Use the
+service pin for local Trigger commands and native-package readiness checks.
 
 A live Bun task run failed in `@learncard/init` while loading DidKit, so the native
 `@learncard/didkit-plugin-node` package remains externalized from the Trigger bundle.
