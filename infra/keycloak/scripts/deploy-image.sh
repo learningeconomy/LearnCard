@@ -77,12 +77,9 @@ download_optional() {
         printf 'Unexpected metadata listing; refusing deployment.\n' >&2; exit 1
     fi
 }
-download_optional "$prefix/deployment.json" "$work/deployment.json"
-if [[ -f "$work/deployment.json" ]]; then
-    jq -e '.status == "complete"' "$work/deployment.json" >/dev/null || {
-        printf 'Prior deployment incomplete; operator reconciliation required.\n' >&2; exit 1;
-    }
-fi
+# Includes production promotions (RELEASE_SHA comes from the immutable image).
+# Must precede plans, snapshots, journal writes and all service/realm mutations.
+bash "$scripts/check-release-order.sh"
 download_optional "$prefix/metadata.json" "$work/prev.json"
 bash "$scripts/terraform-plan.sh" service
 # Mirror every non-secret ECS environment option from the actual candidate plan.
