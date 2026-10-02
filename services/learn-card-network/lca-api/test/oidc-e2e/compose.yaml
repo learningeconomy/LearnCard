@@ -1,0 +1,24 @@
+# Exclusive, disposable stack owned by run.mjs. Never mounts developer data.
+services:
+    mongo:
+        image: mongo:7.0
+        ports: ['127.0.0.1::27017']
+        tmpfs: ['/data/db', '/data/configdb']
+    redis:
+        image: redis:7.4-alpine
+        command: ['redis-server', '--save', '', '--appendonly', 'no']
+        ports: ['127.0.0.1::6379']
+        tmpfs: ['/data']
+    keycloak:
+        image: quay.io/keycloak/keycloak:26.7.4
+        command: start-dev --import-realm
+        environment:
+            KC_BOOTSTRAP_ADMIN_USERNAME: admin
+            KC_BOOTSTRAP_ADMIN_PASSWORD: ${OIDC_E2E_ADMIN_PASSWORD:-unused-during-cleanup}
+            KC_HOSTNAME: http://localhost:${OIDC_E2E_KEYCLOAK_PORT:-18081}
+            KC_HTTP_ENABLED: 'true'
+        ports: ['127.0.0.1:${OIDC_E2E_KEYCLOAK_PORT:-18081}:8080']
+        extra_hosts: ['host.docker.internal:host-gateway']
+        tmpfs: ['/opt/keycloak/data:uid=1000,gid=0']
+        volumes:
+            - ${OIDC_E2E_REALM_FILE:-/dev/null}:/opt/keycloak/data/import/learncard-oidc-e2e-realm.json:ro
