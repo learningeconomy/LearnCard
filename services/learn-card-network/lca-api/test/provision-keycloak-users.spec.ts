@@ -102,6 +102,25 @@ const setupUser = (
 };
 
 describe('provisioning social providers', (): void => {
+    it.each(['google', 'apple'])(
+        'refuses a conflicting %s link before any Mongo or Keycloak write',
+        async alias => {
+            const dependencies = setupUser(false);
+            mocks.findSubject.mockResolvedValue(null);
+            vi.mocked(dependencies.admin.links).mockResolvedValue([
+                { identityProvider: alias, userId: 'other-subject', userName: 'other' },
+            ]);
+            expect(await provisionKeycloakUsers({ apply: true }, dependencies)).toMatchObject({
+                refused: 1,
+                conflicts: 1,
+                linked: 0,
+                mapped: 0,
+            });
+            expect(dependencies.admin.request).not.toHaveBeenCalled();
+            expect(mocks.createSubject).not.toHaveBeenCalled();
+            expect(mocks.updateOne).not.toHaveBeenCalled();
+        }
+    );
     it.each([
         { disabled: true, emailVerified: true, email: 'person@example.com' },
         { disabled: false, emailVerified: false, email: 'person@example.com' },

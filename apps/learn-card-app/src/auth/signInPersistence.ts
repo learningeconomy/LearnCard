@@ -31,7 +31,10 @@ const applyPersistence = async (adapter: SignInAdapter, sessionOnly: boolean): P
         useSignInPersistence.setState({ isPublicMode: sessionOnly });
     } catch (error) {
         setPublicComputerMode(false);
-        useSignInPersistence.setState({ isPublicMode: false, error: failureMessage });
+        useSignInPersistence.setState({
+            isPublicMode: false,
+            error: adapter.providerType === 'keycloak' ? failureMessage : null,
+        });
         log.warn('Unable to configure sign-in persistence', error);
         throw new Error(failureMessage, { cause: error });
     }
@@ -61,7 +64,7 @@ export const withSignInPersistence = (adapter: SignInAdapter): SignInAdapter => 
         await pendingPersistence;
         const { error } = useSignInPersistence.getState();
         if (error) throw new Error(error);
-        await applyPersistence(adapter, isPublicComputerMode());
+        await applyPersistence(adapter, useSignInPersistence.getState().isPublicMode);
     };
     return {
         ...adapter,

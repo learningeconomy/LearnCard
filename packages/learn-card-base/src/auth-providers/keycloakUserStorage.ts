@@ -7,18 +7,11 @@ export const createKeycloakUserStorage = (
 ): { store: Storage; setSessionPersistence: (sessionOnly: boolean) => Promise<void> } => {
     const userKey = `oidc.user:${authority}:${clientId}`;
     const modeKey = `learncard.keycloak.persistence:${authority}:${clientId}`;
-    const revisionKey = `${modeKey}:revision`;
-    const isSession = (): boolean => local.getItem(modeKey) === 'session';
-    const active = (): Storage => {
-        const revision = local.getItem(revisionKey);
-        if (session.getItem(revisionKey) !== revision) {
-            // A different tab changed modes: never reuse this tab's pre-switch tokens.
-            session.removeItem(userKey);
-            if (revision === null) session.removeItem(revisionKey);
-            else session.setItem(revisionKey, revision);
-        }
-        return isSession() ? session : local;
-    };
+    // Pin the choice to this tab, including across redirects and reloads.
+    let sessionOnly = (session.getItem(modeKey) ?? local.getItem(modeKey)) === 'session';
+    session.setItem(modeKey, sessionOnly ? 'session' : 'local');
+    const isSession = (): boolean => sessionOnly;
+    const active = (): Storage => (isSession() ? session : local);
     const inactive = (): Storage => (isSession() ? local : session);
 
     // Never resurrect a user from the wrong store, especially after a tab has closed.
@@ -26,8 +19,7 @@ export const createKeycloakUserStorage = (
     inactive().removeItem(userKey);
 
     return {
-        // Resolve the preference on every access so older instances cannot write local tokens
-        // after another tab/instance enables Shared Computer mode.
+        // Another tab's preference must never move this session's tokens.
         store: {
             get length(): number {
                 return active().length;
@@ -38,19 +30,18 @@ export const createKeycloakUserStorage = (
             removeItem: (key: string): void => active().removeItem(key),
             clear: (): void => active().clear(),
         },
-        setSessionPersistence: async (sessionOnly: boolean): Promise<void> => {
+        setSessionPersistence: async (nextSessionOnly: boolean): Promise<void> => {
             const source = active();
-            const target = sessionOnly ? session : local;
+            const target = nextSessionOnly ? session : local;
             if (source !== target) {
                 const user = source.getItem(userKey);
                 if (user === null) target.removeItem(userKey);
                 else target.setItem(userKey, user);
-                const revision = crypto.randomUUID();
-                local.setItem(revisionKey, revision);
-                session.setItem(revisionKey, revision);
             }
             // All browser storage operations are synchronous: SDK writes cannot interleave.
-            local.setItem(modeKey, sessionOnly ? 'session' : 'local');
+            session.setItem(modeKey, nextSessionOnly ? 'session' : 'local');
+            local.setItem(modeKey, nextSessionOnly ? 'session' : 'local');
+            sessionOnly = nextSessionOnly;
             inactive().removeItem(userKey);
         },
     };

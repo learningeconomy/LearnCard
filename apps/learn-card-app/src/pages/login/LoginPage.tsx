@@ -628,14 +628,18 @@ export const LoginContent: React.FC = () => {
                     </IonRow>
 
                     <div className="w-full max-w-[500px] px-4">
-                        <SignInPersistenceError />
+                        {adapter.providerType === 'keycloak' && <SignInPersistenceError />}
                     </div>
                     {isWeb && configCapabilities.localKeyPersistence && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center mt-3">
                             <button
                                 role="switch"
                                 aria-checked={isPublicMode}
-                                disabled={isUpdatingPersistence || Boolean(persistenceError)}
+                                disabled={
+                                    isUpdatingPersistence ||
+                                    (adapter.providerType === 'keycloak' &&
+                                        Boolean(persistenceError))
+                                }
                                 onClick={() => changeSignInPersistence(adapter, !isPublicMode)}
                                 className="flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-200 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
