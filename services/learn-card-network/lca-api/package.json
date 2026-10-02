@@ -28,7 +28,9 @@
         "dev": "bun --conditions=development --watch src/docker-entry.ts",
         "start:docker": "bun --conditions=development src/docker-entry.ts",
         "serverless-deploy": "node scripts/check-seed-encryption-infrastructure.mjs && node ../../../scripts/prepare-didkit-native-layer.cjs && serverless deploy",
-        "serverless-deploy-scouts": "serverless deploy --config serverless-scouts.yml"
+        "serverless-deploy-scouts": "serverless deploy --config serverless-scouts.yml",
+        "test:oidc:e2e": "node test/oidc-e2e/run.mjs",
+        "typecheck:oidc:e2e": "tsc --noEmit -p test/oidc-e2e/tsconfig.json"
     },
     "keywords": [],
     "author": "WeLibrary, LLC (www.welibrary.io)",
@@ -50,7 +52,8 @@
         "serverless-http": "3.2.0",
         "serverless-offline": "^14.4.0",
         "serverless-prune-plugin": "^2.1.0",
-        "shx": "^0.3.4"
+        "shx": "^0.3.4",
+        "@playwright/test": "^1.42.0"
     },
     "dependencies": {
         "@aws-sdk/client-kms": "^3.1139.0",

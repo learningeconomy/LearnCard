@@ -24,7 +24,7 @@ export default createVitestConfig(serviceIntegrationPreset, {
         },
         // Fully-mocked unit specs (mock @cache/@models/@environment) run under
         // vitest.config.ts; they must not load the live-Mongo integration setup.
-        exclude: ['test/auth-tickets.spec.ts', 'test/oidc.spec.ts'],
+        exclude: ['test/auth-tickets.spec.ts', 'test/oidc.spec.ts', 'test/oidc-e2e/**'],
         alias: {
             '@mongo': require.resolve(
                 liveBroker ? './test/helpers/live-mongo.ts' : './test/helpers/mock-mongo.ts'
