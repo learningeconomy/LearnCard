@@ -681,6 +681,8 @@ export type LearnCardNetworkPluginMethods = {
             expiresAt?: string;
             oneTime?: boolean;
             audienceVersion?: number;
+            /** Bind acceptance to the pending referral the learner reviewed. */
+            expectedRequestId?: string;
         },
         recipientToken?: string
     ) => Promise<{ termsUri: string; redirectUrl?: string }>;

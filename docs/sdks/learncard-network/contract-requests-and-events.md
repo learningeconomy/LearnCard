@@ -75,7 +75,7 @@ await learner.invoke.denyContractRequest(contractUri);
 await learner.invoke.cancelContractRequest(contractUri, learnerProfileId);
 ```
 
-Acceptance uses `consentToContract` after the user reviews the latest contract, audience and permissions. Include its current `audienceVersion` for recipient-bearing contracts. Encryption must cover the owner and current recipients before sharing credential URIs. See [ConsentFlow](../../core-concepts/consent-and-permissions/consentflow-overview.md).
+Acceptance uses `consentToContract` after the user reviews the latest contract, audience and permissions. For referral acceptance, pass `expectedRequestId` in the consent options. The server checks that this exact request is still pending under the same contract lock as the consent write. A missing, mismatched, denied, or cancelled request returns `CONFLICT` without recording consent or a consent event. New consent and re-consent also reject expired contracts. Omit `expectedRequestId` for independent direct or legacy consent links; cancelling an invitation does not disable a valid direct consent link. Include its current `audienceVersion` for recipient-bearing contracts. Encryption must cover the owner and current recipients before sharing credential URIs. See [ConsentFlow](../../core-concepts/consent-and-permissions/consentflow-overview.md).
 
 ```mermaid
 stateDiagram-v2

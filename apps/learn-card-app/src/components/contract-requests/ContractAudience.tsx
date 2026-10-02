@@ -6,9 +6,10 @@ import * as m from '../../paraglide/messages.js';
 export const ContractAudience: React.FC<{
     contract: ConsentFlowContractDetails;
     testId: string;
-}> = ({ contract, testId }) => {
-    if (!contract.recipients?.length) return null;
-    const profiles = [contract.owner, ...contract.recipients].filter(
+    alwaysShowOwner?: boolean;
+}> = ({ contract, testId, alwaysShowOwner = false }) => {
+    if (!alwaysShowOwner && !contract.recipients?.length) return null;
+    const profiles = [contract.owner, ...(contract.recipients ?? [])].filter(
         (profile, index, all) => all.findIndex(candidate => candidate.did === profile.did) === index
     );
     return (

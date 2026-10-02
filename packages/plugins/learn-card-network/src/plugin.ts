@@ -2415,7 +2415,7 @@ export async function getLearnCardNetworkPlugin(
             consentToContract: async (
                 _learnCard,
                 contractUri,
-                { terms, expiresAt, oneTime, audienceVersion },
+                { terms, expiresAt, oneTime, audienceVersion, expectedRequestId },
                 recipientToken
             ) => {
                 await ensureUser();
@@ -2426,6 +2426,7 @@ export async function getLearnCardNetworkPlugin(
                     expiresAt,
                     oneTime,
                     audienceVersion,
+                    expectedRequestId,
                     recipientToken, // for SmartResume
                 });
             },

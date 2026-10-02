@@ -26,6 +26,7 @@ import { removeRequestedForRelationship } from './delete';
 import {
     lockContractAudience,
     audienceVersionWhere,
+    consentMutationWhere,
     assertAudienceMutation,
     runAudienceMutation,
 } from './recipients';
@@ -43,6 +44,7 @@ export const reconsentTerms = async (
         oneTime,
         guardianApproval,
         audienceVersion,
+        expectedRequestId,
         smartResumeFingerprint,
     }: {
         terms: ConsentFlowTermsType;
@@ -50,6 +52,7 @@ export const reconsentTerms = async (
         oneTime?: boolean;
         guardianApproval?: ConsentFlowGuardianApproval;
         audienceVersion?: number;
+        expectedRequestId?: string;
         smartResumeFingerprint?: string;
     },
     domain: string
@@ -79,6 +82,8 @@ export const reconsentTerms = async (
                 new QueryBuilder(
                     new BindParam({
                         audienceVersion: audienceVersion ?? null,
+                        expectedRequestId: expectedRequestId ?? null,
+                        consenterProfileId: relationship.consenter.profileId,
                         termsMutationVersion: Number(relationship.terms.mutationVersion ?? 0),
                         params: {
                             ...newFlat,
@@ -103,7 +108,7 @@ export const reconsentTerms = async (
                 ),
                 relationship.contract.id
             )
-                .where(audienceVersionWhere)
+                .where(`${audienceVersionWhere} AND ${consentMutationWhere}`)
                 .set('contract.hasConsented = true')
                 .with('contract')
                 .match({

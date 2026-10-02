@@ -7,10 +7,14 @@ import { getClient, getUser } from './helpers/getClient';
 import { testUnsignedBoost, testVc } from './helpers/send';
 import { getHolderExportMetadataForProfile } from '@accesslayer/consentflowcontract/relationships/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
+import { consentToContract as commitConsent } from '@accesslayer/consentflowcontract/relationships/create';
 import { normalContract, normalFullTerms } from './helpers/contract';
 import cache from '@cache';
 import { neogma } from '@instance';
-import { getContractTermsByUri } from '@accesslayer/consentflowcontract/relationships/read';
+import {
+    getContractDetailsByUri,
+    getContractTermsByUri,
+} from '@accesslayer/consentflowcontract/relationships/read';
 import { getStoredContractRequest } from '@accesslayer/consentflowcontract/read';
 import * as contractRead from '@accesslayer/consentflowcontract/read';
 import {
@@ -20,7 +24,7 @@ import {
 import * as notifications from '@helpers/notifications.helpers';
 import { ensureContractEventMaintenance } from '@helpers/contract-event-maintenance.helpers';
 import { deliverQueuedNotification } from '@helpers/notificationQueue.helpers';
-import type { LCNNotification } from '@learncard/types';
+import type { LCNNotification, LCNProfile } from '@learncard/types';
 import { openApiDocument } from '../src/openapi';
 
 const actor = async (role: string) => {
@@ -124,6 +128,8 @@ describe('generic contract requests and correlated events', () => {
             const uri = await create();
             const sender = { owner, writer, recipient }[role];
             await expect(send(uri, sender)).resolves.toBe(true);
+            // Inline delivery has a one-second budget; finish persisted work before asserting it.
+            await flush(uri);
             expect(await status(uri, sender)).toMatchObject({
                 status: 'pending',
                 requestedBy: sender.profileId,
@@ -149,6 +155,130 @@ describe('generic contract requests and correlated events', () => {
         }
     );
 
+    it('accepts only the pending invitation ID supplied by the learner', async () => {
+        const uri = await create();
+        await send(uri);
+        const invitation = (await status(uri))!;
+        const before = (await eventRows(uri)).length;
+        const input = { contractUri: uri, terms: normalFullTerms, audienceVersion: 2 };
+        await expect(
+            learner.clients.fullAuth.contracts.consentToContract({
+                ...input,
+                expectedRequestId: 'different-request',
+            })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+        expect((await eventRows(uri)).length).toBe(before);
+        expect((await status(uri))?.status).toBe('pending');
+        await learner.clients.fullAuth.contracts.consentToContract({
+            ...input,
+            expectedRequestId: invitation.requestId,
+        });
+        expect((await status(uri))?.status).toBe('accepted');
+    });
+    it.each(['cancelled', 'denied'] as const)(
+        'rejects invitation-bound consent after %s without new terms or events',
+        async decision => {
+            const uri = await create();
+            await send(uri);
+            const invitation = (await status(uri))!;
+            if (decision === 'cancelled')
+                await owner.clients.fullAuth.contracts.cancelContractRequest({
+                    contractUri: uri,
+                    targetProfileId: learner.profileId,
+                });
+            else await learner.clients.fullAuth.contracts.denyContractRequest({ contractUri: uri });
+            const before = (await eventRows(uri)).length;
+            await expect(
+                learner.clients.fullAuth.contracts.consentToContract({
+                    contractUri: uri,
+                    terms: normalFullTerms,
+                    audienceVersion: 2,
+                    expectedRequestId: invitation.requestId,
+                })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+            expect((await eventRows(uri)).length).toBe(before);
+            expect((await status(uri))?.status).toBe(decision);
+            const terms = await neogma.queryRunner.run(
+                'MATCH (terms:ConsentFlowTerms)-[:CONSENTS_TO]->(:ConsentFlowContract {id: $id}) RETURN terms',
+                { id: id(uri) }
+            );
+            expect(terms.records).toHaveLength(0);
+            // A separate consent link stays independent of an invitation's terminal decision.
+            await accept(uri);
+            expect((await status(uri))?.status).toBe(decision);
+        }
+    );
+    it('rejects cancellation and expiry even after the route has loaded a valid snapshot', async () => {
+        const uri = await create();
+        await send(uri);
+        const invitation = (await status(uri))!;
+        const details = (await getContractDetailsByUri(uri))!;
+        const profile = {
+            ...(await getProfileByProfileId(learner.profileId))!,
+            did: learner.did,
+        } as LCNProfile;
+        await owner.clients.fullAuth.contracts.cancelContractRequest({
+            contractUri: uri,
+            targetProfileId: learner.profileId,
+        });
+        const before = (await eventRows(uri)).length;
+        await expect(
+            commitConsent(
+                profile,
+                details,
+                {
+                    terms: normalFullTerms,
+                    audienceVersion: 2,
+                    expectedRequestId: invitation.requestId,
+                },
+                'localhost:4000'
+            )
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+        expect((await eventRows(uri)).length).toBe(before);
+        await neogma.queryRunner.run(
+            'MATCH (contract:ConsentFlowContract {id:$id}) SET contract.expiresAt=$past',
+            { id: id(uri), past: '2000-01-01T00:00:00Z' }
+        );
+        await expect(
+            commitConsent(
+                profile,
+                details,
+                { terms: normalFullTerms, audienceVersion: 2 },
+                'localhost:4000'
+            )
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+        expect((await eventRows(uri)).length).toBe(before);
+    });
+    it('preserves legacy contracts with a blank expiry', async () => {
+        const uri = await create([]);
+        await neogma.queryRunner.run(
+            'MATCH (contract:ConsentFlowContract {id:$id}) SET contract.expiresAt=$blank',
+            { id: id(uri), blank: '   ' }
+        );
+        await expect(accept(uri)).resolves.toHaveProperty('termsUri');
+    });
+    it('rejects expired new consent and re-consent inside the write without creating events', async () => {
+        const uri = await create();
+        const expire = () =>
+            neogma.queryRunner.run(
+                'MATCH (contract:ConsentFlowContract {id:$id}) SET contract.expiresAt=$past',
+                { id: id(uri), past: '2000-01-01T00:00:00.000Z' }
+            );
+        await expire();
+        await expect(accept(uri)).rejects.toMatchObject({ code: 'CONFLICT' });
+        expect(await eventRows(uri)).toHaveLength(0);
+        await neogma.queryRunner.run(
+            'MATCH (contract:ConsentFlowContract {id:$id}) REMOVE contract.expiresAt',
+            { id: id(uri) }
+        );
+        const { termsUri } = await accept(uri);
+        await learner.clients.fullAuth.contracts.withdrawConsent({ uri: termsUri });
+        const before = (await eventRows(uri)).length;
+        await expire();
+        await expect(accept(uri)).rejects.toMatchObject({ code: 'CONFLICT' });
+        expect((await eventRows(uri)).length).toBe(before);
+        expect((await getContractTermsByUri(termsUri))?.terms.status).toBe('withdrawn');
+    });
     it('requires verified authentication, scope, target existence and an authorized sender', async () => {
         const uri = await create();
         const input = { contractUri: uri, targetProfileId: learner.profileId };
