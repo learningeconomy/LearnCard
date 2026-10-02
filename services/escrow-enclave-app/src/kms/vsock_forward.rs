@@ -41,11 +41,11 @@ fn bring_up_loopback() -> io::Result<()> {
         for (dst, src) in ifr.ifr_name.iter_mut().zip(b"lo") {
             *dst = *src as libc::c_char;
         }
-        let result = if libc::ioctl(fd, libc::SIOCGIFFLAGS, &mut ifr) < 0 {
+        let result = if libc::ioctl(fd, libc::SIOCGIFFLAGS as libc::Ioctl, &mut ifr) < 0 {
             Err(io::Error::last_os_error())
         } else {
             ifr.ifr_ifru.ifru_flags |= (libc::IFF_UP | libc::IFF_RUNNING) as libc::c_short;
-            if libc::ioctl(fd, libc::SIOCSIFFLAGS, &ifr) < 0 {
+            if libc::ioctl(fd, libc::SIOCSIFFLAGS as libc::Ioctl, &ifr) < 0 {
                 Err(io::Error::last_os_error())
             } else {
                 Ok(())
