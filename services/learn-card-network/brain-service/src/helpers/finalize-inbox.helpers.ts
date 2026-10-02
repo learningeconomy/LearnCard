@@ -3,7 +3,10 @@ import {
     LCNNotificationTypeEnumValidator,
     LCNInboxStatusEnumValidator,
     VC,
+    JWE,
     UnsignedVC,
+    VCValidator,
+    JWEValidator,
 } from '@learncard/types';
 import { ProfileType } from 'types/profile';
 import { getContactMethodsForProfile } from '@accesslayer/contact-method/read';
@@ -21,6 +24,16 @@ import { getLearnCard, getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
 import { handleConnectionPromptsForCredentialClaim } from '@helpers/connectionPrompt.helpers';
 import { decryptInboxCredential } from '@helpers/inbox-encryption.helpers';
+import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
+import { getBitstringStatusListEntries, isEncrypted } from '@learncard/helpers';
+import type { IssuedCredential } from 'types/credential';
+import { getBoostByUri } from '@accesslayer/boost/read';
+import { storeCredential } from '@accesslayer/credential/create';
+import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
+import {
+    createSentCredentialRelationship,
+    createReceivedCredentialRelationship,
+} from '@accesslayer/credential/relationships/create';
 
 export async function finalizeInboxCredentialsForProfile(
     profile: ProfileType,
@@ -30,8 +43,8 @@ export async function finalizeInboxCredentialsForProfile(
     claimed: number;
     errors: number;
     guardianPending: number;
-    verifiableCredentials: VC[];
-    deliveries: { id: string; credential: VC }[];
+    verifiableCredentials: (VC | JWE)[];
+    deliveries: { id: string; credential: VC | JWE }[];
 }> {
     const contactMethods = await getContactMethodsForProfile(profile.did);
     const verifiedContacts = contactMethods.filter(cm => cm.isVerified);
@@ -48,8 +61,8 @@ export async function finalizeInboxCredentialsForProfile(
         lcDid = lc.id.did();
     } catch {}
 
-    const verifiableCredentials: VC[] = [];
-    const deliveries: { id: string; credential: VC }[] = [];
+    const verifiableCredentials: (VC | JWE)[] = [];
+    const deliveries: { id: string; credential: VC | JWE }[] = [];
 
     for (const cm of verifiedContacts) {
         const pending = await getAcceptedPendingInboxCredentialsForContactMethodId(cm.id);
@@ -79,7 +92,8 @@ export async function finalizeInboxCredentialsForProfile(
             }
 
             try {
-                let finalCredential: VC;
+                let finalCredential: VC | JWE;
+                let issued: IssuedCredential | undefined;
                 const credentialPayload = inboxCredential.refreshId
                     ? undefined
                     : await decryptInboxCredential(inboxCredential.credential);
@@ -112,19 +126,7 @@ export async function finalizeInboxCredentialsForProfile(
                     );
                     if (!signingAuthorityForUser) throw new Error('Signing authority not found');
 
-                    // Set subject DID to the authenticated user's DID
-                    if (Array.isArray(unsignedCredential.credentialSubject)) {
-                        unsignedCredential.credentialSubject =
-                            unsignedCredential.credentialSubject.map(sub => ({
-                                ...sub,
-                                id: (sub as any).did || (sub as any).id || profile.did,
-                            }));
-                    } else {
-                        (unsignedCredential.credentialSubject as any).id =
-                            (unsignedCredential as any).credentialSubject?.did ||
-                            (unsignedCredential as any).credentialSubject?.id ||
-                            profile.did;
-                    }
+                    setCredentialSubjectIds(unsignedCredential, profile.did);
 
                     // Set issuer from signing authority
                     unsignedCredential.issuer = signingAuthorityForUser.relationship.did;
@@ -136,32 +138,59 @@ export async function finalizeInboxCredentialsForProfile(
                         ? getAppDidWeb(domain, listingSlug)
                         : undefined;
 
-                    finalCredential = (
-                        await issueCredentialWithSigningAuthority(
-                            { type: 'profile', profile: issuerProfile },
-                            unsignedCredential,
-                            signingAuthorityForUser,
-                            domain,
-                            false,
-                            ownerDidOverride
-                        )
-                    ).credential as VC;
+                    issued = await issueCredentialWithSigningAuthority(
+                        { type: 'profile', profile: issuerProfile },
+                        unsignedCredential,
+                        signingAuthorityForUser,
+                        domain,
+                        undefined,
+                        ownerDidOverride,
+                        undefined,
+                        [issuerProfile.did]
+                    );
+                    finalCredential = issued.credential;
                 } else {
                     finalCredential = JSON.parse(credentialPayload!) as VC;
                 }
 
                 if (!inboxCredential.refreshId) {
-                    // The seeded encryption plugin adds the service DID; use explicit recipients.
-                    const learnCard = await getEmptyLearnCard();
-                    const recoveryCredential = await learnCard.invoke.createDagJwe(
-                        finalCredential,
-                        [profile.did]
-                    );
+                    if (!senderProfile) throw new Error('Issuer profile not found');
+                    if (!issued || !isEncrypted(issued.credential)) {
+                        const signedCredential = VCValidator.parse(finalCredential);
+                        const learnCard = await getEmptyLearnCard();
+                        issued = {
+                            kind: 'issued-credential',
+                            credential: await learnCard.invoke.createDagJwe(signedCredential, [
+                                profile.did,
+                                inboxCredential.issuerDid,
+                            ]),
+                            statusEntries:
+                                issued?.statusEntries ??
+                                getBitstringStatusListEntries(signedCredential),
+                        };
+                    }
                     const finalized = await finalizeAndWipeInboxCredential(inboxCredential.id, {
                         recipientDid: profile.did,
-                        credential: recoveryCredential,
+                        credential: JWEValidator.parse(issued.credential),
                     });
                     if (!finalized) throw new Error('Inbox credential is no longer pending');
+                    finalCredential = issued.credential;
+                    // Finalization already owns claim prompts and notifications. Index
+                    // the accepted delivery without replaying ordinary send/accept effects.
+                    const instance = await storeCredential(issued);
+                    const boost = inboxCredential.boostUri
+                        ? await getBoostByUri(inboxCredential.boostUri)
+                        : undefined;
+                    if (boost) await createBoostInstanceOfRelationship(instance, boost);
+                    await createSentCredentialRelationship(
+                        { type: 'profile', profile: senderProfile },
+                        profile,
+                        instance,
+                        undefined,
+                        inboxCredential.activityId,
+                        inboxCredential.integrationId
+                    );
+                    await createReceivedCredentialRelationship(profile, senderProfile, instance);
                 }
 
                 // Only write a claim audit edge once the record is actually finalized.

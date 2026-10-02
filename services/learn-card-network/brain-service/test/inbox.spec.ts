@@ -8,6 +8,7 @@ import {
     VC,
     VP,
     JWE,
+    JWEValidator,
 } from '@learncard/types';
 import { sendSpy, addNotificationToQueueSpy } from './helpers/spies';
 import * as notifications from '@helpers/notifications.helpers';
@@ -1912,8 +1913,11 @@ describe('Universal Inbox', () => {
             expect(res.claimed).toBe(2);
             expect(res.errors).toBe(0);
             expect(res.verifiableCredentials).toHaveLength(2);
-            // Ensure returned VCs are signed
-            for (const vc of res.verifiableCredentials) {
+            // The HTTP contract is encrypted; only the holder decrypts the signed VCs.
+            for (const encrypted of res.verifiableCredentials) {
+                const vc = await userB.learnCard.invoke.decryptDagJwe<VC>(
+                    JWEValidator.parse(encrypted)
+                );
                 expect(vc.proof).toBeDefined();
             }
 
@@ -2089,12 +2093,13 @@ describe('Universal Inbox', () => {
             const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
             try {
-                await expect(userB.clients.fullAuth.inbox.finalize({})).resolves.toMatchObject({
-                    processed: 1,
-                    claimed: 1,
-                    errors: 0,
-                    verifiableCredentials: [expect.objectContaining({ proof: expect.anything() })],
-                });
+                const result = await userB.clients.fullAuth.inbox.finalize({});
+                expect(result).toMatchObject({ processed: 1, claimed: 1, errors: 0 });
+                expect(
+                    await userB.learnCard.invoke.decryptDagJwe<VC>(
+                        JWEValidator.parse(result.verifiableCredentials[0])
+                    )
+                ).toMatchObject({ proof: expect.anything() });
             } finally {
                 queryRunnerSpy.mockRestore();
                 consoleErrorSpy.mockRestore();

@@ -112,6 +112,19 @@ ConsentFlow is a consent management system where:
     3. The signing authority signs the credential and returns it
     4. The `issueCredentialWithSigningAuthority()` helper handles this flow
 - A common pattern is to get a signing authority with `getSigningAuthorityForUserByName(profile, endpoint, name)`
+- Known-recipient sends use the helper's `encrypt = true` default. Preserve its
+  `IssuedCredential` wrapper through storage so public status-list coordinates remain
+  available without decrypting the credential. Inbox finalization returns encrypted
+  deliveries; the network SDK decrypts them locally before returning VCs to the app.
+- Three interoperable delivery paths intentionally request plaintext (`LC-2201`):
+    - `routes/workflows.ts`: boost claim-link exchanges return a VC inside a presentation
+      to wallets that may not support LearnCard JWE decryption.
+    - `routes/workflows.ts`: inbox claim-link exchanges have the same interoperability requirement.
+    - `routes/boosts.ts`: federated `/send` forwards to another network's inbox endpoint,
+      whose accepted encryption format is outside this server's control.
+- Managed refresh issuance is a separate existing boundary: refresh sends, inbox refresh
+  finalization, and refresh publication inspect the signed VC before encrypting it for
+  storage. LC-2201 does not change those refresh flows.
 
 ### AutoBoosts
 
