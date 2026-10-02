@@ -168,6 +168,7 @@
         "skill-frameworks": "bun run --cwd ../../services/learn-card-network/brain-service skill-frameworks",
         "seed:demo-persona": "bun run --cwd ../../services/learn-card-network/brain-service seed:demo-persona",
         "lc": "bun scripts/lc.ts",
+        "native:sync": "bun scripts/ensure-ios-pod-lock-compatible.ts && bunx cap sync",
         "config-editor": "bun scripts/config-editor.ts",
         "docker-start": "bun scripts/prepare-native-config.ts learncard --stage local && vite --host",
         "docker-start:tenant": "bun scripts/prepare-native-config.ts ${TENANT:-learncard} --stage ${STAGE:-local} ${LOCAL_AIP:+--local-aip} && vite --host",

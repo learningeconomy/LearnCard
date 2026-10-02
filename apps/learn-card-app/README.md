@@ -22,7 +22,7 @@ For now:
 2. copy network address from terminal IE: "http://10.6.17.241:3000"
 3. update the `capacitor.config.ts` file at the root of the project, add the following config field
     - `server: { url: "http://10.6.17.241:3000" }`
-4. `bunx cap sync`
+4. `bun run native:sync`
 5. `bunx cap open ios`
 6. select simulator on XCode + make changes locally, HMR should be enabled
 7. alternatively, you can run `bunx cap run ios` ... select a simulator from the terminal + make changes locally, HMR should be enabled as well
@@ -41,7 +41,7 @@ simulator intentionally uses the unsupported stub.
 
 ### Native smoke-test checklist
 
-After `bun scripts/prepare-native-config.ts <tenant> [--stage <stage>]` and `bunx cap sync`:
+After `bun scripts/prepare-native-config.ts <tenant> [--stage <stage>]` and `bun run native:sync`:
 
 1. Launch on iOS 27 and an iOS 26 simulator/device, background and foreground the app repeatedly,
    and confirm there is no scene-lifecycle runtime assertion.
