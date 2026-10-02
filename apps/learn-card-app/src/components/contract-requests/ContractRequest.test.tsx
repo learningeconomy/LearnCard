@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/re
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ContractRequest, PendingContractRequests } from './ContractRequest';
+import FullScreenConsentFlow from '../../pages/consentFlow/FullScreenConsentFlow';
 import { setLocale } from '../../paraglide/runtime.js';
 
 const state = vi.hoisted(() => ({
@@ -16,6 +17,8 @@ const state = vi.hoisted(() => ({
     contract: {
         uri: 'lc:network:localhost%3A4000/trpc:contract:one',
         name: 'Partner services',
+        createdAt: '2026-10-02T00:00:00.000Z',
+        updatedAt: '2026-10-02T00:00:00.000Z',
         description: 'Get career support',
         reasonForAccessing: 'To provide career services',
         owner: { did: 'did:key:partner', profileId: 'partner', displayName: 'Partner Org' },
@@ -23,7 +26,10 @@ const state = vi.hoisted(() => ({
             { did: 'did:key:referrer', profileId: 'referrer', displayName: 'Referrer Org' },
         ],
         contract: {
-            read: { personal: {}, credentials: { categories: { Achievement: {} } } },
+            read: {
+                personal: {},
+                credentials: { categories: { Achievement: { required: false } } },
+            },
             write: { personal: {}, credentials: { categories: { Achievement: true } } },
         },
         expiresAt: '',
@@ -35,6 +41,8 @@ const state = vi.hoisted(() => ({
     deny: vi.fn(),
     modal: vi.fn(),
     close: vi.fn(),
+    closeToken: vi.fn(),
+    beforeSubmit: undefined as undefined | (() => Promise<void>),
     toast: vi.fn(),
     confirm: vi.fn(),
     flags: true,
@@ -60,7 +68,11 @@ vi.mock('learn-card-base', () => ({
         )[key],
     useWallet: () => ({ initWallet }),
     useGetCurrentLCNUser: () => ({ currentLCNUser: { profileId: 'learner' } }),
-    useModal: () => ({ newModal: state.modal, closeModal: state.close }),
+    useModal: () => ({
+        newModalWithToken: state.modal,
+        closeModal: state.close,
+        forceCloseModalByToken: state.closeToken,
+    }),
     ModalTypes: { Right: 'right', FullScreen: 'fullscreen' },
     useGetProfile: () => ({
         data: state.referrerLoaded ? { displayName: 'Referrer Org' } : undefined,
@@ -79,16 +91,26 @@ vi.mock('launchdarkly-react-client-sdk', () => ({
     useFlags: () => ({ enableContractRequests: state.flags }),
 }));
 vi.mock('learn-card-base/config/TenantConfigProvider', () => ({ useBrandingConfig: () => ({}) }));
-vi.mock('../../pages/consentFlow/FullScreenConsentFlow', () => ({ default: () => null }));
+vi.mock('../../pages/consentFlow/FullScreenConsentFlow', () => ({
+    default: (props: { beforeSubmit?: () => Promise<void> }) => {
+        state.beforeSubmit = props.beforeSubmit;
+        return <div data-testid="consent-review">Consent review</div>;
+    },
+}));
 vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
-const show = (element = <ContractRequest contractUri={state.contract.uri} requestId="req-1" />) =>
-    render(
-        <QueryClientProvider
-            client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}
-        >
-            {element}
-        </QueryClientProvider>
-    );
+const show = (element = <ContractRequest contractUri={state.contract.uri} requestId="req-1" />) => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+    const view = render(<QueryClientProvider client={client}>{element}</QueryClientProvider>);
+    return {
+        ...view,
+        update: () =>
+            view.rerender(
+                <QueryClientProvider client={client}>
+                    {React.cloneElement(element)}
+                </QueryClientProvider>
+            ),
+    };
+};
 beforeEach(() => {
     vi.clearAllMocks();
     setLocale('en');
@@ -100,6 +122,8 @@ beforeEach(() => {
     state.referrerLoaded = true;
     state.flags = true;
     state.list = [];
+    state.beforeSubmit = undefined;
+    state.modal.mockImplementation(() => ({ id: state.modal.mock.calls.length, generation: 0 }));
     state.getStatus.mockImplementation(async () => ({ ...state.status }));
     state.getContract.mockImplementation(async () => structuredClone(state.contract));
     state.seen.mockResolvedValue(true);
@@ -118,13 +142,111 @@ describe('referral actions', () => {
         show();
         fireEvent.click(await screen.findByText('Accept & Connect'));
         await waitFor(() => expect(state.modal).toHaveBeenCalled());
-        const flow = state.modal.mock.calls[0][0];
+        const flow = state.modal.mock.calls[0][0].props.children;
         expect(flow.props.contractDetails.owner.displayName).toBe('Partner Org');
         expect(flow.props.disableRedirect).toBe(true);
         expect(flow.props.expectedRequestId).toBe('req-1');
         expect(state.getContract).toHaveBeenCalledTimes(2);
         state.status.status = 'cancelled';
         await expect(flow.props.beforeSubmit()).rejects.toThrow('no longer pending');
+    });
+    it.each(['flags', 'tenant'] as const)(
+        'closes only saved referral details when %s is disabled, after the card unmounts',
+        async gate => {
+            vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+            const card = show();
+            fireEvent.click(await screen.findByText('View Details'));
+            const saved = state.modal.mock.calls[0][0];
+            const token = state.modal.mock.results[0].value;
+            card.unmount();
+            const details = show(saved);
+            await screen.findByText('Decline');
+            const reads = state.getStatus.mock.calls.length;
+            state[gate] = false;
+            details.update();
+            await waitFor(() => expect(state.closeToken).toHaveBeenCalledExactlyOnceWith(token));
+            expect(screen.queryByTestId('contract-request-details')).toBeNull();
+            await vi.advanceTimersByTimeAsync(90_000);
+            expect(state.getStatus).toHaveBeenCalledTimes(reads);
+            expect(state.deny).not.toHaveBeenCalled();
+            expect(state.close).not.toHaveBeenCalled();
+        }
+    );
+    it('aborts a decline when the gate changes while confirmation is open', async () => {
+        let confirm!: (value: boolean) => void;
+        state.confirm.mockImplementation(
+            () =>
+                new Promise(resolve => {
+                    confirm = resolve;
+                })
+        );
+        const view = show(
+            <ContractRequest contractUri={state.contract.uri} requestId="req-1" details />
+        );
+        fireEvent.click(await screen.findByText('Decline'));
+        await waitFor(() => expect(state.confirm).toHaveBeenCalled());
+        state.flags = false;
+        view.update();
+        confirm(true);
+        await waitFor(() => expect(screen.queryByText('Decline')).toBeNull());
+        expect(state.deny).not.toHaveBeenCalled();
+    });
+    it('does not open consent when the gate changes during the fresh request read', async () => {
+        const card = show();
+        await screen.findByText('Accept & Connect');
+        let finish!: (value: unknown) => void;
+        state.getStatus.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    finish = resolve;
+                })
+        );
+        fireEvent.click(screen.getByText('Accept & Connect'));
+        await waitFor(() => expect(finish).toBeDefined());
+        state.flags = false;
+        card.update();
+        finish({ ...state.status });
+        await waitFor(() => expect(state.getContract).toHaveBeenCalledTimes(2));
+        expect(state.modal).not.toHaveBeenCalled();
+    });
+    it('guards a saved consent review independently of its card and aborts a gate change during final revalidation', async () => {
+        const card = show();
+        fireEvent.click(await screen.findByText('Accept & Connect'));
+        await waitFor(() => expect(state.modal).toHaveBeenCalled());
+        const saved = state.modal.mock.calls[0][0];
+        const token = state.modal.mock.results[0].value;
+        card.unmount();
+        const review = show(saved);
+        await screen.findByTestId('consent-review');
+        const submit = state.beforeSubmit!;
+        // The card has gone away; the saved review still permits a valid submission.
+        await expect(submit()).resolves.toBeUndefined();
+        let finish!: (value: unknown) => void;
+        state.getStatus.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    finish = resolve;
+                })
+        );
+        const submitting = expect(submit()).rejects.toThrow('Referrals are disabled');
+        await waitFor(() => expect(finish).toBeDefined());
+        state.flags = false;
+        review.update();
+        finish({ ...state.status });
+        await submitting;
+        expect(screen.queryByTestId('consent-review')).toBeNull();
+        expect(state.closeToken).toHaveBeenCalledExactlyOnceWith(token);
+        await expect(submit()).rejects.toThrow('Referrals are disabled');
+    });
+    it('does not fetch or offer actions when disabled, and leaves ordinary consent screens available', () => {
+        state.flags = false;
+        const card = show();
+        expect(screen.queryByTestId('contract-request-card')).toBeNull();
+        expect(state.getStatus).not.toHaveBeenCalled();
+        card.unmount();
+        show(<FullScreenConsentFlow contractDetails={state.contract} />);
+        expect(screen.getByTestId('consent-review')).toBeVisible();
+        expect(state.closeToken).not.toHaveBeenCalled();
     });
     it('uses the referrer profile ID when its display profile cannot be loaded', async () => {
         state.referrerLoaded = false;
@@ -288,7 +410,9 @@ describe('referral actions', () => {
         show();
         fireEvent.click(await screen.findByText('Accept & Connect'));
         await waitFor(() => expect(state.modal).toHaveBeenCalled());
-        expect(state.modal.mock.calls[0][0].props.contractDetails.needsGuardianConsent).toBe(true);
+        expect(
+            state.modal.mock.calls[0][0].props.children.props.contractDetails.needsGuardianConsent
+        ).toBe(true);
     });
     it('recovers only generic pending invitations independently of archived alerts', () => {
         state.list = [
@@ -298,7 +422,7 @@ describe('referral actions', () => {
         ];
         show(<PendingContractRequests />);
         fireEvent.click(screen.getByText('Partner services'));
-        expect(state.modal.mock.calls[0][0].props.requestId).toBe('req-1');
+        expect(state.modal.mock.calls[0][0].props.children.props.requestId).toBe('req-1');
     });
     it.each([
         [false, true],
