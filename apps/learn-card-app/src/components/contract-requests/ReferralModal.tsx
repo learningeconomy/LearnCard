@@ -65,6 +65,11 @@ export const ReferralConsentReview: React.FC<
     return (
         <FullScreenConsentFlow
             {...props}
+            beforePublicationRetry={async () => {
+                requireEnabled();
+                await (props.beforePublicationRetry ?? props.beforeSubmit)?.();
+                requireEnabled();
+            }}
             beforeSubmit={async () => {
                 requireEnabled();
                 await props.beforeSubmit?.();

@@ -156,16 +156,18 @@ export const ContractRequest: React.FC<RequestProps> = ({
         }
     };
 
-    const readPending = async (): Promise<ConsentFlowContractDetails> => {
+    const readRequest = async (
+        expectedStatus: 'pending' | 'accepted'
+    ): Promise<ConsentFlowContractDetails> => {
         const wallet = await initWallet();
         const current = await wallet.invoke.getRequestStatusForProfile(
             profileId,
             undefined,
             contractUri
         );
-        if (current?.requestId !== requestId || current.status !== 'pending') {
+        if (current?.requestId !== requestId || current.status !== expectedStatus) {
             await refresh();
-            throw new Error('Request is no longer pending');
+            throw new Error(`Request is no longer ${expectedStatus}`);
         }
         const fresh = await wallet.invoke.getContract(contractUri);
         if (isExpired(fresh.expiresAt)) {
@@ -177,7 +179,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
 
     const requirePending = async () => {
         requireEnabled();
-        const fresh = await readPending();
+        const fresh = await readRequest('pending');
         requireEnabled();
         return fresh;
     };
@@ -192,7 +194,10 @@ export const ContractRequest: React.FC<RequestProps> = ({
                     disableRedirect
                     expectedRequestId={requestId}
                     beforeSubmit={async () => {
-                        await readPending();
+                        await readRequest('pending');
+                    }}
+                    beforePublicationRetry={async () => {
+                        await readRequest('accepted');
                     }}
                     successCallback={() => {
                         void refresh();
