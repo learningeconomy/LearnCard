@@ -5,7 +5,9 @@ import { initLearnCard } from '@learncard/init';
 
 const wasmPath = require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm');
 const didkit = await readFile(wasmPath);
-// This smoke must remain local, including any unexpectedly introduced context fetch.
+// WASM is deliberately loaded from the filesystem before this guard. Keep the guard
+// before wallet initialization; URL-based WASM loading would violate this offline smoke.
+// Reject any unexpectedly introduced context fetch.
 globalThis.fetch = async () => {
     throw new Error('Runtime DID Auth smoke must not access the network.');
 };

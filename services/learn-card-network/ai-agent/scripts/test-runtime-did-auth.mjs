@@ -14,15 +14,22 @@ const runtime = join(temporary, 'app');
 const packageRoot = join(runtime, 'node_modules/@learncard/didkit-plugin');
 const binary = 'src/didkit/pkg/didkit_wasm_bg.wasm';
 
-const run = (args, cwd = repo) =>
-    spawnSync(bun, args, {
+const run = (args, cwd = repo) => {
+    const result = spawnSync(bun, args, {
         cwd,
         encoding: 'utf8',
         timeout: 120_000,
         env: { ...process.env, SKIP_DIDKIT_NAPI: '1' },
     });
+    if (result.error?.code === 'ENOENT') {
+        throw new Error(
+            'Bun executable not found. Install Bun on PATH or set BUN_BINARY to its path.'
+        );
+    }
+    assert.ifError(result.error);
+    return result;
+};
 const succeeded = result => {
-    assert.equal(result.error, undefined);
     assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
 };
 
@@ -39,6 +46,21 @@ try {
         join(packageRoot, 'package.json')
     );
     await copyFile(join(repo, 'packages/plugins/didkit', binary), join(packageRoot, binary));
+
+    // Shadow every ancestor of TMPDIR with a deterministic invalid package. The
+    // good /app entrypoint must use its own copy; a detached entrypoint must load
+    // this poison artifact instead, regardless of packages installed above TMPDIR.
+    const detachedPackage = join(temporary, 'node_modules/@learncard/didkit-plugin');
+    const corruptHeader = new Uint8Array([0, 97, 115, 109]);
+    await mkdir(detachedPackage, { recursive: true });
+    await writeFile(
+        join(detachedPackage, 'package.json'),
+        JSON.stringify({
+            name: '@learncard/didkit-plugin',
+            exports: { './dist/didkit_wasm_bg.wasm': './poison.wasm' },
+        })
+    );
+    await writeFile(join(detachedPackage, 'poison.wasm'), corruptHeader);
 
     succeeded(
         run([
@@ -70,13 +92,13 @@ try {
     await copyFile(bundled, detached);
     const outside = run(['--no-install', '--conditions=development', detached], runtime);
     assert.notEqual(outside.status, 0, 'A detached smoke must not silently select another package');
-    assert.match(outside.stderr, /Cannot find module|Module not found/);
+    assert.match(outside.stderr, /CompileError/);
 
     // Ensure the smoke actually instantiates the copied artifact.
-    await writeFile(join(packageRoot, binary), new Uint8Array([0, 97, 115, 109]));
+    await writeFile(join(packageRoot, binary), corruptHeader);
     const corrupt = run(['--no-install', '--conditions=development', bundled], runtime);
     assert.notEqual(corrupt.status, 0, 'A corrupt assembled WASM must fail the smoke');
-    assert.match(corrupt.stderr, /CompileError|WebAssembly/);
+    assert.match(corrupt.stderr, /CompileError/);
     console.log(
         JSON.stringify({ ...evidence, detachedEntrypointRejected: true, corruptWasmRejected: true })
     );
