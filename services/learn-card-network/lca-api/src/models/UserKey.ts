@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { escrowBlobIdentity } from '../services/escrow-enclave/blobIdentity';
 import type { Filter } from 'mongodb';
 import { ESCROW_PIN_MAX_ATTEMPTS } from '@learncard/sss-key-manager';
 import { EscrowPinStatusValidator as SharedEscrowPinStatusValidator } from '@learncard/types';
@@ -63,6 +64,8 @@ export const EscrowEnvelopeValidator = z
     .strict();
 
 export const EscrowBlobValidator = z.object({
+    enrollmentEpoch: z.number().int().positive(),
+    blobHash: z.string().regex(/^[0-9a-f]{64}$/),
     envelope: EscrowEnvelopeValidator,
     enclaveKeyId: z.string().regex(/^[A-Za-z0-9._-]{1,128}$/),
     enclaveMode: z.enum(['software', 'nitro']),
@@ -732,21 +735,29 @@ const getAuthProviderFilter = (authProvider: AuthProviderMapping): Filter<MongoU
 /** Persist verified escrow and its confirmed descriptor atomically. */
 export const setEscrowBlobByAuthProvider = async (
     authProvider: AuthProviderMapping,
-    blob: EscrowBlob,
+    blob: Omit<EscrowBlob, 'enrollmentEpoch' | 'blobHash'>,
     expectedShareVersion: number,
     pin?: { salt: string },
     carryFrom?: { blob: EscrowBlob; pin: NonNullable<MongoUserKeyType['escrowPin']> }
 ): Promise<MongoUserKeyType | null> => {
     const now = new Date();
-    const parsed = EscrowBlobValidator.safeParse(blob);
+    const parsed = EscrowBlobValidator.omit({ enrollmentEpoch: true, blobHash: true }).safeParse(
+        blob
+    );
     if (!parsed.success) throw new Error('Invalid escrow payload');
-    const validated = parsed.data;
+    const blobHash = escrowBlobIdentity(parsed.data.envelope);
+    const assembled = EscrowBlobValidator.safeParse({
+        ...parsed.data,
+        blobHash,
+        enrollmentEpoch: 1,
+    });
+    if (!assembled.success) throw new Error('Invalid escrow payload');
+    const { enrollmentEpoch: _initialEpoch, ...validated } = assembled.data;
     if (
         validated.shareVersion !== expectedShareVersion ||
         validated.enclaveKeyId !== validated.envelope.keyId
-    ) {
+    )
         return null;
-    }
     return getUserKeysCollection().findOneAndUpdate(
         {
             ...getAuthProviderFilter(authProvider),
@@ -757,7 +768,16 @@ export const setEscrowBlobByAuthProvider = async (
         [
             {
                 $set: {
-                    escrowBlob: { $literal: validated },
+                    escrowBlob: {
+                        $mergeObjects: [
+                            { $literal: validated },
+                            {
+                                enrollmentEpoch: {
+                                    $add: [{ $ifNull: ['$escrowBlob.enrollmentEpoch', 0] }, 1],
+                                },
+                            },
+                        ],
+                    },
                     escrowPin: carryFrom
                         ? { $literal: { ...carryFrom.pin, shareVersion: expectedShareVersion } }
                         : pin
@@ -797,6 +817,71 @@ export const setEscrowBlobByAuthProvider = async (
         { returnDocument: 'after' }
     );
 };
+
+/**
+ * P9.3: migrates an escrow blob sealed under a previous enclave key onto the
+ * current one. Atomic compare-and-swap against the OLD envelope/blob object
+ * AND the unchanged `escrowPin` (read at the same time as `oldBlob`, so ANY
+ * concurrent write to this account since — a re-enroll, a PIN change, an
+ * opt-out — loses the race safely rather than overwriting a stale
+ * assumption), even though this write never touches `escrowPin` itself.
+ * Writes the new envelope under the CURRENT `enclaveKeyId`, a fresh
+ * Rust-order `blobHash` (identical algorithm to `setEscrowBlobByAuthProvider`),
+ * the SAME `enrollmentEpoch` and `shareVersion` — `escrowPin` is left
+ * exactly as read. Lost race (version bump, opt-out, or any other change
+ * since `oldBlob`/`oldPin` were read) -> null, no-op; callers retry on a
+ * later job run rather than treating this as an error.
+ */
+export const rewrapEscrowBlobByAuthProvider = async (
+    authProvider: AuthProviderMapping,
+    oldBlob: EscrowBlob,
+    oldPin: MongoUserKeyType['escrowPin'],
+    newEnvelope: EscrowBlob['envelope'],
+    identity: Pick<EscrowBlob, 'enclaveKeyId' | 'enclaveMode' | 'measurements'>
+): Promise<MongoUserKeyType | null> => {
+    const now = new Date();
+    const blobHash = escrowBlobIdentity(newEnvelope);
+    const parsed = EscrowBlobValidator.safeParse({
+        envelope: newEnvelope,
+        enclaveKeyId: identity.enclaveKeyId,
+        enclaveMode: identity.enclaveMode,
+        measurements: identity.measurements,
+        shareVersion: oldBlob.shareVersion,
+        blobHash,
+        enrollmentEpoch: oldBlob.enrollmentEpoch,
+        createdAt: now,
+    });
+    if (!parsed.success || parsed.data.enclaveKeyId !== parsed.data.envelope.keyId) return null;
+    const filter: Filter<MongoUserKeyType> = {
+        ...getAuthProviderFilter(authProvider),
+        escrowBlob: oldBlob,
+        escrowOptedOutAt: { $exists: false },
+        ...(oldPin ? { escrowPin: oldPin } : { escrowPin: { $exists: false } }),
+    };
+    return getUserKeysCollection().findOneAndUpdate(
+        filter,
+        { $set: { escrowBlob: parsed.data, updatedAt: now } },
+        { returnDocument: 'after' }
+    );
+};
+
+/**
+ * P9.3 migration job candidates: escrow blobs still sealed under any of the
+ * given (previous) enclave keys. Never returns opted-out accounts — escrow
+ * is fully disabled for them, so there is nothing to migrate. Bounded by
+ * `limit`, mirroring `findEscrowHoldsDueForReminder`'s own batch shape.
+ */
+export const findUserKeysWithEscrowBlobKeyId = async (
+    keyIds: string[],
+    limit: number
+): Promise<MongoUserKeyType[]> =>
+    getUserKeysCollection()
+        .find({
+            'escrowBlob.enclaveKeyId': { $in: keyIds },
+            escrowOptedOutAt: { $exists: false },
+        })
+        .limit(limit)
+        .toArray();
 
 export const clearEscrowByAuthProvider = async (
     authProvider: AuthProviderMapping,

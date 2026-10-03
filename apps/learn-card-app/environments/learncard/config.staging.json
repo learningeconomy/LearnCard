@@ -32,7 +32,14 @@
             "serverUrl": "https://staging.api.learncard.app/api",
             "escrowEnclaveMode": "off",
             "escrowEnclavePublicKeys": [
-                "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEdi2P3bj3ZuaVMRl3CKa78AgtRoIB8NcWX5DX+PmIx7SU6ZJGenmhHiLWzNxgvfAIucQtE4y//dS6W1sgkrJ2Tw=="
+                "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAErzuapPkQxSAb0oEQdYHWQIGXt8aSTKZwUWxrFoysw6WggnF8caCLNZiaFBeAfBd2PUty+/pXmgmpFsIo86zzcQ=="
+            ],
+            "escrowEnclaveMeasurements": [
+                {
+                    "pcr0": "9890a8eb71b094d0ec9f2000ddc1199fad236f9e82578bdc16df534a5a090cc9f1eff11749d75046809a638c1f9ebb41",
+                    "pcr1": "4b4d5b3661b3efc12920900c80e126e4ce783c522de6c02a2a5bf7af3a2b9327b86776f188e4be1c1c404a129dbda493",
+                    "pcr2": "dff0c05d46852268f49623d9313df29720c36c898f6053c78f7d7560628569d7b8a166ece5cb8a2ea0c1489f52dea859"
+                }
             ]
         }
     }

@@ -57,16 +57,17 @@ The `keysRouter` implements the server side of Shamir Secret Sharing key managem
 
 The `escrow` tRPC router is disabled unless `ESCROW_ENCLAVE_MODE` is configured.
 
-| Route                          | Procedure                 | Purpose                                                            |
-| ------------------------------ | ------------------------- | ------------------------------------------------------------------ |
-| `GET /keys/escrow/attestation` | `escrow.getAttestation`   | Enclave public key and hold duration                               |
-| `POST /keys/escrow`            | `escrow.enroll`           | Verify and store automatic recovery material                       |
-| `DELETE /keys/escrow`          | `escrow.remove`           | Remove material and optionally opt out                             |
-| `POST /keys/escrow/opt-in`     | `escrow.optIn`            | Allow enrollment again                                             |
-| `POST /keys/escrow/recover`    | `escrow.startRecovery`    | Start a waiting period without resetting an existing hold          |
-| `GET /keys/escrow/status`      | `escrow.getStatus`        | Check status; active devices send provider auth via `X-Auth-Token` |
-| `POST /keys/escrow/cancel`     | `escrow.cancelRecovery`   | DID owner cancels a pending hold                                   |
-| `POST /keys/escrow/complete`   | `escrow.completeRecovery` | Claim an elapsed hold and release sealed recovery material once    |
+| Route                           | Procedure                     | Purpose                                                                   |
+| ------------------------------- | ----------------------------- | ------------------------------------------------------------------------- |
+| `GET /keys/escrow/attestation`  | `escrow.getAttestation`       | Enclave public key and hold duration                                      |
+| `POST /keys/escrow`             | `escrow.enroll`               | Verify and store automatic recovery material                              |
+| `DELETE /keys/escrow`           | `escrow.remove`               | Remove material and optionally opt out                                    |
+| `POST /keys/escrow/opt-in`      | `escrow.optIn`                | Allow enrollment again                                                    |
+| `POST /keys/escrow/recover`     | `escrow.startRecovery`        | Start a waiting period without resetting an existing hold                 |
+| `GET /keys/escrow/status`       | `escrow.getStatus`            | Check status; active devices send provider auth via `X-Auth-Token`        |
+| `POST /keys/escrow/cancel`      | `escrow.cancelRecovery`       | DID owner cancels a pending hold                                          |
+| `POST /keys/escrow/cancel-link` | `escrow.cancelRecoveryByLink` | Cancels a pending hold via the single-use email cancel link (no DID auth) |
+| `POST /keys/escrow/complete`    | `escrow.completeRecovery`     | Claim an elapsed hold and release sealed recovery material once           |
 
 ### Important Invariants
 

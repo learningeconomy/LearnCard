@@ -13,6 +13,7 @@ import {
 
 export const lcaApiEnvironmentShape = {
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    LAMBDA_STAGE: optionalEnvironmentString,
     PORT: environmentPort.default(3000),
     SEED: requiredEnvironmentString,
     SA_SEED_KMS_KEY_ARN: optionalEnvironmentString,
@@ -42,6 +43,16 @@ export const lcaApiEnvironmentShape = {
     ESCROW_ENCLAVE_MODE: optionalEnvironmentString.pipe(z.enum(['software', 'remote']).optional()),
     ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON: optionalEnvironmentString,
     ESCROW_ENCLAVE_ACTIVE_KEY_ID: optionalEnvironmentString,
+    ESCROW_ENCLAVE_REMOTE_URL: optionalEnvironmentUrl,
+    ESCROW_ENCLAVE_REMOTE_TOKEN: optionalEnvironmentString,
+    /** Operator-flipped, manual-only kill switch (P7.1). When true, startRecovery/completeRecovery
+     *  refuse with a friendly message; hold cancellation and notifications keep working. Never
+     *  auto-flipped by the escrow-ledger-monitor — a compromised monitor must not be able to
+     *  silently DoS recovery. See services/escrow-ledger-monitor/README.md. */
+    ESCROW_RELEASE_KILL_SWITCH: optionalEnvironmentBoolean,
+    ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS: optionalEnvironmentString
+        .transform(value => (value === undefined ? 10_000 : Number(value)))
+        .pipe(z.number().int().positive().max(30_000)),
     ESCROW_HOLD_DURATION_MS: optionalEnvironmentString
         .transform(value => (value === undefined ? 604_800_000 : Number(value)))
         .pipe(z.number().int().positive().max(Number.MAX_SAFE_INTEGER)),
@@ -74,30 +85,6 @@ export const lcaApiEnvironmentSchema = z
         };
     })
     .superRefine((environment, context) => {
-        if (environment.ESCROW_ENCLAVE_MODE === 'software') {
-            try {
-                const keys = parseEscrowPrivateKeys(
-                    environment.ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON ?? ''
-                );
-                if (
-                    !environment.ESCROW_ENCLAVE_ACTIVE_KEY_ID ||
-                    !Object.hasOwn(keys, environment.ESCROW_ENCLAVE_ACTIVE_KEY_ID)
-                ) {
-                    context.addIssue({
-                        code: 'custom',
-                        path: ['ESCROW_ENCLAVE_ACTIVE_KEY_ID'],
-                        message: 'Software escrow requires an active key ID present in the key map',
-                    });
-                }
-            } catch {
-                context.addIssue({
-                    code: 'custom',
-                    path: ['ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON'],
-                    message:
-                        'Software escrow requires a valid nonempty key ID to private key JSON map',
-                });
-            }
-        }
         if (environment.SA_SEED_KMS_KEY_ARN) {
             if (
                 !/^arn:aws[a-z-]*:kms:[a-z0-9-]+:\d{12}:key\/[a-zA-Z0-9-]+$/.test(
@@ -131,6 +118,56 @@ export const lcaApiEnvironmentSchema = z
                 code: 'custom',
                 path: ['SA_SEED_ENCRYPT_WRITES'],
                 message: 'Plaintext writes require the compatibility reader',
+            });
+        }
+
+        if (environment.ESCROW_ENCLAVE_MODE === 'software') {
+            try {
+                const keys = parseEscrowPrivateKeys(
+                    environment.ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON ?? ''
+                );
+                if (
+                    !environment.ESCROW_ENCLAVE_ACTIVE_KEY_ID ||
+                    !Object.hasOwn(keys, environment.ESCROW_ENCLAVE_ACTIVE_KEY_ID)
+                ) {
+                    context.addIssue({
+                        code: 'custom',
+                        path: ['ESCROW_ENCLAVE_ACTIVE_KEY_ID'],
+                        message: 'Software escrow requires an active key ID present in the key map',
+                    });
+                }
+            } catch {
+                context.addIssue({
+                    code: 'custom',
+                    path: ['ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON'],
+                    message:
+                        'Software escrow requires a valid nonempty key ID to private key JSON map',
+                });
+            }
+        }
+        // Format-only: absence at 'remote' mode is intentionally NOT a parse-time
+        // failure. getEscrowEnclave() fails closed per-request instead, so a
+        // misconfigured remote backend degrades that one feature rather than
+        // crashing the whole service at boot (see escrow-enclave/index.ts).
+        if (environment.ESCROW_ENCLAVE_REMOTE_URL) {
+            const { protocol, hostname } = new URL(environment.ESCROW_ENCLAVE_REMOTE_URL);
+            const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(hostname);
+            if (protocol !== 'https:' && environment.NODE_ENV !== 'test' && !isLocalhost) {
+                context.addIssue({
+                    code: 'custom',
+                    path: ['ESCROW_ENCLAVE_REMOTE_URL'],
+                    message: 'Must use https:// outside tests or localhost',
+                });
+            }
+        }
+        if (
+            environment.ESCROW_ENCLAVE_REMOTE_TOKEN &&
+            environment.ESCROW_ENCLAVE_REMOTE_TOKEN.length < 32
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['ESCROW_ENCLAVE_REMOTE_TOKEN'],
+                message: 'Must be at least 32 characters',
             });
         }
         if (
@@ -184,6 +221,13 @@ export const parseLcaApiEnvironment = (
         }
     );
 };
+
+// Read live from process.env (not the frozen `environment` snapshot below) so an
+// operator's flip takes effect on the next request without a full restart, and so
+// tests can toggle it per-case. The escrow-ledger-monitor must never set this itself
+// — see services/escrow-ledger-monitor/README.md.
+export const isEscrowReleaseKillSwitchEnabled = (): boolean =>
+    optionalEnvironmentBoolean.parse(process.env.ESCROW_RELEASE_KILL_SWITCH) ?? false;
 
 /** Parse configuration without exposing secret values in validation errors. */
 export const parseEscrowPrivateKeys = (serialized: string): Record<string, string> => {

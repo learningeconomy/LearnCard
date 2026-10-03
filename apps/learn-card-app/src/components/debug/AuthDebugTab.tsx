@@ -25,6 +25,9 @@ import {
     getAuthConfig,
     getSSSConfig,
     getLogger,
+    isProductionEnvironment,
+    isProductionTenant,
+    isPcrPinnedMeasurement,
 } from 'learn-card-base';
 
 const log = getLogger('auth-debug-tab');
@@ -846,6 +849,15 @@ export const AuthDebugTab: React.FC = () => {
         copyToClipboard,
     ]);
 
+    // --- Escrow enclave debug derivations (recomputed each render; cheap, no side effects) ---
+    const sssConfig = getSSSConfig();
+    const nitroPcrPins = sssConfig.escrowEnclaveMeasurements.filter(isPcrPinnedMeasurement);
+    const nitroLegacyPinCount = sssConfig.escrowEnclaveMeasurements.length - nitroPcrPins.length;
+    const escrowSoftwareBlockedInProd =
+        sssConfig.escrowEnclaveMode === 'software' &&
+        isProductionEnvironment() &&
+        isProductionTenant(getAuthConfig().tenantId);
+
     return (
         <div className="space-y-2">
             {/* ── Status headline ── */}
@@ -1588,6 +1600,80 @@ export const AuthDebugTab: React.FC = () => {
                     copied={copied}
                     onCopy={copyToClipboard}
                 />
+
+                {escrowSoftwareBlockedInProd && (
+                    <div className="flex items-center gap-1 mt-1 text-[9px] text-red-400">
+                        <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
+                        <span>
+                            Software mode blocked in production for tenant &quot;
+                            {getAuthConfig().tenantId}&quot; — escrow is effectively off
+                        </span>
+                    </div>
+                )}
+
+                {sssConfig.escrowEnclaveMode === 'nitro' && (
+                    <>
+                        <KVRow
+                            label="Pinned PCR Tuples"
+                            value={nitroPcrPins.length}
+                            copied={copied}
+                            onCopy={copyToClipboard}
+                        />
+
+                        {nitroPcrPins.map((pin, i) => (
+                            <KVRow
+                                key={i}
+                                label={`PCR Tuple ${i}`}
+                                value={`${truncate(pin.pcr0 ?? '', 12)}… / ${truncate(
+                                    pin.pcr1 ?? '',
+                                    12
+                                )}… / ${truncate(pin.pcr2 ?? '', 12)}…`}
+                                copied={copied}
+                                onCopy={copyToClipboard}
+                            />
+                        ))}
+
+                        {nitroLegacyPinCount > 0 && (
+                            <div className="flex items-center gap-1 mt-1 text-[9px] text-yellow-400">
+                                <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
+                                <span>
+                                    {nitroLegacyPinCount} legacy image-only pin
+                                    {nitroLegacyPinCount > 1 ? 's' : ''} configured — these never
+                                    match an attestation
+                                </span>
+                            </div>
+                        )}
+
+                        {nitroPcrPins.length === 0 && (
+                            <div className="flex items-center gap-1 mt-1 text-[9px] text-red-400">
+                                <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
+                                <span>No valid PCR pins — nitro escrow is effectively off</span>
+                            </div>
+                        )}
+
+                        <KVRow
+                            label="Root Cert SHA-256"
+                            value={
+                                sssConfig.escrowEnclaveRootSha256
+                                    ? truncate(sssConfig.escrowEnclaveRootSha256, 16)
+                                    : 'default (AWS root)'
+                            }
+                            copied={copied}
+                            onCopy={copyToClipboard}
+                        />
+
+                        <KVRow
+                            label="Max Attestation Age"
+                            value={
+                                sssConfig.escrowEnclaveMaxAgeMs
+                                    ? `${sssConfig.escrowEnclaveMaxAgeMs}ms`
+                                    : 'default (300000ms)'
+                            }
+                            copied={copied}
+                            onCopy={copyToClipboard}
+                        />
+                    </>
+                )}
 
                 <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-2.5 mb-0.5">
                     Coordinator State

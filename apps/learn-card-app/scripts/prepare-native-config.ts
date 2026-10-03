@@ -274,6 +274,12 @@ merged['_tenant'] = tenantArg;
 merged['_stage'] = stageArg ?? 'production';
 merged['_localAi'] = useLocalAi;
 
+// Schema-validated deploy stage (see `stage` in tenantConfigSchema.ts). Distinct from the
+// `_stage` debug metadata above: this one is a typed TenantConfig field that runtime code
+// (e.g. the escrow software-enclave guard in authConfig.ts) can read to distinguish a
+// staging deploy from production, since both build in Vite "production" mode.
+merged['stage'] = stageArg ?? 'production';
+
 // ---------------------------------------------------------------------------
 // 3. Validate against the Zod schema
 // ---------------------------------------------------------------------------
@@ -458,9 +464,8 @@ if (existsSync(brandingDir)) {
             const currentValue = validatedConfig.branding[configKey];
 
             if (!currentValue) {
-                (validatedConfig.branding as Record<string, unknown>)[
-                    configKey
-                ] = `/branding/${match}`;
+                (validatedConfig.branding as Record<string, unknown>)[configKey] =
+                    `/branding/${match}`;
                 log.info(`   ✓ ${match} → branding.${configKey} = /branding/${match}`);
             } else {
                 log.info(
@@ -844,7 +849,7 @@ if (nativeConfig) {
             // Replace everything between the LAUNCHER intent-filter and </activity>
             // (i.e. replace the deep link + custom scheme intent filters block)
             manifest = manifest.replace(
-                /(<!-- HTTPS deep linking intent-filters -->)[\s\S]*?(        <\/activity>)/,
+                /(<!-- HTTPS deep linking intent-filters -->)[\s\S]*?( {8}<\/activity>)/,
                 `<!-- HTTPS deep linking intent-filters -->\n${allIntentFilters}\n\n        </activity>`
             );
 

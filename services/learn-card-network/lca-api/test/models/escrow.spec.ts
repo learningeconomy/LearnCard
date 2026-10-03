@@ -1,6 +1,8 @@
+import { randomUUID } from 'crypto';
 import { beforeAll, afterAll, beforeEach, describe, it, expect } from 'vitest';
 import { client } from '@mongo';
 import {
+    type EscrowHold,
     createUserKeysIndexes,
     getUserKeysCollection,
     upsertUserKeyByAuthProvider,
@@ -13,20 +15,28 @@ import {
     getEscrowHoldsCollection,
     createEscrowHold,
     cancelEscrowHold,
+    cancelEscrowHoldByCancelToken,
     completeEscrowHold,
     expireStaleEscrowHolds,
     ESCROW_HOLD_STALE_WINDOW_MS,
     generateEscrowResumeToken,
     hashEscrowResumeToken,
     findPendingEscrowHoldByAuthProvider,
+    findEscrowHoldById,
+    findEscrowHoldsDueForReminder,
+    claimEscrowHoldForReminder,
+    recordEscrowHoldNotification,
+    rotateEscrowCancelToken,
     reserveEscrowPinAttempt,
     refundEscrowPinAttempt,
+    rewrapEscrowBlobByAuthProvider,
+    findUserKeysWithEscrowBlobKeyId,
     type EscrowBlob,
     type AuthProviderMapping,
 } from '@models';
 
 const provider: AuthProviderMapping = { type: 'firebase', id: 'escrow-model-test' };
-const blob: EscrowBlob = {
+const blob: Omit<EscrowBlob, 'enrollmentEpoch' | 'blobHash'> = {
     envelope: {
         version: 1,
         algorithm: 'P-256-HKDF-SHA256-AES-256-GCM',
@@ -47,6 +57,23 @@ const createHold = (
     releasePolicy: 'hold' | 'pin' = 'hold'
 ): ReturnType<typeof createEscrowHold> =>
     createEscrowHold({
+        holdRecord: {
+            hold: {
+                holdId: randomUUID(),
+                did: 'did:key:test',
+                shareVersion: 1,
+                blobHash: 'ab'.repeat(32),
+                enrollmentEpoch: 1,
+                releasePolicy: 'hold',
+                clientEphemeralPublicKey: 'public-key',
+                createdLo: 0,
+                createdHi: 0,
+                policyVersion: 1,
+                signature: 'test-signature',
+            },
+            holdDurationMs: 0,
+            ledgerSeq: 0,
+        },
         authProvider: provider,
         primaryDid: 'did:key:test',
         shareVersion: 1,
@@ -135,6 +162,62 @@ describe('escrow model invariants', () => {
             (await findUserKeyByAuthProvider(provider.type, provider.id))?.escrowPin?.failedAttempts
         ).toBe(1);
     });
+    it('validates required opaque hold records before insert', async () => {
+        const valid = await createHold();
+        expect(valid._id).toBe(valid.holdRecord.hold.holdId);
+        await cancelEscrowHold(valid._id, 'did');
+        const input = {
+            ...valid,
+            holdRecord: {
+                ...valid.holdRecord,
+                hold: { ...valid.holdRecord.hold, holdId: randomUUID(), signedExtension: 'keep' },
+                signedExtension: 'keep',
+            },
+        };
+        const opaque = await createEscrowHold(input);
+        expect(opaque.holdRecord).toEqual(input.holdRecord);
+        await cancelEscrowHold(opaque._id, 'did');
+        for (const holdRecord of [
+            undefined,
+            {},
+            { ...valid.holdRecord, ledgerSeq: 'invalid' },
+            { ...valid.holdRecord, hold: { ...valid.holdRecord.hold, enrollmentEpoch: 0 } },
+        ]) {
+            // Simulate untyped/legacy input at the runtime schema boundary.
+            await expect(
+                createEscrowHold({ ...input, holdRecord } as unknown as Parameters<
+                    typeof createEscrowHold
+                >[0])
+            ).rejects.toThrow('Invalid escrow hold');
+        }
+    });
+    it('computes the Rust-order fixed blob hash and increments epochs atomically', async () => {
+        const first = await setEscrowBlobByAuthProvider(provider, blob, 1);
+        expect(first?.escrowBlob?.enrollmentEpoch).toBe(1);
+        expect(first?.escrowBlob?.blobHash).toBe(
+            'a531b47276c2837a51306766f654de4ee8b4e7114c1960eeb993b6260f0c8ea9'
+        );
+        const results = await Promise.all([
+            setEscrowBlobByAuthProvider(provider, blob, 1),
+            setEscrowBlobByAuthProvider(provider, blob, 1),
+        ]);
+        expect(results.map(result => result?.escrowBlob?.enrollmentEpoch).sort()).toEqual([2, 3]);
+        expect(results[0]?.escrowBlob?.envelope.ciphertext).toBe('$literal-data');
+        await expect(
+            setEscrowBlobByAuthProvider(
+                provider,
+                { ...blob, envelope: { ...blob.envelope, ciphertext: '' } },
+                1
+            )
+        ).rejects.toThrow('Invalid escrow payload');
+        expect(
+            await setEscrowBlobByAuthProvider(provider, { ...blob, enclaveKeyId: 'other' }, 1)
+        ).toBeNull();
+        expect(
+            (await findUserKeyByAuthProvider(provider.type, provider.id))?.escrowBlob
+                ?.enrollmentEpoch
+        ).toBe(3);
+    });
     it('atomically replaces escrow without duplicate methods and preserves literal values', async () => {
         await setEscrowBlobByAuthProvider(provider, blob, 1);
         const result = await setEscrowBlobByAuthProvider(provider, blob, 1);
@@ -144,10 +227,108 @@ describe('escrow model invariants', () => {
             confirmationStatus: 'confirmed',
             shareVersion: 1,
         });
-        expect(result?.escrowBlob).toEqual(blob);
+        expect(result?.escrowBlob).toEqual({
+            ...blob,
+            enrollmentEpoch: 2,
+            blobHash: expect.stringMatching(/^[0-9a-f]{64}$/),
+        });
         expect(
             await setEscrowBlobByAuthProvider(provider, { ...blob, shareVersion: 2 }, 2)
         ).toBeNull();
+    });
+    it('rewraps a previous-key blob onto the current key (P9.3): epoch+1, same version, escrowPin untouched', async () => {
+        const stored = await setEscrowBlobByAuthProvider(provider, blob, 1, {
+            salt: Buffer.alloc(16).toString('base64'),
+        });
+        const oldBlob = stored!.escrowBlob!;
+        const oldPin = stored!.escrowPin!;
+        const newEnvelope: EscrowBlob['envelope'] = {
+            ...blob.envelope,
+            keyId: 'current',
+            ciphertext: '$rewrapped-data',
+        };
+        const rewrapped = await rewrapEscrowBlobByAuthProvider(
+            provider,
+            oldBlob,
+            oldPin,
+            newEnvelope,
+            {
+                enclaveKeyId: 'current',
+                enclaveMode: 'software',
+                measurements: {},
+            }
+        );
+        expect(rewrapped?.escrowBlob).toEqual({
+            envelope: newEnvelope,
+            enclaveKeyId: 'current',
+            enclaveMode: 'software',
+            measurements: {},
+            shareVersion: oldBlob.shareVersion,
+            enrollmentEpoch: oldBlob.enrollmentEpoch + 1,
+            blobHash: expect.stringMatching(/^[0-9a-f]{64}$/),
+            createdAt: expect.any(Date),
+        });
+        expect(rewrapped?.escrowBlob?.blobHash).not.toBe(oldBlob.blobHash);
+        // escrowPin is byte-identical to what was read before the rewrap — the
+        // model never touches it, and the CAS filter proves it wasn't touched
+        // by anything else concurrently either.
+        expect(rewrapped?.escrowPin).toEqual(oldPin);
+        // Lost race: presenting the now-stale oldBlob/oldPin again is a no-op,
+        // not an error — a later job run should simply re-observe and retry.
+        expect(
+            await rewrapEscrowBlobByAuthProvider(provider, oldBlob, oldPin, newEnvelope, {
+                enclaveKeyId: 'current',
+                enclaveMode: 'software',
+                measurements: {},
+            })
+        ).toBeNull();
+    });
+    it('rewrapEscrowBlobByAuthProvider: concurrent runs never double-write; a mid-run re-enroll wins the race', async () => {
+        const stored = await setEscrowBlobByAuthProvider(provider, blob, 1, {
+            salt: Buffer.alloc(16).toString('base64'),
+        });
+        const oldBlob = stored!.escrowBlob!;
+        const oldPin = stored!.escrowPin!;
+        const attempt = (ciphertext: string): ReturnType<typeof rewrapEscrowBlobByAuthProvider> =>
+            rewrapEscrowBlobByAuthProvider(
+                provider,
+                oldBlob,
+                oldPin,
+                { ...blob.envelope, keyId: 'current', ciphertext },
+                { enclaveKeyId: 'current', enclaveMode: 'software', measurements: {} }
+            );
+        const [first, second] = await Promise.all([attempt('$race-a'), attempt('$race-b')]);
+        expect([first, second].filter(result => result !== null)).toHaveLength(1);
+        // A concurrent re-enrollment (a NEW escrowBlob, different from oldBlob)
+        // between read and write also wins the race against a stale rewrap.
+        const reenrolled = await setEscrowBlobByAuthProvider(provider, blob, 1);
+        expect(reenrolled?.escrowBlob?.envelope.keyId).toBe('test');
+        expect(
+            await rewrapEscrowBlobByAuthProvider(
+                provider,
+                oldBlob,
+                oldPin,
+                { ...blob.envelope, keyId: 'current', ciphertext: '$stale' },
+                { enclaveKeyId: 'current', enclaveMode: 'software', measurements: {} }
+            )
+        ).toBeNull();
+    });
+    it('findUserKeysWithEscrowBlobKeyId: matches given keyIds, excludes opted-out accounts', async () => {
+        await setEscrowBlobByAuthProvider(provider, blob, 1);
+        expect(
+            (await findUserKeysWithEscrowBlobKeyId(['test'], 10)).map(u => u.authProviders[0]?.id)
+        ).toContain(provider.id);
+        expect(await findUserKeysWithEscrowBlobKeyId(['nonexistent-key'], 10)).toEqual([]);
+        await clearEscrowByAuthProvider(provider, { optOut: true });
+        await getUserKeysCollection().updateOne(
+            { 'authProviders.id': provider.id },
+            { $set: { escrowBlob: blob } }
+        );
+        expect(
+            (await findUserKeysWithEscrowBlobKeyId(['test'], 10)).some(
+                u => u.authProviders[0]?.id === provider.id
+            )
+        ).toBe(false);
     });
     it('clears with and without opting out; explicit opt-in permits enrollment again', async () => {
         await setEscrowBlobByAuthProvider(provider, blob, 1);
@@ -206,5 +387,181 @@ describe('escrow model invariants', () => {
         expect(generateEscrowResumeToken()).not.toBe(token);
         expect(hashEscrowResumeToken(token)).toMatch(/^[0-9a-f]{64}$/);
         expect(hashEscrowResumeToken(token)).not.toBe(token);
+    });
+    it('cancels via link token exactly once, rejecting wrong, reused, or hash-less holds', async () => {
+        const cancelTokenHash = 'a'.repeat(64);
+        const hold = await createEscrowHold({
+            holdRecord: {
+                hold: {
+                    holdId: randomUUID(),
+                    did: 'did:key:test',
+                    shareVersion: 1,
+                    blobHash: 'ab'.repeat(32),
+                    enrollmentEpoch: 1,
+                    releasePolicy: 'hold',
+                    clientEphemeralPublicKey: 'public-key',
+                    createdLo: 0,
+                    createdHi: 0,
+                    policyVersion: 1,
+                    signature: 'test-signature',
+                },
+                holdDurationMs: 0,
+                ledgerSeq: 0,
+            },
+            authProvider: provider,
+            primaryDid: 'did:key:test',
+            shareVersion: 1,
+            identityProofType: 'auth-token',
+            requestedAt: new Date(),
+            releaseAfter: new Date(),
+            releasePolicy: 'hold',
+            clientEphemeralPublicKey: 'public-key',
+            resumeTokenHash: hashEscrowResumeToken(generateEscrowResumeToken()),
+            cancelTokenHash,
+        });
+        expect(await cancelEscrowHoldByCancelToken(hold._id, 'b'.repeat(64))).toBeNull();
+        const cancelled = await cancelEscrowHoldByCancelToken(hold._id, cancelTokenHash);
+        expect(cancelled).toMatchObject({ status: 'cancelled', cancelledBy: 'link' });
+        expect(cancelled?.cancelTokenUsedAt).toBeInstanceOf(Date);
+        expect(cancelled?.cancelReason).toBeUndefined();
+        // Burned: the hash still matches, but cancelTokenUsedAt no longer $exists-fails the filter.
+        expect(await cancelEscrowHoldByCancelToken(hold._id, cancelTokenHash)).toBeNull();
+        // A pending hold with no cancelTokenHash at all never matches an exact-hash filter.
+        const noToken = await createHold();
+        expect(await cancelEscrowHoldByCancelToken(noToken._id, cancelTokenHash)).toBeNull();
+    });
+    it('records notifications by appending to the array without disturbing other fields', async () => {
+        const hold = await createHold();
+        await recordEscrowHoldNotification(hold._id, 'started');
+        let stored = await findEscrowHoldById(hold._id);
+        expect(stored?.notifications).toHaveLength(1);
+        expect(stored?.notifications[0]).toMatchObject({ kind: 'started' });
+        expect(stored?.notifications[0].sentAt).toBeInstanceOf(Date);
+        expect(stored?.status).toBe('pending');
+        await recordEscrowHoldNotification(hold._id, 'cancelled');
+        stored = await findEscrowHoldById(hold._id);
+        expect(stored?.notifications.map(entry => entry.kind)).toEqual(['started', 'cancelled']);
+        // A missing hold id is a no-op, never a throw.
+        await expect(
+            recordEscrowHoldNotification('does-not-exist', 'completed')
+        ).resolves.toBeUndefined();
+    });
+    it('rotates the cancel token only for pending holds, leaving terminal holds untouched', async () => {
+        const originalHash = 'a'.repeat(64);
+        const hold = await createEscrowHold({
+            holdRecord: {
+                hold: {
+                    holdId: randomUUID(),
+                    did: 'did:key:test',
+                    shareVersion: 1,
+                    blobHash: 'ab'.repeat(32),
+                    enrollmentEpoch: 1,
+                    releasePolicy: 'hold',
+                    clientEphemeralPublicKey: 'public-key',
+                    createdLo: 0,
+                    createdHi: 0,
+                    policyVersion: 1,
+                    signature: 'test-signature',
+                },
+                holdDurationMs: 0,
+                ledgerSeq: 0,
+            },
+            authProvider: provider,
+            primaryDid: 'did:key:test',
+            shareVersion: 1,
+            identityProofType: 'auth-token',
+            requestedAt: new Date(),
+            releaseAfter: new Date(),
+            releasePolicy: 'hold',
+            clientEphemeralPublicKey: 'public-key',
+            resumeTokenHash: hashEscrowResumeToken(generateEscrowResumeToken()),
+            cancelTokenHash: originalHash,
+        });
+
+        const token = await rotateEscrowCancelToken(hold._id);
+        expect(token).toMatch(/^[0-9a-f]{64}$/);
+        const rotated = await findEscrowHoldById(hold._id);
+        expect(rotated?.cancelTokenHash).toMatch(/^[0-9a-f]{64}$/);
+        expect(rotated?.cancelTokenHash).toBe(originalHash);
+        expect(rotated?.cancelTokenHashes).toHaveLength(1);
+        expect(await rotateEscrowCancelToken(hold._id)).toBe(token);
+        expect((await findEscrowHoldById(hold._id))?.cancelTokenHashes).toHaveLength(1);
+
+        // Cancelling burns the pending-only precondition: further rotation is a no-op.
+        const cancelled = await cancelEscrowHold(hold._id, 'did');
+        const hashAfterCancel = cancelled?.cancelTokenHash;
+        expect(await rotateEscrowCancelToken(hold._id)).toBeNull();
+        expect((await findEscrowHoldById(hold._id))?.cancelTokenHash).toBe(hashAfterCancel);
+
+        const completedHold = await createHold();
+        await completeEscrowHold(completedHold._id);
+        expect(await rotateEscrowCancelToken(completedHold._id)).toBeNull();
+        expect((await findEscrowHoldById(completedHold._id))?.cancelTokenHash).toBeUndefined();
+
+        expect(await rotateEscrowCancelToken('does-not-exist')).toBeNull();
+    });
+    it('finds only pending hold-policy holds due within 24h and claims each at most once', async () => {
+        const now = new Date();
+        const hour = 60 * 60 * 1000;
+        // Each candidate needs its own authProvider: the partial unique index
+        // allows only one pending hold-policy hold per (authProvider, policy).
+        const createHoldFor = (releaseAfter: Date, releasePolicy: 'hold' | 'pin' = 'hold') =>
+            createEscrowHold({
+                holdRecord: {
+                    hold: {
+                        holdId: randomUUID(),
+                        did: 'did:key:test',
+                        shareVersion: 1,
+                        blobHash: 'ab'.repeat(32),
+                        enrollmentEpoch: 1,
+                        releasePolicy: 'hold',
+                        clientEphemeralPublicKey: 'public-key',
+                        createdLo: 0,
+                        createdHi: 0,
+                        policyVersion: 1,
+                        signature: 'test-signature',
+                    },
+                    holdDurationMs: 0,
+                    ledgerSeq: 0,
+                },
+                authProvider: { type: 'firebase', id: `escrow-reminder-${randomUUID()}` },
+                primaryDid: 'did:key:test',
+                shareVersion: 1,
+                identityProofType: 'auth-token',
+                requestedAt: new Date(),
+                releaseAfter,
+                releasePolicy,
+                clientEphemeralPublicKey: 'public-key',
+                resumeTokenHash: hashEscrowResumeToken(generateEscrowResumeToken()),
+            });
+
+        const dueSoon = await createHoldFor(new Date(now.getTime() + 23 * hour));
+        const dueLate = await createHoldFor(new Date(now.getTime() + 25 * hour));
+        const alreadyReminded = await createHoldFor(new Date(now.getTime() + hour));
+        await recordEscrowHoldNotification(alreadyReminded._id, 'reminder');
+        const pinHold = await createHoldFor(now, 'pin');
+        const completedHold = await createHoldFor(new Date(now.getTime() + 2 * hour));
+        await completeEscrowHold(completedHold._id);
+
+        const due = await findEscrowHoldsDueForReminder(now, 200);
+        const dueIds = due.map(hold => hold._id);
+        expect(dueIds).toContain(dueSoon._id);
+        expect(dueIds).not.toContain(dueLate._id);
+        expect(dueIds).not.toContain(alreadyReminded._id);
+        expect(dueIds).not.toContain(pinHold._id);
+        expect(dueIds).not.toContain(completedHold._id);
+
+        // Two concurrent claims for the same hold: MongoDB serializes the
+        // findOneAndUpdate CAS, so exactly one observes the pre-push state.
+        const [first, second] = await Promise.all([
+            claimEscrowHoldForReminder(dueSoon._id, now),
+            claimEscrowHoldForReminder(dueSoon._id, now),
+        ]);
+        const winners = [first, second].filter((claim): claim is EscrowHold => claim !== null);
+        expect(winners).toHaveLength(1);
+        expect(winners[0]?.notifications.filter(entry => entry.kind === 'reminder')).toHaveLength(
+            0
+        );
+        expect(await claimEscrowHoldForReminder(dueSoon._id, now)).toBeNull();
     });
 });
