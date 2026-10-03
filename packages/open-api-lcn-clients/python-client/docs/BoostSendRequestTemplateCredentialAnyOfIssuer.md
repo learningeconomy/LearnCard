@@ -1,31 +1,30 @@
 # BoostSendRequestTemplateCredentialAnyOfIssuer
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | [optional] 
-**type** | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.md) |  | [optional] 
-**name** | **str** |  | [optional] 
-**url** | **str** |  | [optional] 
-**phone** | **str** |  | [optional] 
-**description** | **str** |  | [optional] 
-**endorsement** | **List[object]** |  | [optional] 
-**image** | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfImage**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfImage.md) |  | [optional] 
-**email** | **str** |  | [optional] 
-**address** | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfAddress**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfAddress.md) |  | [optional] 
-**other_identifier** | [**List[BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInner]**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInner.md) |  | [optional] 
-**official** | **str** |  | [optional] 
-**parent_org** | **object** |  | [optional] 
-**family_name** | **str** |  | [optional] 
-**given_name** | **str** |  | [optional] 
-**additional_name** | **str** |  | [optional] 
-**patronymic_name** | **str** |  | [optional] 
-**honorific_prefix** | **str** |  | [optional] 
-**honorific_suffix** | **str** |  | [optional] 
-**family_name_prefix** | **str** |  | [optional] 
-**date_of_birth** | **str** |  | [optional] 
+| Name                   | Type                                                                                                                                                          | Description | Notes      |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **id**                 | **str**                                                                                                                                                       |             | [optional] |
+| **type**               | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.md)                                       |             | [optional] |
+| **name**               | **str**                                                                                                                                                       |             | [optional] |
+| **url**                | **str**                                                                                                                                                       |             | [optional] |
+| **phone**              | **str**                                                                                                                                                       |             | [optional] |
+| **description**        | **str**                                                                                                                                                       |             | [optional] |
+| **endorsement**        | **List[object]**                                                                                                                                              |             | [optional] |
+| **image**              | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfImage**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfImage.md)                                     |             | [optional] |
+| **email**              | **str**                                                                                                                                                       |             | [optional] |
+| **address**            | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfAddress**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfAddress.md)                                 |             | [optional] |
+| **other_identifier**   | [**List[BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInner]**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInner.md) |             | [optional] |
+| **official**           | **str**                                                                                                                                                       |             | [optional] |
+| **parent_org**         | **object**                                                                                                                                                    |             | [optional] |
+| **family_name**        | **str**                                                                                                                                                       |             | [optional] |
+| **given_name**         | **str**                                                                                                                                                       |             | [optional] |
+| **additional_name**    | **str**                                                                                                                                                       |             | [optional] |
+| **patronymic_name**    | **str**                                                                                                                                                       |             | [optional] |
+| **honorific_prefix**   | **str**                                                                                                                                                       |             | [optional] |
+| **honorific_suffix**   | **str**                                                                                                                                                       |             | [optional] |
+| **family_name_prefix** | **str**                                                                                                                                                       |             | [optional] |
+| **date_of_birth**      | **str**                                                                                                                                                       |             | [optional] |
 
 ## Example
 
@@ -44,6 +43,5 @@ boost_send_request_template_credential_any_of_issuer_dict = boost_send_request_t
 # create an instance of BoostSendRequestTemplateCredentialAnyOfIssuer from a dict
 boost_send_request_template_credential_any_of_issuer_from_dict = BoostSendRequestTemplateCredentialAnyOfIssuer.from_dict(boost_send_request_template_credential_any_of_issuer_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

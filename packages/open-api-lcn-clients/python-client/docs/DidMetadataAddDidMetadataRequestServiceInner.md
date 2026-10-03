@@ -1,13 +1,12 @@
 # DidMetadataAddDidMetadataRequestServiceInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**type** | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.md) |  | 
-**service_endpoint** | **List[object]** |  | 
+| Name                 | Type                                                                                                                    | Description | Notes |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **id**               | **str**                                                                                                                 |             |
+| **type**             | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.md) |             |
+| **service_endpoint** | **List[object]**                                                                                                        |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ did_metadata_add_did_metadata_request_service_inner_dict = did_metadata_add_did_
 # create an instance of DidMetadataAddDidMetadataRequestServiceInner from a dict
 did_metadata_add_did_metadata_request_service_inner_from_dict = DidMetadataAddDidMetadataRequestServiceInner.from_dict(did_metadata_add_did_metadata_request_service_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

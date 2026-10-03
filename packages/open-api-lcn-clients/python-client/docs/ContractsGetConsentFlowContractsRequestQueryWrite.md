@@ -1,12 +1,11 @@
 # ContractsGetConsentFlowContractsRequestQueryWrite
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**credentials** | [**ContractsGetConsentFlowContractsRequestQueryReadCredentials**](ContractsGetConsentFlowContractsRequestQueryReadCredentials.md) |  | [optional] 
-**personal** | [**Dict[str, ContractsGetConsentFlowContractsRequestQueryReadCredentialsCategoriesValue]**](ContractsGetConsentFlowContractsRequestQueryReadCredentialsCategoriesValue.md) |  | [optional] 
+| Name            | Type                                                                                                                                             | Description | Notes      |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- | ---------- |
+| **credentials** | [**ContractsGetConsentFlowContractsRequestQueryWriteCredentials**](ContractsGetConsentFlowContractsRequestQueryWriteCredentials.md)              |             | [optional] |
+| **personal**    | [**Dict[str, ContractsGetConsentFlowContractsRequestQueryReadPersonalValue]**](ContractsGetConsentFlowContractsRequestQueryReadPersonalValue.md) |             | [optional] |
 
 ## Example
 
@@ -25,6 +24,5 @@ contracts_get_consent_flow_contracts_request_query_write_dict = contracts_get_co
 # create an instance of ContractsGetConsentFlowContractsRequestQueryWrite from a dict
 contracts_get_consent_flow_contracts_request_query_write_from_dict = ContractsGetConsentFlowContractsRequestQueryWrite.from_dict(contracts_get_consent_flow_contracts_request_query_write_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

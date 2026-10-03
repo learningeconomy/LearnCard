@@ -1,17 +1,16 @@
 # ContractsGetConsentedContracts200ResponseRecordsInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**expires_at** | **str** |  | [optional] 
-**one_time** | **bool** |  | [optional] 
-**terms** | [**ContractsGetConsentedContracts200ResponseRecordsInnerTerms**](ContractsGetConsentedContracts200ResponseRecordsInnerTerms.md) |  | 
-**contract** | [**ContractsGetConsentFlowContract200Response**](ContractsGetConsentFlowContract200Response.md) |  | 
-**uri** | **str** |  | 
-**consenter** | [**BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md) |  | 
-**status** | **str** |  | 
+| Name           | Type                                                                                                      | Description | Notes      |
+| -------------- | --------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **expires_at** | **str**                                                                                                   |             | [optional] |
+| **one_time**   | **bool**                                                                                                  |             | [optional] |
+| **terms**      | [**StorageResolve200ResponseAnyOf1**](StorageResolve200ResponseAnyOf1.md)                                 |             |
+| **contract**   | [**ContractsGetConsentFlowContract200Response**](ContractsGetConsentFlowContract200Response.md)           |             |
+| **uri**        | **str**                                                                                                   |             |
+| **consenter**  | [**BoostGetBoostRecipients200ResponseInnerToAnyOf3**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md) |             |
+| **status**     | **str**                                                                                                   |             |
 
 ## Example
 
@@ -30,6 +29,5 @@ contracts_get_consented_contracts200_response_records_inner_dict = contracts_get
 # create an instance of ContractsGetConsentedContracts200ResponseRecordsInner from a dict
 contracts_get_consented_contracts200_response_records_inner_from_dict = ContractsGetConsentedContracts200ResponseRecordsInner.from_dict(contracts_get_consented_contracts200_response_records_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,11 +1,10 @@
 # ProfileSigningAuthorities200ResponseInnerSigningAuthority
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**endpoint** | **str** |  | 
+| Name         | Type    | Description | Notes |
+| ------------ | ------- | ----------- | ----- |
+| **endpoint** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ profile_signing_authorities200_response_inner_signing_authority_dict = profile_s
 # create an instance of ProfileSigningAuthorities200ResponseInnerSigningAuthority from a dict
 profile_signing_authorities200_response_inner_signing_authority_from_dict = ProfileSigningAuthorities200ResponseInnerSigningAuthority.from_dict(profile_signing_authorities200_response_inner_signing_authority_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

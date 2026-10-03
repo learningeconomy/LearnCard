@@ -1,12 +1,11 @@
 # ContractsSyncCredentialsToContractRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**terms_uri** | **str** |  | 
-**categories** | **Dict[str, List[str]]** |  | 
+| Name           | Type                     | Description | Notes |
+| -------------- | ------------------------ | ----------- | ----- |
+| **terms_uri**  | **str**                  |             |
+| **categories** | **Dict[str, List[str]]** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ contracts_sync_credentials_to_contract_request_dict = contracts_sync_credentials
 # create an instance of ContractsSyncCredentialsToContractRequest from a dict
 contracts_sync_credentials_to_contract_request_from_dict = ContractsSyncCredentialsToContractRequest.from_dict(contracts_sync_credentials_to_contract_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

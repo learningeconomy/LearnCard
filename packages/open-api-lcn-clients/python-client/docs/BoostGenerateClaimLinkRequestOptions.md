@@ -1,12 +1,11 @@
 # BoostGenerateClaimLinkRequestOptions
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**ttl_seconds** | **float** |  | [optional] 
-**total_uses** | **float** |  | [optional] 
+| Name            | Type      | Description | Notes      |
+| --------------- | --------- | ----------- | ---------- |
+| **ttl_seconds** | **float** |             | [optional] |
+| **total_uses**  | **float** |             | [optional] |
 
 ## Example
 
@@ -25,6 +24,5 @@ boost_generate_claim_link_request_options_dict = boost_generate_claim_link_reque
 # create an instance of BoostGenerateClaimLinkRequestOptions from a dict
 boost_generate_claim_link_request_options_from_dict = BoostGenerateClaimLinkRequestOptions.from_dict(boost_generate_claim_link_request_options_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

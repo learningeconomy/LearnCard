@@ -1,14 +1,13 @@
 # BoostGetBoostFrameworksRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**uri** | **str** |  | 
-**limit** | **int** |  | [optional] [default to 50]
-**cursor** | **str** |  | [optional] 
-**query** | [**BoostGetBoostFrameworksRequestQuery**](BoostGetBoostFrameworksRequestQuery.md) |  | [optional] 
+| Name       | Type                                                                              | Description | Notes                      |
+| ---------- | --------------------------------------------------------------------------------- | ----------- | -------------------------- |
+| **uri**    | **str**                                                                           |             |
+| **limit**  | **int**                                                                           |             | [optional] [default to 50] |
+| **cursor** | **str**                                                                           |             | [optional]                 |
+| **query**  | [**BoostGetBoostFrameworksRequestQuery**](BoostGetBoostFrameworksRequestQuery.md) |             | [optional]                 |
 
 ## Example
 
@@ -27,6 +26,5 @@ boost_get_boost_frameworks_request_dict = boost_get_boost_frameworks_request_ins
 # create an instance of BoostGetBoostFrameworksRequest from a dict
 boost_get_boost_frameworks_request_from_dict = BoostGetBoostFrameworksRequest.from_dict(boost_get_boost_frameworks_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,18 +1,17 @@
 # BoostGetFamilialBoostsRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**limit** | **float** |  | [optional] [default to 25]
-**cursor** | **str** |  | [optional] 
-**sort** | **str** |  | [optional] 
-**uri** | **str** |  | 
-**query** | [**BoostGetBoostsRequestQuery**](BoostGetBoostsRequestQuery.md) |  | [optional] 
-**parent_generations** | [**BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations**](BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.md) |  | [optional] 
-**child_generations** | [**BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations**](BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.md) |  | [optional] 
-**include_extended_family** | **bool** |  | [optional] [default to False]
+| Name                        | Type                                                                                                                                            | Description | Notes                         |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----------------------------- |
+| **limit**                   | **float**                                                                                                                                       |             | [optional] [default to 25]    |
+| **cursor**                  | **str**                                                                                                                                         |             | [optional]                    |
+| **sort**                    | **str**                                                                                                                                         |             | [optional]                    |
+| **uri**                     | **str**                                                                                                                                         |             |
+| **query**                   | [**BoostCountBoostsRequestQuery**](BoostCountBoostsRequestQuery.md)                                                                             |             | [optional]                    |
+| **parent_generations**      | [**BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations**](BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.md) |             | [optional]                    |
+| **child_generations**       | [**BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations**](BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.md) |             | [optional]                    |
+| **include_extended_family** | **bool**                                                                                                                                        |             | [optional] [default to False] |
 
 ## Example
 
@@ -31,6 +30,5 @@ boost_get_familial_boosts_request_dict = boost_get_familial_boosts_request_insta
 # create an instance of BoostGetFamilialBoostsRequest from a dict
 boost_get_familial_boosts_request_from_dict = BoostGetFamilialBoostsRequest.from_dict(boost_get_familial_boosts_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-
