@@ -15,6 +15,7 @@
         "start": "bun --conditions=development src/index.ts",
         "start:docker": "bun --conditions=development src/index.ts",
         "smoke:staging": "bun --conditions=development scripts/smoke.ts",
+        "test:runtime-did-auth": "node scripts/test-runtime-did-auth.mjs",
         "test": "bunx vitest"
     },
     "keywords": [],
