@@ -94,13 +94,7 @@ export const useConsentToContract = (
                         error.data &&
                         typeof error.data === 'object' &&
                         'code' in error.data &&
-                        [
-                            'CONFLICT',
-                            'BAD_REQUEST',
-                            'UNAUTHORIZED',
-                            'FORBIDDEN',
-                            'NOT_FOUND',
-                        ].includes(String(error.data.code))
+                        ['CONFLICT', 'BAD_REQUEST', 'NOT_FOUND'].includes(String(error.data.code))
                     )
                         clearPublicationRetry();
                     throw error;

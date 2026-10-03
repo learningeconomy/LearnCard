@@ -182,6 +182,8 @@ describe('interactive consent audience boundary', () => {
     });
     it.each([
         new TypeError('Failed to fetch'),
+        Object.assign(new Error('Sign in again'), { data: { code: 'UNAUTHORIZED' } }),
+        Object.assign(new Error('Renew guardian approval'), { data: { code: 'FORBIDDEN' } }),
         Object.assign(new Error('Request timed out'), { data: { code: 'TIMEOUT' } }),
         Object.assign(new Error('Service unavailable'), {
             data: { code: 'INTERNAL_SERVER_ERROR' },
