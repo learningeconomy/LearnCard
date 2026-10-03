@@ -1,133 +1,146 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
-import { IonSpinner } from '@ionic/react';
 import { QRCodeSVG } from 'qrcode.react';
 import { UnsignedVC, VC } from '@learncard/types';
-import {
-    ProfilePicture,
-    ToastTypeEnum,
-    truncateWithEllipsis,
-    useShareBoostMutation,
-    useToast,
-} from 'learn-card-base';
-import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import { ToastTypeEnum, useToast } from 'learn-card-base';
 import X from 'learn-card-base/svgs/X';
+import {
+    captureResumeAccount,
+    useResumeAccountRevision,
+} from '../../helpers/resume-publishing/account';
+import { useIssueTcpResume } from '../../hooks/useIssueTcpResume';
+import { enterSharePrivacy } from '../share-links/sharePrivacy';
+import { resumePublicationErrorMessage } from './resumePublicationMessages';
 import * as m from '../../paraglide/messages.js';
 
 type ResumeShareLinkProps = {
     handleClose?: () => void;
     resume: VC | UnsignedVC;
     resumeUri: string;
+    /** Already committed managed link. Opening this surface must not publish again. */
+    committedLink?: string;
 };
 
-const ResumeShareLink: React.FC<ResumeShareLinkProps> = ({ handleClose, resume, resumeUri }) => {
-    const brandingConfig = useBrandingConfig();
+const ResumeShareLinkContent: React.FC<ResumeShareLinkProps> = ({
+    handleClose,
+    resumeUri,
+    committedLink,
+}) => {
+    enterSharePrivacy();
     const { presentToast } = useToast();
-    const [shareLink, setShareLink] = useState<string>('');
-    const { mutate: shareResume, isPending } = useShareBoostMutation();
+    const { getResumeShareLink } = useIssueTcpResume();
+    const getLink = useRef(getResumeShareLink);
+    getLink.current = getResumeShareLink;
+    const [shareLink, setShareLink] = useState('');
+    const [error, setError] = useState<string>();
+    const [loading, setLoading] = useState(true);
+    const [copying, setCopying] = useState(false);
 
     useEffect(() => {
-        if (!resumeUri) return;
-
-        shareResume(
-            {
-                credential: resume,
-                credentialUri: resumeUri,
-                shareRouteName: 'verify/resume',
-            },
-            {
-                onSuccess: data => setShareLink(data?.link ?? ''),
-                onError: () => {
-                    presentToast(m['toasts.resume.shareLinkGenerated'](), {
-                        type: ToastTypeEnum.Error,
-                        hasDismissButton: true,
-                    });
-                },
-            }
-        );
-    }, [presentToast, resume, resumeUri, shareResume]);
+        let cancelled = false;
+        const isCurrentAccount = captureResumeAccount();
+        setShareLink('');
+        setError(undefined);
+        setLoading(true);
+        // Recover the managed link even when provided by the publisher so a
+        // stopped or expired entry is never offered from a cached result.
+        void getLink
+            .current(resumeUri)
+            .then(link => {
+                if (!cancelled && isCurrentAccount()) setShareLink(link);
+            })
+            .catch(failure => {
+                if (!cancelled && isCurrentAccount())
+                    setError(resumePublicationErrorMessage(failure));
+            })
+            .finally(() => {
+                if (!cancelled && isCurrentAccount()) setLoading(false);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [resumeUri, committedLink]);
 
     const copyShareLink = async () => {
-        if (!shareLink) return;
-
+        if (!shareLink || copying) return;
+        setCopying(true);
+        const isCurrentAccount = captureResumeAccount();
         try {
-            await Clipboard.write({ string: shareLink });
-            presentToast(m['toasts.resume.linkCopied'](), {
-                hasDismissButton: true,
-            });
+            const currentLink = await getResumeShareLink(resumeUri);
+            if (!isCurrentAccount()) return;
+            await Clipboard.write({ string: currentLink });
+            presentToast(m['toasts.resume.linkCopied'](), { hasDismissButton: true });
         } catch {
+            setShareLink('');
+            setError(m['resumePublishing.linkUnavailable']());
             presentToast(m['toasts.resume.linkCopyFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
+        } finally {
+            setCopying(false);
         }
     };
 
     return (
-        <section className="flex h-full w-full items-center justify-center p-5">
-            <div className="w-full max-w-[400px] rounded-[28px] border-2 border-white bg-grayscale-900 shadow-[0_20px_50px_rgba(15,23,42,0.35)] overflow-hidden">
-                <div className="flex items-center justify-between px-6 py-5">
-                    <ProfilePicture
-                        customContainerClass="flex justify-center items-center h-[44px] w-[44px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[44px] min-h-[44px]"
-                        customImageClass="flex justify-center items-center h-[44px] w-[44px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[44px] min-h-[44px]"
-                        customSize={120}
-                    />
-                    <p className="text-[22px] font-medium text-white">{m['common.share']()}</p>
+        <section
+            className="sentry-block ph-no-capture flex h-full w-full items-center justify-center p-5 font-poppins"
+            data-feedback-exclude
+        >
+            <div className="w-full max-w-[400px] rounded-[20px] border border-grayscale-200 bg-white p-6 space-y-5">
+                <div className="flex items-center justify-between gap-4">
+                    <h1 className="text-xl font-semibold text-grayscale-900">
+                        {m['common.share']()}
+                    </h1>
                     <button
                         type="button"
                         onClick={handleClose}
-                        className="text-white disabled:opacity-50"
                         disabled={!handleClose}
+                        className="text-grayscale-700 disabled:opacity-50 rounded-[20px]"
                         aria-label={m['passport.resumeBuilder.shareLink.close']()}
                     >
-                        <X className="h-8 w-8 text-white" />
+                        <X className="h-8 w-8" />
                     </button>
                 </div>
-
-                <div className="px-6 pb-6">
-                    <div className="rounded-[28px] bg-white p-4 sm:p-5">
-                        <div className="aspect-square w-full overflow-hidden rounded-[20px] bg-white flex items-center justify-center">
-                            {isPending || !shareLink ? (
-                                <IonSpinner name="crescent" className="h-8 w-8 text-indigo-500" />
-                            ) : (
-                                <QRCodeSVG value={shareLink} size={420} className="h-full w-full" />
-                            )}
-                        </div>
-
-                        <div className="mt-4 flex items-center gap-3 rounded-full bg-grayscale-100 px-4 py-3">
-                            <p className="min-w-0 flex-1 truncate text-[16px] font-medium text-grayscale-500">
-                                {shareLink
-                                    ? truncateWithEllipsis(shareLink, 40)
-                                    : m['passport.resumeBuilder.shareLink.generatingLink']()}
-                            </p>
-                            <button
-                                type="button"
-                                onClick={copyShareLink}
-                                disabled={!shareLink}
-                                className="shrink-0 text-[16px] font-semibold text-blue-500 disabled:opacity-50"
-                            >
-                                {m['passport.resumeBuilder.shareLink.copyLink']()}
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="mt-3 w-full flex flex-col gap-[10px] bg-sky-50 border border-sky-200 rounded-[15px] p-[14px]">
-                        <p className="text-sky-900 font-poppins text-[16px] font-[600] m-0">
-                            {m['passport.resumeBuilder.shareLink.heading']({
-                                brand: brandingConfig?.name ?? '',
-                            })}
+                {loading ? (
+                    <p role="status" className="text-sm text-grayscale-600 flex gap-2 items-center">
+                        <span
+                            aria-hidden
+                            className="w-4 h-4 rounded-full border-2 border-grayscale-300 border-t-grayscale-900 animate-spin"
+                        />
+                        {m['resumePublishing.opening']()}
+                    </p>
+                ) : error ? (
+                    <p role="alert" className="text-sm text-red-700">
+                        {error}
+                    </p>
+                ) : (
+                    <>
+                        <QRCodeSVG value={shareLink} size={320} className="mx-auto h-auto w-full" />
+                        <p className="text-sm text-grayscale-600">
+                            {m['resumePublishing.linkReady']()}
                         </p>
-                        <p className="text-sky-800 text-sm m-0">
-                            {m['passport.resumeBuilder.shareLink.description1']()}
-                        </p>
-                        <p className="text-sky-800 text-sm m-0">
-                            {m['passport.resumeBuilder.shareLink.description2']()}
-                        </p>
-                    </div>
-                </div>
+                        <button
+                            type="button"
+                            onClick={() => void copyShareLink()}
+                            disabled={!shareLink || copying}
+                            className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white text-sm font-medium disabled:opacity-40"
+                        >
+                            {copying
+                                ? m['shareLinks.copying']()
+                                : m['passport.resumeBuilder.shareLink.copyLink']()}
+                        </button>
+                    </>
+                )}
+                <p className="text-xs text-grayscale-600 leading-relaxed">
+                    {m['resumePublishing.limits']()}
+                </p>
             </div>
         </section>
     );
 };
-
+const ResumeShareLink: React.FC<ResumeShareLinkProps> = props => {
+    const revision = useResumeAccountRevision();
+    return <ResumeShareLinkContent key={revision} {...props} />;
+};
 export default ResumeShareLink;

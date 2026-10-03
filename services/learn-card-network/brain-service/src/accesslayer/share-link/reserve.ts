@@ -11,6 +11,7 @@ import {
 import { ensureShareLinkConstraints } from '../../models/share-link-constraints';
 import type { ShareLinkRecord } from '../../models/ShareLink';
 import { failShareLink } from './errors';
+import { pinShareAttachment, queueShareAttachmentCleanup } from './attachment';
 import {
     deleteReservation,
     enqueueCleanupJob,
@@ -60,6 +61,8 @@ const parseRecordedResult = (
 };
 
 type ReservationProps = {
+    attachmentId?: string | null;
+    attachmentChunkCount?: number | null;
     shareId: string;
     namespace: string;
     ownerProfileId: string;
@@ -96,6 +99,20 @@ const writeReservation = async (
     tx: ShareLinkTransaction,
     props: ReservationProps
 ): Promise<void> => {
+    if (props.contentVersion !== null && props.attachmentId && props.attachmentChunkCount) {
+        await pinShareAttachment(
+            tx,
+            {
+                namespace: props.namespace,
+                ownerProfileId: props.ownerProfileId,
+                shareId: props.shareId,
+                contentVersion: props.contentVersion,
+                attachmentId: props.attachmentId,
+                chunkCount: props.attachmentChunkCount,
+            },
+            props.requestHash
+        );
+    }
     await tx.run('CREATE (r:ShareLinkReservation) SET r = $props', { props });
 };
 
@@ -120,9 +137,30 @@ const bumpShareGeneration = async (
 const supersedeReservation = async (
     tx: ShareLinkTransaction,
     reservationProps: Record<string, unknown>,
-    now: string
+    now: string,
+    retainAttachment = false
 ): Promise<ShareLinkReservationRecord> => {
     const reservation = toShareLinkReservationRecord(reservationProps);
+    if (
+        !retainAttachment &&
+        reservation.attachmentId &&
+        reservation.attachmentChunkCount &&
+        reservation.contentVersion
+    ) {
+        await queueShareAttachmentCleanup(
+            tx,
+            {
+                namespace: reservation.namespace,
+                ownerProfileId: reservation.ownerProfileId,
+                shareId: reservation.shareId,
+                contentVersion: reservation.contentVersion,
+                attachmentId: reservation.attachmentId,
+                chunkCount: reservation.attachmentChunkCount,
+            },
+            'abandoned',
+            now
+        );
+    }
 
     if (reservation.objectRef) {
         await enqueueCleanupJob(tx, {
@@ -245,7 +283,7 @@ export const reserveCreate = async (input: ReserveCreateInput): Promise<ReserveS
 
                 // Same logical operation, expired lease: retain its expiry.
                 supersededExpiresAt = { value: existingReservation.expiresAt };
-                await supersedeReservation(tx, existingReservationProps, nowIso);
+                await supersedeReservation(tx, existingReservationProps, nowIso, true);
             }
 
             if (!share) {
@@ -264,6 +302,7 @@ export const reserveCreate = async (input: ReserveCreateInput): Promise<ReserveS
                 contentVersion: 1,
                 baseContentVersion: share.contentVersion,
                 content: input.content,
+                attachment: input.attachment,
                 selectedCount: input.selectedCount,
                 title: input.title,
                 note: input.note ?? null,
@@ -349,6 +388,8 @@ export const reserveCreate = async (input: ReserveCreateInput): Promise<ReserveS
             objectRef,
             contentVersion: 1,
             baseVersion: 1,
+            attachmentId: input.attachment?.id ?? null,
+            attachmentChunkCount: input.attachment?.chunkCount ?? null,
             baseContentVersion: 1,
             contentHash: input.content.contentHash,
             contentBytes: input.content.contentBytes,
@@ -388,6 +429,7 @@ export const reserveCreate = async (input: ReserveCreateInput): Promise<ReserveS
 };
 
 type CreateReservationForShareInput = {
+    attachment?: import('@learncard/types').ShareLinkAttachment;
     share: ShareLinkRecord;
     opKey: ShareLinkOperationKey;
     operationId: string;
@@ -434,6 +476,14 @@ const createReservationForShare = async (
         operationId: input.operationId,
         objectRef: input.objectRef,
         contentVersion: input.contentVersion,
+        attachmentId:
+            input.contentVersion !== null
+                ? (input.attachment?.id ?? null)
+                : (input.share.attachmentId ?? null),
+        attachmentChunkCount:
+            input.contentVersion !== null
+                ? (input.attachment?.chunkCount ?? null)
+                : (input.share.attachmentChunkCount ?? null),
         baseVersion: input.share.version,
         baseContentVersion: input.baseContentVersion,
         contentHash: input.content ? input.content.contentHash : null,
@@ -564,7 +614,7 @@ export const reserveReplacement = async (
                     };
                 }
 
-                await supersedeReservation(tx, existingReservationProps, nowIso);
+                await supersedeReservation(tx, existingReservationProps, nowIso, true);
             }
 
             return reserveReplacementForLockedShare(tx, {
@@ -659,6 +709,7 @@ const reserveReplacementForLockedShare = async (
         contentVersion: input.content ? input.content.contentVersion : null,
         baseContentVersion: share.contentVersion,
         content: input.content,
+        attachment: input.content?.attachment,
         selectedCount: input.content ? input.content.selectedCount : share.selectedCount,
         title: input.title ?? share.title,
         note: input.note !== undefined ? input.note : share.note,
