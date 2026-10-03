@@ -1,12 +1,11 @@
 # StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**header** | [**StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeader**](StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeader.md) |  | 
-**encrypted_key** | **str** |  | 
+| Name              | Type                                                                                                                                    | Description | Notes |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **header**        | [**StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeader**](StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeader.md) |             |
+| **encrypted_key** | **str**                                                                                                                                 |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ storage_resolve200_response_any_of_any_of_any_of1_recipients_inner_dict = storag
 # create an instance of StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInner from a dict
 storage_resolve200_response_any_of_any_of_any_of1_recipients_inner_from_dict = StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInner.from_dict(storage_resolve200_response_any_of_any_of_any_of1_recipients_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

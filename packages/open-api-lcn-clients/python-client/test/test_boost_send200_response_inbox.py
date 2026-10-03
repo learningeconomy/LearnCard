@@ -35,9 +35,19 @@ class TestBoostSend200ResponseInbox(unittest.TestCase):
         model = BoostSend200ResponseInbox()
         if include_optional:
             return BoostSend200ResponseInbox(
+                refresh = openapi_client.models.boost_send_200_response_inbox_refresh.boost_send_200_response_inbox_refresh(
+                    refresh_id = '0', 
+                    refresh_service = {
+                        'key' : null
+                        }, 
+                    credential_id = '0', 
+                    issuer_did = '0', 
+                    credential_status = null, 
+                    holder_did = '0', ),
                 issuance_id = '',
                 status = 'PENDING',
-                claim_url = ''
+                claim_url = '',
+                guardian_status = 'AWAITING_GUARDIAN'
             )
         else:
             return BoostSend200ResponseInbox(

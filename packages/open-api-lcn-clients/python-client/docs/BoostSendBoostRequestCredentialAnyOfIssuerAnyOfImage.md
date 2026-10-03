@@ -1,13 +1,12 @@
 # BoostSendBoostRequestCredentialAnyOfIssuerAnyOfImage
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**type** | **str** |  | 
-**caption** | **str** |  | [optional] 
+| Name        | Type    | Description | Notes      |
+| ----------- | ------- | ----------- | ---------- |
+| **id**      | **str** |             |
+| **type**    | **str** |             |
+| **caption** | **str** |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ boost_send_boost_request_credential_any_of_issuer_any_of_image_dict = boost_send
 # create an instance of BoostSendBoostRequestCredentialAnyOfIssuerAnyOfImage from a dict
 boost_send_boost_request_credential_any_of_issuer_any_of_image_from_dict = BoostSendBoostRequestCredentialAnyOfIssuerAnyOfImage.from_dict(boost_send_boost_request_credential_any_of_issuer_any_of_image_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

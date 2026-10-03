@@ -38,6 +38,7 @@ class TestBoostSendRequestTemplate(unittest.TestCase):
                 name = '',
                 type = '',
                 category = '',
+                created = '',
                 status = 'DRAFT',
                 auto_connect_recipients = True,
                 meta = {
@@ -45,6 +46,7 @@ class TestBoostSendRequestTemplate(unittest.TestCase):
                     },
                 default_permissions = openapi_client.models.boost_send_request_template_default_permissions.boost_send_request_template_defaultPermissions(
                     role = '', 
+                    can_view = True, 
                     can_edit = True, 
                     can_issue = True, 
                     can_revoke = True, 
@@ -60,6 +62,7 @@ class TestBoostSendRequestTemplate(unittest.TestCase):
                 credential = None,
                 claim_permissions = openapi_client.models.boost_send_request_template_claim_permissions.boost_send_request_template_claimPermissions(
                     role = '', 
+                    can_view = True, 
                     can_edit = True, 
                     can_issue = True, 
                     can_revoke = True, 
@@ -74,7 +77,8 @@ class TestBoostSendRequestTemplate(unittest.TestCase):
                 skills = [
                     openapi_client.models.boost_send_request_template_skills_inner.boost_send_request_template_skills_inner(
                         framework_id = '', 
-                        id = '', )
+                        id = '', 
+                        proficiency_level = 1.337, )
                     ]
             )
         else:
