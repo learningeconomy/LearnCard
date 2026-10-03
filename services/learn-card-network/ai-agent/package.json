@@ -15,7 +15,8 @@
         "start": "bun --conditions=development src/index.ts",
         "start:docker": "bun --conditions=development src/index.ts",
         "smoke:staging": "bun --conditions=development scripts/smoke.ts",
-        "test": "bunx vitest"
+        "test:runtime-did-auth": "node scripts/test-runtime-did-auth.mjs",
+        "test": "node scripts/test-runtime-did-auth.mjs && bunx vitest"
     },
     "keywords": [],
     "author": "Learning Economy Foundation (www.learningeconomy.io)",

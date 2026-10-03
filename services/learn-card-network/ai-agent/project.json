@@ -7,7 +7,12 @@
     "tags": [],
     "namedInputs": {
         "source": ["{projectRoot}/src/**/*", "{projectRoot}/public/**/*"],
-        "tests": ["{projectRoot}/test/**/*"],
+        "tests": [
+            "{projectRoot}/test/**/*",
+            "{projectRoot}/scripts/test-runtime-did-auth.mjs",
+            "{projectRoot}/scripts/runtime-did-auth-smoke.ts",
+            "{projectRoot}/Dockerfile"
+        ],
         "dist": ["{projectRoot}/dist/**/*"]
     },
     "targets": {
