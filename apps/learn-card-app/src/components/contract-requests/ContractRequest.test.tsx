@@ -152,18 +152,21 @@ afterEach(() => {
     vi.useRealTimers();
 });
 describe('referral actions', () => {
-    it('opens fresh review and rechecks the request before submission', async () => {
-        show();
-        fireEvent.click(await screen.findByText('Accept & Connect'));
-        await waitFor(() => expect(state.modal).toHaveBeenCalled());
-        const flow = state.modal.mock.calls[0][0].props.children;
-        expect(flow.props.contractDetails.owner.displayName).toBe('Partner Org');
-        expect(flow.props.disableRedirect).toBe(true);
-        expect(flow.props.expectedRequestId).toBe('req-1');
-        expect(state.getContract).toHaveBeenCalledTimes(2);
-        state.status.status = 'cancelled';
-        await expect(flow.props.beforeSubmit()).rejects.toThrow('no longer pending');
-    });
+    it.each(['cancelled', 'accepted'])(
+        'keeps initial consent pending-only when request becomes %s',
+        async status => {
+            show();
+            fireEvent.click(await screen.findByText('Accept & Connect'));
+            await waitFor(() => expect(state.modal).toHaveBeenCalled());
+            const flow = state.modal.mock.calls[0][0].props.children;
+            expect(flow.props.contractDetails.owner.displayName).toBe('Partner Org');
+            expect(flow.props.disableRedirect).toBe(true);
+            expect(flow.props.expectedRequestId).toBe('req-1');
+            expect(state.getContract).toHaveBeenCalledTimes(2);
+            state.status.status = status;
+            await expect(flow.props.beforeSubmit()).rejects.toThrow('no longer pending');
+        }
+    );
     it.each(['flags', 'tenant'] as const)(
         'closes only saved referral details when %s is disabled, after the card unmounts',
         async gate => {

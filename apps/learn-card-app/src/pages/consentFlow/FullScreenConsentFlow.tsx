@@ -56,6 +56,8 @@ type FullScreenConsentFlowProps = {
     };
     disableRedirect?: boolean;
     beforeSubmit?: () => Promise<void>;
+    /** Revalidate an accepted invitation when finishing its saved publication. */
+    beforePublicationRetry?: () => Promise<void>;
     expectedRequestId?: string;
     onCloseCallback?: () => void;
     onBackCallback?: () => void;
@@ -74,6 +76,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
     childInsightsProfile,
     disableRedirect = false,
     beforeSubmit,
+    beforePublicationRetry,
     expectedRequestId,
     onCloseCallback,
     onBackCallback,
@@ -146,7 +149,8 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
 
     const handleSubmit = async (
-        submit: (beforeSubmit: () => Promise<void>) => ReturnType<typeof consentToContract>
+        submit: (beforeSubmit: () => Promise<void>) => ReturnType<typeof consentToContract>,
+        validateRequest = beforeSubmit
     ) => {
         const { prompted } = await gate();
         if (prompted) return;
@@ -162,7 +166,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
 
                 const { redirectUrl } = await submit(async () => {
                     await guardedAction(() => {});
-                    await beforeSubmit?.();
+                    await validateRequest?.();
                 });
 
                 // Sync any auto-boost credentials (if any). No need to wait.
@@ -370,7 +374,12 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 <button
                     className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm disabled:opacity-40"
                     disabled={consentingToContract}
-                    onClick={() => void handleSubmit(retrySmartResumePublication)}
+                    onClick={() =>
+                        void handleSubmit(
+                            retrySmartResumePublication,
+                            beforePublicationRetry ?? beforeSubmit
+                        )
+                    }
                 >
                     {m['common.tryAgain']()}
                 </button>
