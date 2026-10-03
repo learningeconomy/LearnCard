@@ -42,14 +42,31 @@ export const createConsentFlowContract = async ({
     const createdAt = new Date().toISOString();
     const uniqueRecipientIds = [...new Set(recipientIds)].filter(id => id !== ownerProfileId);
     const uniqueWriterIds = [...new Set(writerIds)];
+    const autoBoostsById = new Map<string, (typeof autoboosts)[number]>();
+    for (const config of autoboosts) {
+        const existing = autoBoostsById.get(config.id);
+        if (
+            existing &&
+            (existing.signingAuthorityEndpoint !== config.signingAuthorityEndpoint ||
+                existing.signingAuthorityName !== config.signingAuthorityName)
+        ) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: `Conflicting signing authorities for autoboost: ${config.id}`,
+            });
+        }
+        autoBoostsById.set(config.id, config);
+    }
+    // One configured template produces one issuance per consent/update.
+    const uniqueAutoBoosts = [...autoBoostsById.values()];
 
     const query = new QueryBuilder(
         new BindParam({
             ownerProfileId,
             recipientIds: uniqueRecipientIds,
             writerIds: uniqueWriterIds,
-            boostIds: [...new Set(autoboosts.map(boost => boost.id))],
-            autoboosts,
+            boostIds: uniqueAutoBoosts.map(boost => boost.id),
+            autoboosts: uniqueAutoBoosts,
             createdAt,
             params: flattenObject({
                 id,

@@ -12,6 +12,7 @@ import {
 import { syncCredentialsToContract } from '@accesslayer/consentflowcontract/relationships/update';
 import { testUnsignedBoost, testVc } from './helpers/send';
 import { openApiDocument } from '../src/openapi';
+import { neogma } from '@instance';
 
 const actor = async (role: string) => {
     const user = await getUser(randomBytes(32).toString('hex'));
@@ -155,6 +156,103 @@ describe('contract data recipients', () => {
         expect(
             records.find(record => record.contract.uri === legacyUri)!.contract.recipients
         ).toEqual([]);
+    });
+
+    it('exports empty recipients and version zero for legacy contracts without an audience version', async () => {
+        const uri = await create();
+        await neogma.queryRunner.run(
+            'MATCH (contract:ConsentFlowContract {id: $id}) REMOVE contract.audienceVersion',
+            { id: getIdFromUri(uri) }
+        );
+        await accept(uri);
+        const exported = (await learner.clients.fullAuth.credential.getHolderExportMetadata())
+            .consentRecords[0]!;
+        expect(exported.contract.recipients).toEqual([]);
+        expect(exported.contract.audienceVersion).toBe(0);
+        expect(exported.contract.owner.did).toBe(owner.did);
+    });
+
+    it('exports the current public audience and version while preserving holder history', async () => {
+        await Profile.update(
+            { email: 'synthetic-private@example.com' },
+            { where: { profileId: recipient.profileId } }
+        );
+        const uri = await create([recipient.profileId]);
+        const { termsUri } = await accept(uri, 1);
+        const exported = (await learner.clients.fullAuth.credential.getHolderExportMetadata())
+            .consentRecords[0]!;
+        expect(exported.contract.owner.did).toBe(owner.did);
+        expect(exported.contract.audienceVersion).toBe(1);
+        expect(exported.contract.recipients).toEqual([
+            expect.objectContaining({ profileId: recipient.profileId, did: recipient.did }),
+        ]);
+        expect(exported.contract.recipients![0]).not.toHaveProperty('email');
+        await owner.clients.fullAuth.contracts.removeContractRecipient({
+            contractUri: uri,
+            recipient: recipient.profileId,
+        });
+        await learner.clients.fullAuth.contracts.withdrawConsent({ uri: termsUri });
+        const later = (await learner.clients.fullAuth.credential.getHolderExportMetadata())
+            .consentRecords[0]!;
+        expect(later.contract.recipients).toEqual([]);
+        expect(later.contract.audienceVersion).toBe(2);
+        expect(later.status).toBe('withdrawn');
+        expect(later.transactions).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ action: 'consent' }),
+                expect.objectContaining({ action: 'withdraw' }),
+            ])
+        );
+    });
+
+    it('collapses repeated autoboosts after normalizing signing-authority names', async () => {
+        const endpoint = 'https://example.com/synthetic-signer';
+        await owner.clients.fullAuth.profile.registerSigningAuthority({
+            endpoint,
+            name: 'synthetic',
+            did: owner.did,
+        });
+        const boostUri = await owner.clients.fullAuth.boost.createBoost({
+            credential: testUnsignedBoost,
+        });
+        const uri = await owner.clients.fullAuth.contracts.createConsentFlowContract({
+            name: 'Duplicate autoboost configuration',
+            contract: normalContract,
+            autoboosts: ['synthetic', 'Synthetic', 'synthetic'].map(name => ({
+                boostUri,
+                signingAuthority: { endpoint, name },
+            })),
+        });
+        expect((await details(uri)).autoBoosts).toEqual([boostUri]);
+    });
+
+    it('rejects conflicting signers for the same autoboost before creating a contract', async () => {
+        const endpoint = 'https://example.com/synthetic-signer';
+        for (const name of ['first', 'second']) {
+            await owner.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint,
+                name,
+                did: owner.did,
+            });
+        }
+        const boostUri = await owner.clients.fullAuth.boost.createBoost({
+            credential: testUnsignedBoost,
+        });
+        const name = `autoboost-conflict-${owner.profileId}`;
+        await expect(
+            owner.clients.fullAuth.contracts.createConsentFlowContract({
+                name,
+                contract: normalContract,
+                autoboosts: ['first', 'second'].map(name => ({
+                    boostUri,
+                    signingAuthority: { endpoint, name },
+                })),
+            })
+        ).rejects.toMatchObject({
+            code: 'BAD_REQUEST',
+            message: expect.stringContaining('Conflicting signing authorities'),
+        });
+        expect(await ConsentFlowContract.findMany({ where: { name } })).toHaveLength(0);
     });
 
     it('rejects missing and stale acknowledgments without recording consent', async () => {
