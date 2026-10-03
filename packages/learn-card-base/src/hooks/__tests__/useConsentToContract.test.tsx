@@ -180,6 +180,50 @@ describe('interactive consent audience boundary', () => {
         expect(guard).toHaveBeenCalled();
         await vi.waitFor(() => expect(hook.result.current.publicationRetryAvailable).toBe(false));
     });
+    it.each([
+        new TypeError('Failed to fetch'),
+        Object.assign(new Error('Request timed out'), { data: { code: 'TIMEOUT' } }),
+        Object.assign(new Error('Service unavailable'), {
+            data: { code: 'INTERNAL_SERVER_ERROR' },
+        }),
+    ])('keeps the exact publication after an ambiguous retry failure: %s', async error => {
+        const prepared = {
+            ...selection,
+            expiresAt: '2027-01-01T00:00:00Z',
+            oneTime: true,
+            terms: {
+                ...selection.terms,
+                read: {
+                    ...selection.terms.read,
+                    personal: { name: 'Alex' },
+                    credentials: {
+                        categories: { Achievement: { shared: ['urn:encrypted'], sharing: true } },
+                    },
+                },
+            },
+        };
+        mocks.materialize.mockResolvedValue(prepared);
+        mocks.consent
+            .mockRejectedValueOnce(
+                Object.assign(new Error('Upload failed'), { data: { code: 'BAD_GATEWAY' } })
+            )
+            .mockRejectedValueOnce(error);
+        const hook = renderHook(() =>
+            useConsentToContract('urn:contract', 'did:key:owner', 'token')
+        );
+        await expect(
+            (hook.result.current as unknown as MutationHarness).mutationFn(selection)
+        ).rejects.toThrow('Upload failed');
+        await expect(hook.result.current.retrySmartResumePublication()).rejects.toBe(error);
+        await vi.waitFor(() => expect(hook.result.current.publicationRetryAvailable).toBe(true));
+        await hook.result.current.retrySmartResumePublication();
+        expect(mocks.consent.mock.calls[1]).toEqual(mocks.consent.mock.calls[0]);
+        expect(mocks.consent.mock.calls[2]).toEqual(mocks.consent.mock.calls[0]);
+        expect(mocks.consent.mock.calls[2]![1]).toEqual({ ...prepared, audienceVersion: 3 });
+        expect(mocks.materialize).toHaveBeenCalledOnce();
+        expect(mocks.review).toHaveBeenCalledOnce();
+        await vi.waitFor(() => expect(hook.result.current.publicationRetryAvailable).toBe(false));
+    });
     it('does not replay a publication under a different holder', async () => {
         mocks.consent.mockRejectedValueOnce(
             Object.assign(new Error('Upload failed'), { data: { code: 'BAD_GATEWAY' } })

@@ -85,16 +85,23 @@ export const useConsentToContract = (
                     clearPublicationRetry();
                     return result;
                 } catch (error) {
-                    // Conflicts require review; an external upload failure keeps the exact retry.
-                    if (!(
+                    // An ambiguous failure may have reached the server. Keep the exact
+                    // accepted decision until success or a confirmed invalidation.
+                    if (
                         error &&
                         typeof error === 'object' &&
                         'data' in error &&
                         error.data &&
                         typeof error.data === 'object' &&
                         'code' in error.data &&
-                        error.data.code === 'BAD_GATEWAY'
-                    ))
+                        [
+                            'CONFLICT',
+                            'BAD_REQUEST',
+                            'UNAUTHORIZED',
+                            'FORBIDDEN',
+                            'NOT_FOUND',
+                        ].includes(String(error.data.code))
+                    )
                         clearPublicationRetry();
                     throw error;
                 }
