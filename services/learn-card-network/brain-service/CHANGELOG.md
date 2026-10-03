@@ -1,5 +1,16 @@
 # @learncard/network-brain-service
 
+## 3.19.2
+
+### Patch Changes
+
+- [#979](https://github.com/learningeconomy/LearnCard/pull/979) [`a55332b1652567bc7f3d60064a446365c134cf24`](https://github.com/learningeconomy/LearnCard/commit/a55332b1652567bc7f3d60064a446365c134cf24) Thanks [@github-actions](https://github.com/apps/github-actions)! - Export complete mutually exclusive credential-refresh publication schemas for generated clients. Regenerate the Python SDK from pinned, offline local inputs with omission-preserving models and UTC Z-only activity date filters; verify prepared requests against the unchanged server contracts.
+
+- Updated dependencies [[`590adf48867d6c6fd504e66a11c9827d5102122d`](https://github.com/learningeconomy/LearnCard/commit/590adf48867d6c6fd504e66a11c9827d5102122d)]:
+    - @learncard/didkit-plugin@1.10.3
+    - @learncard/credential-library@2.0.5
+    - @learncard/didkit-plugin-node@0.3.3
+
 ## 3.19.1
 
 ### Patch Changes

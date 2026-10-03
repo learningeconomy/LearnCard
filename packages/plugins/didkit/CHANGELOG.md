@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.10.3
+
+### Patch Changes
+
+- [#1645](https://github.com/learningeconomy/LearnCard/pull/1645) [`590adf48867d6c6fd504e66a11c9827d5102122d`](https://github.com/learningeconomy/LearnCard/commit/590adf48867d6c6fd504e66a11c9827d5102122d) Thanks [@github-actions](https://github.com/apps/github-actions)! - Update DIDKit WASM from didkit 543de99bb356 and ssi 6d71e5f46e59, including the HTTP bridge artifact and integrity pin.
+
 ## 1.10.2
 
 ### Patch Changes
