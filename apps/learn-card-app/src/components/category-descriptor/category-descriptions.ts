@@ -53,6 +53,13 @@ export const CATEGORY_DESCRIPTIONS: {
         competitive victories.`,
         type: CredentialCategoryEnum.achievement,
     },
+    [CredentialCategoryEnum.qualifications]: {
+        id: 11,
+        text: `Qualifications are formal credentials that recognize professional or vocational expertise,
+        including licenses, certifications, and apprenticeship credentials. They document the knowledge,
+        training, or authorization needed to practice a trade or profession.`,
+        type: CredentialCategoryEnum.qualifications,
+    },
     [CredentialCategoryEnum.accomplishment]: {
         id: 5,
         text: `A portfolio is a curated collection of an individual's work, 

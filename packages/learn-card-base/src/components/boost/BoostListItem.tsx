@@ -28,10 +28,16 @@ import { newCredsStore } from 'learn-card-base/stores/newCredsStore';
 import DotIcon from '../../svgs/DotIcon';
 import { CredentialLifecycleStatus } from '../CredentialBadge/CredentialStatusSealIcon';
 import { useI18nLocale, useT } from 'learn-card-base/i18n';
+import {
+    getCredentialExpirationDate,
+    hasCredentialExpired,
+} from '../../helpers/credentialExpiration';
 
 const DISPLAY_TYPE_KEYS: Record<string, string> = {
     Badge: 'badge',
     Boost: 'badge',
+    Qualification: 'qualifications',
+    Qualifications: 'qualifications',
     Family: 'family',
     Achievement: 'achievement',
     Course: 'course',
@@ -148,6 +154,8 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
         });
         return createdAt;
     }, [activeLocale, credential, relativeDate]);
+    const expirationDate = getCredentialExpirationDate(credential);
+    const isExpired = hasCredentialExpired(credential);
 
     const { subColor } = categoryMetadata[categoryType];
 
@@ -158,6 +166,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
             [CredentialCategoryEnum.learningHistory]: 'bg-emerald-500',
             [CredentialCategoryEnum.socialBadge]: 'bg-cyan-500',
             [CredentialCategoryEnum.achievement]: 'bg-orange-300',
+            [CredentialCategoryEnum.qualifications]: 'bg-emerald-500',
             [CredentialCategoryEnum.accomplishment]: 'bg-lime-300',
             [CredentialCategoryEnum.workHistory]: 'bg-blue-300',
             [CredentialCategoryEnum.accommodation]: 'bg-amber-300',
@@ -397,6 +406,16 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                         </>
                     )}
                 </span>
+                {expirationDate && (
+                    <span
+                        className={`text-xs ${isExpired ? 'text-amber-700 font-semibold' : 'text-grayscale-500'}`}
+                    >
+                        {t(isExpired ? 'credential.lifecycle.expired' : 'credential.expires')}{' '}
+                        {new Intl.DateTimeFormat(activeLocale, { dateStyle: 'medium' }).format(
+                            new Date(expirationDate)
+                        )}
+                    </span>
+                )}
             </div>
 
             {onOptionsClick && (

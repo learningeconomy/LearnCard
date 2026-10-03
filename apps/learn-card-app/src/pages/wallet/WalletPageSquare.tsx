@@ -25,6 +25,7 @@ const CATEGORY_TITLE: Partial<Record<CredentialCategoryEnum, () => string>> = {
     [CredentialCategoryEnum.skill]: m['wallet.categories.skills'],
     [CredentialCategoryEnum.socialBadge]: m['wallet.categories.socialBadges'],
     [CredentialCategoryEnum.achievement]: m['wallet.categories.achievements'],
+    [CredentialCategoryEnum.qualifications]: m['wallet.categories.qualifications'],
     [CredentialCategoryEnum.learningHistory]: m['wallet.categories.studies'],
     [CredentialCategoryEnum.accomplishment]: m['wallet.categories.portfolio'],
     [CredentialCategoryEnum.accommodation]: m['wallet.categories.assistance'],

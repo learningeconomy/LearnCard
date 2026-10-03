@@ -5,6 +5,7 @@ import React from 'react';
 import moment from 'moment';
 import { ErrorBoundary } from 'react-error-boundary';
 import { getLocale } from '../../../paraglide/runtime.js';
+import * as m from '../../../paraglide/messages.js';
 
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useTheme from '../../../theme/hooks/useTheme';
@@ -60,6 +61,10 @@ import { VC, VerificationItem } from '@learncard/types';
 import { LCR } from 'learn-card-base/types/credential-records';
 import { ID_CARD_DISPLAY_TYPES } from 'learn-card-base/helpers/credentials/ids';
 import { getDefaultDisplayType } from '../boostHelpers';
+import {
+    getCredentialExpirationDate,
+    hasCredentialExpired,
+} from 'learn-card-base/helpers/credentialExpiration';
 import { useCredentialStatus } from '../../../hooks/useCredentialStatus';
 import CredentialUpdatedIndicator from '../../credentials/credential-history/CredentialUpdatedIndicator';
 import { useMarkCredentialUpdateRead } from '../../credentials/credential-history/useMarkCredentialUpdateRead';
@@ -445,6 +450,13 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     });
 
     const createdAtDate = new Date(getIssuanceDate(cred) ?? '');
+    const expirationDate = getCredentialExpirationDate(cred);
+    const isExpired = hasCredentialExpired(cred);
+    const expirationLabel = expirationDate
+        ? `${(isExpired ? m['wallet.expired'] : m['wallet.expires'])()} ${moment(expirationDate)
+              .locale(getLocale())
+              .format('MMMM DD YYYY')}`
+        : undefined;
     const issueDate = Number.isNaN(createdAtDate.getTime())
         ? moment(createdAt).locale(getLocale()).format('MMMM DD YYYY')
         : new Intl.DateTimeFormat(getLocale(), {
@@ -452,6 +464,19 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
               day: '2-digit',
               year: 'numeric',
           }).format(createdAtDate);
+    const customDateDisplay = showSkeleton ? (
+        <BoostTextSkeleton
+            containerClassName="w-full flex items-center justify-center"
+            skeletonStyles={{ width: '50%' }}
+        />
+    ) : expirationLabel ? (
+        <div className="flex flex-col items-center gap-0.5 text-[11px] leading-tight text-grayscale-700">
+            <span>{issueDate}</span>
+            <span className={isExpired ? 'text-amber-700 font-semibold' : ''}>
+                {expirationLabel}
+            </span>
+        </div>
+    ) : undefined;
 
     const isCardView = boostPageViewMode === BoostPageViewMode.Card;
 
@@ -502,6 +527,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     customHeaderClass="boost-managed-card"
                     thumbImgSrc={badgeThumbnail}
                     dateDisplay={issueDate}
+                    customDateDisplay={customDateDisplay}
                     issuerName={issuerName}
                     customIssuerName={
                         <CustomIssuerName
@@ -584,6 +610,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         customHeaderClass="boost-managed-card"
                         thumbImgSrc={badgeThumbnail}
                         dateDisplay={issueDate}
+                        customDateDisplay={customDateDisplay}
                         issuerName={issuerName}
                         customIssuerName={
                             <CustomIssuerName
@@ -675,14 +702,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     checkStatus={initialCheckmarkState}
                     onCheckClick={onCheckMarkClick}
                     dateDisplay={issueDate}
-                    customDateDisplay={
-                        showSkeleton ? (
-                            <BoostTextSkeleton
-                                containerClassName="w-full flex items-center justify-center"
-                                skeletonStyles={{ width: '50%' }}
-                            />
-                        ) : undefined
-                    }
+                    customDateDisplay={customDateDisplay}
                     issuerName={issuerName}
                     customIssuerName={
                         <CustomIssuerName

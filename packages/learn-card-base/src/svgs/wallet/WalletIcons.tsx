@@ -75,6 +75,7 @@ export const WALLET_ICON_PALETTE_DEFAULTS: Record<string, Required<IconPalette>>
     Skills: SKILLS_DEFAULTS,
     Boosts: BOOSTS_DEFAULTS,
     Achievements: ACHIEVEMENTS_DEFAULTS,
+    Qualifications: STUDIES_DEFAULTS,
     Studies: STUDIES_DEFAULTS,
     Portfolio: PORTFOLIO_DEFAULTS,
     Assistance: ASSISTANCE_DEFAULTS,

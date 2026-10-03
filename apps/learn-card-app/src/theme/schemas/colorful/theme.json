@@ -76,6 +76,18 @@
                 "backgroundSecondaryColor": "pink-200",
                 "tabActiveColor": "bg-pink-300"
             },
+            "qualifications": {
+                "primaryColor": "emerald-100",
+                "secondaryColor": "emerald-600",
+                "indicatorColor": "emerald-100",
+                "borderColor": "emerald-300",
+                "statusBarColor": "emerald-500",
+                "headerBrandingTextColor": "text-emerald-700",
+                "headerTextColor": "text-white",
+                "backgroundPrimaryColor": "!bg-emerald-500",
+                "backgroundSecondaryColor": "emerald-100",
+                "tabActiveColor": "bg-emerald-300"
+            },
             "learningHistory": {
                 "primaryColor": "emerald-401",
                 "secondaryColor": "emerald-601",
@@ -217,6 +229,13 @@
                     "backsplash": "#F9A8D4",
                     "spill": "#CA8A04",
                     "cupOutline": "#BE185D"
+                }
+            },
+            "qualifications": {
+                "spilledCup": {
+                    "backsplash": "#A7F3D0",
+                    "spill": "#34D399",
+                    "cupOutline": "#047857"
                 }
             },
             "accomplishment": {

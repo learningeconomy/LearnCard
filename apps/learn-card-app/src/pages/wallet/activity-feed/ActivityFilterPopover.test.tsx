@@ -12,7 +12,7 @@ import { CredentialCategoryEnum } from 'learn-card-base';
 import { ActivityFilterPopover } from './ActivityFilterPopover';
 
 describe('ActivityFilterPopover', () => {
-    it('renders All + the 7 category chips', () => {
+    it('renders All + the 8 category chips, including Qualifications', () => {
         const { getByText } = render(
             <ActivityFilterPopover selected="all" onApply={vi.fn()} onReset={vi.fn()} />
         );
@@ -20,6 +20,7 @@ describe('ActivityFilterPopover', () => {
             'All',
             'Badges',
             'Achievements',
+            'Qualifications',
             'Courses',
             'Portfolio',
             'Assistance',
@@ -35,6 +36,16 @@ describe('ActivityFilterPopover', () => {
         fireEvent.click(getByText('Achievements'));
         fireEvent.click(getByText('Apply Filter'));
         expect(onApply).toHaveBeenCalledWith(CredentialCategoryEnum.achievement);
+    });
+
+    it('applies Qualifications as its own category filter', () => {
+        const onApply = vi.fn();
+        const { getByText } = render(
+            <ActivityFilterPopover selected="all" onApply={onApply} onReset={vi.fn()} />
+        );
+        fireEvent.click(getByText('Qualifications'));
+        fireEvent.click(getByText('Apply Filter'));
+        expect(onApply).toHaveBeenCalledWith(CredentialCategoryEnum.qualifications);
     });
     it('calls onReset when Reset is clicked', () => {
         const onReset = vi.fn();

@@ -4,7 +4,11 @@ import { z } from 'zod';
 import ExperienceIcon from 'learn-card-base/svgs/ExperienceIcon';
 import AccommodationsIcon from 'learn-card-base/svgs/AccommodationsIcon';
 
-import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
+import {
+    AchievementTypes,
+    CATEGORY_TO_TEMPLATE_LIST,
+    ACHIEVEMENT_CATEGORIES,
+} from 'learn-card-base/components/IssueVC/constants';
 import BoostsIcon from 'learn-card-base/svgs/wallet/BoostsIcon';
 import AllBoostsIcon from 'learn-card-base/svgs/wallet/AllBoostsIcon';
 import AchievementsIcon from 'learn-card-base/svgs/wallet/AchievementsIcon';
@@ -25,6 +29,7 @@ export const availableBoostCategories = [
     BoostCategoryOptionsEnum.accomplishment,
     BoostCategoryOptionsEnum.accommodation,
     BoostCategoryOptionsEnum.workHistory,
+    BoostCategoryOptionsEnum.qualifications,
     BoostCategoryOptionsEnum.id,
 ];
 
@@ -92,6 +97,14 @@ export const boostVCTypeOptions = {
             iconClassName: 'text-white',
             iconCircleClass: 'bg-blue-600',
             type: BoostCategoryOptionsEnum.workHistory,
+        },
+        {
+            id: 10,
+            title: 'Qualifications',
+            IconComponent: AchievementsIcon,
+            iconClassName: 'text-white',
+            iconCircleClass: 'bg-emerald-500',
+            type: BoostCategoryOptionsEnum.qualifications,
         },
         {
             id: 5,
@@ -226,6 +239,18 @@ export const boostVCTypeOptions = {
         //     type: BoostCategoryOptionsEnum.family,
         // },
         {
+            id: 10,
+            title: 'Qualifications',
+            IconComponent: AchievementsIcon,
+            iconClassName: 'text-white',
+            iconCircleClass: 'bg-emerald-500',
+            type: BoostCategoryOptionsEnum.qualifications,
+            ShapeIcon: Diamond,
+            shapeColor: 'text-emerald-500 w-[35px] h-[35px]',
+            WalletIcon: AchievementsIcon,
+            iconStyles: 'h-[35px] w-[35px]',
+        },
+        {
             id: 5,
             title: 'ID',
             IconComponent: IDsIcon,
@@ -319,6 +344,8 @@ export const CATEGORY_TO_SUBCATEGORY_LIST: {
         //     type: AchievementTypes.Upskilling,
         // },
     ],
+    [BoostCategoryOptionsEnum.qualifications]:
+        CATEGORY_TO_TEMPLATE_LIST[ACHIEVEMENT_CATEGORIES.Qualifications],
     [BoostCategoryOptionsEnum.id]: [
         // {
         //     title: 'License',
@@ -1037,6 +1064,7 @@ export const BOOST_CATEGORY_TO_WALLET_ROUTE = {
     ['ID']: 'ids',
     ['Learning History']: 'learninghistory',
     ['Achievement']: 'achievements',
+    ['Qualifications']: 'qualifications',
     ['Work History']: 'workhistory',
     ['Skill']: 'skills',
     ['Social Badge']: 'socialBadges',

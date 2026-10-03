@@ -25,7 +25,13 @@ import {
     getEndorsementsForVC,
     getEndorsementTargetId,
     resolveSharedCredential,
+    getDefaultCategoryForCredential,
+    getAllSortedCredentials,
 } from './credentialHelpers';
+import {
+    getNotificationType,
+    NotificationTypeEnum,
+} from '../components/notifications/notifications';
 
 const createWallet = () => {
     const get = vi.fn();
@@ -356,5 +362,120 @@ describe('getEndorsementsForVC', () => {
         read.mockResolvedValue(endorsement);
 
         await expect(getEndorsementsForVC(wallet, credential)).resolves.toEqual([endorsement]);
+    });
+});
+
+describe('Qualifications classification', () => {
+    const qualification = (achievementType: string, tags?: string[]) => ({
+        '@context': [
+            'https://www.w3.org/ns/credentials/v2',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+        ],
+        id: 'urn:uuid:qualification',
+        type: ['VerifiableCredential', 'OpenBadgeCredential'],
+        issuer: 'did:example:issuer',
+        validFrom: '2025-01-01T00:00:00Z',
+        credentialSubject: {
+            id: 'did:example:holder',
+            type: ['AchievementSubject'],
+            achievement: {
+                id: 'urn:uuid:achievement',
+                type: ['Achievement'],
+                name: 'Professional qualification',
+                description: 'Qualification awarded by the issuer.',
+                criteria: { narrative: 'Complete the requirements.' },
+                achievementType,
+                ...(tags ? { tag: tags } : {}),
+            },
+        },
+    });
+
+    it.each([
+        'License',
+        'Certification',
+        'JourneymanCertificate',
+        'MasterCertificate',
+        'ApprenticeshipCertificate',
+    ])('places %s in Qualifications without changing the credential', achievementType => {
+        const credential = qualification(achievementType);
+        const original = structuredClone(credential);
+        expect(getDefaultCategoryForCredential(credential as never)).toBe('Qualifications');
+        expect(credential).toEqual(original);
+    });
+
+    it.each(['expirationDate', 'validUntil'])(
+        'keeps expired credentials in Qualifications with %s',
+        expirationField => {
+            const credential = {
+                ...qualification('License'),
+                [expirationField]: '2025-02-01T00:00:00Z',
+            };
+            expect(getDefaultCategoryForCredential(credential as never)).toBe('Qualifications');
+        }
+    );
+
+    it('preserves an explicit issuer category override', () => {
+        expect(
+            getDefaultCategoryForCredential(qualification('License', ['lc:category:ID']) as never)
+        ).toBe('ID');
+    });
+
+    it('allows an explicit Qualifications category on another achievement type', () => {
+        expect(
+            getDefaultCategoryForCredential(
+                qualification('Certificate', ['lc:category:Qualifications']) as never
+            )
+        ).toBe('Qualifications');
+    });
+
+    it('classifies a wrapped qualification using the inner credential', () => {
+        expect(
+            getDefaultCategoryForCredential({
+                type: ['VerifiableCredential', 'CertifiedBoostCredential'],
+                boostCredential: qualification('JourneymanCertificate'),
+            } as never)
+        ).toBe('Qualifications');
+    });
+
+    it('preserves custom category overrides', () => {
+        expect(
+            getDefaultCategoryForCredential(qualification('ext:LCA_CUSTOM:ID:License') as never)
+        ).toBe('ID');
+    });
+
+    it.each([
+        ['Certificate', 'Achievement'],
+        ['CertificateOfCompletion', 'Learning History'],
+        ['ext:DriversLicense', 'ID'],
+        ['ext:Passport', 'ID'],
+    ])('does not reclassify %s as a professional qualification', (achievementType, category) => {
+        expect(getDefaultCategoryForCredential(qualification(achievementType) as never)).toBe(
+            category
+        );
+    });
+});
+
+describe('Qualifications share-picker grouping', () => {
+    it('makes Qualifications credentials available in their own share category', async () => {
+        const credential = {
+            type: ['VerifiableCredential'],
+            credentialSubject: {
+                achievement: { achievementType: 'License' },
+            },
+        } as never;
+
+        const sorted = await getAllSortedCredentials([credential]);
+
+        expect(sorted.qualifications).toEqual([credential]);
+        expect(sorted.achievements).toEqual([]);
+    });
+});
+
+describe('Qualifications notifications', () => {
+    it('classifies standard and custom Qualifications notifications separately', () => {
+        expect(getNotificationType('License')).toBe(NotificationTypeEnum.Qualifications);
+        expect(getNotificationType('ext:LCA_CUSTOM:Qualifications:Continuing_Education')).toBe(
+            NotificationTypeEnum.Qualifications
+        );
     });
 });

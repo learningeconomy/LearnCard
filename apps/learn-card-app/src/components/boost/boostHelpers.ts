@@ -573,6 +573,7 @@ export const getDefaultDisplayType = (category: BoostCategoryOptionsEnum) => {
 
     if (
         category === BoostCategoryOptionsEnum.achievement ||
+        category === BoostCategoryOptionsEnum.qualifications ||
         category === BoostCategoryOptionsEnum.accommodation ||
         category === BoostCategoryOptionsEnum.learningHistory
     ) {

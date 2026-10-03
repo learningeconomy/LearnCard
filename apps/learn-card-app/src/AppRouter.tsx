@@ -33,6 +33,8 @@ import {
     useContract,
     usePendingContractSync,
     switchedProfileStore,
+    walletStore,
+    networkStore,
     usePrivacyGate,
     useAiFeatureGate,
     useNetworkConsentMutation,
@@ -62,6 +64,7 @@ import { AI_ROUTES } from './constants/aiRoutes';
 import { useAutoVerifyContactMethodWithProofOfLogin } from './hooks/useAutoVerifyContactMethodWithProofOfLogin';
 import { useFinalizeInboxCredentials } from './hooks/useFinalizeInboxCredentials';
 import useConsentFlow from './pages/consentFlow/useConsentFlow';
+import { reconcileQualificationCategories } from 'learn-card-base/helpers/qualificationCategoryBackfill';
 import ReducedMotionManager from './components/accessibility/ReducedMotionManager';
 
 const log = getLogger('app-router');
@@ -156,6 +159,15 @@ const AppRouter: React.FC = () => {
     const currentUser = useCurrentUser();
     const queryClient = useQueryClient();
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
+    const activeWallet = walletStore.use.wallet();
+    const cloudUrl = networkStore.use.cloudUrl();
+
+    useEffect(() => {
+        if (!walletReady || !isLoggedIn || isShareViewer || !activeWallet) return;
+        void reconcileQualificationCategories(activeWallet, queryClient, cloudUrl).catch(error =>
+            log.warn('Wallet category reconciliation failed', error)
+        );
+    }, [walletReady, isLoggedIn, isShareViewer, activeWallet, queryClient, cloudUrl]);
 
     useEffect(() => {
         if (

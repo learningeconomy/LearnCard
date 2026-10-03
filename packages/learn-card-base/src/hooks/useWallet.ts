@@ -165,7 +165,9 @@ export const useWallet = () => {
 
             const wallet = walletStore.get.wallet();
 
-            if (!_privateKey && wallet) return wallet;
+            if (!_privateKey && wallet) {
+                return wallet;
+            }
 
             generating = true;
 
@@ -177,7 +179,6 @@ export const useWallet = () => {
             );
 
             if (!_privateKey) walletStore.set.wallet(newWallet);
-
             generating = false;
 
             return newWallet;

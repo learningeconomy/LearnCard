@@ -97,6 +97,8 @@ export const getCategoryColor = (category = LCCategoryEnum.achievement) => {
             return 'indigo-600';
         case LCCategoryEnum.achievement:
             return 'pink-600';
+        case LCCategoryEnum.qualifications:
+            return 'emerald-600';
         case LCCategoryEnum.learningHistory:
             return 'emerald-700';
         case LCCategoryEnum.id:
@@ -124,6 +126,7 @@ export const getCategoryPrimaryColor = (category = LCCategoryEnum.achievement) =
             return 'indigo';
         case LCCategoryEnum.achievement:
             return 'pink';
+        case LCCategoryEnum.qualifications:
         case LCCategoryEnum.learningHistory:
             return 'emerald';
         case LCCategoryEnum.id:
@@ -170,6 +173,7 @@ export const getCategoryIcon = (category = LCCategoryEnum.achievement, size: str
         case LCCategoryEnum.skill:
             return <PuzzlePiece size={size} />;
         case LCCategoryEnum.achievement:
+        case LCCategoryEnum.qualifications:
             return <Trophy size={size} />;
         case LCCategoryEnum.course:
         case LCCategoryEnum.learningHistory:

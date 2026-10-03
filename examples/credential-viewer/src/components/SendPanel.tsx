@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 
 import type { CredentialFixture } from '@learncard/credential-library';
-import { prepareFixture } from '@learncard/credential-library';
+import { prepareViewerFixture } from '../lib/prepare';
 
 import { Badge } from './Badge';
 import { SPEC_LABELS, SPEC_COLORS } from '../lib/colors';
@@ -26,8 +26,14 @@ export const SendPanel: React.FC<SendPanelProps> = ({ fixtures, onClose }) => {
 
     const [recipient, setRecipient] = useState('');
     const [step, setStep] = useState<SendStep>('configure');
-    const [result, setResult] = useState<SendResult>({ succeeded: 0, failed: 0, errors: [], results: [] });
+    const [result, setResult] = useState<SendResult>({
+        succeeded: 0,
+        failed: 0,
+        errors: [],
+        results: [],
+    });
     const [progress, setProgress] = useState(0);
+    const [keepFixtureDates, setKeepFixtureDates] = useState(false);
 
     const isBulk = fixtures.length > 1;
 
@@ -47,16 +53,16 @@ export const SendPanel: React.FC<SendPanelProps> = ({ fixtures, onClose }) => {
             const fixture = fixtures[i];
 
             try {
-                const prepared = prepareFixture(fixture, {
-                    issuerDid: did,
-                    subjectDid: recipient.trim(),
-                });
+                const prepared = prepareViewerFixture(
+                    fixture,
+                    { issuerDid: did, subjectDid: recipient.trim() },
+                    keepFixtureDates
+                );
 
                 const res = await send({
                     recipient: recipient.trim(),
                     credential: prepared as Record<string, unknown>,
                     name: fixture.name,
-                    category: 'Achievement',
                 });
 
                 results.push(res);
@@ -73,7 +79,7 @@ export const SendPanel: React.FC<SendPanelProps> = ({ fixtures, onClose }) => {
 
         setResult({ succeeded, failed, errors, results });
         setStep(failed > 0 && succeeded === 0 ? 'error' : 'success');
-    }, [recipient, did, fixtures, send]);
+    }, [recipient, did, fixtures, send, keepFixtureDates]);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -82,8 +88,18 @@ export const SendPanel: React.FC<SendPanelProps> = ({ fixtures, onClose }) => {
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center">
-                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            <svg
+                                className="w-4 h-4 text-white"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                                />
                             </svg>
                         </div>
 
@@ -92,9 +108,7 @@ export const SendPanel: React.FC<SendPanelProps> = ({ fixtures, onClose }) => {
                                 Send {isBulk ? `${fixtures.length} Credentials` : 'Credential'}
                             </h3>
 
-                            <p className="text-xs text-gray-400">
-                                Send via LearnCard Network
-                            </p>
+                            <p className="text-xs text-gray-400">Send via LearnCard Network</p>
                         </div>
                     </div>
 
@@ -102,8 +116,18 @@ export const SendPanel: React.FC<SendPanelProps> = ({ fixtures, onClose }) => {
                         onClick={onClose}
                         className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 transition-colors cursor-pointer"
                     >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M6 18L18 6M6 6l12 12"
+                            />
                         </svg>
                     </button>
                 </div>
@@ -115,7 +139,12 @@ export const SendPanel: React.FC<SendPanelProps> = ({ fixtures, onClose }) => {
                             const specColor = SPEC_COLORS[f.spec];
 
                             return (
-                                <Badge key={f.id} bg={specColor.bg} text={specColor.text} border={specColor.border}>
+                                <Badge
+                                    key={f.id}
+                                    bg={specColor.bg}
+                                    text={specColor.text}
+                                    border={specColor.border}
+                                >
                                     {f.name}
                                 </Badge>
                             );
@@ -141,9 +170,24 @@ export const SendPanel: React.FC<SendPanelProps> = ({ fixtures, onClose }) => {
                                 />
 
                                 <p className="mt-1 text-[10px] text-gray-600">
-                                    Recipient type is auto-detected. Creates a boost on-the-fly and sends it.
+                                    Recipient type is auto-detected. Creates a boost on-the-fly and
+                                    sends it.
+                                </p>
+                                <p className="mt-1 text-xs text-emerald-400">
+                                    Each credential uses its detected category, including
+                                    Qualifications.
                                 </p>
                             </div>
+
+                            <label className="flex items-center gap-2 text-xs text-gray-300">
+                                <input
+                                    type="checkbox"
+                                    checked={keepFixtureDates}
+                                    onChange={event => setKeepFixtureDates(event.target.checked)}
+                                    className="accent-emerald-600"
+                                />
+                                Keep fixture dates (including expired credentials)
+                            </label>
 
                             <button
                                 onClick={handleSend}
@@ -157,9 +201,24 @@ export const SendPanel: React.FC<SendPanelProps> = ({ fixtures, onClose }) => {
 
                     {step === 'sending' && (
                         <div className="flex flex-col items-center py-8 text-gray-400">
-                            <svg className="w-8 h-8 animate-spin mb-3" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            <svg
+                                className="w-8 h-8 animate-spin mb-3"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                />
+                                <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                                />
                             </svg>
 
                             <p className="text-sm">
@@ -180,8 +239,18 @@ export const SendPanel: React.FC<SendPanelProps> = ({ fixtures, onClose }) => {
                     {step === 'success' && (
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 text-emerald-400">
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <svg
+                                    className="w-5 h-5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
                                 </svg>
 
                                 <span className="text-sm font-medium">
@@ -208,8 +277,18 @@ export const SendPanel: React.FC<SendPanelProps> = ({ fixtures, onClose }) => {
                     {step === 'error' && (
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 text-red-400">
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <svg
+                                    className="w-5 h-5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
                                 </svg>
 
                                 <span className="text-sm font-medium">All sends failed</span>
@@ -220,7 +299,10 @@ export const SendPanel: React.FC<SendPanelProps> = ({ fixtures, onClose }) => {
                             </pre>
 
                             <button
-                                onClick={() => { setStep('configure'); setResult({ succeeded: 0, failed: 0, errors: [], results: [] }); }}
+                                onClick={() => {
+                                    setStep('configure');
+                                    setResult({ succeeded: 0, failed: 0, errors: [], results: [] });
+                                }}
                                 className="w-full py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm transition-colors cursor-pointer"
                             >
                                 Try Again

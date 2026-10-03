@@ -11,6 +11,7 @@ export type SortedCredentials = {
     courses: VC[];
     achievements: VC[];
     workHistory: VC[];
+    qualifications: VC[];
     socialBadges: VC[];
     memberships: VC[];
     families: VC[];
@@ -23,6 +24,7 @@ export const initialSyncState: SelectedCredsStoreState = {
     selectedAchievementIds: null,
     selectedIdIds: null,
     selectedWorkHistoryIds: null,
+    selectedQualificationIds: null,
     selectedSocialBadgeIds: null,
     allVcIds: null,
 
@@ -49,6 +51,7 @@ export type SelectedCredsStoreState = {
     selectedAchievementIds: string[] | undefined | null;
     selectedIdIds: string[] | undefined | null;
     selectedWorkHistoryIds: string[] | undefined | null;
+    selectedQualificationIds: string[] | undefined | null;
     selectedSocialBadgeIds: string[] | undefined | null;
     allVcIds: string[] | undefined | null;
     courseCountTotal: number | undefined | null;
@@ -74,6 +77,7 @@ export const resetSelectedCredsStoreSelectedIds = (
         | 'course'
         | 'socialBadges'
         | 'workHistory'
+        | 'qualifications'
         | 'all',
     resetType: 'empty' | 'fill'
 ) => {
@@ -84,6 +88,7 @@ export const resetSelectedCredsStoreSelectedIds = (
     const allIdIds = filterMaybes(_credentials?.ids.map(cred => cred?.id));
     const allSocialBadgeIds = filterMaybes(_credentials?.socialBadges.map(cred => cred?.id));
     const allWorkHistoryIds = filterMaybes(_credentials?.workHistory.map(cred => cred?.id));
+    const allQualificationIds = filterMaybes(_credentials?.qualifications?.map(cred => cred?.id));
 
     switch (achievementType) {
         case 'course':
@@ -134,6 +139,14 @@ export const resetSelectedCredsStoreSelectedIds = (
                 selectedCredsStore.set.selectedWorkHistoryIds([]);
             }
             break;
+        case 'qualifications':
+            if (resetType === 'fill') {
+                selectedCredsStore.set.selectedQualificationIds(allQualificationIds);
+            }
+            if (resetType === 'empty') {
+                selectedCredsStore.set.selectedQualificationIds([]);
+            }
+            break;
         case 'all':
             if (resetType === 'fill') {
                 selectedCredsStore.set.selectedCourseIds(allCourseIds);
@@ -141,6 +154,7 @@ export const resetSelectedCredsStoreSelectedIds = (
                 selectedCredsStore.set.selectedAchievementIds(allAchievementIds);
                 selectedCredsStore.set.selectedIdIds(allIdIds);
                 selectedCredsStore.set.selectedWorkHistoryIds(allWorkHistoryIds);
+                selectedCredsStore.set.selectedQualificationIds(allQualificationIds);
                 selectedCredsStore.set.selectedSocialBadgeIds(allSocialBadgeIds);
             }
             if (resetType === 'empty') {
@@ -149,6 +163,7 @@ export const resetSelectedCredsStoreSelectedIds = (
                 selectedCredsStore.set.selectedAchievementIds([]);
                 selectedCredsStore.set.selectedIdIds([]);
                 selectedCredsStore.set.selectedWorkHistoryIds([]);
+                selectedCredsStore.set.selectedQualificationIds([]);
                 selectedCredsStore.set.selectedSocialBadgeIds([]);
             }
             break;
