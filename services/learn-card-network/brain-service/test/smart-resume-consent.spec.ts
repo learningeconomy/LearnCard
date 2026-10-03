@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import { environment } from '@environment';
 import { ConsentFlowTerms } from '@models';
+import { neogma } from '@instance';
 import { getUser } from './helpers/getClient';
 import { normalContract, normalFullTerms } from './helpers/contract';
 import { getContractTermsForProfile } from '@accesslayer/consentflowcontract/relationships/read';
@@ -130,6 +131,40 @@ describe('SmartResume consent before publication', () => {
             { where: { id: terms.id } }
         );
         await expect(accept()).resolves.toHaveProperty('redirectUrl', 'https://example.com/resume');
+        expect(upload).toHaveBeenCalledTimes(2);
+    });
+
+    it('ties a referral upload retry to the accepted invitation', async () => {
+        const profileId = (await learner.clients.fullAuth.profile.getProfile())!.profileId;
+        await owner.clients.fullAuth.contracts.sendContractRequest({
+            contractUri,
+            targetProfileId: profileId,
+        });
+        const invitation = (await owner.clients.fullAuth.contracts.getRequestStatusForProfile({
+            contractUri,
+            targetProfileId: profileId,
+        }))!;
+        upload.mockRejectedValueOnce(new Error('Synthetic outage'));
+        await expect(accept({ expectedRequestId: invitation.requestId })).rejects.toMatchObject({
+            code: 'BAD_GATEWAY',
+        });
+        await expect(accept({ expectedRequestId: 'different-invitation' })).rejects.toMatchObject({
+            code: 'CONFLICT',
+        });
+        await expect(accept({ expectedRequestId: invitation.requestId })).resolves.toHaveProperty(
+            'redirectUrl'
+        );
+        await neogma.queryRunner.run(
+            'MATCH (c:ConsentFlowContract {id: $contractId})-[r:REQUESTED_FOR]->(:Profile {profileId: $profileId}) SET r.requestId = $replacement',
+            {
+                contractId: contractUri.split(':').at(-1),
+                profileId,
+                replacement: 'replacement-invitation',
+            }
+        );
+        await expect(accept({ expectedRequestId: invitation.requestId })).rejects.toMatchObject({
+            code: 'CONFLICT',
+        });
         expect(upload).toHaveBeenCalledTimes(2);
     });
 
