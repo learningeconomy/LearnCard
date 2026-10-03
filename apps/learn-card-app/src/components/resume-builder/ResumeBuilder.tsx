@@ -21,11 +21,21 @@ import {
     ToastTypeEnum,
     CredentialCategoryEnum,
     useGetResolvedCredential,
-    useShareBoostMutation,
     useWallet,
 } from 'learn-card-base';
 import { useResumePreselection } from './useResumePreselection';
 import { useIssueTcpResume } from '../../hooks/useIssueTcpResume';
+import { enterSharePrivacy } from '../share-links/sharePrivacy';
+import { resumePublicationErrorMessage } from './resumePublicationMessages';
+import {
+    captureResumeAccount,
+    useResumeAccountRevision,
+} from '../../helpers/resume-publishing/account';
+import { downloadProtectedResumePdf } from '../../helpers/resume-publishing/protectedPdf';
+import {
+    readProtectedResumeChunk,
+    isProtectedResumeCurrent,
+} from '../share-links/protectedResumeReader';
 
 import {
     getResumeBuilderSnapshotKey,
@@ -39,7 +49,8 @@ import type { ResumeSectionKey } from './resume-builder.helpers';
 import { VC } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 
-export const ResumeBuilder: React.FC = () => {
+const ResumeBuilderContent: React.FC = () => {
+    enterSharePrivacy();
     useResumePreselection();
 
     const { newModal, closeModal } = useModal({ mobile: ModalTypes.FullScreen });
@@ -59,6 +70,8 @@ export const ResumeBuilder: React.FC = () => {
     const [isHydratingResume, setIsHydratingResume] = useState<boolean>(false);
 
     const [loadingAction, setLoadingAction] = useState<ResumeBuilderHeaderAction>(null);
+    const [canDiscardSetup, setCanDiscardSetup] = useState(false);
+    const [pendingSetup, setPendingSetup] = useState(false);
     const [resumeQrCodeLink, setResumeQrCodeLink] = useState<string>('');
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
     const hiddenSections = resumeBuilderStore.useTracked.hiddenSections();
@@ -71,8 +84,12 @@ export const ResumeBuilder: React.FC = () => {
     const documentSetup = resumeBuilderStore.useTracked.documentSetup();
     const sectionOrder = resumeBuilderStore.useTracked.sectionOrder();
     const { presentToast } = useToast();
-    const { publishTcpResume } = useIssueTcpResume();
-    const { mutate: shareResume } = useShareBoostMutation();
+    const {
+        publishTcpResume,
+        getResumeShareLink,
+        prepareResumePublicationLink,
+        discardPendingResumePublication,
+    } = useIssueTcpResume();
     const { data: activeResumeVc } = useGetResolvedCredential(
         activeResume?.uri ?? '',
         Boolean(activeResume?.uri)
@@ -122,11 +139,12 @@ export const ResumeBuilder: React.FC = () => {
     }, []);
 
     const openResumeShareModal = useCallback(
-        (resume: VC, resumeUri: string) => {
+        (resume: VC, resumeUri: string, committedLink?: string) => {
             newModal(
                 <ResumeShareLink
                     resume={resume}
                     resumeUri={resumeUri}
+                    committedLink={committedLink}
                     handleClose={() => closeModal()}
                 />,
                 {},
@@ -134,31 +152,6 @@ export const ResumeBuilder: React.FC = () => {
             );
         },
         [closeModal, newModal]
-    );
-
-    const createResumeShareLink = useCallback(
-        (resume: VC, resumeUri: string): Promise<string> =>
-            new Promise((resolve, reject) => {
-                shareResume(
-                    {
-                        credential: resume,
-                        credentialUri: resumeUri,
-                        shareRouteName: 'verify/resume',
-                    },
-                    {
-                        onSuccess: data => {
-                            const link = data?.link;
-                            if (!link) {
-                                reject(new Error('Unable to generate a resume share link.'));
-                                return;
-                            }
-                            resolve(link);
-                        },
-                        onError: () => reject(new Error('Unable to generate a resume share link.')),
-                    }
-                );
-            }),
-        [shareResume]
     );
 
     const waitForUiUpdate = useCallback(
@@ -171,18 +164,39 @@ export const ResumeBuilder: React.FC = () => {
 
     const publishCurrentResume = useCallback(
         async ({
-            requireShareLinkForQr = false,
             openShareModalAfterSave = true,
             successToastTitle = m['passport.resumeBuilder.toastTitle.published'](),
         }: {
-            requireShareLinkForQr?: boolean;
             openShareModalAfterSave?: boolean;
             successToastTitle?: string;
         }) => {
+            const isCurrentAccount = captureResumeAccount();
+            const snapshotKey = currentSnapshotKey;
+            const reservedLink = await prepareResumePublicationLink();
+            if (!isCurrentAccount()) throw { code: 'account' };
+            setResumeQrCodeLink(reservedLink);
+            await waitForUiUpdate();
             const artifact = await resumePreviewRef.current?.createPDFArtifact();
+            if (!isCurrentAccount()) throw { code: 'account' };
             if (!artifact) {
-                throw new Error('Could not generate a PDF artifact for publishing.');
+                throw new Error('Resume artifact unavailable');
             }
+
+            if (
+                snapshotKey !==
+                getResumeBuilderSnapshotKey({
+                    personalDetails: resumeBuilderStore.get.personalDetails(),
+                    hiddenPersonalDetails: resumeBuilderStore.get.hiddenPersonalDetails(),
+                    hiddenSections: resumeBuilderStore.get.hiddenSections(),
+                    currentJobCredentialUri: resumeBuilderStore.get.currentJobCredentialUri(),
+                    credentialStartDates: resumeBuilderStore.get.credentialStartDates(),
+                    credentialEndDates: resumeBuilderStore.get.credentialEndDates(),
+                    documentSetup: resumeBuilderStore.get.documentSetup(),
+                    credentialEntries: resumeBuilderStore.get.credentialEntries(),
+                    sectionOrder: resumeBuilderStore.get.sectionOrder(),
+                })
+            )
+                throw { code: 'changed' };
 
             const includedCredentials = Object.entries(credentialEntries).flatMap(
                 ([category, entries]) =>
@@ -194,46 +208,57 @@ export const ResumeBuilder: React.FC = () => {
                     )
             );
 
-            const { lerVc, lerUri } = await publishTcpResume({
+            const {
+                lerVc,
+                lerUri,
+                shareLink,
+                cleanupWarning,
+                recoveredAttempt,
+                snapshot: publishedSnapshot,
+            } = await publishTcpResume({
                 pdfBlob: artifact.blob,
                 fileName: artifact.fileName,
                 pdfHash: artifact.hash,
                 includedCredentials,
             });
 
-            let shareLink: string | null = null;
-            if (documentSetup?.showQRCode) {
-                try {
-                    shareLink = await createResumeShareLink(lerVc, lerUri);
-                    setResumeQrCodeLink(shareLink);
-                } catch (error) {
-                    if (requireShareLinkForQr) throw error;
-                }
-            }
+            if (!isCurrentAccount()) throw { code: 'account' };
+            setPendingSetup(false);
+            setCanDiscardSetup(false);
+            setResumeQrCodeLink(shareLink);
+            if (cleanupWarning)
+                presentToast(m['resumePublishing.cleanup'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
 
             if (activeResume?.recordId) {
                 setBaselineSnapshotByResume({
                     recordId: activeResume.recordId,
-                    snapshotKey: currentSnapshotKey,
+                    snapshotKey: getResumeBuilderSnapshotKey(publishedSnapshot),
                 });
             }
 
-            presentToast(m['toasts.resume.publishedSuccess'](), {
-                title: successToastTitle,
-                type: ToastTypeEnum.Success,
-                hasDismissButton: true,
-                duration: 6000,
-            });
+            presentToast(
+                recoveredAttempt
+                    ? m['resumePublishing.recovered']()
+                    : m['toasts.resume.publishedSuccess'](),
+                {
+                    title: successToastTitle,
+                    type: ToastTypeEnum.Success,
+                    hasDismissButton: true,
+                    duration: 6000,
+                }
+            );
 
             if (openShareModalAfterSave) {
-                openResumeShareModal(lerVc, lerUri);
+                openResumeShareModal(lerVc, lerUri, shareLink);
             }
 
             return { lerVc, lerUri, shareLink };
         },
         [
             activeResume?.recordId,
-            createResumeShareLink,
             credentialEntries,
             currentSnapshotKey,
             documentSetup?.showQRCode,
@@ -241,14 +266,21 @@ export const ResumeBuilder: React.FC = () => {
             openResumeShareModal,
             presentToast,
             publishTcpResume,
+            prepareResumePublicationLink,
+            waitForUiUpdate,
         ]
     );
 
     const handlePreview = useCallback(async () => {
         if (loadingAction) return;
         setLoadingAction('preview');
+        const isCurrentAccount = captureResumeAccount();
         try {
             const nextPreview = await resumePreviewRef.current?.createPDFPreviewUrl();
+            if (!isCurrentAccount()) {
+                revokePreviewBlobUrl(nextPreview ?? null);
+                return;
+            }
             if (nextPreview) {
                 setInlinePreview(prevPreview => {
                     revokePreviewBlobUrl(prevPreview);
@@ -263,30 +295,64 @@ export const ResumeBuilder: React.FC = () => {
     const handleDownload = useCallback(async () => {
         if (loadingAction) return;
         setLoadingAction('download');
+        const isCurrentAccount = captureResumeAccount();
         try {
-            let savedResumeForShare: { lerVc: VC; lerUri: string } | null = null;
+            let savedResumeForShare: { lerVc: VC; lerUri: string; shareLink: string } | null = null;
             if (documentSetup?.showQRCode) {
                 const publishResult = await publishCurrentResume({
-                    requireShareLinkForQr: true,
                     openShareModalAfterSave: false,
                     successToastTitle: m['passport.resumeBuilder.toastTitle.saved'](),
                 });
                 savedResumeForShare = {
                     lerVc: publishResult.lerVc,
                     lerUri: publishResult.lerUri,
+                    shareLink: publishResult.shareLink,
                 };
                 await waitForUiUpdate();
             }
-            await resumePreviewRef.current?.generatePDF();
             if (savedResumeForShare) {
-                openResumeShareModal(savedResumeForShare.lerVc, savedResumeForShare.lerUri);
+                await downloadProtectedResumePdf(
+                    savedResumeForShare.lerVc,
+                    documentSetup.fileName,
+                    async () => {
+                        return (
+                            isCurrentAccount() &&
+                            (await isProtectedResumeCurrent(savedResumeForShare.lerVc)) &&
+                            isCurrentAccount()
+                        );
+                    },
+                    readProtectedResumeChunk
+                );
+            } else {
+                await resumePreviewRef.current?.generatePDF();
+            }
+            if (!isCurrentAccount()) return;
+            if (savedResumeForShare) {
+                openResumeShareModal(
+                    savedResumeForShare.lerVc,
+                    savedResumeForShare.lerUri,
+                    savedResumeForShare.shareLink
+                );
             }
             presentToast(m['toasts.resume.downloadSuccess'](), {
                 title: m['passport.resumeBuilder.toastTitle.downloaded'](),
                 type: ToastTypeEnum.Success,
             });
-        } catch (error: any) {
-            presentToast(error?.message ?? m['toasts.resume.downloadFailed'](), {
+        } catch (error: unknown) {
+            const disposable =
+                typeof error === 'object' &&
+                error !== null &&
+                'canDiscard' in error &&
+                error.canDiscard === true;
+            setCanDiscardSetup(disposable);
+            setPendingSetup(
+                disposable ||
+                    (typeof error === 'object' &&
+                        error !== null &&
+                        'code' in error &&
+                        error.code === 'pending')
+            );
+            presentToast(resumePublicationErrorMessage(error), {
                 title: m['passport.resumeBuilder.toastTitle.downloadFailed'](),
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -296,6 +362,7 @@ export const ResumeBuilder: React.FC = () => {
         }
     }, [
         documentSetup?.showQRCode,
+        documentSetup.fileName,
         loadingAction,
         openResumeShareModal,
         presentToast,
@@ -308,14 +375,26 @@ export const ResumeBuilder: React.FC = () => {
         setLoadingAction('publish');
         try {
             await publishCurrentResume({
-                requireShareLinkForQr: false,
                 openShareModalAfterSave: true,
                 successToastTitle: activeResume?.recordId
                     ? m['passport.resumeBuilder.toastTitle.saved']()
                     : m['passport.resumeBuilder.toastTitle.published'](),
             });
-        } catch (error: any) {
-            presentToast(error?.message ?? m['toasts.resume.publishFailed'](), {
+        } catch (error: unknown) {
+            const disposable =
+                typeof error === 'object' &&
+                error !== null &&
+                'canDiscard' in error &&
+                error.canDiscard === true;
+            setCanDiscardSetup(disposable);
+            setPendingSetup(
+                disposable ||
+                    (typeof error === 'object' &&
+                        error !== null &&
+                        'code' in error &&
+                        error.code === 'pending')
+            );
+            presentToast(resumePublicationErrorMessage(error), {
                 title: m['passport.resumeBuilder.toastTitle.publishFailed'](),
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -382,6 +461,7 @@ export const ResumeBuilder: React.FC = () => {
     const handleSelectResume = useCallback(
         async (resume: ExistingResume) => {
             setIsHydratingResume(true);
+            const isCurrentAccount = captureResumeAccount();
             try {
                 const wallet = await initWallet();
                 const { snapshot, activeResume: nextActiveResume } =
@@ -393,6 +473,7 @@ export const ResumeBuilder: React.FC = () => {
                         }
                     });
 
+                if (!isCurrentAccount()) return;
                 resumeBuilderStore.set.hydrateStore(snapshot, nextActiveResume);
                 setBaselineSnapshotByResume({
                     recordId: nextActiveResume.recordId,
@@ -400,21 +481,37 @@ export const ResumeBuilder: React.FC = () => {
                 });
                 closeInlinePreview();
                 setResumeQrCodeLink('');
+                if (nextActiveResume.uri) {
+                    try {
+                        const link = await getResumeShareLink(nextActiveResume.uri);
+                        if (isCurrentAccount()) setResumeQrCodeLink(link);
+                    } catch {
+                        /* Legacy resumes can still be edited and republished explicitly. */
+                    }
+                }
+                if (!isCurrentAccount()) return;
                 presentToast(m['toasts.resume.loadedEditMode'](), {
                     type: ToastTypeEnum.Success,
                 });
-            } catch (error: any) {
-                presentToast(error?.message ?? m['toasts.resume.loadFailed'](), {
+            } catch (error: unknown) {
+                presentToast(m['toasts.resume.loadFailed'](), {
                     type: ToastTypeEnum.Error,
                 });
             } finally {
                 setIsHydratingResume(false);
             }
         },
-        [closeInlinePreview, initWallet, presentToast]
+        [closeInlinePreview, getResumeShareLink, initWallet, presentToast]
     );
 
     const handleCreateNewResume = useCallback(() => {
+        if (pendingSetup) {
+            presentToast(m['resumePublishing.pending'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+            return;
+        }
         resumeBuilderStore.set.resetStore();
         closeInlinePreview();
         setResumeQrCodeLink('');
@@ -422,7 +519,39 @@ export const ResumeBuilder: React.FC = () => {
         presentToast(m['toasts.resume.newDraft'](), {
             type: ToastTypeEnum.Success,
         });
-    }, [closeInlinePreview, presentToast]);
+    }, [closeInlinePreview, presentToast, pendingSetup]);
+
+    const handleDiscardSetup = useCallback(async () => {
+        if (loadingAction || !canDiscardSetup) return;
+        const isCurrentAccount = captureResumeAccount();
+        setLoadingAction('publish');
+        try {
+            const cleared = await discardPendingResumePublication();
+            if (!isCurrentAccount()) return;
+            if (!cleared) {
+                presentToast(m['resumePublishing.discardFailed'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+                return;
+            }
+            setCanDiscardSetup(false);
+            setPendingSetup(false);
+            setResumeQrCodeLink('');
+            presentToast(m['resumePublishing.discarded'](), {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
+        } catch (error: unknown) {
+            if (isCurrentAccount())
+                presentToast(resumePublicationErrorMessage(error), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+        } finally {
+            setLoadingAction(null);
+        }
+    }, [canDiscardSetup, discardPendingResumePublication, loadingAction, presentToast]);
 
     const handleShareCurrentResume = useCallback(() => {
         if (!activeResumeVc || !activeResume?.uri) {
@@ -436,13 +565,39 @@ export const ResumeBuilder: React.FC = () => {
     }, [activeResume?.uri, activeResumeVc, openResumeShareModal, presentToast]);
 
     return (
-        <div className="resume-builder flex h-full w-full bg-grayscale-50 overflow-hidden relative">
+        <div
+            className="resume-builder sentry-block ph-no-capture flex h-full w-full bg-grayscale-100 overflow-hidden relative"
+            data-feedback-exclude
+        >
             {(loadingAction || isHydratingResume) && (
                 <div className="absolute inset-0 h-full w-full z-[100] bg-white/80 backdrop-blur-sm flex items-center justify-center">
                     <ResumeBuilderLoader />
                 </div>
             )}
             <div className="flex-1 min-w-0 flex flex-col">
+                {canDiscardSetup && (
+                    <div className="bg-amber-50 border-b border-amber-100 px-6 py-4 space-y-3">
+                        <p className="text-sm text-grayscale-700">
+                            {m['resumePublishing.interrupted']()}
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() => void handleDiscardSetup()}
+                            disabled={Boolean(loadingAction)}
+                            className="py-3 px-4 rounded-[20px] border border-grayscale-300 bg-white text-grayscale-700 text-sm font-medium disabled:opacity-40"
+                        >
+                            {loadingAction
+                                ? m['resumePublishing.discarding']()
+                                : m['resumePublishing.discard']()}
+                        </button>
+                    </div>
+                )}
+                <p className="bg-white px-6 py-3 text-xs text-grayscale-600">
+                    {m['resumePublishing.republishLimits']()}
+                </p>
+                <p className="bg-white px-6 py-3 text-xs text-grayscale-600">
+                    {m['resumePublishing.originalClaims']()}
+                </p>
                 <ResumeBuilderHeader
                     loadingAction={loadingAction}
                     isMobile={isMobile}
@@ -454,7 +609,7 @@ export const ResumeBuilder: React.FC = () => {
                         activeResumeVc && activeResume?.uri ? handleShareCurrentResume : undefined
                     }
                     disableShareCurrentResume={hasUnsavedChanges}
-                    disablePublish={Boolean(activeResume) ? !hasUnsavedChanges : false}
+                    disablePublish={activeResume ? !hasUnsavedChanges : false}
                     onSelectResume={handleSelectResume}
                     onCreateNewResume={handleCreateNewResume}
                     activeResumeRecordId={activeResume?.recordId}
@@ -506,4 +661,8 @@ export const ResumeBuilder: React.FC = () => {
     );
 };
 
+export const ResumeBuilder: React.FC = () => {
+    const revision = useResumeAccountRevision();
+    return <ResumeBuilderContent key={revision} />;
+};
 export default ResumeBuilder;

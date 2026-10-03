@@ -216,6 +216,183 @@ beforeEach(() => {
     rateLimits.enforceRateLimits.mockResolvedValue(undefined);
 });
 
+describe('guarded managed attachment chunks', () => {
+    const attachmentId = '5d02e240-7cae-499d-9b18-d477e6b9ebd2';
+    const request = { id: SHARE_ID, contentVersion: 2, attachmentId, chunkIndex: 0 };
+    const setup = (overrides: Partial<ShareLinkRecord> = {}) => {
+        let record = shareRecord({ attachmentId, attachmentChunkCount: 16, ...overrides });
+        // This fixture deliberately changes password/clock dependencies between
+        // requests to exercise invalidation; production dependencies stay readonly.
+        const dependencies: {
+            -readonly [
+                Key in keyof PublicShareLinkRouterDependencies
+            ]: PublicShareLinkRouterDependencies[Key];
+        } = { ...makeDependencies({ getShareLink: vi.fn(async () => record) }) };
+        const fetch = vi.fn(
+            async (tuple: {
+                namespace: string;
+                ownerProfileId: string;
+                shareId: string;
+                contentVersion: number;
+                objectId: string;
+                operationId: string;
+            }) => ({ ok: true as const, value: { ...contentProjection(record), ...tuple } })
+        );
+        dependencies.repository.fetchAttachmentChunk = fetch;
+        return {
+            dependencies,
+            fetch,
+            setRecord: (next: ShareLinkRecord) => {
+                record = next;
+            },
+            getRecord: () => record,
+        };
+    };
+
+    it('derives storage tuple from committed state without accepting caller capabilities', async () => {
+        const { dependencies, fetch } = setup();
+        await expect(makeCaller(dependencies).attachmentChunk(request)).resolves.toEqual({
+            ...request,
+            envelope,
+        });
+        expect(fetch).toHaveBeenCalledWith({
+            namespace: NAME,
+            ownerProfileId: 'owner-1',
+            shareId: SHARE_ID,
+            contentVersion: 2,
+            objectId: `resume-pdf-${attachmentId}-0`,
+            operationId: attachmentId,
+        });
+        await expect(
+            makeCaller(dependencies).attachmentChunk({
+                ...request,
+                ownerProfileId: 'someone-else',
+            } as never)
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        expect(fetch).toHaveBeenCalledOnce();
+        expect(dependencies.receipts.persist).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        { status: 'stopped' },
+        { status: 'pending' },
+        { contentState: 'content_missing' },
+        { expiresAt: '2026-09-20T00:00:00.000Z' },
+        { contentVersion: 3 },
+        { attachmentId: OPERATION_ID },
+        { attachmentChunkCount: 0 },
+        { namespace: 'other-deployment' },
+    ] as Partial<ShareLinkRecord>[])(
+        'withholds chunks for inactive/mismatched state %#',
+        async override => {
+            const { dependencies, fetch } = setup(override);
+            await expect(makeCaller(dependencies).attachmentChunk(request)).rejects.toMatchObject({
+                code: 'NOT_FOUND',
+            });
+            expect(fetch).not.toHaveBeenCalled();
+        }
+    );
+
+    it.each(['stop', 'replace', 'expire', 'passcode'])(
+        'denies state change during remote fetch: %s',
+        async change => {
+            const state = setup();
+            state.fetch.mockImplementationOnce(async tuple => {
+                const original = state.getRecord();
+                const value = { ...contentProjection(original), ...tuple };
+                state.setRecord({
+                    ...original,
+                    ...(change === 'stop'
+                        ? { status: 'stopped' }
+                        : change === 'replace'
+                          ? { contentVersion: 3, version: 4 }
+                          : change === 'expire'
+                            ? { expiresAt: '2026-09-20T00:00:00.000Z' }
+                            : { passcodeHash: 'changed-verifier', version: 4 }),
+                });
+                return { ok: true as const, value };
+            });
+            await expect(
+                makeCaller(state.dependencies).attachmentChunk(request)
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        }
+    );
+
+    it('enforces passcode attempts once and uses a current-state bound grant for all 16 chunks', async () => {
+        const state = setup({ passcodeHash: 'secret-password-verifier' });
+        state.dependencies.verifyPasscode = vi.fn(
+            async (_hash, password) => password === 'correct-password'
+        );
+        const caller = makeCaller(state.dependencies);
+        await expect(
+            caller.attachmentChunk({ ...request, passcode: 'wrong-password' })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        const first = await caller.attachmentChunk({ ...request, passcode: 'correct-password' });
+        expect(first.accessToken).toBeDefined();
+        expect(first.accessToken).not.toContain('secret-password-verifier');
+        for (let chunkIndex = 1; chunkIndex < 16; chunkIndex++) {
+            await expect(
+                caller.attachmentChunk({ ...request, chunkIndex, accessToken: first.accessToken })
+            ).resolves.toMatchObject({ chunkIndex, envelope });
+        }
+        expect(state.dependencies.verifyPasscode).toHaveBeenCalledTimes(2);
+        expect(state.dependencies.passcodeAttempts?.reserve).toHaveBeenCalledTimes(2);
+        // Grant is bound to source IP and cannot replace a current password check from another source.
+        await expect(
+            makeCaller(state.dependencies, { sourceIp: '203.0.113.8' }).attachmentChunk({
+                ...request,
+                accessToken: first.accessToken,
+            })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        state.dependencies.now = () => new Date('2026-09-21T00:01:00.000Z');
+        await expect(
+            caller.attachmentChunk({ ...request, accessToken: first.accessToken })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+    });
+
+    it('rejects an oversized immutable attachment response', async () => {
+        const { dependencies, fetch, getRecord } = setup();
+        fetch.mockImplementationOnce(async tuple => ({
+            ok: true as const,
+            value: {
+                ...contentProjection(getRecord()),
+                ...tuple,
+                envelope: { ...envelope, ct: Buffer.alloc(256 * 1024 + 17).toString('base64url') },
+            },
+        }));
+        await expect(makeCaller(dependencies).attachmentChunk(request)).rejects.toMatchObject({
+            code: 'NOT_FOUND',
+        });
+    });
+
+    it('rejects tampered grants and foreign immutable response tuples', async () => {
+        const state = setup({ passcodeHash: 'verifier' });
+        state.dependencies.verifyPasscode = vi.fn(async () => true);
+        const first = await makeCaller(state.dependencies).attachmentChunk({
+            ...request,
+            passcode: 'correct-password',
+        });
+        await expect(
+            makeCaller(state.dependencies).attachmentChunk({
+                ...request,
+                accessToken: `${first.accessToken}x`,
+            })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        state.setRecord({ ...state.getRecord(), passcodeHash: null });
+        state.fetch.mockImplementationOnce(async tuple => ({
+            ok: true as const,
+            value: {
+                ...contentProjection(state.getRecord()),
+                ...tuple,
+                ownerProfileId: 'wrong-owner',
+            },
+        }));
+        await expect(makeCaller(state.dependencies).attachmentChunk(request)).rejects.toMatchObject(
+            { code: 'NOT_FOUND' }
+        );
+    });
+});
+
 describe('public share-link resolve', () => {
     it('answers not_found and calls nothing when configuration is disabled', async () => {
         const dependencies = makeDependencies();

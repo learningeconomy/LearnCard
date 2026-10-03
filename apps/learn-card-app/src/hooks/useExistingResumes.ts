@@ -2,6 +2,11 @@ import { useQuery } from '@tanstack/react-query';
 import { VC } from '@learncard/types';
 import { CredentialCategoryEnum, useWallet } from 'learn-card-base';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
+import {
+    captureResumeAccount,
+    useResumeAccountRevision,
+} from '../helpers/resume-publishing/account';
+import { enterSharePrivacy } from '../components/share-links/sharePrivacy';
 
 type ResumeIndexRecord = {
     id: string;
@@ -20,17 +25,21 @@ export type ExistingResume = {
 export const useExistingResumes = () => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.get.switchedDid();
+    const accountRevision = useResumeAccountRevision();
 
     return useQuery({
-        queryKey: ['existing-resumes', switchedDid ?? ''],
+        queryKey: ['existing-resumes', switchedDid ?? '', accountRevision],
         queryFn: async (): Promise<ExistingResume[]> => {
+            enterSharePrivacy();
+            const selectedAccount = captureResumeAccount();
             const wallet = await initWallet();
+            if (!selectedAccount()) throw new Error('Account changed');
 
             const records = (await wallet.index.LearnCloud.get({
                 category: CredentialCategoryEnum.resume,
             })) as ResumeIndexRecord[];
 
-            return Promise.all(
+            const resumes = await Promise.all(
                 records.map(async record => {
                     let vc: VC | null = null;
                     if (record.uri) {
@@ -54,6 +63,8 @@ export const useExistingResumes = () => {
                     };
                 })
             );
+            if (!selectedAccount()) throw new Error('Account changed');
+            return resumes;
         },
     });
 };

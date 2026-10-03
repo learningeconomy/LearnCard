@@ -50,6 +50,7 @@ export type ShareLinkMaintenanceFailureCategory =
     | 'share_link_maintenance_pass_failed'
     | 'share_link_maintenance_recovery_failed'
     | 'share_link_maintenance_cleanup_failed'
+    | 'share_link_maintenance_attachment_stage_failed'
     | 'share_link_maintenance_receipt_prune_failed'
     | 'share_link_maintenance_initialization_failed'
     | 'share_link_maintenance_configuration_invalid';
@@ -67,6 +68,7 @@ export type ShareLinkMaintenanceRunSummary = {
     cleanup: CleanupRunSummary | null;
     /** Namespace-scoped expired/consumed receipt nodes deleted this pass. */
     receiptPrune: { pruned: number } | null;
+    attachmentStages?: { queued: number } | null;
     categories: Partial<Record<ShareLinkMaintenanceFailureCategory, number>>;
 };
 

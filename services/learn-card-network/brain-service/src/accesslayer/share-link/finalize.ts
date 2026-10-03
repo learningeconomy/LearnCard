@@ -5,6 +5,7 @@ import type { ShareLinkPolicySnapshot } from '@helpers/share-link-policy/types';
 
 import { ensureShareLinkConstraints } from '../../models/share-link-constraints';
 import { failShareLink } from './errors';
+import { verifyPinnedShareAttachment, queueShareAttachmentCleanup } from './attachment';
 import {
     deleteReservation,
     enqueueCleanupJob,
@@ -157,6 +158,27 @@ export const finalizeReservation = async (
             }
 
             const previousObjectRef = share.activeObjectRef;
+            if (
+                reservation.contentVersion !== null &&
+                reservation.attachmentId &&
+                reservation.attachmentChunkCount
+            ) {
+                if (input.verifiedAttachmentId !== reservation.attachmentId) {
+                    failShareLink('PRECONDITION_FAILED', 'attachment was not verified');
+                }
+                await verifyPinnedShareAttachment(
+                    tx,
+                    {
+                        namespace: reservation.namespace,
+                        ownerProfileId: reservation.ownerProfileId,
+                        shareId: reservation.shareId,
+                        contentVersion: reservation.contentVersion,
+                        attachmentId: reservation.attachmentId,
+                        chunkCount: reservation.attachmentChunkCount,
+                    },
+                    reservation.requestHash
+                );
+            }
             const nextObjectRef = reservation.objectRef ?? share.activeObjectRef;
             const nextContentVersion = reservation.contentVersion ?? share.contentVersion;
 
@@ -193,6 +215,12 @@ export const finalizeReservation = async (
                     props: {
                         version: share.version + 1,
                         contentVersion: nextContentVersion,
+                        attachmentId: reservation.objectRef
+                            ? (reservation.attachmentId ?? null)
+                            : (share.attachmentId ?? null),
+                        attachmentChunkCount: reservation.objectRef
+                            ? (reservation.attachmentChunkCount ?? null)
+                            : (share.attachmentChunkCount ?? null),
                         status: 'active',
                         contentState: 'finalized',
                         activeObjectRef: nextObjectRef,
@@ -244,6 +272,21 @@ export const finalizeReservation = async (
             let cleanupQueuedFor: string | null = null;
 
             if (previousObjectRef && previousObjectRef !== nextObjectRef) {
+                if (share.attachmentId && share.attachmentChunkCount) {
+                    await queueShareAttachmentCleanup(
+                        tx,
+                        {
+                            namespace: share.namespace,
+                            ownerProfileId: share.ownerProfileId,
+                            shareId: share.id,
+                            contentVersion: share.contentVersion,
+                            attachmentId: share.attachmentId,
+                            chunkCount: share.attachmentChunkCount,
+                        },
+                        'superseded',
+                        nowIso
+                    );
+                }
                 await enqueueCleanupJob(tx, {
                     objectRef: previousObjectRef,
                     operationId: share.activeObjectOperationId!,

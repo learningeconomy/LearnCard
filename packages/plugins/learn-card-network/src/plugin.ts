@@ -1152,6 +1152,16 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.shareLinks.create.mutate(input);
             },
+            putShareLinkAttachmentChunk: async (_learnCard, input) => {
+                await ensureUser();
+                return client.shareLinks.putAttachmentChunk.mutate(input);
+            },
+            deleteShareLinkAttachmentChunks: async (_learnCard, input) => {
+                await ensureUser();
+                return client.shareLinks.deleteAttachmentChunks.mutate(input);
+            },
+            getShareLinkAttachmentChunk: async (_learnCard, input) =>
+                client.publicShareLinks.attachmentChunk.mutate(input),
             updateShareLink: async (_learnCard, input) => {
                 await ensureUser();
 
