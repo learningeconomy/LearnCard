@@ -33,7 +33,8 @@ const state = vi.hoisted(() => ({
     presentToast: vi.fn(),
 }));
 
-vi.mock('learn-card-base', () => ({
+vi.mock('learn-card-base', async () => ({
+    ...(await import('learn-card-base/helpers/consentErrors')),
     useConsentToContract: (...args: Parameters<typeof useConsentToContract>) =>
         useConsentToContract(...args),
     useWallet: () => ({ initWallet: state.initWallet }),
@@ -68,6 +69,9 @@ vi.mock('learn-card-base', () => ({
     }),
     ModalTypes: { FullScreen: 'fullscreen', Cancel: 'cancel', Right: 'right' },
     ToastTypeEnum: { Error: 'error', Success: 'success' },
+}));
+vi.mock('learn-card-base/components/modals/useModal', () => ({
+    useModal: () => ({ newModal: state.newModal, closeModal: vi.fn(), closeAllModals: vi.fn() }),
 }));
 vi.mock('react-router-dom', () => ({
     useHistory: () => ({ push: vi.fn() }),
@@ -159,6 +163,11 @@ describe('guardian approval at the consent submission boundary', () => {
         state.upload.mockResolvedValue('lc:shared');
         state.initWallet.mockResolvedValue({
             invoke: {
+                getContract: vi.fn().mockResolvedValue(contract),
+                getConsentedContracts: vi.fn().mockResolvedValue({
+                    records: [{ uri: 'lc:terms', contract }],
+                    hasMore: false,
+                }),
                 hasPin: state.hasPin,
                 getDidAuthVp: state.sign,
                 consentToContract: state.consent,
@@ -178,6 +187,39 @@ describe('guardian approval at the consent submission boundary', () => {
         cleanup();
         queryClient.clear();
         vi.restoreAllMocks();
+    });
+
+    it('keeps an audience conflict in review without calling the success callback', async () => {
+        state.child = false;
+        const onSuccess = vi.fn();
+        state.consent.mockRejectedValueOnce(
+            Object.assign(
+                new Error(
+                    'The sharing audience or consent changed. Review the contract and try again.'
+                ),
+                { data: { code: 'CONFLICT', httpStatus: 409 } }
+            )
+        );
+        showFlow({ successCallback: onSuccess });
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() => expect(state.presentToast).toHaveBeenCalled());
+        expect(onSuccess).not.toHaveBeenCalled();
+        expect(screen.getByRole('button', { name: 'Connect' })).toBeTruthy();
+        expect(state.presentToast.mock.calls[0][1].type).toBe('error');
+        expect(state.newModal).not.toHaveBeenCalled();
+    });
+
+    it('preserves the existing-consent callback for the explicit already-consented response', async () => {
+        state.child = false;
+        const onSuccess = vi.fn();
+        state.consent.mockRejectedValueOnce(
+            Object.assign(new Error("You've already consented to this contract!"), {
+                data: { code: 'CONFLICT' },
+            })
+        );
+        showFlow({ successCallback: onSuccess });
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() => expect(onSuccess).toHaveBeenCalledOnce());
     });
 
     it('requires a fresh PIN and signature after a slow credential upload without uploading again', async () => {

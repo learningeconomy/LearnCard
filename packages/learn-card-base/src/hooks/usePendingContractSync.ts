@@ -4,6 +4,7 @@ import { ConsentFlowTerms } from '@learncard/types';
 
 import { useWallet } from './useWallet';
 import { getOrCreateSharedUriForWallet } from './useSharedUrisInTerms';
+import { loadContractAudience } from './consentAudience';
 import { getOrFetchConsentedContracts } from './useConsentedContracts';
 import { contractCategoryNameToCategoryMetadata } from '../types/boostAndCredentialMetadata';
 import {
@@ -163,6 +164,9 @@ export const usePendingContractSync = (enabled = true): void => {
                     throw new Error('Consented contract terms were not found for background sync');
                 }
 
+                if (consentedContract.status !== 'live')
+                    throw new Error('Sharing is no longer active.');
+                const audience = await loadContractAudience(wallet, consentedContract.contract.uri);
                 const categoryEntries = Object.entries(
                     consentedContract.terms.read?.credentials?.categories ?? {}
                 ).filter(([, categoryConfig]) => isCategoryEligibleForSync(categoryConfig));
@@ -195,7 +199,7 @@ export const usePendingContractSync = (enabled = true): void => {
                                     categoryName,
                                     credentialCategory,
                                     sourceUri: record.uri,
-                                } as SyncCredentialTask)
+                                }) as SyncCredentialTask
                         );
                     })
                 );
@@ -209,7 +213,7 @@ export const usePendingContractSync = (enabled = true): void => {
                 });
 
                 const sharedUrisByCategory: Record<string, string[]> = {
-                    ...job.syncedSharedUrisByCategory,
+                    // Re-materialize resumed jobs for the current audience; old URIs may target removed recipients.
                 };
 
                 await runWithConcurrency(
@@ -232,7 +236,7 @@ export const usePendingContractSync = (enabled = true): void => {
 
                             const sharedUri = await getOrCreateSharedUriForWallet(
                                 wallet,
-                                job.ownerDid,
+                                audience.recipients,
                                 queryClient,
                                 sourceUri,
                                 credentialCategory
@@ -297,7 +301,11 @@ export const usePendingContractSync = (enabled = true): void => {
                             0
                         ),
                     });
-                    await wallet.invoke.syncCredentialsToContract(job.termsUri, categoriesToSync);
+                    await wallet.invoke.syncCredentialsToContract(
+                        job.termsUri,
+                        categoriesToSync,
+                        audience.audienceVersion
+                    );
                     queryClient.invalidateQueries({
                         queryKey: ['useTermsTransactions', job.termsUri],
                     });

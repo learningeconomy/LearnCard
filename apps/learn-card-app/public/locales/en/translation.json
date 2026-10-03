@@ -1755,6 +1755,7 @@
         "previewCredentials": "Preview {{count}} Credentials"
     },
     "consentFlow": {
+        "reviewChanged": "The sharing details changed. Review them before connecting again.",
         "guardianApprovalRequired": "Ask a current account manager to approve this connection, then try again.",
         "acceptAndSync": "Accept & Sync",
         "accepted": "Accepted",
@@ -1874,7 +1875,8 @@
             "name": "name",
             "email": "email",
             "profilePicture": "profile picture"
-        }
+        },
+        "retryPublication": "Your sharing choices are saved. Try again to finish sending them."
     },
     "recovery": {
         "automatic": {
@@ -3586,6 +3588,12 @@
         "skillsHub": "Skills Hub"
     },
     "base": {
+        "consentAudience": {
+            "title": "Review who receives your data",
+            "description": "Your selected information will be available to everyone listed below.",
+            "confirm": "Confirm Sharing",
+            "cancel": "Cancel"
+        },
         "verification": {
             "selfIssued": "Self Issued",
             "trustedIssuer": "Trusted Issuer",
