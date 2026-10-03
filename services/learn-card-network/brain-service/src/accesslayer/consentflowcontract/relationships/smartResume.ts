@@ -39,6 +39,7 @@ export const publishSmartResume = async ({
     termsId,
     fingerprint,
     audienceVersion,
+    expectedRequestId,
     upload,
 }: {
     contractId: string;
@@ -46,6 +47,7 @@ export const publishSmartResume = async ({
     termsId: string;
     fingerprint: string;
     audienceVersion?: number;
+    expectedRequestId?: string;
     upload: (terms: ConsentFlowTerms) => Promise<string | undefined>;
 }): Promise<string | undefined> => {
     const leaseId = randomUUID();
@@ -60,6 +62,7 @@ export const publishSmartResume = async ({
                     termsId,
                     fingerprint,
                     audienceVersion: audienceVersion ?? null,
+                    expectedRequestId: expectedRequestId ?? null,
                     leaseId,
                     leaseDurationMs,
                 })
@@ -72,6 +75,10 @@ export const publishSmartResume = async ({
             )
             .where(
                 `terms.smartResumeFingerprint = $fingerprint
+                AND ($expectedRequestId IS NULL OR EXISTS {
+                    MATCH (contract)-[request:REQUESTED_FOR]->(profile)
+                    WHERE request.requestId = $expectedRequestId AND request.status = 'accepted'
+                })
                 AND terms.smartResumeMutationVersion = coalesce(terms.mutationVersion, 0)
                 AND (terms.status = 'live' OR (terms.status = 'stale' AND terms.oneTime = true))
                 AND CASE WHEN terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' THEN true ELSE datetime(terms.expiresAt) > datetime.realtime() END
