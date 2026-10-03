@@ -161,7 +161,6 @@ export const consentToContract = async (
                     new BindParam({
                         params: flattenObject({
                             terms,
-
                             ...(smartResumeFingerprint
                                 ? {
                                       smartResumeFingerprint,
