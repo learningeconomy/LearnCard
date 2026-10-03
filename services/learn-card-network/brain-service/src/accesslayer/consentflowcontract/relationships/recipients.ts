@@ -36,6 +36,16 @@ export const audienceVersionWhere = `
  OR coalesce(contract.audienceVersion, 0) = $audienceVersion)
 `;
 
+/** Checked under the contract lock; a referral accepts only the invitation the learner reviewed. */
+export const consentMutationWhere = `
+(CASE WHEN contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' THEN true
+ ELSE datetime(contract.expiresAt) > datetime.realtime() END)
+AND ($expectedRequestId IS NULL OR EXISTS {
+    MATCH (contract)-[request:REQUESTED_FOR]->(:Profile {profileId: $consenterProfileId})
+    WHERE request.requestId = $expectedRequestId AND request.status = 'pending'
+})
+`;
+
 export const assertAudienceMutation = (count: number): void => {
     if (!count)
         throw new TRPCError({
