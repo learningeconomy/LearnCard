@@ -83,7 +83,6 @@ export const reconsentTerms = async (
                         params: {
                             ...newFlat,
                             ...removedProperties,
-
                             ...(smartResumeFingerprint
                                 ? {
                                       smartResumeFingerprint,

@@ -61,7 +61,7 @@ import {
     getWritersForContract,
 } from '@accesslayer/consentflowcontract/relationships/read';
 import { inflateObject } from '@helpers/objects.helpers';
-import { constructUri, getIdFromUri, resolveUri } from '@helpers/uri.helpers';
+import { constructUri, getIdFromUri } from '@helpers/uri.helpers';
 import {
     getContractByUri,
     getStoredContractRequest,
@@ -1116,14 +1116,6 @@ export const contractsRouter = t.router({
                     },
                     ctx.domain
                 );
-
-            try {
-                await updateRequestedForStatusIfExists(
-                    contractDetails.contract.id,
-                    profile.profileId,
-                    'accepted'
-                );
-            } catch {}
 
             const relationship = await getContractTermsForProfile(
                 profile,
