@@ -141,31 +141,55 @@ afterEach(() => {
     cleanup();
     client.clear();
 });
-it('retries a customized decision from real confirmation state with exactly the accepted encrypted submission', async () => {
-    render(
-        <QueryClientProvider client={client}>
-            <FullScreenConsentFlow
-                contractDetails={contract}
-                disableRedirect
-                successCallback={state.success}
-            />
-        </QueryClientProvider>
-    );
-    // Confirmation and its selection state are real; only its editor/footer are synthetic.
-    fireEvent.click(screen.getByRole('button', { name: 'Privacy & Data' }));
-    const editor = render(state.modal.mock.calls[0][0]);
-    fireEvent.click(screen.getByRole('button', { name: 'Do not send email' }));
-    editor.unmount();
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm choices' }));
-    await screen.findByText('Your sharing choices are saved. Try again to finish sending them.');
-    const accepted = structuredClone(state.consent.mock.calls[0]);
-    expect(accepted[1].terms.read.personal).toEqual({ name: 'Alex' });
-    expect(accepted[1].terms.read.credentials.categories.Achievement.shared).toEqual([
-        'lc:encrypted-copy',
-    ]);
-    expect(state.success).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Try Again' }));
-    await waitFor(() => expect(state.success).toHaveBeenCalledOnce());
-    expect(state.consent.mock.calls[1]).toEqual(accepted);
-    expect(state.upload).toHaveBeenCalledOnce();
-});
+it.each([false, true])(
+    'retries a customized decision with the same encrypted submission (intermediate network failure: %s)',
+    async transientFailure => {
+        if (transientFailure) {
+            state.consent
+                .mockReset()
+                .mockRejectedValueOnce(
+                    Object.assign(new Error('Upload failed'), { data: { code: 'BAD_GATEWAY' } })
+                )
+                .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+                .mockResolvedValue({ redirectUrl: '' });
+        }
+        render(
+            <QueryClientProvider client={client}>
+                <FullScreenConsentFlow
+                    contractDetails={contract}
+                    disableRedirect
+                    successCallback={state.success}
+                />
+            </QueryClientProvider>
+        );
+        // Confirmation and its selection state are real; only its editor/footer are synthetic.
+        fireEvent.click(screen.getByRole('button', { name: 'Privacy & Data' }));
+        const editor = render(state.modal.mock.calls[0][0]);
+        fireEvent.click(screen.getByRole('button', { name: 'Do not send email' }));
+        editor.unmount();
+        fireEvent.click(screen.getByRole('button', { name: 'Confirm choices' }));
+        await screen.findByText(
+            'Your sharing choices are saved. Try again to finish sending them.'
+        );
+        const accepted = structuredClone(state.consent.mock.calls[0]);
+        expect(accepted[1].terms.read.personal).toEqual({ name: 'Alex' });
+        expect(accepted[1].terms.read.credentials.categories.Achievement.shared).toEqual([
+            'lc:encrypted-copy',
+        ]);
+        expect(state.success).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', { name: 'Try Again' }));
+        if (transientFailure) {
+            await waitFor(() => expect(state.consent).toHaveBeenCalledTimes(2));
+            await screen.findByText(
+                'Your sharing choices are saved. Try again to finish sending them.'
+            );
+            expect(state.success).not.toHaveBeenCalled();
+            expect(state.consent.mock.calls[1]).toEqual(accepted);
+            fireEvent.click(screen.getByRole('button', { name: 'Try Again' }));
+        }
+        await waitFor(() => expect(state.success).toHaveBeenCalledOnce());
+        expect(state.consent.mock.calls[1]).toEqual(accepted);
+        if (transientFailure) expect(state.consent.mock.calls[2]).toEqual(accepted);
+        expect(state.upload).toHaveBeenCalledOnce();
+    }
+);
