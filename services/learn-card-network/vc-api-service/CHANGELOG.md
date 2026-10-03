@@ -1,5 +1,12 @@
 # @learncard/vc-api-service
 
+## 1.0.8
+
+### Patch Changes
+
+- Updated dependencies [[`590adf48867d6c6fd504e66a11c9827d5102122d`](https://github.com/learningeconomy/LearnCard/commit/590adf48867d6c6fd504e66a11c9827d5102122d)]:
+    - @learncard/didkit-plugin@1.10.3
+
 ## 1.0.7
 
 ### Patch Changes

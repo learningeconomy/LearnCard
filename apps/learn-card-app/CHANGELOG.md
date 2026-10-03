@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.99.1
+
+### Patch Changes
+
+- [#1640](https://github.com/learningeconomy/LearnCard/pull/1640) [`9a969d221544687e252a005b1d31425b41723417`](https://github.com/learningeconomy/LearnCard/commit/9a969d221544687e252a005b1d31425b41723417) Thanks [@goblincore](https://github.com/goblincore)! - fix: prevent AI Insights Privacy & Data modal crash
+
+- Updated dependencies []:
+    - @learncard/credential-library@2.0.5
+    - @learncard/lca-api-plugin@2.0.8
+    - @learncard/react@2.12.9
+
 ## 1.99.0
 
 ### Minor Changes
