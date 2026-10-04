@@ -65,6 +65,13 @@ describe('history account isolation', () => {
         stores.wallet.update({ wallet: { id: { did: () => 'did:key:other' } } });
         expect(walletContext.isCurrent()).toBe(false);
     });
+    it('rechecks dynamic eligibility after capture', () => {
+        let allowed = true;
+        const context = captureHistoryContext(wallet as never, () => allowed);
+        expect(context.eligible).toBe(true);
+        allowed = false;
+        expect(context.eligible).toBe(false);
+    });
     it('blocks switched, child and service accounts while permitting the primary account', () => {
         expect(isHistoryAccountEligible()).toBe(true);
         for (const state of [

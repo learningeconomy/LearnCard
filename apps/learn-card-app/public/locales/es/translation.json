@@ -9330,7 +9330,7 @@
         "record": "Guardar historial privado",
         "retention": "Guarda hasta 500 recordatorios de los últimos 90 días. Los registros antiguos se eliminan al conectarte.",
         "limits": "Los títulos no describen todos los datos enviados. Eliminar el historial no retira la información enviada. Desactivar el registro conserva el historial anterior.",
-        "cleanupPending": "No se pudieron eliminar algunos registros antiguos. Conéctate y actualiza para terminar.",
+        "cleanupPending": "No se pudieron leer o eliminar algunos registros. Borra el historial para eliminarlos.",
         "refresh": "Actualizar",
         "clear": "Borrar historial",
         "empty": "No hay envíos registrados.",

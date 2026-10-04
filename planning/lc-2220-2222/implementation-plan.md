@@ -45,3 +45,9 @@ Before calling either story complete: finish protocol end-to-end and differentia
 LC-2222 remains planned. Its first implementation decision is how to carry the protected PDF: an encrypted asset tied to share-service authorization avoids the existing public upload, whereas embedding a PDF in the encrypted share would require a strict size ceiling under the existing one-megabyte envelope limit. Resolve this against representative generated PDF sizes before selecting the storage contract. No Resume Builder publishing code has been changed yet.
 
 Validated locally: 44 app tests and 13 SDK submit tests pass; focused application diagnostics for ten implementation/test files report zero errors; history adapter/tests and the complete OID4VC SDK pass TypeScript checks; localization and safe-area guards pass. Whole-app TypeScript remains unverified because that check reports errors elsewhere in this checkout.
+
+## Automated review follow-up — 2026-10-04
+
+The pre-send history Cloud lookup has been removed. A locally cached holder-encrypted consent snapshot supplies the capture; current Cloud consent is checked only after transport. Unknown/disabled consent is skipped without an error toast. Read failures and corrupt/future-version records cannot trigger destructive generation cleanup; explicit Clear provides recovery. Clock-skew handling, cancellation/loading states, shared live eligibility and safe SDK JARM diagnostics are covered by new tests. See [review-follow-up.md](review-follow-up.md) for each finding, validation and the documented non-atomic settings ordering boundary.
+
+LC-2222 is now implemented separately in draft PR #1651. Do not mix its managed PDF attachment work into this PR.

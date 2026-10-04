@@ -5,6 +5,7 @@ import {
     JarmEncryptError,
     type JarmClientMetadata,
     type ResponseObjectPayload,
+    type JarmEncryptErrorCode,
 } from './encrypt';
 import type { ProofJwtSigner } from '../vci/types';
 
@@ -189,26 +190,45 @@ export interface SubmitPresentationResult {
 /* -------------------------------------------------------------------------- */
 
 export type VpSubmitErrorCode =
-    'invalid_input' | 'no_fetch' | 'network_error' | 'server_error' | 'jarm_encrypt_failed';
+    | 'invalid_input'
+    | 'no_fetch'
+    | 'network_error'
+    | 'server_error'
+    | 'jarm_encrypt_failed'
+    | 'internal_error';
 
+const safeJarmCodes = new Set<JarmEncryptErrorCode>([
+    'no_encryption_key',
+    'invalid_jwks',
+    'jwks_fetch_failed',
+    'unsupported_alg',
+    'missing_signer',
+    'sign_failed',
+    'encrypt_failed',
+]);
 export class VpSubmitError extends Error {
     readonly code: VpSubmitErrorCode;
     readonly status?: number;
+    /** @deprecated Transport errors never retain verifier response data. */
     readonly body?: unknown;
+    readonly jarmCode?: JarmEncryptErrorCode;
 
     constructor(
         code: VpSubmitErrorCode,
         message: string,
-        extra: { status?: number; body?: unknown; cause?: unknown } = {}
+        extra: {
+            status?: number;
+            body?: unknown;
+            cause?: unknown;
+            jarmCode?: JarmEncryptErrorCode;
+        } = {}
     ) {
         super(message);
         this.name = 'VpSubmitError';
         this.code = code;
         this.status = extra.status;
-        this.body = extra.body;
-        if (extra.cause !== undefined) {
-            (this as { cause?: unknown }).cause = extra.cause;
-        }
+        // Preserve source compatibility for deprecated arguments, never their private values.
+        if (extra.jarmCode && safeJarmCodes.has(extra.jarmCode)) this.jarmCode = extra.jarmCode;
     }
 }
 
@@ -408,10 +428,11 @@ const encodeJarmBody = async (args: {
         if (e instanceof JarmEncryptError) {
             throw new VpSubmitError(
                 'jarm_encrypt_failed',
-                'Unable to encrypt the verifier response'
+                'Unable to encrypt the verifier response',
+                { jarmCode: e.code }
             );
         }
-        throw new VpSubmitError('jarm_encrypt_failed', 'Unable to encrypt the verifier response');
+        throw new VpSubmitError('internal_error', 'Unable to prepare the verifier response');
     }
 
     const params = new URLSearchParams();

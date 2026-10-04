@@ -356,7 +356,7 @@ When a verifier requests `response_mode=direct_post.jwt`, the wallet must encryp
 
 VCI errors are thrown as `CredentialOfferParseError` / `VciError`; VP errors as `VpError`. Every error carries a stable `code` field so UI can map to friendly copy without string-matching messages.
 
-`submitPresentation` throws `VpSubmitError` with a stable `code` and, for HTTP failures, `status`. Transport errors deliberately omit the response URL, verifier-controlled response body/status text, and nested fetch/encryption causes so logging an error does not disclose request capabilities or presentations. Consumers should use `code` and `status` rather than `body` or `cause`. Successful `SubmitPresentationResult.body` is unchanged and should still be treated as private counterparty data.
+`submitPresentation` throws `VpSubmitError` with a stable `code` and, for HTTP failures, `status`. Transport errors deliberately omit the response URL, verifier-controlled response body/status text, and nested fetch/encryption causes so logging an error does not disclose request capabilities or presentations. Consumers should use `code` and `status` rather than `body` or `cause`. Recognized encryption failures also expose the allowlisted `jarmCode`; unexpected response preparation errors use `internal_error` without a nested cause. Successful `SubmitPresentationResult.body` is unchanged and should still be treated as private counterparty data.
 
 ### `CredentialOfferParseError.code`
 

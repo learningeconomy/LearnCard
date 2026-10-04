@@ -22,11 +22,14 @@ type Loaded = Awaited<ReturnType<typeof loadVerifierHistory>>;
 type State = { revision: number; context: HistoryContext; data: Loaded };
 const button =
     'py-2 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed';
-const VerifierHistorySection: React.FC<{ eligible: boolean }> = ({ eligible }) => {
+const VerifierHistorySection: React.FC<{ eligible: boolean; isEligible?: () => boolean }> = ({
+    eligible,
+    isEligible,
+}) => {
     const { initWallet } = useWallet();
     const locale = useLocale();
     const revision = useHistoryAccountRevision();
-    const allowed = isHistoryAccountEligible(eligible);
+    const allowed = isHistoryAccountEligible(eligible && (isEligible?.() ?? true));
     const [state, setState] = useState<State | null>(null);
     const [busy, setBusy] = useState<number | null>(null);
     const [error, setError] = useState<{ revision: number; message: string } | null>(null);
@@ -51,7 +54,7 @@ const VerifierHistorySection: React.FC<{ eligible: boolean }> = ({ eligible }) =
             if (!context) {
                 const wallet = await initWallet();
                 if (!isSelectedAccount()) return;
-                context = captureHistoryContext(wallet, eligible);
+                context = captureHistoryContext(wallet, isEligible ?? eligible);
             }
             if (!context.isCurrent()) return;
             const currentRevision = getHistoryAccountRevision();
@@ -140,7 +143,11 @@ const VerifierHistorySection: React.FC<{ eligible: boolean }> = ({ eligible }) =
                                 <button
                                     type="button"
                                     className={button}
-                                    disabled={loading || !visible.data.receipts.length}
+                                    disabled={
+                                        loading ||
+                                        (!visible.data.receipts.length &&
+                                            visible.data.cleanupComplete)
+                                    }
                                     onClick={() =>
                                         void run(async context => {
                                             await clearVerifierHistory(context);

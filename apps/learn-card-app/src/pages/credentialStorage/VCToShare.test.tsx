@@ -39,6 +39,9 @@ vi.mock('../../helpers/verifier-history/account', () => ({
     captureHistoryAccount: () => () => mocks.current,
     captureHistoryContext: (wallet: unknown) => ({ wallet, isCurrent: () => mocks.current }),
 }));
+vi.mock('../../helpers/verifier-history/useEligibility', () => ({
+    useVerifierHistoryEligibility: () => () => true,
+}));
 import VCToShare from './VCToShare';
 const props = {
     vcsToShare: [{ name: 'Diploma' } as VC],
@@ -86,6 +89,35 @@ describe('credential disclosure recording', () => {
         expect(Object.keys(onSubmit.mock.calls[0][0])).toEqual(['verifiablePresentation']);
         expect(onSubmit.mock.calls[0][1]).toMatchObject({ finish: mocks.finish });
         expect(mocks.finish).not.toHaveBeenCalled();
+    });
+    it('rejects CHAPI once and exits loading after an account change during signing', async () => {
+        mocks.sign.mockImplementationOnce(async () => {
+            mocks.current = false;
+            return {};
+        });
+        const respondWith = vi.fn((result: Promise<unknown>) => {
+            void result.catch(() => undefined);
+        });
+        render(<VCToShare {...props} event={{ respondWith }} />);
+        fireEvent.click(screen.getByRole('button', { name: 'Share' }));
+        await screen.findByText(/Error sharing/);
+        expect(screen.queryByText('Sharing...')).not.toBeInTheDocument();
+        expect(respondWith).toHaveBeenCalledTimes(1);
+        await expect(respondWith.mock.calls[0][0]).rejects.toThrow('canceled');
+        expect(mocks.finish).not.toHaveBeenCalled();
+    });
+    it('exits loading without submitting after an account change during VC-API signing', async () => {
+        mocks.sign.mockImplementationOnce(async () => {
+            mocks.current = false;
+            return {};
+        });
+        const onSubmit = vi.fn();
+        render(<VCToShare {...props} onSubmit={onSubmit} />);
+        fireEvent.click(screen.getByRole('button', { name: 'Share' }));
+        await screen.findByText(/Error sharing/);
+        expect(screen.queryByText('Sharing...')).not.toBeInTheDocument();
+        expect(onSubmit).not.toHaveBeenCalled();
+        expect(screen.getByRole('button', { name: 'Share' })).toBeDisabled();
     });
     it('does not repeat handoff when persistence fails', async () => {
         mocks.finish.mockResolvedValue('unavailable');

@@ -23,11 +23,12 @@ const opaque = (value: unknown): JWE =>
 const clear = <T>(value: JWE): T => JSON.parse(Buffer.from(value.ciphertext, 'base64').toString());
 const draft = { protocol: 'vc-api' as const, titles: ['Selected diploma'] };
 const fixture = () => {
+    const fixtureId = webcrypto.randomUUID();
     let sequence = 0;
     let current = true;
     const documents = new Map<string, Record<string, unknown>>();
     const wallet: HistoryWallet = {
-        id: { did: () => 'did:key:holder' },
+        id: { did: () => `did:key:holder-${fixtureId}` },
         invoke: {
             createDagJwe: vi.fn(async value => opaque(value)),
             decryptDagJwe: async <T>(value: JWE) => clear<T>(value),
@@ -235,16 +236,165 @@ describe('private verifier history', () => {
             cleanupComplete: false,
         });
     });
-    it('fails closed on corrupt payloads or broken pagination, without broad deletion', async () => {
+    it('quarantines corrupt payloads, supports explicit clear, and rejects broken pagination', async () => {
         const { context, seed, wallet } = fixture();
         seed({ kind: 'receipt', vp: 'CANARY' });
-        await expect(loadVerifierHistory(context)).rejects.toThrow();
+        expect(await loadVerifierHistory(context)).toMatchObject({
+            enabled: false,
+            receipts: [],
+            cleanupComplete: false,
+        });
         expect(wallet.invoke.learnCloudDelete).not.toHaveBeenCalled();
+        expect(await clearVerifierHistory(context)).toBe(true);
+        expect(await loadVerifierHistory(context)).toMatchObject({
+            enabled: false,
+            receipts: [],
+            cleanupComplete: true,
+        });
         vi.mocked(wallet.invoke.learnCloudReadPage).mockResolvedValue({
             records: [],
             hasMore: true,
         });
         await expect(loadVerifierHistory(context)).rejects.toThrow('pagination');
+    });
+    it('unknown/off consent performs no Cloud calls before or after sending and emits no history error', async () => {
+        const { context, wallet } = fixture();
+        vi.mocked(wallet.invoke.learnCloudReadPage).mockRejectedValue(new Error('Cloud down'));
+        expect(await (await beginVerifierDisclosure(context, draft)).finish('sent')).toBe(
+            'skipped'
+        );
+        expect(wallet.invoke.learnCloudReadPage).not.toHaveBeenCalled();
+        expect(wallet.invoke.learnCloudCreate).not.toHaveBeenCalled();
+        vi.mocked(wallet.invoke.learnCloudReadPage).mockRestore();
+    });
+    it('enabled consent is captured locally, with authoritative Cloud checks only after transport', async () => {
+        const { context, wallet } = fixture();
+        await setVerifierHistoryEnabled(context, true);
+        vi.mocked(wallet.invoke.learnCloudReadPage).mockClear();
+        const attempt = await beginVerifierDisclosure(context, draft);
+        expect(wallet.invoke.learnCloudReadPage).not.toHaveBeenCalled();
+        expect(await attempt.finish('sent')).toBe('saved');
+        expect(wallet.invoke.learnCloudReadPage).toHaveBeenCalledTimes(2);
+        await setVerifierHistoryEnabled(context, false);
+        vi.mocked(wallet.invoke.learnCloudReadPage).mockClear();
+        expect(await (await beginVerifierDisclosure(context, draft)).finish('sent')).toBe(
+            'skipped'
+        );
+        expect(wallet.invoke.learnCloudReadPage).not.toHaveBeenCalled();
+    });
+    it('a future-version receipt does not break known history, toggles, exact delete or clear', async () => {
+        const { context, seed, documents, wallet } = fixture();
+        await setVerifierHistoryEnabled(context, true);
+        await (await beginVerifierDisclosure(context, draft)).finish('sent');
+        seed({
+            kind: 'receipt',
+            version: 2,
+            eventId: webcrypto.randomUUID(),
+            private: 'FUTURE_CANARY',
+        });
+        const futureId = [...documents.keys()].at(-1)!;
+        const loaded = await loadVerifierHistory(context);
+        expect(loaded).toMatchObject({ enabled: true, cleanupComplete: false });
+        expect(loaded.receipts).toHaveLength(1);
+        expect(documents.has(futureId)).toBe(true);
+        await setVerifierHistoryEnabled(context, false);
+        expect(await deleteVerifierReceipt(context, loaded.receipts[0].eventId)).toBe(true);
+        expect(await clearVerifierHistory(context)).toBe(true);
+        expect(documents.has(futureId)).toBe(false);
+        expect(wallet.invoke.learnCloudDelete).toHaveBeenCalledWith({ _id: futureId }, false);
+    });
+    it('future-dated receipts are hidden but never automatically deleted for clock skew', async () => {
+        const { context, seed, documents } = fixture();
+        await setVerifierHistoryEnabled(context, true);
+        const settings = clear<{ generation: string }>([...documents.values()][0].payload as JWE);
+        const now = Date.now();
+        seed({
+            kind: 'receipt',
+            version: 1,
+            generation: settings.generation,
+            protocol: 'vc-api',
+            titles: ['Ahead'],
+            outcome: 'sent',
+            eventId: webcrypto.randomUUID(),
+            sentAt: new Date(now + 60000).toISOString(),
+        });
+        expect((await loadVerifierHistory(context, now)).receipts).toHaveLength(0);
+        expect(documents.size).toBe(2);
+        expect((await loadVerifierHistory(context, now + 60000)).receipts).toHaveLength(1);
+    });
+    it('empty reads cannot reset cached consent or erase another generation', async () => {
+        const { context, wallet, seed, documents } = fixture();
+        await setVerifierHistoryEnabled(context, true);
+        await (await beginVerifierDisclosure(context, draft)).finish('sent');
+        vi.mocked(wallet.invoke.learnCloudReadPage).mockResolvedValueOnce({
+            records: [],
+            hasMore: false,
+        });
+        await expect(setVerifierHistoryEnabled(context, true)).rejects.toThrow('settings');
+        seed({
+            kind: 'settings',
+            version: 1,
+            enabled: true,
+            revision: webcrypto.randomUUID(),
+            generation: webcrypto.randomUUID(),
+        });
+        vi.mocked(wallet.invoke.learnCloudDelete).mockClear();
+        expect(await loadVerifierHistory(context)).toMatchObject({
+            receipts: [],
+            cleanupComplete: false,
+        });
+        expect(wallet.invoke.learnCloudDelete).not.toHaveBeenCalled();
+        expect(documents.size).toBe(3);
+        expect(await clearVerifierHistory(context)).toBe(true);
+    });
+    it('recovers encrypted local consent after reload, with no pre-send Cloud traffic', async () => {
+        const { context, wallet } = fixture();
+        const local = new Map<string, string>();
+        vi.stubGlobal('localStorage', {
+            getItem: (key: string) => local.get(key) ?? null,
+            setItem: (key: string, value: string) => local.set(key, value),
+            removeItem: (key: string) => local.delete(key),
+        });
+        try {
+            await setVerifierHistoryEnabled(context, true);
+            expect(local.size).toBe(1);
+            expect([...local.values()][0]).not.toContain('generation');
+            vi.resetModules();
+            const reloaded = await import('./history');
+            vi.mocked(wallet.invoke.learnCloudReadPage).mockClear();
+            const attempt = await reloaded.beginVerifierDisclosure(context, draft);
+            expect(wallet.invoke.learnCloudReadPage).not.toHaveBeenCalled();
+            expect(await attempt.finish('sent')).toBe('saved');
+            vi.mocked(wallet.invoke.learnCloudReadPage).mockResolvedValueOnce({
+                records: [],
+                hasMore: false,
+            });
+            await expect(reloaded.loadVerifierHistory(context)).rejects.toThrow('settings');
+        } finally {
+            vi.unstubAllGlobals();
+        }
+    });
+    it('unknown settings never enable recording; clear recovers with recording disabled', async () => {
+        const { context, seed, wallet } = fixture();
+        await setVerifierHistoryEnabled(context, true);
+        const attempt = await beginVerifierDisclosure(context, draft);
+        seed({ kind: 'settings', version: 2, enabled: true });
+        expect(await attempt.finish('sent')).toBe('skipped');
+        expect(await loadVerifierHistory(context)).toMatchObject({
+            enabled: false,
+            cleanupComplete: false,
+        });
+        await expect(setVerifierHistoryEnabled(context, true)).rejects.toThrow('settings');
+        expect(await clearVerifierHistory(context)).toBe(true);
+        expect(await loadVerifierHistory(context)).toMatchObject({
+            enabled: false,
+            cleanupComplete: true,
+        });
+        expect(wallet.invoke.learnCloudCreate).toHaveBeenCalledTimes(2);
+    });
+    it('truncates titles without leaving a trailing UTF-16 surrogate', () => {
+        const [title] = visibleCredentialTitles([{ name: 'a'.repeat(159) + '😀' }]);
+        expect(title).toBe('a'.repeat(159));
     });
     it('does not decode compact credentials or accept non-web origins', () => {
         expect(

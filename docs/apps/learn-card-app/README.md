@@ -61,6 +61,25 @@ flowchart LR
     - **Link** — For sending digitally
     - **Presentation** — For formal verification requests
 
+### Private Verifier History
+
+In **Data Sharing Center**, open **Shared with verifiers** to enable private recording, delete individual reminders or clear history. Recording is off by default and is unavailable for managed accounts. Disabling recording keeps previous reminders; clearing readable history keeps the preference.
+
+```mermaid
+flowchart LR
+    A[Open private history] --> B[Enable recording]
+    B --> C[Send credentials]
+    C --> D[Confirm current consent]
+    D --> E[Save encrypted reminder]
+    E --> F[View or clear reminders]
+```
+
+A reminder records successful sending or a browser handoff, not verifier acceptance. It contains the visible credential titles and, where shown during review, the verifier name, origin and purpose. It contains no credentials, claims, credential addresses or link keys. Deleting history cannot retract information already sent.
+
+The app keeps an owner-encrypted consent snapshot on the device. Sending does not look up history in Cloud first. Without a readable local snapshot, recording is skipped until you open private history on that device; current consent is checked after sending before a reminder is saved.
+
+History displays at most 500 entries from the last 90 days. Cleanup runs when history is successfully accessed; offline clients cannot guarantee immediate physical deletion. Unreadable records are hidden and are not automatically deleted. **Clear history** can remove them by their exact document IDs; unknown consent is then kept off for safety. Future-dated reminders are hidden until the local clock catches up and are not removed solely because of clock skew.
+
 ### Self-Assigning Skills
 
 ```mermaid

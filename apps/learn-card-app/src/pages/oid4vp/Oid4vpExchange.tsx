@@ -1,5 +1,7 @@
+import { useVerifierHistoryEligibility } from '../../helpers/verifier-history/useEligibility';
 import {
     beginVerifierDisclosure,
+    type HistoryContext,
     historyOrigin,
     visibleCredentialTitles,
 } from '../../helpers/verifier-history/history';
@@ -162,6 +164,7 @@ const Oid4vpExchange: React.FC = () => {
     const params = queryString.parse(search);
     const isLoggedIn = useIsLoggedIn();
     const { initWallet } = useWallet();
+    const historyEligible = useVerifierHistoryEligibility();
     const { presentToast } = useToast();
 
     const requestUri = singleParam(params.request);
@@ -245,13 +248,14 @@ const Oid4vpExchange: React.FC = () => {
             // network round-trip.
             const clientInfo = extractClientInfo(currentPhase.request);
 
+            const isSelectedAccount = captureHistoryAccount();
+            let context: HistoryContext | undefined;
             try {
                 setPhase({ kind: 'submitting', clientInfo });
 
-                const isSelectedAccount = captureHistoryAccount();
                 const wallet = await initWallet();
                 if (!isSelectedAccount()) throw new Error('Account changed. Please try again.');
-                const context = captureHistoryContext(wallet);
+                context = captureHistoryContext(wallet, historyEligible);
 
                 const chosen = buildChosenList(
                     currentPhase.selection,
@@ -332,7 +336,7 @@ const Oid4vpExchange: React.FC = () => {
                     }
                 }
 
-                if (!context.isCurrent()) return;
+                if (!context.isCurrent()) throw new Error('Account changed. Please try again.');
 
                 const result: Awaited<ReturnType<WalletOidcVpInvoke['presentCredentials']>> =
                     await resilientPresentCredentials({
@@ -345,12 +349,12 @@ const Oid4vpExchange: React.FC = () => {
                     });
 
                 void history.finish('sent').then(result => {
-                    if (result === 'unavailable' && context.isCurrent())
+                    if (result === 'unavailable' && history.isCurrent())
                         presentToast(m['verifierHistory.saveFailed'](), {
                             type: ToastTypeEnum.Error,
                         });
                 });
-                if (!context.isCurrent()) return;
+                if (!context.isCurrent()) throw new Error('Account changed. Please try again.');
 
                 // Pull the W3C VCs out of the picked candidates so the
                 // finished screen can render them as `BoostEarnedCard`s.
@@ -377,16 +381,21 @@ const Oid4vpExchange: React.FC = () => {
                     kind: 'error',
                     error,
                     clientInfo,
-                    retryConsent: {
-                        request: currentPhase.request,
-                        selection: currentPhase.selection,
-                        dcqlSelection: currentPhase.dcqlSelection,
-                        pool: currentPhase.pool,
-                    },
+                    // Never offer old-account credentials as a retry on a different account.
+                    ...(isSelectedAccount() && (!context || context.isCurrent())
+                        ? {
+                              retryConsent: {
+                                  request: currentPhase.request,
+                                  selection: currentPhase.selection,
+                                  dcqlSelection: currentPhase.dcqlSelection,
+                                  pool: currentPhase.pool,
+                              },
+                          }
+                        : {}),
                 });
             }
         },
-        [phase, initWallet, resilience, presentToast]
+        [phase, initWallet, resilience, presentToast, historyEligible]
     );
 
     const handleCancel = useCallback(() => {

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useVerifierHistoryEligibility } from '../../helpers/verifier-history/useEligibility';
+import React, { useState, useRef } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('v-c-to-share');
 
@@ -11,6 +12,7 @@ import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 import {
     beginVerifierDisclosure,
     visibleCredentialTitles,
+    type HistoryContext,
 } from '../../helpers/verifier-history/history';
 import {
     captureHistoryContext,
@@ -52,9 +54,12 @@ const VCToShare: React.FC<{
     onReject,
     verifiablePresentationRequest,
 }) => {
+    const responded = useRef(false);
+    const accountInvalidated = useRef(false);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string>('');
     const { initWallet } = useWallet();
+    const historyEligible = useVerifierHistoryEligibility();
     const { presentToast } = useToast();
 
     const renderCredentialList = vcsToShare?.map(vc => {
@@ -80,9 +85,12 @@ const VCToShare: React.FC<{
     });
 
     const accept = async () => {
+        const isSelectedAccount = captureHistoryAccount();
+        let context: HistoryContext | undefined;
         try {
+            setError('');
             setIsLoading(true);
-            const isSelectedAccount = captureHistoryAccount();
+            if (responded.current) throw new Error('Request already completed');
             const wallet = await initWallet();
             if (!isSelectedAccount()) throw new Error('Account changed. Please try again.');
 
@@ -98,13 +106,13 @@ const VCToShare: React.FC<{
                 log.error(e);
             }
 
-            const context = captureHistoryContext(wallet);
+            context = captureHistoryContext(wallet, historyEligible);
             const history = await beginVerifierDisclosure(context, {
                 protocol: event ? 'chapi' : 'vc-api',
                 titles: visibleCredentialTitles(vcsToShare),
             });
             const firstCredential = vcsToShare[0];
-            if (!firstCredential) return;
+            if (!firstCredential) throw new Error('No credentials selected');
             const vpToShare = {
                 ...(await wallet.invoke.newPresentation(firstCredential)),
                 verifiableCredential: vcsToShare,
@@ -116,8 +124,9 @@ const VCToShare: React.FC<{
                 proofPurpose: 'authentication',
             });
 
-            if (!context.isCurrent()) return;
+            if (!context.isCurrent()) throw new Error('Account changed');
             if (event) {
+                responded.current = true;
                 event.respondWith(
                     Promise.resolve({
                         dataType: 'VerifiablePresentation',
@@ -137,6 +146,18 @@ const VCToShare: React.FC<{
             handleCloseModal();
         } catch (e) {
             log.error('share.credentials.failed');
+            if (!isSelectedAccount() || (context && !context.isCurrent()))
+                accountInvalidated.current = true;
+            if (event && !responded.current) {
+                responded.current = true;
+                const rejection = Promise.reject(new Error('Credential sharing canceled'));
+                void rejection.catch(() => undefined);
+                try {
+                    event.respondWith(rejection);
+                } catch {
+                    /* Mediator may already be closed. */
+                }
+            }
             setIsLoading(false);
             setError('Error sharing credential(s). Please try again.');
         }
@@ -173,7 +194,12 @@ const VCToShare: React.FC<{
                     <button
                         className="shrink-0 bg-grayscale-900 rounded-[20px] text-white font-medium h-10 px-6 text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                         onClick={accept}
-                        disabled={selectedCount === 0 || (isLoading && !error)}
+                        disabled={
+                            selectedCount === 0 ||
+                            isLoading ||
+                            Boolean(event && responded.current) ||
+                            accountInvalidated.current
+                        }
                     >
                         {isLoading && !error ? (
                             <span className="flex items-center justify-center gap-2">

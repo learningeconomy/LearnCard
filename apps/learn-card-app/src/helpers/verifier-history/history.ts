@@ -35,7 +35,42 @@ const payloadSchema = z.discriminatedUnion('kind', [settingsSchema, receiptSchem
 type Settings = z.infer<typeof settingsSchema>;
 export type VerifierReceipt = z.infer<typeof receiptSchema>;
 type Payload = z.infer<typeof payloadSchema>;
-type Stored = { _id: string; payload: Payload };
+type Stored = { _id: string; payload: Payload; encrypted: JWE };
+type Scan = { records: Stored[]; unreadable: { _id: string }[]; unknownConsent: boolean };
+// Only a holder-encrypted settings snapshot persists locally. No receipt metadata is cached here.
+const consentCache = new Map<string, Settings | undefined>();
+const consentKey = (context: HistoryContext) =>
+    `lc.verifier-history-consent.v1:${context.wallet.id.did()}`;
+const rememberConsent = (context: HistoryContext, record?: Stored): void => {
+    if (!active(context)) return;
+    const settings = record?.payload.kind === 'settings' ? record.payload : undefined;
+    consentCache.set(context.wallet.id.did(), settings);
+    try {
+        if (settings && record)
+            localStorage.setItem(consentKey(context), JSON.stringify(record.encrypted));
+        else localStorage.removeItem(consentKey(context));
+    } catch {
+        /* Local storage is optional; unknown consent never enables recording. */
+    }
+};
+const cachedConsent = async (context: HistoryContext): Promise<Settings | undefined> => {
+    const did = context.wallet.id.did();
+    if (consentCache.has(did)) return consentCache.get(did);
+    try {
+        const encrypted = localStorage.getItem(consentKey(context));
+        if (!encrypted) return undefined;
+        const value = await context.wallet.invoke.decryptDagJwe<unknown>(JSON.parse(encrypted));
+        assertCurrent(context);
+        const parsed = settingsSchema.safeParse(value);
+        if (parsed.success) {
+            consentCache.set(did, parsed.data);
+            return parsed.data;
+        }
+    } catch {
+        /* A cold/unreadable snapshot is skipped, without Cloud I/O or a failure toast. */
+    }
+    return undefined;
+};
 export type HistoryWallet = {
     id: { did(): string };
     invoke: {
@@ -78,7 +113,8 @@ const text = (value: unknown, limit: number): string | undefined =>
               )
               .join('')
               .trim()
-              .slice(0, limit) || undefined
+              .slice(0, limit)
+              .replace(/[\uD800-\uDBFF]$/, '') || undefined
         : undefined;
 export const historyOrigin = (value: unknown): string | undefined => {
     try {
@@ -110,9 +146,18 @@ const active = (context: HistoryContext) => context.eligible && context.isCurren
 const assertCurrent = (context: HistoryContext) => {
     if (!active(context)) throw new Error('History unavailable for this account');
 };
+const settingsRecord = (records: Stored[]) =>
+    records.filter(record => record.payload.kind === 'settings').at(-1);
 const latestSettings = (records: Stored[]): Settings | undefined =>
-    records.filter(record => record.payload.kind === 'settings').at(-1)?.payload as
-        Settings | undefined;
+    settingsRecord(records)?.payload as Settings | undefined;
+const requireReadableConsent = (context: HistoryContext, scan: Scan): void => {
+    // Cloud currently maps some storage failures to an empty result. Do not reset known consent.
+    if (
+        scan.unknownConsent ||
+        (!latestSettings(scan.records) && consentCache.get(context.wallet.id.did()))
+    )
+        throw new Error('History settings could not be read');
+};
 const sameConsent = (a: Settings | undefined, b: Settings | undefined) =>
     a?.enabled === true &&
     b?.enabled === true &&
@@ -120,8 +165,10 @@ const sameConsent = (a: Settings | undefined, b: Settings | undefined) =>
     a.generation === b.generation;
 
 /** Explicit cursor pagination; the generic Cloud read helper does not advance its cursor. */
-const readAll = async (context: HistoryContext): Promise<Stored[]> => {
+const readAll = async (context: HistoryContext): Promise<Scan> => {
     const records: Stored[] = [];
+    const unreadable: { _id: string }[] = [];
+    let unknownConsent = false;
     const cursors = new Set<string>();
     let cursor: string | undefined;
     for (let pageNumber = 0; pageNumber < MAX_SCAN_PAGES; pageNumber++) {
@@ -139,16 +186,36 @@ const readAll = async (context: HistoryContext): Promise<Stored[]> => {
                 !/^[a-f0-9]{24}$/i.test(record._id)
             )
                 continue;
-            // Fail closed on corruption; never delete a document whose payload we cannot validate.
-            const decrypted = await context.wallet.invoke.decryptDagJwe<unknown>(
-                record.payload as JWE
-            );
-            assertCurrent(context);
-            const parsed = payloadSchema.safeParse(decrypted);
-            if (!parsed.success) throw new Error('History data could not be read');
-            records.push({ _id: record._id, payload: parsed.data });
+            // Quarantine unreadable documents: routine reads/maintenance never delete them.
+            try {
+                const decrypted = await context.wallet.invoke.decryptDagJwe<unknown>(
+                    record.payload as JWE
+                );
+                assertCurrent(context);
+                const parsed = payloadSchema.safeParse(decrypted);
+                if (parsed.success)
+                    records.push({
+                        _id: record._id,
+                        payload: parsed.data,
+                        encrypted: record.payload as JWE,
+                    });
+                else {
+                    unreadable.push({ _id: record._id });
+                    // An unsupported receipt cannot enable recording; unknown settings fail closed.
+                    if (
+                        !decrypted ||
+                        typeof decrypted !== 'object' ||
+                        (decrypted as { kind?: unknown }).kind !== 'receipt'
+                    )
+                        unknownConsent = true;
+                }
+            } catch {
+                assertCurrent(context);
+                unreadable.push({ _id: record._id });
+                unknownConsent = true;
+            }
         }
-        if (!page.hasMore) return records;
+        if (!page.hasMore) return { records, unreadable, unknownConsent };
         if (!page.cursor || cursors.has(page.cursor)) throw new Error('History pagination failed');
         cursors.add(page.cursor);
         cursor = page.cursor;
@@ -164,8 +231,12 @@ const append = async (context: HistoryContext, payload: Payload): Promise<void> 
         payload: encrypted,
     });
     if (!created) throw new Error('History could not be saved');
+    if (payload.kind === 'settings') rememberConsent(context, { _id: '', payload, encrypted });
 };
-const deleteExact = async (context: HistoryContext, records: Stored[]): Promise<boolean> => {
+const deleteExact = async (
+    context: HistoryContext,
+    records: { _id: string }[]
+): Promise<boolean> => {
     for (const record of records) {
         assertCurrent(context);
         try {
@@ -215,55 +286,82 @@ const maintain = async (
         .filter(record => record.payload.kind === 'settings')
         .slice(-10)
         .forEach(record => keep.add(record._id));
-    return deleteExact(
-        context,
-        records.filter(record => !keep.has(record._id))
+    const deletable = records.filter(record => {
+        if (keep.has(record._id)) return false;
+        if (record.payload.kind === 'settings') return true;
+        // Never infer a clear from missing settings/new generation, or delete a future-dated receipt.
+        const sentAt = Date.parse(record.payload.sentAt);
+        return (
+            sentAt < now - HISTORY_RETENTION_MS ||
+            (record.payload.generation === settings?.generation && sentAt <= now)
+        );
+    });
+    const deleted = await deleteExact(context, deletable);
+    return (
+        deleted &&
+        !records.some(
+            record =>
+                record.payload.kind === 'receipt' &&
+                record.payload.generation !== settings?.generation &&
+                Date.parse(record.payload.sentAt) >= now - HISTORY_RETENTION_MS
+        )
     );
 };
 export const loadVerifierHistory = async (context: HistoryContext, now = Date.now()) => {
-    const records = await readAll(context);
-    const settings = latestSettings(records);
-    const cleanupComplete = await maintain(context, records, settings, now);
+    await cachedConsent(context);
+    const scan = await readAll(context);
+    const settings = latestSettings(scan.records);
+    if (!scan.unknownConsent) requireReadableConsent(context, scan);
+    if (scan.unknownConsent || settings)
+        rememberConsent(context, scan.unknownConsent ? undefined : settingsRecord(scan.records));
+    const cleanupComplete = await maintain(context, scan.records, settings, now);
     assertCurrent(context);
     return {
-        enabled: settings?.enabled ?? false,
-        receipts: retained(records, settings, now).map(record => record.payload as VerifierReceipt),
-        cleanupComplete,
+        enabled: !scan.unknownConsent && (settings?.enabled ?? false),
+        receipts: retained(scan.records, settings, now).map(
+            record => record.payload as VerifierReceipt
+        ),
+        cleanupComplete: cleanupComplete && scan.unreadable.length === 0,
     };
 };
 export const setVerifierHistoryEnabled = async (
     context: HistoryContext,
     enabled: boolean
 ): Promise<void> => {
-    const records = await readAll(context);
+    await cachedConsent(context);
+    const scan = await readAll(context);
+    requireReadableConsent(context, scan);
     await append(context, {
         kind: 'settings',
         version: 1,
         enabled,
         revision: crypto.randomUUID(),
-        generation: latestSettings(records)?.generation ?? crypto.randomUUID(),
+        generation: latestSettings(scan.records)?.generation ?? crypto.randomUUID(),
     });
 };
 export const clearVerifierHistory = async (context: HistoryContext): Promise<boolean> => {
-    const records = await readAll(context);
+    await cachedConsent(context);
+    const scan = await readAll(context);
+    if (!scan.unknownConsent) requireReadableConsent(context, scan);
     await append(context, {
         kind: 'settings',
         version: 1,
-        enabled: latestSettings(records)?.enabled ?? false,
+        enabled: !scan.unknownConsent && (latestSettings(scan.records)?.enabled ?? false),
         revision: crypto.randomUUID(),
         generation: crypto.randomUUID(),
     });
-    // Only validated receipts captured before the clear; keep the newly appended preference.
-    return deleteExact(
-        context,
-        records.filter(record => record.payload.kind === 'receipt')
-    );
+    // Explicit recovery: exact IDs in this holder's opaque history scope, including unreadable data.
+    // Unknown consent remains disabled; no associated DID or broad query is ever deleted.
+    return deleteExact(context, [
+        ...scan.records.filter(record => record.payload.kind === 'receipt'),
+        ...scan.unreadable,
+    ]);
 };
 export const deleteVerifierReceipt = async (
     context: HistoryContext,
     eventId: string
 ): Promise<boolean> => {
-    const records = await readAll(context);
+    const { records } = await readAll(context);
     return deleteExact(
         context,
         records.filter(
@@ -277,30 +375,10 @@ export const beginVerifierDisclosure = async (
     context: HistoryContext,
     draft: ReceiptDraft
 ): Promise<DisclosureAttempt> => {
-    let settings: Settings | undefined;
-    let ready = true;
-    try {
-        if (!active(context) || draft.titles.length === 0)
-            return { isCurrent: context.isCurrent, finish: async () => 'skipped' };
-        let timer: ReturnType<typeof setTimeout> | undefined;
-        try {
-            settings = latestSettings(
-                await Promise.race([
-                    readAll(context),
-                    new Promise<never>((_, reject) => {
-                        timer = setTimeout(
-                            () => reject(new Error('History lookup timed out')),
-                            3000
-                        );
-                    }),
-                ])
-            );
-        } finally {
-            clearTimeout(timer);
-        }
-    } catch {
-        ready = false;
-    }
+    if (!active(context) || draft.titles.length === 0)
+        return { isCurrent: context.isCurrent, finish: async () => 'skipped' };
+    // Capture only local consent before transport. Never correlate a Cloud read with a send.
+    const settings = await cachedConsent(context);
     const eventId = crypto.randomUUID();
     const captured = {
         protocol: draft.protocol,
@@ -317,11 +395,20 @@ export const beginVerifierDisclosure = async (
             if (result) return result;
             const sentAt = new Date().toISOString();
             result = (async (): Promise<RecordingResult> => {
-                if (!active(context) || (ready && !settings?.enabled)) return 'skipped';
-                if (!ready) return 'unavailable';
+                if (!active(context) || !settings?.enabled) return 'skipped';
                 try {
                     const before = await readAll(context);
-                    if (!sameConsent(settings, latestSettings(before))) return 'skipped';
+                    if (
+                        before.unknownConsent ||
+                        !sameConsent(settings, latestSettings(before.records))
+                    ) {
+                        if (before.unknownConsent || latestSettings(before.records))
+                            rememberConsent(
+                                context,
+                                before.unknownConsent ? undefined : settingsRecord(before.records)
+                            );
+                        return 'skipped';
+                    }
                     const payload = receiptSchema.parse({
                         kind: 'receipt',
                         version: 1,
@@ -338,10 +425,18 @@ export const beginVerifierDisclosure = async (
                         /* Reconcile a committed write whose acknowledgement was lost. */
                     }
                     const after = await readAll(context);
-                    if (!sameConsent(settings, latestSettings(after))) {
+                    if (
+                        after.unknownConsent ||
+                        !sameConsent(settings, latestSettings(after.records))
+                    ) {
+                        if (after.unknownConsent || latestSettings(after.records))
+                            rememberConsent(
+                                context,
+                                after.unknownConsent ? undefined : settingsRecord(after.records)
+                            );
                         await deleteExact(
                             context,
-                            after.filter(
+                            after.records.filter(
                                 record =>
                                     record.payload.kind === 'receipt' &&
                                     record.payload.eventId === eventId
@@ -350,14 +445,19 @@ export const beginVerifierDisclosure = async (
                         return 'skipped';
                     }
                     if (
-                        !after.some(
+                        !after.records.some(
                             record =>
                                 record.payload.kind === 'receipt' &&
                                 record.payload.eventId === eventId
                         )
                     )
                         return 'unavailable';
-                    return (await maintain(context, after, latestSettings(after), Date.now()))
+                    return (await maintain(
+                        context,
+                        after.records,
+                        latestSettings(after.records),
+                        Date.now()
+                    ))
                         ? 'saved'
                         : 'unavailable';
                 } catch {

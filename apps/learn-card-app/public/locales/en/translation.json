@@ -9381,7 +9381,7 @@
         "record": "Keep private history",
         "retention": "Keep up to 500 reminders from the last 90 days. Older records are removed when you connect.",
         "limits": "Titles do not describe every claim sent. Deleting history cannot retract information already sent. Turning recording off keeps earlier history.",
-        "cleanupPending": "Some older records could not be removed. Connect and refresh to finish cleanup.",
+        "cleanupPending": "Some records could not be read or removed. Clear history to remove them.",
         "refresh": "Refresh",
         "clear": "Clear history",
         "empty": "No recorded disclosures.",

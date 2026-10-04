@@ -1,4 +1,6 @@
-import { vi } from 'vitest';
+import { vi, afterEach } from 'vitest';
+import * as encryption from './encrypt';
+afterEach(() => vi.restoreAllMocks());
 import { submitPresentation, VpSubmitError } from './submit';
 import { PresentationSubmission } from './select';
 
@@ -284,5 +286,53 @@ describe('transport error privacy', () => {
                 expect((error as Error & { cause?: unknown }).cause).toBeUndefined();
             }
         }
+    });
+});
+
+describe('safe JARM diagnostics', () => {
+    const options = {
+        responseUri: RESPONSE_URI,
+        vpToken: 'VP_CANARY',
+        responseMode: 'direct_post.jwt' as const,
+        clientMetadata: {},
+        nonce: 'NONCE_CANARY',
+        fetchImpl: mockFetchOk(undefined).fetchImpl,
+    };
+    it('keeps an allowlisted encryption code without the error message or cause', async () => {
+        vi.spyOn(encryption, 'encryptResponseObject').mockRejectedValue(
+            new encryption.JarmEncryptError('unsupported_alg', 'JARM_CANARY', {
+                cause: new Error('CAUSE_CANARY'),
+            })
+        );
+        await expect(submitPresentation(options)).rejects.toMatchObject({
+            code: 'jarm_encrypt_failed',
+            jarmCode: 'unsupported_alg',
+        });
+        try {
+            await submitPresentation(options);
+        } catch (error) {
+            expect(JSON.stringify(error)).not.toContain('CANARY');
+            expect((error as Error).cause).toBeUndefined();
+        }
+    });
+    it('distinguishes unexpected programming errors without exposing their private values', async () => {
+        vi.spyOn(encryption, 'encryptResponseObject').mockRejectedValue(
+            new TypeError('PROGRAMMING_CANARY')
+        );
+        await expect(submitPresentation(options)).rejects.toMatchObject({
+            code: 'internal_error',
+            message: 'Unable to prepare the verifier response',
+        });
+    });
+    it('drops deprecated body/cause and invalid runtime JARM codes', () => {
+        const error = new VpSubmitError('jarm_encrypt_failed', 'Unable to encrypt', {
+            body: 'BODY_CANARY',
+            cause: new Error('CAUSE_CANARY'),
+            jarmCode: 'CODE_CANARY' as never,
+        });
+        expect(JSON.stringify(error)).not.toContain('CANARY');
+        expect(error.body).toBeUndefined();
+        expect(error.cause).toBeUndefined();
+        expect(error.jarmCode).toBeUndefined();
     });
 });

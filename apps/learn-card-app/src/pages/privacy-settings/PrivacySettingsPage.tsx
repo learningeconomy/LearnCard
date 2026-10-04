@@ -1,3 +1,4 @@
+import { useVerifierHistoryEligibility } from '../../helpers/verifier-history/useEligibility';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 
 import { IonContent, IonPage, useIonViewWillEnter } from '@ionic/react';
@@ -51,6 +52,7 @@ type PrivacySettingsProfile = {
 
 const PrivacySettingsPage: React.FC = () => {
     const flags = useFlags();
+    const historyEligible = useVerifierHistoryEligibility();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -290,7 +292,12 @@ const PrivacySettingsPage: React.FC = () => {
             <IonContent>
                 <DataSharingCenterView
                     vm={vm}
-                    verifierHistory={<VerifierHistorySection eligible={!isMinor} />}
+                    verifierHistory={
+                        <VerifierHistorySection
+                            eligible={historyEligible()}
+                            isEligible={historyEligible}
+                        />
+                    }
                 />
             </IonContent>
         </IonPage>

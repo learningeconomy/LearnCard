@@ -9330,7 +9330,7 @@
         "record": "Conserver un historique privé",
         "retention": "Conservez jusqu’à 500 rappels des 90 derniers jours. Les anciens enregistrements sont supprimés à la connexion.",
         "limits": "Les titres ne décrivent pas toutes les données envoyées. Supprimer l’historique ne retire pas les informations envoyées. Désactiver l’enregistrement conserve l’historique existant.",
-        "cleanupPending": "Certains anciens enregistrements n’ont pas pu être supprimés. Connectez-vous et actualisez pour terminer.",
+        "cleanupPending": "Certains enregistrements n’ont pas pu être lus ou supprimés. Effacez l’historique pour les supprimer.",
         "refresh": "Actualiser",
         "clear": "Effacer l’historique",
         "empty": "Aucun envoi enregistré.",

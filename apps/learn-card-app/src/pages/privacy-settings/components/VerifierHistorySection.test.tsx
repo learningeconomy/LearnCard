@@ -104,8 +104,9 @@ describe('verifier history controls', () => {
         mocks.load.mockResolvedValue({ enabled: false, receipts: [], cleanupComplete: false });
         fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
         expect(
-            await screen.findByText(/Some older records could not be removed/)
+            await screen.findByText(/Some records could not be read or removed/)
         ).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Clear history' })).not.toBeDisabled();
     });
     it('hides decrypted state synchronously on switch and rejects late loads', async () => {
         const { rerender } = render(<VerifierHistorySection eligible />);

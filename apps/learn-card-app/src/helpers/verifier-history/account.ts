@@ -41,16 +41,21 @@ export const useHistoryAccountRevision = () =>
         () => 0
     );
 /** The generation also invalidates a late result after switching away and back. */
-export const captureHistoryContext = (wallet: HistoryWallet, eligible = true): HistoryContext => {
+export const captureHistoryContext = (
+    wallet: HistoryWallet,
+    eligible: boolean | (() => boolean) = true
+): HistoryContext => {
     const revision = accountRevision;
     const did = wallet.id.did();
     return {
         wallet,
-        eligible: isHistoryAccountEligible(eligible),
+        get eligible() {
+            return isHistoryAccountEligible(typeof eligible === 'function' ? eligible() : eligible);
+        },
         isCurrent: () =>
             accountRevision === revision &&
             !!currentUserStore.get.currentUser() &&
-            wallet.id.did() === did,
+            (walletStore.get.wallet()?.id.did() ?? did) === did,
     };
 };
 
