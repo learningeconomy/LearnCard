@@ -27,7 +27,7 @@ export type AssociationType = z.infer<typeof AssociationTypeValidator>;
 
 export const AssociationValidator = z
     .object({
-        type: z.string().array().nonempty(),
+        type: z.literal('Association').or(z.string().array().nonempty()),
         associationType: AssociationTypeValidator,
         sourceId: z.string().optional(),
         targetId: z.string(),
