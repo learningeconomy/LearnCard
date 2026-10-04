@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
     sign: vi.fn(),
     create: vi.fn(),
     toast: vi.fn(),
+    reset: vi.fn(),
     log: { info: vi.fn(), error: vi.fn() },
 }));
 vi.mock('learn-card-base', () => ({
@@ -18,7 +19,7 @@ vi.mock('learn-card-base', () => ({
     useToast: () => ({ presentToast: mocks.toast }),
     ToastTypeEnum: { Error: 'error' },
     categoryMetadata: { Achievement: { defaultImageSrc: '' } },
-    chapiStore: { set: { isChapiInteraction: vi.fn() } },
+    chapiStore: { set: { isChapiInteraction: mocks.reset } },
     redirectStore: { set: { authRedirect: vi.fn() } },
 }));
 vi.mock('@ionic/react', () => ({
@@ -64,6 +65,9 @@ beforeEach(() => {
 });
 describe('credential disclosure recording', () => {
     it('records CHAPI handoff only after respondWith, with no presentation diagnostics', async () => {
+        mocks.reset.mockImplementationOnce(() => {
+            throw new Error('STATE_CANARY');
+        });
         const respondWith = vi.fn();
         render(<VCToShare {...props} event={{ respondWith }} />);
         fireEvent.click(screen.getByRole('button', { name: 'Share' }));
@@ -72,6 +76,7 @@ describe('credential disclosure recording', () => {
             mocks.finish.mock.invocationCallOrder[0]
         );
         expect(JSON.stringify(mocks.log.info.mock.calls)).not.toContain('VP_CANARY');
+        expect(JSON.stringify(mocks.log.error.mock.calls)).not.toContain('CANARY');
     });
     it('does not record signing or handoff failure', async () => {
         mocks.sign.mockRejectedValue(new Error('VP_CANARY'));

@@ -102,8 +102,8 @@ const VCToShare: React.FC<{
             try {
                 chapiStore.set.isChapiInteraction(null);
                 redirectStore.set.authRedirect(null);
-            } catch (e) {
-                log.error(e);
+            } catch {
+                log.error('share.credentials.reset.failed');
             }
 
             context = captureHistoryContext(wallet, historyEligible);
