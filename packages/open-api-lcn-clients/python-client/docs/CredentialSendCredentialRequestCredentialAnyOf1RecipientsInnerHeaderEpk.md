@@ -1,16 +1,15 @@
 # CredentialSendCredentialRequestCredentialAnyOf1RecipientsInnerHeaderEpk
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**kty** | **str** |  | [optional] 
-**crv** | **str** |  | [optional] 
-**x** | **str** |  | [optional] 
-**y** | **str** |  | [optional] 
-**n** | **str** |  | [optional] 
-**d** | **str** |  | [optional] 
+| Name    | Type    | Description | Notes      |
+| ------- | ------- | ----------- | ---------- |
+| **kty** | **str** |             | [optional] |
+| **crv** | **str** |             | [optional] |
+| **x**   | **str** |             | [optional] |
+| **y**   | **str** |             | [optional] |
+| **n**   | **str** |             | [optional] |
+| **d**   | **str** |             | [optional] |
 
 ## Example
 
@@ -29,6 +28,5 @@ credential_send_credential_request_credential_any_of1_recipients_inner_header_ep
 # create an instance of CredentialSendCredentialRequestCredentialAnyOf1RecipientsInnerHeaderEpk from a dict
 credential_send_credential_request_credential_any_of1_recipients_inner_header_epk_from_dict = CredentialSendCredentialRequestCredentialAnyOf1RecipientsInnerHeaderEpk.from_dict(credential_send_credential_request_credential_any_of1_recipients_inner_header_epk_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

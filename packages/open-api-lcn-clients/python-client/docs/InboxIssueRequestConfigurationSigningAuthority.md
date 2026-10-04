@@ -4,10 +4,10 @@ The signing authority to use for the credential. If not provided, the users defa
 
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**endpoint** | **str** |  | 
-**name** | **str** |  | 
+| Name         | Type    | Description | Notes |
+| ------------ | ------- | ----------- | ----- |
+| **endpoint** | **str** |             |
+| **name**     | **str** |             |
 
 ## Example
 
@@ -26,6 +26,5 @@ inbox_issue_request_configuration_signing_authority_dict = inbox_issue_request_c
 # create an instance of InboxIssueRequestConfigurationSigningAuthority from a dict
 inbox_issue_request_configuration_signing_authority_from_dict = InboxIssueRequestConfigurationSigningAuthority.from_dict(inbox_issue_request_configuration_signing_authority_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

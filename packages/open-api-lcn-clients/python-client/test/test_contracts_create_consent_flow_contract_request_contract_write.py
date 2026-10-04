@@ -35,14 +35,14 @@ class TestContractsCreateConsentFlowContractRequestContractWrite(unittest.TestCa
         model = ContractsCreateConsentFlowContractRequestContractWrite()
         if include_optional:
             return ContractsCreateConsentFlowContractRequestContractWrite(
-                credentials = openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_credentials.contracts_createConsentFlowContract_request_contract_read_credentials(
+                credentials = openapi_client.models.contracts_create_consent_flow_contract_request_contract_write_credentials.contracts_createConsentFlowContract_request_contract_write_credentials(
                     categories = {
-                        'key' : openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_credentials_categories_value.contracts_createConsentFlowContract_request_contract_read_credentials_categories_value(
+                        'key' : openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_personal_value.contracts_createConsentFlowContract_request_contract_read_personal_value(
                             required = True, 
                             default_enabled = True, )
                         }, ),
                 personal = {
-                    'key' : openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_credentials_categories_value.contracts_createConsentFlowContract_request_contract_read_credentials_categories_value(
+                    'key' : openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_personal_value.contracts_createConsentFlowContract_request_contract_read_personal_value(
                         required = True, 
                         default_enabled = True, )
                     }

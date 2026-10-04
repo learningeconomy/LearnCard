@@ -1,18 +1,17 @@
 # Schema0
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | [optional] 
-**statement** | **str** |  | 
-**description** | **str** |  | [optional] 
-**code** | **str** |  | [optional] 
-**icon** | **str** |  | [optional] 
-**type** | **str** |  | [optional] 
-**status** | **str** |  | [optional] 
-**children** | [**List[Schema0]**](Schema0.md) |  | [optional] 
+| Name            | Type                            | Description | Notes      |
+| --------------- | ------------------------------- | ----------- | ---------- |
+| **id**          | **str**                         |             | [optional] |
+| **statement**   | **str**                         |             |
+| **description** | **str**                         |             | [optional] |
+| **code**        | **str**                         |             | [optional] |
+| **icon**        | **str**                         |             | [optional] |
+| **type**        | **str**                         |             | [optional] |
+| **status**      | **str**                         |             | [optional] |
+| **children**    | [**List[Schema0]**](Schema0.md) |             | [optional] |
 
 ## Example
 
@@ -31,6 +30,5 @@ schema0_dict = schema0_instance.to_dict()
 # create an instance of Schema0 from a dict
 schema0_from_dict = Schema0.from_dict(schema0_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,15 +1,14 @@
 # ContractsConsentToContractRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**terms** | [**ContractsConsentToContractRequestTerms**](ContractsConsentToContractRequestTerms.md) |  | 
-**contract_uri** | **str** |  | 
-**expires_at** | **str** |  | [optional] 
-**one_time** | **bool** |  | [optional] 
-**recipient_token** | **str** |  | [optional] 
+| Name                | Type                                                                                    | Description | Notes      |
+| ------------------- | --------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **terms**           | [**ContractsConsentToContractRequestTerms**](ContractsConsentToContractRequestTerms.md) |             |
+| **contract_uri**    | **str**                                                                                 |             |
+| **expires_at**      | **str**                                                                                 |             | [optional] |
+| **one_time**        | **bool**                                                                                |             | [optional] |
+| **recipient_token** | **str**                                                                                 |             | [optional] |
 
 ## Example
 
@@ -28,6 +27,5 @@ contracts_consent_to_contract_request_dict = contracts_consent_to_contract_reque
 # create an instance of ContractsConsentToContractRequest from a dict
 contracts_consent_to_contract_request_from_dict = ContractsConsentToContractRequest.from_dict(contracts_consent_to_contract_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

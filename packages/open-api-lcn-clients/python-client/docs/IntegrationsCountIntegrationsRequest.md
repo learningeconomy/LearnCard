@@ -1,11 +1,10 @@
 # IntegrationsCountIntegrationsRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**query** | [**IntegrationsGetIntegrationsRequestQuery**](IntegrationsGetIntegrationsRequestQuery.md) |  | [optional] 
+| Name      | Type                                                                                      | Description | Notes      |
+| --------- | ----------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **query** | [**IntegrationsGetIntegrationsRequestQuery**](IntegrationsGetIntegrationsRequestQuery.md) |             | [optional] |
 
 ## Example
 
@@ -24,6 +23,5 @@ integrations_count_integrations_request_dict = integrations_count_integrations_r
 # create an instance of IntegrationsCountIntegrationsRequest from a dict
 integrations_count_integrations_request_from_dict = IntegrationsCountIntegrationsRequest.from_dict(integrations_count_integrations_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

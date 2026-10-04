@@ -41,6 +41,7 @@ class TestClaimHookGetClaimHooksForBoostRequestQuery(unittest.TestCase):
                     target_uri = null, 
                     permissions = openapi_client.models.claim_hook_get_claim_hooks_for_boost_request_query_data_permissions.claimHook_getClaimHooksForBoost_request_query_data_permissions(
                         role = null, 
+                        can_view = True, 
                         can_edit = True, 
                         can_issue = True, 
                         can_revoke = True, 
@@ -61,6 +62,7 @@ class TestClaimHookGetClaimHooksForBoostRequestQuery(unittest.TestCase):
                     target_uri = null, 
                     permissions = openapi_client.models.claim_hook_get_claim_hooks_for_boost_request_query_data_permissions.claimHook_getClaimHooksForBoost_request_query_data_permissions(
                         role = null, 
+                        can_view = True, 
                         can_edit = True, 
                         can_issue = True, 
                         can_revoke = True, 

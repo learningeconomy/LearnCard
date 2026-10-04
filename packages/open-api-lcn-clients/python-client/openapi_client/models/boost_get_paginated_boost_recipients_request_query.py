@@ -22,6 +22,7 @@ from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_statement import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostGetPaginatedBoostRecipientsRequestQuery(BaseModel):
     """
@@ -38,7 +39,8 @@ class BoostGetPaginatedBoostRecipientsRequestQuery(BaseModel):
     __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "bio", "email", "websiteLink", "isServiceProfile", "type"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -50,8 +52,7 @@ class BoostGetPaginatedBoostRecipientsRequestQuery(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -97,6 +98,11 @@ class BoostGetPaginatedBoostRecipientsRequestQuery(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of type
         if self.type:
             _dict['type'] = self.type.to_dict()
+        # set to None if is_service_profile (nullable) is None
+        # and model_fields_set contains the field
+        if self.is_service_profile is None and "is_service_profile" in self.model_fields_set:
+            _dict['isServiceProfile'] = None
+
         return _dict
 
     @classmethod
@@ -108,7 +114,7 @@ class BoostGetPaginatedBoostRecipientsRequestQuery(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "profileId": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["profileId"]) if obj.get("profileId") is not None else None,
             "displayName": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["displayName"]) if obj.get("displayName") is not None else None,
             "shortBio": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["shortBio"]) if obj.get("shortBio") is not None else None,
@@ -117,7 +123,9 @@ class BoostGetPaginatedBoostRecipientsRequestQuery(BaseModel):
             "websiteLink": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["websiteLink"]) if obj.get("websiteLink") is not None else None,
             "isServiceProfile": obj.get("isServiceProfile"),
             "type": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["type"]) if obj.get("type") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

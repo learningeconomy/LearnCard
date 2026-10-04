@@ -1,10 +1,9 @@
 # BoostGetPaginatedBoostRecipientsWithChildrenRequestNumberOfGenerations
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
 
 ## Example
 
@@ -23,6 +22,5 @@ boost_get_paginated_boost_recipients_with_children_request_number_of_generations
 # create an instance of BoostGetPaginatedBoostRecipientsWithChildrenRequestNumberOfGenerations from a dict
 boost_get_paginated_boost_recipients_with_children_request_number_of_generations_from_dict = BoostGetPaginatedBoostRecipientsWithChildrenRequestNumberOfGenerations.from_dict(boost_get_paginated_boost_recipients_with_children_request_number_of_generations_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

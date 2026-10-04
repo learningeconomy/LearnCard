@@ -19,17 +19,18 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
-from openapi_client.models.contracts_get_consent_flow_contract200_response_contract import ContractsGetConsentFlowContract200ResponseContract
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of3 import BoostGetBoostRecipients200ResponseInnerToAnyOf3
+from openapi_client.models.storage_resolve200_response_any_of_any_of1 import StorageResolve200ResponseAnyOfAnyOf1
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsGetConsentFlowContract200Response(BaseModel):
     """
     ContractsGetConsentFlowContract200Response
     """ # noqa: E501
-    contract: ContractsGetConsentFlowContract200ResponseContract
-    owner: BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
+    contract: StorageResolve200ResponseAnyOfAnyOf1
+    owner: BoostGetBoostRecipients200ResponseInnerToAnyOf3
     name: Optional[StrictStr]
     subtitle: Optional[StrictStr] = None
     description: Optional[StrictStr] = None
@@ -43,12 +44,13 @@ class ContractsGetConsentFlowContract200Response(BaseModel):
     updated_at: Optional[StrictStr] = Field(alias="updatedAt")
     expires_at: Optional[StrictStr] = Field(default=None, alias="expiresAt")
     auto_boosts: Optional[List[StrictStr]] = Field(default=None, alias="autoBoosts")
-    writers: Optional[List[BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo]] = None
+    writers: Optional[List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]] = None
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["contract", "owner", "name", "subtitle", "description", "reasonForAccessing", "image", "uri", "needsGuardianConsent", "redirectUrl", "frontDoorBoostUri", "createdAt", "updatedAt", "expiresAt", "autoBoosts", "writers"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -60,8 +62,7 @@ class ContractsGetConsentFlowContract200Response(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -98,8 +99,7 @@ class ContractsGetConsentFlowContract200Response(BaseModel):
         _items = []
         if self.writers:
             for _item_writers in self.writers:
-                if _item_writers:
-                    _items.append(_item_writers.to_dict())
+                _items.append(_item_writers.to_dict() if _item_writers is not None else None)
             _dict['writers'] = _items
         # puts key-value pairs in additional_properties in the top level
         if self.additional_properties is not None:
@@ -135,6 +135,11 @@ class ContractsGetConsentFlowContract200Response(BaseModel):
         # and model_fields_set contains the field
         if self.uri is None and "uri" in self.model_fields_set:
             _dict['uri'] = None
+
+        # set to None if needs_guardian_consent (nullable) is None
+        # and model_fields_set contains the field
+        if self.needs_guardian_consent is None and "needs_guardian_consent" in self.model_fields_set:
+            _dict['needsGuardianConsent'] = None
 
         # set to None if redirect_url (nullable) is None
         # and model_fields_set contains the field
@@ -172,9 +177,9 @@ class ContractsGetConsentFlowContract200Response(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
-            "contract": ContractsGetConsentFlowContract200ResponseContract.from_dict(obj["contract"]) if obj.get("contract") is not None else None,
-            "owner": BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.from_dict(obj["owner"]) if obj.get("owner") is not None else None,
+        _values = {
+            "contract": StorageResolve200ResponseAnyOfAnyOf1.from_dict(obj["contract"]) if obj.get("contract") is not None else None,
+            "owner": BoostGetBoostRecipients200ResponseInnerToAnyOf3.from_dict(obj["owner"]) if obj.get("owner") is not None else None,
             "name": obj.get("name"),
             "subtitle": obj.get("subtitle"),
             "description": obj.get("description"),
@@ -188,8 +193,10 @@ class ContractsGetConsentFlowContract200Response(BaseModel):
             "updatedAt": obj.get("updatedAt"),
             "expiresAt": obj.get("expiresAt"),
             "autoBoosts": obj.get("autoBoosts"),
-            "writers": [BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.from_dict(_item) for _item in obj["writers"]] if obj.get("writers") is not None else None
-        })
+            "writers": [BoostGetBoostRecipients200ResponseInnerToAnyOf3.from_dict(_item) for _item in obj["writers"]] if obj.get("writers") is not None else None
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:
