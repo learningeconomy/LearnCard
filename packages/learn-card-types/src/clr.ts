@@ -27,7 +27,8 @@ export type AssociationType = z.infer<typeof AssociationTypeValidator>;
 
 export const AssociationValidator = z
     .object({
-        type: z.literal('Association').or(z.string().array().nonempty()),
+        // Accept compacted scalars while retaining the existing permissive array contract.
+        type: z.string().min(1).or(z.string().array().nonempty()),
         associationType: AssociationTypeValidator,
         sourceId: z.string().optional(),
         targetId: z.string(),

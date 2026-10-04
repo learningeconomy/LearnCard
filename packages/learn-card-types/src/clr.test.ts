@@ -15,6 +15,13 @@ const association = {
     targetId: 'https://example.org/achievements/program',
 };
 
+const supportedTypeNames = [
+    'Association',
+    'https://purl.imsglobal.org/spec/vc/clr/vocab.html#Association',
+    'https://example.org/ExtendedAssociation',
+    'CustomAssociation',
+];
+
 const subject = {
     id: 'did:example:learner',
     type: ['ClrSubject'],
@@ -52,11 +59,33 @@ describe('CLR Association.type', () => {
         expect(AssociationValidator.parse(input)).toEqual(input);
     });
 
+    it.each(supportedTypeNames)(
+        'preserves scalar and singleton-array type values through full CLR parsing: %s',
+        typeName => {
+            for (const type of [typeName, [typeName]]) {
+                const input = { ...association, type };
+                const credential = {
+                    ...unsignedClr,
+                    credentialSubject: { ...subject, association: [input] },
+                };
+
+                // This SDK validator checks structure; the official CLR schema is stricter.
+                expect(AssociationValidator.parse(input)).toEqual(input);
+                expect(UnsignedClrCredentialValidator.parse(credential)).toEqual(credential);
+                expect(ClrCredentialValidator.parse({ ...credential, proof })).toEqual({
+                    ...credential,
+                    proof,
+                });
+            }
+        }
+    );
+
     it.each(
         [
             ['Association'],
             ['Association', 'https://example.org/ExtendedAssociation'],
             ['https://example.org/LegacyAssociation'],
+            [''], // Existing arrays accept every string; preserve that contract.
         ].map(type => ({ type }))
     )('preserves supported legacy arrays: $type', ({ type }) => {
         const input = { ...association, type };
@@ -65,25 +94,15 @@ describe('CLR Association.type', () => {
     });
 
     it.each(
-        [
-            undefined,
-            null,
-            false,
-            42,
-            '',
-            'NotAssociation',
-            'association',
-            {},
-            [],
-            ['Association', 42],
-            [['Association']],
-        ].map(type => ({ type }))
+        [undefined, null, false, 42, '', {}, [], ['Association', 42], [['Association']]].map(
+            type => ({ type })
+        )
     )('rejects invalid values: $type', ({ type }) => {
         expect(AssociationValidator.safeParse({ ...association, type }).success).toBe(false);
     });
 
     it('exposes scalar and legacy array types to callers', () => {
-        expectTypeOf<Association['type']>().toEqualTypeOf<'Association' | string[]>();
+        expectTypeOf<Association['type']>().toEqualTypeOf<string | string[]>();
     });
 });
 
@@ -108,7 +127,15 @@ describe('CLR credentials with associations', () => {
     });
 
     it('preserves nested CLR content and validates its associations when parsed directly', () => {
-        const nested = { ...unsignedClr, id: 'https://example.org/credentials/nested-clr', proof };
+        const nested = {
+            ...unsignedClr,
+            id: 'https://example.org/credentials/nested-clr',
+            credentialSubject: {
+                ...subject,
+                association: [{ ...association, type: supportedTypeNames[1] }],
+            },
+            proof,
+        };
         const input = {
             ...unsignedClr,
             credentialSubject: { ...subject, verifiableCredential: [nested] },
@@ -120,7 +147,7 @@ describe('CLR credentials with associations', () => {
         expect(ClrCredentialValidator.parse(nested)).toEqual(nested);
     });
 
-    it.each([[], 'NotAssociation', ['Association', null]].map(type => ({ type })))(
+    it.each([[], '', ['Association', null]].map(type => ({ type })))(
         'rejects invalid associations through full CLR parsing: $type',
         ({ type }) => {
             const invalidSubject = { ...subject, association: [{ ...association, type }] };

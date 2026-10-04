@@ -2,4 +2,4 @@
 "@learncard/types": patch
 ---
 
-Accept the CLR 2.0 scalar `Association.type` value `"Association"` while preserving support for existing nonempty string arrays.
+Accept nonempty scalar strings for CLR `Association.type`, including `"Association"`, full IRIs, and custom type names, while preserving the existing nonempty string-array contract. This validator checks structural compatibility; strict CLR conformance still requires the official schema's `"Association"` value.
