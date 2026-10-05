@@ -1,12 +1,11 @@
 # ContractsGetTermsTransactionHistoryRequestQueryDateAnyOf
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**gt** | **str** |  | 
-**lt** | **str** |  | 
+| Name   | Type    | Description | Notes |
+| ------ | ------- | ----------- | ----- |
+| **gt** | **str** |             |
+| **lt** | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ contracts_get_terms_transaction_history_request_query_date_any_of_dict = contrac
 # create an instance of ContractsGetTermsTransactionHistoryRequestQueryDateAnyOf from a dict
 contracts_get_terms_transaction_history_request_query_date_any_of_from_dict = ContractsGetTermsTransactionHistoryRequestQueryDateAnyOf.from_dict(contracts_get_terms_transaction_history_request_query_date_any_of_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,20 +1,20 @@
 # openapi_client.ContactMethodsApi
 
-All URIs are relative to *https://network.learncard.com/api*
+All URIs are relative to _/api_
 
-Method | HTTP request | Description
-------------- | ------------- | -------------
-[**contact_methods_add_contact_method**](ContactMethodsApi.md#contact_methods_add_contact_method) | **POST** /profile/contact-methods/add | Add Contact Method
-[**contact_methods_create_contact_method_session**](ContactMethodsApi.md#contact_methods_create_contact_method_session) | **POST** /contact-methods/session | Create Contact Method Session
-[**contact_methods_get_my_contact_methods**](ContactMethodsApi.md#contact_methods_get_my_contact_methods) | **GET** /profile/contact-methods | Get My Contact Methods
-[**contact_methods_remove_contact_method**](ContactMethodsApi.md#contact_methods_remove_contact_method) | **POST** /profile/contact-methods/remove | Remove Contact Method
-[**contact_methods_send_challenge**](ContactMethodsApi.md#contact_methods_send_challenge) | **POST** /contact-methods/challenge | Send Contact Method Challenge (OTP)
-[**contact_methods_set_primary_contact_method**](ContactMethodsApi.md#contact_methods_set_primary_contact_method) | **POST** /profile/contact-methods/set-primary | Set Primary Contact Method
-[**contact_methods_verify_contact_method**](ContactMethodsApi.md#contact_methods_verify_contact_method) | **POST** /profile/contact-methods/verify | Verify Contact Method
-[**contact_methods_verify_with_credential**](ContactMethodsApi.md#contact_methods_verify_with_credential) | **POST** /profile/contact-methods/verify-with-credential | Verify Contact Method With Credential
-
+| Method                                                                                                                  | HTTP request                                             | Description                           |
+| ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------- |
+| [**contact_methods_add_contact_method**](ContactMethodsApi.md#contact_methods_add_contact_method)                       | **POST** /profile/contact-methods/add                    | Add Contact Method                    |
+| [**contact_methods_create_contact_method_session**](ContactMethodsApi.md#contact_methods_create_contact_method_session) | **POST** /contact-methods/session                        | Create Contact Method Session         |
+| [**contact_methods_get_my_contact_methods**](ContactMethodsApi.md#contact_methods_get_my_contact_methods)               | **GET** /profile/contact-methods                         | Get My Contact Methods                |
+| [**contact_methods_remove_contact_method**](ContactMethodsApi.md#contact_methods_remove_contact_method)                 | **POST** /profile/contact-methods/remove                 | Remove Contact Method                 |
+| [**contact_methods_send_challenge**](ContactMethodsApi.md#contact_methods_send_challenge)                               | **POST** /contact-methods/challenge                      | Send Contact Method Challenge (OTP)   |
+| [**contact_methods_set_primary_contact_method**](ContactMethodsApi.md#contact_methods_set_primary_contact_method)       | **POST** /profile/contact-methods/set-primary            | Set Primary Contact Method            |
+| [**contact_methods_verify_contact_method**](ContactMethodsApi.md#contact_methods_verify_contact_method)                 | **POST** /profile/contact-methods/verify                 | Verify Contact Method                 |
+| [**contact_methods_verify_with_credential**](ContactMethodsApi.md#contact_methods_verify_with_credential)               | **POST** /profile/contact-methods/verify-with-credential | Verify Contact Method With Credential |
 
 # **contact_methods_add_contact_method**
+
 > ContactMethodsAddContactMethod200Response contact_methods_add_contact_method(contact_methods_add_contact_method_request)
 
 Add Contact Method
@@ -23,7 +23,7 @@ Add a new contact method to the profile (requires verification)
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -32,10 +32,10 @@ from openapi_client.models.contact_methods_add_contact_method_request import Con
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -52,7 +52,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ContactMethodsApi(api_client)
-    contact_methods_add_contact_method_request = openapi_client.ContactMethodsAddContactMethodRequest() # ContactMethodsAddContactMethodRequest | 
+    contact_methods_add_contact_method_request = openapi_client.ContactMethodsAddContactMethodRequest() # ContactMethodsAddContactMethodRequest |
 
     try:
         # Add Contact Method
@@ -63,14 +63,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ContactMethodsApi->contact_methods_add_contact_method: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **contact_methods_add_contact_method_request** | [**ContactMethodsAddContactMethodRequest**](ContactMethodsAddContactMethodRequest.md)|  | 
+| Name                                           | Type                                                                                  | Description | Notes |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------- | ----------- | ----- |
+| **contact_methods_add_contact_method_request** | [**ContactMethodsAddContactMethodRequest**](ContactMethodsAddContactMethodRequest.md) |             |
 
 ### Return type
 
@@ -82,22 +79,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **contact_methods_create_contact_method_session**
+
 > ContactMethodsCreateContactMethodSession200Response contact_methods_create_contact_method_session(contact_methods_create_contact_method_session_request)
 
 Create Contact Method Session
@@ -106,7 +104,6 @@ Creates a short-lived claim session for the specified contact method and returns
 
 ### Example
 
-
 ```python
 import openapi_client
 from openapi_client.models.contact_methods_create_contact_method_session200_response import ContactMethodsCreateContactMethodSession200Response
@@ -114,10 +111,10 @@ from openapi_client.models.contact_methods_create_contact_method_session_request
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 
@@ -125,7 +122,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ContactMethodsApi(api_client)
-    contact_methods_create_contact_method_session_request = openapi_client.ContactMethodsCreateContactMethodSessionRequest() # ContactMethodsCreateContactMethodSessionRequest | 
+    contact_methods_create_contact_method_session_request = openapi_client.ContactMethodsCreateContactMethodSessionRequest() # ContactMethodsCreateContactMethodSessionRequest |
 
     try:
         # Create Contact Method Session
@@ -136,14 +133,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ContactMethodsApi->contact_methods_create_contact_method_session: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **contact_methods_create_contact_method_session_request** | [**ContactMethodsCreateContactMethodSessionRequest**](ContactMethodsCreateContactMethodSessionRequest.md)|  | 
+| Name                                                      | Type                                                                                                      | Description | Notes |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **contact_methods_create_contact_method_session_request** | [**ContactMethodsCreateContactMethodSessionRequest**](ContactMethodsCreateContactMethodSessionRequest.md) |             |
 
 ### Return type
 
@@ -155,20 +149,21 @@ No authorization required
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description           | Response headers |
+| ----------- | --------------------- | ---------------- |
+| **200**     | Successful response   | -                |
+| **400**     | Invalid input data    | -                |
+| **500**     | Internal server error | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **contact_methods_get_my_contact_methods**
+
 > List[ContactMethodsGetMyContactMethods200ResponseInner] contact_methods_get_my_contact_methods()
 
 Get My Contact Methods
@@ -177,7 +172,7 @@ Get all contact methods associated with the authenticated profile
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -185,10 +180,10 @@ from openapi_client.models.contact_methods_get_my_contact_methods200_response_in
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -215,8 +210,6 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ContactMethodsApi->contact_methods_get_my_contact_methods: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
 This endpoint does not need any parameter.
@@ -231,21 +224,22 @@ This endpoint does not need any parameter.
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
- - **Accept**: application/json
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **contact_methods_remove_contact_method**
+
 > ContactMethodsSendChallenge200Response contact_methods_remove_contact_method(contact_methods_remove_contact_method_request)
 
 Remove Contact Method
@@ -254,7 +248,7 @@ Remove a contact method from the profile
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -263,10 +257,10 @@ from openapi_client.models.contact_methods_send_challenge200_response import Con
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -283,7 +277,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ContactMethodsApi(api_client)
-    contact_methods_remove_contact_method_request = openapi_client.ContactMethodsRemoveContactMethodRequest() # ContactMethodsRemoveContactMethodRequest | 
+    contact_methods_remove_contact_method_request = openapi_client.ContactMethodsRemoveContactMethodRequest() # ContactMethodsRemoveContactMethodRequest |
 
     try:
         # Remove Contact Method
@@ -294,14 +288,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ContactMethodsApi->contact_methods_remove_contact_method: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **contact_methods_remove_contact_method_request** | [**ContactMethodsRemoveContactMethodRequest**](ContactMethodsRemoveContactMethodRequest.md)|  | 
+| Name                                              | Type                                                                                        | Description | Notes |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **contact_methods_remove_contact_method_request** | [**ContactMethodsRemoveContactMethodRequest**](ContactMethodsRemoveContactMethodRequest.md) |             |
 
 ### Return type
 
@@ -313,22 +304,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **contact_methods_send_challenge**
+
 > ContactMethodsSendChallenge200Response contact_methods_send_challenge(contact_methods_send_challenge_request)
 
 Send Contact Method Challenge (OTP)
@@ -337,7 +329,6 @@ Generates a 6-digit OTP and sends it to the specified contact method, caching it
 
 ### Example
 
-
 ```python
 import openapi_client
 from openapi_client.models.contact_methods_send_challenge200_response import ContactMethodsSendChallenge200Response
@@ -345,10 +336,10 @@ from openapi_client.models.contact_methods_send_challenge_request import Contact
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 
@@ -356,7 +347,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ContactMethodsApi(api_client)
-    contact_methods_send_challenge_request = openapi_client.ContactMethodsSendChallengeRequest() # ContactMethodsSendChallengeRequest | 
+    contact_methods_send_challenge_request = openapi_client.ContactMethodsSendChallengeRequest() # ContactMethodsSendChallengeRequest |
 
     try:
         # Send Contact Method Challenge (OTP)
@@ -367,14 +358,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ContactMethodsApi->contact_methods_send_challenge: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **contact_methods_send_challenge_request** | [**ContactMethodsSendChallengeRequest**](ContactMethodsSendChallengeRequest.md)|  | 
+| Name                                       | Type                                                                            | Description | Notes |
+| ------------------------------------------ | ------------------------------------------------------------------------------- | ----------- | ----- |
+| **contact_methods_send_challenge_request** | [**ContactMethodsSendChallengeRequest**](ContactMethodsSendChallengeRequest.md) |             |
 
 ### Return type
 
@@ -386,20 +374,21 @@ No authorization required
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description           | Response headers |
+| ----------- | --------------------- | ---------------- |
+| **200**     | Successful response   | -                |
+| **400**     | Invalid input data    | -                |
+| **500**     | Internal server error | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **contact_methods_set_primary_contact_method**
+
 > ContactMethodsSendChallenge200Response contact_methods_set_primary_contact_method(contact_methods_set_primary_contact_method_request)
 
 Set Primary Contact Method
@@ -408,7 +397,7 @@ Set a contact method as the primary one for the profile
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -417,10 +406,10 @@ from openapi_client.models.contact_methods_set_primary_contact_method_request im
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -437,7 +426,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ContactMethodsApi(api_client)
-    contact_methods_set_primary_contact_method_request = openapi_client.ContactMethodsSetPrimaryContactMethodRequest() # ContactMethodsSetPrimaryContactMethodRequest | 
+    contact_methods_set_primary_contact_method_request = openapi_client.ContactMethodsSetPrimaryContactMethodRequest() # ContactMethodsSetPrimaryContactMethodRequest |
 
     try:
         # Set Primary Contact Method
@@ -448,14 +437,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ContactMethodsApi->contact_methods_set_primary_contact_method: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **contact_methods_set_primary_contact_method_request** | [**ContactMethodsSetPrimaryContactMethodRequest**](ContactMethodsSetPrimaryContactMethodRequest.md)|  | 
+| Name                                                   | Type                                                                                                | Description | Notes |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **contact_methods_set_primary_contact_method_request** | [**ContactMethodsSetPrimaryContactMethodRequest**](ContactMethodsSetPrimaryContactMethodRequest.md) |             |
 
 ### Return type
 
@@ -467,22 +453,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **contact_methods_verify_contact_method**
+
 > ContactMethodsVerifyWithCredential200Response contact_methods_verify_contact_method(contact_methods_verify_contact_method_request)
 
 Verify Contact Method
@@ -491,7 +478,7 @@ Verify a contact method using the verification token
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -500,10 +487,10 @@ from openapi_client.models.contact_methods_verify_with_credential200_response im
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -520,7 +507,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ContactMethodsApi(api_client)
-    contact_methods_verify_contact_method_request = openapi_client.ContactMethodsVerifyContactMethodRequest() # ContactMethodsVerifyContactMethodRequest | 
+    contact_methods_verify_contact_method_request = openapi_client.ContactMethodsVerifyContactMethodRequest() # ContactMethodsVerifyContactMethodRequest |
 
     try:
         # Verify Contact Method
@@ -531,14 +518,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ContactMethodsApi->contact_methods_verify_contact_method: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **contact_methods_verify_contact_method_request** | [**ContactMethodsVerifyContactMethodRequest**](ContactMethodsVerifyContactMethodRequest.md)|  | 
+| Name                                              | Type                                                                                        | Description | Notes |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **contact_methods_verify_contact_method_request** | [**ContactMethodsVerifyContactMethodRequest**](ContactMethodsVerifyContactMethodRequest.md) |             |
 
 ### Return type
 
@@ -550,22 +534,23 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **contact_methods_verify_with_credential**
+
 > ContactMethodsVerifyWithCredential200Response contact_methods_verify_with_credential(contact_methods_verify_with_credential_request)
 
 Verify Contact Method With Credential
@@ -574,7 +559,7 @@ Verify ownership of a contact method using a cryptographically verified proof-of
 
 ### Example
 
-* Bearer Authentication (Authorization):
+- Bearer Authentication (Authorization):
 
 ```python
 import openapi_client
@@ -583,10 +568,10 @@ from openapi_client.models.contact_methods_verify_with_credential_request import
 from openapi_client.rest import ApiException
 from pprint import pprint
 
-# Defining the host is optional and defaults to https://network.learncard.com/api
+# Defining the host is optional and defaults to /api
 # See configuration.py for a list of all supported configuration parameters.
 configuration = openapi_client.Configuration(
-    host = "https://network.learncard.com/api"
+    host = "/api"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -603,7 +588,7 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ContactMethodsApi(api_client)
-    contact_methods_verify_with_credential_request = openapi_client.ContactMethodsVerifyWithCredentialRequest() # ContactMethodsVerifyWithCredentialRequest | 
+    contact_methods_verify_with_credential_request = openapi_client.ContactMethodsVerifyWithCredentialRequest() # ContactMethodsVerifyWithCredentialRequest |
 
     try:
         # Verify Contact Method With Credential
@@ -614,14 +599,11 @@ with openapi_client.ApiClient(configuration) as api_client:
         print("Exception when calling ContactMethodsApi->contact_methods_verify_with_credential: %s\n" % e)
 ```
 
-
-
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **contact_methods_verify_with_credential_request** | [**ContactMethodsVerifyWithCredentialRequest**](ContactMethodsVerifyWithCredentialRequest.md)|  | 
+| Name                                               | Type                                                                                          | Description | Notes |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **contact_methods_verify_with_credential_request** | [**ContactMethodsVerifyWithCredentialRequest**](ContactMethodsVerifyWithCredentialRequest.md) |             |
 
 ### Return type
 
@@ -633,18 +615,17 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
- - **Accept**: application/json
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 ### HTTP response details
 
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**200** | Successful response |  -  |
-**400** | Invalid input data |  -  |
-**401** | Authorization not provided |  -  |
-**403** | Insufficient access |  -  |
-**500** | Internal server error |  -  |
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-

@@ -1,13 +1,12 @@
 # BoostGetBoostFrameworks200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**cursor** | **str** |  | [optional] 
-**has_more** | **bool** |  | 
-**records** | [**List[BoostGetBoostFrameworks200ResponseRecordsInner]**](BoostGetBoostFrameworks200ResponseRecordsInner.md) |  | 
+| Name         | Type                                                                                                          | Description | Notes      |
+| ------------ | ------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **cursor**   | **str**                                                                                                       |             | [optional] |
+| **has_more** | **bool**                                                                                                      |             |
+| **records**  | [**List[BoostGetBoostFrameworks200ResponseRecordsInner]**](BoostGetBoostFrameworks200ResponseRecordsInner.md) |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ boost_get_boost_frameworks200_response_dict = boost_get_boost_frameworks200_resp
 # create an instance of BoostGetBoostFrameworks200Response from a dict
 boost_get_boost_frameworks200_response_from_dict = BoostGetBoostFrameworks200Response.from_dict(boost_get_boost_frameworks200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

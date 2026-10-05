@@ -15,9 +15,24 @@
 
 set -euo pipefail
 
-CLIENT_DIR="$(dirname "$0")/python-client"
+PACKAGE_ROOT="$(realpath -m "$(dirname "$0")")"
+CLIENT_DIR="$(realpath -ms "${1:-$PACKAGE_ROOT/python-client}")"
 
-trap 'rm -f "$CLIENT_DIR/pyproject.toml.tmp"' EXIT
+if [[ ! -d "$CLIENT_DIR" || -L "$CLIENT_DIR" ||
+      "$CLIENT_DIR" != "$(realpath -m "$CLIENT_DIR")" ||
+      "$CLIENT_DIR" != "$PACKAGE_ROOT/"* ]]; then
+    echo 'Security-floor target must be an existing non-symlink directory inside the client package' >&2
+    exit 1
+fi
+for file in pyproject.toml setup.py requirements.txt test-requirements.txt .travis.yml .gitlab-ci.yml openapi_client/__init__.py; do
+    if [[ ! -f "$CLIENT_DIR/$file" || -L "$CLIENT_DIR/$file" ]]; then
+        echo "Missing or unsafe generated file: $CLIENT_DIR/$file" >&2
+        exit 1
+    fi
+done
+
+TEMP_FILE=''
+trap 'if [[ -n "$TEMP_FILE" ]]; then rm -f "$TEMP_FILE"; fi' EXIT
 
 sed_i() {
     # portable in-place sed (GNU + BSD)
@@ -37,13 +52,15 @@ if ! grep -qE '^(filelock =|[[:space:]]*"filelock>=)' "$CLIENT_DIR/pyproject.tom
     # awk instead of sed: `\n` in a sed replacement is a GNU extension and is
     # silently ignored by BSD/macOS sed, which would skip the insertion.
     # OpenAPI Generator supports both Poetry assignments and PEP 735 arrays.
+    TEMP_FILE="$(mktemp "$CLIENT_DIR/.pyproject.XXXXXX")"
     awk '
         { print }
         /^pytest-cov =/ { print "filelock = \">= 3.20.3\"" }
         /^[[:space:]]*"pytest-cov>=/ { print "  \"filelock>=3.20.3\"," }
     ' \
-        "$CLIENT_DIR/pyproject.toml" > "$CLIENT_DIR/pyproject.toml.tmp" &&
-        mv "$CLIENT_DIR/pyproject.toml.tmp" "$CLIENT_DIR/pyproject.toml"
+        "$CLIENT_DIR/pyproject.toml" > "$TEMP_FILE" &&
+        mv "$TEMP_FILE" "$CLIENT_DIR/pyproject.toml"
+    TEMP_FILE=''
 fi
 
 sed_i \

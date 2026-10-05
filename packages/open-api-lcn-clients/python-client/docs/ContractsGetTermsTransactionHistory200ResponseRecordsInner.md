@@ -1,17 +1,17 @@
 # ContractsGetTermsTransactionHistory200ResponseRecordsInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**expires_at** | **str** |  | [optional] 
-**one_time** | **bool** |  | [optional] 
-**terms** | [**ContractsGetTermsTransactionHistory200ResponseRecordsInnerTerms**](ContractsGetTermsTransactionHistory200ResponseRecordsInnerTerms.md) |  | [optional] 
-**id** | **str** |  | 
-**action** | **str** |  | 
-**var_date** | **str** |  | 
-**uris** | **List[str]** |  | [optional] 
+| Name                  | Type                                                                                                                                                    | Description | Notes      |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **expires_at**        | **str**                                                                                                                                                 |             | [optional] |
+| **one_time**          | **bool**                                                                                                                                                |             | [optional] |
+| **terms**             | [**StorageResolve200ResponseAnyOf1**](StorageResolve200ResponseAnyOf1.md)                                                                               |             | [optional] |
+| **guardian_approval** | [**ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval**](ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval.md) |             | [optional] |
+| **id**                | **str**                                                                                                                                                 |             |
+| **action**            | **str**                                                                                                                                                 |             |
+| **var_date**          | **str**                                                                                                                                                 |             |
+| **uris**              | **List[str]**                                                                                                                                           |             | [optional] |
 
 ## Example
 
@@ -30,6 +30,5 @@ contracts_get_terms_transaction_history200_response_records_inner_dict = contrac
 # create an instance of ContractsGetTermsTransactionHistory200ResponseRecordsInner from a dict
 contracts_get_terms_transaction_history200_response_records_inner_from_dict = ContractsGetTermsTransactionHistory200ResponseRecordsInner.from_dict(contracts_get_terms_transaction_history200_response_records_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,14 +1,13 @@
 # ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**sharing** | **bool** |  | [optional] 
-**shared** | **List[str]** |  | [optional] 
-**share_all** | **bool** |  | [optional] 
-**share_until** | **str** |  | [optional] 
+| Name            | Type          | Description | Notes      |
+| --------------- | ------------- | ----------- | ---------- |
+| **sharing**     | **bool**      |             | [optional] |
+| **shared**      | **List[str]** |             | [optional] |
+| **share_all**   | **bool**      |             | [optional] |
+| **share_until** | **str**       |             | [optional] |
 
 ## Example
 
@@ -27,6 +26,5 @@ contracts_get_consented_contracts_request_query_read_credentials_categories_valu
 # create an instance of ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue from a dict
 contracts_get_consented_contracts_request_query_read_credentials_categories_value_from_dict = ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue.from_dict(contracts_get_consented_contracts_request_query_read_credentials_categories_value_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-
