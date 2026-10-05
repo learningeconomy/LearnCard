@@ -342,18 +342,18 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
     return (
         <div
             data-testid="consent-privacy-and-data"
-            className={embedded ? 'relative h-full overflow-hidden' : 'h-full'}
+            className="relative flex h-full min-h-0 flex-col overflow-hidden bg-white font-poppins"
         >
             {!embedded && (
                 <PrivacyAndDataHeader name={name} image={image} className={headerClass} />
             )}
 
             <div
-                className="h-full w-full flex flex-col gap-[20px] overflow-y-auto p-[20px] pb-[300px]"
+                className="min-h-0 flex-1 w-full flex flex-col gap-4 overflow-y-auto px-6 py-5 pb-28"
                 style={embedded ? undefined : appStyles}
             >
                 <ContractAudience contract={contractDetails} testId="consent-shared-with" />
-                <div className="text-grayscale-900 text-[14px] rounded-[15px] bg-white w-full p-[15px] flex flex-col gap-[10px] shadow-box-bottom">
+                <div className="text-sm leading-relaxed text-grayscale-600 rounded-2xl border border-grayscale-200 bg-white w-full p-4 flex flex-col gap-3">
                     <ContractPermissionsAndDetailsText
                         contractDetails={contractDetails}
                         app={app}
@@ -361,8 +361,8 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                     />
                 </div>
 
-                <div className="text-grayscale-900 text-[14px] rounded-[15px] bg-white w-full p-[15px] flex flex-col gap-[20px] shadow-box-bottom">
-                    <h4 className="text-grayscale-900 text-[20px] font-notoSans">
+                <div className="text-sm leading-relaxed text-grayscale-600 rounded-2xl border border-grayscale-200 bg-white w-full p-4 flex flex-col gap-4">
+                    <h4 className="text-grayscale-900 text-sm font-medium leading-relaxed">
                         {contractCategoryReadDataExists
                             ? m['consentFlow.privacyData.shareData']({
                                   brand: brandingConfig?.name ?? '',
@@ -378,7 +378,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                 <div className="w-full flex justify-between items-center">
                                     <label className="flex flex-col gap-[2px]">
                                         <output
-                                            className={`font-[600] text-[14px] font-notoSans ${
+                                            className={`font-[600] text-sm font-poppins ${
                                                 allReadToggle
                                                     ? 'text-emerald-700'
                                                     : 'text-grayscale-500'
@@ -388,7 +388,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                                 ? m['consentFlow.status.active']()
                                                 : m['consentFlow.status.off']()}
                                         </output>
-                                        <p className="font-notoSans text-grayscale-900 text-[20px]">
+                                        <p className="text-grayscale-900 text-sm font-medium">
                                             {m['consentFlow.liveSyncAll']()}
                                         </p>
                                     </label>
@@ -402,13 +402,13 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                     />
                                 </div>
 
-                                <p className="text-grayscale-600 text-[14px] font-notoSans">
+                                <p className="text-grayscale-600 text-sm font-poppins">
                                     <TransP
                                         m={m['consentFlow.privacyData.liveSyncDescription']}
                                         components={[
                                             <span
                                                 key="emphasis"
-                                                className="font-[600] font-notoSans"
+                                                className="font-[600] font-poppins"
                                             />,
                                         ]}
                                     />
@@ -432,8 +432,8 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                 </div>
 
                 {contractPersonalReadDataExists && (
-                    <div className="text-grayscale-900 text-[14px] rounded-[15px] bg-white w-full p-[15px] flex flex-col gap-[20px] shadow-box-bottom">
-                        <h4 className="text-grayscale-900 text-[20px] font-notoSans">
+                    <div className="text-sm leading-relaxed text-grayscale-600 rounded-2xl border border-grayscale-200 bg-white w-full p-4 flex flex-col gap-4">
+                        <h4 className="text-grayscale-900 text-sm font-medium leading-relaxed">
                             {m['consentFlow.privacyData.sharePersonalData']()}
                         </h4>
 
@@ -441,7 +441,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                             <div className="w-full flex justify-between items-center">
                                 <label className="flex flex-col gap-[2px]">
                                     <output
-                                        className={`font-[600] text-[14px] font-notoSans ${
+                                        className={`font-[600] text-sm font-poppins ${
                                             readTerms.anonymize
                                                 ? 'text-emerald-700'
                                                 : 'text-grayscale-500'
@@ -451,7 +451,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                             ? m['consentFlow.status.on']()
                                             : m['consentFlow.status.off']()}
                                     </output>
-                                    <p className="font-notoSans text-grayscale-900 text-[20px]">
+                                    <p className="text-grayscale-900 text-sm font-medium">
                                         {m['consentFlow.anonymize']()}
                                     </p>
                                 </label>
@@ -465,14 +465,11 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                 />
                             </div>
 
-                            <p className="text-grayscale-600 text-[14px] font-notoSans">
+                            <p className="text-grayscale-600 text-sm font-poppins">
                                 <TransP
                                     m={m['consentFlow.privacyData.anonymizeDescription']}
                                     components={[
-                                        <span
-                                            key="emphasis"
-                                            className="font-[600] font-notoSans"
-                                        />,
+                                        <span key="emphasis" className="font-[600] font-poppins" />,
                                     ]}
                                 />
                             </p>
@@ -490,8 +487,8 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                     </div>
                 )}
 
-                <div className="text-grayscale-900 text-[14px] rounded-[15px] bg-white w-full p-[15px] flex flex-col gap-[20px] shadow-box-bottom">
-                    <h4 className="text-grayscale-900 text-[20px] font-notoSans">
+                <div className="text-sm leading-relaxed text-grayscale-600 rounded-2xl border border-grayscale-200 bg-white w-full p-4 flex flex-col gap-4">
+                    <h4 className="text-grayscale-900 text-sm font-medium leading-relaxed">
                         {contractCategoryWriteDataExists
                             ? m['consentFlow.privacyData.allowAddData']({
                                   name,
@@ -508,7 +505,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                 <div className="w-full flex justify-between items-center">
                                     <label className="flex flex-col gap-[2px]">
                                         <output
-                                            className={`font-[600] text-[14px] font-notoSans ${
+                                            className={`font-[600] text-sm font-poppins ${
                                                 allWriteToggle
                                                     ? 'text-emerald-700'
                                                     : 'text-grayscale-500'
@@ -518,7 +515,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                                 ? m['consentFlow.status.active']()
                                                 : m['consentFlow.status.off']()}
                                         </output>
-                                        <p className="font-notoSans text-grayscale-900 text-[20px]">
+                                        <p className="text-grayscale-900 text-sm font-medium">
                                             {m['consentFlow.allowAll']()}
                                         </p>
                                     </label>
@@ -532,14 +529,14 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                     />
                                 </div>
 
-                                <p className="text-grayscale-600 text-[14px] font-notoSans">
+                                <p className="text-grayscale-600 text-sm font-poppins">
                                     <TransP
                                         m={m['consentFlow.privacyData.writeDescription']}
                                         values={{ brand: brandingConfig?.name ?? '' }}
                                         components={[
                                             <span
                                                 key="emphasis"
-                                                className="font-[600] font-notoSans"
+                                                className="font-[600] font-poppins"
                                             />,
                                         ]}
                                     />
@@ -558,6 +555,8 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                 </div>
             </div>
             <ConsentFlowFooter
+                compact
+                actionButtonLoading={updatingTerms}
                 actionButtonText={isPostConsent ? saveWord : undefined}
                 actionButtonDisabled={updatingTerms || loadingShareAllCredentials || !isUpdated}
                 actionButtonColorClass={embedded ? 'bg-emerald-600' : undefined}

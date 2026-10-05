@@ -176,7 +176,7 @@ const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose
                         className="p-1 -ml-1"
                         aria-label={m['common.back']()}
                     >
-                        <ChevronLeft className="w-6 h-6 text-grayscale-700" />
+                        <ChevronLeft className="w-6 h-6 text-grayscale-700 rtl:rotate-180" />
                     </button>
 
                     <div className="flex items-center gap-2">
@@ -418,29 +418,33 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
               : m['dataSharing.appDetails']();
 
     return (
-        <div className="bg-white rounded-[20px] min-w-[350px] max-w-[450px] w-full h-[80vh] overflow-hidden flex flex-col min-h-0">
-            <div className="shrink-0 flex items-center gap-3 px-6 pt-6 pb-4">
+        <div className="bg-white rounded-[20px] max-w-[450px] w-full h-[80vh] overflow-hidden flex flex-col min-h-0 font-poppins">
+            <div className="shrink-0 flex items-center gap-3 px-6 py-5 border-b border-grayscale-200">
                 <button
                     onClick={handleBack}
                     aria-label={m['common.back']()}
-                    className="p-1 -ml-1 rounded-full hover:bg-grayscale-10 transition-colors"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center -ms-2 rounded-[20px] hover:bg-grayscale-10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
-                    <ChevronLeft className="w-6 h-6 text-grayscale-700" />
+                    <ChevronLeft className="w-6 h-6 text-grayscale-700 rtl:rotate-180" />
                 </button>
 
                 {image ? (
-                    <img src={image} alt={name} className="w-8 h-8 rounded-lg object-cover" />
+                    <img
+                        src={image}
+                        alt={name}
+                        className="w-10 h-10 shrink-0 rounded-xl object-cover"
+                    />
                 ) : (
-                    <div className="w-8 h-8 rounded-lg bg-grayscale-100 flex items-center justify-center">
+                    <div className="w-10 h-10 shrink-0 rounded-xl bg-grayscale-100 flex items-center justify-center">
                         <Shield className="w-4 h-4 text-grayscale-400" />
                     </div>
                 )}
 
                 <div className="min-w-0">
-                    <h2 className="text-lg font-semibold text-grayscale-900 truncate leading-tight">
+                    <h2 className="text-base font-semibold text-grayscale-900 leading-snug break-words">
                         {stepTitle}
                     </h2>
-                    <p className="text-xs text-grayscale-500 truncate">{name}</p>
+                    <p className="text-xs text-grayscale-600 break-words">{name}</p>
                 </div>
             </div>
 

@@ -47,11 +47,11 @@ const ContractPermissionsAndDetailsText: React.FC<ContractPermissionsAndDetailsT
 
     return (
         <>
-            <div className="text-grayscale-900 text-[14px]">
-                <span className="font-notoSans font-[600]">{name}</span>
+            <div className="text-grayscale-600 text-sm leading-relaxed">
+                <span className="font-poppins font-medium">{name}</span>
                 {isRequestingAccess && (
                     <>
-                        <span className="font-notoSans">
+                        <span className="font-poppins">
                             {' '}
                             {isPostConsent
                                 ? m['consentFlow.terms.requestedAccessTo']()
@@ -61,7 +61,7 @@ const ContractPermissionsAndDetailsText: React.FC<ContractPermissionsAndDetailsT
                     </>
                 )}
                 {!isRequestingAccess && (
-                    <span className="font-notoSans">
+                    <span className="font-poppins">
                         {' '}
                         {m['consentFlow.terms.notRequesting']({
                             brand: brandingConfig?.name ?? '',
@@ -71,14 +71,14 @@ const ContractPermissionsAndDetailsText: React.FC<ContractPermissionsAndDetailsT
             </div>
 
             {contractDetails.reasonForAccessing && (
-                <div className="text-grayscale-900 text-[14px] font-notoSans">
+                <div className="text-grayscale-600 text-sm leading-relaxed font-poppins">
                     {contractDetails.reasonForAccessing}
                 </div>
             )}
 
             {app?.privacyPolicyUrl && (
                 <button
-                    className={`w-fit font-notoSans text-[14px] font-[600] underline text-${primaryColor}`}
+                    className={`w-fit font-poppins text-sm font-medium underline text-${primaryColor}`}
                     onClick={() => openExternalLink(app?.privacyPolicyUrl as string)}
                 >
                     {m['consentFlow.terms.developerPrivacyPolicy']()}

@@ -1,6 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { IonIcon } from '@ionic/react';
-import { closeOutline, alertCircleOutline } from 'ionicons/icons';
+import {
+    closeOutline,
+    alertCircleOutline,
+    peopleOutline,
+    shieldCheckmarkOutline,
+} from 'ionicons/icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     useWallet,
@@ -37,9 +42,9 @@ const formatLabels = (labels: string[]): string =>
         : m['contractRequests.none']();
 
 const primary =
-    'py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed';
+    'min-h-11 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm leading-5 hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2';
 const secondary =
-    'py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40';
+    'min-h-11 py-3 px-4 rounded-[20px] border border-solid border-grayscale-300 bg-white text-grayscale-700 font-medium text-sm leading-5 hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2';
 
 type RequestProps = {
     contractUri: string;
@@ -241,18 +246,33 @@ export const ContractRequest: React.FC<RequestProps> = ({
     return (
         <article
             data-testid={details ? 'contract-request-details' : 'contract-request-card'}
-            className="font-poppins p-6 bg-white border border-grayscale-200 rounded-[20px] space-y-4 text-grayscale-900"
+            aria-busy={busy || request.isPending}
+            className={`font-poppins text-grayscale-900 min-w-0 bg-white ${
+                details
+                    ? 'flex h-full min-h-0 flex-col'
+                    : 'p-5 sm:p-6 border border-solid border-grayscale-200 rounded-[20px]'
+            }`}
         >
-            <div className="flex justify-between items-start gap-3">
-                <p className="text-xs font-medium text-grayscale-700">
+            <header
+                className={`flex items-center gap-3 ${details ? 'shrink-0 px-6 py-5 border-b border-grayscale-200' : 'mb-4'}`}
+            >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-emerald-50 text-emerald-700">
+                    {contract?.image ? (
+                        <img src={contract.image} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                        <IonIcon icon={peopleOutline} aria-hidden="true" className="text-xl" />
+                    )}
+                </div>
+                <p className="flex-1 text-xs font-medium text-grayscale-700">
                     {branding.contractRequestLabel || m['contractRequests.label']()}
                 </p>
-                {onDismiss && (
+                {(onDismiss || details) && (
                     <button
-                        aria-label={m['contractRequests.dismiss']()}
+                        type="button"
+                        aria-label={details ? m['common.close']() : m['contractRequests.dismiss']()}
                         disabled={busy}
-                        onClick={() => void run(onDismiss, 'dismiss')}
-                        className="p-2 rounded-[20px] text-grayscale-700"
+                        onClick={() => (details ? closeModal() : void run(onDismiss!, 'dismiss'))}
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[20px] text-grayscale-600 hover:bg-grayscale-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40"
                     >
                         {busyAction === 'dismiss' ? (
                             <span
@@ -261,89 +281,159 @@ export const ContractRequest: React.FC<RequestProps> = ({
                                 className="block w-4 h-4 border-2 border-grayscale-300 border-t-grayscale-900 rounded-full animate-spin"
                             />
                         ) : (
-                            <IonIcon icon={closeOutline} />
+                            <IonIcon icon={closeOutline} aria-hidden="true" className="text-xl" />
                         )}
                     </button>
                 )}
-            </div>
-            {request.isPending ? (
-                <p role="status">{m['contractRequests.loading']()}</p>
-            ) : (
-                <>
-                    {contract?.image && (
-                        <img
-                            src={contract.image}
-                            alt=""
-                            className="w-16 h-16 object-cover rounded-full"
+            </header>
+            <div
+                className={
+                    details ? 'min-h-0 flex-1 overflow-y-auto px-6 py-6 space-y-5' : 'space-y-3'
+                }
+            >
+                {request.isPending ? (
+                    <div
+                        role="status"
+                        className="flex items-center gap-3 py-2 text-sm text-grayscale-600"
+                    >
+                        <span
+                            aria-hidden="true"
+                            className="h-4 w-4 shrink-0 rounded-full border-2 border-grayscale-200 border-t-emerald-600 animate-spin"
                         />
-                    )}
-                    <h3 className="text-xl font-semibold">
-                        {unavailable
-                            ? m['contractRequests.unavailable']()
-                            : request.isError && !contract
-                              ? m['error.generic']()
-                              : title}
-                    </h3>
-                    <p className="text-sm text-grayscale-600 leading-relaxed">
-                        {contract?.description}
-                    </p>
-                    {details && contract && (
-                        <>
-                            <p className="text-sm text-grayscale-600">
-                                {contract.reasonForAccessing}
+                        {m['contractRequests.loading']()}
+                    </div>
+                ) : (
+                    <>
+                        <h3 className="text-lg font-semibold leading-snug text-grayscale-900 break-words">
+                            {unavailable
+                                ? m['contractRequests.unavailable']()
+                                : request.isError && !contract
+                                  ? m['error.generic']()
+                                  : title}
+                        </h3>
+                        {contract?.description && (
+                            <p className="text-sm text-grayscale-600 leading-relaxed">
+                                {contract.description}
                             </p>
-                            {status?.message && (
-                                <p className="text-sm text-grayscale-600">{status.message}</p>
-                            )}
-                            <ContractAudience
-                                contract={contract}
-                                testId="contract-request-shared-with"
-                                alwaysShowOwner
-                            />
-                            <div className="text-sm text-grayscale-600">
-                                <h4 className="font-medium text-grayscale-900">
-                                    {m['contractRequests.dataRequested']()}
-                                </h4>
-                                <p>
-                                    {formatLabels(
-                                        Object.keys(contract.contract.read.personal)
-                                            .map(localizeContractPersonalField)
-                                            .concat(
+                        )}
+                        {details && contract && (
+                            <>
+                                {(contract.reasonForAccessing || status?.message) && (
+                                    <div className="space-y-3 border-s-2 border-emerald-200 ps-4 text-sm text-grayscale-600 leading-relaxed">
+                                        {contract.reasonForAccessing && (
+                                            <p>{contract.reasonForAccessing}</p>
+                                        )}
+                                        {status?.message && <p>{status.message}</p>}
+                                    </div>
+                                )}
+                                <ContractAudience
+                                    contract={contract}
+                                    testId="contract-request-shared-with"
+                                    alwaysShowOwner
+                                />
+                                <dl className="space-y-4 rounded-2xl border border-grayscale-200 p-4 text-sm leading-relaxed">
+                                    <div>
+                                        <dt className="font-medium text-grayscale-900">
+                                            {m['contractRequests.dataRequested']()}
+                                        </dt>
+                                        <dd className="mt-1 text-grayscale-600">
+                                            {formatLabels(
+                                                Object.keys(contract.contract.read.personal)
+                                                    .map(localizeContractPersonalField)
+                                                    .concat(
+                                                        Object.keys(
+                                                            contract.contract.read.credentials
+                                                                .categories
+                                                        ).map(categoryLabel)
+                                                    )
+                                            )}
+                                        </dd>
+                                    </div>
+                                    <div className="border-t border-grayscale-100 pt-4">
+                                        <dt className="font-medium text-grayscale-900">
+                                            {m['contractRequests.outcomes']()}
+                                        </dt>
+                                        <dd className="mt-1 text-grayscale-600">
+                                            {formatLabels(
                                                 Object.keys(
-                                                    contract.contract.read.credentials.categories
+                                                    contract.contract.write.credentials.categories
                                                 ).map(categoryLabel)
-                                            )
-                                    )}
-                                </p>
-                                <h4 className="font-medium text-grayscale-900 mt-3">
-                                    {m['contractRequests.outcomes']()}
-                                </h4>
-                                <p>
-                                    {formatLabels(
-                                        Object.keys(
-                                            contract.contract.write.credentials.categories
-                                        ).map(categoryLabel)
-                                    )}
-                                </p>
-                            </div>
-                            <p className="text-sm text-grayscale-600">
-                                {m['contractRequests.reviewFirst']()}
+                                            )}
+                                        </dd>
+                                    </div>
+                                </dl>
+                            </>
+                        )}
+                        {status && status.status !== 'pending' && (
+                            <p
+                                role="status"
+                                className="text-xs font-medium text-grayscale-700 rounded-full bg-grayscale-100 px-3 py-1.5 w-fit"
+                            >
+                                {status.status === 'accepted'
+                                    ? m['contractRequests.connected']()
+                                    : status.status === 'denied'
+                                      ? m['contractRequests.declined']()
+                                      : m['contractRequests.cancelled']()}
                             </p>
-                        </>
-                    )}
-                    {status && status.status !== 'pending' && (
-                        <p role="status" className="text-sm font-medium text-grayscale-700">
-                            {status.status === 'accepted'
-                                ? m['contractRequests.connected']()
-                                : status.status === 'denied'
-                                  ? m['contractRequests.declined']()
-                                  : m['contractRequests.cancelled']()}
+                        )}
+                    </>
+                )}
+                {(error || request.isError) && (
+                    <div
+                        role="alert"
+                        className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
+                    >
+                        <IonIcon
+                            icon={alertCircleOutline}
+                            aria-hidden="true"
+                            className="text-red-400 text-lg mt-0.5 shrink-0"
+                        />
+                        <div className="text-sm text-red-700 leading-relaxed">
+                            <p>{m['contractRequests.error']()}</p>
+                            <button
+                                type="button"
+                                disabled={busy || request.isFetching}
+                                className="mt-2 font-medium underline underline-offset-4 disabled:opacity-40"
+                                onClick={() =>
+                                    void run(
+                                        retryAction ??
+                                            (async () => {
+                                                await request.refetch({ throwOnError: true });
+                                            })
+                                    )
+                                }
+                            >
+                                {busyAction === 'retry'
+                                    ? m['contractRequests.working']()
+                                    : m['common.tryAgain']()}
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+            {(pending || details) && !request.isPending && (
+                <footer
+                    className={
+                        details
+                            ? 'shrink-0 border-t border-grayscale-200 bg-white px-6 py-4 space-y-3'
+                            : 'mt-5'
+                    }
+                >
+                    {details && pending && (
+                        <p className="flex items-start gap-2 text-xs text-grayscale-600 leading-relaxed">
+                            <IonIcon
+                                icon={shieldCheckmarkOutline}
+                                aria-hidden="true"
+                                className="text-emerald-700 text-base shrink-0"
+                            />
+                            {m['contractRequests.reviewFirst']()}
                         </p>
                     )}
                     {pending && (
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2.5">
                             <button
-                                className={primary}
+                                type="button"
+                                className={`${primary} ${details ? 'flex-1' : ''}`}
                                 disabled={busy}
                                 onClick={() => void accept()}
                             >
@@ -351,7 +441,7 @@ export const ContractRequest: React.FC<RequestProps> = ({
                                     <span className="flex items-center justify-center gap-2">
                                         <span
                                             aria-hidden="true"
-                                            className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
+                                            className="w-4 h-4 shrink-0 border-2 border-white/30 border-t-white rounded-full animate-spin"
                                         />
                                         {m['contractRequests.working']()}
                                     </span>
@@ -359,8 +449,9 @@ export const ContractRequest: React.FC<RequestProps> = ({
                                     m['contractRequests.accept']()
                                 )}
                             </button>
-                            {!details && (
+                            {!details ? (
                                 <button
+                                    type="button"
                                     className={secondary}
                                     disabled={busy}
                                     onClick={() =>
@@ -375,10 +466,10 @@ export const ContractRequest: React.FC<RequestProps> = ({
                                 >
                                     {m['contractRequests.details']()}
                                 </button>
-                            )}
-                            {details && (
+                            ) : (
                                 <button
-                                    className={secondary}
+                                    type="button"
+                                    className={`${secondary} flex-1`}
                                     disabled={busy}
                                     onClick={() => void decline()}
                                 >
@@ -390,36 +481,16 @@ export const ContractRequest: React.FC<RequestProps> = ({
                         </div>
                     )}
                     {details && (
-                        <button className={secondary} disabled={busy} onClick={closeModal}>
+                        <button
+                            type="button"
+                            className="w-full py-2 text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors rounded-[20px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40"
+                            disabled={busy}
+                            onClick={closeModal}
+                        >
                             {m['contractRequests.notNow']()}
                         </button>
                     )}
-                </>
-            )}
-            {(error || request.isError) && (
-                <div
-                    role="alert"
-                    className="p-3 bg-red-50 border border-red-100 rounded-2xl flex gap-2.5"
-                >
-                    <IonIcon icon={alertCircleOutline} className="text-red-400" />
-                    <span className="text-sm text-red-700">{m['contractRequests.error']()}</span>
-                    <button
-                        disabled={busy || request.isFetching}
-                        className="text-sm underline"
-                        onClick={() =>
-                            void run(
-                                retryAction ??
-                                    (async () => {
-                                        await request.refetch({ throwOnError: true });
-                                    })
-                            )
-                        }
-                    >
-                        {busyAction === 'retry'
-                            ? m['contractRequests.working']()
-                            : m['common.tryAgain']()}
-                    </button>
-                </div>
+                </footer>
             )}
         </article>
     );
