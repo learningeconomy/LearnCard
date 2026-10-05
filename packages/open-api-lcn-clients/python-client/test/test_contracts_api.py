@@ -61,6 +61,13 @@ class TestContractsApi(unittest.TestCase):
         """
         pass
 
+    def test_contracts_delete_credential_from_all_contracts(self) -> None:
+        """Test case for contracts_delete_credential_from_all_contracts
+
+        Delete credential references from all consent terms
+        """
+        pass
+
     def test_contracts_forward_contract_request_to_profile(self) -> None:
         """Test case for contracts_forward_contract_request_to_profile
 
@@ -142,6 +149,13 @@ class TestContractsApi(unittest.TestCase):
         """Test case for contracts_get_request_status_for_profile
 
         Get request status for a specific profile under a contract
+        """
+        pass
+
+    def test_contracts_get_shared_insights_requests_for_profile(self) -> None:
+        """Test case for contracts_get_shared_insights_requests_for_profile
+
+        Get profiles a user has shared insights with
         """
         pass
 

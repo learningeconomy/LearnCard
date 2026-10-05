@@ -6,6 +6,8 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # Python 3.11+ parses the resulting TOML so a misplaced or duplicate dependency
 # cannot pass just because the shell script's text checks accept it.
 python3 - "$REPO_ROOT" <<'PYTHON'
+import json
+import os
 import pathlib
 import shutil
 import subprocess
@@ -61,7 +63,9 @@ dependencies = ["urllib3 (>=2.1.0,<3.0.0)"]
         }
         for name, content in files.items():
             (self.client / name).write_text(content)
-        # Deliberately no .github/: the workflow deletes it before this script.
+        (self.client / "openapi_client").mkdir(exist_ok=True)
+        (self.client / "openapi_client/__init__.py").write_text("")
+        # Floors also support the generated metadata after nested .github cleanup.
 
     def run_script(self):
         return subprocess.run(
@@ -98,10 +102,10 @@ dependencies = ["urllib3 (>=2.1.0,<3.0.0)"]
                     self.assertEqual(requirements, ["pytest >= 9.0.3", "pytest-cov >= 2.8.1", "tox >= 4.11.0", "filelock >= 3.20.3"])
                     self.assertEqual((self.client / ".travis.yml").read_text(), 'python:\n  - "3.10"\n')
                     self.assertEqual((self.client / ".gitlab-ci.yml").read_text(), "pytest-3.10:\n  image: python:3.10-alpine\n")
-                    before = {p.name: p.read_bytes() for p in self.client.iterdir()}
+                    before = {str(p.relative_to(self.client)): p.read_bytes() for p in self.client.rglob("*") if p.is_file()}
                     result = self.run_script()
                     self.assertEqual(result.returncode, 0, result.stderr)
-                    self.assertEqual(before, {p.name: p.read_bytes() for p in self.client.iterdir()})
+                    self.assertEqual(before, {str(p.relative_to(self.client)): p.read_bytes() for p in self.client.rglob("*") if p.is_file()})
                     self.assertFalse((self.client / "pyproject.toml.tmp").exists())
 
     def test_unknown_or_missing_floors_still_fail(self):
@@ -145,8 +149,72 @@ dependencies = ["urllib3 (>=2.1.0,<3.0.0)"]
         self.assertNotEqual(self.run_script().returncode, 0)
 
     def test_generator_is_pinned(self):
-        workflow = (ROOT / ".github/workflows/open-api-generator.yml").read_text()
-        self.assertRegex(workflow, r"(?m)^\s+generator-tag: v\d+\.\d+\.\d+$")
+        self.fixture(True)
+        package = SCRIPT.parent
+        with tempfile.TemporaryDirectory(prefix=".pin-contract-", dir=package) as directory:
+            output = pathlib.Path(directory) / "generated"
+            trace = self.root / "docker-calls.jsonl"
+            docker = self.root / "docker"
+            # Fault-inject the external Docker boundary, not the driver. Mutable
+            # image references or network-enabled runs fail the real CLI path.
+            docker.write_text('''#!/usr/bin/env python3
+import json
+import os
+import pathlib
+import re
+import shutil
+import sys
+
+args = sys.argv[1:]
+images = [arg for arg in args if arg.startswith(("oven/bun", "openapitools/openapi-generator-cli"))]
+if len(images) != 1 or not re.fullmatch(r"[^\\s]+@sha256:[a-f0-9]{64}", images[0]):
+    raise SystemExit(90)
+with open(os.environ["PIN_TRACE"], "a") as trace:
+    trace.write(json.dumps({"image": images[0], "args": args}) + "\\n")
+if args[0] in ("image", "pull"):
+    raise SystemExit(0)
+if args[0] != "run" or args[args.index("--network") + 1] != "none":
+    raise SystemExit(91)
+mounts = {}
+for index, arg in enumerate(args[:-1]):
+    if arg == "-v":
+        source, target, *_ = args[index + 1].split(":")
+        mounts[target] = pathlib.Path(source)
+if args[-1] == "version":
+    print("7.25.0")
+elif "generate" in args:
+    shutil.copytree(os.environ["PIN_FIXTURE"], mounts["/output"], dirs_exist_ok=True)
+    (mounts["/output"] / ".github").mkdir()
+elif "scripts/export-openapi.ts" in args:
+    (mounts["/schema"] / "openapi.json").write_text("{}")
+elif "/workspace/node_modules/prettier/bin/prettier.cjs" not in args:
+    raise SystemExit(92)
+''')
+            docker.chmod(0o755)
+            result = subprocess.run(
+                ["bash", str(package / "generate-python.sh"), str(output)],
+                cwd=ROOT,
+                env={
+                    "PATH": str(self.root) + os.pathsep + os.environ["PATH"],
+                    "PIN_TRACE": str(trace),
+                    "PIN_FIXTURE": str(self.client),
+                },
+                capture_output=True,
+                text=True,
+                timeout=20,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            calls = [json.loads(line) for line in trace.read_text().splitlines()]
+            run_images = {call["image"].split("@")[0] for call in calls if call["args"][0] == "run"}
+            self.assertEqual(run_images, {"oven/bun", "openapitools/openapi-generator-cli"})
+            # Prove successful pin checks reached real floor processing and
+            # promotion rather than passing on image inspection alone.
+            metadata = tomllib.loads((output / "pyproject.toml").read_text())
+            self.assertEqual(metadata["project"]["requires-python"], ">=3.10")
+            self.assertEqual(metadata["project"]["dependencies"], ["urllib3 (>=2.7.0,<3.0.0)"])
+            self.assertIn("filelock>=3.20.3", metadata["dependency-groups"]["dev"])
+            self.assertFalse((output / ".github").exists())
+
 
 
 unittest.main()

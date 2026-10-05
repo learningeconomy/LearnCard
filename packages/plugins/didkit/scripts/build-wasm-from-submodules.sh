@@ -5,7 +5,6 @@ set -euo pipefail
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 DIDKIT_DIR="${ROOT_DIR}/lib/didkit"
 DIDKIT_LOCKFILE="${DIDKIT_DIR}/Cargo.lock"
-DIDKIT_WASM_LOCKFILE="${ROOT_DIR}/packages/plugins/didkit/wasm/didkit-wasm.Cargo.lock"
 DIDKIT_WEB_DIR="${ROOT_DIR}/lib/didkit/lib/web"
 SOURCE_PKG_DIR="${DIDKIT_WEB_DIR}/pkg"
 TARGET_PKG_DIR="${ROOT_DIR}/packages/plugins/didkit/src/didkit/pkg"
@@ -23,46 +22,21 @@ if ! command -v bun >/dev/null 2>&1; then
     exit 1
 fi
 
-
 if [ ! -d "${DIDKIT_WEB_DIR}" ]; then
     echo "Expected DIDKit web crate at ${DIDKIT_WEB_DIR}" >&2
     exit 1
 fi
 
-if [ ! -f "${DIDKIT_WASM_LOCKFILE}" ]; then
-    echo "Expected DIDKit WASM lockfile at ${DIDKIT_WASM_LOCKFILE}" >&2
+if [ ! -f "${DIDKIT_LOCKFILE}" ]; then
+    echo "Expected committed DIDKit workspace lockfile at ${DIDKIT_LOCKFILE}" >&2
     exit 1
 fi
-
-# DIDKit owns an independent workspace lock. Temporarily use LearnCard's
-# authoritative WASM graph and restore the original workspace bytes on exit.
-DIDKIT_LOCKFILE_BACKUP=""
-if [ -e "${DIDKIT_LOCKFILE}" ]; then
-    DIDKIT_LOCKFILE_BACKUP="$(mktemp)"
-    cp "${DIDKIT_LOCKFILE}" "${DIDKIT_LOCKFILE_BACKUP}"
-fi
-
-restore_didkit_lockfile() {
-    if [ -n "${DIDKIT_LOCKFILE_BACKUP}" ]; then
-        mv "${DIDKIT_LOCKFILE_BACKUP}" "${DIDKIT_LOCKFILE}"
-    else
-        rm -f "${DIDKIT_LOCKFILE}"
-    fi
-}
-trap restore_didkit_lockfile EXIT
-trap 'exit 130' INT
-trap 'exit 143' TERM
-cp "${DIDKIT_WASM_LOCKFILE}" "${DIDKIT_LOCKFILE}"
 
 (
     cd "${DIDKIT_WEB_DIR}"
 
-    if [ "${UPDATE_DIDKIT_WASM_LOCKFILE:-0}" = "1" ]; then
-        wasm-pack build --target=web
-        cp "${DIDKIT_LOCKFILE}" "${DIDKIT_WASM_LOCKFILE}"
-    else
-        wasm-pack build --target=web --locked
-    fi
+    # Source updates must include DIDKit's committed workspace lock.
+    wasm-pack build --target=web --locked
     optimized_wasm="$(mktemp "${SOURCE_PKG_DIR}/didkit_wasm_bg.wasm.XXXXXX")"
     trap 'rm -f "${optimized_wasm}"' EXIT
 
@@ -70,8 +44,6 @@ cp "${DIDKIT_WASM_LOCKFILE}" "${DIDKIT_LOCKFILE}"
     mv "${optimized_wasm}" "${SOURCE_PKG_DIR}/didkit_wasm_bg.wasm"
 
     trap - EXIT
-
-
 )
 
 mkdir -p "${TARGET_PKG_DIR}"

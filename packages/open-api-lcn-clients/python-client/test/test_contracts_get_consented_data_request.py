@@ -38,9 +38,9 @@ class TestContractsGetConsentedDataRequest(unittest.TestCase):
                 limit = 1.337,
                 cursor = '',
                 sort = '',
-                query = openapi_client.models.contracts_get_consented_data_for_contract_request_query.contracts_getConsentedDataForContract_request_query(
+                query = openapi_client.models.contracts_get_consented_data_request_query.contracts_getConsentedData_request_query(
                     anonymize = True, 
-                    credentials = openapi_client.models.contracts_get_consented_data_for_contract_request_query_credentials.contracts_getConsentedDataForContract_request_query_credentials(
+                    credentials = openapi_client.models.contracts_get_consented_data_for_did_request_query_credentials.contracts_getConsentedDataForDid_request_query_credentials(
                         categories = {
                             'key' : True
                             }, ), 

@@ -1,11 +1,10 @@
 # InboxApproveGuardianRequestRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**token** | **str** |  | 
+| Name      | Type    | Description | Notes |
+| --------- | ------- | ----------- | ----- |
+| **token** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ inbox_approve_guardian_request_request_dict = inbox_approve_guardian_request_req
 # create an instance of InboxApproveGuardianRequestRequest from a dict
 inbox_approve_guardian_request_request_from_dict = InboxApproveGuardianRequestRequest.from_dict(inbox_approve_guardian_request_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-
