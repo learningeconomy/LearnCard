@@ -228,19 +228,27 @@ data "aws_iam_policy_document" "enclave_host_permissions" {
   # templates/user-data.sh.tftpl) so the host can authenticate lca-api's
   # calls and terminate TLS on 8443 without any secret ever being
   # hardcoded in this repo or baked into an AMI/EIF. Scoped to exactly
-  # these three parameter ARNs, never a wildcard path — a compromised host
-  # gains no ability to read any OTHER parameter in this account.
+  # these three parameter ARNs, never a wildcard path.
   statement {
-    sid    = "ReadHostSecretParameters"
-    effect = "Allow"
+    sid       = "ReadHostSecretParameters"
+    effect    = "Allow"
+    actions   = ["ssm:GetParameter"]
+    resources = local.host_secret_parameter_arns
+  }
+
+  # AmazonSSMManagedInstanceCore (enable_ssm) grants ssm:GetParameter(s) on
+  # "*", which would let a compromised host read every parameter in the
+  # account (e.g. the staging CA key). An explicit deny keeps the scope above.
+  statement {
+    sid    = "DenyOtherParameters"
+    effect = "Deny"
     actions = [
       "ssm:GetParameter",
+      "ssm:GetParameters",
+      "ssm:GetParametersByPath",
+      "ssm:GetParameterHistory",
     ]
-    resources = [
-      "arn:${data.aws_partition.current.partition}:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.host_bearer_token_parameter_name}",
-      "arn:${data.aws_partition.current.partition}:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.host_tls_certificate_parameter_name}",
-      "arn:${data.aws_partition.current.partition}:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.host_tls_private_key_parameter_name}",
-    ]
+    not_resources = local.host_secret_parameter_arns
   }
 
   # CloudWatch Logs: write-only to the P3.1 log group. The modern
@@ -258,6 +266,16 @@ resource "aws_iam_role_policy" "enclave_host" {
   name   = "${local.name_prefix}-host-policy"
   role   = aws_iam_role.enclave_host.id
   policy = data.aws_iam_policy_document.enclave_host_permissions.json
+}
+
+locals {
+  host_secret_parameter_arns = [
+    for name in [
+      var.host_bearer_token_parameter_name,
+      var.host_tls_certificate_parameter_name,
+      var.host_tls_private_key_parameter_name,
+    ] : "arn:${data.aws_partition.current.partition}:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${name}"
+  ]
 }
 
 resource "aws_iam_role_policy_attachment" "enclave_host_ssm" {

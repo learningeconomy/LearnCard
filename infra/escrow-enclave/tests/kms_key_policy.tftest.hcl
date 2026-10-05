@@ -659,3 +659,15 @@ run "steady_state_host_cannot_write_sealed_keys" {
     error_message = "With first boot disabled the host role must hold no PutObject on sealed-keys/"
   }
 }
+
+run "host_cannot_read_other_ssm_parameters" {
+  command = apply
+
+  assert {
+    condition = anytrue([
+      for s in jsondecode(data.aws_iam_policy_document.enclave_host_permissions.json).Statement :
+      s.Effect == "Deny" && contains(flatten([s.Action]), "ssm:GetParameters") && length(flatten([s.NotResource])) == 3
+    ])
+    error_message = "The host role must explicitly deny SSM parameter reads outside its three host parameters"
+  }
+}
