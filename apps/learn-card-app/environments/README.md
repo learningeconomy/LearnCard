@@ -160,8 +160,13 @@ of redirecting the webview: iOS uses an ephemeral `ASWebAuthenticationSession`
 - **Sheet never appears / stuck on "Verifying…"**: `ASWebAuthenticationSession`
   can accept `start()` and silently not present (non-key presentation anchor,
   previous sheet still dismissing). The plugin anchors on the scene's key
-  window, checks `canStart`, cancels a stale session on retry, and the JS side
-  cancels natively and fails with "Sign-in expired" after 60 s so the form
+  window and reports `PRESENTATION_BUSY` when no session can start. The JS side
+  retries only that presentation failure every 100 ms for up to 5 s, allowing
+  the native Apple sign-in sheet to finish dismissing after returning its
+  credential. It reuses the same authorize URL without repeating Apple sign-in
+  or the ticket exchange; cancellation and other failures are not retried.
+  Once started, the JS side cancels natively and fails with "Sign-in expired"
+  after the overall 60 s timeout so the form
   recovers. On the iOS **Simulator** the usual cause is macOS reporting
   "SafariViewService quit unexpectedly" — the out-of-process host for the
   sheet crashed, so the completion handler can never fire; this is a simulator
