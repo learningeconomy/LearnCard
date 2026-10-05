@@ -33,6 +33,14 @@ const TRANSITIVE_PODS: PodDependency[] = [
             'node_modules/@capacitor/file-transfer/CapacitorFileTransfer.podspec'
         ),
     },
+    {
+        name: 'IONFileViewerLib',
+        owner: 'CapacitorFileViewer',
+        podspecPath: resolve(
+            MONOREPO_ROOT,
+            'node_modules/@capacitor/file-viewer/CapacitorFileViewer.podspec'
+        ),
+    },
 ];
 
 const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

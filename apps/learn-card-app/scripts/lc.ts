@@ -1299,13 +1299,15 @@ const nativeDev = async (tenantId?: string, platform?: Platform) => {
     log.info(green('▶ Step 1/6 — Patching capacitor.config.ts with live-reload URL'));
     patchCapConfigSource(serverUrl);
 
-    // Step 2: Cap sync (reads from the patched TS source → generates platform JSONs with server.url)
-    execBlocking('bun run native:sync', 'Step 2/6 — Capacitor sync (with live-reload URL)');
-
-    // Step 3: Restore the original capacitor.config.ts so git stays clean
-    log.info('');
-    log.info(green('▶ Step 3/6 — Restoring capacitor.config.ts (git stays clean)'));
-    unpatchCapConfigSource();
+    try {
+        // Step 2: Cap sync reads the patched source into the platform JSONs.
+        execBlocking('bun run native:sync', 'Step 2/6 — Capacitor sync (with live-reload URL)');
+    } finally {
+        // Step 3: Restore the source even if pod repair or Capacitor sync fails.
+        log.info('');
+        log.info(green('▶ Step 3/6 — Restoring capacitor.config.ts (git stays clean)'));
+        unpatchCapConfigSource();
+    }
 
     // Step 4: Patch native projects with tenant config. This step COPIES the
     // tenant base `capacitor.config.json` over the cap-synced platform JSONs,
