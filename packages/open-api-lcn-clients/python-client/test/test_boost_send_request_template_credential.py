@@ -56,6 +56,7 @@ class TestBoostSendRequestTemplateCredential(unittest.TestCase):
                 status = None,
                 terms_of_use = None,
                 evidence = None,
+                render_method = None,
                 proof = None
             )
         else:

@@ -1,17 +1,16 @@
 # ContactMethodsVerifyWithCredential200ResponseContactMethodOneOf
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | **str** |  | 
-**value** | **str** |  | 
-**id** | **str** |  | 
-**is_verified** | **bool** |  | 
-**verified_at** | **str** |  | [optional] 
-**is_primary** | **bool** |  | 
-**created_at** | **str** |  | 
+| Name            | Type     | Description | Notes      |
+| --------------- | -------- | ----------- | ---------- |
+| **type**        | **str**  |             |
+| **value**       | **str**  |             |
+| **id**          | **str**  |             |
+| **is_verified** | **bool** |             |
+| **verified_at** | **str**  |             | [optional] |
+| **is_primary**  | **bool** |             |
+| **created_at**  | **str**  |             |
 
 ## Example
 
@@ -30,6 +29,5 @@ contact_methods_verify_with_credential200_response_contact_method_one_of_dict = 
 # create an instance of ContactMethodsVerifyWithCredential200ResponseContactMethodOneOf from a dict
 contact_methods_verify_with_credential200_response_contact_method_one_of_from_dict = ContactMethodsVerifyWithCredential200ResponseContactMethodOneOf.from_dict(contact_methods_verify_with_credential200_response_contact_method_one_of_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

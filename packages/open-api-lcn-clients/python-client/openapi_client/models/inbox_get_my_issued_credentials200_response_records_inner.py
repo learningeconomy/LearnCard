@@ -19,27 +19,41 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
 from openapi_client.models.inbox_get_my_issued_credentials200_response_records_inner_signing_authority import InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority
+from openapi_client.models.inbox_issue200_response_refresh import InboxIssue200ResponseRefresh
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class InboxGetMyIssuedCredentials200ResponseRecordsInner(BaseModel):
     """
     InboxGetMyIssuedCredentials200ResponseRecordsInner
     """ # noqa: E501
-    id: StrictStr
-    credential: StrictStr
-    is_signed: StrictBool = Field(alias="isSigned")
+    refresh: Optional[InboxIssue200ResponseRefresh] = None
+    refresh_id: Optional[StrictStr] = Field(default=None, alias="refreshId")
+    id: Optional[StrictStr]
+    is_signed: Optional[StrictBool] = Field(alias="isSigned")
     current_status: StrictStr = Field(alias="currentStatus")
     is_accepted: Optional[StrictBool] = Field(default=None, alias="isAccepted")
-    expires_at: StrictStr = Field(alias="expiresAt")
-    created_at: StrictStr = Field(alias="createdAt")
-    issuer_did: StrictStr = Field(alias="issuerDid")
+    expires_at: Optional[StrictStr] = Field(alias="expiresAt")
+    created_at: Optional[StrictStr] = Field(alias="createdAt")
+    finalized_at: Optional[StrictStr] = Field(default=None, alias="finalizedAt")
+    expired_at: Optional[StrictStr] = Field(default=None, alias="expiredAt")
+    credential_name: Optional[StrictStr] = Field(default=None, alias="credentialName")
+    achievement_type: Optional[StrictStr] = Field(default=None, alias="achievementType")
+    issuer_did: Optional[StrictStr] = Field(alias="issuerDid")
     webhook_url: Optional[StrictStr] = Field(default=None, alias="webhookUrl")
     boost_uri: Optional[StrictStr] = Field(default=None, alias="boostUri")
     activity_id: Optional[StrictStr] = Field(default=None, alias="activityId")
+    integration_id: Optional[StrictStr] = Field(default=None, alias="integrationId")
     signing_authority: Optional[InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority] = Field(default=None, alias="signingAuthority")
-    __properties: ClassVar[List[str]] = ["id", "credential", "isSigned", "currentStatus", "isAccepted", "expiresAt", "createdAt", "issuerDid", "webhookUrl", "boostUri", "activityId", "signingAuthority"]
+    guardian_email: Optional[Annotated[str, Field(strict=True)]] = Field(default=None, alias="guardianEmail")
+    guardian_status: Optional[StrictStr] = Field(default=None, alias="guardianStatus")
+    guardian_approved_at: Optional[StrictStr] = Field(default=None, alias="guardianApprovedAt")
+    guardian_approved_by_did: Optional[StrictStr] = Field(default=None, alias="guardianApprovedByDid")
+    additional_properties: Dict[str, Any] = {}
+    __properties: ClassVar[List[str]] = ["refresh", "refreshId", "id", "isSigned", "currentStatus", "isAccepted", "expiresAt", "createdAt", "finalizedAt", "expiredAt", "credentialName", "achievementType", "issuerDid", "webhookUrl", "boostUri", "activityId", "integrationId", "signingAuthority", "guardianEmail", "guardianStatus", "guardianApprovedAt", "guardianApprovedByDid"]
 
     @field_validator('current_status')
     def current_status_validate_enum(cls, value):
@@ -48,8 +62,29 @@ class InboxGetMyIssuedCredentials200ResponseRecordsInner(BaseModel):
             raise ValueError("must be one of enum values ('PENDING', 'ISSUED', 'EXPIRED', 'DELIVERED', 'CLAIMED')")
         return value
 
+    @field_validator('guardian_email', mode="before")
+    def guardian_email_validate_regular_expression(cls, value):
+        """Validates the regular expression"""
+        if value is None:
+            return value
+
+        if isinstance(value, str) and not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
+        return value
+
+    @field_validator('guardian_status')
+    def guardian_status_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['AWAITING_GUARDIAN', 'GUARDIAN_APPROVED', 'GUARDIAN_REJECTED']):
+            raise ValueError("must be one of enum values ('AWAITING_GUARDIAN', 'GUARDIAN_APPROVED', 'GUARDIAN_REJECTED')")
+        return value
+
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -61,8 +96,7 @@ class InboxGetMyIssuedCredentials200ResponseRecordsInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -78,8 +112,10 @@ class InboxGetMyIssuedCredentials200ResponseRecordsInner(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
+        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
+            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -87,9 +123,102 @@ class InboxGetMyIssuedCredentials200ResponseRecordsInner(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of refresh
+        if self.refresh:
+            _dict['refresh'] = self.refresh.to_dict()
         # override the default output from pydantic by calling `to_dict()` of signing_authority
         if self.signing_authority:
             _dict['signingAuthority'] = self.signing_authority.to_dict()
+        # puts key-value pairs in additional_properties in the top level
+        if self.additional_properties is not None:
+            for _key, _value in self.additional_properties.items():
+                _dict[_key] = _value
+
+        # set to None if refresh_id (nullable) is None
+        # and model_fields_set contains the field
+        if self.refresh_id is None and "refresh_id" in self.model_fields_set:
+            _dict['refreshId'] = None
+
+        # set to None if id (nullable) is None
+        # and model_fields_set contains the field
+        if self.id is None and "id" in self.model_fields_set:
+            _dict['id'] = None
+
+        # set to None if is_signed (nullable) is None
+        # and model_fields_set contains the field
+        if self.is_signed is None and "is_signed" in self.model_fields_set:
+            _dict['isSigned'] = None
+
+        # set to None if is_accepted (nullable) is None
+        # and model_fields_set contains the field
+        if self.is_accepted is None and "is_accepted" in self.model_fields_set:
+            _dict['isAccepted'] = None
+
+        # set to None if expires_at (nullable) is None
+        # and model_fields_set contains the field
+        if self.expires_at is None and "expires_at" in self.model_fields_set:
+            _dict['expiresAt'] = None
+
+        # set to None if created_at (nullable) is None
+        # and model_fields_set contains the field
+        if self.created_at is None and "created_at" in self.model_fields_set:
+            _dict['createdAt'] = None
+
+        # set to None if finalized_at (nullable) is None
+        # and model_fields_set contains the field
+        if self.finalized_at is None and "finalized_at" in self.model_fields_set:
+            _dict['finalizedAt'] = None
+
+        # set to None if expired_at (nullable) is None
+        # and model_fields_set contains the field
+        if self.expired_at is None and "expired_at" in self.model_fields_set:
+            _dict['expiredAt'] = None
+
+        # set to None if credential_name (nullable) is None
+        # and model_fields_set contains the field
+        if self.credential_name is None and "credential_name" in self.model_fields_set:
+            _dict['credentialName'] = None
+
+        # set to None if achievement_type (nullable) is None
+        # and model_fields_set contains the field
+        if self.achievement_type is None and "achievement_type" in self.model_fields_set:
+            _dict['achievementType'] = None
+
+        # set to None if issuer_did (nullable) is None
+        # and model_fields_set contains the field
+        if self.issuer_did is None and "issuer_did" in self.model_fields_set:
+            _dict['issuerDid'] = None
+
+        # set to None if webhook_url (nullable) is None
+        # and model_fields_set contains the field
+        if self.webhook_url is None and "webhook_url" in self.model_fields_set:
+            _dict['webhookUrl'] = None
+
+        # set to None if boost_uri (nullable) is None
+        # and model_fields_set contains the field
+        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
+            _dict['boostUri'] = None
+
+        # set to None if activity_id (nullable) is None
+        # and model_fields_set contains the field
+        if self.activity_id is None and "activity_id" in self.model_fields_set:
+            _dict['activityId'] = None
+
+        # set to None if integration_id (nullable) is None
+        # and model_fields_set contains the field
+        if self.integration_id is None and "integration_id" in self.model_fields_set:
+            _dict['integrationId'] = None
+
+        # set to None if guardian_approved_at (nullable) is None
+        # and model_fields_set contains the field
+        if self.guardian_approved_at is None and "guardian_approved_at" in self.model_fields_set:
+            _dict['guardianApprovedAt'] = None
+
+        # set to None if guardian_approved_by_did (nullable) is None
+        # and model_fields_set contains the field
+        if self.guardian_approved_by_did is None and "guardian_approved_by_did" in self.model_fields_set:
+            _dict['guardianApprovedByDid'] = None
+
         return _dict
 
     @classmethod
@@ -101,20 +230,37 @@ class InboxGetMyIssuedCredentials200ResponseRecordsInner(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
+            "refresh": InboxIssue200ResponseRefresh.from_dict(obj["refresh"]) if obj.get("refresh") is not None else None,
+            "refreshId": obj.get("refreshId"),
             "id": obj.get("id"),
-            "credential": obj.get("credential"),
             "isSigned": obj.get("isSigned"),
             "currentStatus": obj.get("currentStatus"),
             "isAccepted": obj.get("isAccepted"),
             "expiresAt": obj.get("expiresAt"),
             "createdAt": obj.get("createdAt"),
+            "finalizedAt": obj.get("finalizedAt"),
+            "expiredAt": obj.get("expiredAt"),
+            "credentialName": obj.get("credentialName"),
+            "achievementType": obj.get("achievementType"),
             "issuerDid": obj.get("issuerDid"),
             "webhookUrl": obj.get("webhookUrl"),
             "boostUri": obj.get("boostUri"),
             "activityId": obj.get("activityId"),
-            "signingAuthority": InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority.from_dict(obj["signingAuthority"]) if obj.get("signingAuthority") is not None else None
-        })
+            "integrationId": obj.get("integrationId"),
+            "signingAuthority": InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority.from_dict(obj["signingAuthority"]) if obj.get("signingAuthority") is not None else None,
+            "guardianEmail": obj.get("guardianEmail"),
+            "guardianStatus": obj.get("guardianStatus"),
+            "guardianApprovedAt": obj.get("guardianApprovedAt"),
+            "guardianApprovedByDid": obj.get("guardianApprovedByDid")
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
+        # store additional fields in additional_properties
+        for _key in obj.keys():
+            if _key not in cls.__properties:
+                _obj.additional_properties[_key] = obj.get(_key)
+
         return _obj
 
 

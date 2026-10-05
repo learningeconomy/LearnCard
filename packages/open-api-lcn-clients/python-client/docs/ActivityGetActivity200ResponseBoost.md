@@ -1,13 +1,12 @@
 # ActivityGetActivity200ResponseBoost
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**name** | **str** |  | [optional] 
-**category** | **str** |  | [optional] 
+| Name         | Type    | Description | Notes      |
+| ------------ | ------- | ----------- | ---------- |
+| **id**       | **str** |             |
+| **name**     | **str** |             | [optional] |
+| **category** | **str** |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ activity_get_activity200_response_boost_dict = activity_get_activity200_response
 # create an instance of ActivityGetActivity200ResponseBoost from a dict
 activity_get_activity200_response_boost_from_dict = ActivityGetActivity200ResponseBoost.from_dict(activity_get_activity200_response_boost_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

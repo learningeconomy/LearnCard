@@ -1,22 +1,21 @@
 # ContractsCreateConsentFlowContractRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**contract** | [**ContractsCreateConsentFlowContractRequestContract**](ContractsCreateConsentFlowContractRequestContract.md) |  | 
-**name** | **str** |  | 
-**subtitle** | **str** |  | [optional] 
-**description** | **str** |  | [optional] 
-**reason_for_accessing** | **str** |  | [optional] 
-**needs_guardian_consent** | **bool** |  | [optional] 
-**redirect_url** | **str** |  | [optional] 
-**front_door_boost_uri** | **str** |  | [optional] 
-**image** | **str** |  | [optional] 
-**expires_at** | **str** |  | [optional] 
-**autoboosts** | [**List[ContractsCreateConsentFlowContractRequestAutoboostsInner]**](ContractsCreateConsentFlowContractRequestAutoboostsInner.md) |  | [optional] 
-**writers** | **List[str]** |  | [optional] 
+| Name                       | Type                                                                                                                              | Description | Notes      |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **contract**               | [**ContractsCreateConsentFlowContractRequestContract**](ContractsCreateConsentFlowContractRequestContract.md)                     |             |
+| **name**                   | **str**                                                                                                                           |             |
+| **subtitle**               | **str**                                                                                                                           |             | [optional] |
+| **description**            | **str**                                                                                                                           |             | [optional] |
+| **reason_for_accessing**   | **str**                                                                                                                           |             | [optional] |
+| **needs_guardian_consent** | **bool**                                                                                                                          |             | [optional] |
+| **redirect_url**           | **str**                                                                                                                           |             | [optional] |
+| **front_door_boost_uri**   | **str**                                                                                                                           |             | [optional] |
+| **image**                  | **str**                                                                                                                           |             | [optional] |
+| **expires_at**             | **str**                                                                                                                           |             | [optional] |
+| **autoboosts**             | [**List[ContractsCreateConsentFlowContractRequestAutoboostsInner]**](ContractsCreateConsentFlowContractRequestAutoboostsInner.md) |             | [optional] |
+| **writers**                | **List[str]**                                                                                                                     |             | [optional] |
 
 ## Example
 
@@ -35,6 +34,5 @@ contracts_create_consent_flow_contract_request_dict = contracts_create_consent_f
 # create an instance of ContractsCreateConsentFlowContractRequest from a dict
 contracts_create_consent_flow_contract_request_from_dict = ContractsCreateConsentFlowContractRequest.from_dict(contracts_create_consent_flow_contract_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,11 +1,10 @@
 # AppStoreRemoveBoostFromListingRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**template_alias** | **str** |  | 
+| Name               | Type    | Description | Notes |
+| ------------------ | ------- | ----------- | ----- |
+| **template_alias** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ app_store_remove_boost_from_listing_request_dict = app_store_remove_boost_from_l
 # create an instance of AppStoreRemoveBoostFromListingRequest from a dict
 app_store_remove_boost_from_listing_request_from_dict = AppStoreRemoveBoostFromListingRequest.from_dict(app_store_remove_boost_from_listing_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-
