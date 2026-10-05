@@ -65,7 +65,7 @@ const ConsentFlowFooter: React.FC<ConsentFlowFooterProps> = ({
         <footer
             className={
                 compact
-                    ? 'absolute bottom-0 left-0 w-full bg-white border-t border-grayscale-200 px-6 py-4 z-50 font-poppins'
+                    ? 'shrink-0 w-full bg-white border-t border-grayscale-200 px-6 py-4 font-poppins'
                     : 'absolute bottom-0 left-0 w-full bg-white bg-opacity-70 border-t-[1px] border-solid border-white p-[20px] backdrop-blur-[10px] z-50'
             }
         >
