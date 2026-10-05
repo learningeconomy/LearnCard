@@ -246,13 +246,14 @@ const setup = async (
 test.use({ screenshot: 'only-on-failure' });
 
 test.describe('Generic referrals @mocked', () => {
-    test('S1 referral card and target seen state', async ({ page }) => {
+    test('S1 referral card and target seen state', async ({ page }, testInfo) => {
         const state = await setup(page);
         const card = page.getByTestId('contract-request-card');
         await expect(card).toContainText('Referrer Org has referred you to Partner Org.');
         await expect(card.getByRole('button', { name: 'Accept & Connect' })).toBeVisible();
         await expect(card.getByRole('button', { name: 'View Details' })).toBeVisible();
         await expect.poll(state.seen).toBe(true);
+        await card.screenshot({ path: testInfo.outputPath('referral-card.png') });
     });
     for (const gate of ['tenant', 'flag'] as const)
         test(`S2 disabled ${gate} preserves default notification`, async ({ page }) => {
@@ -268,7 +269,7 @@ test.describe('Generic referrals @mocked', () => {
             });
             await expect(page.getByTestId('pending-contract-requests')).toHaveCount(0);
         });
-    test('S3 details disclose purpose, message and all recipients', async ({ page }) => {
+    test('S3 details disclose purpose, message and all recipients', async ({ page }, testInfo) => {
         await setup(page);
         await page.getByRole('button', { name: 'View Details' }).click();
         const details = page.getByTestId('contract-request-details');
@@ -280,7 +281,10 @@ test.describe('Generic referrals @mocked', () => {
         await expect(details.getByTestId('contract-request-shared-with')).toContainText(
             'Referrer Org'
         );
-        await page.screenshot({ path: '/tmp/lc2226-pr3-referral-details.png', fullPage: true });
+        await page.screenshot({
+            path: testInfo.outputPath('referral-details.png'),
+            fullPage: true,
+        });
     });
     test('S4 explicit confirmed decline', async ({ page }) => {
         const state = await setup(page);
@@ -298,7 +302,9 @@ test.describe('Generic referrals @mocked', () => {
         await expect(page.getByTestId('contract-request-card')).toContainText('Declined');
     });
     for (const recipients of [true, false])
-        test(`S5 opens data review before consent (recipients=${recipients})`, async ({ page }) => {
+        test(`S5 opens data review before consent (recipients=${recipients})`, async ({
+            page,
+        }, testInfo) => {
             await setup(page, { recipients });
             await page.getByRole('button', { name: 'Accept & Connect' }).click();
             if (recipients) {
@@ -319,11 +325,12 @@ test.describe('Generic referrals @mocked', () => {
             } else {
                 await expect(audience).toHaveCount(0);
             }
+            await privacy.screenshot({ path: testInfo.outputPath('privacy-settings.png') });
         });
     for (const recipients of [true, false])
         test(`S6 connected sharing details and editing disclose the audience (recipients=${recipients})`, async ({
             page,
-        }) => {
+        }, testInfo) => {
             await setup(page, { connected: true, recipients });
             await page.goto('/privacy-and-data', { waitUntil: 'domcontentloaded' });
             await page.getByText('Partner services', { exact: true }).click();
@@ -345,6 +352,7 @@ test.describe('Generic referrals @mocked', () => {
             } else {
                 await expect(audience).toHaveCount(0);
             }
+            await privacy.screenshot({ path: testInfo.outputPath('privacy-settings.png') });
         });
     test('S8 request read failure offers retry without consent', async ({ page }) => {
         const state = await setup(page, { readError: true });
@@ -355,7 +363,7 @@ test.describe('Generic referrals @mocked', () => {
         await card.getByRole('button', { name: 'Try Again' }).click();
         await expect(card.getByRole('button', { name: 'Accept & Connect' })).toBeVisible();
     });
-    test('S9 Arabic referral details fit a mobile viewport', async ({ page }) => {
+    test('S9 Arabic referral details fit a mobile viewport', async ({ page }, testInfo) => {
         await page.setViewportSize({ width: 390, height: 844 });
         await setup(page);
         await page
@@ -374,6 +382,13 @@ test.describe('Generic referrals @mocked', () => {
             details.getByRole('button', { name: ar.contractRequests.accept })
         ).toBeVisible();
         await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+        const acceptButton = details.getByRole('button', { name: ar.contractRequests.accept });
+        await expect(acceptButton).toBeInViewport();
+        const acceptBox = await acceptButton.boundingBox();
+        expect(acceptBox?.height).toBeGreaterThanOrEqual(44);
+        await expect(
+            details.getByRole('button', { name: ar.contractRequests.notNow })
+        ).toBeInViewport();
         await expect
             .poll(async () => {
                 const box = await details.boundingBox();
@@ -395,7 +410,10 @@ test.describe('Generic referrals @mocked', () => {
                 })
             )
             .toBe(true);
-        await page.screenshot({ path: '/tmp/lc2226-pr3-referral-mobile-ar.png', fullPage: true });
+        await page.screenshot({
+            path: testInfo.outputPath('referral-mobile-ar.png'),
+            fullPage: true,
+        });
     });
     test('S7 dismissed alert remains recoverable from pending invitations', async ({ page }) => {
         const state = await setup(page);
