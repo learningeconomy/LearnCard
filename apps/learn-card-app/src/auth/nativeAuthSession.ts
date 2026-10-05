@@ -12,6 +12,9 @@ const log = getLogger('native-auth-session');
 const OVERALL_TIMEOUT_MS = 5 * 60 * 1000;
 /** iOS: every native hop is a silent ticket redeem (~1-2 s); anything longer is a stuck sheet. */
 const WEB_AUTH_SESSION_TIMEOUT_MS = 60 * 1000;
+/** Allow a preceding native provider sheet to finish dismissing. */
+const PRESENTATION_TIMEOUT_MS = 5 * 1000;
+const PRESENTATION_RETRY_MS = 100;
 /** Grace window after the browser closes before treating it as a cancellation. */
 const BROWSER_FINISHED_GRACE_MS = 750;
 
@@ -61,11 +64,26 @@ const openViaWebAuthSession = async (
         }, WEB_AUTH_SESSION_TIMEOUT_MS);
     });
 
+    const startWhenReady = async (): Promise<WebAuthSessionResult> => {
+        const deadline = Date.now() + PRESENTATION_TIMEOUT_MS;
+        while (!timedOut) {
+            try {
+                return await plugin.start({ url, callbackScheme, ephemeral: true });
+            } catch (error) {
+                // Only retry when native confirms no session started. Retrying
+                // other failures could reuse an already-consumed login ticket.
+                if (getErrorCode(error) !== 'PRESENTATION_BUSY') throw error;
+                if (Date.now() >= deadline) {
+                    throw new AuthSessionError('Sign-in expired. Please try again.', 'expired');
+                }
+                await new Promise<void>(resolve => setTimeout(resolve, PRESENTATION_RETRY_MS));
+            }
+        }
+        throw new AuthSessionError('Sign-in expired. Please try again.', 'expired');
+    };
+
     try {
-        const result = await Promise.race([
-            plugin.start({ url, callbackScheme, ephemeral: true }),
-            expiry,
-        ]);
+        const result = await Promise.race([startWhenReady(), expiry]);
         return result.url;
     } catch (error) {
         if (timedOut) {
