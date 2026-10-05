@@ -1,38 +1,40 @@
 # StorageResolve200ResponseAnyOf
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**context** | [**List[BoostSendRequestTemplateCredentialAnyOfContextInner]**](BoostSendRequestTemplateCredentialAnyOfContextInner.md) |  | 
-**id** | **str** |  | [optional] 
-**type** | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.md) |  | 
-**issuer** | [**StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuer**](StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuer.md) |  | 
-**credential_subject** | [**BoostSendRequestTemplateCredentialAnyOfCredentialSubject**](BoostSendRequestTemplateCredentialAnyOfCredentialSubject.md) |  | 
-**refresh_service** | [**BoostSendBoostRequestCredentialAnyOfTermsOfUse**](BoostSendBoostRequestCredentialAnyOfTermsOfUse.md) |  | [optional] 
-**credential_schema** | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md) |  | [optional] 
-**issuance_date** | **str** |  | [optional] 
-**expiration_date** | **str** |  | [optional] 
-**credential_status** | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md) |  | [optional] 
-**name** | **str** |  | [optional] 
-**description** | **str** |  | [optional] 
-**valid_from** | **str** |  | [optional] 
-**valid_until** | **str** |  | [optional] 
-**status** | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md) |  | [optional] 
-**terms_of_use** | [**BoostSendBoostRequestCredentialAnyOfTermsOfUse**](BoostSendBoostRequestCredentialAnyOfTermsOfUse.md) |  | [optional] 
-**evidence** | [**BoostSendRequestTemplateCredentialAnyOfEvidence**](BoostSendRequestTemplateCredentialAnyOfEvidence.md) |  | [optional] 
-**proof** | [**BoostSendRequestTemplateCredentialAnyOfProof**](BoostSendRequestTemplateCredentialAnyOfProof.md) |  | 
-**verifiable_credential** | [**StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1VerifiableCredential**](StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1VerifiableCredential.md) |  | [optional] 
-**holder** | **str** |  | [optional] 
-**protected** | **str** |  | 
-**iv** | **str** |  | 
-**ciphertext** | **str** |  | 
-**tag** | **str** |  | 
-**aad** | **str** |  | [optional] 
-**recipients** | [**List[StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInner]**](StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInner.md) |  | [optional] 
-**read** | [**StorageResolve200ResponseAnyOfAnyOf1Read**](StorageResolve200ResponseAnyOfAnyOf1Read.md) |  | 
-**write** | [**StorageResolve200ResponseAnyOfAnyOf1Write**](StorageResolve200ResponseAnyOfAnyOf1Write.md) |  | 
+| Name                      | Type                                                                                                                                                                                | Description | Notes      |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **format**                | **str**                                                                                                                                                                             |             |
+| **data**                  | **str**                                                                                                                                                                             |             |
+| **context**               | [**List[BoostSendRequestTemplateCredentialAnyOfContextInner]**](BoostSendRequestTemplateCredentialAnyOfContextInner.md)                                                             |             |
+| **id**                    | **str**                                                                                                                                                                             |             | [optional] |
+| **type**                  | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.md)                                                             |             |
+| **issuer**                | [**StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1Issuer**](StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1Issuer.md)                                             |             |
+| **credential_subject**    | [**BoostSendRequestTemplateCredentialAnyOfCredentialSubject**](BoostSendRequestTemplateCredentialAnyOfCredentialSubject.md)                                                         |             |
+| **refresh_service**       | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md)                                                                 |             | [optional] |
+| **credential_schema**     | [**BoostSendRequestTemplateCredentialAnyOfCredentialSchema**](BoostSendRequestTemplateCredentialAnyOfCredentialSchema.md)                                                           |             | [optional] |
+| **issuance_date**         | **str**                                                                                                                                                                             |             | [optional] |
+| **expiration_date**       | **str**                                                                                                                                                                             |             | [optional] |
+| **credential_status**     | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md)                                                                 |             | [optional] |
+| **name**                  | **str**                                                                                                                                                                             |             | [optional] |
+| **description**           | **str**                                                                                                                                                                             |             | [optional] |
+| **valid_from**            | **str**                                                                                                                                                                             |             | [optional] |
+| **valid_until**           | **str**                                                                                                                                                                             |             | [optional] |
+| **status**                | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md)                                                                 |             | [optional] |
+| **terms_of_use**          | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md)                                                                 |             | [optional] |
+| **evidence**              | [**BoostSendRequestTemplateCredentialAnyOfEvidence**](BoostSendRequestTemplateCredentialAnyOfEvidence.md)                                                                           |             | [optional] |
+| **render_method**         | [**StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1RenderMethod**](StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1RenderMethod.md)                                 |             | [optional] |
+| **proof**                 | [**BoostSendRequestTemplateCredentialAnyOfProof**](BoostSendRequestTemplateCredentialAnyOfProof.md)                                                                                 |             |
+| **verifiable_credential** | [**StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1VerifiableCredential**](StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1VerifiableCredential.md)                                     |             | [optional] |
+| **holder**                | **str**                                                                                                                                                                             |             | [optional] |
+| **protected**             | **str**                                                                                                                                                                             |             |
+| **iv**                    | **str**                                                                                                                                                                             |             |
+| **ciphertext**            | **str**                                                                                                                                                                             |             |
+| **tag**                   | **str**                                                                                                                                                                             |             |
+| **aad**                   | **str**                                                                                                                                                                             |             | [optional] |
+| **recipients**            | [**List[StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInner]**](StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInner.md)                                                   |             | [optional] |
+| **read**                  | [**StorageResolve200ResponseAnyOfAnyOf1Read**](StorageResolve200ResponseAnyOfAnyOf1Read.md)                                                                                         |             |
+| **write**                 | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite.md) |             |
 
 ## Example
 
@@ -51,6 +53,5 @@ storage_resolve200_response_any_of_dict = storage_resolve200_response_any_of_ins
 # create an instance of StorageResolve200ResponseAnyOf from a dict
 storage_resolve200_response_any_of_from_dict = StorageResolve200ResponseAnyOf.from_dict(storage_resolve200_response_any_of_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

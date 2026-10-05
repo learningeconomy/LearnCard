@@ -1,12 +1,11 @@
 # ContractsGetTermsTransactionHistoryRequestQueryTerms
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**read** | [**ContractsGetTermsTransactionHistoryRequestQueryTermsRead**](ContractsGetTermsTransactionHistoryRequestQueryTermsRead.md) |  | [optional] 
-**write** | [**ContractsGetConsentedContractsRequestQueryWrite**](ContractsGetConsentedContractsRequestQueryWrite.md) |  | [optional] 
+| Name      | Type                                                                                                                        | Description | Notes      |
+| --------- | --------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **read**  | [**ContractsGetTermsTransactionHistoryRequestQueryTermsRead**](ContractsGetTermsTransactionHistoryRequestQueryTermsRead.md) |             | [optional] |
+| **write** | [**ContractsGetConsentedContractsRequestQueryWrite**](ContractsGetConsentedContractsRequestQueryWrite.md)                   |             | [optional] |
 
 ## Example
 
@@ -25,6 +24,5 @@ contracts_get_terms_transaction_history_request_query_terms_dict = contracts_get
 # create an instance of ContractsGetTermsTransactionHistoryRequestQueryTerms from a dict
 contracts_get_terms_transaction_history_request_query_terms_from_dict = ContractsGetTermsTransactionHistoryRequestQueryTerms.from_dict(contracts_get_terms_transaction_history_request_query_terms_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

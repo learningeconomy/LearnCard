@@ -1,16 +1,15 @@
 # InboxGetMyIssuedCredentialsRequestQuery
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**current_status** | **str** |  | [optional] 
-**id** | **str** |  | [optional] 
-**is_signed** | **bool** |  | [optional] 
-**is_accepted** | **bool** |  | [optional] 
-**issuer_did** | **str** |  | [optional] 
-**boost_uri** | **str** |  | [optional] 
+| Name               | Type     | Description | Notes      |
+| ------------------ | -------- | ----------- | ---------- |
+| **current_status** | **str**  |             | [optional] |
+| **id**             | **str**  |             | [optional] |
+| **is_signed**      | **bool** |             | [optional] |
+| **is_accepted**    | **bool** |             | [optional] |
+| **issuer_did**     | **str**  |             | [optional] |
+| **boost_uri**      | **str**  |             | [optional] |
 
 ## Example
 
@@ -29,6 +28,5 @@ inbox_get_my_issued_credentials_request_query_dict = inbox_get_my_issued_credent
 # create an instance of InboxGetMyIssuedCredentialsRequestQuery from a dict
 inbox_get_my_issued_credentials_request_query_from_dict = InboxGetMyIssuedCredentialsRequestQuery.from_dict(inbox_get_my_issued_credentials_request_query_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

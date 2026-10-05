@@ -1,10 +1,9 @@
 # BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
 
 ## Example
 
@@ -23,6 +22,5 @@ boost_send_request_template_credential_any_of_issuer_any_of_other_identifier_inn
 # create an instance of BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType from a dict
 boost_send_request_template_credential_any_of_issuer_any_of_other_identifier_inner_identifier_type_from_dict = BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType.from_dict(boost_send_request_template_credential_any_of_issuer_any_of_other_identifier_inner_identifier_type_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

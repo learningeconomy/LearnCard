@@ -1,12 +1,11 @@
 # InboxClaimRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**credential** | [**InboxClaimRequestCredential**](InboxClaimRequestCredential.md) |  | 
-**configuration** | [**InboxClaimRequestConfiguration**](InboxClaimRequestConfiguration.md) |  | [optional] 
+| Name              | Type                                                                    | Description | Notes      |
+| ----------------- | ----------------------------------------------------------------------- | ----------- | ---------- |
+| **credential**    | [**InboxClaimRequestCredential**](InboxClaimRequestCredential.md)       |             |
+| **configuration** | [**InboxClaimRequestConfiguration**](InboxClaimRequestConfiguration.md) |             | [optional] |
 
 ## Example
 
@@ -25,6 +24,5 @@ inbox_claim_request_dict = inbox_claim_request_instance.to_dict()
 # create an instance of InboxClaimRequest from a dict
 inbox_claim_request_from_dict = InboxClaimRequest.from_dict(inbox_claim_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

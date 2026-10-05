@@ -1,12 +1,11 @@
 # ContractsAddAutoBoostsToContractRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**contract_uri** | **str** |  | 
-**autoboosts** | [**List[ContractsAddAutoBoostsToContractRequestAutoboostsInner]**](ContractsAddAutoBoostsToContractRequestAutoboostsInner.md) |  | 
+| Name             | Type                                                                                                                          | Description | Notes |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **contract_uri** | **str**                                                                                                                       |             |
+| **autoboosts**   | [**List[ContractsAddAutoBoostsToContractRequestAutoboostsInner]**](ContractsAddAutoBoostsToContractRequestAutoboostsInner.md) |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ contracts_add_auto_boosts_to_contract_request_dict = contracts_add_auto_boosts_t
 # create an instance of ContractsAddAutoBoostsToContractRequest from a dict
 contracts_add_auto_boosts_to_contract_request_from_dict = ContractsAddAutoBoostsToContractRequest.from_dict(contracts_add_auto_boosts_to_contract_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

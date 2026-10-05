@@ -1,12 +1,11 @@
 # BoostUpdateBoostPermissionsRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**uri** | **str** |  | 
-**updates** | [**BoostUpdateBoostPermissionsRequestUpdates**](BoostUpdateBoostPermissionsRequestUpdates.md) |  | 
+| Name        | Type                                                                                          | Description | Notes |
+| ----------- | --------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **uri**     | **str**                                                                                       |             |
+| **updates** | [**BoostUpdateBoostPermissionsRequestUpdates**](BoostUpdateBoostPermissionsRequestUpdates.md) |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ boost_update_boost_permissions_request_dict = boost_update_boost_permissions_req
 # create an instance of BoostUpdateBoostPermissionsRequest from a dict
 boost_update_boost_permissions_request_from_dict = BoostUpdateBoostPermissionsRequest.from_dict(boost_update_boost_permissions_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

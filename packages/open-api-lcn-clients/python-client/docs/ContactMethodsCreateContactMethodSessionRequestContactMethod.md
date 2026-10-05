@@ -1,12 +1,11 @@
 # ContactMethodsCreateContactMethodSessionRequestContactMethod
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**value** | **str** |  | 
-**type** | **str** |  | 
+| Name      | Type    | Description | Notes |
+| --------- | ------- | ----------- | ----- |
+| **value** | **str** |             |
+| **type**  | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ contact_methods_create_contact_method_session_request_contact_method_dict = cont
 # create an instance of ContactMethodsCreateContactMethodSessionRequestContactMethod from a dict
 contact_methods_create_contact_method_session_request_contact_method_from_dict = ContactMethodsCreateContactMethodSessionRequestContactMethod.from_dict(contact_methods_create_contact_method_session_request_contact_method_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

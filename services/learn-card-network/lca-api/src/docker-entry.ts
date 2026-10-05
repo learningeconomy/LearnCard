@@ -108,7 +108,10 @@ server.register(oidcFastifyPlugin);
 
 (async () => {
     try {
-        await ensureAuthSubjectIndexes();
+        await ensureAuthSubjectIndexes().catch(error => {
+            // Login requests retry index creation and must succeed before writing subjects.
+            console.error('AuthSubject indexes unavailable at startup; login will retry:', error);
+        });
         console.log('Server starting on port ', environment.PORT || 3000);
         await ensureUserKeysIndexes();
         await createEscrowHoldsIndexes();

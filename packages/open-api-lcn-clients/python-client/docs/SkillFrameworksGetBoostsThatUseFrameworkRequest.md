@@ -1,13 +1,12 @@
 # SkillFrameworksGetBoostsThatUseFrameworkRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**limit** | **int** |  | [optional] [default to 50]
-**cursor** | **str** |  | [optional] 
-**query** | [**BoostGetBoostsRequestQuery**](BoostGetBoostsRequestQuery.md) |  | [optional] 
+| Name       | Type                                                                | Description | Notes                      |
+| ---------- | ------------------------------------------------------------------- | ----------- | -------------------------- |
+| **limit**  | **int**                                                             |             | [optional] [default to 50] |
+| **cursor** | **str**                                                             |             | [optional]                 |
+| **query**  | [**BoostCountBoostsRequestQuery**](BoostCountBoostsRequestQuery.md) |             | [optional]                 |
 
 ## Example
 
@@ -26,6 +25,5 @@ skill_frameworks_get_boosts_that_use_framework_request_dict = skill_frameworks_g
 # create an instance of SkillFrameworksGetBoostsThatUseFrameworkRequest from a dict
 skill_frameworks_get_boosts_that_use_framework_request_from_dict = SkillFrameworksGetBoostsThatUseFrameworkRequest.from_dict(skill_frameworks_get_boosts_that_use_framework_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -40,7 +40,8 @@ class TestProfileManagerCreateProfileManagerRequest(unittest.TestCase):
                 bio = '',
                 email = '',
                 image = '',
-                hero_image = ''
+                hero_image = '',
+                manager_type = ''
             )
         else:
             return ProfileManagerCreateProfileManagerRequest(
