@@ -47,6 +47,7 @@
     - [Auth Grants and API Tokens](core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md)
 - [Consent & Permissions](core-concepts/consent-and-permissions/consentflow-overview.md)
     - [Brokered Referrals](how-to-guides/consent-flow/brokered-referrals.md)
+    - [Brokered Referral Lifecycle](core-concepts/consent-and-permissions/brokered-referral-lifecycle.md)
     - [Reading & Writing Consented Data](core-concepts/consent-and-permissions/writing-consented-data.md)
     - [Issue on Consent](core-concepts/consent-and-permissions/auto-boosts.md)
     - [GameFlow](core-concepts/consent-and-permissions/gameflow-overview.md)

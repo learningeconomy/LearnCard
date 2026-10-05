@@ -88,6 +88,10 @@ stateDiagram-v2
 
 Denied and cancelled generic requests retain their correlation fields. Withdrawing consent retains an accepted generic request and the referral captured on consent history. It revokes current data access; it does not reset a terminal request to pending. If the learner later consents again, the original referral remains attached to the consent and subsequent transactions. This does not reopen the request or send another acceptance decision to a requester outside the audience. A legacy AI request cannot replace an attributed request; it returns `CONFLICT`.
 
+## Polling fallback
+
+Use `getContractSentRequests(contractUri)` to reconcile visible invitation statuses. The brain route `getConsentedDataForDid` is exposed by the SDK as `getConsentFlowDataForDid(did, { limit, cursor })`; follow pagination and filter records by `contractUri`. An accepted request can outlive consent, so always read current permitted data before relying on the decision. Polling does not claim credentials or run client synchronization. See the [integrator example](../../how-to-guides/consent-flow/brokered-referrals.md#poll-when-webhooks-are-unavailable).
+
 ## Webhook events
 
 Configure the receiving profile's `notificationsWebhook` using the existing profile API. Events use `type: "CONSENT_FLOW_TRANSACTION"` and a localized `message`. Correlation lives in `data.metadata`:

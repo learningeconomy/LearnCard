@@ -891,6 +891,7 @@ See [Tenant-Branded Emails (architecture)](../../../docs/core-concepts/tenant-br
 
 ### Attributed contract requests and event delivery
 
+- Integrator documentation lives in `docs/how-to-guides/consent-flow/brokered-referrals.md`, with the complete lifecycle sequence in `docs/core-concepts/consent-and-permissions/brokered-referral-lifecycle.md` and webhook fields in `docs/sdks/learncard-network/contract-requests-and-events.md`. Keep embedded `docs/snippets/contract-requests/` modules synchronized with `node scripts/check-docs-snippets.mjs --fix`; `tests/e2e/tests/docs-contract-requests.spec.ts` executes them against synthetic local services. The brain route `getConsentedDataForDid` is the SDK's `getConsentFlowDataForDid`; polling reconciles current state but cannot trigger learner claim/live sync. Scope grants never replace role or consent authorization.
 - Generic `REQUESTED_FOR` edges have `requestId`, `requestedBy`, optional `externalReferenceId`/`message`, and `requestedAt`. Exact pending retries are idempotent; conflicting or terminal requests do not reopen. Legacy edges have no request ID and retain legacy AI behavior.
 - Snapshot referral identity onto Terms and every related transaction, including issuance and maintenance. Do not infer historical correlation from the latest mutable request edge.
 - Append `ConsentFlowEvent` + per-recipient `ConsentFlowEventDelivery` in the same locked query as consent/request state changes. The contract audience lock serializes request decisions, consent and recipient changes.
