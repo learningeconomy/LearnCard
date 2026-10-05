@@ -22,6 +22,7 @@ from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.inbox_issue_request_configuration_delivery_template import InboxIssueRequestConfigurationDeliveryTemplate
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class InboxIssueRequestConfigurationDelivery(BaseModel):
     """
@@ -32,7 +33,8 @@ class InboxIssueRequestConfigurationDelivery(BaseModel):
     __properties: ClassVar[List[str]] = ["suppress", "template"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -44,8 +46,7 @@ class InboxIssueRequestConfigurationDelivery(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -84,10 +85,12 @@ class InboxIssueRequestConfigurationDelivery(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "suppress": obj.get("suppress") if obj.get("suppress") is not None else False,
             "template": InboxIssueRequestConfigurationDeliveryTemplate.from_dict(obj["template"]) if obj.get("template") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

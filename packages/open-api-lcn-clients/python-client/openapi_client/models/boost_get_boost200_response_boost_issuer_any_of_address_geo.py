@@ -22,6 +22,7 @@ from typing import Any, ClassVar, Dict, List, Optional, Union
 from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_address_type import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostGetBoost200ResponseBoostIssuerAnyOfAddressGeo(BaseModel):
     """
@@ -34,7 +35,8 @@ class BoostGetBoost200ResponseBoostIssuerAnyOfAddressGeo(BaseModel):
     __properties: ClassVar[List[str]] = ["type", "latitude", "longitude"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -46,8 +48,7 @@ class BoostGetBoost200ResponseBoostIssuerAnyOfAddressGeo(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -103,11 +104,13 @@ class BoostGetBoost200ResponseBoostIssuerAnyOfAddressGeo(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "type": BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType.from_dict(obj["type"]) if obj.get("type") is not None else None,
             "latitude": obj.get("latitude"),
             "longitude": obj.get("longitude")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

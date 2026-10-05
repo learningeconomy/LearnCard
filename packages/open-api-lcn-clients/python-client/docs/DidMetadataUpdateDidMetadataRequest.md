@@ -1,11 +1,10 @@
 # DidMetadataUpdateDidMetadataRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**updates** | [**DidMetadataUpdateDidMetadataRequestUpdates**](DidMetadataUpdateDidMetadataRequestUpdates.md) |  | 
+| Name        | Type                                                                                            | Description | Notes |
+| ----------- | ----------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **updates** | [**DidMetadataUpdateDidMetadataRequestUpdates**](DidMetadataUpdateDidMetadataRequestUpdates.md) |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ did_metadata_update_did_metadata_request_dict = did_metadata_update_did_metadata
 # create an instance of DidMetadataUpdateDidMetadataRequest from a dict
 did_metadata_update_did_metadata_request_from_dict = DidMetadataUpdateDidMetadataRequest.from_dict(did_metadata_update_did_metadata_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

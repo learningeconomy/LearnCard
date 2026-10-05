@@ -75,7 +75,7 @@ jobs:
                       ~/.cargo/registry/cache/
                       ~/.cargo/git/db/
                       lib/didkit/target/
-                  key: ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-${{ hashFiles('packages/plugins/didkit/wasm/didkit-wasm.Cargo.lock', 'lib/didkit/**/*.toml', 'lib/ssi/**/*.toml') }}
+                  key: ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-${{ hashFiles('lib/didkit/Cargo.lock', 'lib/didkit/**/*.toml', 'lib/ssi/**/*.toml') }}
                   restore-keys: |
                       ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-
 
@@ -253,7 +253,7 @@ jobs:
                       ~/.cargo/registry/cache/
                       ~/.cargo/git/db/
                       lib/didkit/target/
-                  key: ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-${{ hashFiles('packages/plugins/didkit/wasm/didkit-wasm.Cargo.lock', 'lib/didkit/**/*.toml', 'lib/ssi/**/*.toml') }}
+                  key: ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-${{ hashFiles('lib/didkit/Cargo.lock', 'lib/didkit/**/*.toml', 'lib/ssi/**/*.toml') }}
                   restore-keys: |
                       ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-
 
@@ -298,8 +298,6 @@ jobs:
 
             - name: Build DIDKit WASM
               if: steps.submodules.outputs.has_updates == 'true'
-              env:
-                  UPDATE_DIDKIT_WASM_LOCKFILE: '1'
               run: packages/plugins/didkit/scripts/build-wasm-from-submodules.sh
 
             - name: Verify generated bridge DIDKit integrity
@@ -363,7 +361,6 @@ jobs:
                   if git diff --quiet -- \
                       lib/didkit \
                       lib/ssi \
-                      packages/plugins/didkit/wasm/didkit-wasm.Cargo.lock \
                       packages/learn-card-bridge-http/scripts/sync-didkit.ts \
                       packages/learn-card-bridge-http/src/didkit_wasm_bg.wasm \
                       packages/plugins/didkit/src/didkit; then
@@ -475,7 +472,6 @@ jobs:
                       .changeset/update-didkit-wasm.md
                       lib/didkit
                       lib/ssi
-                      packages/plugins/didkit/wasm/didkit-wasm.Cargo.lock
                       packages/learn-card-bridge-http/scripts/sync-didkit.ts
                       packages/learn-card-bridge-http/src/didkit_wasm_bg.wasm
                       packages/plugins/didkit/src/didkit/index.ts

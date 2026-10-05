@@ -36,36 +36,50 @@ export const createKeycloakSignInAdapter = (
     let disposed = false;
     let completingRedirect = false;
     let pending: PendingSignIn | undefined;
+    let signOutRevision = 0;
+    const cancellations = new Set<(error: AuthSessionError) => void>();
+    const cancelled = (): AuthSessionError =>
+        new AuthSessionError('Sign-in cancelled. Please try again.', 'no_session');
 
     const notify = (callback: () => void): void => {
         try {
             callback();
         } catch {
-            log.warn('Sign-in instrumentation callback failed');
+            log.warn('Sign-in callback failed');
         }
     };
     const operation = async <T>(
         name: KeycloakSignInOperation,
-        action: () => Promise<T>
+        action: (check: () => void) => Promise<T>
     ): Promise<T> => {
         if (disposed)
             throw new AuthSessionError('Sign-in cancelled. Please try again.', 'no_session');
         notify(() => config.onOperation?.(name, 'started'));
+        const initialRevision = signOutRevision;
+        const check = (): void => {
+            if (disposed || initialRevision !== signOutRevision) throw cancelled();
+        };
+        let cancel: (error: AuthSessionError) => void = () => undefined;
+        const cancellation = new Promise<never>((_resolve, reject) => {
+            cancel = reject;
+        });
+        if (name !== 'signOut') cancellations.add(cancel);
         try {
-            const result = await action();
-            if (disposed)
-                throw new AuthSessionError('Sign-in cancelled. Please try again.', 'no_session');
+            const result = await Promise.race([action(check), cancellation]);
+            if (name !== 'signOut') check();
             notify(() => config.onOperation?.(name, 'succeeded'));
             return result;
         } catch (error) {
             notify(() => config.onOperation?.(name, 'failed', error));
             throw error;
+        } finally {
+            cancellations.delete(cancel);
         }
     };
     const emit = (user: AuthUser | null): void => {
         revision++;
         currentUser = user;
-        for (const listener of listeners) listener(user);
+        for (const listener of listeners) notify(() => listener(user));
     };
     const loaded = (user: User): void => {
         // The provider validates the returning identity before publishing it.
@@ -93,6 +107,10 @@ export const createKeycloakSignInAdapter = (
         userManager.events.removeUserUnloaded(unloaded);
     };
     const authorize = async (extraQueryParams: Record<string, string>): Promise<AuthUser> => {
+        const initialRevision = signOutRevision;
+        const check = (): void => {
+            if (disposed || initialRevision !== signOutRevision) throw cancelled();
+        };
         if (disposed)
             throw new AuthSessionError('Sign-in cancelled. Please try again.', 'no_session');
         if (pending) throw new Error('A sign-in is already in progress');
@@ -111,12 +129,8 @@ export const createKeycloakSignInAdapter = (
         });
         // Attach rejection handling before navigation (native callbacks may arrive immediately).
         try {
-            const navigation = Promise.resolve().then(() => {
-                if (disposed)
-                    throw new AuthSessionError(
-                        'Sign-in cancelled. Please try again.',
-                        'no_session'
-                    );
+            const navigation = provider.beginSignIn().then(() => {
+                check();
                 return (config.openAuthorization ?? (args => userManager.signinRedirect(args)))({
                     extraQueryParams,
                 });
@@ -125,8 +139,7 @@ export const createKeycloakSignInAdapter = (
                 Promise.all([completion, navigation]).then(([user]) => user),
                 cancellation,
             ]);
-            if (disposed)
-                throw new AuthSessionError('Sign-in cancelled. Please try again.', 'no_session');
+            check();
             return user;
         } finally {
             unsubscribe();
@@ -140,15 +153,22 @@ export const createKeycloakSignInAdapter = (
             ...(options?.intent === 'reauthenticate' ? { prompt: 'login' } : {}),
         });
     const social = (name: 'google' | 'apple', options?: SocialSignInOptions): Promise<AuthUser> =>
-        operation(name, async () => {
+        operation(name, async check => {
             const native = config.nativeSocial?.[name];
-            const user =
-                config.isNative?.() && native && config.requestSocialTicket
-                    ? await hop(await config.requestSocialTicket(name, await native()), options)
-                    : await authorize({
-                          kc_idp_hint: name,
-                          ...(options?.intent === 'reauthenticate' ? { prompt: 'login' } : {}),
-                      });
+            let user: AuthUser;
+            if (config.isNative?.() && native && config.requestSocialTicket) {
+                const proof = await native();
+                check();
+                const ticket = await config.requestSocialTicket(name, proof);
+                check();
+                user = await hop(ticket, options);
+            } else {
+                user = await authorize({
+                    kc_idp_hint: name,
+                    ...(options?.intent === 'reauthenticate' ? { prompt: 'login' } : {}),
+                });
+            }
+            check();
             if (options?.intent !== 'reauthenticate') notify(() => config.onSignedIn?.(name, user));
             return user;
         });
@@ -182,8 +202,9 @@ export const createKeycloakSignInAdapter = (
         },
         getCurrentUser: (): AuthUser | null => currentUser,
         signInWithCustomToken: (ticket, options): Promise<AuthUser> =>
-            operation('customToken', async () => {
+            operation('customToken', async check => {
                 const user = await hop(ticket, options);
+                check();
                 if (options?.intent !== 'reauthenticate')
                     notify(() => config.onSignedIn?.('customToken', user));
                 return user;
@@ -191,19 +212,22 @@ export const createKeycloakSignInAdapter = (
         signInWithGoogle: (options): Promise<AuthUser> => social('google', options),
         signInWithApple: (options): Promise<AuthUser> => social('apple', options),
         signInWithOidcCredential: (providerId, idToken): Promise<AuthUser> =>
-            operation('oidc', async () => {
+            operation('oidc', async check => {
                 if (
                     (providerId !== 'google' && providerId !== 'apple') ||
                     !config.requestSocialTicket
                 ) {
                     return unsupported('signInWithOidcCredential');
                 }
-                const user = await hop(await config.requestSocialTicket(providerId, idToken));
+                const ticket = await config.requestSocialTicket(providerId, idToken);
+                check();
+                const user = await hop(ticket);
+                check();
                 notify(() => config.onSignedIn?.('oidc', user));
                 return user;
             }),
         checkRedirectResult: (): Promise<AuthUser | null> =>
-            operation('redirect', async () => {
+            operation('redirect', async check => {
                 if (typeof window === 'undefined') return null;
                 const url = new URL(window.location.href);
                 if (
@@ -217,6 +241,7 @@ export const createKeycloakSignInAdapter = (
                 try {
                     // Always let the SDK validate and consume callback state, including errors.
                     const user = await provider.handleRedirectCallback(url.href);
+                    check();
                     if (disposed)
                         throw new AuthSessionError(
                             'Sign-in cancelled. Please try again.',
@@ -254,7 +279,17 @@ export const createKeycloakSignInAdapter = (
                     window.history.replaceState(window.history.state, '', url.href);
                 }
             }),
-        signOut: (): Promise<void> => operation('signOut', () => provider.signOut()),
+        signOut: (): Promise<void> =>
+            operation('signOut', async () => {
+                signOutRevision++;
+                const attempt = pending;
+                pending = undefined;
+                attempt?.reject(cancelled());
+                for (const cancel of cancellations) cancel(cancelled());
+                const signingOut = provider.signOut();
+                emit(null);
+                await signingOut;
+            }),
         isEmailLink: (): boolean => false,
         validateEmailLink: async (): Promise<boolean> => false,
         sendEmailLink: (): Promise<never> => unsupported('sendEmailLink'),
@@ -271,6 +306,7 @@ export const createKeycloakSignInAdapter = (
         onPhoneVerificationFailed: noSubscription,
         cleanup: (): void => {
             disposed = true;
+            for (const cancel of cancellations) cancel(cancelled());
             stopListening();
             listeners.clear();
             pending?.reject(

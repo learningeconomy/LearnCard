@@ -1,11 +1,10 @@
 # AppStoreAdminUpdateListingStatusRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**status** | **str** |  | 
+| Name       | Type    | Description | Notes |
+| ---------- | ------- | ----------- | ----- |
+| **status** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ app_store_admin_update_listing_status_request_dict = app_store_admin_update_list
 # create an instance of AppStoreAdminUpdateListingStatusRequest from a dict
 app_store_admin_update_listing_status_request_from_dict = AppStoreAdminUpdateListingStatusRequest.from_dict(app_store_admin_update_listing_status_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

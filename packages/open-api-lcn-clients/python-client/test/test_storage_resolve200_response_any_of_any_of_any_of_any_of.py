@@ -35,6 +35,8 @@ class TestStorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf(unittest.TestCase):
         model = StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf()
         if include_optional:
             return StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf(
+                format = 'w3c-vc-2.0',
+                data = '',
                 context = [
                     null
                     ],
@@ -56,10 +58,13 @@ class TestStorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf(unittest.TestCase):
                 status = None,
                 terms_of_use = None,
                 evidence = None,
+                render_method = None,
                 proof = None
             )
         else:
             return StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf(
+                format = 'w3c-vc-2.0',
+                data = '',
                 context = [
                     null
                     ],

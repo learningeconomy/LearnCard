@@ -63,6 +63,7 @@ export const ensureAuthSubjectIndexes = (): Promise<void> => {
         authSubjectIndexesReady = createAuthSubjectIndexes().catch(error => {
             authSubjectIndexesReady = undefined;
             console.error('Unable to create AuthSubject indexes:', error);
+            throw error;
         });
     }
     return authSubjectIndexesReady;

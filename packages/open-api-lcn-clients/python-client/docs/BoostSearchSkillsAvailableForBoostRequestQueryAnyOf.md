@@ -1,11 +1,10 @@
 # BoostSearchSkillsAvailableForBoostRequestQueryAnyOf
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**var_or** | [**List[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInner]**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInner.md) |  | 
+| Name       | Type                                                                                                                                  | Description | Notes |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **var_or** | [**List[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInner]**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInner.md) |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ boost_search_skills_available_for_boost_request_query_any_of_dict = boost_search
 # create an instance of BoostSearchSkillsAvailableForBoostRequestQueryAnyOf from a dict
 boost_search_skills_available_for_boost_request_query_any_of_from_dict = BoostSearchSkillsAvailableForBoostRequestQueryAnyOf.from_dict(boost_search_skills_available_for_boost_request_query_any_of_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

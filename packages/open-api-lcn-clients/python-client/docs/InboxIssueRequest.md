@@ -1,14 +1,15 @@
 # InboxIssueRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**recipient** | [**InboxIssueRequestRecipient**](InboxIssueRequestRecipient.md) |  | 
-**credential** | [**InboxIssueRequestCredential**](InboxIssueRequestCredential.md) |  | [optional] 
-**template_uri** | **str** | URI of a boost template to use for issuance. The boost credential will be resolved and used. Mutually exclusive with credential field. | [optional] 
-**configuration** | [**InboxIssueRequestConfiguration**](InboxIssueRequestConfiguration.md) |  | [optional] 
+| Name                | Type                                                                    | Description                                                                                                                            | Notes      |
+| ------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| **recipient**       | [**InboxIssueRequestRecipient**](InboxIssueRequestRecipient.md)         |                                                                                                                                        |
+| **credential**      | [**InboxIssueRequestCredential**](InboxIssueRequestCredential.md)       |                                                                                                                                        | [optional] |
+| **template_uri**    | **str**                                                                 | URI of a boost template to use for issuance. The boost credential will be resolved and used. Mutually exclusive with credential field. | [optional] |
+| **refresh**         | **bool**                                                                | Allocate managed refresh before signing. Requires unsigned content and a registered signing authority; binds the holder on claim.      | [optional] |
+| **idempotency_key** | **str**                                                                 |                                                                                                                                        | [optional] |
+| **configuration**   | [**InboxIssueRequestConfiguration**](InboxIssueRequestConfiguration.md) |                                                                                                                                        | [optional] |
 
 ## Example
 
@@ -27,6 +28,5 @@ inbox_issue_request_dict = inbox_issue_request_instance.to_dict()
 # create an instance of InboxIssueRequest from a dict
 inbox_issue_request_from_dict = InboxIssueRequest.from_dict(inbox_issue_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,12 +1,11 @@
 # BoostCountBoostSiblingsRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**uri** | **str** |  | 
-**query** | [**BoostGetBoostsRequestQuery**](BoostGetBoostsRequestQuery.md) |  | [optional] 
+| Name      | Type                                                                | Description | Notes      |
+| --------- | ------------------------------------------------------------------- | ----------- | ---------- |
+| **uri**   | **str**                                                             |             |
+| **query** | [**BoostCountBoostsRequestQuery**](BoostCountBoostsRequestQuery.md) |             | [optional] |
 
 ## Example
 
@@ -25,6 +24,5 @@ boost_count_boost_siblings_request_dict = boost_count_boost_siblings_request_ins
 # create an instance of BoostCountBoostSiblingsRequest from a dict
 boost_count_boost_siblings_request_from_dict = BoostCountBoostSiblingsRequest.from_dict(boost_count_boost_siblings_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

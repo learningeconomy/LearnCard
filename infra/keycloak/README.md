@@ -365,9 +365,11 @@ production frontend/migration script are outside this suite's scope.
   created. The runner stops API/browser/callback processes and removes containers,
   the Compose network, temporary fixture, credentials, and browser artifacts in
   `finally`, also on SIGINT/SIGTERM. Cleanup failures fail the command.
-- An uncatchable SIGKILL or machine crash cannot run teardown. The next invocation
-  removes this suite's stale stack before starting; the fixed project prevents
-  accumulating stacks/users. CI also runs Compose teardown with `if: always()`.
+- An uncatchable SIGKILL or machine crash cannot run teardown. If a lock remains,
+  stop all OIDC E2E invocations and their child processes before manually removing
+  the lock path reported by the runner. The next invocation then removes this
+  suite's stale stack. The fixed project prevents accumulating stacks/users.
+  CI also runs Compose teardown with `if: always()`.
 - Optional `--grep <pattern>`, `--grep-invert <pattern>`, and `--headed` are supported.
   Worker/config overrides are deliberately disallowed to preserve serial cleanup.
 

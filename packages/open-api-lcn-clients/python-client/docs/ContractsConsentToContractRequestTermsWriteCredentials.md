@@ -1,11 +1,10 @@
 # ContractsConsentToContractRequestTermsWriteCredentials
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**categories** | **Dict[str, bool]** |  | [optional] 
+| Name           | Type                | Description | Notes      |
+| -------------- | ------------------- | ----------- | ---------- |
+| **categories** | **Dict[str, bool]** |             | [optional] |
 
 ## Example
 
@@ -24,6 +23,5 @@ contracts_consent_to_contract_request_terms_write_credentials_dict = contracts_c
 # create an instance of ContractsConsentToContractRequestTermsWriteCredentials from a dict
 contracts_consent_to_contract_request_terms_write_credentials_from_dict = ContractsConsentToContractRequestTermsWriteCredentials.from_dict(contracts_consent_to_contract_request_terms_write_credentials_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-
