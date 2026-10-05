@@ -264,6 +264,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
 
             return Boolean(categoryState?.sharing && categoryState.shareAll);
         });
+    const allWriteToggle = Object.values(terms.write.credentials.categories).every(Boolean);
 
     const handleToggleAllCategoryReadToggles = () => {
         updateSlice('read', oldRead => {

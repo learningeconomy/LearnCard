@@ -1,12 +1,11 @@
 # BoostRemoveBoostAdminRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**uri** | **str** |  | 
-**profile_id** | **str** |  | 
+| Name           | Type    | Description | Notes |
+| -------------- | ------- | ----------- | ----- |
+| **uri**        | **str** |             |
+| **profile_id** | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ boost_remove_boost_admin_request_dict = boost_remove_boost_admin_request_instanc
 # create an instance of BoostRemoveBoostAdminRequest from a dict
 boost_remove_boost_admin_request_from_dict = BoostRemoveBoostAdminRequest.from_dict(boost_remove_boost_admin_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

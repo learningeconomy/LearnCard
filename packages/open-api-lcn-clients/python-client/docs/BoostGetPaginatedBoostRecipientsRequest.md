@@ -1,16 +1,15 @@
 # BoostGetPaginatedBoostRecipientsRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**limit** | **float** |  | [optional] [default to 25]
-**cursor** | **str** |  | [optional] 
-**sort** | **str** |  | [optional] 
-**uri** | **str** |  | 
-**include_unaccepted_boosts** | **bool** |  | [optional] [default to True]
-**query** | [**BoostGetPaginatedBoostRecipientsRequestQuery**](BoostGetPaginatedBoostRecipientsRequestQuery.md) |  | [optional] 
+| Name                          | Type                                                                                                | Description | Notes                        |
+| ----------------------------- | --------------------------------------------------------------------------------------------------- | ----------- | ---------------------------- |
+| **limit**                     | **float**                                                                                           |             | [optional] [default to 25]   |
+| **cursor**                    | **str**                                                                                             |             | [optional]                   |
+| **sort**                      | **str**                                                                                             |             | [optional]                   |
+| **uri**                       | **str**                                                                                             |             |
+| **include_unaccepted_boosts** | **bool**                                                                                            |             | [optional] [default to True] |
+| **query**                     | [**BoostGetPaginatedBoostRecipientsRequestQuery**](BoostGetPaginatedBoostRecipientsRequestQuery.md) |             | [optional]                   |
 
 ## Example
 
@@ -29,6 +28,5 @@ boost_get_paginated_boost_recipients_request_dict = boost_get_paginated_boost_re
 # create an instance of BoostGetPaginatedBoostRecipientsRequest from a dict
 boost_get_paginated_boost_recipients_request_from_dict = BoostGetPaginatedBoostRecipientsRequest.from_dict(boost_get_paginated_boost_recipients_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

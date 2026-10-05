@@ -1,11 +1,10 @@
 # StorageResolve200ResponseAnyOf1WriteCredentials
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**categories** | **Dict[str, bool]** |  | 
+| Name           | Type                | Description | Notes |
+| -------------- | ------------------- | ----------- | ----- |
+| **categories** | **Dict[str, bool]** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ storage_resolve200_response_any_of1_write_credentials_dict = storage_resolve200_
 # create an instance of StorageResolve200ResponseAnyOf1WriteCredentials from a dict
 storage_resolve200_response_any_of1_write_credentials_from_dict = StorageResolve200ResponseAnyOf1WriteCredentials.from_dict(storage_resolve200_response_any_of1_write_credentials_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-
