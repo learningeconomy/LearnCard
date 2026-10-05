@@ -46,7 +46,7 @@ describe('share-link policy decision table', () => {
     it.each(['unknown', 'minor'] as const)(
         'allows service tracking with %s age without changing the expiry default',
         age => {
-            expect(composeShareLinkPolicy(age, false, true)).toEqual({
+            expect(composeShareLinkPolicy(age, true, true)).toEqual({
                 isMinor: false,
                 policyResolved: true,
                 defaultExpiryDays: 30,

@@ -793,7 +793,7 @@ describe('share-link lifecycle repository (Neo4j)', () => {
 
         const protectedShare = await finalizeReservation({
             ...protect.reservation,
-            resolveCurrentPolicy: async () => policy,
+            resolveCurrentPolicy: async () => ({ ...policy, isServiceProfile: false }),
             now: NOW,
         });
         if (protectedShare.outcome !== 'finalized') throw new Error('expected protected share');

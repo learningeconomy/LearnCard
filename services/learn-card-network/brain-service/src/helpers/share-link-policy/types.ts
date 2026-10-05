@@ -20,6 +20,11 @@ export type ShareLinkPolicySnapshot = {
     viewCountingEnabled: boolean;
 };
 
+/** Fresh graph-local classification; never persisted or inferred from an old snapshot. */
+export type CurrentShareLinkPolicy = ShareLinkPolicySnapshot & {
+    isServiceProfile: boolean;
+};
+
 /**
  * Authoritative server-side sources. Implementations must read persisted server
  * state only; no request-derived value may be used as authority.

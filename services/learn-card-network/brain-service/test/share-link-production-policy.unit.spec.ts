@@ -67,6 +67,7 @@ describe('production share-link age policy', () => {
         { dob: undefined, type: undefined, isServiceProfile: true, eligible: true },
         { dob: 'not-a-date', type: undefined, isServiceProfile: true, eligible: true },
         { dob: '2020-01-01', type: undefined, isServiceProfile: true, eligible: true },
+        { dob: '1990-01-01', type: undefined, isServiceProfile: true, eligible: true },
         { dob: undefined, type: 'child', isServiceProfile: true, eligible: false },
         { dob: undefined, type: undefined, isServiceProfile: 'true', eligible: false },
     ])(
@@ -86,7 +87,7 @@ describe('production share-link age policy', () => {
                 NOW
             );
             expect(preflight.viewCountingEnabled).toBe(eligible);
-            expect(locked).toEqual(preflight);
+            expect(locked).toEqual({ ...preflight, isServiceProfile: eligible });
             expect(locked.defaultExpiryDays).toBe(30);
         }
     );

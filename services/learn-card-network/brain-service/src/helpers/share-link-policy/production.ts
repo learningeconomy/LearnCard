@@ -8,7 +8,7 @@ import {
 } from '@helpers/profile.helpers';
 
 import { composeShareLinkPolicy } from './resolver';
-import type { ShareLinkOwnerAge, ShareLinkPolicySnapshot, ShareLinkPolicySource } from './types';
+import type { CurrentShareLinkPolicy, ShareLinkOwnerAge, ShareLinkPolicySource } from './types';
 
 const ADULT_AGE = 18;
 
@@ -58,10 +58,11 @@ export const createProductionShareLinkPolicySource = (): ShareLinkPolicySource =
             profile?.isServiceProfile,
             profile?.type
         );
+        const isManaged = await isProfileManaged(profileId);
         return {
             age: ageFromPersistedProfile(profile),
             isServiceProfile,
-            isManaged: isServiceProfile ? false : await isProfileManaged(profileId),
+            isManaged,
         };
     },
 });
@@ -71,7 +72,7 @@ export const resolveCurrentShareLinkPolicy = async (
     tx: ShareLinkTransaction,
     ownerProfileId: string,
     now: Date
-): Promise<ShareLinkPolicySnapshot> => {
+): Promise<CurrentShareLinkPolicy> => {
     const result = await tx.run(
         `MATCH (p:Profile {profileId: $profileId})
          OPTIONAL MATCH (p)-[:MANAGED_BY]->(directManager:Profile)
@@ -83,18 +84,21 @@ export const resolveCurrentShareLinkPolicy = async (
         { profileId: transformProfileId(ownerProfileId) }
     );
     const record = result.records[0];
-    if (!record) return composeShareLinkPolicy('unknown', true);
+    if (!record) return { ...composeShareLinkPolicy('unknown', true), isServiceProfile: false };
 
     const profileType = record.get('profileType');
     const isServiceProfile = isServiceProfileExemptFromGuardianship(
         record.get('isServiceProfile'),
         profileType
     );
-    return composeShareLinkPolicy(
-        ageFromPersistedProfile({ dob: record.get('dob'), type: profileType }, now),
-        isServiceProfile ? false : record.get('isManaged') !== false,
-        isServiceProfile
-    );
+    return {
+        ...composeShareLinkPolicy(
+            ageFromPersistedProfile({ dob: record.get('dob'), type: profileType }, now),
+            record.get('isManaged') !== false,
+            isServiceProfile
+        ),
+        isServiceProfile,
+    };
 };
 
 export const productionShareViewEligibilitySource: ShareViewEligibilitySource = {
