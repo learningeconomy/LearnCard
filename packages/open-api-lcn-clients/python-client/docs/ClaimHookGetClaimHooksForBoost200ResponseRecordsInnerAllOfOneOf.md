@@ -1,12 +1,11 @@
 # ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | **str** |  | 
-**data** | [**ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOfData**](ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOfData.md) |  | 
+| Name     | Type                                                                                                                                              | Description | Notes |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **type** | **str**                                                                                                                                           |             |
+| **data** | [**ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOfData**](ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOfData.md) |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ claim_hook_get_claim_hooks_for_boost200_response_records_inner_all_of_one_of_dic
 # create an instance of ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf from a dict
 claim_hook_get_claim_hooks_for_boost200_response_records_inner_all_of_one_of_from_dict = ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf.from_dict(claim_hook_get_claim_hooks_for_boost200_response_records_inner_all_of_one_of_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

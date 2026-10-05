@@ -1,13 +1,12 @@
 # StorageResolve200ResponseAnyOf1
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**read** | [**StorageResolve200ResponseAnyOf1Read**](StorageResolve200ResponseAnyOf1Read.md) |  | 
-**write** | [**StorageResolve200ResponseAnyOf1Write**](StorageResolve200ResponseAnyOf1Write.md) |  | 
-**denied_writers** | **List[str]** |  | [optional] 
+| Name               | Type                                                                                | Description | Notes      |
+| ------------------ | ----------------------------------------------------------------------------------- | ----------- | ---------- |
+| **read**           | [**StorageResolve200ResponseAnyOf1Read**](StorageResolve200ResponseAnyOf1Read.md)   |             |
+| **write**          | [**StorageResolve200ResponseAnyOf1Write**](StorageResolve200ResponseAnyOf1Write.md) |             |
+| **denied_writers** | **List[str]**                                                                       |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ storage_resolve200_response_any_of1_dict = storage_resolve200_response_any_of1_i
 # create an instance of StorageResolve200ResponseAnyOf1 from a dict
 storage_resolve200_response_any_of1_from_dict = StorageResolve200ResponseAnyOf1.from_dict(storage_resolve200_response_any_of1_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

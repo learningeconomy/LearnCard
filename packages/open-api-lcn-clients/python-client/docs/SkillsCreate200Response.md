@@ -1,20 +1,19 @@
 # SkillsCreate200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**statement** | **str** |  | 
-**description** | **str** |  | [optional] 
-**code** | **str** |  | [optional] 
-**icon** | **str** |  | [optional] 
-**type** | **str** |  | [default to 'skill']
-**status** | **str** |  | [default to 'active']
-**framework_id** | **str** |  | [optional] 
-**created_at** | **str** |  | [optional] 
-**updated_at** | **str** |  | [optional] 
+| Name             | Type    | Description | Notes                 |
+| ---------------- | ------- | ----------- | --------------------- |
+| **id**           | **str** |             |
+| **statement**    | **str** |             |
+| **description**  | **str** |             | [optional]            |
+| **code**         | **str** |             | [optional]            |
+| **icon**         | **str** |             | [optional]            |
+| **type**         | **str** |             | [default to 'skill']  |
+| **status**       | **str** |             | [default to 'active'] |
+| **framework_id** | **str** |             | [optional]            |
+| **created_at**   | **str** |             | [optional]            |
+| **updated_at**   | **str** |             | [optional]            |
 
 ## Example
 
@@ -33,6 +32,5 @@ skills_create200_response_dict = skills_create200_response_instance.to_dict()
 # create an instance of SkillsCreate200Response from a dict
 skills_create200_response_from_dict = SkillsCreate200Response.from_dict(skills_create200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

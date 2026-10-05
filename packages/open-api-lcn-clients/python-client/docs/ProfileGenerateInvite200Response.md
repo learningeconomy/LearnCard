@@ -1,13 +1,12 @@
 # ProfileGenerateInvite200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**profile_id** | **str** |  | 
-**challenge** | **str** |  | 
-**expires_in** | **float** |  | 
+| Name           | Type      | Description | Notes |
+| -------------- | --------- | ----------- | ----- |
+| **profile_id** | **str**   |             |
+| **challenge**  | **str**   |             |
+| **expires_in** | **float** |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ profile_generate_invite200_response_dict = profile_generate_invite200_response_i
 # create an instance of ProfileGenerateInvite200Response from a dict
 profile_generate_invite200_response_from_dict = ProfileGenerateInvite200Response.from_dict(profile_generate_invite200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

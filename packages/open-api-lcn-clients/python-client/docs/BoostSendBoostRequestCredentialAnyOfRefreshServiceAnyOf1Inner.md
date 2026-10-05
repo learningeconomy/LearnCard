@@ -1,12 +1,11 @@
 # BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf1Inner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | [optional] 
-**type** | **str** |  | 
+| Name     | Type    | Description | Notes      |
+| -------- | ------- | ----------- | ---------- |
+| **id**   | **str** |             | [optional] |
+| **type** | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ boost_send_boost_request_credential_any_of_refresh_service_any_of1_inner_dict = 
 # create an instance of BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf1Inner from a dict
 boost_send_boost_request_credential_any_of_refresh_service_any_of1_inner_from_dict = BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf1Inner.from_dict(boost_send_boost_request_credential_any_of_refresh_service_any_of1_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-
