@@ -352,3 +352,32 @@ async fn two_of_three_outages_bad_signature_and_dissent() {
         assert!(start.elapsed() < Duration::from_secs(3));
     }
 }
+
+#[test]
+fn draft08_nonce_echo_is_optional_but_must_match_when_present() {
+    let protocol = Protocol::IetfDraft08;
+    let nonce = vec![7; protocol.nonce_size()];
+    let server = pin("a", protocol, 1);
+    let wire = response(protocol, 1, &nonce, 100_001, 2, 0, 200_000);
+    let body = unframe(protocol, &wire).unwrap();
+
+    let mismatched = frame(protocol, replace(body, &[*b"NONC"], &[8; 32]));
+    assert_eq!(
+        verify(&server, &nonce, &mismatched, 10_000),
+        Err(TimeError::Nonce)
+    );
+
+    let entries = Message::parse(body)
+        .unwrap()
+        .0
+        .into_iter()
+        .filter(|(tag, _)| tag != b"NONC")
+        .map(|(tag, bytes)| (tag, bytes.to_vec()))
+        .collect();
+    let without_echo = frame(protocol, encode(entries).unwrap());
+    assert!(verify(&server, &nonce, &without_echo, 10_000).is_ok());
+    assert_eq!(
+        verify(&server, &[8; 32], &without_echo, 10_000),
+        Err(TimeError::Nonce)
+    );
+}

@@ -177,7 +177,9 @@ pub(super) fn verify(
         if u32le(reply.get(b"VER\0")?)? != 0x8000_0008 {
             return Err(TimeError::Encoding);
         }
-        if reply.get(b"NONC")? != nonce {
+        // Cloudflare's draft-08 replies omit the NONC echo; the signed Merkle
+        // ROOT checked below binds the nonce either way.
+        if reply.0.get(b"NONC").is_some_and(|echo| *echo != nonce) {
             return Err(TimeError::Nonce);
         }
     }

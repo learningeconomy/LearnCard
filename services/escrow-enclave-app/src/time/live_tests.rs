@@ -24,6 +24,41 @@ fn captured_legacy_responses() {
     }
 }
 
+// Real Cloudflare draft-08 capture from the staging host, 2026-10-05. Its reply
+// carries no NONC echo, so the nonce is bound only through the signed ROOT.
+#[test]
+fn captured_cloudflare_draft08_response() {
+    let server = servers::published()
+        .unwrap()
+        .into_iter()
+        .find(|s| s.id == "cloudflare")
+        .unwrap();
+    let nonce = STANDARD
+        .decode("5eaASm8WOHNlN9eak2ALBt5urvqMNuS4tyOvgd1tlNM=")
+        .unwrap();
+    let response = STANDARD.decode("Uk9VR0hUSU1UAQAABgAAAEAAAABEAAAARAAAAIgAAAAgAQAAU0lHAFZFUgBQQVRIU1JFUENFUlRJTkRYdJUpaMeV8EesZUkcULEZXehAsVmvSeskprsjQWHCjnUpnf5jpgGme2c1VjpW7XAb7IdXljzzI/MbUPdCdOddCQgAAIADAAAABAAAAAwAAABSQURJTUlEUFJPT1QBAAAADOTDagAAAAB0sYYO+Rx0aL5XqPLT71dvXHBqTSFNQHTY3UpefUgoegIAAABAAAAAU0lHAERFTEWyVGi8Il3weTSFtWFjFRV2teGhCo0HWXtdb7K069oyi/xDV6i7SmxNKQ05wlniLatsnaFL+pCppohQz03JOWUJAwAAACAAAAAoAAAAUFVCS01JTlRNQVhUSqiR+jxbbDOa0ocYS8lPxiqfZsx0cPvTyHe5aKD5p975gcNqAAAAAHnTxGoAAAAAAAAAAA==").unwrap();
+    let (evidence, interval) = protocol::verify(&server, &nonce, &response, 10_000).unwrap();
+    assert_eq!(evidence.midpoint_ms, 1_791_222_796_000);
+    assert_eq!(evidence.radius_ms, 1_000);
+    assert_eq!(
+        interval,
+        TrustedInterval {
+            lo_ms: 1_791_222_795_000,
+            hi_ms: 1_791_222_797_000
+        }
+    );
+    let mut wrong_nonce = nonce.clone();
+    wrong_nonce[0] ^= 1;
+    assert_eq!(
+        protocol::verify(&server, &wrong_nonce, &response, 10_000),
+        Err(TimeError::Nonce)
+    );
+    let mut forged = response.clone();
+    let last = forged.len() - 1;
+    forged[last] ^= 1;
+    assert!(protocol::verify(&server, &nonce, &forged, 10_000).is_err());
+}
+
 #[test]
 #[ignore = "contacts public UDP time authorities; run manually with --ignored --nocapture"]
 fn published_servers_verify_live() {
