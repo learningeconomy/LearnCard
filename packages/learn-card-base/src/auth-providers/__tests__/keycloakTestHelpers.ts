@@ -30,16 +30,26 @@ export const createUser = (overrides: Partial<ConstructorParameters<typeof User>
         ...overrides,
     });
 
-export const createManager = (initial: User | null = createUser()): UserManagerLike => {
+export const createManager = (initial: User | null = createUser()) => {
     let user = initial;
     const loaded = new Set<(user: User) => void>();
     const unloaded = new Set<() => void>();
-    const save = (next: User): User => {
-        user = next;
+    const save = async (next: User): Promise<User> => {
+        // Match oidc-client-ts: storage must succeed before UserLoaded is emitted.
+        await manager.storeUser(next);
         for (const listener of loaded) listener(next);
         return next;
     };
-    return {
+    const methods = {
+        signinSilent: vi.fn(async (): Promise<User | null> =>
+            save(createUser({ id_token: 'renewed' }))
+        ),
+        signinCallback: vi.fn(async (_url?: string): Promise<User | undefined> =>
+            save(createUser())
+        ),
+    };
+    const manager = {
+        mocks: methods,
         settings: {
             authority: 'https://auth.example.org/realms/learncard',
             client_id: 'app',
@@ -49,9 +59,9 @@ export const createManager = (initial: User | null = createUser()): UserManagerL
         storeUser: vi.fn(async (next: User | null) => {
             user = next;
         }),
-        signinSilent: vi.fn(async () => save(createUser({ id_token: 'renewed' }))),
+        signinSilent: methods.signinSilent as UserManagerLike['signinSilent'],
         signinRedirect: vi.fn(async () => undefined),
-        signinCallback: vi.fn(async () => save(createUser())),
+        signinCallback: methods.signinCallback as UserManagerLike['signinCallback'],
         signoutRedirect: vi.fn(async () => undefined),
         removeUser: vi.fn(async () => {
             user = null;
@@ -69,4 +79,5 @@ export const createManager = (initial: User | null = createUser()): UserManagerL
             addAccessTokenExpiring: vi.fn(),
         },
     };
+    return manager;
 };

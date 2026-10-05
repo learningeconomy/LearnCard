@@ -39,6 +39,8 @@ beforeEach(() => {
         provider: createKeycloakAuthProvider({ ...keycloakConfig, userManager: manager }),
         requestEmailOtpTicket: vi.fn(),
     };
+    vi.spyOn(manager.events, 'addUserLoaded');
+    vi.spyOn(manager.events, 'removeUserLoaded');
     location();
 });
 afterEach(() => {
@@ -188,7 +190,7 @@ describe('createKeycloakSignInAdapter', () => {
     it('handles code/state callbacks and cleans only OIDC URL parameters', async () => {
         location('?code=c&state=s&keep=yes#tab');
         expect(await create().checkRedirectResult?.()).toHaveProperty('id', 'user-1');
-        expect(manager.signinCallback).toHaveBeenCalledWith(
+        expect(manager.mocks.signinCallback).toHaveBeenCalledWith(
             'https://app.example.org/callback?code=c&state=s&keep=yes#tab'
         );
         expect(replaceState).toHaveBeenCalledWith(
@@ -199,7 +201,7 @@ describe('createKeycloakSignInAdapter', () => {
     });
     it('maps login_required to a friendly session error and cleans the URL', async () => {
         location('?error=login_required&state=s');
-        vi.mocked(manager.signinCallback).mockRejectedValue(new Error('login_required'));
+        manager.mocks.signinCallback.mockRejectedValue(new Error('login_required'));
         await expect(create().checkRedirectResult?.()).rejects.toMatchObject({
             name: 'AuthSessionError',
             message: 'Sign-in expired. Please try again.',
@@ -211,12 +213,12 @@ describe('createKeycloakSignInAdapter', () => {
         async query => {
             location(query);
             expect(await create().checkRedirectResult?.()).toBeNull();
-            expect(manager.signinCallback).not.toHaveBeenCalled();
+            expect(manager.mocks.signinCallback).not.toHaveBeenCalled();
         }
     );
     it('rejects missing callback users', async () => {
         location('?code=c&state=s');
-        vi.mocked(manager.signinCallback).mockResolvedValue(undefined);
+        manager.mocks.signinCallback.mockResolvedValue(undefined);
         await expect(create().checkRedirectResult?.()).rejects.toBeInstanceOf(AuthSessionError);
     });
     it('propagates navigation failures', async () => {
@@ -293,7 +295,7 @@ describe('createKeycloakSignInAdapter', () => {
 
     it('does not restore adapter state after cleanup during a callback', async () => {
         let resolveCallback: ((user: ReturnType<typeof createUser>) => void) | undefined;
-        vi.mocked(manager.signinCallback).mockImplementation(
+        manager.mocks.signinCallback.mockImplementation(
             () =>
                 new Promise(resolve => {
                     resolveCallback = resolve;
@@ -315,6 +317,151 @@ describe('createKeycloakSignInAdapter', () => {
         expect(manager.removeUser).toHaveBeenCalledOnce();
     });
 
+    it('still invalidates and removes the session when a logout subscriber throws', async () => {
+        const adapter = create();
+        let throwOnLogout = false;
+        adapter.subscribe(user => {
+            if (!user && throwOnLogout) throw new Error('subscriber failed');
+        });
+        await vi.waitFor(() => expect(adapter.getCurrentUser()).not.toBeNull());
+        throwOnLogout = true;
+        await adapter.signOut();
+        expect(manager.removeUser).toHaveBeenCalledOnce();
+        expect(await manager.getUser()).toBeNull();
+        await expect(config.provider.handleRedirectCallback()).rejects.toBeInstanceOf(
+            AuthSessionError
+        );
+    });
+
+    it.each(['callback', 'renewal'] as const)(
+        'keeps an old %s cancelled after logout and permits a fresh sign-in',
+        async kind => {
+            let release!: () => void;
+            let entered!: () => void;
+            const gate = new Promise<void>(resolve => {
+                release = resolve;
+            });
+            const started = new Promise<void>(resolve => {
+                entered = resolve;
+            });
+            if (kind === 'callback') {
+                const complete = manager.mocks.signinCallback.getMockImplementation()!;
+                manager.mocks.signinCallback.mockImplementationOnce(async url => {
+                    entered();
+                    await gate;
+                    return complete(url);
+                });
+            } else {
+                const complete = manager.mocks.signinSilent.getMockImplementation()!;
+                manager.mocks.signinSilent.mockImplementationOnce(async () => {
+                    entered();
+                    await gate;
+                    return complete();
+                });
+            }
+            const onUser = vi.fn();
+            const onSignedIn = vi.fn();
+            const adapter = create({
+                onSignedIn,
+                openAuthorization: async () => {
+                    await config.provider.handleRedirectCallback(
+                        'com.example.app:/callback?code=c&state=s'
+                    );
+                },
+            });
+            adapter.subscribe(onUser);
+            const work =
+                kind === 'callback' ? adapter.signInWithGoogle() : config.provider.getIdToken(true);
+            const outcome = work.then(
+                () => null,
+                error => error
+            );
+            await started;
+            onUser.mockClear();
+            await adapter.signOut();
+            // Callback sign-in is rejected immediately, without waiting for the SDK.
+            if (kind === 'callback') expect(await outcome).toBeInstanceOf(AuthSessionError);
+            release();
+            expect(await outcome).toBeInstanceOf(AuthSessionError);
+            await vi.waitFor(async () => expect(await manager.getUser()).toBeNull());
+            expect(onSignedIn).not.toHaveBeenCalled();
+            expect(onUser.mock.calls.every(([user]) => user === null)).toBe(true);
+            expect(await config.provider.getCurrentUser()).toBeNull();
+            expect(adapter.getCurrentUser()).toBeNull();
+            expect(await adapter.signInWithGoogle()).toHaveProperty('id', 'user-1');
+            expect(onSignedIn).toHaveBeenCalledOnce();
+            expect(adapter.getCurrentUser()).toHaveProperty('id', 'user-1');
+            expect(await config.provider.getIdToken(true)).toBe('renewed');
+        }
+    );
+
+    it.each(['proof', 'ticket'] as const)('cancels pending native %s immediately', async stage => {
+        let release!: (value: string) => void;
+        const gate = new Promise<string>(resolve => {
+            release = resolve;
+        });
+        const ticket = vi.fn(() => (stage === 'ticket' ? gate : Promise.resolve('ticket')));
+        const open = vi.fn();
+        const adapter = create({
+            isNative: () => true,
+            nativeSocial: { google: () => (stage === 'proof' ? gate : Promise.resolve('proof')) },
+            requestSocialTicket: ticket,
+            openAuthorization: open,
+        });
+        const work = adapter.signInWithGoogle();
+        const outcome = work.catch(error => error);
+        if (stage === 'ticket') await vi.waitFor(() => expect(ticket).toHaveBeenCalledOnce());
+        await adapter.signOut();
+        expect(await outcome).toBeInstanceOf(AuthSessionError);
+        release('late');
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(open).not.toHaveBeenCalled();
+        if (stage === 'proof') expect(ticket).not.toHaveBeenCalled();
+    });
+
+    it('drains an old callback before opening a fresh sign-in', async () => {
+        let release!: () => void;
+        const gate = new Promise<void>(resolve => {
+            release = resolve;
+        });
+        const complete = manager.mocks.signinCallback.getMockImplementation()!;
+        manager.mocks.signinCallback.mockImplementationOnce(async url => {
+            await gate;
+            return complete(url);
+        });
+        const open = vi.fn(async () => {
+            await config.provider.handleRedirectCallback('com.app:/callback?code=c&state=s');
+        });
+        const adapter = create({ openAuthorization: open });
+        adapter.subscribe(vi.fn());
+        const old = adapter.signInWithGoogle().catch(error => error);
+        await vi.waitFor(() => expect(manager.mocks.signinCallback).toHaveBeenCalledOnce());
+        await adapter.signOut();
+        expect(await old).toBeInstanceOf(AuthSessionError);
+        const fresh = adapter.signInWithGoogle();
+        await Promise.resolve();
+        expect(open).toHaveBeenCalledOnce();
+        release();
+        expect(await fresh).toHaveProperty('id', 'user-1');
+        expect(await config.provider.getCurrentUser()).toHaveProperty('id', 'user-1');
+        expect(adapter.getCurrentUser()).toHaveProperty('id', 'user-1');
+    });
+
+    it('rejects callbacks arriving after logout without storing or emitting', async () => {
+        const adapter = create();
+        const onUser = vi.fn();
+        adapter.subscribe(onUser);
+        await adapter.signOut();
+        onUser.mockClear();
+        await expect(
+            config.provider.handleRedirectCallback('com.app:/callback?code=c&state=s')
+        ).rejects.toBeInstanceOf(AuthSessionError);
+        expect(manager.mocks.signinCallback).not.toHaveBeenCalled();
+        expect(onUser).not.toHaveBeenCalled();
+        expect(await manager.getUser()).toBeNull();
+    });
+
     it('cancels after callback completion while native navigation remains pending', async () => {
         const adapter = create({ openAuthorization: () => new Promise(() => undefined) });
         const signIn = adapter.signInWithCustomToken('ticket');
@@ -328,7 +475,7 @@ describe('createKeycloakSignInAdapter', () => {
         const adapter = create({ openAuthorization: async () => undefined });
         const signIn = adapter.signInWithCustomToken('ticket');
         const rejection = expect(signIn).rejects.toThrow('callback failed');
-        vi.mocked(manager.signinCallback).mockRejectedValue(new Error('callback failed'));
+        manager.mocks.signinCallback.mockRejectedValue(new Error('callback failed'));
         await expect(
             config.provider.handleRedirectCallback('com.app:/callback?error=failed&state=s')
         ).rejects.toThrow('callback failed');
@@ -347,7 +494,7 @@ describe('createKeycloakSignInAdapter', () => {
         const adapter = create({ openAuthorization: open });
         const oldSignIn = adapter.signInWithCustomToken('old-ticket');
         const oldRejection = expect(oldSignIn).rejects.toThrow('cancelled');
-        vi.mocked(manager.signinCallback).mockImplementationOnce(
+        manager.mocks.signinCallback.mockImplementationOnce(
             () =>
                 new Promise(resolve => {
                     finishOldCallback = resolve;

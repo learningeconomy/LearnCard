@@ -5,7 +5,6 @@ import { createKeycloakAuthProvider, trimTrailingSlashes } from '../createKeyclo
 import type {
     KeycloakAuthProvider,
     KeycloakAuthProviderConfig,
-    UserManagerLike,
 } from '../createKeycloakAuthProvider';
 import { createManager, createUser, keycloakConfig } from './keycloakTestHelpers';
 
@@ -56,6 +55,360 @@ const create = (
 ): KeycloakAuthProvider => createKeycloakAuthProvider({ ...keycloakConfig, userManager, ...extra });
 
 describe('createKeycloakAuthProvider', () => {
+    it('tracks automatic renewal on an injected real SDK manager', async () => {
+        const sdk = await vi.importActual<typeof import('oidc-client-ts')>('oidc-client-ts');
+        const storage = new InMemoryWebStorage();
+        const manager = new sdk.UserManager({
+            authority: `${keycloakConfig.serverUrl}realms/${keycloakConfig.realm}`,
+            client_id: keycloakConfig.clientId,
+            redirect_uri: keycloakConfig.redirectUri,
+            automaticSilentRenew: false,
+            userStore: new WebStorageStateStore({ store: storage }),
+            stateStore: new WebStorageStateStore({ store: storage }),
+        });
+        let release!: () => void;
+        let entered!: () => void;
+        const gate = new Promise<void>(resolve => {
+            release = resolve;
+        });
+        const started = new Promise<void>(resolve => {
+            entered = resolve;
+        });
+        vi.spyOn(manager, 'signinSilent').mockImplementation(async () => {
+            entered();
+            await gate;
+            const user = createUser();
+            await manager.storeUser(user);
+            await manager.events.load(user);
+            return user;
+        });
+        const provider = createKeycloakAuthProvider({
+            ...keycloakConfig,
+            stateStore: storage,
+            userManager: manager,
+        });
+        const loaded = vi.fn();
+        manager.events.addUserLoaded(loaded);
+        const old = manager.signinSilent().catch(error => error);
+        await started;
+        await provider.signOut();
+        const fresh = provider.beginSignIn();
+        release();
+        expect(await old).toBeInstanceOf(AuthSessionError);
+        await fresh;
+        const freshUser = createUser({ profile: { ...createUser().profile, sub: 'fresh' } });
+        await manager.storeUser(freshUser);
+        expect(loaded).not.toHaveBeenCalled();
+        expect(await provider.getCurrentUser()).toHaveProperty('id', 'fresh');
+    });
+
+    it('rejects late redirect creation before navigation and removes its PKCE state', async () => {
+        const sdk = await vi.importActual<typeof import('oidc-client-ts')>('oidc-client-ts');
+        const storage = new InMemoryWebStorage();
+        const provider = createKeycloakAuthProvider({
+            ...keycloakConfig,
+            stateStore: storage,
+            userStore: storage,
+        });
+        const navigate = vi.fn();
+        vi.stubGlobal('window', { self: { location: { assign: navigate }, stop: vi.fn() } });
+        let release!: () => void;
+        let entered!: () => void;
+        const gate = new Promise<void>(resolve => {
+            release = resolve;
+        });
+        const started = new Promise<void>(resolve => {
+            entered = resolve;
+        });
+        let stateId = '';
+        const request = vi
+            .spyOn(sdk.OidcClient.prototype, 'createSigninRequest')
+            .mockImplementation(async function () {
+                entered();
+                await gate;
+                const state = await sdk.SigninState.create({
+                    authority: provider.userManager.settings.authority,
+                    client_id: keycloakConfig.clientId,
+                    redirect_uri: keycloakConfig.redirectUri,
+                    scope: 'openid',
+                    code_verifier: true,
+                });
+                stateId = state.id;
+                await this.settings.stateStore.set(stateId, state.toStorageString());
+                return { url: `https://auth.example.org/authorize?state=${stateId}`, state };
+            });
+        try {
+            const old = provider.userManager
+                .signinRedirect({ extraQueryParams: {} })
+                .catch(error => error);
+            await started;
+            await provider.signOut();
+            release();
+            expect(await old).toBeInstanceOf(AuthSessionError);
+            expect(navigate).not.toHaveBeenCalled();
+            expect(storage.getItem(`oidc.${stateId}`)).toBeFalsy();
+            const reloaded = createKeycloakAuthProvider({
+                ...keycloakConfig,
+                stateStore: storage,
+                userStore: storage,
+            });
+            await expect(
+                reloaded.handleRedirectCallback(
+                    `${keycloakConfig.redirectUri}?code=old&state=${stateId}`
+                )
+            ).rejects.toBeInstanceOf(AuthSessionError);
+        } finally {
+            request.mockRestore();
+            vi.unstubAllGlobals();
+        }
+    });
+
+    it('allows retry after a one-time logout cleanup failure', async () => {
+        const manager = createManager();
+        manager.removeUser.mockRejectedValueOnce(new Error('storage unavailable'));
+        const provider = create(manager);
+        await expect(provider.signOut()).rejects.toThrow('storage unavailable');
+        await expect(provider.beginSignIn()).rejects.toThrow('storage unavailable');
+        await provider.signOut();
+        await provider.beginSignIn();
+        expect(await provider.handleRedirectCallback()).toHaveProperty('id', 'user-1');
+    });
+
+    it('preserves SDK async loaded-listener ordering and rejection handling', async () => {
+        const sdk = await vi.importActual<typeof import('oidc-client-ts')>('oidc-client-ts');
+        const storage = new InMemoryWebStorage();
+        const provider = createKeycloakAuthProvider({
+            ...keycloakConfig,
+            stateStore: storage,
+            userStore: storage,
+        });
+        const order: string[] = [];
+        let release!: () => void;
+        let entered!: () => void;
+        const gate = new Promise<void>(resolve => {
+            release = resolve;
+        });
+        const started = new Promise<void>(resolve => {
+            entered = resolve;
+        });
+        const first = async (): Promise<void> => {
+            entered();
+            await gate;
+            order.push('first');
+        };
+        const second = (): void => {
+            order.push('second');
+        };
+        provider.userManager.events.addUserLoaded(first);
+        provider.userManager.events.addUserLoaded(second);
+        const callback = vi
+            .spyOn(sdk.UserManager.prototype, 'signinCallback')
+            .mockImplementation(async function () {
+                const user = createUser();
+                await this.storeUser(user);
+                await this.events.load(user);
+                return user;
+            });
+        try {
+            const work = provider.handleRedirectCallback();
+            await started;
+            expect(order).toEqual([]);
+            release();
+            await work;
+            expect(order).toEqual(['first', 'second']);
+            provider.userManager.events.removeUserLoaded(first);
+            provider.userManager.events.removeUserLoaded(second);
+            provider.userManager.events.addUserLoaded(async () => {
+                throw new Error('listener failed');
+            });
+            await expect(provider.handleRedirectCallback()).rejects.toThrow('listener failed');
+        } finally {
+            callback.mockRestore();
+        }
+    });
+
+    it.each(['callback', 'automatic', 'manual'] as const)(
+        'rejects an old %s at the real SDK storage boundary and allows fresh work',
+        async mode => {
+            const sdk = await vi.importActual<typeof import('oidc-client-ts')>('oidc-client-ts');
+            let release!: () => void;
+            let entered!: () => void;
+            const gate = new Promise<void>(resolve => {
+                release = resolve;
+            });
+            const started = new Promise<void>(resolve => {
+                entered = resolve;
+            });
+            const method = mode === 'callback' ? 'signinCallback' : 'signinSilent';
+            const spy = vi
+                .spyOn(sdk.UserManager.prototype, method)
+                .mockImplementation(async function () {
+                    entered();
+                    await gate;
+                    const user = createUser();
+                    await this.storeUser(user);
+                    await this.events.load(user);
+                    return user;
+                });
+            try {
+                const storage = new InMemoryWebStorage();
+                const provider = createKeycloakAuthProvider({
+                    ...keycloakConfig,
+                    stateStore: storage,
+                    userStore: storage,
+                });
+                await provider.userManager.storeUser(createUser());
+                const loaded = vi.fn();
+                provider.userManager.events.addUserLoaded(loaded);
+                const work =
+                    mode === 'callback'
+                        ? provider.handleRedirectCallback()
+                        : mode === 'automatic'
+                          ? provider.userManager.signinSilent()
+                          : provider.getIdToken(true);
+                const outcome = work.catch(error => error);
+                await started;
+                await provider.signOut();
+                const fresh = provider.beginSignIn();
+                release();
+                expect(await outcome).toBeInstanceOf(AuthSessionError);
+                await fresh;
+                expect(await provider.userManager.getUser()).toBeNull();
+                expect(loaded).not.toHaveBeenCalled();
+                await provider.userManager.storeUser(createUser());
+                expect(
+                    await (mode === 'callback'
+                        ? provider.handleRedirectCallback()
+                        : provider.userManager.signinSilent())
+                ).not.toBeNull();
+                expect(loaded).toHaveBeenCalledOnce();
+            } finally {
+                spy.mockRestore();
+            }
+        }
+    );
+
+    it('drains an async store before clearing logout and admitting a fresh session', async () => {
+        const sdk = await vi.importActual<typeof import('oidc-client-ts')>('oidc-client-ts');
+        const memory = new InMemoryWebStorage();
+        let release!: () => void;
+        let entered!: () => void;
+        const gate = new Promise<void>(resolve => {
+            release = resolve;
+        });
+        const started = new Promise<void>(resolve => {
+            entered = resolve;
+        });
+        let delay = true;
+        const provider = createKeycloakAuthProvider({
+            ...keycloakConfig,
+            stateStore: memory,
+            userStore: {
+                get length() {
+                    return memory.length;
+                },
+                key: index => memory.key(index),
+                getItem: key => memory.getItem(key),
+                removeItem: key => memory.removeItem(key),
+                setItem: async (key, value) => {
+                    if (delay) {
+                        entered();
+                        await gate;
+                        delay = false;
+                    }
+                    memory.setItem(key, value);
+                },
+            },
+        });
+        const spy = vi
+            .spyOn(sdk.UserManager.prototype, 'signinCallback')
+            .mockImplementation(async function () {
+                const user = createUser();
+                await this.storeUser(user);
+                await this.events.load(user);
+                return user;
+            });
+        try {
+            const loaded = vi.fn();
+            provider.userManager.events.addUserLoaded(loaded);
+            const old = provider.handleRedirectCallback().catch(error => error);
+            await started;
+            const logout = provider.signOut();
+            const fresh = provider.beginSignIn();
+            release();
+            await logout;
+            expect(await old).toBeInstanceOf(AuthSessionError);
+            await fresh;
+            expect(await provider.getCurrentUser()).toBeNull();
+            expect(loaded).not.toHaveBeenCalled();
+            await provider.handleRedirectCallback();
+            expect(await provider.getCurrentUser()).toHaveProperty('id', 'user-1');
+            expect(loaded).toHaveBeenCalledOnce();
+        } finally {
+            spy.mockRestore();
+        }
+    });
+
+    it('invalidates only this client pending PKCE states, including callbacks during a new attempt', async () => {
+        const storage = new InMemoryWebStorage();
+        const provider = createKeycloakAuthProvider({
+            ...keycloakConfig,
+            stateStore: storage,
+            userStore: storage,
+        });
+        storage.setItem(
+            'oidc.old',
+            JSON.stringify({
+                authority: provider.userManager.settings.authority,
+                client_id: keycloakConfig.clientId,
+            })
+        );
+        storage.setItem(
+            'oidc.other',
+            JSON.stringify({
+                authority: provider.userManager.settings.authority,
+                client_id: 'other',
+            })
+        );
+        await provider.signOut();
+        await provider.beginSignIn();
+        expect(storage.getItem('oidc.old')).toBeFalsy();
+        expect(storage.getItem('oidc.other')).not.toBeNull();
+        await expect(
+            provider.handleRedirectCallback(`${keycloakConfig.redirectUri}?code=old&state=old`)
+        ).rejects.toBeInstanceOf(AuthSessionError);
+        expect(await provider.getCurrentUser()).toBeNull();
+    });
+
+    it('gates loaded listeners when logout occurs after storage but before SDK dispatch', async () => {
+        const sdk = await vi.importActual<typeof import('oidc-client-ts')>('oidc-client-ts');
+        const storage = new InMemoryWebStorage();
+        const provider = createKeycloakAuthProvider({
+            ...keycloakConfig,
+            stateStore: storage,
+            userStore: storage,
+        });
+        const loaded = vi.fn();
+        provider.userManager.events.addUserLoaded(loaded);
+        const spy = vi
+            .spyOn(sdk.UserManager.prototype, 'signinCallback')
+            .mockImplementation(async function () {
+                const user = createUser();
+                await this.storeUser(user);
+                await provider.signOut();
+                await this.events.load(user);
+                return user;
+            });
+        try {
+            await expect(provider.handleRedirectCallback()).rejects.toBeInstanceOf(
+                AuthSessionError
+            );
+            expect(loaded).not.toHaveBeenCalled();
+            expect(await provider.getCurrentUser()).toBeNull();
+        } finally {
+            spy.mockRestore();
+        }
+    });
     it('builds PKCE authorization-code settings and injectable stores without iframe/session monitoring', () => {
         const storage = new InMemoryWebStorage();
         const provider = createKeycloakAuthProvider({
@@ -106,9 +459,7 @@ describe('createKeycloakAuthProvider', () => {
 
     it('maps revoked refresh tokens to typed session errors', async () => {
         const manager = createManager();
-        vi.mocked(manager.signinSilent).mockRejectedValue(
-            new ErrorResponse({ error: 'invalid_grant' })
-        );
+        manager.mocks.signinSilent.mockRejectedValue(new ErrorResponse({ error: 'invalid_grant' }));
         await expect(create(manager).getIdToken(true)).rejects.toMatchObject({
             name: 'AuthSessionError',
             reason: 'revoked',
@@ -151,7 +502,7 @@ describe('createKeycloakAuthProvider', () => {
     it('returns cached ID tokens without renewal', async () => {
         const manager = createManager();
         expect(await create(manager).getIdToken()).toBe('id');
-        expect(manager.signinSilent).not.toHaveBeenCalled();
+        expect(manager.mocks.signinSilent).not.toHaveBeenCalled();
     });
     it.each(['force', 'expired', 'near-expiry'] as const)('renews for %s', async reason => {
         const user = createUser();
@@ -159,7 +510,7 @@ describe('createKeycloakAuthProvider', () => {
         if (reason === 'near-expiry') user.expires_in = 60;
         const manager = createManager(user);
         expect(await create(manager).getIdToken(reason === 'force')).toBe('renewed');
-        expect(manager.signinSilent).toHaveBeenCalledOnce();
+        expect(manager.mocks.signinSilent).toHaveBeenCalledOnce();
     });
     it('throws a no_session error with no user', async () => {
         await expect(create(createManager(null)).getIdToken()).rejects.toMatchObject({
@@ -171,7 +522,7 @@ describe('createKeycloakAuthProvider', () => {
         'rejects incomplete silent results',
         async result => {
             const manager = createManager();
-            vi.mocked(manager.signinSilent).mockResolvedValue(result);
+            manager.mocks.signinSilent.mockResolvedValue(result);
             await expect(create(manager).getIdToken(true)).rejects.toBeInstanceOf(AuthSessionError);
         }
     );
@@ -183,21 +534,23 @@ describe('createKeycloakAuthProvider', () => {
     it('does not start an iframe when renewal lacks a refresh token', async () => {
         const manager = createManager(createUser({ refresh_token: undefined }));
         await expect(create(manager).getIdToken(true)).rejects.toBeInstanceOf(AuthSessionError);
-        expect(manager.signinSilent).not.toHaveBeenCalled();
+        expect(manager.mocks.signinSilent).not.toHaveBeenCalled();
     });
     it('refreshes the session', async () => {
         const manager = createManager();
         expect(await create(manager).refreshSession()).toBe(true);
-        expect(manager.signinSilent).toHaveBeenCalledOnce();
+        expect(manager.mocks.signinSilent).toHaveBeenCalledOnce();
     });
     it('returns false when session renewal fails', async () => {
         const manager = createManager();
-        vi.mocked(manager.signinSilent).mockRejectedValue(new Error('offline'));
+        manager.mocks.signinSilent.mockRejectedValue(new Error('offline'));
         expect(await create(manager).refreshSession()).toBe(false);
     });
     it('stores a refresh-token bootstrap User before silently reauthenticating', async () => {
         const manager = createManager(null);
-        expect(await create(manager).reauthenticateWithToken('new-refresh')).toHaveProperty(
+        const provider = create(manager);
+        vi.spyOn(manager, 'storeUser');
+        expect(await provider.reauthenticateWithToken('new-refresh')).toHaveProperty(
             'id',
             'user-1'
         );
@@ -206,12 +559,12 @@ describe('createKeycloakAuthProvider', () => {
             expect.objectContaining({ refresh_token: 'new-refresh', id_token: undefined })
         );
         expect(vi.mocked(manager.storeUser).mock.invocationCallOrder[0]).toBeLessThan(
-            vi.mocked(manager.signinSilent).mock.invocationCallOrder[0]
+            manager.mocks.signinSilent.mock.invocationCallOrder[0]
         );
     });
     it('removes the bootstrap record after failed reauthentication', async () => {
         const manager = createManager();
-        vi.mocked(manager.signinSilent).mockResolvedValue(null);
+        manager.mocks.signinSilent.mockResolvedValue(null);
         await expect(create(manager).reauthenticateWithToken('refresh')).rejects.toBeInstanceOf(
             AuthSessionError
         );
@@ -224,7 +577,7 @@ describe('createKeycloakAuthProvider', () => {
     it('does not resurrect a bootstrapped session after sign-out', async () => {
         const manager = createManager();
         let finishRefresh: (() => void) | undefined;
-        vi.mocked(manager.signinSilent).mockImplementation(async () => {
+        manager.mocks.signinSilent.mockImplementation(async () => {
             await new Promise<void>(resolve => {
                 finishRefresh = resolve;
             });
@@ -244,7 +597,7 @@ describe('createKeycloakAuthProvider', () => {
 
     it('preserves a newer session when bootstrap renewal fails', async () => {
         const manager = createManager();
-        vi.mocked(manager.signinSilent).mockImplementation(async () => {
+        manager.mocks.signinSilent.mockImplementation(async () => {
             await manager.storeUser(createUser({ refresh_token: 'newer-session' }));
             throw new Error('old refresh failed');
         });
@@ -271,11 +624,11 @@ describe('createKeycloakAuthProvider', () => {
         expect(manager.signoutRedirect).not.toHaveBeenCalled();
     });
     it('delegates redirect callback validation to the SDK', async () => {
-        const manager: UserManagerLike = createManager();
+        const manager = createManager();
         expect(
             await create(manager).handleRedirectCallback('https://app.example.org/?code=x&state=y')
         ).toHaveProperty('id', 'user-1');
-        expect(manager.signinCallback).toHaveBeenCalledWith(
+        expect(manager.mocks.signinCallback).toHaveBeenCalledWith(
             'https://app.example.org/?code=x&state=y'
         );
     });
