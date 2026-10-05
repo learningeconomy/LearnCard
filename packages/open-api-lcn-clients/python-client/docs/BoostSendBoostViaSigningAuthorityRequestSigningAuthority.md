@@ -1,12 +1,11 @@
 # BoostSendBoostViaSigningAuthorityRequestSigningAuthority
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**name** | **str** |  | 
-**endpoint** | **str** |  | 
+| Name         | Type    | Description | Notes |
+| ------------ | ------- | ----------- | ----- |
+| **name**     | **str** |             |
+| **endpoint** | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ boost_send_boost_via_signing_authority_request_signing_authority_dict = boost_se
 # create an instance of BoostSendBoostViaSigningAuthorityRequestSigningAuthority from a dict
 boost_send_boost_via_signing_authority_request_signing_authority_from_dict = BoostSendBoostViaSigningAuthorityRequestSigningAuthority.from_dict(boost_send_boost_via_signing_authority_request_signing_authority_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

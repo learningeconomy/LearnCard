@@ -736,6 +736,16 @@ jobs:
                   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
                   AUTHORIZED_DIDS: ${{ secrets.AUTHORIZED_DIDS }}
                   GOOGLE_APPLICATION_CREDENTIAL: ${{ secrets.GOOGLE_APPLICATION_CREDENTIAL }}
+                  KEYCLOAK_ISSUERS: ${{ vars.KEYCLOAK_ISSUERS }}
+                  KEYCLOAK_AUDIENCES: ${{ vars.KEYCLOAK_AUDIENCES }}
+                  KEYCLOAK_JWKS_URL_OVERRIDES: ${{ vars.KEYCLOAK_JWKS_URL_OVERRIDES }}
+                  OIDC_ISSUER: ${{ vars.OIDC_ISSUER }}
+                  OIDC_SIGNING_KEY_JWK: ${{ secrets.OIDC_SIGNING_KEY_JWK }}
+                  OIDC_CLIENT_ID: ${{ vars.OIDC_CLIENT_ID }}
+                  OIDC_CLIENT_SECRET: ${{ secrets.OIDC_CLIENT_SECRET }}
+                  OIDC_REDIRECT_URIS: ${{ vars.OIDC_REDIRECT_URIS }}
+                  GOOGLE_OAUTH_CLIENT_IDS: ${{ vars.GOOGLE_OAUTH_CLIENT_IDS }}
+                  APPLE_OAUTH_CLIENT_IDS: ${{ vars.APPLE_OAUTH_CLIENT_IDS }}
                   MONGO_URI: ${{ secrets.MONGO_URI }}
                   MONGO_DB_NAME: ${{ secrets.MONGO_DB_NAME }}
                   SCOUTS_SSO_CLIENT_SECRET: ${{ secrets.SCOUTS_SSO_CLIENT_SECRET }}

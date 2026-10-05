@@ -1,12 +1,12 @@
 # BoostSendRequestTemplateSkillsInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**framework_id** | **str** |  | 
-**id** | **str** |  | 
+| Name                  | Type      | Description | Notes      |
+| --------------------- | --------- | ----------- | ---------- |
+| **framework_id**      | **str**   |             |
+| **id**                | **str**   |             |
+| **proficiency_level** | **float** |             | [optional] |
 
 ## Example
 
@@ -25,6 +25,5 @@ boost_send_request_template_skills_inner_dict = boost_send_request_template_skil
 # create an instance of BoostSendRequestTemplateSkillsInner from a dict
 boost_send_request_template_skills_inner_from_dict = BoostSendRequestTemplateSkillsInner.from_dict(boost_send_request_template_skills_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

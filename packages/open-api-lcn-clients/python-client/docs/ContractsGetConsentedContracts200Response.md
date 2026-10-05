@@ -1,13 +1,12 @@
 # ContractsGetConsentedContracts200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**cursor** | **str** |  | [optional] 
-**has_more** | **bool** |  | 
-**records** | [**List[ContractsGetConsentedContracts200ResponseRecordsInner]**](ContractsGetConsentedContracts200ResponseRecordsInner.md) |  | 
+| Name         | Type                                                                                                                        | Description | Notes      |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **cursor**   | **str**                                                                                                                     |             | [optional] |
+| **has_more** | **bool**                                                                                                                    |             |
+| **records**  | [**List[ContractsGetConsentedContracts200ResponseRecordsInner]**](ContractsGetConsentedContracts200ResponseRecordsInner.md) |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ contracts_get_consented_contracts200_response_dict = contracts_get_consented_con
 # create an instance of ContractsGetConsentedContracts200Response from a dict
 contracts_get_consented_contracts200_response_from_dict = ContractsGetConsentedContracts200Response.from_dict(contracts_get_consented_contracts200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

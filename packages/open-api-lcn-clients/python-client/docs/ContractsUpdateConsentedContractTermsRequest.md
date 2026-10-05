@@ -1,14 +1,13 @@
 # ContractsUpdateConsentedContractTermsRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**uri** | **str** |  | 
-**terms** | [**ContractsUpdateConsentedContractTermsRequestTerms**](ContractsUpdateConsentedContractTermsRequestTerms.md) |  | 
-**expires_at** | **str** |  | [optional] 
-**one_time** | **bool** |  | [optional] 
+| Name           | Type                                                                                                          | Description | Notes      |
+| -------------- | ------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **uri**        | **str**                                                                                                       |             |
+| **terms**      | [**ContractsUpdateConsentedContractTermsRequestTerms**](ContractsUpdateConsentedContractTermsRequestTerms.md) |             |
+| **expires_at** | **str**                                                                                                       |             | [optional] |
+| **one_time**   | **bool**                                                                                                      |             | [optional] |
 
 ## Example
 
@@ -27,6 +26,5 @@ contracts_update_consented_contract_terms_request_dict = contracts_update_consen
 # create an instance of ContractsUpdateConsentedContractTermsRequest from a dict
 contracts_update_consented_contract_terms_request_from_dict = ContractsUpdateConsentedContractTermsRequest.from_dict(contracts_update_consented_contract_terms_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,18 +1,17 @@
 # DidMetadataGetDidMetadata200ResponseVerificationMethodInnerAnyOf
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**context** | [**List[BoostSendRequestTemplateCredentialAnyOfContextInner]**](BoostSendRequestTemplateCredentialAnyOfContextInner.md) |  | [optional] 
-**id** | **str** |  | 
-**type** | **str** |  | 
-**controller** | **str** |  | 
-**public_key_jwk** | [**DidMetadataGetDidMetadata200ResponseVerificationMethodInnerAnyOfPublicKeyJwk**](DidMetadataGetDidMetadata200ResponseVerificationMethodInnerAnyOfPublicKeyJwk.md) |  | [optional] 
-**public_key_base58** | **str** |  | [optional] 
-**public_key_multibase** | **str** |  | [optional] 
-**block_chain_account_id** | **str** |  | [optional] 
+| Name                       | Type                                                                                                                                                                | Description | Notes      |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **context**                | [**List[BoostSendRequestTemplateCredentialAnyOfContextInner]**](BoostSendRequestTemplateCredentialAnyOfContextInner.md)                                             |             | [optional] |
+| **id**                     | **str**                                                                                                                                                             |             |
+| **type**                   | **str**                                                                                                                                                             |             |
+| **controller**             | **str**                                                                                                                                                             |             |
+| **public_key_jwk**         | [**DidMetadataGetDidMetadata200ResponseVerificationMethodInnerAnyOfPublicKeyJwk**](DidMetadataGetDidMetadata200ResponseVerificationMethodInnerAnyOfPublicKeyJwk.md) |             | [optional] |
+| **public_key_base58**      | **str**                                                                                                                                                             |             | [optional] |
+| **public_key_multibase**   | **str**                                                                                                                                                             |             | [optional] |
+| **block_chain_account_id** | **str**                                                                                                                                                             |             | [optional] |
 
 ## Example
 
@@ -31,6 +30,5 @@ did_metadata_get_did_metadata200_response_verification_method_inner_any_of_dict 
 # create an instance of DidMetadataGetDidMetadata200ResponseVerificationMethodInnerAnyOf from a dict
 did_metadata_get_did_metadata200_response_verification_method_inner_any_of_from_dict = DidMetadataGetDidMetadata200ResponseVerificationMethodInnerAnyOf.from_dict(did_metadata_get_did_metadata200_response_verification_method_inner_any_of_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-
