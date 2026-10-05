@@ -21,6 +21,7 @@ import ConsentFlowReadSharing from './ConsentFlowReadSharing';
 import ConsentFlowWriteSharing from './ConsentFlowWriteSharing';
 import ContractPermissionsAndDetailsText from './ContractPermissionsAndDetailsText';
 import PrivacyAndDataHeader from './PrivacyAndDataHeader';
+import { ContractAudience } from '../../components/contract-requests/ContractAudience';
 import ConsentFlowVerifiableDataSharingItem from './ConsentFlowVerifiableDataSharingItem';
 
 import { curriedStateSlice } from '@learncard/helpers';
@@ -339,7 +340,10 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
     const saveWord = updatingTerms ? m['consentFlow.saving']() : m['common.save']();
 
     return (
-        <div className={embedded ? 'relative h-full overflow-hidden' : 'h-full'}>
+        <div
+            data-testid="consent-privacy-and-data"
+            className={embedded ? 'relative h-full overflow-hidden' : 'h-full'}
+        >
             {!embedded && (
                 <PrivacyAndDataHeader name={name} image={image} className={headerClass} />
             )}
@@ -348,6 +352,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                 className="h-full w-full flex flex-col gap-[20px] overflow-y-auto p-[20px] pb-[300px]"
                 style={embedded ? undefined : appStyles}
             >
+                <ContractAudience contract={contractDetails} testId="consent-shared-with" />
                 <div className="text-grayscale-900 text-[14px] rounded-[15px] bg-white w-full p-[15px] flex flex-col gap-[10px] shadow-box-bottom">
                     <ContractPermissionsAndDetailsText
                         contractDetails={contractDetails}

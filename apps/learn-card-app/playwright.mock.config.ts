@@ -8,6 +8,7 @@ import base from './playwright.config';
  * tier (playwright.config.ts) skips `@mocked` tests via grepInvert.
  */
 const mockPort = Number(process.env.PW_MOCK_PORT ?? 3010);
+const recordVideo = process.env.PW_RECORD_VIDEO === 'true';
 if (!Number.isInteger(mockPort) || mockPort < 1024 || mockPort > 65535)
     throw new Error('Invalid PW_MOCK_PORT');
 
@@ -31,6 +32,8 @@ const config: PlaywrightTestConfig = {
         // Start unauthenticated — mocked tests drive auth through the seed flow
         // against stubbed endpoints, not a saved real session.
         storageState: undefined,
+        // Opt in to retained recordings of successful tests for review.
+        video: recordVideo ? { mode: 'on', size: { width: 1280, height: 800 } } : base.use?.video,
     },
     webServer: {
         // Build the LOCAL tenant config so the app points at localhost:4000/4100/5100

@@ -303,4 +303,20 @@ Release the consent audience foundation, request/event API, and compatible clien
 
 Developers can run `bun --conditions=development scripts/lc-2226/referral-lab.ts` from a repository checkout against loopback brain/cloud/LCA services (defaults 4000/4100/5200). It creates synthetic profiles, two audiences, autoboosts and outcomes, then verifies encrypted sync, isolation, lifecycle boundaries, and signed correlated webhooks. It leaves synthetic history for inspection. The same executable is exercised by `tests/e2e/tests/contract-referral.spec.ts`. That spec advertises `host.docker.internal` to the containerized brain and binds its synthetic webhook receiver on all host interfaces. For a manual Docker run, set `LC2226_WEBHOOK_HOST=host.docker.internal`; host-only services use the default `127.0.0.1`. Service URLs remain HTTP loopback addresses. Leave `NOTIFICATIONS_SERVICE_WEBHOOK_URL` unset in this disposable stack so a local service-wide override does not redirect the lab profiles' webhooks.
 
+For browser coverage of the actual app screens with synthetic API responses, run from `apps/learn-card-app`:
+
+```bash
+bun run test-mock -- contract-request.mocked.spec.ts --retries=0
+```
+
+This checks invitation gates, permission details, decline, dismissed invitation recovery, and audience disclosure before consent and while editing existing access. Contracts without extra recipients keep their existing layout. These browser tests use mocked network responses; the separate referral lab verifies the real APIs, encryption and webhooks.
+
+To retain videos of successful browser tests:
+
+```bash
+PW_RECORD_VIDEO=true bun run test-mock -- contract-request.mocked.spec.ts --retries=0 --workers=1
+```
+
+Videos are saved under the app's ignored `test-results/` directory. The recording option does not change ordinary test runs.
+
 See [Contract Requests and Events](../../sdks/learncard-network/contract-requests-and-events.md) for status transitions, API methods, retry semantics, and scope requirements.
