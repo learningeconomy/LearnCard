@@ -308,14 +308,44 @@ test.describe('Generic referrals @mocked', () => {
                 await expect(page.getByText('To provide career services').last()).toBeVisible();
                 await expect(page.getByTestId('consent-shared-with')).toHaveCount(0);
             }
+            await page.getByRole('button', { name: 'Privacy & Data', exact: true }).click();
+            const privacy = page.getByTestId('consent-privacy-and-data');
+            await expect(privacy).toBeVisible();
+            const audience = privacy.getByTestId('consent-shared-with');
+            if (recipients) {
+                await expect(audience).toBeVisible();
+                await expect(audience).toContainText('Partner Org');
+                await expect(audience).toContainText('Referrer Org');
+            } else {
+                await expect(audience).toHaveCount(0);
+            }
         });
-    test('S6 connected sharing details disclose the audience', async ({ page }) => {
-        await setup(page, { connected: true });
-        await page.goto('/privacy-and-data', { waitUntil: 'domcontentloaded' });
-        await page.getByText('Partner services', { exact: true }).click();
-        await expect(page.getByTestId('contract-shared-with')).toContainText('Partner Org');
-        await expect(page.getByTestId('contract-shared-with')).toContainText('Referrer Org');
-    });
+    for (const recipients of [true, false])
+        test(`S6 connected sharing details and editing disclose the audience (recipients=${recipients})`, async ({
+            page,
+        }) => {
+            await setup(page, { connected: true, recipients });
+            await page.goto('/privacy-and-data', { waitUntil: 'domcontentloaded' });
+            await page.getByText('Partner services', { exact: true }).click();
+            const detailsAudience = page.getByTestId('contract-shared-with');
+            if (recipients) {
+                await expect(detailsAudience).toContainText('Partner Org');
+                await expect(detailsAudience).toContainText('Referrer Org');
+            } else {
+                await expect(detailsAudience).toHaveCount(0);
+            }
+            await page.getByRole('button', { name: 'Edit access', exact: true }).click();
+            const privacy = page.getByTestId('consent-privacy-and-data');
+            await expect(privacy).toBeVisible();
+            const audience = privacy.getByTestId('consent-shared-with');
+            if (recipients) {
+                await expect(audience).toBeVisible();
+                await expect(audience).toContainText('Partner Org');
+                await expect(audience).toContainText('Referrer Org');
+            } else {
+                await expect(audience).toHaveCount(0);
+            }
+        });
     test('S8 request read failure offers retry without consent', async ({ page }) => {
         const state = await setup(page, { readError: true });
         const card = page.getByTestId('contract-request-card');
