@@ -269,6 +269,32 @@ export const createKeycloakAuthProvider = (
     // Enforce revisions before the SDK stores tokens and raises UserLoaded.
     // Owning signinSilent also covers the SDK's automatic renewal service.
     class ValidatingUserManager extends UserManager {
+        private readonly logoutRevocationUsers = new WeakSet<User>();
+
+        constructor(...args: ConstructorParameters<typeof UserManager>) {
+            super(...args);
+            const load = this.events.load.bind(this.events);
+            this.events.load = (user, raiseEvent) =>
+                this.logoutRevocationUsers.has(user) ? Promise.resolve() : load(user, raiseEvent);
+        }
+
+        protected override async _revokeInternal(
+            user: User | null,
+            types?: RevokeTokensTypes
+        ): Promise<void> {
+            if (!signedOut || !user) return super._revokeInternal(user, types);
+            // oidc-client-ts 3.5.0 persists and emits this exact object after
+            // revoking its tokens, before removing it and navigating to end_session.
+            // Let that bookkeeping finish without persisting/emitting an identity.
+            // Other objects (including concurrent auth results) remain guarded.
+            this.logoutRevocationUsers.add(user);
+            try {
+                await super._revokeInternal(user, types);
+            } finally {
+                this.logoutRevocationUsers.delete(user);
+            }
+        }
+
         override signinSilent(args?: SigninSilentArgs): Promise<User | null> {
             return runRenewal(() => super.signinSilent(args));
         }
@@ -276,6 +302,7 @@ export const createKeycloakAuthProvider = (
             return runRedirect(() => super.signinCallback(url));
         }
         override storeUser(user: User | null): Promise<void> {
+            if (user && this.logoutRevocationUsers.has(user)) return Promise.resolve();
             return guardStore(value => super.storeUser(value), user);
         }
         override signinRedirect(args?: SigninRedirectArgs): Promise<void> {
