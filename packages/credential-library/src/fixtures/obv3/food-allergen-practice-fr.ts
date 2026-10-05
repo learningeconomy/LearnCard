@@ -28,9 +28,10 @@ export const obv3FoodAllergenPracticeFr: CredentialFixture = {
         description:
             "Évaluation d'un exercice de prévention des contacts croisés avec des allergènes.",
         issuer: {
-            id: 'https://fixtures.example.org/frenchfry/issuers/vocational',
+            id: 'did:example:lc2184-cedar-training',
             type: ['Profile'],
-            name: 'Example Vocational Institute',
+            name: 'Cedar Technical Training',
+            url: 'https://cedar-training.example',
         },
         validFrom: '2026-09-01T00:00:00Z',
         validUntil: '2028-09-01T00:00:00Z',

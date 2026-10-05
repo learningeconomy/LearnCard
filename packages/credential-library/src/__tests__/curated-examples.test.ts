@@ -70,6 +70,28 @@ describe('Curated example coverage', () => {
         expect(fixture.credential.proof).toBeUndefined();
     });
 
+    it('uses named issuer profiles while preserving shared and distinct issuer groups', () => {
+        const issuers = fixtures.map(fixture => asRecord(fixture.credential.issuer));
+        for (const issuer of issuers) {
+            expect(issuer.id).toMatch(/^did:/);
+            expect(issuer.type).toEqual(['Profile']);
+            expect(issuer.name).toBeTruthy();
+            expect(issuer.name).not.toMatch(/^https?:/);
+        }
+        expect(new Set(issuers.map(issuer => issuer.id)).size).toBe(5);
+        expect(obv3FoodAllergenPracticeFr.credential.issuer).toEqual(
+            obv3FoodAllergenPractice.credential.issuer
+        );
+        expect(obv3FoodAllergenFacilitator.credential.issuer).toEqual(
+            obv3FoodAllergenPractice.credential.issuer
+        );
+        for (const child of asRecords(
+            subjectOf(clrMixedRolePortfolio.credential).verifiableCredential
+        )) {
+            expect(child.issuer).toEqual(clrMixedRolePortfolio.credential.issuer);
+        }
+    });
+
     it.each([obv3FoodAllergenPractice, obv3FoodAllergenPracticeFr])(
         '$id expresses RubricScore within the declared range',
         fixture => {
@@ -203,6 +225,9 @@ describe('Curated example coverage', () => {
             freshIds: true,
         });
         expect(asRecord(prepared.issuer).id).toBe('did:example:portfolio-test-issuer');
+        expect(asRecord(prepared.issuer).name).toBe(
+            asRecord(clrMixedRolePortfolio.credential.issuer).name
+        );
         expect(prepared.validFrom).toBe('2026-10-04T12:00:00Z');
         const subject = subjectOf(prepared);
         expect(subject.id).toBe('did:example:portfolio-test-subject');

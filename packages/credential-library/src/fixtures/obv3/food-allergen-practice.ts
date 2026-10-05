@@ -28,9 +28,10 @@ export const obv3FoodAllergenPractice: CredentialFixture = {
         description:
             'Plan preparation for a fictional allergen-sensitive order. Demonstrate a controlled practice task with observer feedback.',
         issuer: {
-            id: 'https://fixtures.example.org/frenchfry/issuers/vocational',
+            id: 'did:example:lc2184-cedar-training',
             type: ['Profile'],
-            name: 'Example Vocational Institute',
+            name: 'Cedar Technical Training',
+            url: 'https://cedar-training.example',
         },
         validFrom: '2026-09-01T00:00:00Z',
         validUntil: '2028-09-01T00:00:00Z',

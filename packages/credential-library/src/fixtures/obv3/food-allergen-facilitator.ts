@@ -28,9 +28,10 @@ export const obv3FoodAllergenFacilitator: CredentialFixture = {
         description:
             'Train a simulated food-preparation team on cross-contact communication in a fictional order. Assesses teaching performance; independent learner skill is outside this assessment.',
         issuer: {
-            id: 'https://fixtures.example.org/frenchfry/issuers/vocational',
+            id: 'did:example:lc2184-cedar-training',
             type: ['Profile'],
-            name: 'Example Vocational Institute',
+            name: 'Cedar Technical Training',
+            url: 'https://cedar-training.example',
         },
         validFrom: '2026-09-01T00:00:00Z',
         validUntil: '2028-09-01T00:00:00Z',

@@ -28,6 +28,15 @@ evaluation labels, other payloads, generator, or shared generation templates are
 imported. The French example is a counterpart, not a second independent scoring
 case.
 
+Issuer profiles reuse existing fictional examples: Cedar Technical Training
+(`clr/training-provider-record`), Tech Academy (`obv3/full-badge`), Community College
+XYZ (`clr/multi-achievement`), Metropolis University – Office of the Registrar
+(`vc-v2/education-degree`), and State University (`obv3/micro-credential`). The five
+issuer groups remain distinct; the CLR and its three children share the Community
+College XYZ profile. Administrative contexts define the profile and URL terms
+without adding achievement claims. These display profiles do not assert issuer
+trust or verification, and the original corpus release is unchanged.
+
 ## Licenses and attribution
 
 Authored corpus scenario text and fixture bodies are dedicated under

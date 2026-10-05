@@ -36,9 +36,10 @@ export const clrMixedRolePortfolio: CredentialFixture = {
         description:
             'Portfolio of quadratic modeling practice, statistical sampling transfer, and teaching performance.',
         issuer: {
-            id: 'https://fixtures.example.org/frenchfry/issuers/education',
+            id: 'did:example:communitycollegeXYZ',
             type: ['Profile'],
-            name: 'Example Education Institute',
+            name: 'Community College XYZ',
+            url: 'https://ccxyz.example.edu',
         },
         validFrom: '2026-09-02T00:00:00Z',
         credentialSubject: {
@@ -56,9 +57,10 @@ export const clrMixedRolePortfolio: CredentialFixture = {
                     description:
                         'Fit a parabola to a simulated projectile dataset. Demonstrate a controlled practice task with observer feedback.',
                     issuer: {
-                        id: 'https://fixtures.example.org/frenchfry/issuers/education',
+                        id: 'did:example:communitycollegeXYZ',
                         type: ['Profile'],
-                        name: 'Example Education Institute',
+                        name: 'Community College XYZ',
+                        url: 'https://ccxyz.example.edu',
                     },
                     validFrom: '2026-09-01T00:00:00Z',
                     validUntil: '2028-09-01T00:00:00Z',
@@ -129,9 +131,10 @@ export const clrMixedRolePortfolio: CredentialFixture = {
                     description:
                         'Adapt this task to a new fictional setting: Design a stratified survey for a fictional school. Complete an independently planned transfer project, recording assumptions, an initial failed approach and a supported revision.',
                     issuer: {
-                        id: 'https://fixtures.example.org/frenchfry/issuers/education',
+                        id: 'did:example:communitycollegeXYZ',
                         type: ['Profile'],
-                        name: 'Example Education Institute',
+                        name: 'Community College XYZ',
+                        url: 'https://ccxyz.example.edu',
                     },
                     validFrom: '2026-09-01T00:00:00Z',
                     validUntil: '2028-09-01T00:00:00Z',
@@ -255,9 +258,10 @@ export const clrMixedRolePortfolio: CredentialFixture = {
                     description:
                         'Facilitate a simulated novice task: Fit a parabola to a simulated projectile dataset. Assesses teaching performance; independent learner skill is outside this assessment.',
                     issuer: {
-                        id: 'https://fixtures.example.org/frenchfry/issuers/education',
+                        id: 'did:example:communitycollegeXYZ',
                         type: ['Profile'],
-                        name: 'Example Education Institute',
+                        name: 'Community College XYZ',
+                        url: 'https://ccxyz.example.edu',
                     },
                     validFrom: '2026-09-01T00:00:00Z',
                     validUntil: '2028-09-01T00:00:00Z',

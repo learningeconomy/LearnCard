@@ -28,9 +28,10 @@ export const obv3PhishingTransfer: CredentialFixture = {
         description:
             'Adapt this task to a new fictional setting: Classify synthetic suspicious email examples. Complete an independently planned transfer project, recording assumptions, an initial failed approach and a supported revision.',
         issuer: {
-            id: 'https://fixtures.example.org/frenchfry/issuers/technology',
+            id: 'did:example:issuer123',
             type: ['Profile'],
-            name: 'Example Technology Institute',
+            name: 'Tech Academy',
+            url: 'https://techacademy.example.com',
         },
         validFrom: '2026-09-01T00:00:00Z',
         validUntil: '2028-09-01T00:00:00Z',
