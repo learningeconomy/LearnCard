@@ -2,8 +2,9 @@ import React from 'react';
 
 import { ProfilePicture, useModal } from 'learn-card-base';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
+import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 
-import { VC } from '@learncard/types';
+import type { VC } from '@learncard/types';
 
 export const AdminToolsFamilySelector: React.FC<{
     families: VC[];
@@ -27,6 +28,7 @@ export const AdminToolsFamilySelector: React.FC<{
                 <h4 className="text-[20px] text-grayscale-900 py-4">Select a Family</h4>
 
                 {families.map(family => {
+                    const displayFamily = unwrapBoostCredential(family);
                     const isSelected = family.boostId === selectedFamily?.uri;
 
                     return (
@@ -34,8 +36,8 @@ export const AdminToolsFamilySelector: React.FC<{
                             key={family.boostId}
                             onClick={() => {
                                 setSelectedFamily({
-                                    name: family.name,
-                                    picture: family.image,
+                                    name: displayFamily?.name ?? '',
+                                    picture: displayFamily?.image ?? '',
                                     uri: family?.boostId,
                                 });
                                 closeModal();
@@ -48,9 +50,9 @@ export const AdminToolsFamilySelector: React.FC<{
                                     customContainerClass="w-[40px] h-[40px]"
                                     customImageClass="w-full h-full object-cover"
                                     overrideSrc
-                                    overrideSrcURL={family.image}
+                                    overrideSrcURL={displayFamily?.image}
                                 />
-                                <p className="text-grayscale-700 ml-2">{family.name}</p>
+                                <p className="text-grayscale-700 ml-2">{displayFamily?.name}</p>
                             </div>
 
                             {isSelected && (
