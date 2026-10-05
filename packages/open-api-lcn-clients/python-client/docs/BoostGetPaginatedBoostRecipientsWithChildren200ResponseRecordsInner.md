@@ -1,15 +1,15 @@
 # BoostGetPaginatedBoostRecipientsWithChildren200ResponseRecordsInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**to** | [**BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md) |  | 
-**var_from** | **str** |  | 
-**received** | **str** |  | [optional] 
-**boost_uris** | **List[str]** |  | 
-**credential_uris** | **List[str]** |  | [optional] 
+| Name                | Type                                                                                                                          | Description | Notes      |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **to**              | [**BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md) |             |
+| **var_from**        | **str**                                                                                                                       |             |
+| **received**        | **str**                                                                                                                       |             | [optional] |
+| **boost_uris**      | **List[str]**                                                                                                                 |             |
+| **credential_uris** | **List[str]**                                                                                                                 |             | [optional] |
+| **status**          | **str**                                                                                                                       |             | [optional] |
 
 ## Example
 
@@ -28,6 +28,5 @@ boost_get_paginated_boost_recipients_with_children200_response_records_inner_dic
 # create an instance of BoostGetPaginatedBoostRecipientsWithChildren200ResponseRecordsInner from a dict
 boost_get_paginated_boost_recipients_with_children200_response_records_inner_from_dict = BoostGetPaginatedBoostRecipientsWithChildren200ResponseRecordsInner.from_dict(boost_get_paginated_boost_recipients_with_children200_response_records_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

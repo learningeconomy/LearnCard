@@ -1,13 +1,12 @@
 # BoostGetChildrenProfileManagers200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**cursor** | **str** |  | [optional] 
-**has_more** | **bool** |  | 
-**records** | [**List[BoostGetChildrenProfileManagers200ResponseRecordsInner]**](BoostGetChildrenProfileManagers200ResponseRecordsInner.md) |  | 
+| Name         | Type                                                                                                                          | Description | Notes      |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **cursor**   | **str**                                                                                                                       |             | [optional] |
+| **has_more** | **bool**                                                                                                                      |             |
+| **records**  | [**List[BoostGetChildrenProfileManagers200ResponseRecordsInner]**](BoostGetChildrenProfileManagers200ResponseRecordsInner.md) |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ boost_get_children_profile_managers200_response_dict = boost_get_children_profil
 # create an instance of BoostGetChildrenProfileManagers200Response from a dict
 boost_get_children_profile_managers200_response_from_dict = BoostGetChildrenProfileManagers200Response.from_dict(boost_get_children_profile_managers200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

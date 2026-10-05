@@ -1,13 +1,12 @@
 # IntegrationsGetIntegrationsRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**limit** | **float** |  | [optional] 
-**cursor** | **str** |  | [optional] 
-**query** | [**IntegrationsGetIntegrationsRequestQuery**](IntegrationsGetIntegrationsRequestQuery.md) |  | [optional] 
+| Name       | Type                                                                                      | Description | Notes      |
+| ---------- | ----------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **limit**  | **float**                                                                                 |             | [optional] |
+| **cursor** | **str**                                                                                   |             | [optional] |
+| **query**  | [**IntegrationsGetIntegrationsRequestQuery**](IntegrationsGetIntegrationsRequestQuery.md) |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ integrations_get_integrations_request_dict = integrations_get_integrations_reque
 # create an instance of IntegrationsGetIntegrationsRequest from a dict
 integrations_get_integrations_request_from_dict = IntegrationsGetIntegrationsRequest.from_dict(integrations_get_integrations_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

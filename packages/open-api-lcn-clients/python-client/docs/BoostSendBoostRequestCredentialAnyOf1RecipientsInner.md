@@ -1,12 +1,11 @@
 # BoostSendBoostRequestCredentialAnyOf1RecipientsInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**header** | [**BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeader**](BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeader.md) |  | 
-**encrypted_key** | **str** |  | 
+| Name              | Type                                                                                                                            | Description | Notes |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **header**        | [**BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeader**](BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeader.md) |             |
+| **encrypted_key** | **str**                                                                                                                         |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ boost_send_boost_request_credential_any_of1_recipients_inner_dict = boost_send_b
 # create an instance of BoostSendBoostRequestCredentialAnyOf1RecipientsInner from a dict
 boost_send_boost_request_credential_any_of1_recipients_inner_from_dict = BoostSendBoostRequestCredentialAnyOf1RecipientsInner.from_dict(boost_send_boost_request_credential_any_of1_recipients_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,11 +1,10 @@
 # AppStoreUpdateListingRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**updates** | [**AppStoreUpdateListingRequestUpdates**](AppStoreUpdateListingRequestUpdates.md) |  | 
+| Name        | Type                                                                              | Description | Notes |
+| ----------- | --------------------------------------------------------------------------------- | ----------- | ----- |
+| **updates** | [**AppStoreUpdateListingRequestUpdates**](AppStoreUpdateListingRequestUpdates.md) |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ app_store_update_listing_request_dict = app_store_update_listing_request_instanc
 # create an instance of AppStoreUpdateListingRequest from a dict
 app_store_update_listing_request_from_dict = AppStoreUpdateListingRequest.from_dict(app_store_update_listing_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

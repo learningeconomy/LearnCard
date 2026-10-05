@@ -1,12 +1,11 @@
 # ProfileGetAvailableProfiles200ResponseRecordsInner
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**profile** | [**BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md) |  | 
-**manager** | [**ProfileGetAvailableProfiles200ResponseRecordsInnerManager**](ProfileGetAvailableProfiles200ResponseRecordsInnerManager.md) |  | [optional] 
+| Name        | Type                                                                                                                          | Description | Notes      |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **profile** | [**BoostGetBoostRecipients200ResponseInnerToAnyOf3**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md)                     |             |
+| **manager** | [**ProfileGetAvailableProfiles200ResponseRecordsInnerManager**](ProfileGetAvailableProfiles200ResponseRecordsInnerManager.md) |             | [optional] |
 
 ## Example
 
@@ -25,6 +24,5 @@ profile_get_available_profiles200_response_records_inner_dict = profile_get_avai
 # create an instance of ProfileGetAvailableProfiles200ResponseRecordsInner from a dict
 profile_get_available_profiles200_response_records_inner_from_dict = ProfileGetAvailableProfiles200ResponseRecordsInner.from_dict(profile_get_available_profiles200_response_records_inner_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

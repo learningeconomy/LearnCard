@@ -1,13 +1,12 @@
 # ContractsGetCredentialsForContract200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**cursor** | **str** |  | [optional] 
-**has_more** | **bool** |  | 
-**records** | [**List[ContractsGetCredentialsForContract200ResponseRecordsInner]**](ContractsGetCredentialsForContract200ResponseRecordsInner.md) |  | 
+| Name         | Type                                                                                                                                | Description | Notes      |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **cursor**   | **str**                                                                                                                             |             | [optional] |
+| **has_more** | **bool**                                                                                                                            |             |
+| **records**  | [**List[ContractsGetCredentialsForContract200ResponseRecordsInner]**](ContractsGetCredentialsForContract200ResponseRecordsInner.md) |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ contracts_get_credentials_for_contract200_response_dict = contracts_get_credenti
 # create an instance of ContractsGetCredentialsForContract200Response from a dict
 contracts_get_credentials_for_contract200_response_from_dict = ContractsGetCredentialsForContract200Response.from_dict(contracts_get_credentials_for_contract200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-
