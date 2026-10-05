@@ -682,7 +682,7 @@ export const useGetConnectionsRequests = () => {
                     allRecords.push(...records);
                 }
                 cursor = result?.cursor;
-                if (!cursor || !records?.length) break;
+                if (!result?.hasMore || !cursor || !records?.length) break;
             }
 
             return allRecords;
