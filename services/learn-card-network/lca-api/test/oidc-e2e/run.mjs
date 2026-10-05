@@ -24,8 +24,9 @@ for (let index = 0; index < testArgs.length; index++) {
 const here = dirname(fileURLToPath(import.meta.url));
 const service = resolve(here, '../..');
 const repo = resolve(service, '../../..');
-// Fixed project + exclusive lock bounds resources even after SIGKILL: the next
-// run reaps this suite's stale containers before starting. No shared dev volumes.
+// Fixed project + exclusive lock bounds this suite's resources.
+// After SIGKILL, stop all suite processes and remove a stale lock manually.
+// Once locked, the next run reaps the stale stack. No shared dev volumes.
 const project = 'learncard-oidc-e2e';
 const lockPath = join(tmpdir(), `${project}.lock`);
 const composeArgs = ['compose', '-p', project, '-f', join(here, 'compose.yaml')];
@@ -65,8 +66,10 @@ const acquireLock = async () => {
             process.kill(pid, 0);
         } catch (probe) {
             if (probe.code !== 'ESRCH') throw probe;
-            await rm(lockPath);
-            return acquireLock();
+            throw new Error(
+                `Stale OIDC E2E lock at ${lockPath} (PID ${pid}). Stop all OIDC E2E invocations and their child processes, remove this lock manually, then rerun.`,
+                { cause: probe }
+            );
         }
         throw new Error(`OIDC E2E is already running (PID ${pid}); refusing to share its data.`, {
             cause: error,
