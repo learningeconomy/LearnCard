@@ -30,6 +30,12 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
+            # The escrow Rust crates share one pinned toolchain; installing it here
+            # stops nx's parallel `cargo test` runs racing to install it.
+            - name: Install pinned Rust toolchain
+              working-directory: services/escrow-enclave-app
+              run: rustup toolchain install
+
             - name: Run tests
               uses: nick-fields/retry@v2
               with:
