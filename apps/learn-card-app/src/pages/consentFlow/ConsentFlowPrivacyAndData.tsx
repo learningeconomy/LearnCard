@@ -348,7 +348,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                 <PrivacyAndDataHeader name={name} image={image} className={headerClass} />
             )}
 
-            <div className="min-h-0 flex-1 w-full flex flex-col gap-4 overflow-y-auto bg-grayscale-10 px-6 py-5 pb-28">
+            <div className="min-h-0 flex-1 w-full flex flex-col gap-4 overflow-y-auto bg-grayscale-10 px-6 py-5">
                 <ContractAudience contract={contractDetails} testId="consent-shared-with" />
                 <div className="text-sm leading-relaxed text-grayscale-600 rounded-2xl border border-grayscale-200 bg-white w-full p-4 flex flex-col gap-3">
                     <ContractPermissionsAndDetailsText
