@@ -1,0 +1,23 @@
+version: 2
+updates:
+    - package-ecosystem: docker
+      directory: /infra/keycloak
+      schedule:
+          interval: weekly
+      open-pull-requests-limit: 2
+      groups:
+          keycloak-images:
+              patterns: ['*']
+    - package-ecosystem: terraform
+      directories:
+          - /infra/aws/bootstrap
+          - /infra/keycloak/terraform/network
+          - /infra/keycloak/terraform/service
+          # Kept ahead of the parallel realm workstream; see terraform/README.md.
+          - /infra/keycloak/terraform/realm
+      schedule:
+          interval: weekly
+      open-pull-requests-limit: 2
+      groups:
+          keycloak-terraform:
+              patterns: ['*']

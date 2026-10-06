@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { ModalInstanceToken } from 'learn-card-base/components/modals/types/Modals';
 import { useHistory } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
@@ -68,6 +68,7 @@ type MyLearnCardModalProps = {
     hideLogout?: boolean;
     hideEdit?: boolean;
     hideShare?: boolean;
+    resumeRecovery?: boolean;
 };
 
 const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
@@ -77,8 +78,10 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     hideLogout = false,
     hideEdit = false,
     hideShare = false,
+    resumeRecovery = false,
 }) => {
     const flags = useFlags();
+    const resumedRecovery = useRef(false);
     const [user, setUser] = useState(_user);
 
     const { initWallet } = useWallet();
@@ -174,6 +177,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     };
 
     const rows: {
+        id?: string;
         Icon: React.FC;
         title: string;
         iconVersion?: string;
@@ -307,6 +311,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
         if (capabilities.recovery) {
             rows.push({
+                id: 'account-recovery',
                 title: m['profile.menu.accountRecovery'](),
                 Icon: ShieldCheck,
                 caretText: '',
@@ -318,7 +323,11 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                     const showReAuth = () => {
                         newModal(
-                            <ReAuthOverlay onSuccess={closeModal} onCancel={closeModal} />,
+                            <ReAuthOverlay
+                                resumeAction="account-recovery"
+                                onSuccess={closeModal}
+                                onCancel={closeModal}
+                            />,
                             { sectionClassName: '!max-w-[480px]' },
                             { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                         );
@@ -752,6 +761,16 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     if (!isWallpaperFaded) {
         backgroundStyles.backgroundColor = wallpaperBackgroundColor;
     }
+
+    useEffect(() => {
+        if (!resumeRecovery || resumedRecovery.current || !currentUser?.privateKey) return;
+        const recoveryRow = rows.find(row => row.id === 'account-recovery');
+        if (!recoveryRow?.onClick) return;
+        resumedRecovery.current = true;
+        void Promise.resolve(recoveryRow.onClick()).catch(() => {
+            log.warn('Unable to reopen account recovery');
+        });
+    }, [resumeRecovery, currentUser?.privateKey, rows]);
 
     if (isLoggingOut) {
         return <LogoutLoadingPage />;

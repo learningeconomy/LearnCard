@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ContractAudience } from '../../components/contract-requests/ContractAudience';
 import { useImmer } from 'use-immer';
 import useConsentFlow from './useConsentFlow';
 import { cloneDeep, isEqual } from 'lodash-es';
@@ -333,6 +334,7 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
                             </div>
                         )}
 
+                        <ContractAudience contract={contractDetails} testId="consent-shared-with" />
                         <ContractPermissionsAndDetailsText
                             contractDetails={contractDetails}
                             app={app}
