@@ -9,8 +9,8 @@
  *
  * Design notes (per the design of record):
  *  - The signing key is **separate from `SEED`** and rotated independently.
- *    Production/staging set `OIDC_SIGNING_KEY_JWK` to a JSON RSA private JWK
- *    (from Secrets Manager). When unset in production the provider fails closed
+ *    Deployed Lambdas fetch a JSON RSA private JWK using `OIDC_SIGNING_KEY_SECRET_ID`.
+ *    Local/Docker/CI can still set `OIDC_SIGNING_KEY_JWK`. When unset in production the provider fails closed
  *    (503) — it never falls back to a forgeable key. In dev/CI an ephemeral
  *    RSA keypair is generated once per process (random, never deterministic,
  *    never a function of `SEED`) so local Keycloak can round-trip.
@@ -21,6 +21,7 @@
  */
 
 import crypto from 'node:crypto';
+import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 
 import { environment } from '@environment';
 import { TRPCError } from '@trpc/server';
@@ -56,7 +57,7 @@ interface OidcSigningKey {
     kid: string;
 }
 
-let cachedKey: OidcSigningKey | undefined;
+let cachedKey: Promise<OidcSigningKey> | undefined;
 let cachedKeyMaterial: string | undefined;
 let ephemeralDevJwk: JWK | undefined;
 
@@ -70,40 +71,51 @@ const isProduction = (): boolean =>
     !environment.IS_OFFLINE &&
     !environment.IS_E2E_TEST;
 
-/**
- * Resolve the RSA private JWK for the signing key.
- *
- * Production/staging set `OIDC_SIGNING_KEY_JWK` to a JSON RSA private JWK.
- * When unset in production the provider fails closed (503). In dev/CI a single
- * ephemeral RSA keypair is generated once per process — random, never
- * deterministic, and never derived from `SEED`.
- */
-const resolveSigningJwk = (): { jwk: JWK; material: string } => {
-    const configured = environment.OIDC_SIGNING_KEY_JWK?.trim();
-    if (configured) {
-        let parsed: unknown;
+/** Parse both configured sources without exposing key material in errors. */
+const parseSigningJwk = (configured: string): JWK => {
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(configured);
+    } catch {
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'OIDC signing key must be a JSON RSA private JWK',
+        });
+    }
+    const jwk = parsed as JWK;
+    if (
+        !jwk ||
+        jwk.kty !== 'RSA' ||
+        typeof jwk.d !== 'string' ||
+        !jwk.d ||
+        typeof jwk.kid !== 'string' ||
+        !jwk.kid ||
+        jwk.alg !== 'RS256'
+    ) {
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'OIDC signing key must be an RSA private JWK with d, kid and alg=RS256',
+        });
+    }
+    return jwk;
+};
+
+/** Prefer the local override, then Secrets Manager; deployed instances fail closed. */
+const resolveSigningJwk = async (configured?: string, secretId?: string): Promise<JWK> => {
+    if (configured) return parseSigningJwk(configured);
+    if (secretId) {
+        let secretString: string | undefined;
         try {
-            parsed = JSON.parse(configured);
+            const client = new SecretsManagerClient({});
+            const result = await client.send(new GetSecretValueCommand({ SecretId: secretId }));
+            secretString = result.SecretString;
         } catch {
             throw new TRPCError({
                 code: 'INTERNAL_SERVER_ERROR',
-                message: 'OIDC_SIGNING_KEY_JWK must be a JSON RSA private JWK',
+                message: 'OIDC signing key could not be fetched',
             });
         }
-        const jwk = parsed as JWK;
-        if (
-            !jwk ||
-            jwk.kty !== 'RSA' ||
-            typeof jwk.d !== 'string' ||
-            !jwk.kid ||
-            jwk.alg !== 'RS256'
-        ) {
-            throw new TRPCError({
-                code: 'INTERNAL_SERVER_ERROR',
-                message: 'OIDC_SIGNING_KEY_JWK must be an RSA private JWK (kty=RSA with d)',
-            });
-        }
-        return { jwk, material: `configured:${configured}` };
+        return parseSigningJwk(secretString ?? '');
     }
 
     if (isProduction()) {
@@ -118,38 +130,62 @@ const resolveSigningJwk = (): { jwk: JWK; material: string } => {
         ephemeralDevJwk = privateKey.export({ format: 'jwk' }) as JWK;
         process.emitWarning('OIDC is using an ephemeral development signing key.');
     }
-    return { jwk: ephemeralDevJwk, material: 'ephemeral-dev' };
+    return ephemeralDevJwk;
 };
 
 /**
  * Resolve (and memoize) the OIDC signing key.
  *
- * Memoization is keyed on the resolved key material so tests that stub a
- * different `OIDC_SIGNING_KEY_JWK` transparently get a fresh key.
+ * Cache the entire in-flight load by configuration; failures can be retried.
+ * Changing the local JWK or secret id transparently loads a fresh key.
  */
 export const getOidcSigningKey = async (): Promise<OidcSigningKey> => {
-    const { jwk, material } = resolveSigningJwk();
+    const configured = environment.OIDC_SIGNING_KEY_JWK?.trim();
+    const secretId = environment.OIDC_SIGNING_KEY_SECRET_ID?.trim();
+    const material = configured
+        ? `configured:${configured}`
+        : secretId
+          ? `secret:${secretId}`
+          : isProduction()
+            ? 'unconfigured-production'
+            : 'ephemeral-dev';
     if (cachedKey && cachedKeyMaterial === material) return cachedKey;
 
-    const privateKey = (await importJWK(jwk, OIDC_SIGNING_ALG)) as CryptoKey;
-    const publicComponents: JWK = {
-        kty: 'RSA',
-        n: jwk.n,
-        e: jwk.e,
-    };
-    const publicKey = (await importJWK(publicComponents, OIDC_SIGNING_ALG)) as CryptoKey;
+    const pending = (async (): Promise<OidcSigningKey> => {
+        const jwk = await resolveSigningJwk(configured, secretId);
+        try {
+            const privateKey = (await importJWK(jwk, OIDC_SIGNING_ALG)) as CryptoKey;
+            const publicComponents: JWK = {
+                kty: 'RSA',
+                n: jwk.n,
+                e: jwk.e,
+            };
+            const publicKey = (await importJWK(publicComponents, OIDC_SIGNING_ALG)) as CryptoKey;
 
-    const publicJwk = await exportJWK(publicKey);
-    const kid = jwk.kid ?? (await calculateJwkThumbprint(publicJwk));
+            const publicJwk = await exportJWK(publicKey);
+            const kid = jwk.kid ?? (await calculateJwkThumbprint(publicJwk));
 
-    publicJwk.kid = kid;
-    publicJwk.alg = jwk.alg ?? OIDC_SIGNING_ALG;
-    publicJwk.use = 'sig';
+            publicJwk.kid = kid;
+            publicJwk.alg = jwk.alg ?? OIDC_SIGNING_ALG;
+            publicJwk.use = 'sig';
 
-    cachedKey = { privateKey, publicKey, publicJwk, kid };
+            return { privateKey, publicKey, publicJwk, kid };
+        } catch {
+            throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'OIDC signing key could not be imported',
+            });
+        }
+    })();
+    cachedKey = pending;
     cachedKeyMaterial = material;
 
-    return cachedKey;
+    try {
+        return await pending;
+    } catch (error) {
+        if (cachedKey === pending) resetOidcSigningKeyForTests();
+        throw error;
+    }
 };
 
 /** Clear the memoized signing key. Intended for isolated tests only. */

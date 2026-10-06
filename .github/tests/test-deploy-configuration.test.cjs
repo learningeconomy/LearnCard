@@ -30,6 +30,7 @@ for (const key of [
     'KEYCLOAK_AUDIENCES',
     'KEYCLOAK_JWKS_URL_OVERRIDES',
     'OIDC_ISSUER',
+    'OIDC_SIGNING_KEY_SECRET_ID',
     'OIDC_CLIENT_ID',
     'OIDC_REDIRECT_URIS',
     'GOOGLE_OAUTH_CLIENT_IDS',
@@ -37,9 +38,29 @@ for (const key of [
 ]) {
     assert.equal(lca.env[key], '${{ vars.' + key + ' }}');
 }
-for (const key of ['OIDC_CLIENT_SECRET', 'OIDC_SIGNING_KEY_JWK']) {
+for (const key of ['OIDC_CLIENT_SECRET']) {
     assert.equal(lca.env[key], '${{ secrets.' + key + ' }}');
 }
+assert.equal(lca.env.OIDC_SIGNING_KEY_JWK, undefined);
+const lcaServerless = yaml.load(
+    fs.readFileSync(path.join(root, 'services/learn-card-network/lca-api/serverless.yml'), 'utf8')
+);
+assert.equal(lcaServerless.provider.environment.OIDC_SIGNING_KEY_JWK, undefined);
+assert.equal(
+    lcaServerless.provider.environment.OIDC_SIGNING_KEY_SECRET_ID,
+    "${env:OIDC_SIGNING_KEY_SECRET_ID, ''}"
+);
+assert.equal(lcaServerless.functions.oidc.role, undefined);
+assert.deepEqual(lcaServerless.provider.iam.role.statements, [
+    {
+        Effect: 'Allow',
+        Action: 'secretsmanager:GetSecretValue',
+        Resource: {
+            'Fn::Sub':
+                'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:lca-api/${sls:stage}/oidc-signing-jwk-*',
+        },
+    },
+]);
 
 const workflow = workflows.get('keycloak-infra.yml');
 const pluginInit = workflow.jobs.validate.steps.find(step => step.run === 'tflint --init');

@@ -740,7 +740,7 @@ jobs:
                   KEYCLOAK_AUDIENCES: ${{ vars.KEYCLOAK_AUDIENCES }}
                   KEYCLOAK_JWKS_URL_OVERRIDES: ${{ vars.KEYCLOAK_JWKS_URL_OVERRIDES }}
                   OIDC_ISSUER: ${{ vars.OIDC_ISSUER }}
-                  OIDC_SIGNING_KEY_JWK: ${{ secrets.OIDC_SIGNING_KEY_JWK }}
+                  OIDC_SIGNING_KEY_SECRET_ID: ${{ vars.OIDC_SIGNING_KEY_SECRET_ID }}
                   OIDC_CLIENT_ID: ${{ vars.OIDC_CLIENT_ID }}
                   OIDC_CLIENT_SECRET: ${{ secrets.OIDC_CLIENT_SECRET }}
                   OIDC_REDIRECT_URIS: ${{ vars.OIDC_REDIRECT_URIS }}

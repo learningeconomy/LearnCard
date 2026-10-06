@@ -4,8 +4,11 @@ import { createLocalJWKSet, exportJWK, generateKeyPair, jwtVerify } from 'jose';
 import { oidcFastifyPlugin } from '../src/oidc';
 import { issueLoginTicket, redeemLoginTicket } from '../src/cache/login-tickets';
 import cache from '@cache';
+import { GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
+import { getOidcSigningKey, resetOidcSigningKeyForTests } from '../src/helpers/oidc.helpers';
 
-const { env, entries } = vi.hoisted(() => ({
+const { env, entries, sendSecret } = vi.hoisted(() => ({
+    sendSecret: vi.fn(),
     env: {
         NODE_ENV: 'test',
         LAMBDA_STAGE: '',
@@ -13,6 +16,7 @@ const { env, entries } = vi.hoisted(() => ({
         IS_E2E_TEST: false,
         OIDC_ISSUER: 'https://issuer.test',
         OIDC_SIGNING_KEY_JWK: '',
+        OIDC_SIGNING_KEY_SECRET_ID: '',
         OIDC_CLIENT_ID: 'keycloak-broker',
         OIDC_CLIENT_SECRET: 'secret',
         OIDC_REDIRECT_URIS: '',
@@ -21,6 +25,15 @@ const { env, entries } = vi.hoisted(() => ({
     entries: new Map<string, { value: string; expires: number }>(),
 }));
 vi.mock('@environment', () => ({ environment: env }));
+vi.mock('@aws-sdk/client-secrets-manager', async importOriginal => {
+    const actual = await importOriginal<typeof import('@aws-sdk/client-secrets-manager')>();
+    return {
+        ...actual,
+        SecretsManagerClient: class {
+            send = sendSecret;
+        },
+    };
+});
 vi.mock('@cache', () => {
     const get = async (key: string): Promise<string | null> => {
         const entry = entries.get(key);
@@ -154,6 +167,8 @@ beforeAll(async () => {
     });
 });
 beforeEach(async () => {
+    resetOidcSigningKeyForTests();
+    sendSecret.mockReset();
     entries.clear();
     app = Fastify();
     await app.register(oidcFastifyPlugin);
@@ -165,6 +180,7 @@ beforeEach(async () => {
         IS_E2E_TEST: false,
         OIDC_ISSUER: 'https://issuer.test',
         OIDC_SIGNING_KEY_JWK: privateJwk,
+        OIDC_SIGNING_KEY_SECRET_ID: '',
         OIDC_CLIENT_ID: 'keycloak-broker',
         OIDC_CLIENT_SECRET: 'secret',
         OIDC_REDIRECT_URIS: '',
@@ -177,6 +193,98 @@ afterEach(async () => {
 });
 
 describe('OIDC provider', () => {
+    describe('Secrets Manager signing key', () => {
+        beforeEach(() => {
+            env.LAMBDA_STAGE = 'dev';
+            env.OIDC_SIGNING_KEY_JWK = '';
+            env.OIDC_SIGNING_KEY_SECRET_ID = 'lca-api/dev/oidc-signing-jwk';
+            sendSecret.mockResolvedValue({ SecretString: privateJwk });
+        });
+
+        it('fetches once across concurrent and subsequent callers and resets for tests', async () => {
+            const keys = await Promise.all([getOidcSigningKey(), getOidcSigningKey()]);
+            expect(keys[0]).toBe(keys[1]);
+            expect(await getOidcSigningKey()).toBe(keys[0]);
+            expect(sendSecret).toHaveBeenCalledTimes(1);
+            const command = sendSecret.mock.calls[0][0];
+            expect(command).toBeInstanceOf(GetSecretValueCommand);
+            expect(command.input).toEqual({ SecretId: env.OIDC_SIGNING_KEY_SECRET_ID });
+            resetOidcSigningKeyForTests();
+            await getOidcSigningKey();
+            expect(sendSecret).toHaveBeenCalledTimes(2);
+        });
+
+        it('serves public JWKS and signs verifiable tokens with the fetched key', async () => {
+            const response = await exchange(await code());
+            expect(response.statusCode).toBe(200);
+            const jwks = (await app.inject('/oidc/jwks')).json();
+            expect(jwks.keys[0].d).toBeUndefined();
+            const { protectedHeader } = await jwtVerify(
+                response.json().id_token,
+                createLocalJWKSet(jwks)
+            );
+            expect(protectedHeader.kid).toBe('test-key');
+            expect(sendSecret).toHaveBeenCalledTimes(1);
+        });
+
+        it('sanitizes fetch failures and retries the next request', async () => {
+            sendSecret.mockRejectedValueOnce(new Error(privateJwk));
+            await expect(getOidcSigningKey()).rejects.toMatchObject({
+                message: 'OIDC signing key could not be fetched',
+                cause: undefined,
+            });
+            expect((await getOidcSigningKey()).kid).toBe('test-key');
+            expect(sendSecret).toHaveBeenCalledTimes(2);
+        });
+
+        it.each([
+            '/.well-known/openid-configuration',
+            '/oidc/jwks',
+            '/oidc/authorize',
+            '/oidc/token',
+        ])('returns 503 on fetch failure for %s and recovers', async url => {
+            sendSecret.mockRejectedValueOnce(new Error('unavailable'));
+            const response = url === '/oidc/token' ? await exchange('x') : await app.inject(url);
+            expect(response.statusCode).toBe(503);
+            expect(response.json()).toEqual({ error: 'server_error' });
+            expect((await app.inject('/oidc/jwks')).statusCode).toBe(200);
+        });
+
+        it.each([
+            undefined,
+            '',
+            'not-json',
+            'null',
+            '{}',
+            JSON.stringify({ kty: 'EC', d: 'private', kid: 'key', alg: 'RS256' }),
+            JSON.stringify({ kty: 'RSA', kid: 'key', alg: 'RS256' }),
+            JSON.stringify({ kty: 'RSA', d: 'private', alg: 'RS256' }),
+            JSON.stringify({ kty: 'RSA', d: 'private', kid: 'key', alg: 'HS256' }),
+            JSON.stringify({ kty: 'RSA', d: 'private', kid: 'key', alg: 'RS256' }),
+        ])('rejects invalid or missing SecretString (%#) and retries', async SecretString => {
+            sendSecret.mockResolvedValueOnce({ SecretString });
+            await expect(getOidcSigningKey()).rejects.toThrow('OIDC signing key');
+            expect((await getOidcSigningKey()).kid).toBe('test-key');
+            expect(sendSecret).toHaveBeenCalledTimes(2);
+        });
+
+        it('prefers the env JWK and reloads when its material changes', async () => {
+            env.OIDC_SIGNING_KEY_JWK = privateJwk;
+            expect((await getOidcSigningKey()).kid).toBe('test-key');
+            env.OIDC_SIGNING_KEY_JWK = JSON.stringify({
+                ...JSON.parse(privateJwk),
+                kid: 'replacement',
+            });
+            expect((await getOidcSigningKey()).kid).toBe('replacement');
+            expect(sendSecret).not.toHaveBeenCalled();
+        });
+
+        it('does not fall back to Secrets Manager for an invalid env JWK', async () => {
+            env.OIDC_SIGNING_KEY_JWK = 'invalid';
+            await expect(getOidcSigningKey()).rejects.toThrow('OIDC signing key');
+            expect(sendSecret).not.toHaveBeenCalled();
+        });
+    });
     it('returns a server error without a code redirect when authorization-code storage fails', async () => {
         const loginHint = await ticket();
         vi.spyOn(cache, 'set').mockResolvedValueOnce(undefined);
