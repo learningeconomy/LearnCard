@@ -21,9 +21,37 @@ export interface MongoAuthSubjectType extends AuthSubjectAttributes {
 export const getAuthSubjectsCollection = (): Collection<MongoAuthSubjectType> =>
     mongodb.collection<MongoAuthSubjectType>(AUTH_SUBJECTS_COLLECTION);
 
+const MONGO_NAMESPACE_NOT_FOUND = 26;
+const MONGO_INDEX_NOT_FOUND = 27;
+
+const mongoErrorCode = (error: unknown): unknown =>
+    typeof error === 'object' && error !== null ? (error as { code?: unknown }).code : undefined;
+
+/**
+ * `identityKey` is unique: each sign-in method maps to exactly one subject.
+ * `subject` is deliberately NOT unique — linked sign-in methods for the same
+ * person (email code + native Google/Apple with the same verified email) share
+ * one subject, so Keycloak and the wallet see a single account. Databases
+ * created before linking existed carry a unique `subject` index; drop it.
+ */
 export const createAuthSubjectIndexes = async (): Promise<void> => {
     const collection = getAuthSubjectsCollection();
-    await collection.createIndex({ subject: 1 }, { unique: true });
+
+    const existing = await collection.indexes().catch(error => {
+        if (mongoErrorCode(error) === MONGO_NAMESPACE_NOT_FOUND) return [];
+        throw error;
+    });
+    const legacyUniqueSubject = existing.find(
+        index =>
+            index.unique === true && index.key?.subject === 1 && Object.keys(index.key).length === 1
+    );
+    if (legacyUniqueSubject?.name) {
+        await collection.dropIndex(legacyUniqueSubject.name).catch(error => {
+            if (mongoErrorCode(error) !== MONGO_INDEX_NOT_FOUND) throw error;
+        });
+    }
+
+    await collection.createIndex({ subject: 1 });
     await collection.createIndex({ identityKey: 1 }, { unique: true });
 };
 
@@ -49,15 +77,18 @@ const isDuplicateKeyError = (error: unknown): boolean =>
     (error as { code?: unknown }).code === MONGO_DUPLICATE_KEY;
 
 /**
- * Persist a random, permanent subject independently of Firebase and UserKey.
+ * Shared upsert for both `getOrCreateAuthSubject` and `getOrCreateAuthSubjectLinkedTo`.
  *
  * Two concurrent first logins for the same identity can both miss the lookup
  * and race on the insert; the unique `identityKey` index rejects the loser
  * with E11000. Retrying once then finds the winner's document and only runs
- * the `$set` half of the upsert.
+ * the `$set` half of the upsert. `subjectForInsert` only takes effect when this
+ * `identityKey` doesn't exist yet (`$setOnInsert`) — an existing record always
+ * keeps its own `subject`, regardless of what's passed here.
  */
-export const getOrCreateAuthSubject = async (
+const upsertAuthSubject = async (
     identityKey: string,
+    subjectForInsert: string,
     attrs: AuthSubjectAttributes
 ): Promise<MongoAuthSubjectType> => {
     await ensureAuthSubjectIndexes();
@@ -74,7 +105,7 @@ export const getOrCreateAuthSubject = async (
         getAuthSubjectsCollection().findOneAndUpdate(
             { identityKey },
             {
-                $setOnInsert: { subject: randomUUID(), identityKey, createdAt: now },
+                $setOnInsert: { subject: subjectForInsert, identityKey, createdAt: now },
                 $set: fields,
             },
             { upsert: true, returnDocument: 'after' }
@@ -90,3 +121,27 @@ export const getOrCreateAuthSubject = async (
     if (!record) throw new Error('Unable to persist authentication subject');
     return record;
 };
+
+/** Persist a random, permanent subject independently of Firebase and UserKey. */
+export const getOrCreateAuthSubject = (
+    identityKey: string,
+    attrs: AuthSubjectAttributes
+): Promise<MongoAuthSubjectType> => upsertAuthSubject(identityKey, randomUUID(), attrs);
+
+/**
+ * Same as `getOrCreateAuthSubject`, but a brand-new `identityKey` adopts the given
+ * `subject` instead of minting a random one — used to unify a native social sign-in
+ * onto an already-existing email-code identity for the same verified email. If
+ * `identityKey` already has its own record (e.g. this provider/sub was seen before),
+ * that record's existing `subject` is kept untouched; it is never overwritten.
+ */
+export const getOrCreateAuthSubjectLinkedTo = (
+    identityKey: string,
+    subject: string,
+    attrs: AuthSubjectAttributes
+): Promise<MongoAuthSubjectType> => upsertAuthSubject(identityKey, subject, attrs);
+
+/** Read-only lookup used to find an existing identity to link a new one to. */
+export const findAuthSubjectByIdentityKey = (
+    identityKey: string
+): Promise<MongoAuthSubjectType | null> => getAuthSubjectsCollection().findOne({ identityKey });

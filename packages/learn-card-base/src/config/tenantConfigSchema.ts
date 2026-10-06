@@ -63,6 +63,12 @@ export const tenantKeycloakConfigSchema = z
         scopes: z.array(z.string()).default(['openid', 'profile', 'email', 'phone']),
         redirectUri: z.string().optional(),
         postLogoutRedirectUri: z.string().optional(),
+        /**
+         * Native only. Static page (apps/learn-card-app/public/auth/continue.html on the tenant web domain)
+         * opened first in the system auth sheet so it shows a branded loader instead of blank redirects.
+         * Omit to open the Keycloak authorize URL directly.
+         */
+        authBridgeUrl: z.string().url().optional(),
     })
     .passthrough();
 

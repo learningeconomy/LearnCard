@@ -7,7 +7,9 @@ import {
 } from 'oidc-client-ts';
 import type {
     CreateSigninRequestArgs,
+    INavigator,
     IWindow,
+    NavigateParams,
     NavigateResponse,
     RevokeTokensTypes,
     SigninSilentArgs,
@@ -16,7 +18,10 @@ import type {
 } from 'oidc-client-ts';
 import { AuthSessionError, UnsupportedSignInOperationError } from '@learncard/types';
 import type { AuthProvider, AuthUser } from '@learncard/types';
+import { getLogger } from '../logging/logger';
 import { createKeycloakUserStorage } from './keycloakUserStorage';
+
+const log = getLogger('keycloak-auth-provider');
 
 /**
  * Strip trailing slashes from a URL the host app supplies (config, not user
@@ -37,10 +42,18 @@ export interface UserManagerLike {
     getUser(): Promise<User | null>;
     storeUser(user: User | null): Promise<void>;
     signinSilent(): Promise<User | null>;
-    signinRedirect(args: { extraQueryParams: Record<string, string> }): Promise<void>;
+    signinRedirect(args: {
+        extraQueryParams: Record<string, string>;
+        state?: unknown;
+    }): Promise<void>;
     signinCallback(url?: string): Promise<User | undefined>;
-    signoutRedirect(args: { post_logout_redirect_uri: string }): Promise<void>;
+    signoutRedirect(args: {
+        post_logout_redirect_uri: string;
+        id_token_hint?: string;
+    }): Promise<void>;
     removeUser(): Promise<void>;
+    /** Best-effort on hosts that never reach end_session (e.g. native sign-out). */
+    revokeTokens?(types?: RevokeTokensTypes): Promise<void>;
     events: {
         addUserLoaded(callback: (user: User) => Promise<void> | void): unknown;
         removeUserLoaded(callback: (user: User) => Promise<void> | void): void;
@@ -66,12 +79,34 @@ export interface KeycloakAuthProviderConfig {
     userStore?: OidcStorage;
     /** Injectable SDK boundary; auth methods must await storeUser before emitting UserLoaded. */
     userManager?: UserManagerLike;
+    /** Validate app-owned OIDC state and returning identity before notifying consumers. */
+    validateRedirectUser?: (user: AuthUser, state: unknown) => void;
+    /**
+     * Native hosts: open `url` in a system auth sheet and resolve only after the
+     * callback URL has been passed to handleRedirectCallback. Web omits this and
+     * uses the SDK's redirect navigator.
+     */
+    navigate?: (url: string) => Promise<void>;
     /** Custom stores/managers must implement their own persistence migration. */
     setSessionPersistence?: (sessionOnly: boolean) => Promise<void>;
 }
 
+/** Routes the SDK's redirect-navigator through a host-supplied system auth sheet. */
+const createNativeRedirectNavigator = (navigate: (url: string) => Promise<void>): INavigator => ({
+    prepare: async (): Promise<IWindow> => ({
+        navigate: async (params: NavigateParams): Promise<NavigateResponse> => {
+            await navigate(params.url);
+            return { url: params.url };
+        },
+        close: (): void => {},
+    }),
+    callback: async (): Promise<void> => {},
+});
+
 export interface KeycloakAuthProvider extends AuthProvider {
     userManager: UserManagerLike;
+    /** Finish host cleanup before navigating away; the ID token is captured first. */
+    signOut(beforeRedirect?: () => Promise<void>): Promise<void>;
     /** Drain invalidated SDK work before admitting a new explicit authorization. */
     beginSignIn(): Promise<void>;
     /** true uses sessionStorage, false uses localStorage; await before starting sign-in. */
@@ -113,6 +148,8 @@ export const createKeycloakAuthProvider = (
     let signOutRevision = 0;
     let signedOut = false;
     let activeRevision: number | undefined;
+    let redirectContext: { previousUser: User | null } | undefined;
+    let renewal: Promise<User | null> | undefined;
     let authWork: Promise<unknown> | undefined;
     let writes: Promise<void> = Promise.resolve();
     let logout: Promise<void> = Promise.resolve();
@@ -160,6 +197,16 @@ export const createKeycloakAuthProvider = (
         const revision = activeRevision ?? signOutRevision;
         const write = writes.then(async () => {
             if (user) assertRevision(revision);
+            if (user && redirectContext) {
+                const current = await userManager.getUser();
+                assertRevision(revision);
+                if (current?.profile.sub !== redirectContext.previousUser?.profile.sub) {
+                    throw cancelled();
+                }
+                const mapped = keycloakUserToAuthUser(user);
+                if (!mapped) throw new AuthSessionError('Please sign in again.', 'no_session');
+                config.validateRedirectUser?.(mapped, user.state);
+            }
             if (user) userRevisions.set(user, revision);
             await store(user);
             // A native async write may already be running when logout begins.
@@ -172,6 +219,31 @@ export const createKeycloakAuthProvider = (
         writes = write.catch(() => undefined);
         return write;
     };
+    const runRenewal = (action: () => Promise<User | null>): Promise<User | null> => {
+        if (signedOut) return Promise.reject(cancelled());
+        if (renewal) return renewal;
+        renewal = runAuth(action).finally(() => {
+            renewal = undefined;
+        });
+        return renewal;
+    };
+    const runRedirect = (action: () => Promise<User | undefined>): Promise<User | undefined> =>
+        runAuth(async () => {
+            const revision = signOutRevision;
+            const previousUser = await userManager.getUser();
+            assertRevision(revision);
+            redirectContext = { previousUser };
+            try {
+                const user = await action();
+                assertRevision(revision);
+                const mapped = keycloakUserToAuthUser(user);
+                if (!mapped) throw new AuthSessionError('Please sign in again.', 'no_session');
+                config.validateRedirectUser?.(mapped, user?.state);
+                return user;
+            } finally {
+                redirectContext = undefined;
+            }
+        });
     const stateStore =
         config.userManager?.settings.stateStore ??
         new WebStorageStateStore({
@@ -224,10 +296,10 @@ export const createKeycloakAuthProvider = (
         }
 
         override signinSilent(args?: SigninSilentArgs): Promise<User | null> {
-            return runAuth(() => super.signinSilent(args));
+            return runRenewal(() => super.signinSilent(args));
         }
         override signinCallback(url?: string): Promise<User | undefined> {
-            return runAuth(() => super.signinCallback(url));
+            return runRedirect(() => super.signinCallback(url));
         }
         override storeUser(user: User | null): Promise<void> {
             if (user && this.logoutRevocationUsers.has(user)) return Promise.resolve();
@@ -290,13 +362,14 @@ export const createKeycloakAuthProvider = (
                 loadUserInfo: false,
                 monitorSession: false,
                 filterProtocolClaims: true,
-                revokeTokensOnSignout: true,
+                // Keycloak end-session ends the session and invalidates tokens without prior revocation.
+                revokeTokensOnSignout: false,
                 stateStore,
                 userStore: new WebStorageStateStore({
                     store: config.userStore ?? browserStorage?.store ?? new InMemoryWebStorage(),
                 }),
             },
-            undefined,
+            config.navigate ? createNativeRedirectNavigator(config.navigate) : undefined,
             undefined,
             {
                 // Automatic renewal calls the SDK directly. Reject its iframe fallback too.
@@ -339,8 +412,8 @@ export const createKeycloakAuthProvider = (
         userManager.storeUser = user => guardStore(store, user);
         const silent = userManager.signinSilent.bind(userManager);
         const callback = userManager.signinCallback.bind(userManager);
-        userManager.signinSilent = () => runAuth(silent);
-        userManager.signinCallback = url => runAuth(() => callback(url));
+        userManager.signinSilent = () => runRenewal(silent);
+        userManager.signinCallback = url => runRedirect(() => callback(url));
     }
     const beginSignIn = (): Promise<void> => {
         const revision = signOutRevision;
@@ -471,7 +544,7 @@ export const createKeycloakAuthProvider = (
                 reauthenticating = false;
             }
         },
-        signOut: (): Promise<void> => {
+        signOut: (beforeRedirect?: () => Promise<void>): Promise<void> => {
             signOutRevision++;
             signedOut = true;
             const previousLogout = logout;
@@ -480,18 +553,27 @@ export const createKeycloakAuthProvider = (
                 await previousLogout.catch(() => undefined);
                 await writes;
                 await clearSigninState();
-                if (config.postLogoutRedirectUri) {
+                const user = await userManager.getUser();
+                if (!config.postLogoutRedirectUri || !user?.id_token) {
+                    // Native/no-redirect hosts never reach end_session. Revoke while
+                    // tokens remain in storage, before removing the local session.
                     try {
-                        await userManager.signoutRedirect({
-                            post_logout_redirect_uri: config.postLogoutRedirectUri,
-                        });
+                        await userManager.revokeTokens?.();
                     } catch (error) {
-                        // SDK revocation can fail before removeUser. A reload must
-                        // not restore the old session even if remote logout fails.
-                        await userManager.removeUser();
-                        throw error;
+                        log.debug('Unable to revoke Keycloak tokens on sign-out', error);
                     }
-                } else {
+                    await userManager.removeUser();
+                    return;
+                }
+                try {
+                    // Capture the ID token before host cleanup can clear storage.
+                    await beforeRedirect?.();
+                    await userManager.signoutRedirect({
+                        post_logout_redirect_uri: config.postLogoutRedirectUri,
+                        id_token_hint: user.id_token,
+                    });
+                } catch {
+                    // Still clear local auth when cleanup, discovery, or navigation fails.
                     await userManager.removeUser();
                 }
             })();

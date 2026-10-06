@@ -2,6 +2,17 @@
 # In 26.7.4 HTTP_RELATIVE_PATH is build-time; CACHE and CACHE_STACK are runtime.
 ARG KEYCLOAK_VERSION=26.7.4
 FROM quay.io/keycloak/keycloak:${KEYCLOAK_VERSION} AS builder
+
+# Apple Identity Provider for Keycloak (https://github.com/klausbetz/apple-identity-provider-keycloak)
+# v1.17.0 is the first release compatible with Keycloak >= 26.5. Providers must be present
+# before `kc.sh build` runs. Pin by digest so a compromised/rotated release asset fails the
+# build instead of silently changing behavior; bump both the version and the checksum
+# together (see infra/keycloak/README.md).
+ADD --checksum=sha256:4091dee2a1ec9e0771bef4bd46005197d86b0a2b1f25198c41738476b1d102bb \
+    --chown=keycloak:keycloak \
+    https://github.com/klausbetz/apple-identity-provider-keycloak/releases/download/1.17.0/apple-identity-provider-1.17.0.jar \
+    /opt/keycloak/providers/apple-identity-provider-1.17.0.jar
+
 ENV KC_DB=postgres \
     KC_HEALTH_ENABLED=true \
     KC_METRICS_ENABLED=true \

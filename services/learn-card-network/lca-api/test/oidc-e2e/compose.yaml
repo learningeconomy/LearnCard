@@ -10,13 +10,22 @@ services:
         ports: ['127.0.0.1::6379']
         tmpfs: ['/data']
     keycloak:
-        image: quay.io/keycloak/keycloak:26.7.4
+        # The canonical realm includes Apple, so stock Keycloak cannot import it.
+        build:
+            context: ../../../../../infra/keycloak
+            dockerfile: Dockerfile.dev
         command: start-dev --import-realm
         environment:
             KC_BOOTSTRAP_ADMIN_USERNAME: admin
             KC_BOOTSTRAP_ADMIN_PASSWORD: ${OIDC_E2E_ADMIN_PASSWORD:-unused-during-cleanup}
             KC_HOSTNAME: http://localhost:${OIDC_E2E_KEYCLOAK_PORT:-18081}
             KC_HTTP_ENABLED: 'true'
+            GOOGLE_CLIENT_ID: ci-google-client-id.apps.googleusercontent.com
+            GOOGLE_CLIENT_SECRET: ci-google-client-secret
+            APPLE_SERVICE_ID: com.learncard.ci.signin
+            APPLE_TEAM_ID: ci-apple-team-id
+            APPLE_KEY_ID: ci-apple-key-id
+            APPLE_P8_CONTENT: ci-placeholder-not-a-real-key
         ports: ['127.0.0.1:${OIDC_E2E_KEYCLOAK_PORT:-18081}:8080']
         extra_hosts: ['host.docker.internal:host-gateway']
         tmpfs: ['/opt/keycloak/data:uid=1000,gid=0']

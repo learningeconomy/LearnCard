@@ -79,12 +79,33 @@ The `escrow` tRPC router is disabled unless `ESCROW_ENCLAVE_MODE` is configured.
 
 `auth.requestLoginTicket` and `auth.requestSocialLoginTicket` prove ownership in-app and issue 60-second single-use tickets. The ticket travels in URLs (`login_hint` on the Keycloak auth URL and again on the `/oidc/authorize` redirect), so it lands in browser history and API Gateway access logs; single-use + the short TTL is what makes that acceptable. Do not lengthen the TTL without revisiting that.
 `src/oidc.ts` serves discovery, JWKS, authorize, token and userinfo in Docker and Lambda; no CORS or duplicate tRPC endpoints.
-Subjects are random permanent UUIDs in `AuthSubject`, keyed by normalized email or Google/Apple subject (never auto-linked by email).
+Subjects are random permanent UUIDs in `AuthSubject`, keyed by normalized email or Google/Apple subject.
+`requestSocialLoginTicket` is the one exception to "never auto-linked by email": when `verifySocialIdToken`
+returns a verified email (Apple's private-relay addresses count), a brand-new `<provider>:<sub>` identity
+adopts the existing `email:<address>` identity's `subject` via `getOrCreateAuthSubjectLinkedTo`
+(`$setOnInsert`), so a user doesn't hit "Account already exists" switching from email-code to native
+social sign-in. It never runs the other direction, and an already-existing `<provider>:<sub>` record
+keeps its own `subject` — only a first-time native sign-in can be linked this way.
 Require `OIDC_ISSUER`, an exact redirect allowlist, and a token client secret; any deployed stage (`NODE_ENV=production` or `LAMBDA_STAGE` set) additionally requires an RSA private `OIDC_SIGNING_KEY_JWK`.
 Login codes, tickets and authorization codes are consumed with `getDel` (`src/cache/getDel.ts`, Redis `GETDEL`, requires Redis >= 6.2).
 Rate limiting is two layers, both keyed on `request.ip` (API Gateway `sourceIp` under `serverless-http`; `x-forwarded-for` is attacker-controlled and never trusted). Both fail open if Redis is unreachable. **Layer 1 — failures only** (`src/helpers/rate-limit.helpers.ts`, Redis counters, 10-minute window): the ticket routes use 5 per email plus a 50-per-IP backstop; `/oidc/authorize` (bad client/redirect, invalid ticket) and `/oidc/token` (`invalid_client` only) each use 50 per IP and answer `429 temporarily_unavailable` + `Retry-After` (or an OAuth error redirect once the `redirect_uri` is validated). `invalid_grant` at the token endpoint is deliberately not counted: only the broker (one NAT IP) can reach that branch, and counting the codes it relays would let anyone lock every user out. **Layer 2 — all requests** (`@fastify/rate-limit`, registered in `oidcFastifyPlugin`, Redis-backed when available): 300/min per IP globally so Keycloak's discovery/JWKS polling is never blocked; 60/min per IP on the browser-facing `/oidc/authorize`; a 3000/min sanity ceiling on the server-to-server `/oidc/token` and `/oidc/userinfo` (every legitimate call shares the broker's egress IP, so a tight cap there is a global login ceiling). Layer 2 exists mainly so CodeQL's `js/missing-rate-limiting` recognises the routes; do not remove either layer.
 Unit coverage is in `test/oidc.spec.ts` and `test/auth-tickets.spec.ts`; broker import coverage is gated by `KEYCLOAK_INTEGRATION`.
-The complete live email-code broker round-trip is covered by `bun run test:oidc:e2e` (Playwright, real lca-api + disposable Keycloak/Redis/Mongo). Keep its cleanup contract: exact per-test user/subject deletion, private transient stores, and runner teardown on success/failure/signals. Never point it at shared environments. Phone OTP remains deferred; see the migration plan AD-2/AD-10.
+Phone OTP remains deferred. The complete live broker round-trip and Firebase-era mapping proof
+are in `test/keycloak-broker-roundtrip.integration.spec.ts` and
+`test/keycloak-migration.integration.spec.ts`, gated on both `KEYCLOAK_INTEGRATION=true`
+and `KEYCLOAK_ROUNDTRIP=true`. With both flags, `vitest.integration.config.ts` selects
+only the live auth suites and aliases Mongo to the explicitly configured API database;
+without them, existing temporary-Mongo integration suites retain their setup.
+See `infra/keycloak/README.md` at the repository root for the local command.
+
+`bun run provision:keycloak` previews the AD-10 mapping migration; `--apply` writes,
+`--email` and `--limit` restrict a batch. Never use this operator-only email join in a
+runtime login route. Dry-run performs no resource writes, including no index creation.
+Existing AuthSubjects are read, not upserted, so repeat apply does not alter lastLoginAt.
+The final global email mapping coverage gate must pass before cutover. Phone-only
+accounts remain a separately reported deferred cohort.
+
+`bun run test:oidc:e2e` also covers the complete email-code broker round-trip in Playwright, with real lca-api and disposable Keycloak/Redis/Mongo. Keep its cleanup contract: exact per-test user/subject deletion, private transient stores, and runner teardown on success/failure/signals. Never point it at shared environments.
 
 ### Keycloak broker gotchas
 

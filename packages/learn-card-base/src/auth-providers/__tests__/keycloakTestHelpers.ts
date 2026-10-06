@@ -63,6 +63,7 @@ export const createManager = (initial: User | null = createUser()) => {
         signinRedirect: vi.fn(async () => undefined),
         signinCallback: methods.signinCallback as UserManagerLike['signinCallback'],
         signoutRedirect: vi.fn(async () => undefined),
+        revokeTokens: vi.fn(async () => undefined),
         removeUser: vi.fn(async () => {
             user = null;
             for (const listener of unloaded) listener();
