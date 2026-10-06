@@ -21,6 +21,7 @@
         "smoke:staging": "bun --conditions=development scripts/smoke.ts",
         "smoke:feed-wasm": "bun --conditions=development scripts/assistant-feed-wasm-regression.ts",
         "smoke:sentry": "bun --conditions=development scripts/sentry-telemetry-smoke.ts",
+        "test:runtime-did-auth": "node scripts/test-runtime-did-auth.mjs",
         "test": "bunx vitest"
     },
     "keywords": [],

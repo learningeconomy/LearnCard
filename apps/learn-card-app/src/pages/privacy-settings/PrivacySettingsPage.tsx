@@ -130,7 +130,10 @@ const PrivacySettingsPage: React.FC = () => {
     const isMinor = ageGate.isChildProfile || ageGate.isMinorByAge;
     const shared = useSharedLinks(
         flags?.shareMultipleEnabled === true,
-        !isMinor,
+        !isMinor ||
+            (currentLCNUser?.isServiceProfile === true &&
+                currentLCNUser.type !== 'child' &&
+                !ageGate.isChildProfile),
         handlePreviewShare,
         handlePreviewSavedCollection,
         handleUpdateShare,

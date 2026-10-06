@@ -113,6 +113,14 @@ vi.mock('../../hooks/useGuardianGate', () => ({
     useGuardianGate: () => ({ guardedAction: state.guardian }),
 }));
 vi.mock('./useConsentFlow', () => ({ default: () => ({}) }));
+vi.mock('./useConsentAccountIdentity', () => ({
+    useConsentAccountIdentity: () => ({
+        displayName: 'Learner',
+        image: undefined,
+        profileId: 'learner',
+        isLoading: false,
+    }),
+}));
 vi.mock('../../helpers/contract.helpers', () => ({
     getMinimumTermsForContract: () => ({
         read: {
