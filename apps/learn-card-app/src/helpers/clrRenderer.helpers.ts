@@ -1,4 +1,9 @@
 import { formatLocaleDate } from '../i18n/formatters';
+import {
+    normalizeClrCredential,
+    type ClrNormalizedModel,
+    type ClrNormalizedRecord,
+} from 'learn-card-base/helpers/credentials/clr';
 /** A directly mapped CLR/OB value with provenance metadata for traceable rendering. */
 export type SourceMappedField<T> = {
     value: T;
@@ -254,6 +259,10 @@ export type IssuerAddressDisplayModel = {
 
 /** Complete normalized display model consumed by transcript renderer surfaces and views. */
 export type ClrTranscriptDisplayModel = {
+    /** Source-preserving CLR normalization shared with other LearnCard surfaces. */
+    canonical: ClrNormalizedModel;
+    /** Convenience alias for canonical.records during the legacy view migration. */
+    records: ClrNormalizedRecord[];
     meta: {
         /** True if the publisher intentionally omitted some assertions from this CLR. */
         partial: boolean;
@@ -871,7 +880,8 @@ const resolveAchievedLevel = (
 const classifyRecord = (
     nestedCredential: Record<string, unknown>,
     warnings: DisplayWarning[],
-    fallbackId: string
+    fallbackId: string,
+    canonicalRecord?: ClrNormalizedRecord
 ): {
     course?: CourseDisplayModel;
     program?: ProgramDisplayModel;
@@ -890,9 +900,11 @@ const classifyRecord = (
     const achievementType =
         typeof achievement.achievementType === 'string' ? achievement.achievementType : undefined;
 
-    const resultDescriptions = asArray<Record<string, unknown>>(
-        achievement.resultDescription as Record<string, unknown>[]
-    );
+    const resultDescriptions =
+        canonicalRecord?.resultDescriptions.map(description => description.source) ??
+        asArray<Record<string, unknown>>(
+            achievement.resultDescription as Record<string, unknown>[]
+        );
 
     const resultDescriptionById = new Map(
         resultDescriptions
@@ -1312,6 +1324,7 @@ export const normalizeClrTranscriptDisplayModel = (
 ): ClrTranscriptDisplayModel => {
     // Normalization is the single source of truth for render decisions across all surfaces/views.
     const warnings: DisplayWarning[] = [];
+    const canonical = normalizeClrCredential(rawCredential);
 
     const credentialSubject = getSingleCredentialSubject(rawCredential) ?? {};
     const nestedCredentials = asArray<Record<string, unknown>>(
@@ -1403,7 +1416,10 @@ export const normalizeClrTranscriptDisplayModel = (
     }
 
     for (const { nestedCredential, recordId } of academicRecordEntries) {
-        const normalized = classifyRecord(nestedCredential, warnings, recordId);
+        const canonicalRecord = canonical.records.find(
+            record => record.sourceCredential === nestedCredential
+        );
+        const normalized = classifyRecord(nestedCredential, warnings, recordId, canonicalRecord);
         if (normalized.course) courses.push(normalized.course);
         if (normalized.program) programs.push(normalized.program);
         if (normalized.competency) competencies.push(normalized.competency);
@@ -1546,6 +1562,8 @@ export const normalizeClrTranscriptDisplayModel = (
     }
 
     return {
+        canonical,
+        records: canonical.records,
         meta: {
             partial,
             credentialStatusType,
