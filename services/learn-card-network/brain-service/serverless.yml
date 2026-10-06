@@ -263,6 +263,19 @@ functions:
                   rate: rate(1 day)
                   enabled: true
 
+    # Retry durable consent notification intents once per minute.
+    contractEvents:
+        handler: contractEventsLambda.contractEventsHandler
+        timeout: 60
+        reservedConcurrency: 1
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - schedule: rate(1 minute)
+
     # LC-2187 share-link recovery + cleanup. Dedicated entrypoint (no lambda.ts
     # import-time work). Runs automatically with valid service configuration;
     # absent wiring remains inert and partial wiring fails closed. The cadence
