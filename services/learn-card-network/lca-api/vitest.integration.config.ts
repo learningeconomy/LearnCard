@@ -12,6 +12,7 @@ export default createVitestConfig(serviceIntegrationPreset, {
         include: liveBroker
             ? [
                   'test/keycloak-broker-roundtrip.integration.spec.ts',
+                  'test/keycloak-social-broker.integration.spec.ts',
                   'test/keycloak-migration.integration.spec.ts',
                   'test/keycloak-verify.integration.spec.ts',
                   'test/oidc.integration.spec.ts',

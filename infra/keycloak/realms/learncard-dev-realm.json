@@ -5,6 +5,120 @@
     "bruteForceProtected": true,
     "resetPasswordAllowed": false,
     "sslRequired": "none",
+    "requiredActions": [
+        {
+            "alias": "VERIFY_EMAIL",
+            "name": "Verify Email",
+            "providerId": "VERIFY_EMAIL",
+            "enabled": true,
+            "defaultAction": false,
+            "priority": 50
+        },
+        {
+            "alias": "UPDATE_PROFILE",
+            "name": "Update Profile",
+            "providerId": "UPDATE_PROFILE",
+            "enabled": false,
+            "defaultAction": false,
+            "priority": 40
+        },
+        {
+            "alias": "CONFIGURE_TOTP",
+            "name": "Configure OTP",
+            "providerId": "CONFIGURE_TOTP",
+            "enabled": true,
+            "defaultAction": false,
+            "priority": 54
+        },
+        {
+            "alias": "UPDATE_PASSWORD",
+            "name": "Update Password",
+            "providerId": "UPDATE_PASSWORD",
+            "enabled": true,
+            "defaultAction": false,
+            "priority": 57
+        },
+        {
+            "alias": "TERMS_AND_CONDITIONS",
+            "name": "Terms and Conditions",
+            "providerId": "TERMS_AND_CONDITIONS",
+            "enabled": false,
+            "defaultAction": false,
+            "priority": 20
+        },
+        {
+            "alias": "delete_account",
+            "name": "Delete Account",
+            "providerId": "delete_account",
+            "enabled": false,
+            "defaultAction": false,
+            "priority": 60
+        },
+        {
+            "alias": "delete_credential",
+            "name": "Delete Credential",
+            "providerId": "delete_credential",
+            "enabled": true,
+            "defaultAction": false,
+            "priority": 110
+        },
+        {
+            "alias": "update_user_locale",
+            "name": "Update User Locale",
+            "providerId": "update_user_locale",
+            "enabled": true,
+            "defaultAction": false,
+            "priority": 1000
+        },
+        {
+            "alias": "UPDATE_EMAIL",
+            "name": "Update Email",
+            "providerId": "UPDATE_EMAIL",
+            "enabled": false,
+            "defaultAction": false,
+            "priority": 70
+        },
+        {
+            "alias": "CONFIGURE_RECOVERY_AUTHN_CODES",
+            "name": "Recovery Authentication Codes",
+            "providerId": "CONFIGURE_RECOVERY_AUTHN_CODES",
+            "enabled": true,
+            "defaultAction": false,
+            "priority": 130
+        },
+        {
+            "alias": "webauthn-register",
+            "name": "Webauthn Register",
+            "providerId": "webauthn-register",
+            "enabled": true,
+            "defaultAction": false,
+            "priority": 80
+        },
+        {
+            "alias": "webauthn-register-passwordless",
+            "name": "Webauthn Register Passwordless",
+            "providerId": "webauthn-register-passwordless",
+            "enabled": true,
+            "defaultAction": false,
+            "priority": 90
+        },
+        {
+            "alias": "VERIFY_PROFILE",
+            "name": "Verify Profile",
+            "providerId": "VERIFY_PROFILE",
+            "enabled": false,
+            "defaultAction": false,
+            "priority": 100
+        },
+        {
+            "alias": "idp_link",
+            "name": "Linking Identity Provider",
+            "providerId": "idp_link",
+            "enabled": true,
+            "defaultAction": false,
+            "priority": 120
+        }
+    ],
     "components": {
         "org.keycloak.userprofile.UserProfileProvider": [
             {
@@ -151,6 +265,32 @@
     ],
     "authenticationFlows": [
         {
+            "alias": "social first broker login",
+            "providerId": "basic-flow",
+            "topLevel": true,
+            "builtIn": false,
+            "authenticationExecutions": [
+                {
+                    "authenticator": "idp-review-profile",
+                    "authenticatorFlow": false,
+                    "requirement": "DISABLED",
+                    "priority": 10
+                },
+                {
+                    "authenticator": "idp-create-user-if-unique",
+                    "authenticatorFlow": false,
+                    "requirement": "ALTERNATIVE",
+                    "priority": 20
+                },
+                {
+                    "authenticator": "idp-auto-link",
+                    "authenticatorFlow": false,
+                    "requirement": "ALTERNATIVE",
+                    "priority": 30
+                }
+            ]
+        },
+        {
             "alias": "Account verification options",
             "description": "Method with which to verify the existing account",
             "providerId": "basic-flow",
@@ -292,11 +432,11 @@
                     "userSetupAllowed": false
                 },
                 {
-                    "authenticatorFlow": true,
+                    "authenticator": "idp-auto-link",
+                    "authenticatorFlow": false,
                     "requirement": "ALTERNATIVE",
                     "priority": 20,
-                    "autheticatorFlow": true,
-                    "flowAlias": "Handle Existing Account",
+                    "autheticatorFlow": false,
                     "userSetupAllowed": false
                 }
             ]
@@ -415,15 +555,18 @@
             "displayName": "Google",
             "providerId": "google",
             "enabled": true,
-            "trustEmail": false,
+            "trustEmail": true,
             "storeToken": false,
             "addReadTokenRoleOnCreate": false,
             "hideOnLogin": false,
             "linkOnly": false,
-            "firstBrokerLoginFlowAlias": "first broker login",
+            "firstBrokerLoginFlowAlias": "social first broker login",
             "config": {
                 "clientId": "${GOOGLE_CLIENT_ID}",
                 "clientSecret": "${GOOGLE_CLIENT_SECRET}",
+                "filteredByClaim": "true",
+                "claimFilterName": "email_verified",
+                "claimFilterValue": "^true$",
                 "defaultScope": "openid profile email",
                 "syncMode": "IMPORT"
             }
@@ -433,15 +576,19 @@
             "displayName": "Apple",
             "providerId": "apple",
             "enabled": true,
-            "trustEmail": false,
+            "trustEmail": true,
             "storeToken": false,
             "addReadTokenRoleOnCreate": false,
             "hideOnLogin": false,
             "linkOnly": false,
-            "firstBrokerLoginFlowAlias": "first broker login",
+            "firstBrokerLoginFlowAlias": "social first broker login",
             "config": {
                 "clientId": "${APPLE_SERVICE_ID}",
                 "clientSecret": "${APPLE_P8_CONTENT}",
+                "filteredByClaim": "true",
+                "claimFilterName": "email_verified",
+                "claimFilterValue": "^true$",
+                "tokenExchangeAccountLinkingEnabled": "false",
                 "teamId": "${APPLE_TEAM_ID}",
                 "keyId": "${APPLE_KEY_ID}",
                 "defaultScope": "name%20email",
