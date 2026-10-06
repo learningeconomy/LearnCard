@@ -347,13 +347,16 @@ const createContentRedactor = (initial: string[] = [], config = activeConfig) =>
         if (
             content === undefined ||
             content.length > 16_384 ||
-            registeredCharacters + content.length > 65_536
+            (!fragments.has(content) && registeredCharacters + content.length > 65_536)
         ) {
             overflowed = true;
             fragments.clear();
             orderedFragments = undefined;
             return;
         }
+        // Exact values already covered consume no additional cumulative budget,
+        // but every registration must still satisfy the per-value limit.
+        if (fragments.has(content)) return;
         registeredCharacters += content.length;
         orderedFragments = undefined;
         fragments.add(content);
@@ -847,7 +850,7 @@ export const createAgentRunTelemetry = ({
     registerToolNames: (names: string[]) => void;
 } => {
     const content = createContentRedactor([ownerDid, ...sensitiveContent], config);
-    const knownTools = new Set(['listSkills', 'readSkill']);
+    const knownTools = new Set(['listSkills', 'searchSkills', 'readSkill']);
     const safeModel = (model: string): string =>
         (model === config.model || model === config.retroModel) &&
         /^[a-z0-9][a-z0-9_.:/-]{0,100}$/i.test(model)

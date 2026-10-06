@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { CloudWatchClient, PutMetricDataCommand } from '@aws-sdk/client-cloudwatch';
 import * as Sentry from '@sentry/node';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -826,6 +827,126 @@ describe('Sentry final SDK envelopes', () => {
         } finally {
             initializeObservability(config, memory.transport);
             errorLogs.mockRestore();
+        }
+    });
+
+    it('charges repeated covered content only once and preserves unrelated diagnostics', async () => {
+        const privateValue = 'RepeatedPrivateValue '.repeat(750);
+        expect(privateValue.length).toBeLessThanOrEqual(16_384);
+        const run = telemetry([privateValue]);
+        for (let index = 0; index < 6; index += 1) {
+            run.observer.onSensitiveContent?.(privateValue);
+        }
+        expect(privateValue.length * 7).toBeGreaterThan(65_536);
+        run.failed(new Error('Provider unavailable: RepeatedPrivateValue'), 1);
+        await flushObservability();
+        expect(failures('agent.run')[0]?.exception?.values?.[0]?.value).toBe(
+            'Provider unavailable: [REDACTED]'
+        );
+        expect(JSON.stringify(memory.events)).not.toContain('RepeatedPrivateValue');
+    });
+
+    it('enforces the per-value limit for an already-covered escaped representation', async () => {
+        const privateValue = '\n'.repeat(9_000);
+        const escapedValue = JSON.stringify(privateValue).slice(1, -1);
+        expect(privateValue.length).toBeLessThanOrEqual(16_384);
+        expect(escapedValue.length).toBeGreaterThan(16_384);
+        const run = telemetry([privateValue]);
+        run.observer.onSensitiveContent?.(escapedValue);
+        run.failed(new Error('Provider unavailable'), 1);
+        await flushObservability();
+        expect(failures('agent.run')[0]?.exception?.values?.[0]?.value).toBe(
+            '[Message withheld: sensitive content exceeded redaction capacity]'
+        );
+    });
+
+    it.each(['unique cumulative overflow', 'per-value overflow', 'unavailable content'])(
+        'continues to fail closed for %s',
+        async scenario => {
+            const run = telemetry();
+            if (scenario === 'unique cumulative overflow') {
+                for (let index = 0; index < 5; index += 1) {
+                    run.observer.onSensitiveContent?.(`${index}${'PrivateOverflow'.repeat(1_170)}`);
+                }
+            } else {
+                run.observer.onSensitiveContent?.(
+                    scenario === 'per-value overflow' ? 'x'.repeat(16_385) : undefined
+                );
+            }
+            run.failed(new Error('Provider unavailable: PrivateOverflow'), 1);
+            await flushObservability();
+            expect(failures('agent.run')[0]?.exception?.values?.[0]?.value).toBe(
+                '[Message withheld: sensitive content exceeded redaction capacity]'
+            );
+            expect(JSON.stringify(memory.events)).not.toContain('PrivateOverflow');
+        }
+    );
+
+    it('keeps searchSkills literal across lifecycle, application and CloudWatch logs', async () => {
+        const logs = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+        const send = vi
+            .spyOn(CloudWatchClient.prototype, 'send')
+            .mockResolvedValue({ $metadata: {} });
+        try {
+            initializeObservability(
+                { ...config, nodeEnv: 'production', cloudWatchMetricsEnabled: true },
+                memory.transport
+            );
+            const run = telemetry();
+            for (const name of ['searchSkills', 'UnregisteredPrivateTool']) {
+                run.observer.onToolComplete?.({ name, durationMs: 1, success: true });
+            }
+            await flushObservability();
+            const expectedNames = [
+                'searchSkills',
+                `sha256:${createHash('sha256')
+                    .update('UnregisteredPrivateTool')
+                    .digest('hex')
+                    .slice(0, 24)}`,
+            ];
+            expect(
+                memory.events
+                    .filter(
+                        event =>
+                            event.message === 'agent.tool.completed' &&
+                            event.tags?.recordKind !== 'application-log'
+                    )
+                    .map(event => event.tags?.toolName)
+            ).toEqual(expectedNames);
+            expect(expectSafeLogStream().map(record => record.fields.toolName)).toEqual(
+                expectedNames
+            );
+            const cloudWatch = logs.mock.calls.map(([record]) => record as string);
+            expect(
+                cloudWatch
+                    .filter(record => record.includes('agent.tool.completed'))
+                    .map(record => record.match(/toolName=(\S+)/)?.[1])
+            ).toEqual(expectedNames);
+            const metrics = send.mock.calls.flatMap(
+                ([command]) => (command as PutMetricDataCommand).input.MetricData ?? []
+            );
+            for (const metricName of ['ToolCallCount', 'ToolFailureCount', 'ToolCallLatency']) {
+                expect(
+                    metrics
+                        .filter(
+                            metric =>
+                                metric.MetricName === metricName &&
+                                metric.Dimensions?.some(dimension => dimension.Name === 'ToolName')
+                        )
+                        .map(
+                            metric =>
+                                metric.Dimensions?.find(dimension => dimension.Name === 'ToolName')
+                                    ?.Value
+                        )
+                ).toEqual(expectedNames);
+            }
+            expect(JSON.stringify([memory.events, logs.mock.calls, send.mock.calls])).not.toContain(
+                'UnregisteredPrivateTool'
+            );
+        } finally {
+            initializeObservability(config, memory.transport);
+            logs.mockRestore();
+            send.mockRestore();
         }
     });
 
