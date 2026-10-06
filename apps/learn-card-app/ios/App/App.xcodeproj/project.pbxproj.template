@@ -10,6 +10,8 @@
 		2FAD9763203C412B000D30F8 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
 		50379B232058CBB4000EE86E /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
 		504EC3081FED79650016851F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
+		9582B6852FE996820072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6842FE996800072D4E8 /* SceneDelegate.swift */; };
+		9582B6872FE996840072D4E8 /* BarcodeScannerPluginSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6862FE996830072D4E8 /* BarcodeScannerPluginSimulator.swift */; };
 		FEEDBAC10000000000000001 /* MyViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEEDBAC10000000000000002 /* MyViewController.swift */; };
 		FEEDBAC10000000000000003 /* ScreenshotObserverPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEEDBAC10000000000000004 /* ScreenshotObserverPlugin.swift */; };
 		FEEDBAC10000000000000005 /* ShakeObserverPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEEDBAC10000000000000006 /* ShakeObserverPlugin.swift */; };
@@ -27,6 +29,8 @@
 		50379B222058CBB4000EE86E /* capacitor.config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
 		504EC3041FED79650016851F /* App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = App.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		504EC3071FED79650016851F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		9582B6842FE996800072D4E8 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		9582B6862FE996830072D4E8 /* BarcodeScannerPluginSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeScannerPluginSimulator.swift; sourceTree = "<group>"; };
 		FEEDBAC10000000000000002 /* MyViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyViewController.swift; sourceTree = "<group>"; };
 		FEEDBAC10000000000000004 /* ScreenshotObserverPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotObserverPlugin.swift; sourceTree = "<group>"; };
 		FEEDBAC10000000000000006 /* ShakeObserverPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShakeObserverPlugin.swift; sourceTree = "<group>"; };
@@ -86,6 +90,8 @@
 				F9B2528128E655E4006C0001 /* GoogleService-Info.plist */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
+				9582B6842FE996800072D4E8 /* SceneDelegate.swift */,
+				9582B6862FE996830072D4E8 /* BarcodeScannerPluginSimulator.swift */,
 				FEEDBAC10000000000000002 /* MyViewController.swift */,
 				FEEDBAC10000000000000004 /* ScreenshotObserverPlugin.swift */,
 				FEEDBAC10000000000000006 /* ShakeObserverPlugin.swift */,
@@ -224,6 +230,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
+				9582B6852FE996820072D4E8 /* SceneDelegate.swift in Sources */,
+				9582B6872FE996840072D4E8 /* BarcodeScannerPluginSimulator.swift in Sources */,
 				FEEDBAC10000000000000001 /* MyViewController.swift in Sources */,
 				FEEDBAC10000000000000003 /* ScreenshotObserverPlugin.swift in Sources */,
 				FEEDBAC10000000000000005 /* ShakeObserverPlugin.swift in Sources */,
