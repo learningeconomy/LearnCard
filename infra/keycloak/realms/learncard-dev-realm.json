@@ -1,0 +1,147 @@
+{
+    "realm": "learncard",
+    "enabled": true,
+    "registrationAllowed": false,
+    "bruteForceProtected": true,
+    "resetPasswordAllowed": false,
+    "sslRequired": "none",
+    "components": {
+        "org.keycloak.userprofile.UserProfileProvider": [
+            {
+                "providerId": "declarative-user-profile",
+                "config": {
+                    "kc.user.profile.config": [
+                        "{\"attributes\":[{\"name\":\"username\",\"required\":{\"roles\":[\"user\",\"admin\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"email\",\"validations\":{\"email\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"firstName\",\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"lastName\",\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"phone_number\",\"multivalued\":false,\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\"]}},{\"name\":\"phone_number_verified\",\"multivalued\":false,\"validations\":{\"options\":{\"options\":[\"true\",\"false\"]}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\"]}}]}"
+                    ]
+                }
+            }
+        ]
+    },
+    "clients": [
+        {
+            "clientId": "learncard-app",
+            "protocol": "openid-connect",
+            "enabled": true,
+            "publicClient": true,
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": false,
+            "implicitFlowEnabled": false,
+            "serviceAccountsEnabled": false,
+            "redirectUris": ["http://localhost:3000/*", "capacitor://localhost/*"],
+            "webOrigins": ["+"],
+            "attributes": {
+                "pkce.code.challenge.method": "S256",
+                "post.logout.redirect.uris": "http://localhost:3000/*##capacitor://localhost/*"
+            },
+            "defaultClientScopes": ["profile", "email", "roles", "web-origins", "basic"],
+            "protocolMappers": [
+                {
+                    "name": "phone_number",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-attribute-mapper",
+                    "config": {
+                        "user.attribute": "phone_number",
+                        "claim.name": "phone_number",
+                        "jsonType.label": "String",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                },
+                {
+                    "name": "phone_number_verified",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-attribute-mapper",
+                    "config": {
+                        "user.attribute": "phone_number_verified",
+                        "claim.name": "phone_number_verified",
+                        "jsonType.label": "boolean",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                }
+            ]
+        },
+        {
+            "clientId": "lca-api",
+            "description": "Dev fixture placeholder; never use this secret outside local/CI",
+            "protocol": "openid-connect",
+            "enabled": true,
+            "publicClient": false,
+            "secret": "dev-only-secret",
+            "serviceAccountsEnabled": true,
+            "standardFlowEnabled": false,
+            "implicitFlowEnabled": false,
+            "directAccessGrantsEnabled": false
+        },
+        {
+            "clientId": "ci-tests",
+            "description": "CI/dev only; never create in staging/prod",
+            "protocol": "openid-connect",
+            "enabled": true,
+            "publicClient": false,
+            "secret": "ci-tests-dev-only-secret",
+            "directAccessGrantsEnabled": true,
+            "standardFlowEnabled": false,
+            "implicitFlowEnabled": false,
+            "serviceAccountsEnabled": false,
+            "defaultClientScopes": ["profile", "email", "roles", "web-origins", "basic"],
+            "protocolMappers": [
+                {
+                    "name": "phone_number",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-attribute-mapper",
+                    "config": {
+                        "user.attribute": "phone_number",
+                        "claim.name": "phone_number",
+                        "jsonType.label": "String",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                },
+                {
+                    "name": "phone_number_verified",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-attribute-mapper",
+                    "config": {
+                        "user.attribute": "phone_number_verified",
+                        "claim.name": "phone_number_verified",
+                        "jsonType.label": "boolean",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                }
+            ]
+        }
+    ],
+    "users": [
+        {
+            "username": "dev-email",
+            "enabled": true,
+            "email": "dev-email@example.com",
+            "emailVerified": true,
+            "firstName": "Dev",
+            "lastName": "Email",
+            "credentials": [{ "type": "password", "value": "password", "temporary": false }]
+        },
+        {
+            "username": "dev-phone",
+            "enabled": true,
+            "attributes": {
+                "phone_number": ["+15555550100"],
+                "phone_number_verified": ["true"]
+            },
+            "credentials": [{ "type": "password", "value": "password", "temporary": false }]
+        },
+        {
+            "username": "dev-unverified",
+            "enabled": true,
+            "email": "dev-unverified@example.com",
+            "emailVerified": false,
+            "credentials": [{ "type": "password", "value": "password", "temporary": false }]
+        }
+    ]
+}

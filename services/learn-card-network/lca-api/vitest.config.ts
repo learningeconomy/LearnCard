@@ -2,6 +2,11 @@ import { createVitestConfig, nodePreset } from '../../../vitest.shared';
 
 export default createVitestConfig(nodePreset, {
     test: {
-        include: ['src/**/*.test.ts', '*Lambda.test.ts'],
+        include: [
+            'src/**/*.test.ts',
+            '*Lambda.test.ts',
+            'test/keycloak-verify.spec.ts',
+            'test/keycloak-verify.integration.spec.ts',
+        ],
     },
 });

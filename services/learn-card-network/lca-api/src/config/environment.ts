@@ -30,6 +30,9 @@ export const lcaApiEnvironmentShape = {
     OPENAI_API_KEY: optionalEnvironmentString,
     METABASE_SECRET_KEY: optionalEnvironmentString,
     SCOUTS_SSO_CLIENT_SECRET: optionalEnvironmentString,
+    KEYCLOAK_ISSUERS: optionalEnvironmentString,
+    KEYCLOAK_AUDIENCES: optionalEnvironmentString,
+    KEYCLOAK_JWKS_URL_OVERRIDES: optionalEnvironmentString,
     POSTMARK_SERVER_TOKEN: optionalEnvironmentString,
     POSTMARK_FROM_EMAIL: optionalEnvironmentString,
     POSTMARK_BRAND_NAME: optionalEnvironmentString,
@@ -74,6 +77,16 @@ export const lcaApiEnvironmentSchema = z
         };
     })
     .superRefine((environment, context) => {
+        if (
+            environment.KEYCLOAK_ISSUERS?.split(',').some(value => value.trim()) &&
+            !environment.KEYCLOAK_AUDIENCES?.split(',').some(value => value.trim())
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['KEYCLOAK_AUDIENCES'],
+                message: 'Required when KEYCLOAK_ISSUERS is configured',
+            });
+        }
         if (environment.ESCROW_ENCLAVE_MODE === 'software') {
             try {
                 const keys = parseEscrowPrivateKeys(
