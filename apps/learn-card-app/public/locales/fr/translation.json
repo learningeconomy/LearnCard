@@ -1755,6 +1755,7 @@
         "previewCredentials": "Aperçu de {{count}} justificatifs"
     },
     "consentFlow": {
+        "reviewChanged": "Les modalités de partage ont changé. Vérifiez-les avant de vous reconnecter.",
         "guardianApprovalRequired": "Demandez à un gestionnaire actuel du compte d’approuver cette connexion, puis réessayez.",
         "title": "Consentement",
         "acceptAndSync": "Accepter et synchroniser",
@@ -1874,7 +1875,8 @@
             "name": "nom",
             "email": "e-mail",
             "profilePicture": "photo de profil"
-        }
+        },
+        "retryPublication": "Vos choix de partage sont enregistrés. Réessayez pour terminer leur envoi."
     },
     "recovery": {
         "pin": {
@@ -3535,6 +3537,12 @@
         "skillsHub": "Pôle de compétences"
     },
     "base": {
+        "consentAudience": {
+            "title": "Vérifiez qui reçoit vos données",
+            "description": "Les informations que vous choisissez seront accessibles à toutes les personnes ci-dessous.",
+            "confirm": "Confirmer le partage",
+            "cancel": "Annuler"
+        },
         "verification": {
             "selfIssued": "Auto-émis",
             "trustedIssuer": "Émetteur de confiance",

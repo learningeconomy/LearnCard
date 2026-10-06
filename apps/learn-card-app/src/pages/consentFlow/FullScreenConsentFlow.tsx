@@ -3,6 +3,8 @@ import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
 
 import {
+    isAlreadyConsentedError,
+    isConsentConflict,
     useModal,
     useToast,
     useWallet,
@@ -58,7 +60,7 @@ type FullScreenConsentFlowProps = {
 };
 
 const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
-    contractDetails,
+    contractDetails: initialContractDetails,
     app,
     isPostConsent,
     isPreview,
@@ -75,6 +77,11 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
     const history = useHistory();
     const location = useLocation();
     const { initWallet } = useWallet();
+    const [refreshedContract, setRefreshedContract] = useState<ConsentFlowContractDetails>();
+    const contractDetails =
+        refreshedContract?.uri === initialContractDetails?.uri
+            ? refreshedContract
+            : initialContractDetails;
     const { presentToast } = useToast();
     const { newModal, closeModal, closeAllModals } = useModal();
     const { handleSwitchAccount, handleSwitchBackToParentAccount } = useSwitchProfile();
@@ -122,20 +129,20 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
         },
     });
 
-    const { mutateAsync: consentToContract, isPending: consentingToContract } =
-        useConsentToContract(
-            contractDetails?.uri ?? '',
-            contractDetails?.owner?.did ?? '',
-            recipientToken as string // For SmartResume only
-        );
+    const {
+        mutateAsync: consentToContract,
+        isPending: consentingToContract,
+        publicationRetryAvailable,
+        retrySmartResumePublication,
+    } = useConsentToContract(
+        contractDetails?.uri ?? '',
+        contractDetails?.owner?.did ?? '',
+        recipientToken as string // For SmartResume only
+    );
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
 
-    const handleAccept = async (
-        terms: ConsentFlowTerms,
-        shareDuration: {
-            oneTimeShare: boolean;
-            customDuration: string;
-        }
+    const handleSubmit = async (
+        submit: (beforeSubmit: () => Promise<void>) => ReturnType<typeof consentToContract>
     ) => {
         const { prompted } = await gate();
         if (prompted) return;
@@ -149,11 +156,8 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
             await guardedAction(async () => {
                 setStep(ConsentFlowStep.connecting);
 
-                const { redirectUrl } = await consentToContract({
-                    terms,
-                    expiresAt: shareDuration.customDuration,
-                    oneTime: shareDuration.oneTimeShare,
-                    beforeSubmit: () => guardedAction(() => {}),
+                const { redirectUrl } = await submit(async () => {
+                    await guardedAction(() => {});
                 });
 
                 // Sync any auto-boost credentials (if any). No need to wait.
@@ -223,9 +227,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
         } catch (e) {
             const message = e instanceof Error ? e.message : String(e);
             const data = e && typeof e === 'object' && 'data' in e ? e.data : undefined;
-            const isAlreadyConsented =
-                (data && typeof data === 'object' && 'code' in data && data.code === 'CONFLICT') ||
-                message.includes('already consented');
+            const isAlreadyConsented = isAlreadyConsentedError(e);
 
             if (isAlreadyConsented) {
                 successCallback?.();
@@ -241,6 +243,22 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                     await handleSwitchBackToParentAccount();
                 }
 
+                return;
+            }
+
+            if (isConsentConflict(e)) {
+                try {
+                    const wallet = await initWallet();
+                    const updated = await wallet.invoke.getContract(contractDetails!.uri);
+                    setRefreshedContract(updated);
+                } catch {
+                    /* Keep the review open if refreshing fails. */
+                }
+                presentToast(m['consentFlow.reviewChanged'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+                setStep(ConsentFlowStep.confirmation);
                 return;
             }
 
@@ -262,6 +280,19 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
             setStep(ConsentFlowStep.confirmation);
         }
     };
+
+    const handleAccept = (
+        terms: ConsentFlowTerms,
+        shareDuration: { oneTimeShare: boolean; customDuration: string }
+    ) =>
+        handleSubmit(beforeSubmit =>
+            consentToContract({
+                terms,
+                expiresAt: shareDuration.customDuration,
+                oneTime: shareDuration.oneTimeShare,
+                beforeSubmit,
+            })
+        );
 
     const handleNextStep = async () => {
         if (step === ConsentFlowStep.getAnAdult) {
@@ -289,6 +320,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
         ),
         [ConsentFlowStep.confirmation]: (
             <ConsentFlowConfirmation
+                key={`${contractDetails?.uri}:${contractDetails?.audienceVersion}`}
                 contractDetails={contractDetails}
                 app={app}
                 handleAccept={handleAccept}
@@ -319,6 +351,32 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
             />
         ),
     };
+
+    if (publicationRetryAvailable && step === ConsentFlowStep.confirmation) {
+        return (
+            <div
+                role="alert"
+                className="font-poppins p-6 bg-white rounded-[20px] space-y-4 text-grayscale-900"
+            >
+                <p className="text-sm text-grayscale-600 leading-relaxed">
+                    {m['consentFlow.retryPublication']()}
+                </p>
+                <button
+                    className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm disabled:opacity-40"
+                    disabled={consentingToContract}
+                    onClick={() => void handleSubmit(retrySmartResumePublication)}
+                >
+                    {m['common.tryAgain']()}
+                </button>
+                <button
+                    className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm"
+                    onClick={closeModal}
+                >
+                    {m['common.cancel']()}
+                </button>
+            </div>
+        );
+    }
 
     // If this is an inline insights request, render the confirmation page
     // in a minimal view
