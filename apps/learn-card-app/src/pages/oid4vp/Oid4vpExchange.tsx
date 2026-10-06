@@ -120,8 +120,9 @@ type Phase =
     | { kind: 'submitting'; clientInfo: ClientInfo }
     | {
           kind: 'finished';
+          accountChanged?: boolean;
           submitted: SubmitPresentationResult;
-          clientInfo: ClientInfo;
+          clientInfo?: ClientInfo;
           /**
            * The W3C VCs the user just shared. Empty when the picked
            * candidates were SD-JWT VCs / mDLs we can't render with the
@@ -354,7 +355,19 @@ const Oid4vpExchange: React.FC = () => {
                             type: ToastTypeEnum.Error,
                         });
                 });
-                if (!context.isCurrent()) throw new Error('Account changed. Please try again.');
+                if (!context.isCurrent()) {
+                    // Transport completed: report success without previous-account previews
+                    // or a verifier redirect; never offer a retry of this disclosure.
+                    setPhase({
+                        kind: 'finished',
+                        submitted: result.submitted,
+                        clientInfo: undefined,
+                        sharedCredentials: [],
+                        sharedClaimsBreakdown: [],
+                        accountChanged: true,
+                    });
+                    return;
+                }
 
                 // Pull the W3C VCs out of the picked candidates so the
                 // finished screen can render them as `BoostEarnedCard`s.
@@ -471,10 +484,10 @@ const Oid4vpExchange: React.FC = () => {
 
                 {phase.kind === 'finished' && (
                     <RequestFinished
-                        redirectUri={phase.submitted.redirectUri}
-                        clientId={phase.clientInfo.clientId}
-                        clientIdScheme={phase.clientInfo.clientIdScheme}
-                        clientDisplay={phase.clientInfo.display}
+                        redirectUri={phase.accountChanged ? undefined : phase.submitted.redirectUri}
+                        clientId={phase.clientInfo?.clientId}
+                        clientIdScheme={phase.clientInfo?.clientIdScheme}
+                        clientDisplay={phase.clientInfo?.display}
                         sharedCredentials={phase.sharedCredentials}
                         sharedClaimsBreakdown={phase.sharedClaimsBreakdown}
                         onDone={() => history.push('/')}

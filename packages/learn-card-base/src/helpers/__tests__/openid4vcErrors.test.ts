@@ -67,6 +67,17 @@ describe('getFriendlyOpenID4VCError', () => {
             expect(result.title).toBe('No matching credentials');
         });
 
+        it('classifies private VP preparation failures as an account error', () => {
+            const result = getFriendlyOpenID4VCError({
+                name: 'VpSubmitError',
+                code: 'internal_error',
+                message: 'PRIVATE_CANARY',
+            });
+            expect(result.kind).toBe('wallet');
+            expect(result.title).toBe('Couldn’t prepare response');
+            expect(JSON.stringify(result)).not.toContain('PRIVATE_CANARY');
+        });
+
         it('also handles VpSubmitError, BuildPresentationError, etc. via the same VP map', () => {
             const result = getFriendlyOpenID4VCError({
                 name: 'VpSubmitError',

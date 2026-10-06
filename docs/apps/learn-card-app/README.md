@@ -80,6 +80,8 @@ The app keeps an owner-encrypted consent snapshot on the device. Sending does no
 
 History displays at most 500 entries from the last 90 days. Cleanup runs when history is successfully accessed; offline clients cannot guarantee immediate physical deletion. Unreadable records are hidden and are not automatically deleted. **Clear history** can remove them by their exact document IDs; unknown consent is then kept off for safety. Future-dated reminders are hidden until the local clock catches up and are not removed solely because of clock skew.
 
+If history cannot be loaded, **Clear history** remains available to reset recording to off when its settings are missing or unreadable. A cleanup warning means some records could not be removed; try Clear again. An unreadable encrypted document also prevents recording until recovery. A confirmed reminder remains saved even when cleanup is incomplete.
+
 ### Self-Assigning Skills
 
 ```mermaid

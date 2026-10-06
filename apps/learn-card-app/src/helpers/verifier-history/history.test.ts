@@ -347,6 +347,40 @@ describe('private verifier history', () => {
         expect(documents.size).toBe(3);
         expect(await clearVerifierHistory(context)).toBe(true);
     });
+    it('confirms a saved receipt even when other-generation cleanup remains incomplete', async () => {
+        const { context, seed, documents, wallet } = fixture();
+        await setVerifierHistoryEnabled(context, true);
+        await (await beginVerifierDisclosure(context, draft)).finish('sent');
+        seed({
+            kind: 'settings',
+            version: 1,
+            enabled: true,
+            revision: webcrypto.randomUUID(),
+            generation: webcrypto.randomUUID(),
+        });
+        await loadVerifierHistory(context);
+        const attempt = await beginVerifierDisclosure(context, draft);
+        vi.mocked(wallet.invoke.learnCloudDelete).mockResolvedValue(false);
+        expect(await attempt.finish('sent')).toBe('saved');
+        expect(await loadVerifierHistory(context)).toMatchObject({ cleanupComplete: false });
+        expect(documents.size).toBe(4);
+    });
+    it('explicit Clear recovers missing Cloud settings without silently re-enabling recording', async () => {
+        const { context, documents } = fixture();
+        await setVerifierHistoryEnabled(context, true);
+        documents.clear();
+        await expect(loadVerifierHistory(context)).rejects.toThrow('settings');
+        await expect(setVerifierHistoryEnabled(context, true)).rejects.toThrow('settings');
+        expect(await clearVerifierHistory(context)).toBe(true);
+        expect(await loadVerifierHistory(context)).toMatchObject({
+            enabled: false,
+            receipts: [],
+            cleanupComplete: true,
+        });
+        expect(await (await beginVerifierDisclosure(context, draft)).finish('sent')).toBe(
+            'skipped'
+        );
+    });
     it('recovers encrypted local consent after reload, with no pre-send Cloud traffic', async () => {
         const { context, wallet } = fixture();
         const local = new Map<string, string>();

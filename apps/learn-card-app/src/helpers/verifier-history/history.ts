@@ -342,7 +342,7 @@ export const setVerifierHistoryEnabled = async (
 export const clearVerifierHistory = async (context: HistoryContext): Promise<boolean> => {
     await cachedConsent(context);
     const scan = await readAll(context);
-    if (!scan.unknownConsent) requireReadableConsent(context, scan);
+    // Clear is an explicit recovery action even when Cloud lost the cached settings.
     await append(context, {
         kind: 'settings',
         version: 1,
@@ -452,14 +452,18 @@ export const beginVerifierDisclosure = async (
                         )
                     )
                         return 'unavailable';
-                    return (await maintain(
-                        context,
-                        after.records,
-                        latestSettings(after.records),
-                        Date.now()
-                    ))
-                        ? 'saved'
-                        : 'unavailable';
+                    // Cleanup failures belong to the settings notice, not a save-failed toast.
+                    try {
+                        await maintain(
+                            context,
+                            after.records,
+                            latestSettings(after.records),
+                            Date.now()
+                        );
+                    } catch {
+                        /* Maintenance never changes a confirmed save. */
+                    }
+                    return 'saved';
                 } catch {
                     return 'unavailable';
                 }

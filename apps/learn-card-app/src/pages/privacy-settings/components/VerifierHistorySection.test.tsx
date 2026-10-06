@@ -108,6 +108,25 @@ describe('verifier history controls', () => {
         ).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Clear history' })).not.toBeDisabled();
     });
+    it('offers Clear after an initial load failure and reloads the recovered state', async () => {
+        mocks.load.mockRejectedValueOnce(new Error('Missing settings'));
+        render(<VerifierHistorySection eligible />);
+        fireEvent.click(screen.getByRole('button', { name: 'Open private history' }));
+        await screen.findByRole('alert');
+        fireEvent.click(screen.getByRole('button', { name: 'Clear history' }));
+        await screen.findByRole('checkbox');
+        expect(mocks.clear).toHaveBeenCalledTimes(1);
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+    it('shows incomplete Clear cleanup without implying all records were removed', async () => {
+        render(<VerifierHistorySection eligible />);
+        await open();
+        mocks.clear.mockResolvedValue(false);
+        mocks.load.mockResolvedValue({ enabled: false, receipts: [], cleanupComplete: false });
+        fireEvent.click(screen.getByRole('button', { name: 'Clear history' }));
+        await screen.findByText(/Some records could not be read or removed/);
+        expect(screen.getByRole('button', { name: 'Clear history' })).not.toBeDisabled();
+    });
     it('hides decrypted state synchronously on switch and rejects late loads', async () => {
         const { rerender } = render(<VerifierHistorySection eligible />);
         await open();

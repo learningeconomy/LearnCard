@@ -45,7 +45,18 @@ vi.mock('./candidatePool', () => ({ loadCandidatePool: async () => [] }));
 vi.mock('./LoggedOutOid4vp', () => ({ default: () => null }));
 vi.mock('./components/RequestLoading', () => ({ default: () => <div>Loading request</div> }));
 vi.mock('./components/RequestSubmitting', () => ({ default: () => <div>Submitting</div> }));
-vi.mock('./components/RequestFinished', () => ({ default: () => <div>Finished</div> }));
+vi.mock('./components/RequestFinished', () => ({
+    default: (props: {
+        sharedCredentials: unknown[];
+        sharedClaimsBreakdown?: unknown[];
+        redirectUri?: string;
+        clientId?: string;
+    }) => (
+        <div>
+            Finished<span data-testid="success-details">{JSON.stringify(props)}</span>
+        </div>
+    ),
+}));
 vi.mock('./components/RequestCannotSatisfy', () => ({ default: () => null }));
 vi.mock('./components/RequestConsent', () => ({
     default: ({ onApprove }: { onApprove: (picks: unknown) => Promise<void> }) => (
@@ -122,9 +133,12 @@ describe('OID4VP disclosure account cancellation', () => {
             return { submitted: {} };
         });
         await approve();
-        await screen.findByRole('alert');
+        await screen.findByText('Finished');
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
         expect(screen.queryByText('Submitting')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument();
+        expect(screen.getByTestId('success-details')).toHaveTextContent('"sharedCredentials":[]');
+        expect(screen.getByTestId('success-details')).not.toHaveTextContent('verifier.example');
         expect(mocks.send).toHaveBeenCalledTimes(1);
     });
     it('retains success behavior and records only after one transport', async () => {

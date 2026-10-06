@@ -59,8 +59,9 @@ const VerifierHistorySection: React.FC<{ eligible: boolean; isEligible?: () => b
             if (!context.isCurrent()) return;
             const currentRevision = getHistoryAccountRevision();
             setBusy(currentRevision);
-            if (action) await action(context);
+            const result = action ? await action(context) : undefined;
             const data = await loadVerifierHistory(context);
+            if (result === false) data.cleanupComplete = false;
             if (context.isCurrent()) setState({ revision: currentRevision, context, data });
         } catch {
             if (isSelectedAccount() && (!context || context.isCurrent()))
@@ -101,9 +102,23 @@ const VerifierHistorySection: React.FC<{ eligible: boolean; isEligible?: () => b
                         </button>
                     )}
                     {error?.revision === revision && (
-                        <p role="alert" className="text-sm text-red-700">
-                            {error.message}
-                        </p>
+                        <>
+                            <p role="alert" className="text-sm text-red-700">
+                                {error.message}
+                            </p>
+                            {!visible && (
+                                <button
+                                    type="button"
+                                    className={button}
+                                    disabled={loading}
+                                    onClick={() =>
+                                        void run(context => clearVerifierHistory(context))
+                                    }
+                                >
+                                    {m['verifierHistory.clear']()}
+                                </button>
+                            )}
+                        </>
                     )}
                     {visible && (
                         <>
