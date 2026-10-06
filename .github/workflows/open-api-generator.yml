@@ -33,29 +33,18 @@ jobs:
                   git config --local user.name "github-actions[bot]"
                   git config --local user.email "github-actions[bot]@users.noreply.github.com"
 
-            - name: Cleanup old client
-              run: rm -rf ${{ env.working-directory }}/${{ matrix.generator-name }}-client/
-
-            - name: Generate new client
-              uses: openapi-generators/openapitools-generator-action@v1
-
-              with:
-                  generator: ${{ matrix.generator-name }}
-                  # Keep template changes explicit and covered by the security-floor contracts.
-                  generator-tag: v7.25.0
-                  openapi-url: https://network.learncard.com/docs/openapi.json
-                  command-args: -o ${{ env.working-directory }}/${{ matrix.generator-name }}-client/ --skip-validate-spec
-            - name: Remove generated GitHub metadata
-              run: rm -rf ${{ env.working-directory }}/${{ matrix.generator-name }}-client/.github
-
-            - name: Re-apply security dependency floors
-              if: matrix.generator-name == 'python'
-              run: bash ${{ env.working-directory }}/apply-security-floors.sh
-
             - name: Setup Bun
-              uses: oven-sh/setup-bun@v2
+              uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
               with:
                   bun-version: 1.4.2
+
+            - name: Install pinned dependencies without service initialization
+              run: bun install --frozen-lockfile --ignore-scripts
+
+            - name: Export local schema and regenerate with pinned tools
+              # The script uses network-disabled containers, custom Python templates,
+              # and applies security floors before removing generated .github metadata.
+              run: bash ${{ env.working-directory }}/generate-python.sh
 
             - name: Get version from package.json
               id: package-version

@@ -1,12 +1,11 @@
 # ClaimHookGetClaimHooksForBoostRequestQuery
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |  | 
-**data** | [**ClaimHookGetClaimHooksForBoostRequestQueryData**](ClaimHookGetClaimHooksForBoostRequestQueryData.md) |  | 
+| Name     | Type                                                                                                                                              | Description | Notes |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **type** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             |
+| **data** | [**ClaimHookGetClaimHooksForBoostRequestQueryData**](ClaimHookGetClaimHooksForBoostRequestQueryData.md)                                           |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ claim_hook_get_claim_hooks_for_boost_request_query_dict = claim_hook_get_claim_h
 # create an instance of ClaimHookGetClaimHooksForBoostRequestQuery from a dict
 claim_hook_get_claim_hooks_for_boost_request_query_from_dict = ClaimHookGetClaimHooksForBoostRequestQuery.from_dict(claim_hook_get_claim_hooks_for_boost_request_query_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

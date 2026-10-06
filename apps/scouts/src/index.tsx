@@ -57,6 +57,9 @@ installInsetSimulator();
     const LDProvider = await asyncWithLDProvider({
         clientSideID: tenantConfig.observability.launchDarklyClientId,
         context: ANONYMOUS_CONTEXT,
+        options: {
+            diagnosticOptOut: true,
+        },
     });
     const container = document.getElementById('root');
     if (container) {

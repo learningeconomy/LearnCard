@@ -1,12 +1,12 @@
 # ActivityGetActivity200ResponseRecipientProfile
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**profile_id** | **str** |  | 
-**display_name** | **str** |  | [optional] 
+| Name             | Type    | Description | Notes      |
+| ---------------- | ------- | ----------- | ---------- |
+| **profile_id**   | **str** |             |
+| **display_name** | **str** |             | [optional] |
+| **image**        | **str** |             | [optional] |
 
 ## Example
 
@@ -25,6 +25,5 @@ activity_get_activity200_response_recipient_profile_dict = activity_get_activity
 # create an instance of ActivityGetActivity200ResponseRecipientProfile from a dict
 activity_get_activity200_response_recipient_profile_from_dict = ActivityGetActivity200ResponseRecipientProfile.from_dict(activity_get_activity200_response_recipient_profile_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

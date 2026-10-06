@@ -23,6 +23,7 @@ from openapi_client.models.storage_resolve200_response_any_of1_read import Stora
 from openapi_client.models.storage_resolve200_response_any_of1_write import StorageResolve200ResponseAnyOf1Write
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class StorageResolve200ResponseAnyOf1(BaseModel):
     """
@@ -35,7 +36,8 @@ class StorageResolve200ResponseAnyOf1(BaseModel):
     __properties: ClassVar[List[str]] = ["read", "write", "deniedWriters"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -47,8 +49,7 @@ class StorageResolve200ResponseAnyOf1(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -97,11 +98,13 @@ class StorageResolve200ResponseAnyOf1(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "read": StorageResolve200ResponseAnyOf1Read.from_dict(obj["read"]) if obj.get("read") is not None else None,
             "write": StorageResolve200ResponseAnyOf1Write.from_dict(obj["write"]) if obj.get("write") is not None else None,
             "deniedWriters": obj.get("deniedWriters")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

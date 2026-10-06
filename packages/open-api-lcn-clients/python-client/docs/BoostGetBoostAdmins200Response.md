@@ -1,13 +1,12 @@
 # BoostGetBoostAdmins200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**cursor** | **str** |  | [optional] 
-**has_more** | **bool** |  | 
-**records** | [**List[BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo]**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md) |  | 
+| Name         | Type                                                                                                                                | Description | Notes      |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **cursor**   | **str**                                                                                                                             |             | [optional] |
+| **has_more** | **bool**                                                                                                                            |             |
+| **records**  | [**List[BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo]**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md) |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ boost_get_boost_admins200_response_dict = boost_get_boost_admins200_response_ins
 # create an instance of BoostGetBoostAdmins200Response from a dict
 boost_get_boost_admins200_response_from_dict = BoostGetBoostAdmins200Response.from_dict(boost_get_boost_admins200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -26,7 +26,19 @@ const TIMEOUT = 6000;
 
 type NotificationDeliveryOptions = {
     propagateDirectWebhookTransportErrors?: boolean;
+    /** Opt in to terminal rejection errors; legacy callers continue to receive false. */
+    throwOnPermanentFailure?: boolean;
 };
+
+export class PermanentNotificationDeliveryError extends Error {
+    constructor(
+        readonly reason: 'no_webhook' | 'invalid_webhook' | 'webhook_rejected',
+        readonly statusCode?: number
+    ) {
+        super(`Notification delivery rejected: ${reason}`);
+        this.name = 'PermanentNotificationDeliveryError';
+    }
+}
 
 type NotificationWebhookResponseRecord = Record<string, unknown>;
 
@@ -308,6 +320,8 @@ export async function sendNotification(
         );
 
         if (!notificationsWebhook) {
+            if (options.throwOnPermanentFailure)
+                throw new PermanentNotificationDeliveryError('no_webhook');
             return false;
         }
 
@@ -360,7 +374,14 @@ export async function sendNotification(
             }
 
             if (!response.ok) {
-                if (isDefinitiveWebhookRejection(response.status)) return false;
+                if (isDefinitiveWebhookRejection(response.status)) {
+                    if (options.throwOnPermanentFailure)
+                        throw new PermanentNotificationDeliveryError(
+                            'webhook_rejected',
+                            response.status
+                        );
+                    return false;
+                }
 
                 throw createWebhookTransportError(response.status);
             }
@@ -411,7 +432,10 @@ export async function sendNotification(
 
             return notificationDelivered;
         }
+        if (options.throwOnPermanentFailure)
+            throw new PermanentNotificationDeliveryError('invalid_webhook');
     } catch (error) {
+        if (error instanceof PermanentNotificationDeliveryError) throw error;
         if (runtimeEnvironment.NODE_ENV !== 'test') {
             console.error('Notifications Helpers - Error While Sending:', error);
         }

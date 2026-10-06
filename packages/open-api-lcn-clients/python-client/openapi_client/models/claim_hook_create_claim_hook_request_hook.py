@@ -20,7 +20,7 @@ from typing import Any, List, Optional
 from openapi_client.models.claim_hook_create_claim_hook_request_hook_one_of import ClaimHookCreateClaimHookRequestHookOneOf
 from openapi_client.models.claim_hook_create_claim_hook_request_hook_one_of1 import ClaimHookCreateClaimHookRequestHookOneOf1
 from openapi_client.models.claim_hook_create_claim_hook_request_hook_one_of2 import ClaimHookCreateClaimHookRequestHookOneOf2
-from pydantic import StrictStr, Field
+from pydantic import StrictStr, Field, model_validator
 from typing import Union, List, Set, Optional, Dict
 from typing_extensions import Literal, Self
 
@@ -43,6 +43,14 @@ class ClaimHookCreateClaimHookRequestHook(BaseModel):
         validate_assignment=True,
         protected_namespaces=(),
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def parse_raw_oneof(cls, value):
+        """Accept the wire shape as well as explicit actual_instance construction."""
+        if isinstance(value, dict) and "actual_instance" not in value:
+            return {"actual_instance": cls.from_dict(value).actual_instance}
+        return value
 
 
     def __init__(self, *args, **kwargs) -> None:

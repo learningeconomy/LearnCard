@@ -1,3 +1,4 @@
+import { termsReferralSnapshotCypher } from '@helpers/consent-referral.helpers';
 import { QueryBuilder, BindParam } from 'neogma';
 import { v4 as uuid } from 'uuid';
 
@@ -57,9 +58,7 @@ export const createSentCredentialRelationship = async (
             ],
         })
         .create(
-            `(profile)-[r:${
-                Profile.getRelationshipByAlias('credentialSent').name
-            }]->(credential)`
+            `(profile)-[r:${Profile.getRelationshipByAlias('credentialSent').name}]->(credential)`
         )
         .set('r = $params')
         .run();
@@ -239,6 +238,7 @@ export const createCredentialIssuedViaContractRelationship = async (
                 { identifier: 'terms' },
             ],
         })
+        .raw(termsReferralSnapshotCypher())
         .with('transaction')
         .match({
             model: Credential,

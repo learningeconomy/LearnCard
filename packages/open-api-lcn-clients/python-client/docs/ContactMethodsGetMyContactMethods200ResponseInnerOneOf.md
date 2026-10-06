@@ -1,17 +1,16 @@
 # ContactMethodsGetMyContactMethods200ResponseInnerOneOf
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | **str** |  | 
-**value** | **str** |  | 
-**id** | **str** |  | 
-**is_verified** | **bool** |  | 
-**verified_at** | **str** |  | [optional] 
-**is_primary** | **bool** |  | 
-**created_at** | **str** |  | 
+| Name            | Type     | Description | Notes      |
+| --------------- | -------- | ----------- | ---------- |
+| **type**        | **str**  |             |
+| **value**       | **str**  |             |
+| **id**          | **str**  |             |
+| **is_verified** | **bool** |             |
+| **verified_at** | **str**  |             | [optional] |
+| **is_primary**  | **bool** |             |
+| **created_at**  | **str**  |             |
 
 ## Example
 
@@ -30,6 +29,5 @@ contact_methods_get_my_contact_methods200_response_inner_one_of_dict = contact_m
 # create an instance of ContactMethodsGetMyContactMethods200ResponseInnerOneOf from a dict
 contact_methods_get_my_contact_methods200_response_inner_one_of_from_dict = ContactMethodsGetMyContactMethods200ResponseInnerOneOf.from_dict(contact_methods_get_my_contact_methods200_response_inner_one_of_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,11 +1,10 @@
 # BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOf1
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**regex** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOf1Regex**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOf1Regex.md) |  | 
+| Name      | Type    | Description | Notes      |
+| --------- | ------- | ----------- | ---------- |
+| **regex** | **str** |             | [optional] |
 
 ## Example
 
@@ -24,6 +23,5 @@ boost_search_skills_available_for_boost_request_query_any_of_or_inner_id_any_of_
 # create an instance of BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOf1 from a dict
 boost_search_skills_available_for_boost_request_query_any_of_or_inner_id_any_of_any_of1_from_dict = BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOf1.from_dict(boost_search_skills_available_for_boost_request_query_any_of_or_inner_id_any_of_any_of1_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-
