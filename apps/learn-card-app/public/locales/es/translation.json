@@ -1755,6 +1755,7 @@
         "previewCredentials": "Vista previa de {{count}} credenciales"
     },
     "consentFlow": {
+        "reviewChanged": "Los detalles de acceso cambiaron. Revísalos antes de volver a conectar.",
         "guardianApprovalRequired": "Pide a un administrador actual de la cuenta que apruebe esta conexión y vuelve a intentarlo.",
         "title": "Consentimiento",
         "acceptAndSync": "Aceptar y sincronizar",
@@ -1874,7 +1875,8 @@
             "name": "nombre",
             "email": "correo electrónico",
             "profilePicture": "foto de perfil"
-        }
+        },
+        "retryPublication": "Tus opciones para compartir están guardadas. Inténtalo de nuevo para terminar de enviarlas."
     },
     "recovery": {
         "pin": {
@@ -3535,6 +3537,12 @@
         "skillsHub": "Centro de habilidades"
     },
     "base": {
+        "consentAudience": {
+            "title": "Revisa quién recibe tus datos",
+            "description": "La información que elijas estará disponible para todas las personas que aparecen a continuación.",
+            "confirm": "Confirmar uso compartido",
+            "cancel": "Cancelar"
+        },
         "verification": {
             "selfIssued": "Autoemitido",
             "trustedIssuer": "Emisor de confianza",
@@ -9342,7 +9350,7 @@
         "recovered": "Tu publicación anterior está confirmada. Se ha cargado el currículum guardado.",
         "originalClaims": "Las credenciales seleccionadas conservan sus detalles firmados originales; ocultar campos en este PDF no los elimina.",
         "downloadToView": "Descargar para ver",
-        "pdfSize": "PDF · {{size}} KB",
+        "pdfSize": "PDF · Tamaño: {{size}} KB",
         "pdfReady": "Descarga este currículum para abrir el PDF en tu dispositivo.",
         "discard": "Borrar la preparación interrumpida",
         "discarding": "Borrando la preparación interrumpida...",
@@ -9351,5 +9359,30 @@
         "discardFailed": "No pudimos borrar esta preparación. Inténtalo de nuevo.",
         "manageContent": "Edita el contenido del currículum en Resume Builder.",
         "publishInBuilder": "Usa Resume Builder para publicar este currículum."
+    },
+    "contractRequests": {
+        "label": "Conectar",
+        "referred": "{{referrer}} te ha referido a {{owner}}.",
+        "invitation": "{{owner}} quiere conectar contigo.",
+        "accept": "Aceptar y conectar",
+        "details": "Ver detalles",
+        "decline": "Rechazar",
+        "declineConfirm": "¿Rechazar esta invitación?",
+        "declined": "Rechazada",
+        "connected": "Conectado",
+        "cancelled": "Cancelada",
+        "notNow": "Ahora no",
+        "dismiss": "Ocultar invitación",
+        "loading": "Cargando invitación...",
+        "working": "Procesando...",
+        "unavailable": "Esta invitación ya no está disponible.",
+        "error": "Algo salió mal. Inténtalo de nuevo.",
+        "sharedWith": "Compartido con",
+        "dataRequested": "Datos solicitados",
+        "outcomes": "Credenciales que puedes recibir",
+        "none": "Ninguno",
+        "reviewFirst": "Revisa y elige tus datos antes de conectar.",
+        "pending": "Invitaciones pendientes",
+        "empty": "No hay invitaciones pendientes."
     }
 }

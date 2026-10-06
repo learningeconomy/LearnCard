@@ -714,12 +714,14 @@ export const ConsentFlowContractDetailsValidator = z.object({
     expiresAt: z.string().optional(),
     autoBoosts: z.string().array().optional(),
     writers: z.array(LCNProfileValidator).optional(),
+    recipients: z.array(LCNPublicProfileValidator.extend({ did: z.string() })).optional(),
+    audienceVersion: z.number().int().nonnegative().optional(),
 });
 export type ConsentFlowContractDetails = z.infer<typeof ConsentFlowContractDetailsValidator>;
 export type ConsentFlowContractDetailsInput = z.input<typeof ConsentFlowContractDetailsValidator>;
 
 export const ConsentFlowContractRequestStatusValidator = z
-    .enum(['pending', 'accepted', 'denied'])
+    .enum(['pending', 'accepted', 'denied', 'cancelled'])
     .nullable();
 export type ConsentFlowContractRequestStatus = z.infer<
     typeof ConsentFlowContractRequestStatusValidator
@@ -730,7 +732,51 @@ export type ConsentFlowContractRequestReadStatus = z.infer<
     typeof ConsentFlowContractRequestReadStatusValidator
 >;
 
-export const ConsentFlowContractRequestForProfileValidator = z.object({
+/** Durable referral identity captured on consent history and correlated events. */
+export const ConsentFlowReferralValidator = z.object({
+    requestId: z.string(),
+    requestedBy: z.string(),
+    externalReferenceId: z.string().max(256).optional(),
+});
+export type ConsentFlowReferral = z.infer<typeof ConsentFlowReferralValidator>;
+
+export const ContractRequestFieldsValidator = ConsentFlowReferralValidator.partial().extend({
+    requestedAt: z.string().optional(),
+    message: z.string().max(500).optional(),
+});
+export type ContractRequestFields = z.infer<typeof ContractRequestFieldsValidator>;
+
+export const SendContractRequestValidator = z.object({
+    contractUri: z.string(),
+    targetProfileId: z.string(),
+    externalReferenceId: z.string().trim().min(1).max(256).optional(),
+    message: z.string().trim().max(500).optional(),
+});
+export type SendContractRequest = z.infer<typeof SendContractRequestValidator>;
+
+export const ConsentFlowWebhookMetadataValidator = z.object({
+    eventId: z.string(),
+    deliveryKey: z.string(),
+    event: z.enum([
+        'request_sent',
+        'request_accepted',
+        'request_denied',
+        'request_cancelled',
+        'consent_created',
+        'consent_updated',
+        'consent_withdrawn',
+        'credentials_synced',
+    ]),
+    contractUri: z.string(),
+    termsUri: z.string().optional(),
+    requestId: z.string().optional(),
+    requestedBy: z.string().optional(),
+    externalReferenceId: z.string().optional(),
+    recipientRole: z.enum(['owner', 'recipient', 'requester', 'target']),
+});
+export type ConsentFlowWebhookMetadata = z.infer<typeof ConsentFlowWebhookMetadataValidator>;
+
+export const ConsentFlowContractRequestForProfileValidator = ContractRequestFieldsValidator.extend({
     profile: LCNProfileValidator,
     status: ConsentFlowContractRequestStatusValidator,
     readStatus: ConsentFlowContractRequestReadStatusValidator.optional(),
@@ -803,6 +849,7 @@ export const PaginatedConsentFlowTermsValidator = PaginationResponseValidator.ex
             expiresAt: z.string().optional(),
             oneTime: z.boolean().optional(),
             terms: ConsentFlowTermsValidator,
+            referral: ConsentFlowReferralValidator.optional(),
             contract: ConsentFlowContractDetailsValidator,
             uri: z.string(),
             consenter: LCNProfileValidator,
@@ -962,6 +1009,7 @@ export const ConsentFlowTransactionValidator = z.object({
     oneTime: z.boolean().optional(),
     terms: ConsentFlowTermsValidator.optional(),
     guardianApproval: ConsentFlowGuardianApprovalValidator.optional(),
+    referral: ConsentFlowReferralValidator.optional(),
     id: z.string(),
     action: ConsentFlowTransactionActionValidator,
     date: z.string(),
@@ -974,6 +1022,7 @@ export const HolderExportConsentRecordValidator = z.object({
     status: ConsentFlowTermsStatusValidator,
     contract: ConsentFlowContractDetailsValidator,
     terms: ConsentFlowTermsValidator,
+    referral: ConsentFlowReferralValidator.optional(),
     transactions: ConsentFlowTransactionValidator.array(),
 });
 export type HolderExportConsentRecord = z.infer<typeof HolderExportConsentRecordValidator>;
