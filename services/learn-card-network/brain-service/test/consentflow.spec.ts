@@ -3343,7 +3343,7 @@ describe('Consent Flow Contracts', () => {
             contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: minimalContract,
                 name: 'a',
-                expiresAt: new Date(Date.UTC(2024, 3, 25)).toISOString(), // Set explicit expiration
+                expiresAt: '2999-01-01T00:00:00.000Z', // New consent uses Neo4j's real clock.
             });
             const { termsUri: _termsUri } =
                 await userB.clients.fullAuth.contracts.consentToContract({
@@ -3351,6 +3351,11 @@ describe('Consent Flow Contracts', () => {
                     terms: minimalTerms,
                 });
             termsUri = _termsUri;
+            // Verification's fake JS clock can still inspect an existing historical consent.
+            await ConsentFlowContract.update(
+                { expiresAt: new Date(Date.UTC(2024, 3, 25)).toISOString() },
+                { where: { id: contractUri.split(':').at(-1)! } }
+            );
         });
 
         afterAll(async () => {
@@ -3420,7 +3425,7 @@ describe('Consent Flow Contracts', () => {
                 {
                     contract: minimalContract,
                     name: 'b',
-                    expiresAt: new Date(2024, 4, 19).toISOString(),
+                    expiresAt: '2999-01-01T00:00:00.000Z',
                 }
             );
 
@@ -3428,6 +3433,10 @@ describe('Consent Flow Contracts', () => {
                 contractUri: newContractUri,
                 terms: minimalTerms,
             });
+            await ConsentFlowContract.update(
+                { expiresAt: new Date(2024, 4, 19).toISOString() },
+                { where: { id: newContractUri.split(':').at(-1)! } }
+            );
 
             expect(
                 await userA.clients.fullAuth.contracts.verifyConsent({
