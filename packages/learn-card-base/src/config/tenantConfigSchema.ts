@@ -175,6 +175,7 @@ const deleteSuccessStylesSchema = z
 export const tenantBrandingConfigSchema = z
     .object({
         name: z.string().default('LearnCard'),
+        contractRequestLabel: z.string().optional(),
         shortName: z.string().optional(),
         logoUrl: z.string().optional(),
         faviconUrl: z.string().optional(),
@@ -232,6 +233,8 @@ export const samplePersonaConfigSchema = z
 
 export const tenantFeatureConfigSchema = z
     .object({
+        /** Generic referral UI. Requires the enableContractRequests LaunchDarkly flag too. */
+        contractRequests: z.boolean().default(false),
         aiFeatures: z.boolean().default(true),
         appStore: z.boolean().default(true),
         analytics: z.boolean().default(true),

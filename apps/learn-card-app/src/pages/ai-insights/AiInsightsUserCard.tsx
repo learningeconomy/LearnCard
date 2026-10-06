@@ -1,3 +1,4 @@
+import type { ConsentFlowContractRequestStatus } from '@learncard/types';
 import React from 'react';
 
 import { m } from '../../paraglide/messages.js';
@@ -37,8 +38,9 @@ export const AiInsightsUserCard: React.FC<{
     imageContainerClassName?: string;
     imageClassName?: string;
     contractUri?: string;
+    requestId?: string;
     readStatus?: 'unseen' | 'seen' | null | undefined;
-    status?: 'pending' | 'accepted' | 'denied' | null | undefined;
+    status?: ConsentFlowContractRequestStatus | undefined;
 }> = ({
     profile,
     mode = AiInsightsUserCardMode.Request,
@@ -47,6 +49,7 @@ export const AiInsightsUserCard: React.FC<{
     imageContainerClassName,
     imageClassName,
     contractUri = '',
+    requestId,
     status,
     readStatus,
 }) => {
@@ -117,11 +120,15 @@ export const AiInsightsUserCard: React.FC<{
             );
             return;
         } else if (mode === AiInsightsUserCardMode.View || status === 'accepted') {
-            await markRequestAsSeen({
-                contractUri,
-                targetProfileId: profile.profileId,
-            });
-            await refetchContracts();
+            // Attributed referrals track whether the learner has seen their invitation.
+            // Opening the sender's preview must not change that state.
+            if (!requestId) {
+                await markRequestAsSeen({
+                    contractUri,
+                    targetProfileId: profile.profileId,
+                });
+                await refetchContracts();
+            }
 
             newModal(
                 <LearnerInsightsPreview
@@ -244,6 +251,7 @@ export const AiInsightsUserCardWrapper: React.FC<{ profile: LCNProfile; contract
             contractUri={contractUri}
             status={status}
             readStatus={readStatus}
+            requestId={data?.requestId}
             mode={mode}
             containerClassName="!shadow-none !p-4"
             imageContainerClassName="h-[50px] w-[50px] min-w-[50px] min-h-[50px]"
