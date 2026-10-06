@@ -4,7 +4,10 @@ import ClrTranscriptFullPage from './surfaces/ClrTranscriptFullPage';
 import { useVerification } from '../boost/boostCMS/BoostPreview/BoostPreview';
 import VerificationsBox from '../../pages/ids/view-id/IdDetails/VerificationsBox';
 
-import type { ClrTranscriptDisplayModel, ViewOptions } from '../../helpers/clrRenderer.helpers';
+import type {
+    ClrTranscriptDisplayModel,
+    ViewOptions,
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 
 import { VC } from '@learncard/types';
 

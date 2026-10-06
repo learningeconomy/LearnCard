@@ -15,16 +15,16 @@ import ClrProgramCredentialCollapsible from './ClrProgramCredentialCollapsible';
 
 import { useModal } from 'learn-card-base';
 
-import { formatAchievementType } from './clr.helpers';
+import { formatAchievementType } from 'learn-card-base/helpers/credentials/clr/helpers';
 import {
     formatClrDate,
     getLinkedCompetencies,
     getRelationshipsForRecord,
-} from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 import type {
     ClrTranscriptDisplayModel,
     ProgramDisplayModel,
-} from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 import type { VC } from '@learncard/types';
 
 const ClrProgramDetailPanel: React.FC<{

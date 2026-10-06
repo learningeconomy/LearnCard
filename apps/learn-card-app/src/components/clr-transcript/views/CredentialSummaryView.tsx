@@ -1,7 +1,7 @@
 import React from 'react';
 
-import { formatClrDate } from '../../../helpers/clrRenderer.helpers';
-import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
+import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
+import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const CredentialSummaryView: React.FC<{ model: ClrTranscriptDisplayModel }> = ({ model }) => {
     return (

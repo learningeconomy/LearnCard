@@ -37,7 +37,7 @@ vi.mock('./helpers/pdfDocumentResource.helpers', () => ({
     resolvePdfDocumentResource: resolvePdfDocumentResourceMock,
 }));
 
-vi.mock('../../../../components/clr-transcript/clr.helpers', () => ({
+vi.mock('learn-card-base/helpers/credentials/clr/helpers', () => ({
     openAttachmentUrl: openAttachmentUrlMock,
 }));
 

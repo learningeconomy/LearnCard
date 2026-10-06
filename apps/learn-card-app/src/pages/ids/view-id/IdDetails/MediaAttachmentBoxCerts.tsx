@@ -25,7 +25,7 @@ import {
     ResolvedDocumentResource,
     resolvePdfDocumentResource,
 } from './helpers/pdfDocumentResource.helpers';
-import { openAttachmentUrl } from '../../../../components/clr-transcript/clr.helpers';
+import { openAttachmentUrl } from 'learn-card-base/helpers/credentials/clr/helpers';
 
 type Attachment = {
     title: string;
@@ -91,7 +91,7 @@ const getAttachmentDownloadName = (
 ): string => {
     if (documentResource?.downloadName) return documentResource.downloadName;
 
-    const safeTitle = (title || 'attachment').replace(/[^\w.\-]/g, '_');
+    const safeTitle = (title || 'attachment').replace(/[^\w.-]/g, '_');
     const extension = metadata?.fileExtension;
     const alreadyHasExtension =
         extension && safeTitle.toLowerCase().endsWith(`.${extension.toLowerCase()}`);
@@ -140,7 +140,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
             const result = await Promise.all(
                 _evidence.map(async ev => {
                     let attachmentUrl = '';
-                    let type: Attachment['type'] = 'link';
+                    let type: Attachment['type'];
 
                     const genreType = normalizeAttachmentType(ev.genre);
 
@@ -187,7 +187,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     const allowedTypes = ['link', 'photo', 'video', 'document', 'text'] as const;
     const safeEvidenceAttachments = (evidenceAttachments ?? []).map(item => ({
         ...item,
-        type: allowedTypes.includes(item.type as any) ? (item.type as Attachment['type']) : 'link',
+        type: allowedTypes.includes(item.type) ? item.type : 'link',
     }));
     const normalizedAttachments = (attachments ?? []).map(attachment => ({
         ...attachment,
@@ -282,7 +282,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                 const subtitle =
                     attachment.type === 'link'
                         ? getMediaBaseUrl(attachment.url)
-                        : attachment.url?.split('/').filter(Boolean).pop() ?? '';
+                        : (attachment.url?.split('/').filter(Boolean).pop() ?? '');
                 const fileDetails = [
                     metadata?.fileExtension?.toUpperCase(),
                     metadata?.sizeInBytes ? prettyBytes(metadata.sizeInBytes) : undefined,

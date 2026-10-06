@@ -4,7 +4,7 @@ import ClrIssuerAddress from './ClrIssuerAddress';
 import ClrTranscriptSourceField from './ClrTranscriptSourceField';
 import ClrTranscriptTrustBadge from './ClrTranscriptTrustBadge';
 
-import type { ClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
+import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const ClrTranscriptHeader: React.FC<{
     model: ClrTranscriptDisplayModel;

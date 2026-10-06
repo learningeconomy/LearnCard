@@ -7,10 +7,10 @@ import ClrIssuerBadge from './ClrIssuerBadge';
 import { SkillsIcon } from 'learn-card-base/svgs/wallet/SkillsIcon';
 
 import type { VC } from '@learncard/types';
-import { formatClrDate } from '../../helpers/clrRenderer.helpers';
-import { formatAchievementType } from './clr.helpers';
+import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
+import { formatAchievementType } from 'learn-card-base/helpers/credentials/clr/helpers';
 
-import type { ProgramDisplayModel } from '../../helpers/clrRenderer.helpers';
+import type { ProgramDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const ClrProgramCredentialCollapsible: React.FC<{
     program: ProgramDisplayModel;

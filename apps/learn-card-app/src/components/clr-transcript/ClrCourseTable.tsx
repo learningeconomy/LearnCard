@@ -1,16 +1,20 @@
+import { getResultDisplayValue } from 'learn-card-base/helpers/credentials/clr/presentation';
 import React, { useState } from 'react';
 
 import { ChevronDown, ChevronRight, Paperclip } from 'lucide-react';
 import { SkillsIcon } from 'learn-card-base/svgs/wallet/SkillsIcon';
 
-import { formatClrDate, getLinkedCompetencies } from '../../helpers/clrRenderer.helpers';
-import { gradeColor, groupByTerm } from './clr.helpers';
+import {
+    formatClrDate,
+    getLinkedCompetencies,
+} from 'learn-card-base/helpers/credentials/clr/renderer';
+import { gradeColor, groupByTerm } from 'learn-card-base/helpers/credentials/clr/helpers';
 
 import type {
     CourseDisplayModel,
     CompetencyDisplayModel,
     AssociationDisplayModel,
-} from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const ClrCourseTable: React.FC<{
     courses: CourseDisplayModel[];
@@ -103,9 +107,11 @@ const ClrCourseTable: React.FC<{
                                     <div />
                                 </div>
                                 {gc.map(course => {
-                                    const primaryResult = course.results.find(r => r.value);
+                                    const primaryResult = course.results.find(
+                                        r => r.value || r.status || r.achievedLevelId
+                                    );
                                     const grade = primaryResult
-                                        ? String(primaryResult.value.value)
+                                        ? String(getResultDisplayValue(primaryResult))
                                         : undefined;
                                     const credits =
                                         course.creditsEarned?.value ??

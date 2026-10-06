@@ -5,7 +5,7 @@ import ClrCourseTable from './ClrCourseTable';
 import type {
     ClrTranscriptDisplayModel,
     CourseDisplayModel,
-} from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const ClrCourseSection: React.FC<{
     model: ClrTranscriptDisplayModel;

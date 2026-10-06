@@ -2,8 +2,8 @@ import React from 'react';
 
 import ClrResultWithScaleList from '../ClrResultWithScaleList';
 
-import { formatClrDate } from '../../../helpers/clrRenderer.helpers';
-import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
+import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
+import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const StructuredTranscriptView: React.FC<{
     model: ClrTranscriptDisplayModel;

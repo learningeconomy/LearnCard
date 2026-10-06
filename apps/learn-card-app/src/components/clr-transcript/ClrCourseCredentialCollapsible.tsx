@@ -7,8 +7,11 @@ import { ChevronDown, ChevronUp, Paperclip } from 'lucide-react';
 import { SkillsIcon } from 'learn-card-base/svgs/wallet/SkillsIcon';
 
 import type { VC } from '@learncard/types';
-import type { AssessmentDisplayModel, CourseDisplayModel } from '../../helpers/clrRenderer.helpers';
-import { formatClrDate } from '../../helpers/clrRenderer.helpers';
+import type {
+    AssessmentDisplayModel,
+    CourseDisplayModel,
+} from 'learn-card-base/helpers/credentials/clr/renderer';
+import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 type CollapsibleRecord = Pick<
     CourseDisplayModel,

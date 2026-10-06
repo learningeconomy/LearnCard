@@ -1,6 +1,6 @@
 import React from 'react';
 
-import type { IssuerAddressDisplayModel } from '../../helpers/clrRenderer.helpers';
+import type { IssuerAddressDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const ClrIssuerAddress: React.FC<{
     address: IssuerAddressDisplayModel;

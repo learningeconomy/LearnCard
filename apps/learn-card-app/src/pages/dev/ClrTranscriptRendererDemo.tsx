@@ -16,7 +16,7 @@ import {
     normalizeClrTranscriptDisplayModel,
     ClrTranscriptSurface,
     type ClrTranscriptViewer,
-} from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 import {
     ClrTranscriptCard,
     ClrTranscriptEmbedWidget,

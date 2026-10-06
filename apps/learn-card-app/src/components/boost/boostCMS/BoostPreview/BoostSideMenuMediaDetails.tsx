@@ -4,7 +4,7 @@ import { getAttachmentTypeIcon, BoostMediaOptionsEnum } from 'learn-card-base';
 import { getAttachmentSource } from 'learn-card-base/helpers/attachment.helpers';
 
 import useTheme from '../../../../theme/hooks/useTheme';
-import { openAttachmentUrl } from '../../../../components/clr-transcript/clr.helpers';
+import { openAttachmentUrl } from 'learn-card-base/helpers/credentials/clr/helpers';
 
 export const BoostSideMenuMediaDetails: React.FC<{ credential: VC }> = ({ credential }) => {
     const { colors } = useTheme();

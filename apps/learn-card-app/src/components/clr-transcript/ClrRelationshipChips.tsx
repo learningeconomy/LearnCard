@@ -3,7 +3,7 @@ import { ChevronRight } from 'lucide-react';
 
 import ClrSourceInfo from './ClrSourceInfo';
 
-import type { RelationshipDisplayModel } from '../../helpers/clrRenderer.helpers';
+import type { RelationshipDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const ClrRelationshipChips: React.FC<{
     relationships: RelationshipDisplayModel[];

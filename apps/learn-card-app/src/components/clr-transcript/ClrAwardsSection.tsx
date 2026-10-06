@@ -2,10 +2,10 @@ import React from 'react';
 
 import { ChevronRight, Award } from 'lucide-react';
 
-import { formatClrDate } from '../../helpers/clrRenderer.helpers';
-import { formatAchievementType } from './clr.helpers';
+import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
+import { formatAchievementType } from 'learn-card-base/helpers/credentials/clr/helpers';
 
-import type { AwardDisplayModel } from '../../helpers/clrRenderer.helpers';
+import type { AwardDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const ClrAwardsSection: React.FC<{
     awards: AwardDisplayModel[];

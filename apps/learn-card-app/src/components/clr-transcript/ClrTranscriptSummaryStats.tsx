@@ -1,6 +1,6 @@
 import React from 'react';
-import type { ClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
-import { formatClrGpa } from './clr.helpers';
+import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
+import { formatClrGpa } from 'learn-card-base/helpers/credentials/clr/helpers';
 
 const ClrTranscriptSummaryStats: React.FC<{
     model: ClrTranscriptDisplayModel;

@@ -19,12 +19,12 @@ import { useModal } from 'learn-card-base';
 import type {
     ClrTranscriptDisplayModel,
     CourseDisplayModel,
-} from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 import {
     formatClrDate,
     getLinkedCompetencies,
     getRelationshipsForRecord,
-} from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 import type { VC } from '@learncard/types';
 
 const ClrCourseDetailPanel: React.FC<{

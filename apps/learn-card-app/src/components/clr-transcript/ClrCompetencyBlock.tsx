@@ -6,7 +6,7 @@ import ClrResultWithScaleList from './ClrResultWithScaleList';
 import type {
     CompetencyDisplayModel,
     RelationshipDisplayModel,
-} from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const ClrCompetencyBlock: React.FC<{
     competency: CompetencyDisplayModel;

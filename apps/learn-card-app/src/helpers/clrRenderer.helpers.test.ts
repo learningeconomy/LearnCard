@@ -19,8 +19,8 @@ import {
     normalizeClrTranscriptDisplayModel,
     parseCreditsFromDescription,
     selectClrTranscriptView,
-} from './clrRenderer.helpers';
-import { getClrTranscriptKind } from '../components/clr-transcript/clrKind.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
+import { getClrTranscriptKind } from 'learn-card-base/helpers/credentials/clr/kind';
 
 type MutableRelationshipFixture = {
     credentialSubject: {
@@ -175,7 +175,7 @@ describe('normalizeClrTranscriptDisplayModel', () => {
             expect(communication.achievedLevel?.name).toBe('Integrating');
             expect(communication.achievedLevel?.points).toBe('3');
             expect(communication.achievedLevel?.description).toBeTruthy();
-            expect(communication.value.value).toBe('Integrating');
+            expect(communication.value?.value).toBe('Integrating');
         });
 
         it('falls back to matching the achieved level by value when achievedLevel is absent', () => {
@@ -199,7 +199,7 @@ describe('normalizeClrTranscriptDisplayModel', () => {
                 a => a.name?.value === 'Durable Skills Assessment'
             )!;
 
-            expect(skillsModel.results.every(r => r.achievedLevel?.name === r.value.value)).toBe(
+            expect(skillsModel.results.every(r => r.achievedLevel?.name === r.value?.value)).toBe(
                 true
             );
         });
@@ -219,8 +219,9 @@ describe('normalizeClrTranscriptDisplayModel', () => {
         expect(model.courses[0]?.term?.value).toBe('Spring 2026');
         expect(model.courses[0]?.creditsEarned?.value).toBe(4);
         expect(model.courses[0]?.earnedAt?.value).toBe('2026-05-18T23:59:59Z');
-        expect(model.courses[0]?.results[0]?.value.value).toBe('A-');
-        expect(model.courses[0]?.results[2]?.value.value).toBe('Completed');
+        expect(model.courses[0]?.results[0]?.value?.value).toBe('A-');
+        expect(model.courses[0]?.results[2]?.value).toBeUndefined();
+        expect(model.courses[0]?.results[2]?.status?.value).toBe('Completed');
         expect(model.header.issuerImage?.value).toBe(
             'https://aster-ridge.example/brand/institute-mark.png'
         );
@@ -275,8 +276,11 @@ describe('normalizeClrTranscriptDisplayModel', () => {
         const model = normalizeClrTranscriptDisplayModel(credential);
 
         expect(isStandaloneCourseCredential(credential)).toBe(false);
-        expect(model.courses).toHaveLength(1);
+        expect(model.courses).toHaveLength(2);
         expect(model.courses[0]?.name?.value).toBe('Nested course');
+        expect(model.courses.map(course => course.sourceCredentialId)).toEqual(
+            model.records.map(record => record.id)
+        );
         expect(model.evidence).toHaveLength(1);
     });
 
@@ -482,7 +486,7 @@ describe('normalizeClrTranscriptDisplayModel', () => {
             );
             expect(model.courses[0]?.creditsFromDescription?.value).toBe(3);
             expect(model.courses[0]?.creditsFromDescription?.sourcePath).toBe(
-                'achievement.description'
+                'credentialSubject.verifiableCredential[0].credentialSubject.achievement.description'
             );
         });
 
@@ -626,7 +630,9 @@ describe('normalizeClrTranscriptDisplayModel', () => {
             const courseIds = model.courses.map(course => course.sourceCredentialId);
 
             expect(new Set(courseIds)).toHaveProperty('size', courseIds.length);
-            expect(courseIds.every(id => id.startsWith('nested-unknown-'))).toBe(true);
+            expect(courseIds.every(id => model.records.some(record => record.id === id))).toBe(
+                true
+            );
         });
 
         it('warns when multiple records share an Achievement ID alias', () => {
@@ -648,9 +654,8 @@ describe('normalizeClrTranscriptDisplayModel', () => {
             expect(model.warnings).toEqual(
                 expect.arrayContaining([
                     expect.objectContaining({
-                        code: 'AMBIGUOUS_RECORD',
-                        sourceCredentialId: advanced.id,
-                        sourcePath: 'achievement.id',
+                        code: 'AMBIGUOUS_ASSOCIATION_ENDPOINT',
+                        sourcePath: 'credentialSubject.association[0].sourceId',
                     }),
                 ])
             );
@@ -734,7 +739,7 @@ describe('normalizeClrTranscriptDisplayModel', () => {
                 course => course.name?.value === 'Foundations of Systems Thinking'
             )!.results[0]!;
 
-            expect(result.value.value).toBe('Advanced');
+            expect(result.value?.value).toBe('Advanced');
             expect(result.label).toBeUndefined();
             expect(result.resultDescriptionResolved).toBe(false);
             expect(result.alignments).toEqual([]);

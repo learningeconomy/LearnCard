@@ -7,7 +7,7 @@ import ClrTranscriptEvidenceList, {
 import StructuredTranscriptView from './StructuredTranscriptView';
 import SparseAcademicRecordView from './SparseAcademicRecordView';
 
-import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
+import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const VerifierInspectionView: React.FC<{
     model: ClrTranscriptDisplayModel;

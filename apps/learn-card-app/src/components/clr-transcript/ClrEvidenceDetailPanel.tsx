@@ -8,7 +8,7 @@ import X from '../svgs/X';
 
 import { useModal } from 'learn-card-base';
 
-import type { EvidenceDisplayModel } from '../../helpers/clrRenderer.helpers';
+import type { EvidenceDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const ClrEvidenceDetailPanel: React.FC<{
     evidence: EvidenceDisplayModel[];

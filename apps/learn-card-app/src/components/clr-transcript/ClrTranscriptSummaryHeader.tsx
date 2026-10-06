@@ -15,10 +15,10 @@ import CredentialVerificationDisplay from 'learn-card-base/components/Credential
 import { CredentialCategoryEnum, ModalTypes, useModal } from 'learn-card-base';
 
 import type { VC } from '@learncard/types';
-import { formatClrDate } from '../../helpers/clrRenderer.helpers';
-import type { ClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
-import { formatClrGpa } from './clr.helpers';
-import { getClrIssuerLogo } from './clrKind.helpers';
+import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
+import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
+import { formatClrGpa } from 'learn-card-base/helpers/credentials/clr/helpers';
+import { getClrIssuerLogo } from 'learn-card-base/helpers/credentials/clr/kind';
 
 const ClrTranscriptSummaryHeader: React.FC<{
     model: ClrTranscriptDisplayModel;

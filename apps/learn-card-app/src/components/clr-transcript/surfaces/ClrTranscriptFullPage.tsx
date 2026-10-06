@@ -23,14 +23,14 @@ import type {
     ProgramDisplayModel,
     ClrRecordNavigator,
     ClrTranscriptDisplayModel,
-} from '../../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 import {
     createClrRecordSelection,
     selectClrTranscriptView,
-} from '../../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 
 import type { VC } from '@learncard/types';
-import { getClrIssuerLogo } from '../clrKind.helpers';
+import { getClrIssuerLogo } from 'learn-card-base/helpers/credentials/clr/kind';
 
 type ClrRecordNavigatorOptions = {
     model: ClrTranscriptDisplayModel;

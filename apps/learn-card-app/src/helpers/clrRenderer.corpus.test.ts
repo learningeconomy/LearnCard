@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { ALL_FIXTURES } from '../../../../packages/credential-library/src/fixtures';
+import type { CredentialFixture } from '../../../../packages/credential-library/src/types';
 
-import { normalizeClrTranscriptDisplayModel } from './clrRenderer.helpers';
+import { normalizeClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const asObjects = (value: unknown): Record<string, unknown>[] =>
     Array.isArray(value)
@@ -14,9 +15,46 @@ const asObjects = (value: unknown): Record<string, unknown>[] =>
           ? [value as Record<string, unknown>]
           : [];
 
-const clrFixtures = ALL_FIXTURES.filter(fixture => fixture.spec === 'clr-v2');
+const clrFixtures = ALL_FIXTURES.filter(
+    (fixture): fixture is CredentialFixture => fixture.spec === 'clr-v2'
+);
 
 describe('CLR canonical normalization corpus', () => {
+    it.each(clrFixtures)(
+        'projects every record and result into display categories: $id',
+        fixture => {
+            const model = normalizeClrTranscriptDisplayModel(
+                fixture.credential as unknown as Record<string, unknown>
+            );
+            const displayed = [
+                ...model.courses,
+                ...model.programs,
+                ...model.competencies,
+                ...model.assessments,
+                ...model.awards,
+                ...model.otherRecords,
+            ];
+            expect(displayed.map(record => record.sourceCredentialId).sort()).toEqual(
+                model.records.map(record => record.id).sort()
+            );
+            for (const record of model.records) {
+                const projected = displayed.find(item => item.sourceCredentialId === record.id)!;
+                expect(projected.results).toHaveLength(record.results.length);
+                expect(projected.evidence).toHaveLength(record.evidence.length);
+                record.results.forEach((result, index) => {
+                    expect(projected.results[index].value?.value).toEqual(result.value?.value);
+                    expect(projected.results[index].status?.value).toEqual(result.status?.value);
+                    expect(projected.results[index].achievedLevelId?.value).toEqual(
+                        result.achievedLevelId?.value
+                    );
+                    expect(projected.results[index].resultDescriptionResolved).toBe(
+                        result.resultDescriptionResolved
+                    );
+                });
+            }
+        }
+    );
+
     it('preserves every assertion and definition across the registered fixture corpus', () => {
         let embeddedCount = 0;
         let definitionOnlyCount = 0;

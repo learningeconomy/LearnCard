@@ -13,13 +13,16 @@ import ClrCourseCredentialCollapsible from './ClrCourseCredentialCollapsible';
 
 import { useModal } from 'learn-card-base';
 
-import { formatClrDate, getRelationshipsForRecord } from '../../helpers/clrRenderer.helpers';
-import { summarizeAssessment } from './clr.helpers';
+import {
+    formatClrDate,
+    getRelationshipsForRecord,
+} from 'learn-card-base/helpers/credentials/clr/renderer';
+import { summarizeAssessment } from 'learn-card-base/helpers/credentials/clr/helpers';
 
 import type {
     AssessmentDisplayModel,
     ClrTranscriptDisplayModel,
-} from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 import type { VC } from '@learncard/types';
 
 const ClrAssessmentDetailPanel: React.FC<{

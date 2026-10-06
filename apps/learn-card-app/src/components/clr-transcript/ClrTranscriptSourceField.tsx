@@ -1,7 +1,7 @@
 import type React from 'react';
 
-import { formatClrDate } from '../../helpers/clrRenderer.helpers';
-import type { SourceMappedField } from '../../helpers/clrRenderer.helpers';
+import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
+import type { SourceMappedField } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 type Props<T> = {
     label: string;
@@ -9,11 +9,11 @@ type Props<T> = {
     showSource?: boolean;
 };
 
-const ClrTranscriptSourceField: React.FC<Props<any>> = <T,>({
+const ClrTranscriptSourceField = <T,>({
     label,
     field,
     showSource = false,
-}: Props<T>) => {
+}: Props<T>): React.ReactElement | null => {
     if (!field) return null;
 
     const stringifyValue: (value: unknown) => string = (value: unknown): string => {

@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { clrAchievementIdAssociations } from '../../../../../packages/credential-library/src/fixtures/clr/achievement-id-associations';
-import { normalizeClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
+import { normalizeClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 import ClrCourseTable from './ClrCourseTable';
 
