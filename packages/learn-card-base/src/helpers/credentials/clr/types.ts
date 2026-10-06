@@ -206,6 +206,7 @@ export type ClrNormalizedRecord = {
 export type ClrAssociationResolution = 'resolved' | 'ambiguous' | 'unresolved' | 'missing';
 
 export type ClrAssociationModel = {
+    types: ClrMappedValue<string>[];
     associationType?: ClrMappedValue<string>;
     sourceId?: ClrMappedValue<string>;
     targetId?: ClrMappedValue<string>;
