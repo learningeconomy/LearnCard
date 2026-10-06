@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import X from '../svgs/X';
+import { ClrRecordDetails } from './ClrRecordDetails';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { FlatIcon } from 'learn-card-base/components/FlatIcon';
 import ClrCompetencyBlock from './ClrCompetencyBlock';
@@ -21,7 +22,6 @@ import type {
     CourseDisplayModel,
 } from 'learn-card-base/helpers/credentials/clr/renderer';
 import {
-    formatClrDate,
     getLinkedCompetencies,
     getRelationshipsForRecord,
 } from 'learn-card-base/helpers/credentials/clr/renderer';
@@ -46,6 +46,7 @@ const ClrCourseDetailPanel: React.FC<{
     issuerLogo,
     showCloseButton = true,
 }) => {
+    const record = model?.records.find(candidate => candidate.id === course.sourceCredentialId);
     const { closeModal } = useModal();
     const [competenciesOpen, setCompetenciesOpen] = useState(true);
 
@@ -65,9 +66,6 @@ const ClrCourseDetailPanel: React.FC<{
             kind: 'course',
             title: course.name?.value ?? 'Course',
             humanCode: course.humanCode?.value,
-            dateLabel: course.earnedAt?.value
-                ? `Added ${formatClrDate(course.earnedAt.value)}`
-                : undefined,
         },
     };
 
@@ -116,82 +114,54 @@ const ClrCourseDetailPanel: React.FC<{
             </div>
 
             <div className="px-5 space-y-5">
-                <div className="bg-white shadow-box-bottom rounded-2xl overflow-hidden w-full p-4">
-                    {/* Credits summary */}
-                    {credits !== undefined && (
-                        <div className="mb-4 flex">
-                            <div className="flex w-full flex-col items-center rounded-2xl border border-grayscale-200 bg-grayscale-50 px-6 py-4">
-                                <p className="text-2xl font-semibold leading-none text-grayscale-900">
-                                    {credits}
-                                </p>
-                                <p className="mt-1.5 text-sm font-semibold uppercase text-grayscale-600">
-                                    {course.creditsEarned !== undefined ||
-                                    course.creditsFromDescription !== undefined
-                                        ? 'Credits'
-                                        : 'Available'}
-                                </p>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Description + earned date */}
-                    {(course.description?.value || course.earnedAt?.value) && (
-                        <div className="space-y-2">
-                            {course.description?.value && (
-                                <div>
-                                    <h3 className="text-lg font-medium text-grayscale-900 mb-2">
-                                        Description
-                                    </h3>
-                                    <p className="text-base text-grayscale-700 leading-relaxed">
-                                        {course.description.value}
+                {(credits !== undefined ||
+                    course.description?.value ||
+                    relationships.length > 0) && (
+                    <div className="bg-white shadow-box-bottom rounded-2xl overflow-hidden w-full p-4">
+                        {/* Credits summary */}
+                        {credits !== undefined && (
+                            <div className="mb-4 flex">
+                                <div className="flex w-full flex-col items-center rounded-2xl border border-grayscale-200 bg-grayscale-50 px-6 py-4">
+                                    <p className="text-2xl font-semibold leading-none text-grayscale-900">
+                                        {credits}
+                                    </p>
+                                    <p className="mt-1.5 text-sm font-semibold uppercase text-grayscale-600">
+                                        {course.creditsEarned !== undefined ||
+                                        course.creditsFromDescription !== undefined
+                                            ? 'Credits'
+                                            : 'Available'}
                                     </p>
                                 </div>
-                            )}
-                            {course.earnedAt?.value && (
-                                <p className="text-base text-grayscale-600">
-                                    Earned on{' '}
-                                    <span className="font-semibold text-grayscale-600">
-                                        {formatClrDate(course.earnedAt.value)}
-                                    </span>
-                                    {issuerName && (
-                                        <>
-                                            {' '}
-                                            at{' '}
-                                            <span className="font-semibold text-grayscale-600">
-                                                {issuerName}
-                                            </span>
-                                        </>
-                                    )}
-                                </p>
-                            )}
-                        </div>
-                    )}
+                            </div>
+                        )}
 
-                    {relationships.length > 0 && (
-                        <div className="mt-4 border-t border-grayscale-200 pt-4">
-                            <ClrRelationshipChips
-                                relationships={relationships}
-                                onSelectRecord={onSelectRecord}
-                            />
-                        </div>
-                    )}
-                </div>
+                        {course.description?.value && (
+                            <div>
+                                <h3 className="text-lg font-medium text-grayscale-900 mb-2">
+                                    Description
+                                </h3>
+                                <p className="text-base text-grayscale-700 leading-relaxed">
+                                    {course.description.value}
+                                </p>
+                            </div>
+                        )}
+
+                        {relationships.length > 0 && (
+                            <div className="mt-4 border-t border-grayscale-200 pt-4">
+                                <ClrRelationshipChips
+                                    relationships={relationships}
+                                    onSelectRecord={onSelectRecord}
+                                />
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {course.results.length > 0 && (
                     <ClrResultWithScaleList results={course.results} showResultType={adminMode} />
                 )}
 
-                {/* Expires */}
-                {course.validUntil?.value && (
-                    <div>
-                        <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide mb-0.5">
-                            Expires
-                        </p>
-                        <p className="text-base text-grayscale-900">
-                            {formatClrDate(course.validUntil.value)}
-                        </p>
-                    </div>
-                )}
+                <ClrRecordDetails record={record} />
 
                 {/* Competencies collapsible */}
                 {courseCompetencies.length > 0 && (
@@ -219,6 +189,9 @@ const ClrCourseDetailPanel: React.FC<{
                                     <ClrCompetencyBlock
                                         key={c.sourceCredentialId}
                                         competency={c}
+                                        record={model?.records.find(
+                                            record => record.id === c.sourceCredentialId
+                                        )}
                                         relationships={getRelationshipsForRecord(
                                             model?.relationships ?? {},
                                             c.sourceCredentialId
@@ -254,6 +227,7 @@ const ClrCourseDetailPanel: React.FC<{
                     issuerLogo={issuerLogo}
                     skillCount={courseCompetencies.length}
                     credential={boost}
+                    record={record}
                 />
 
                 {/* Admin provenance */}

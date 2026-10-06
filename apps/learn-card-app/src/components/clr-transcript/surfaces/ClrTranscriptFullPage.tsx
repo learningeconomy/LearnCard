@@ -5,6 +5,7 @@ import ClrAssessmentSection from '../ClrAssessmentSection';
 import ClrAssessmentDetailPanel from '../ClrAssessmentDetailPanel';
 import ClrProgramsSection from '../ClrProgramsSection';
 import ClrAwardsSection from '../ClrAwardsSection';
+import { ClrOtherRecordsSection } from '../ClrOtherRecordsSection';
 import ClrCourseDetailPanel from '../ClrCourseDetailPanel';
 import ClrProgramDetailPanel from '../ClrProgramDetailPanel';
 import ClrCompetencyDetailPanel from '../ClrCompetencyDetailPanel';
@@ -195,7 +196,13 @@ const ClrTranscriptFullPage: React.FC<{
                     {/* Awards & Recognitions */}
                     {(selectedView === 'StructuredTranscriptView' ||
                         selectedView === 'VerifierInspectionView') &&
-                        model.awards.length > 0 && <ClrAwardsSection awards={model.awards} />}
+                        model.awards.length > 0 && (
+                            <ClrAwardsSection awards={model.awards} records={model.records} />
+                        )}
+
+                    {selectedView !== 'SparseAcademicRecordView' && (
+                        <ClrOtherRecordsSection model={model} showSource={adminMode} />
+                    )}
 
                     {/* Sparse / summary views */}
                     {selectedView === 'SparseAcademicRecordView' && (
