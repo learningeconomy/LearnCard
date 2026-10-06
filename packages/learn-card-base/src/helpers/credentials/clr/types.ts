@@ -17,6 +17,7 @@ export type ClrMappedValue<T> = {
 };
 
 export type ClrNormalizationWarningCode =
+    | 'AMBIGUOUS_SUBJECT'
     | 'AMBIGUOUS_ASSOCIATION_ENDPOINT'
     | 'CONFLICTING_ACHIEVEMENT_DEFINITION'
     | 'DUPLICATE_CREDENTIAL_ID'
@@ -49,6 +50,8 @@ export type ClrIdentifierModel = {
     type?: ClrMappedValue<string>;
     identityType?: ClrMappedValue<string>;
     identityHash?: ClrMappedValue<string>;
+    identifierType?: ClrMappedValue<string>;
+    identifier?: ClrMappedValue<string>;
     hashed?: ClrMappedValue<boolean>;
     salt?: ClrMappedValue<string>;
     source: ClrJsonObject;
@@ -225,6 +228,13 @@ export type ClrCollectionModel = {
     name?: ClrMappedValue<string>;
     description?: ClrMappedValue<string>;
     publisher?: ClrProfileModel;
+    image?: ClrMappedValue<string>;
+    subjectPath: string;
+    hasProof: boolean;
+    nestedSignedCount: number;
+    nestedUnsignedCount: number;
+    credentialStatusTypes: string[];
+    hasCredentialStatus: boolean;
     subjectId?: ClrMappedValue<string>;
     subjectIdentifiers: ClrIdentifierModel[];
     validFrom?: ClrMappedValue<string>;

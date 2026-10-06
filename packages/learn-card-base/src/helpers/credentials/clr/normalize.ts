@@ -18,6 +18,7 @@ import type {
     ClrRubricLevelModel,
     ClrSourceKind,
 } from './types';
+import { getSingleClrSubject, getClrSubjectPath, isStandaloneCourseCredential } from './selectors';
 
 const LARGE_INLINE_EVIDENCE_THRESHOLD = 100_000;
 
@@ -40,11 +41,11 @@ const asStrings = (value: unknown): string[] =>
           ? [value]
           : [];
 
-const getSingleSubject = (credential: ClrJsonObject): ClrJsonObject | undefined =>
-    asObjects(credential.credentialSubject)[0];
-
 const propertyPath = (sourcePath: string, key: string): string =>
     sourcePath ? `${sourcePath}.${key}` : key;
+
+const itemPath = (value: unknown, path: string, index: number): string =>
+    Array.isArray(value) ? `${path}[${index}]` : path;
 
 const sourceValue = <T>(
     value: T | undefined,
@@ -133,11 +134,13 @@ const mapIdentifiers = (
     sourceKind: ClrSourceKind
 ): ClrIdentifierModel[] =>
     asObjects(value).map((identifier, index) => {
-        const path = `${sourcePath}[${index}]`;
+        const path = itemPath(value, sourcePath, index);
         return {
             type: stringValue(identifier, 'type', path, sourceKind),
             identityType: stringValue(identifier, 'identityType', path, sourceKind),
             identityHash: stringValue(identifier, 'identityHash', path, sourceKind),
+            identifierType: stringValue(identifier, 'identifierType', path, sourceKind),
+            identifier: stringValue(identifier, 'identifier', path, sourceKind),
             hashed:
                 typeof identifier.hashed === 'boolean'
                     ? sourceValue(identifier.hashed, `${path}.hashed`, sourceKind)
@@ -188,7 +191,7 @@ const mapAlignments = (
     scope: ClrAlignmentScope
 ): ClrAlignmentModel[] =>
     asObjects(value).map((alignment, index) =>
-        mapAlignment(alignment, `${sourcePath}[${index}]`, sourceKind, scope)
+        mapAlignment(alignment, itemPath(value, sourcePath, index), sourceKind, scope)
     );
 
 const mapRubricLevels = (
@@ -197,7 +200,7 @@ const mapRubricLevels = (
     sourceKind: ClrSourceKind
 ): ClrRubricLevelModel[] =>
     asObjects(value).map((level, index) => {
-        const path = `${sourcePath}[${index}]`;
+        const path = itemPath(value, sourcePath, index);
         const points = level.points;
         return {
             id: stringValue(level, 'id', path, sourceKind),
@@ -257,7 +260,7 @@ const mapEvidence = (
     sourceKind: ClrSourceKind
 ): ClrEvidenceModel[] =>
     asObjects(value).map((evidence, index) => {
-        const path = `${sourcePath}[${index}]`;
+        const path = itemPath(value, sourcePath, index);
         const id = stringValue(evidence, 'id', path, sourceKind);
         const isInlineDataUri = id?.value.startsWith('data:') ?? false;
         return {
@@ -338,7 +341,7 @@ const mapDefinitionItems = <T>(
     const seen = new Map<string, string>();
     return definitions.flatMap(definition =>
         asObjects(definition.achievement[key]).flatMap((item, index) => {
-            const path = `${definition.path}.${key}[${index}]`;
+            const path = itemPath(definition.achievement[key], `${definition.path}.${key}`, index);
             const identity =
                 typeof item.id === 'string' ? `id:${item.id}` : `value:${stableJson(item)}`;
             const serialized = stableJson(item);
@@ -373,7 +376,7 @@ const mapResults = (
     });
 
     return asObjects(value).map((result, index) => {
-        const path = `${sourcePath}[${index}]`;
+        const path = itemPath(value, sourcePath, index);
         const resultDescriptionId = stringValue(
             result,
             'resultDescription',
@@ -383,7 +386,7 @@ const mapResults = (
         const matches = resultDescriptionId
             ? (descriptionsById.get(resultDescriptionId.value) ?? [])
             : [];
-        const resultDescription = matches[0];
+        const resultDescription = matches.length === 1 ? matches[0] : undefined;
         const resolved = resultDescriptionId === undefined || matches.length === 1;
 
         if (resultDescriptionId && matches.length !== 1) {
@@ -515,7 +518,7 @@ const buildRecord = ({
 }: BuildRecordOptions): ClrNormalizedRecord => {
     const primaryDefinition = definitions[0];
     const credentialId =
-        credential && credentialPath
+        credential && credentialPath !== undefined
             ? stringValue(credential, 'id', credentialPath, 'embeddedCredential')
             : undefined;
     const achievementId = definitionScalar(
@@ -541,7 +544,10 @@ const buildRecord = ({
         warnings,
         id
     );
-    const subjectPath = credentialPath ? `${credentialPath}.credentialSubject` : undefined;
+    const subjectPath =
+        credential && credentialPath !== undefined
+            ? getClrSubjectPath(credential, credentialPath)
+            : undefined;
     const language =
         definitionScalar(
             definitions,
@@ -565,7 +571,7 @@ const buildRecord = ({
         id,
         aliases,
         origins: [
-            ...(credential && subject && credentialPath
+            ...(credential && credentialPath !== undefined
                 ? [
                       {
                           kind: 'embeddedCredential' as const,
@@ -591,15 +597,19 @@ const buildRecord = ({
         sourceAchievement: primaryDefinition?.achievement,
         credentialId,
         credentialTypes:
-            credential && credentialPath
-                ? stringValues(credential.type, `${credentialPath}.type`, 'embeddedCredential')
+            credential && credentialPath !== undefined
+                ? stringValues(
+                      credential.type,
+                      propertyPath(credentialPath, 'type'),
+                      'embeddedCredential'
+                  )
                 : [],
         credentialName:
-            credential && credentialPath
+            credential && credentialPath !== undefined
                 ? stringValue(credential, 'name', credentialPath, 'embeddedCredential')
                 : undefined,
         credentialDescription:
-            credential && credentialPath
+            credential && credentialPath !== undefined
                 ? stringValue(credential, 'description', credentialPath, 'embeddedCredential')
                 : undefined,
         achievementId,
@@ -695,10 +705,10 @@ const buildRecord = ({
             : undefined,
         provenance: {
             issuer:
-                credential && credentialPath
+                credential && credentialPath !== undefined
                     ? mapProfile(
                           credential.issuer,
-                          `${credentialPath}.issuer`,
+                          propertyPath(credentialPath, 'issuer'),
                           'embeddedCredential'
                       )
                     : undefined,
@@ -723,15 +733,15 @@ const buildRecord = ({
                     ? stringValue(subject, 'activityEndDate', subjectPath, 'embeddedCredential')
                     : undefined,
             awarded:
-                credential && credentialPath
+                credential && credentialPath !== undefined
                     ? stringValue(credential, 'awardedDate', credentialPath, 'embeddedCredential')
                     : undefined,
             validFrom:
-                credential && credentialPath
+                credential && credentialPath !== undefined
                     ? stringValue(credential, 'validFrom', credentialPath, 'embeddedCredential')
                     : undefined,
             validUntil:
-                credential && credentialPath
+                credential && credentialPath !== undefined
                     ? stringValue(credential, 'validUntil', credentialPath, 'embeddedCredential')
                     : undefined,
         },
@@ -759,10 +769,10 @@ const buildRecord = ({
                   )
                 : [],
         evidence: [
-            ...(credential && credentialPath
+            ...(credential && credentialPath !== undefined
                 ? mapEvidence(
                       credential.evidence,
-                      `${credentialPath}.evidence`,
+                      propertyPath(credentialPath, 'evidence'),
                       'embeddedCredential'
                   )
                 : []),
@@ -805,17 +815,26 @@ export const normalizeClrCredential = (
 ): ClrNormalizedModel => {
     const collection = rawCredential as ClrJsonObject;
     const warnings: ClrNormalizationWarning[] = [];
-    const subject = getSingleSubject(collection) ?? {};
+    const subject = getSingleClrSubject(collection) ?? {};
+    const subjectPath = getClrSubjectPath(collection);
+    const standalone = isStandaloneCourseCredential(collection);
+    if (Array.isArray(collection.credentialSubject) && collection.credentialSubject.length > 1) {
+        warnings.push({
+            code: 'AMBIGUOUS_SUBJECT',
+            message: 'Multiple credential subjects cannot be reduced to a single learner.',
+            sourcePath: 'credentialSubject',
+        });
+    }
     const collectionId = typeof collection.id === 'string' ? collection.id : 'clr';
-    const embeddedCredentials = asObjects(subject.verifiableCredential);
-    const topLevelAchievements = asObjects(subject.achievement);
+    const embeddedCredentials = standalone ? [collection] : asObjects(subject.verifiableCredential);
+    const topLevelAchievements = standalone ? [] : asObjects(subject.achievement);
 
     const topDefinitionsById = new Map<string, DefinitionSource[]>();
     topLevelAchievements.forEach((achievement, index) => {
         if (typeof achievement.id !== 'string') return;
         const definition: DefinitionSource = {
             achievement,
-            path: `credentialSubject.achievement[${index}]`,
+            path: itemPath(subject.achievement, `${subjectPath}.achievement`, index),
             kind: 'topLevelAchievement',
         };
         topDefinitionsById.set(achievement.id, [
@@ -829,8 +848,22 @@ export const normalizeClrCredential = (
     const credentialIds = new Map<string, number>();
 
     const records = embeddedCredentials.map((credential, index) => {
-        const path = `credentialSubject.verifiableCredential[${index}]`;
-        const embeddedSubject = getSingleSubject(credential);
+        const path = standalone
+            ? ''
+            : itemPath(subject.verifiableCredential, `${subjectPath}.verifiableCredential`, index);
+        const embeddedSubject = getSingleClrSubject(credential);
+        const embeddedSubjectPath = getClrSubjectPath(credential, path);
+        if (
+            Array.isArray(credential.credentialSubject) &&
+            credential.credentialSubject.length > 1
+        ) {
+            warnings.push({
+                code: 'AMBIGUOUS_SUBJECT',
+                message:
+                    'Embedded credential has multiple subjects; no learner claims were selected.',
+                sourcePath: embeddedSubjectPath,
+            });
+        }
         const embeddedAchievement = embeddedSubject
             ? asObjects(embeddedSubject.achievement)[0]
             : undefined;
@@ -843,7 +876,7 @@ export const normalizeClrCredential = (
                 ? [
                       {
                           achievement: embeddedAchievement,
-                          path: `${path}.credentialSubject.achievement`,
+                          path: `${embeddedSubjectPath}.achievement${Array.isArray(embeddedSubject?.achievement) ? '[0]' : ''}`,
                           kind: 'embeddedCredential' as const,
                       },
                   ]
@@ -861,10 +894,11 @@ export const normalizeClrCredential = (
             typeof credential.id === 'string' ? credential.id : `${collectionId}#embedded-${index}`;
         const occurrences = (credentialIds.get(rawCredentialId) ?? 0) + 1;
         credentialIds.set(rawCredentialId, occurrences);
-        const recordId =
+        let recordId =
             occurrences === 1 && !usedRecordIds.has(rawCredentialId)
                 ? rawCredentialId
                 : `${rawCredentialId}#occurrence-${index}`;
+        while (usedRecordIds.has(recordId)) recordId += '#duplicate';
         usedRecordIds.add(recordId);
 
         if (occurrences > 1) {
@@ -879,7 +913,7 @@ export const normalizeClrCredential = (
             warnings.push({
                 code: 'MISSING_ACHIEVEMENT',
                 message: 'Embedded credential does not contain an Achievement definition.',
-                sourcePath: `${path}.credentialSubject.achievement`,
+                sourcePath: `${embeddedSubjectPath}.achievement`,
                 recordId,
             });
         }
@@ -896,12 +930,13 @@ export const normalizeClrCredential = (
 
     topLevelAchievements.forEach((achievement, index) => {
         if (matchedTopLevelIndexes.has(index)) return;
-        const path = `credentialSubject.achievement[${index}]`;
+        const path = itemPath(subject.achievement, `${subjectPath}.achievement`, index);
         const rawId =
             typeof achievement.id === 'string'
                 ? achievement.id
                 : `${collectionId}#achievement-${index}`;
-        const recordId = usedRecordIds.has(rawId) ? `${rawId}#definition-${index}` : rawId;
+        let recordId = usedRecordIds.has(rawId) ? `${rawId}#definition-${index}` : rawId;
+        while (usedRecordIds.has(recordId)) recordId += '#duplicate';
         usedRecordIds.add(recordId);
         records.push(
             buildRecord({
@@ -917,7 +952,7 @@ export const normalizeClrCredential = (
 
     const associations: ClrAssociationModel[] = asObjects(subject.association).map(
         (association, index) => {
-            const path = `credentialSubject.association[${index}]`;
+            const path = itemPath(subject.association, `${subjectPath}.association`, index);
             const sourceId = stringValue(association, 'sourceId', path, 'collectionCredential');
             const targetId = stringValue(association, 'targetId', path, 'collectionCredential');
             const source = resolveAlias(sourceId?.value, aliases);
@@ -968,10 +1003,28 @@ export const normalizeClrCredential = (
             name: stringValue(collection, 'name', '', 'collectionCredential'),
             description: stringValue(collection, 'description', '', 'collectionCredential'),
             publisher: mapProfile(collection.issuer, 'issuer', 'collectionCredential'),
-            subjectId: stringValue(subject, 'id', 'credentialSubject', 'collectionCredential'),
+            image:
+                typeof collection.image === 'string'
+                    ? sourceValue(collection.image, 'image', 'collectionCredential')
+                    : isObject(collection.image)
+                      ? stringValue(collection.image, 'id', 'image', 'collectionCredential')
+                      : undefined,
+            subjectPath,
+            hasProof: collection.proof !== undefined,
+            nestedSignedCount: standalone
+                ? 0
+                : embeddedCredentials.filter(credential => credential.proof !== undefined).length,
+            nestedUnsignedCount: standalone
+                ? 0
+                : embeddedCredentials.filter(credential => credential.proof === undefined).length,
+            credentialStatusTypes: asObjects(collection.credentialStatus).flatMap(status =>
+                asStrings(status.type)
+            ),
+            hasCredentialStatus: collection.credentialStatus !== undefined,
+            subjectId: stringValue(subject, 'id', subjectPath, 'collectionCredential'),
             subjectIdentifiers: mapIdentifiers(
                 subject.identifier,
-                'credentialSubject.identifier',
+                `${subjectPath}.identifier`,
                 'collectionCredential'
             ),
             validFrom: stringValue(collection, 'validFrom', '', 'collectionCredential'),
@@ -980,11 +1033,7 @@ export const normalizeClrCredential = (
             partial: collection.partial === true,
             evidence: [
                 ...mapEvidence(collection.evidence, 'evidence', 'collectionCredential'),
-                ...mapEvidence(
-                    subject.evidence,
-                    'credentialSubject.evidence',
-                    'collectionCredential'
-                ),
+                ...mapEvidence(subject.evidence, `${subjectPath}.evidence`, 'collectionCredential'),
             ],
         },
         records,
