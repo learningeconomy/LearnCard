@@ -165,4 +165,3 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
 };
 
 export default ClrTranscriptTitleDisplay;
-export { getClrTranscriptKind } from 'learn-card-base/helpers/credentials/clr/kind';

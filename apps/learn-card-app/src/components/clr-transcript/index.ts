@@ -21,5 +21,3 @@ export { default as ClrTranscriptCard } from './surfaces/ClrTranscriptCard';
 export { default as ClrTranscriptFullPage } from './surfaces/ClrTranscriptFullPage';
 export { default as ClrTranscriptEmbedWidget } from './surfaces/ClrTranscriptEmbedWidget';
 export { default as ClrTranscriptTitleDisplay } from './ClrTranscriptTitleDisplay';
-export { getClrTranscriptKind } from 'learn-card-base/helpers/credentials/clr/kind';
-export { getClrTranscriptIssuerInfo } from 'learn-card-base/helpers/credentials/clr/kind';

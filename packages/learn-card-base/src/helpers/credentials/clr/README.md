@@ -14,9 +14,10 @@ presentation helpers for LearnCard App and other consumers such as ScoutPass.
 - `evidence.ts`: evidence metadata and actions delegated to the shared attachment opener.
 - `renderer.ts` / `helpers.ts`: compatibility entry points for existing consumers.
 
-App-side helper files are re-export shims. New parsing logic belongs here, not in a
-component or another app helper. Core imports from this directory's `index.ts` do
-not load UI presentation or native attachment dependencies.
+App consumers import directly from this shared directory; the former app helper
+files and component-level helper re-exports have been removed. New parsing logic
+belongs here, not in a component or another app helper. Core imports from this
+directory's `index.ts` do not load UI presentation or native attachment dependencies.
 
 ## Model boundaries
 
