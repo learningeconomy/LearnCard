@@ -60,7 +60,10 @@ public class WebAuthSessionPlugin: CAPPlugin, CAPBridgedPlugin {
             session.presentationContextProvider = self
 
             guard session.canStart else {
-                call.reject("The sign-in sheet cannot be presented right now", "FAILED")
+                // Apple sign-in can return its credential before its sheet finishes
+                // dismissing. No web session has started, so JS can safely retry
+                // presentation without repeating sign-in or redeeming the ticket.
+                call.reject("The sign-in sheet cannot be presented right now", "PRESENTATION_BUSY")
                 return
             }
 
@@ -70,7 +73,7 @@ public class WebAuthSessionPlugin: CAPPlugin, CAPBridgedPlugin {
 
             if !session.start() {
                 self.session = nil
-                call.reject("Unable to start the sign-in sheet", "FAILED")
+                call.reject("Unable to start the sign-in sheet", "PRESENTATION_BUSY")
             }
         }
     }
