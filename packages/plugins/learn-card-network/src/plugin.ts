@@ -2353,6 +2353,14 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
+            addContractRecipient: async (_learnCard, contractUri, recipient) => {
+                await ensureUser();
+                return client.contracts.addContractRecipient.mutate({ contractUri, recipient });
+            },
+            removeContractRecipient: async (_learnCard, contractUri, recipient) => {
+                await ensureUser();
+                return client.contracts.removeContractRecipient.mutate({ contractUri, recipient });
+            },
             getContract: async (_learnCard, uri) => {
                 return client.contracts.getConsentFlowContract.query({ uri });
             },
@@ -2407,7 +2415,7 @@ export async function getLearnCardNetworkPlugin(
             consentToContract: async (
                 _learnCard,
                 contractUri,
-                { terms, expiresAt, oneTime },
+                { terms, expiresAt, oneTime, audienceVersion, expectedRequestId },
                 recipientToken
             ) => {
                 await ensureUser();
@@ -2417,6 +2425,8 @@ export async function getLearnCardNetworkPlugin(
                     terms,
                     expiresAt,
                     oneTime,
+                    audienceVersion,
+                    expectedRequestId,
                     recipientToken, // for SmartResume
                 });
             },
@@ -2427,7 +2437,11 @@ export async function getLearnCardNetworkPlugin(
                 return client.contracts.getConsentedContracts.query(options);
             },
 
-            updateContractTerms: async (_learnCard, uri, { terms, expiresAt, oneTime }) => {
+            updateContractTerms: async (
+                _learnCard,
+                uri,
+                { terms, expiresAt, oneTime, audienceVersion }
+            ) => {
                 await ensureUser();
 
                 return client.contracts.updateConsentedContractTerms.mutate({
@@ -2435,6 +2449,7 @@ export async function getLearnCardNetworkPlugin(
                     terms,
                     expiresAt,
                     oneTime,
+                    audienceVersion,
                 });
             },
 
@@ -2474,12 +2489,18 @@ export async function getLearnCardNetworkPlugin(
                 return client.contracts.verifyConsent.query({ uri, profileId });
             },
 
-            syncCredentialsToContract: async (_learnCard, termsUri, categories) => {
+            syncCredentialsToContract: async (
+                _learnCard,
+                termsUri,
+                categories,
+                audienceVersion
+            ) => {
                 await ensureUser();
 
                 return client.contracts.syncCredentialsToContract.mutate({
                     termsUri,
                     categories,
+                    audienceVersion,
                 });
             },
 
@@ -2491,6 +2512,14 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
+            sendContractRequest: async (_learnCard, request) => {
+                await ensureUser();
+                return client.contracts.sendContractRequest.mutate(request);
+            },
+            denyContractRequest: async (_learnCard, contractUri) => {
+                await ensureUser();
+                return client.contracts.denyContractRequest.mutate({ contractUri });
+            },
             sendAiInsightsContractRequest: async (
                 _learnCard,
                 contractUri,
