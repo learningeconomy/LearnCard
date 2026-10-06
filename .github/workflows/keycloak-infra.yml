@@ -86,6 +86,7 @@ jobs:
               run: bash infra/keycloak/scripts/test-compat-gate.sh
             - name: Test deployment safety without credentials
               run: |
+                  bash infra/keycloak/scripts/test-bootstrap-secret.sh
                   bash infra/keycloak/scripts/test-deploy-image.sh
                   bash infra/keycloak/scripts/test-release-order.sh
                   bash infra/keycloak/scripts/test-realm-runner.sh
@@ -150,6 +151,9 @@ jobs:
                   aws-region: us-east-1
                   role-duration-seconds: 10800
                   unset-current-credentials: true
+            - name: Resolve bootstrap secret reference before publishing or planning
+              if: github.event_name == 'push' || inputs.action == 'promote' || inputs.root == 'service'
+              run: bash infra/keycloak/scripts/resolve-bootstrap-secret.sh
             - name: Refuse out-of-order automatic releases before publishing
               if: github.event_name == 'push'
               run: bash infra/keycloak/scripts/check-release-order.sh
