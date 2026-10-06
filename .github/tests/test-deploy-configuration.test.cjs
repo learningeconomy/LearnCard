@@ -42,6 +42,15 @@ for (const key of ['OIDC_CLIENT_SECRET', 'OIDC_SIGNING_KEY_JWK']) {
 }
 
 const workflow = workflows.get('keycloak-infra.yml');
+const pluginInit = workflow.jobs.validate.steps.find(step => step.run === 'tflint --init');
+assert(pluginInit, 'TFLint plugin initialization must be a separate step');
+assert.equal(pluginInit.env.GITHUB_TOKEN, '${{ github.token }}');
+assert.deepEqual(workflow.permissions, { contents: 'read' });
+assert.equal(workflow.jobs.validate.env?.GITHUB_TOKEN, undefined);
+assert(
+    workflow.jobs.validate.steps.every(step => step === pluginInit || !step.env?.GITHUB_TOKEN),
+    'the read-only GitHub token must be scoped to plugin initialization'
+);
 const steps = workflow.jobs.deploy.steps;
 const resolver = steps.findIndex(step => step.run?.includes('resolve-bootstrap-secret.sh'));
 assert(resolver > steps.findIndex(step => step.uses?.startsWith('aws-actions/configure-')));

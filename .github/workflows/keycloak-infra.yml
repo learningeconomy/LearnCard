@@ -64,13 +64,19 @@ jobs:
             - uses: terraform-linters/setup-tflint@v4
               with:
                   tflint_version: v0.55.1
+            - name: Initialize TFLint plugins
+              working-directory: ${{ matrix.root }}
+              env:
+                  # Avoid the shared runner IP's anonymous GitHub API rate limit.
+                  GITHUB_TOKEN: ${{ github.token }}
+              run: tflint --init
             - name: Validate and lint root
               working-directory: ${{ matrix.root }}
               run: |
                   terraform fmt -check -recursive
                   terraform init -backend=false
                   terraform validate
-                  tflint --init && tflint
+                  tflint
             - name: Test private admin access rules (mock AWS)
               if: matrix.root == 'infra/keycloak/terraform/service'
               working-directory: ${{ matrix.root }}
