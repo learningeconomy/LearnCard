@@ -96,7 +96,11 @@ beforeEach(() => {
                                     candidate: {
                                         id: 'c',
                                         format: 'ldp_vc',
-                                        credential: { name: 'Diploma' },
+                                        credential: {
+                                            '@context': ['https://www.w3.org/2018/credentials/v1'],
+                                            type: ['VerifiableCredential'],
+                                            name: 'Diploma',
+                                        },
                                     },
                                 },
                             ],
@@ -130,7 +134,7 @@ describe('OID4VP disclosure account cancellation', () => {
     it('leaves submitting without offering old credentials after transport', async () => {
         mocks.send.mockImplementationOnce(async () => {
             mocks.current = false;
-            return { submitted: {} };
+            return { submitted: { redirectUri: 'https://verifier.example/private-redirect' } };
         });
         await approve();
         await screen.findByText('Finished');
@@ -139,12 +143,14 @@ describe('OID4VP disclosure account cancellation', () => {
         expect(screen.queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument();
         expect(screen.getByTestId('success-details')).toHaveTextContent('"sharedCredentials":[]');
         expect(screen.getByTestId('success-details')).not.toHaveTextContent('verifier.example');
+        expect(screen.getByTestId('success-details')).not.toHaveTextContent('Diploma');
         expect(mocks.send).toHaveBeenCalledTimes(1);
     });
     it('retains success behavior and records only after one transport', async () => {
         await approve();
         await screen.findByText('Finished');
         await waitFor(() => expect(mocks.finish).toHaveBeenCalledWith('sent'));
+        expect(screen.getByTestId('success-details')).toHaveTextContent('Diploma');
         expect(mocks.send).toHaveBeenCalledTimes(1);
     });
 });
