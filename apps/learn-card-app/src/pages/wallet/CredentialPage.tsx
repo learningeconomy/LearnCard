@@ -106,10 +106,10 @@ const getCategoryToConfig = (): Record<string, CategoryConfig> => ({
         boostCategory: CredentialCategoryEnum.qualifications,
         subheaderType: SubheaderTypeEnum.Qualifications,
         title: m['wallet.categories.qualifications'](),
-        iconColor: 'text-emerald-700',
-        dividerLineColor: 'emerald-300',
-        searchInputColor: 'emerald-500',
-        tabBackgroundColor: 'emerald-400',
+        iconColor: 'text-orange-700',
+        dividerLineColor: 'orange-300',
+        searchInputColor: 'orange-300',
+        tabBackgroundColor: 'orange-300',
     },
     [CredentialCategoryEnum.id]: {
         boostCategory: CredentialCategoryEnum.id, // category

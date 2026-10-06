@@ -103,10 +103,10 @@ export const SubheaderContentType: Record<
     [SubheaderTypeEnum.Qualifications]: {
         title: 'Qualifications',
         IconComponent: QualificationsIcon,
-        iconColor: 'text-emerald-700',
+        iconColor: 'text-orange-700',
         iconPadding: 'p-0',
-        textColor: 'text-white',
-        bgColor: 'bg-emerald-500',
+        textColor: 'text-orange-900',
+        bgColor: 'bg-orange-200',
         helperText: 'Your',
         helperTextClickable: 'qualifications',
     },

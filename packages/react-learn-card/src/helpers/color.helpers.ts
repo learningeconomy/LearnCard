@@ -6,7 +6,7 @@ export const getDarkBGColor = (type: WalletCategoryTypes) => {
     if (type === WalletCategoryTypes?.achievements) {
         return 'bg-orange-500';
     } else if (type === WalletCategoryTypes.qualifications) {
-        return 'bg-emerald-600';
+        return 'bg-orange-700';
     } else if (type === WalletCategoryTypes?.learningHistory) {
         return 'bg-emerald-500';
     } else if (type === WalletCategoryTypes?.skills) {

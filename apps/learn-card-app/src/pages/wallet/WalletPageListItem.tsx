@@ -4,6 +4,7 @@ import { IonSpinner } from '@ionic/react';
 import * as m from '../../paraglide/messages.js';
 
 import DotIcon from 'learn-card-base/svgs/DotIcon';
+import { QualificationsIconSolidColor } from 'learn-card-base/svgs/wallet/QualificationsIcon';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 
 import { CredentialCategoryEnum } from 'learn-card-base';
@@ -50,9 +51,13 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
     loading,
 }) => {
     const { categoryId: categoryType } = walletPageItem;
-    const { getThemedCategory, colors: themeColors } = useTheme();
+    const { theme, getThemedCategory, colors: themeColors } = useTheme();
     const { icons, colors } = getThemedCategory(categoryType);
-    const { IconWithShape, Icon } = icons;
+    const { IconWithShape: themedIconWithShape, Icon } = icons;
+    const IconWithShape =
+        theme.id === 'formal' && categoryType === CredentialCategoryEnum.qualifications
+            ? QualificationsIconSolidColor
+            : themedIconWithShape;
     const { primaryColor, indicatorColor, borderColor } = colors;
 
     const passportCardBgColor = themeColors?.defaults?.passportCardBgColor;

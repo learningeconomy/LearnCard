@@ -19,3 +19,5 @@ Retry truncated category scans on the next session and refresh open sharing list
 Keep available credentials selectable when another indexed credential cannot be loaded.
 
 Replace Qualifications trophy placeholders with the supplied Figma SVG artwork across wallet tiles, navigation, selectors, activity filters, credential corners, and image fallbacks. Keep Colorful and Formal variants independent and preserve the existing Formal empty-state fallback.
+
+Use an orange Qualifications palette across Passport tiles, category pages, Boost previews, notifications, and certificate displays. Keep Neutral Mode surfaces neutral while using the supplied Colorful Solid Color Qualifications icon in both Passport layouts.

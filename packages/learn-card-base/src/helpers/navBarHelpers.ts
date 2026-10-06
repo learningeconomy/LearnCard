@@ -38,7 +38,7 @@ export const getNavBarColor = (
     } else if (path === '/achievements') {
         return 'bg-pink-300';
     } else if (path === '/qualifications') {
-        return 'bg-emerald-300';
+        return 'bg-orange-300';
     } else if (path === '/currencies' || path === '/socialBadges') {
         return 'bg-blue-300';
     } else if (path === '/ids') {

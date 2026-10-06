@@ -112,7 +112,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
         [CredentialCategoryEnum.learningHistory]: 'emerald-700',
         [CredentialCategoryEnum.socialBadge]: 'blue-400',
         [CredentialCategoryEnum.achievement]: 'pink-400',
-        [CredentialCategoryEnum.qualifications]: 'emerald-700',
+        [CredentialCategoryEnum.qualifications]: 'orange-700',
         [CredentialCategoryEnum.accomplishment]: 'yellow-400',
         [CredentialCategoryEnum.workHistory]: 'blue-600',
         [CredentialCategoryEnum.accommodation]: 'violet-500',

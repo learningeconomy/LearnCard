@@ -124,7 +124,7 @@ const RibbonCategory: React.FC<{ categoryType: BoostCategoryOptionsEnum }> = ({ 
             );
         case BoostCategoryOptionsEnum.qualifications:
             return (
-                <span className="text-[12px] font-semibold text-emerald-700">
+                <span className="text-[12px] font-semibold text-orange-700">
                     {m['wallet.categoriesSingular.qualifications']()}
                 </span>
             );

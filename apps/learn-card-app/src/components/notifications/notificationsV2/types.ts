@@ -132,11 +132,11 @@ export const NotificationTypeStyles: {
         typeText: 'Achievement',
     },
     [NotificationTypeEnum.Qualifications]: {
-        viewButtonStyles: 'border-emerald-600 text-emerald-600',
-        unclaimedButtonStyles: 'text-white bg-emerald-600 border-emerald-600 shadow-bottom',
-        claimedButtonStyles: 'text-emerald-600 bg-emerald-50 border-emerald-50 cursor-default',
-        textStyles: 'text-emerald-600 capitalize',
-        iconCircleStyles: 'bg-emerald-600',
+        viewButtonStyles: 'border-orange-700 text-orange-700',
+        unclaimedButtonStyles: 'text-white bg-orange-700 border-orange-700 shadow-bottom',
+        claimedButtonStyles: 'text-orange-700 bg-orange-50 border-orange-50 cursor-default',
+        textStyles: 'text-orange-700 capitalize',
+        iconCircleStyles: 'bg-orange-700',
         typeText: 'Qualifications',
     },
     [NotificationTypeEnum.Skill]: {

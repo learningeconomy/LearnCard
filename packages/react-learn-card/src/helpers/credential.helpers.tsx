@@ -99,7 +99,7 @@ export const getCategoryColor = (category = LCCategoryEnum.achievement) => {
         case LCCategoryEnum.achievement:
             return 'pink-600';
         case LCCategoryEnum.qualifications:
-            return 'emerald-600';
+            return 'orange-700';
         case LCCategoryEnum.learningHistory:
             return 'emerald-700';
         case LCCategoryEnum.id:
@@ -128,6 +128,7 @@ export const getCategoryPrimaryColor = (category = LCCategoryEnum.achievement) =
         case LCCategoryEnum.achievement:
             return 'pink';
         case LCCategoryEnum.qualifications:
+            return 'orange';
         case LCCategoryEnum.learningHistory:
             return 'emerald';
         case LCCategoryEnum.id:
@@ -155,6 +156,7 @@ export const getCategoryLightColor = (category = LCCategoryEnum.achievement) => 
     if (category === LCCategoryEnum.meritBadge) {
         return 'sp-purple-base';
     }
+    if (category === LCCategoryEnum.qualifications) return 'orange-700';
 
     return `${getCategoryPrimaryColor(category)}-500`;
 };
@@ -163,6 +165,7 @@ export const getCategoryDarkColor = (category = LCCategoryEnum.achievement) => {
     if (category === LCCategoryEnum.meritBadge) {
         return 'sp-purple-base';
     }
+    if (category === LCCategoryEnum.qualifications) return 'orange-900';
 
     return `${getCategoryPrimaryColor(category)}-700`;
 };
