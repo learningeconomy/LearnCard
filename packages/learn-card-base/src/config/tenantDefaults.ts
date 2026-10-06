@@ -97,6 +97,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
     },
 
     features: {
+        contractRequests: false,
         aiFeatures: true,
         appStore: true,
         analytics: true,
