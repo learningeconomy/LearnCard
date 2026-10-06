@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import {
@@ -119,6 +120,49 @@ describe('getConsentFlowDidAuthRedirect', () => {
                 contractRedirectUrl: 'https://contract.example.test/unsafe',
             })
         ).toThrow('Incomplete DID Auth request');
+    });
+
+    it('rejects unchallenged AI Passport callbacks before signing', async () => {
+        const wallet = {
+            invoke: { newCredential: vi.fn(), issuePresentation: vi.fn() },
+        } as unknown as BespokeLearnCard;
+        await expect(
+            getConsentFlowDidAuthRedirect({
+                contractUri: 'lc:contract:ai-passport',
+                ownerDid,
+                returnTo: 'https://api.example.test/auth/callback',
+                wallet,
+            })
+        ).rejects.toThrow('AI Passport requires challenge-based authentication');
+        await expect(
+            getConsentFlowDidAuthRedirect({
+                contractUri: LEARNCARD_AI_PASSPORT_CONTRACT_URI,
+                ownerDid,
+                returnTo: 'https://other.example.test/callback',
+                wallet,
+            })
+        ).rejects.toThrow('AI Passport requires challenge-based authentication');
+        expect(wallet.invoke.newCredential).not.toHaveBeenCalled();
+        expect(wallet.invoke.issuePresentation).not.toHaveBeenCalled();
+        expect(() =>
+            getConsentFlowContractRedirect({
+                returnTo: 'https://api.example.test/auth/callback',
+                contractRedirectUrl: 'https://other.example.test/redirect',
+            })
+        ).toThrow('AI Passport requires challenge-based authentication');
+        expect(() =>
+            getConsentFlowContractRedirect({
+                contractRedirectUrl: 'https://api.example.test/auth/callback',
+            })
+        ).toThrow('AI Passport requires challenge-based authentication');
+    });
+
+    it('leaves inline AI Passport consent without a callback available', () => {
+        expect(
+            getConsentFlowContractRedirect({
+                contractUri: LEARNCARD_AI_PASSPORT_CONTRACT_URI,
+            })
+        ).toBeUndefined();
     });
 
     it('preserves the legacy delegated login response when no challenge is supplied', async () => {

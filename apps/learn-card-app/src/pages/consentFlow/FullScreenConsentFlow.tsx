@@ -185,7 +185,9 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                     const contractRedirectUrl = getConsentFlowContractRedirect({
                         challenge,
                         contractRedirectUrl: redirectUrl,
+                        contractUri: contractDetails?.uri,
                         domain,
+                        returnTo,
                     });
 
                     if (contractRedirectUrl) {

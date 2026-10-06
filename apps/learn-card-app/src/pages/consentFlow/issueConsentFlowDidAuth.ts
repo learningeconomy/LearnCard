@@ -1,6 +1,7 @@
 import type { UnsignedVP } from '@learncard/types';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
+import { isLearnCardAiPassportContractUri } from 'learn-card-base/constants/aiPassport';
 
 type QueryParam = string | null | (string | null)[] | undefined;
 const validateConsentFlowDidAuthParams = (challenge?: QueryParam, domain?: QueryParam): boolean => {
@@ -18,16 +19,49 @@ const validateConsentFlowDidAuthParams = (challenge?: QueryParam, domain?: Query
     return hasChallenge;
 };
 
+const requireAiPassportChallenge = (
+    returnTo: QueryParam,
+    challenged: boolean,
+    contractUri?: string
+): void => {
+    if (!challenged && isLearnCardAiPassportContractUri(contractUri)) {
+        throw new Error(
+            'AI Passport requires challenge-based authentication; refresh and sign in again'
+        );
+    }
+    if (typeof returnTo !== 'string' || challenged) return;
+    let origin: string;
+    try {
+        origin = new URL(returnTo).origin;
+    } catch {
+        return; // Relative navigation is handled by the caller.
+    }
+    if (origin === new URL(networkStore.get.aiServiceUrl()).origin) {
+        throw new Error(
+            'AI Passport requires challenge-based authentication; refresh and sign in again'
+        );
+    }
+};
+
 export const getConsentFlowContractRedirect = ({
     challenge,
     contractRedirectUrl,
+    contractUri,
     domain,
+    returnTo,
 }: {
     challenge?: QueryParam;
     contractRedirectUrl?: string;
+    contractUri?: string;
     domain?: QueryParam;
-}): string | undefined =>
-    validateConsentFlowDidAuthParams(challenge, domain) ? undefined : contractRedirectUrl;
+    returnTo?: QueryParam;
+}): string | undefined => {
+    const challenged = validateConsentFlowDidAuthParams(challenge, domain);
+    if (typeof returnTo === 'string') requireAiPassportChallenge(returnTo, challenged, contractUri);
+    if (contractRedirectUrl)
+        requireAiPassportChallenge(contractRedirectUrl, challenged, contractUri);
+    return challenged ? undefined : contractRedirectUrl;
+};
 
 export const getConsentFlowDidAuthRedirect = async ({
     challenge,
@@ -44,7 +78,8 @@ export const getConsentFlowDidAuthRedirect = async ({
     returnTo: string;
     wallet: BespokeLearnCard;
 }): Promise<string> => {
-    validateConsentFlowDidAuthParams(challenge, domain);
+    const challenged = validateConsentFlowDidAuthParams(challenge, domain);
+    requireAiPassportChallenge(returnTo, challenged, contractUri);
 
     const redirect = new URL(returnTo);
 

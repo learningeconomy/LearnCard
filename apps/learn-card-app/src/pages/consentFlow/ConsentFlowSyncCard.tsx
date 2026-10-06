@@ -218,7 +218,9 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                 const allowedContractRedirectUrl = getConsentFlowContractRedirect({
                                     challenge,
                                     contractRedirectUrl,
+                                    contractUri: contractDetails?.uri,
                                     domain,
+                                    returnTo,
                                 });
 
                                 if (allowedContractRedirectUrl) {
