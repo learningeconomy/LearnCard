@@ -63,6 +63,7 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
 }) => {
     const { newModal, closeModal } = useModal();
     const { presentToast } = useToast();
+    const brandingConfig = useBrandingConfig();
 
     const { mutate: createChildAccount } = useCreateChildAccount();
 
