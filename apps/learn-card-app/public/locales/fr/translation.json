@@ -1755,6 +1755,7 @@
         "previewCredentials": "Aperçu de {{count}} justificatifs"
     },
     "consentFlow": {
+        "reviewChanged": "Les modalités de partage ont changé. Vérifiez-les avant de vous reconnecter.",
         "guardianApprovalRequired": "Demandez à un gestionnaire actuel du compte d’approuver cette connexion, puis réessayez.",
         "title": "Consentement",
         "acceptAndSync": "Accepter et synchroniser",
@@ -1874,7 +1875,8 @@
             "name": "nom",
             "email": "e-mail",
             "profilePicture": "photo de profil"
-        }
+        },
+        "retryPublication": "Vos choix de partage sont enregistrés. Réessayez pour terminer leur envoi."
     },
     "recovery": {
         "pin": {
@@ -3565,6 +3567,12 @@
         "skillsHub": "Pôle de compétences"
     },
     "base": {
+        "consentAudience": {
+            "title": "Vérifiez qui reçoit vos données",
+            "description": "Les informations que vous choisissez seront accessibles à toutes les personnes ci-dessous.",
+            "confirm": "Confirmer le partage",
+            "cancel": "Annuler"
+        },
         "verification": {
             "selfIssued": "Auto-émis",
             "trustedIssuer": "Émetteur de confiance",
@@ -9349,5 +9357,30 @@
         "saveError": "Impossible d’enregistrer ces justificatifs. Réessayez.",
         "signInToSave": "Se connecter pour enregistrer",
         "saveHint": "Conservez cette collection signée dans vos éléments reçus."
+    },
+    "contractRequests": {
+        "label": "Connexion",
+        "referred": "{{referrer}} vous a recommandé à {{owner}}.",
+        "invitation": "{{owner}} souhaite vous contacter.",
+        "accept": "Accepter et se connecter",
+        "details": "Voir les détails",
+        "decline": "Refuser",
+        "declineConfirm": "Refuser cette invitation ?",
+        "declined": "Refusée",
+        "connected": "Connecté",
+        "cancelled": "Annulée",
+        "notNow": "Plus tard",
+        "dismiss": "Masquer l’invitation",
+        "loading": "Chargement de l’invitation...",
+        "working": "Traitement...",
+        "unavailable": "Cette invitation n’est plus disponible.",
+        "error": "Une erreur est survenue. Veuillez réessayer.",
+        "sharedWith": "Partagé avec",
+        "dataRequested": "Données demandées",
+        "outcomes": "Attestations que vous pouvez recevoir",
+        "none": "Aucune",
+        "reviewFirst": "Vérifiez et choisissez vos données avant de vous connecter.",
+        "pending": "Invitations en attente",
+        "empty": "Aucune invitation en attente."
     }
 }

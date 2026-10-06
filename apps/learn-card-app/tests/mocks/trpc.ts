@@ -64,6 +64,15 @@ export const createTrpcMock = (page: Page) => {
 
     const install = async (): Promise<void> => {
         await page.route('**/trpc/**', async route => {
+            const cors = {
+                'access-control-allow-origin': route.request().headers().origin ?? '*',
+                'access-control-allow-headers':
+                    route.request().headers()['access-control-request-headers'] ?? '*',
+                'access-control-allow-methods': 'GET, POST, OPTIONS',
+            };
+            if (route.request().method() === 'OPTIONS') {
+                return route.fulfill({ status: 204, headers: cors });
+            }
             const path = new URL(route.request().url()).pathname;
             const segment = decodeURIComponent(path.slice(path.indexOf('/trpc/') + 6));
             const procedures = segment.split(',').filter(Boolean);
@@ -91,6 +100,7 @@ export const createTrpcMock = (page: Page) => {
 
             await route.fulfill({
                 status: 200,
+                headers: cors,
                 contentType: 'application/json',
                 body: JSON.stringify(payload),
             });
