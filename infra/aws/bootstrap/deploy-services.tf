@@ -75,8 +75,10 @@ data "aws_iam_policy_document" "deploy_services" {
     ]
   }
   statement {
-    sid       = "ControlPlaneDiscovery"
-    actions   = ["logs:DescribeLogGroups", "cloudwatch:List*", "cloudwatch:Get*", "cloudwatch:Describe*", "sns:ListTopics", "events:ListRules", "codebuild:ListProjects", "backup:List*", "backup:Describe*", "backup:Get*", "backup:CreateBackupPlan", "backup:UpdateBackupPlan", "backup:DeleteBackupPlan", "backup:CreateBackupSelection", "backup:DeleteBackupSelection", "backup:TagResource", "backup:UntagResource"]
+    sid = "ControlPlaneDiscovery"
+    # ssm:DescribeParameters has no resource-level scoping; the AWS provider calls it
+    # when refreshing aws_ssm_parameter. Parameter values stay environment-scoped below.
+    actions   = ["ssm:DescribeParameters", "logs:DescribeLogGroups", "cloudwatch:List*", "cloudwatch:Get*", "cloudwatch:Describe*", "sns:ListTopics", "events:ListRules", "codebuild:ListProjects", "backup:List*", "backup:Describe*", "backup:Get*", "backup:CreateBackupPlan", "backup:UpdateBackupPlan", "backup:DeleteBackupPlan", "backup:CreateBackupSelection", "backup:DeleteBackupSelection", "backup:TagResource", "backup:UntagResource"]
     resources = ["*"]
   }
   statement {
