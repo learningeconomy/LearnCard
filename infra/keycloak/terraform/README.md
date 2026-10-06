@@ -87,14 +87,14 @@ an authorized administrator confirms no other workflow still uses them.
 
 ### Required GitHub configuration
 
-| Scope                      | Variable                              | Purpose                                                                                               |
-| -------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Each environment           | `AWS_DEPLOY_ROLE_ARN`                 | Bootstrap deploy OIDC role                                                                            |
-| Each environment           | `TF_STATE_BUCKET`                     | That account's bootstrap state bucket                                                                 |
-| Each environment           | `KEYCLOAK_BOOTSTRAP_ADMIN_SECRET_ARN` | Existing secret ARN, never its value                                                                  |
-| Each environment, optional | `KEYCLOAK_CONTAINER_IMAGE`            | Manual service plan/apply override only, account-local `repo@sha256:...`; otherwise use running image |
-| Repository                 | `KEYCLOAK_STAGING_PLAN_ROLE_ARN`      | Staging plan role for main-branch drift checks only                                                   |
-| Repository                 | `KEYCLOAK_PRODUCTION_PLAN_ROLE_ARN`   | Production plan role for main-branch drift checks only; set after bootstrap                           |
+| Scope                                             | Variable                              | Purpose                                                                                               |
+| ------------------------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Each environment                                  | `AWS_DEPLOY_ROLE_ARN`                 | Bootstrap deploy OIDC role                                                                            |
+| Each environment                                  | `TF_STATE_BUCKET`                     | That account's bootstrap state bucket                                                                 |
+| Each environment, optional after first deployment | `KEYCLOAK_BOOTSTRAP_ADMIN_SECRET_ARN` | Explicit existing bootstrap secret ARN; otherwise reuse the ECS service's reference, never its value  |
+| Each environment, optional                        | `KEYCLOAK_CONTAINER_IMAGE`            | Manual service plan/apply override only, account-local `repo@sha256:...`; otherwise use running image |
+| Repository                                        | `KEYCLOAK_STAGING_PLAN_ROLE_ARN`      | Staging plan role for main-branch drift checks only                                                   |
+| Repository                                        | `KEYCLOAK_PRODUCTION_PLAN_ROLE_ARN`   | Production plan role for main-branch drift checks only; set after bootstrap                           |
 
 Region is pinned to `us-east-1`. Repository URLs are discovered from
 `/learncard-keycloak/<env>/bootstrap/ecr_repository_url` and checked against account
@@ -102,6 +102,28 @@ Region is pinned to `us-east-1`. Repository URLs are discovered from
 image digest directly from the build, not `KEYCLOAK_CONTAINER_IMAGE`. Tags are
 `<Keycloak-version>-<12-character-source-sha>` and immutable; reruns reuse that tag.
 ARM64 builds use QEMU/buildx, `provenance: false`, and no production rebuild.
+
+Before publishing an image or planning service changes, the workflow validates the
+bootstrap administrator secret reference. A nonempty
+`KEYCLOAK_BOOTSTRAP_ADMIN_SECRET_ARN` is authoritative. If it is unset, the workflow
+reads the existing `learncard-keycloak-<env>` ECS service's task definition and
+reuses its `keycloak` container's `KC_BOOTSTRAP_ADMIN_PASSWORD` secret ARN, just as
+the drift check does. These are metadata-only ECS reads using the existing deploy
+role permissions; the password and Terraform state are never read. Invalid explicit
+configuration, failed reads, ambiguous/missing references, and ARNs outside the
+expected account, region, or environment fail before image publishing or planning.
+Manual network-only plan/apply does not require a bootstrap secret reference.
+
+**First deployment or missing ECS reference:** an operator must set
+`KEYCLOAK_BOOTSTRAP_ADMIN_SECRET_ARN` in the matching `keycloak-staging` or
+`keycloak-production` GitHub environment to the ARN of an already-created secret
+under `learncard-keycloak/<env>/`, in that environment's account and `us-east-1`.
+Use the complete secret ARN, without ECS JSON-key/version selectors, never the
+password. The secret must contain a plain password string with no trailing newline
+and use the AWS-managed Secrets Manager key (see the [service runbook](service/README.md)).
+The bootstrap Terraform root does not create or publish this secret's ARN. This
+fallback cannot provision an absent secret, change permissions, or verify the
+password itself; the existing ECS/service prerequisites still apply.
 
 **Human bootstrap re-apply required before enabling this pipeline:** the new
 `infra/aws/bootstrap/deploy-pipeline.tf` attaches a protected `*-deploy-pipeline`
