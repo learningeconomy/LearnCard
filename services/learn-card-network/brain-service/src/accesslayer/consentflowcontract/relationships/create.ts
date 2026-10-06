@@ -32,6 +32,7 @@ import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-pro
 import {
     lockContractAudience,
     audienceVersionWhere,
+    consentMutationWhere,
     assertAudienceMutation,
     runAudienceMutation,
 } from './recipients';
@@ -82,6 +83,7 @@ export const consentToContract = async (
         oneTime,
         guardianApproval,
         audienceVersion,
+        expectedRequestId,
         smartResumeFingerprint,
     }: {
         terms: ConsentFlowTermsType;
@@ -90,6 +92,7 @@ export const consentToContract = async (
         oneTime?: boolean;
         guardianApproval?: ConsentFlowGuardianApproval;
         audienceVersion?: number;
+        expectedRequestId?: string;
         smartResumeFingerprint?: string;
     },
     domain: string
@@ -139,6 +142,7 @@ export const consentToContract = async (
                 guardianApproval,
                 audienceVersion,
                 smartResumeFingerprint,
+                expectedRequestId,
             },
             domain
         );
@@ -171,11 +175,13 @@ export const consentToContract = async (
                             ...(guardianApproval ? { guardianApproval } : {}),
                         }),
                         audienceVersion: audienceVersion ?? null,
+                        expectedRequestId: expectedRequestId ?? null,
+                        consenterProfileId: consenter.profileId,
                     })
                 ),
                 contract.id
             )
-                .where(audienceVersionWhere)
+                .where(`${audienceVersionWhere} AND ${consentMutationWhere}`)
                 .set('contract.hasConsented = true')
                 .with('contract')
                 .match({

@@ -172,8 +172,13 @@ describe('consented data boundaries', () => {
         const past = '2000-01-01T00:00:00.000Z';
         const { contractUri } = await consent({
             expiresAt: kind === 'terms' ? past : undefined,
-            contractExpiresAt: kind === 'contract' ? past : undefined,
         });
+        // Seed an existing consent that subsequently expires, rather than consent to an expired contract.
+        if (kind === 'contract')
+            await ConsentFlowContract.update(
+                { expiresAt: past },
+                { where: { id: contractUri.split(':').at(-1)! } }
+            );
         for (const response of await readAll(contractUri)) expect(response.records).toEqual([]);
     });
 

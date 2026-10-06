@@ -9327,5 +9327,30 @@
         "saveError": "Impossible d’enregistrer ces justificatifs. Réessayez.",
         "signInToSave": "Se connecter pour enregistrer",
         "saveHint": "Conservez cette collection signée dans vos éléments reçus."
+    },
+    "contractRequests": {
+        "label": "Connexion",
+        "referred": "{{referrer}} vous a recommandé à {{owner}}.",
+        "invitation": "{{owner}} souhaite vous contacter.",
+        "accept": "Accepter et se connecter",
+        "details": "Voir les détails",
+        "decline": "Refuser",
+        "declineConfirm": "Refuser cette invitation ?",
+        "declined": "Refusée",
+        "connected": "Connecté",
+        "cancelled": "Annulée",
+        "notNow": "Plus tard",
+        "dismiss": "Masquer l’invitation",
+        "loading": "Chargement de l’invitation...",
+        "working": "Traitement...",
+        "unavailable": "Cette invitation n’est plus disponible.",
+        "error": "Une erreur est survenue. Veuillez réessayer.",
+        "sharedWith": "Partagé avec",
+        "dataRequested": "Données demandées",
+        "outcomes": "Attestations que vous pouvez recevoir",
+        "none": "Aucune",
+        "reviewFirst": "Vérifiez et choisissez vos données avant de vous connecter.",
+        "pending": "Invitations en attente",
+        "empty": "Aucune invitation en attente."
     }
 }

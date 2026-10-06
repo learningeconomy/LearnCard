@@ -75,7 +75,7 @@ await learner.invoke.denyContractRequest(contractUri);
 await learner.invoke.cancelContractRequest(contractUri, learnerProfileId);
 ```
 
-Acceptance uses `consentToContract` after the user reviews the latest contract, audience and permissions. Include its current `audienceVersion` for recipient-bearing contracts. Encryption must cover the owner and current recipients before sharing credential URIs. See [ConsentFlow](../../core-concepts/consent-and-permissions/consentflow-overview.md).
+Acceptance uses `consentToContract` after the user reviews the latest contract, audience and permissions. For referral acceptance, pass `expectedRequestId` in the consent options. The server checks that this exact request is still pending under the same contract lock as the consent write. A missing, mismatched, denied, or cancelled request returns `CONFLICT` without recording consent or a consent event. New consent and re-consent also reject expired contracts. Omit `expectedRequestId` for independent direct or legacy consent links; cancelling an invitation does not disable a valid direct consent link. Include its current `audienceVersion` for recipient-bearing contracts. Encryption must cover the owner and current recipients before sharing credential URIs. See [ConsentFlow](../../core-concepts/consent-and-permissions/consentflow-overview.md).
 
 ```mermaid
 stateDiagram-v2
@@ -87,6 +87,10 @@ stateDiagram-v2
 ```
 
 Denied and cancelled generic requests retain their correlation fields. Withdrawing consent retains an accepted generic request and the referral captured on consent history. It revokes current data access; it does not reset a terminal request to pending. If the learner later consents again, the original referral remains attached to the consent and subsequent transactions. This does not reopen the request or send another acceptance decision to a requester outside the audience. A legacy AI request cannot replace an attributed request; it returns `CONFLICT`.
+
+## Polling fallback
+
+Use `getContractSentRequests(contractUri)` to reconcile visible invitation statuses. The brain route `getConsentedDataForDid` is exposed by the SDK as `getConsentFlowDataForDid(did, { limit, cursor })`; follow pagination and filter records by `contractUri`. An accepted request can outlive consent, so always read current permitted data before relying on the decision. Polling does not claim credentials or run client synchronization. See the [integrator example](../../how-to-guides/consent-flow/brokered-referrals.md#poll-when-webhooks-are-unavailable).
 
 ## Webhook events
 
