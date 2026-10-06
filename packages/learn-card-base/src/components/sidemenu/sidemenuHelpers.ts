@@ -20,6 +20,7 @@ import UnicornIcon from 'learn-card-base/svgs/UnicornIcon';
 
 import { SideNavIcons } from 'learn-card-base/svgs/SideNav/SideNavIcons';
 import PassportIcon from 'learn-card-base/svgs/PassportIcon';
+import { QualificationsIconGrayscale1 } from 'learn-card-base/svgs/wallet/QualificationsIcon';
 const {
     SkillsTwoTonedIcon,
     BoostsTwoTonedIcon,
@@ -288,7 +289,7 @@ export const sidemenuLinks: Record<BrandingEnum, SideMenuLinks[]> = {
         {
             id: 12,
             name: 'Qualifications',
-            IconComponent: AchievementsTwoTonedIcon,
+            IconComponent: QualificationsIconGrayscale1,
             path: '/qualifications',
             type: SideMenuLinksEnum.qualifications,
         },

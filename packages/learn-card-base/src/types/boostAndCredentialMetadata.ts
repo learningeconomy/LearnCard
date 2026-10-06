@@ -19,6 +19,12 @@ import AchievementsIcon, {
     AchievementsIconSolid,
     ThickAchievementsIconWithShape,
 } from 'learn-card-base/svgs/wallet/AchievementsIcon';
+import {
+    QualificationsIcon,
+    QualificationsIconWallet,
+    QualificationsIconTypeSelector,
+    QualificationsIconSolidColor,
+} from 'learn-card-base/svgs/wallet/QualificationsIcon';
 import StudiesIcon, {
     StudiesIconSolid,
     ThickStudiesIconWithShape,
@@ -43,6 +49,7 @@ import idsGraphic from '../assets/images/walletids.webp';
 import learningHistoryGraphic from '../assets/images/backpack.png';
 import skillsGraphic from '../assets/images/walletskills.webp';
 import achievementsGraphic from '../assets/images/walletTrophy.png';
+import qualificationsGraphic from '../assets/icons/qualifications.svg';
 import badgeGraphic from '../assets/images/social-badge-2.png';
 import membershipGraphic from '../assets/images/membership-graphic.png';
 import apple from '../assets/images/apple.png';
@@ -276,11 +283,11 @@ export const boostCategoryMetadata: Record<BoostCategoryOptionsEnum, BoostCatego
         subColor: 'emerald-300',
         lightColor: 'emerald-100',
         ShapeIcon: Diamond,
-        WalletIcon: AchievementsIcon,
-        IconComponent: AchievementsIcon,
-        IconWithShape: ThickAchievementsIconWithShape,
-        SolidIconComponent: AchievementsIconSolid,
-        CategoryImage: achievementsGraphic,
+        WalletIcon: QualificationsIconWallet,
+        IconComponent: QualificationsIcon,
+        IconWithShape: QualificationsIconTypeSelector,
+        SolidIconComponent: QualificationsIconSolidColor,
+        CategoryImage: qualificationsGraphic,
         shapeColor: 'text-emerald-300 w-[35px] h-[35px]',
         iconStyles: 'h-[35px] w-[35px]',
         badgeBackgroundColor: 'emerald-600',
@@ -928,7 +935,7 @@ export const categoryMetadata: Record<CredentialCategoryEnum, CredentialMetadata
     [CredentialCategoryEnum.qualifications]: {
         boostType: BoostCategoryOptionsEnum.qualifications,
         walletSubtype: WalletCategoryTypes.qualifications,
-        defaultImageSrc: achievementsGraphic,
+        defaultImageSrc: qualificationsGraphic,
         walletColor: 'emerald-300',
         ...boostCategoryMetadata[BoostCategoryOptionsEnum.qualifications],
     },

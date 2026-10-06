@@ -15,6 +15,7 @@ import PuzzlePiece from '../components/svgs/PuzzlePiece';
 import KeyIcon from '../components/svgs/KeyIcon';
 import User from '../components/svgs/User';
 import Trophy from '../components/svgs/Trophy';
+import QualificationsIcon from '../components/svgs/QualificationsIcon';
 import Graduation from '../components/svgs/Graduation';
 import Briefcase from '../components/svgs/Briefcase';
 import AccommodationsIcon from '../components/svgs/AccommodationsIcon';
@@ -173,8 +174,9 @@ export const getCategoryIcon = (category = LCCategoryEnum.achievement, size: str
         case LCCategoryEnum.skill:
             return <PuzzlePiece size={size} />;
         case LCCategoryEnum.achievement:
-        case LCCategoryEnum.qualifications:
             return <Trophy size={size} />;
+        case LCCategoryEnum.qualifications:
+            return <QualificationsIcon size={size} />;
         case LCCategoryEnum.course:
         case LCCategoryEnum.learningHistory:
             return <Graduation size={size} />;

@@ -17,3 +17,5 @@ Give Qualifications a distinct navigation identity so it does not reuse another 
 Retry truncated category scans on the next session and refresh open sharing lists after reclassification.
 
 Keep available credentials selectable when another indexed credential cannot be loaded.
+
+Replace Qualifications trophy placeholders with the supplied Figma SVG artwork across wallet tiles, navigation, selectors, activity filters, credential corners, and image fallbacks. Keep Colorful and Formal variants independent and preserve the existing Formal empty-state fallback.

@@ -22,6 +22,11 @@ import AchievementsIcon, {
     AchievementsIconWithLightShape,
     ACHIEVEMENTS_DEFAULTS,
 } from './AchievementsIcon';
+import {
+    QualificationsIcon,
+    QualificationsIconWallet,
+    QualificationsIconEmptyState,
+} from './QualificationsIcon';
 import StudiesIcon, {
     StudiesIconWithShape,
     StudiesIconWithLightShape,
@@ -51,6 +56,7 @@ import IDsIcon, { IDsIconWithShape, IDsIconWithLightShape, IDS_DEFAULTS } from '
 import { ALL_BOOSTS_DEFAULTS } from './AllBoostsIcon';
 
 export type { IconPalette };
+export * from './QualificationsIcon';
 
 export {
     AI_SESSIONS_DEFAULTS,
@@ -102,6 +108,9 @@ export const WalletIcons = {
     AchievementsIcon,
     AchievementsIconWithShape,
     AchievementsIconWithLightShape,
+    QualificationsIcon,
+    QualificationsIconWallet,
+    QualificationsIconEmptyState,
     StudiesIcon,
     StudiesIconWithShape,
     StudiesIconWithLightShape,

@@ -12,6 +12,10 @@ import {
 import BoostsIcon from 'learn-card-base/svgs/wallet/BoostsIcon';
 import AllBoostsIcon from 'learn-card-base/svgs/wallet/AllBoostsIcon';
 import AchievementsIcon from 'learn-card-base/svgs/wallet/AchievementsIcon';
+import {
+    QualificationsIcon,
+    QualificationsIconWallet,
+} from 'learn-card-base/svgs/wallet/QualificationsIcon';
 import PortfolioIcon from 'learn-card-base/svgs/wallet/PortfolioIcon';
 import StudiesIcon from 'learn-card-base/svgs/wallet/StudiesIcon';
 import AssistanceIcon from 'learn-card-base/svgs/wallet/AssistanceIcon';
@@ -101,7 +105,7 @@ export const boostVCTypeOptions = {
         {
             id: 10,
             title: 'Qualifications',
-            IconComponent: AchievementsIcon,
+            IconComponent: QualificationsIcon,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-emerald-500',
             type: BoostCategoryOptionsEnum.qualifications,
@@ -241,13 +245,13 @@ export const boostVCTypeOptions = {
         {
             id: 10,
             title: 'Qualifications',
-            IconComponent: AchievementsIcon,
+            IconComponent: QualificationsIcon,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-emerald-500',
             type: BoostCategoryOptionsEnum.qualifications,
             ShapeIcon: Diamond,
             shapeColor: 'text-emerald-500 w-[35px] h-[35px]',
-            WalletIcon: AchievementsIcon,
+            WalletIcon: QualificationsIconWallet,
             iconStyles: 'h-[35px] w-[35px]',
         },
         {

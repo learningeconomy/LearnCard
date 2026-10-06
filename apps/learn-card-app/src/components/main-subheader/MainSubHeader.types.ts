@@ -17,6 +17,7 @@ const {
     SkillsIconWithShape,
     BoostsIcon,
     AchievementsIcon,
+    QualificationsIcon,
     StudiesIcon,
     PortfolioIcon,
     AssistanceIcon,
@@ -101,7 +102,7 @@ export const SubheaderContentType: Record<
     },
     [SubheaderTypeEnum.Qualifications]: {
         title: 'Qualifications',
-        IconComponent: AchievementsIcon,
+        IconComponent: QualificationsIcon,
         iconColor: 'text-emerald-700',
         iconPadding: 'p-0',
         textColor: 'text-white',

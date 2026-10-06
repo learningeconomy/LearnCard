@@ -4,6 +4,7 @@ import idPurple from '../assets/images/id-purple.png';
 import learningHistoryGraphic from '../assets/images/backpack.png';
 import skillsGraphic from '../assets/images/walletskills.webp';
 import achievementsGraphic from '../assets/images/walletTrophy.png';
+import qualificationsGraphic from '../assets/images/qualifications.svg';
 import socialBadge from '../assets/images/social-badge-2.png';
 import experienceMountain from '../assets/images/experience-mountain.png';
 import goalsTarget from '../assets/images/goals-target.png';
@@ -32,7 +33,7 @@ export const TYPE_TO_IMG_SRC = {
     [WalletCategoryTypes.learningHistory]: apple,
     [WalletCategoryTypes.socialBadge]: socialBadge,
     [WalletCategoryTypes.achievements]: achievementsGraphic,
-    [WalletCategoryTypes.qualifications]: achievementsGraphic,
+    [WalletCategoryTypes.qualifications]: qualificationsGraphic,
     [WalletCategoryTypes.accomplishments]: learningHistoryGraphic,
     [WalletCategoryTypes.skills]: skillsGraphic,
     [WalletCategoryTypes.jobHistory]: experienceMountain,
