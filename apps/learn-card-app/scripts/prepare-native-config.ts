@@ -663,7 +663,11 @@ if (nativeConfig) {
             let plist = readFileSync(infoPlistPath, 'utf-8');
             const displayName = nativeConfig.displayName;
             const bundleId = nativeConfig.bundleId;
-            const customSchemes = nativeConfig.customSchemes ?? [];
+            // The native OAuth redirect URI is `<bundleId>://login` (Keycloak sign-in
+            // sheet): always register it as a URL scheme alongside the tenant's own.
+            const customSchemes = Array.from(
+                new Set([bundleId, ...(nativeConfig.customSchemes ?? [])])
+            );
 
             plist = plist.replace(
                 /(<key>CFBundleDisplayName<\/key>\s*<string>)[^<]+(<\/string>)/,
@@ -793,7 +797,11 @@ if (nativeConfig) {
         try {
             let manifest = readFileSync(manifestPath, 'utf-8');
             const domains = nativeConfig.deepLinkDomains ?? [];
-            const customSchemes = nativeConfig.customSchemes ?? [];
+            // Same bundle-id scheme registration as Info.plist above, so the
+            // `<bundleId>://login` OAuth callback routes back into the app.
+            const customSchemes = Array.from(
+                new Set([nativeConfig.bundleId, ...(nativeConfig.customSchemes ?? [])])
+            );
 
             // Build HTTPS deep link intent filters from tenant domains
             const httpsIntentFilters = domains.map(domain => {

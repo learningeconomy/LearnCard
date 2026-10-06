@@ -10,6 +10,7 @@ import {
     walletStore,
 } from 'learn-card-base';
 import { getOrCreateSharedUriForWallet } from 'learn-card-base/hooks/useSharedUrisInTerms';
+import { loadContractAudience } from '../../hooks/consentAudience';
 import { CredentialMetadata } from 'learn-card-base/types/credential-records';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { useAcceptCredentialMutation } from './mutations';
@@ -30,12 +31,12 @@ export type ConsentedContract = {
     uri: string;
     expiresAt?: string;
     oneTime?: boolean;
+    status?: 'live' | 'stale' | 'withdrawn';
 };
 
-const getSharedUrisForOwner = async (
-    learnCard: BespokeLearnCard,
-    ownerDid: string
-): Promise<Set<string>> => {
+// Retained historical copies still belong to credentials in the personal index.
+// An audience change must not silently erase individually selected credentials.
+const getIndexedSharedUris = async (learnCard: BespokeLearnCard): Promise<Set<string>> => {
     const sharedUris = new Set<string>();
 
     let cursor: string | undefined;
@@ -45,7 +46,9 @@ const getSharedUrisForOwner = async (
 
     do {
         (page?.records ?? []).forEach(record => {
-            (record.sharedUris?.[ownerDid] ?? []).forEach(uri => sharedUris.add(uri));
+            Object.values(record.sharedUris ?? {})
+                .flat()
+                .forEach(uri => sharedUris.add(uri));
         });
 
         cursor = page?.hasMore ? page.cursor : undefined;
@@ -115,23 +118,36 @@ export const useSyncConsentContractsMutation = () => {
         mutationFn: async ({ recordsByCategory, allContracts }) => {
             const learnCard = await initWallet();
 
-            for (const { contract, terms, uri: termsUri, expiresAt, oneTime } of allContracts) {
+            for (const {
+                contract,
+                terms,
+                uri: termsUri,
+                expiresAt,
+                oneTime,
+                status,
+            } of allContracts) {
+                if (
+                    (status && status !== 'live') ||
+                    oneTime ||
+                    (expiresAt && Date.parse(expiresAt) <= Date.now()) ||
+                    (contract.expiresAt && Date.parse(contract.expiresAt) <= Date.now())
+                )
+                    continue;
                 // Update current contract progress
                 try {
                     syncProgressStore.set.currentContract(contract.owner.did);
                 } catch {}
 
+                const audience = await loadContractAudience(learnCard, contract.uri);
                 let contractTerms = terms;
                 try {
-                    const validSharedUris = await getSharedUrisForOwner(
-                        learnCard,
-                        contract.owner.did
-                    );
+                    const validSharedUris = await getIndexedSharedUris(learnCard);
                     const { nextTerms, removed } = pruneStaleSharedUris(terms, validSharedUris);
 
                     if (removed > 0) {
                         await learnCard.invoke.updateContractTerms(termsUri, {
                             terms: nextTerms,
+                            audienceVersion: audience.audienceVersion,
                             ...(typeof expiresAt === 'string' ? { expiresAt } : {}),
                             ...(typeof oneTime === 'boolean' ? { oneTime } : {}),
                         });
@@ -169,7 +185,7 @@ export const useSyncConsentContractsMutation = () => {
                                     credUris.map(uri =>
                                         getOrCreateSharedUriForWallet(
                                             learnCard,
-                                            contract.owner.did,
+                                            audience.recipients,
                                             queryClient,
                                             uri,
                                             contractCategoryNameToCategoryMetadata(category)
@@ -199,7 +215,8 @@ export const useSyncConsentContractsMutation = () => {
                     try {
                         await learnCard.invoke.syncCredentialsToContract(
                             termsUri,
-                            categoryMap as Record<string, string[]>
+                            categoryMap as Record<string, string[]>,
+                            audience.audienceVersion
                         );
                         if (contract.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI) {
                             await queueAiInsightCredentialRefresh({

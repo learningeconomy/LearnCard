@@ -31,6 +31,16 @@ export const lcaApiEnvironmentShape = {
     OPENAI_API_KEY: optionalEnvironmentString,
     METABASE_SECRET_KEY: optionalEnvironmentString,
     SCOUTS_SSO_CLIENT_SECRET: optionalEnvironmentString,
+    KEYCLOAK_ISSUERS: optionalEnvironmentString,
+    KEYCLOAK_AUDIENCES: optionalEnvironmentString,
+    KEYCLOAK_JWKS_URL_OVERRIDES: optionalEnvironmentString,
+    OIDC_ISSUER: optionalEnvironmentString,
+    OIDC_SIGNING_KEY_JWK: optionalEnvironmentString,
+    OIDC_CLIENT_ID: optionalEnvironmentString,
+    OIDC_CLIENT_SECRET: optionalEnvironmentString,
+    OIDC_REDIRECT_URIS: optionalEnvironmentString,
+    GOOGLE_OAUTH_CLIENT_IDS: optionalEnvironmentString,
+    APPLE_OAUTH_CLIENT_IDS: optionalEnvironmentString,
     POSTMARK_SERVER_TOKEN: optionalEnvironmentString,
     POSTMARK_FROM_EMAIL: optionalEnvironmentString,
     POSTMARK_BRAND_NAME: optionalEnvironmentString,
@@ -85,6 +95,16 @@ export const lcaApiEnvironmentSchema = z
         };
     })
     .superRefine((environment, context) => {
+        if (
+            environment.KEYCLOAK_ISSUERS?.split(',').some(value => value.trim()) &&
+            !environment.KEYCLOAK_AUDIENCES?.split(',').some(value => value.trim())
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['KEYCLOAK_AUDIENCES'],
+                message: 'Required when KEYCLOAK_ISSUERS is configured',
+            });
+        }
         if (environment.SA_SEED_KMS_KEY_ARN) {
             if (
                 !/^arn:aws[a-z-]*:kms:[a-z0-9-]+:\d{12}:key\/[a-zA-Z0-9-]+$/.test(

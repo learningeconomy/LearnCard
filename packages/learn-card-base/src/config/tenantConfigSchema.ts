@@ -89,6 +89,25 @@ const escrowEnclaveMeasurementSchema = z.union([
     legacyImageOnlyMeasurementSchema,
 ]);
 
+export const tenantKeycloakConfigSchema = z
+    .object({
+        serverUrl: z.string().url(),
+        realm: z.string().min(1),
+        clientId: z.string().min(1),
+        scopes: z.array(z.string()).default(['openid', 'profile', 'email', 'phone']),
+        redirectUri: z.string().optional(),
+        postLogoutRedirectUri: z.string().optional(),
+        /**
+         * Native only. Static page (apps/learn-card-app/public/auth/continue.html on the tenant web domain)
+         * opened first in the system auth sheet so it shows a branded loader instead of blank redirects.
+         * Omit to open the Keycloak authorize URL directly.
+         */
+        authBridgeUrl: z.string().url().optional(),
+    })
+    .passthrough();
+
+export type TenantKeycloakConfig = z.infer<typeof tenantKeycloakConfigSchema>;
+
 export const tenantSSSConfigSchema = z
     .object({
         serverUrl: urlOrPlaceholder().default('https://api.learncard.app/trpc'),
@@ -128,6 +147,7 @@ export const tenantAuthConfigSchema = z
         // is used at runtime. Each block is self-contained with its own schema.
         // Unknown providers pass through via the parent .passthrough().
         firebase: tenantFirebaseConfigSchema.optional(),
+        keycloak: tenantKeycloakConfigSchema.optional(),
 
         // Key-derivation strategy config blocks — only the one matching
         // `keyDerivation` is used at runtime.
@@ -136,6 +156,14 @@ export const tenantAuthConfigSchema = z
     })
     .passthrough()
     .superRefine((auth, context) => {
+        if (auth.provider === 'keycloak' && !auth.keycloak) {
+            context.addIssue({
+                code: 'custom',
+                path: ['keycloak'],
+                message: 'Required when auth.provider is keycloak',
+            });
+        }
+
         if (auth.provider === 'firebase' && !auth.firebase) {
             context.addIssue({
                 code: 'custom',
@@ -194,6 +222,7 @@ const deleteSuccessStylesSchema = z
 export const tenantBrandingConfigSchema = z
     .object({
         name: z.string().default('LearnCard'),
+        contractRequestLabel: z.string().optional(),
         shortName: z.string().optional(),
         logoUrl: z.string().optional(),
         faviconUrl: z.string().optional(),
@@ -251,6 +280,8 @@ export const samplePersonaConfigSchema = z
 
 export const tenantFeatureConfigSchema = z
     .object({
+        /** Generic referral UI. Requires the enableContractRequests LaunchDarkly flag too. */
+        contractRequests: z.boolean().default(false),
         aiFeatures: z.boolean().default(true),
         appStore: z.boolean().default(true),
         analytics: z.boolean().default(true),

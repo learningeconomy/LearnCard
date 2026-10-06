@@ -1589,6 +1589,7 @@
         "createBtn": "Crear nueva insignia de mérito"
     },
     "consentFlow": {
+        "reviewChanged": "Los detalles de acceso cambiaron. Revísalos antes de volver a conectar.",
         "yes": "Sí",
         "no": "No",
         "useDataTo": "usará datos para:",

@@ -4,6 +4,7 @@ import {
     clearAuthConfigOverrides,
     getAuthConfig,
     getConfigCapabilities,
+    getKeycloakConfig,
     getSSSConfig,
     isEmailRelayConfigured,
     getEscrowStrategyConfig,
@@ -14,7 +15,7 @@ import {
     shouldUseSSS,
 } from '../authConfig';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../tenantDefaults';
-import { tenantConfigSchema } from '../tenantConfigSchema';
+import { tenantConfigSchema, tenantKeycloakConfigSchema } from '../tenantConfigSchema';
 
 const PCR0 = 'a'.repeat(96);
 const PCR1 = 'b'.repeat(96);
@@ -310,9 +311,11 @@ describe('authConfig', () => {
                     verifierId: 'tenant-verifier',
                     rpcTarget: 'https://rpc.example.com',
                 },
-                keycloak: {
-                    issuer: 'https://keycloak.example.com',
-                },
+                keycloak: tenantKeycloakConfigSchema.parse({
+                    serverUrl: 'https://keycloak.example.com',
+                    realm: 'learncard',
+                    clientId: 'app',
+                }),
             },
         });
 
@@ -336,8 +339,16 @@ describe('authConfig', () => {
             rpcTarget: 'https://rpc.example.com',
         });
         expect(config.providerConfig.keycloak).toEqual({
-            issuer: 'https://keycloak.example.com',
+            serverUrl: 'https://keycloak.example.com',
+            realm: 'learncard',
+            clientId: 'app',
+            scopes: ['openid', 'profile', 'email', 'phone'],
         });
+        expect(getKeycloakConfig()).toEqual(config.providerConfig.keycloak);
+    });
+
+    it('leaves Keycloak config absent for other tenants', () => {
+        expect(getKeycloakConfig()).toBeUndefined();
     });
 
     it('bridges a non-default escrow rollout percent and allowlist from tenant features', () => {

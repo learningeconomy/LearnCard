@@ -62,6 +62,7 @@
         "membersCount": "{{count}} miembros",
         "socialBoosts": "Reconocimientos sociales",
         "newChildOrOrganization": "Nuevo menor u organización",
+        "newOrganization": "Nueva organización",
         "selectProfileType": "Selecciona un tipo de perfil",
         "organizationProfile": "Perfil de organización",
         "organization": "Organización",
@@ -1755,6 +1756,7 @@
         "previewCredentials": "Vista previa de {{count}} credenciales"
     },
     "consentFlow": {
+        "reviewChanged": "Los detalles de acceso cambiaron. Revísalos antes de volver a conectar.",
         "guardianApprovalRequired": "Pide a un administrador actual de la cuenta que apruebe esta conexión y vuelve a intentarlo.",
         "title": "Consentimiento",
         "acceptAndSync": "Aceptar y sincronizar",
@@ -1874,7 +1876,8 @@
             "name": "nombre",
             "email": "correo electrónico",
             "profilePicture": "foto de perfil"
-        }
+        },
+        "retryPublication": "Tus opciones para compartir están guardadas. Inténtalo de nuevo para terminar de enviarlas."
     },
     "recovery": {
         "pin": {
@@ -3063,7 +3066,9 @@
             "verifying": "Verificando...",
             "forUser": "para {{name}}",
             "requiresFiveDigits": "El PIN debe tener 5 dígitos",
-            "invalidPin": "PIN no válido. Inténtalo de nuevo"
+            "invalidPin": "PIN no válido. Inténtalo de nuevo",
+            "approvalRequiresPin": "Necesitas el PIN de un padre o tutor para esta acción. Cambia a su cuenta para configurarlo.",
+            "parentIdentityUnavailable": "Falta la información de tu cuenta. Vuelve a iniciar sesión."
         },
         "guardianInvite": {
             "shareTitle": "Invitación de tutor",
@@ -3565,6 +3570,12 @@
         "skillsHub": "Centro de habilidades"
     },
     "base": {
+        "consentAudience": {
+            "title": "Revisa quién recibe tus datos",
+            "description": "La información que elijas estará disponible para todas las personas que aparecen a continuación.",
+            "confirm": "Confirmar uso compartido",
+            "cancel": "Cancelar"
+        },
         "verification": {
             "selfIssued": "Autoemitido",
             "trustedIssuer": "Emisor de confianza",
@@ -9349,5 +9360,30 @@
         "saveError": "No se pudieron guardar estas credenciales. Inténtalo de nuevo.",
         "signInToSave": "Inicia sesión para guardar",
         "saveHint": "Guarda esta colección firmada con tus elementos recibidos."
+    },
+    "contractRequests": {
+        "label": "Conectar",
+        "referred": "{{referrer}} te ha referido a {{owner}}.",
+        "invitation": "{{owner}} quiere conectar contigo.",
+        "accept": "Aceptar y conectar",
+        "details": "Ver detalles",
+        "decline": "Rechazar",
+        "declineConfirm": "¿Rechazar esta invitación?",
+        "declined": "Rechazada",
+        "connected": "Conectado",
+        "cancelled": "Cancelada",
+        "notNow": "Ahora no",
+        "dismiss": "Ocultar invitación",
+        "loading": "Cargando invitación...",
+        "working": "Procesando...",
+        "unavailable": "Esta invitación ya no está disponible.",
+        "error": "Algo salió mal. Inténtalo de nuevo.",
+        "sharedWith": "Compartido con",
+        "dataRequested": "Datos solicitados",
+        "outcomes": "Credenciales que puedes recibir",
+        "none": "Ninguno",
+        "reviewFirst": "Revisa y elige tus datos antes de conectar.",
+        "pending": "Invitaciones pendientes",
+        "empty": "No hay invitaciones pendientes."
     }
 }
