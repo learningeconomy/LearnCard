@@ -107,7 +107,7 @@ const getCategoryToConfig = (): Record<string, CategoryConfig> => ({
         subheaderType: SubheaderTypeEnum.Qualifications,
         title: m['wallet.categories.qualifications'](),
         iconColor: 'text-orange-700',
-        dividerLineColor: 'orange-300',
+        dividerLineColor: 'orange-400',
         searchInputColor: 'orange-300',
         tabBackgroundColor: 'orange-300',
     },

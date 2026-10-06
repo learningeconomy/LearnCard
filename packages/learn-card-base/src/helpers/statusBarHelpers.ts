@@ -29,7 +29,7 @@ export const getStatusBarColor = (path?: string, branding?: BrandingEnum, tenant
     } else if (path === '/achievements') {
         return 'pink-400';
     } else if (path === '/qualifications') {
-        return 'orange-200';
+        return 'orange-400';
     } else if (path === '/currencies' || path === '/socialBadges') {
         return 'blue-400';
     } else if (path === '/ids') {

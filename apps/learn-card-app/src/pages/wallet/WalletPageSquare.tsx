@@ -65,9 +65,14 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
 
     const passportCardBgColor = themeColors?.defaults?.passportCardBgColor;
     const passportCardTextColor = themeColors?.defaults?.passportCardTextColor;
+    // The section-standard orange-500 badge needs dark text for readable contrast.
+    const countTextColor =
+        theme.id === 'colorful' && categoryType === CredentialCategoryEnum.qualifications
+            ? 'text-grayscale-900'
+            : 'text-white';
 
     let metaData: React.ReactNode | null = (
-        <p className="text-white font-poppins font-semibold text-base">
+        <p className={`${countTextColor} font-poppins font-semibold text-base`}>
             {numeral(count).format('0a')}
         </p>
     );
@@ -147,7 +152,7 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
                                         name="crescent"
                                         role="status"
                                         aria-label={m['common.loading']()}
-                                        className="text-white h-5 w-5"
+                                        className={`${countTextColor} h-5 w-5`}
                                     />
                                 </div>
                             </div>

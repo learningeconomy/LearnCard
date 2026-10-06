@@ -78,15 +78,15 @@
             },
             "qualifications": {
                 "primaryColor": "orange-300",
-                "secondaryColor": "orange-700",
-                "indicatorColor": "orange-100",
+                "secondaryColor": "orange-500",
+                "indicatorColor": "orange-200",
                 "borderColor": "orange-300",
-                "statusBarColor": "orange-200",
-                "headerBrandingTextColor": "text-orange-900",
-                "headerTextColor": "text-orange-900",
-                "helperTextColor": "text-orange-800",
-                "backgroundPrimaryColor": "!bg-orange-200",
-                "backgroundSecondaryColor": "orange-100",
+                "statusBarColor": "orange-400",
+                "headerBrandingTextColor": "text-grayscale-900",
+                "headerTextColor": "text-grayscale-900",
+                "helperTextColor": "text-grayscale-900",
+                "backgroundPrimaryColor": "!bg-orange-400",
+                "backgroundSecondaryColor": "orange-200",
                 "tabActiveColor": "bg-orange-300"
             },
             "learningHistory": {
