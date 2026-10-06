@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import {
     copyFileSync,
     existsSync,
+    symlinkSync,
     mkdirSync,
     mkdtempSync,
     readFileSync,
@@ -33,12 +34,23 @@ describe('native dev config cleanup', () => {
         fixtures.push(fixture);
 
         const scripts = join(fixture, 'scripts');
-        const loggerPackage = join(fixture, 'node_modules/learn-card-base');
         const tenant = join(fixture, 'environments/learncard');
-        for (const path of [scripts, loggerPackage, tenant]) mkdirSync(path, { recursive: true });
+        for (const path of [scripts, join(fixture, 'node_modules'), tenant]) {
+            mkdirSync(path, { recursive: true });
+        }
 
-        // Run the actual CLI against disposable config and fake native commands.
-        copyFileSync(resolve('scripts/lc.ts'), join(scripts, 'lc.ts'));
+        // Run the actual CLI (and the helper scripts it imports) against disposable
+        // config and fake native commands. learn-card-base resolves to the real package.
+        // lc.ts statically imports these siblings; copy whichever exist on this branch.
+        const cliScripts = ['lc.ts', 'native-auth-audiences.ts', 'keycloak-realm-inputs.ts'];
+        for (const script of cliScripts.filter(name => existsSync(resolve('scripts', name)))) {
+            copyFileSync(resolve('scripts', script), join(scripts, script));
+        }
+        symlinkSync(
+            resolve('../../packages/learn-card-base'),
+            join(fixture, 'node_modules/learn-card-base'),
+            'dir'
+        );
         writeFileSync(join(fixture, 'capacitor.config.ts'), originalConfig);
         writeFileSync(join(tenant, 'config.json'), JSON.stringify({ branding: { name: 'QA' } }));
         writeFileSync(
@@ -46,19 +58,6 @@ describe('native dev config cleanup', () => {
             JSON.stringify({
                 scripts: { 'native:sync': 'bun scripts/sync-fixture.ts' },
             })
-        );
-        writeFileSync(
-            join(loggerPackage, 'package.json'),
-            JSON.stringify({
-                name: 'learn-card-base',
-                exports: { './src/logging/logger': './logger.ts' },
-            })
-        );
-        writeFileSync(
-            join(loggerPackage, 'logger.ts'),
-            `
-export const getLogger = () => ({ info: () => {}, warn: () => {}, error: console.error });
-`
         );
         writeFileSync(
             join(scripts, 'sync-fixture.ts'),
