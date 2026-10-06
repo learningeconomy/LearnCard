@@ -68,7 +68,7 @@ jobs:
                     fi
                   fi
 
-                  echo "### Checking: $GROUP_NAME (ID: $GROUP_ID)" >> $GITHUB_STEP_SUMMARY
+                  echo "### Checking: $GROUP_NAME (ID: $GROUP_ID)" >> "$GITHUB_STEP_SUMMARY"
 
                   echo "Querying UptimeRobot for DOWN monitors in \"$GROUP_NAME\" (ID: $GROUP_ID)..."
 
@@ -90,16 +90,49 @@ jobs:
 
                   if [ "$DOWN_COUNT" = "0" ]; then
                     echo "✅ All monitors in \"$GROUP_NAME\" are UP"
-                    echo "Result: All monitors UP" >> $GITHUB_STEP_SUMMARY
+                    echo "Result: All monitors UP" >> "$GITHUB_STEP_SUMMARY"
                   else
                     echo "::error::$DOWN_COUNT monitor(s) in \"$GROUP_NAME\" are DOWN"
 
                     # List the down monitors for visibility
                     echo "$RESPONSE" | jq -r '.data[] | "  - \(.name) (ID: \(.id)) — down since \(.downDatetime)"' 2>/dev/null || true
 
-                    echo "" >> $GITHUB_STEP_SUMMARY
-                    echo "**$DOWN_COUNT monitor(s) DOWN:**" >> $GITHUB_STEP_SUMMARY
-                    echo "$RESPONSE" | jq -r '.data[] | "- \(.name) (ID: \(.id))"' >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
+                    echo "" >> "$GITHUB_STEP_SUMMARY"
+                    echo "**$DOWN_COUNT monitor(s) DOWN:**" >> "$GITHUB_STEP_SUMMARY"
+                    echo "$RESPONSE" | jq -r '.data[] | "- \(.name) (ID: \(.id))"' >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
 
                     exit 1
+                  fi
+
+            - name: Check Keycloak public admin isolation
+              if: always()
+              run: |
+                  set -euo pipefail
+                  status=$(curl --silent --show-error --max-time 20 --output /dev/null --write-out '%{http_code}' \
+                    https://auth.staging.learncard.app/admin/)
+                  [[ "$status" == 403 ]] || { echo "::error::Keycloak /admin/ must return 403 (got $status)"; exit 1; }
+
+            - name: Check Keycloak discovery and JWKS
+              if: always()
+              env:
+                  REALM_LIVE: ${{ vars.KEYCLOAK_STAGING_REALM_LIVE }}
+              run: |
+                  set -euo pipefail
+                  check_oidc() {
+                    local discovery jwks_uri jwks
+                    discovery=$(curl --fail --silent --show-error --max-time 20 \
+                      https://auth.staging.learncard.app/realms/learncard/.well-known/openid-configuration) || return 1
+                    jwks_uri=$(jq -er 'select(.issuer == "https://auth.staging.learncard.app/realms/learncard") | .jwks_uri | select(type == "string")' <<< "$discovery") || return 1
+                    # Never follow a discovery response to an arbitrary origin.
+                    [[ "$jwks_uri" == https://auth.staging.learncard.app/realms/learncard/protocol/openid-connect/certs ]] || return 1
+                    jwks=$(curl --fail --silent --show-error --max-time 20 "$jwks_uri") || return 1
+                    jq -e '.keys | type == "array" and length > 0' <<< "$jwks" >/dev/null
+                  }
+                  if check_oidc; then
+                    echo 'Keycloak discovery and JWKS passed' >> "$GITHUB_STEP_SUMMARY"
+                  elif [[ "$REALM_LIVE" == true ]]; then
+                    echo '::error::Keycloak discovery/JWKS failed for the commissioned staging realm'
+                    exit 1
+                  else
+                    echo '::warning::Keycloak discovery/JWKS unavailable; set repo variable KEYCLOAK_STAGING_REALM_LIVE=true after realm commissioning'
                   fi
