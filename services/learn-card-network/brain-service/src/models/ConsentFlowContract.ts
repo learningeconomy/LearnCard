@@ -20,11 +20,21 @@ export type ConsentFlowRelationships = {
         typeof Profile,
         ProfileInstance,
         {
-            status: 'pending' | 'accepted' | 'denied';
+            status: 'pending' | 'accepted' | 'denied' | 'cancelled';
+            requestId?: string;
+            requestedBy?: string;
+            externalReferenceId?: string;
+            message?: string;
+            requestedAt?: string;
             readStatus?: 'unseen' | 'seen' | null;
         },
         {
-            status: 'pending' | 'accepted' | 'denied';
+            status: 'pending' | 'accepted' | 'denied' | 'cancelled';
+            requestId?: string;
+            requestedBy?: string;
+            externalReferenceId?: string;
+            message?: string;
+            requestedAt?: string;
             readStatus?: 'unseen' | 'seen' | null;
         }
     >;
@@ -80,11 +90,28 @@ export const ConsentFlowContract = ModelFactory<FlatDbContractType, ConsentFlowR
                 direction: 'out',
                 name: 'REQUESTED_FOR',
                 properties: {
+                    requestId: {
+                        property: 'requestId',
+                        schema: { type: 'string', required: false },
+                    },
+                    requestedBy: {
+                        property: 'requestedBy',
+                        schema: { type: 'string', required: false },
+                    },
+                    externalReferenceId: {
+                        property: 'externalReferenceId',
+                        schema: { type: 'string', required: false },
+                    },
+                    message: { property: 'message', schema: { type: 'string', required: false } },
+                    requestedAt: {
+                        property: 'requestedAt',
+                        schema: { type: 'string', required: false },
+                    },
                     status: {
                         property: 'status',
                         schema: {
                             type: 'string',
-                            enum: ['pending', 'accepted', 'denied'],
+                            enum: ['pending', 'accepted', 'denied', 'cancelled'],
                             required: false,
                         },
                     },

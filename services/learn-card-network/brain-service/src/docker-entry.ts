@@ -1,3 +1,4 @@
+import { dispatchContractEvents } from '@helpers/contract-events.helpers';
 import { configureInboxBatchBodyLimit } from '@helpers/inbox-batch-http.helpers';
 import { environment } from '@environment';
 import Fastify from 'fastify';
@@ -41,8 +42,27 @@ const server = Fastify({ routerOptions: { maxParamLength: 5000 } });
  * graph/remote/signing dependency is initialized at all.
  */
 let shareLinkMaintenanceScheduler: ShareLinkMaintenanceScheduler | null = null;
+let contractEventTimer: ReturnType<typeof setTimeout> | null = null;
+let contractEventPass: Promise<unknown> | null = null;
+let contractEventsStopped = false;
+
+const runContractEventPass = (): void => {
+    if (contractEventsStopped) return;
+    contractEventPass = dispatchContractEvents()
+        .catch(() => {
+            console.warn('contract_events: recovery_pending');
+        })
+        .finally(() => {
+            contractEventPass = null;
+            if (!contractEventsStopped)
+                contractEventTimer = setTimeout(runContractEventPass, 60_000);
+        });
+};
 
 server.addHook('onClose', async () => {
+    contractEventsStopped = true;
+    if (contractEventTimer) clearTimeout(contractEventTimer);
+    await contractEventPass;
     await shareLinkMaintenanceScheduler?.stop();
 });
 // Register before either OpenAPI or tRPC registers its wildcard route. The hook raises the
@@ -166,6 +186,8 @@ server.register(credentialRefreshFastifyPlugin);
         } catch (error) {
             console.error('Skill embedding backfill failed', error);
         }
+
+        contractEventTimer = setTimeout(runContractEventPass, 60_000);
 
         // Explicit startup after readiness. Disabled/invalid config stays inert.
         const maintenanceRuntime = createShareLinkMaintenanceRuntime();

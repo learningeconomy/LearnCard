@@ -1,8 +1,9 @@
+import { termsReferralSnapshotCypher } from '@helpers/consent-referral.helpers';
+import { appendConsentEvent, tryDispatchContractEvent } from '@helpers/contract-events.helpers';
 import {
     ConsentFlowTerms as ConsentFlowTermsType,
     ConsentFlowTransaction,
     ConsentFlowGuardianApproval,
-    LCNNotificationTypeEnumValidator,
     LCNProfile,
     UnsignedVC,
     VC,
@@ -19,10 +20,7 @@ import { DbContractType, FlatDbTermsType } from 'types/consentflowcontract';
 import { BoostType } from 'types/boost';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
-import { reconsentTerms, upsertRequestedForRelationship } from './update';
-import { addNotificationToQueue } from '@helpers/notifications.helpers';
-import { getNotificationMessage } from '@helpers/notificationMessages';
-import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
+import { reconsentTerms } from './update';
 import { getBoostUri, sendBoost } from '@helpers/boost.helpers';
 import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
@@ -31,7 +29,6 @@ import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.h
 import { getProfileByProfileId, getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { cloneDeep } from 'lodash';
 import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
-import { constructUri } from '@helpers/uri.helpers';
 import {
     lockContractAudience,
     audienceVersionWhere,
@@ -158,79 +155,90 @@ export const consentToContract = async (
     const termsId = uuid();
 
     const result = await runAudienceMutation(
-        lockContractAudience(
-            new QueryBuilder(
-                new BindParam({
-                    params: flattenObject({
-                        terms,
-                        ...(smartResumeFingerprint
-                            ? {
-                                  smartResumeFingerprint,
-                                  smartResumePublicationStatus: 'pending',
-                                  smartResumeMutationVersion: 0,
-                              }
-                            : {}),
-                        ...(guardianApproval ? { guardianApproval } : {}),
-                    }),
-                    audienceVersion: audienceVersion ?? null,
-                })
-            ),
-            contract.id
-        )
-            .where(audienceVersionWhere)
-            .set('contract.hasConsented = true')
-            .with('contract')
-            .match({
-                multiple: [
-                    {
-                        model: Profile,
-                        where: { profileId: consenter.profileId },
-                        identifier: 'profile',
-                    },
-                    {
-                        model: ConsentFlowContract,
-                        where: { id: contract.id },
-                        identifier: 'contract',
-                    },
-                ],
-            })
-            .where(
-                'NOT EXISTS { MATCH (profile)-[:CREATED_BY]->(:ConsentFlowTerms)-[:CONSENTS_TO]->(contract) }'
+        appendConsentEvent(
+            lockContractAudience(
+                new QueryBuilder(
+                    new BindParam({
+                        params: flattenObject({
+                            terms,
+                            ...(smartResumeFingerprint
+                                ? {
+                                      smartResumeFingerprint,
+                                      smartResumePublicationStatus: 'pending',
+                                      smartResumeMutationVersion: 0,
+                                  }
+                                : {}),
+                            ...(guardianApproval ? { guardianApproval } : {}),
+                        }),
+                        audienceVersion: audienceVersion ?? null,
+                    })
+                ),
+                contract.id
             )
-            .create({
-                related: [
-                    { identifier: 'profile' },
-                    ConsentFlowTerms.getRelationshipByAlias('createdBy'),
-                    {
-                        model: ConsentFlowTerms,
-                        properties: {
-                            id: termsId,
-                            status: oneTime ? 'stale' : 'live',
-                            createdAt: transaction.date,
-                            updatedAt: transaction.date,
-                            ...(expiresAt ? { expiresAt } : {}),
-                            ...(oneTime ? { oneTime } : {}),
+                .where(audienceVersionWhere)
+                .set('contract.hasConsented = true')
+                .with('contract')
+                .match({
+                    multiple: [
+                        {
+                            model: Profile,
+                            where: { profileId: consenter.profileId },
+                            identifier: 'profile',
                         },
-                        identifier: 'terms',
-                    },
-                    ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
-                    { identifier: 'contract' },
-                ],
-            })
-            .create({
-                related: [
-                    {
-                        identifier: 'transaction',
-                        model: ConsentFlowTransactionModel,
-                        properties: transaction,
-                    },
-                    ConsentFlowTransactionModel.getRelationshipByAlias('isFor'),
-                    { identifier: 'terms' },
-                ],
-            })
-            .set('terms += $params')
-            .set('transaction += $params')
-            .return('terms.id AS id')
+                        {
+                            model: ConsentFlowContract,
+                            where: { id: contract.id },
+                            identifier: 'contract',
+                        },
+                    ],
+                })
+                .where(
+                    'NOT EXISTS { MATCH (profile)-[:CREATED_BY]->(:ConsentFlowTerms)-[:CONSENTS_TO]->(contract) }'
+                )
+                .create({
+                    related: [
+                        { identifier: 'profile' },
+                        ConsentFlowTerms.getRelationshipByAlias('createdBy'),
+                        {
+                            model: ConsentFlowTerms,
+                            properties: {
+                                id: termsId,
+                                status: oneTime ? 'stale' : 'live',
+                                createdAt: transaction.date,
+                                updatedAt: transaction.date,
+                                ...(expiresAt ? { expiresAt } : {}),
+                                ...(oneTime ? { oneTime } : {}),
+                            },
+                            identifier: 'terms',
+                        },
+                        ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
+                        { identifier: 'contract' },
+                    ],
+                })
+                .create({
+                    related: [
+                        {
+                            identifier: 'transaction',
+                            model: ConsentFlowTransactionModel,
+                            properties: transaction,
+                        },
+                        ConsentFlowTransactionModel.getRelationshipByAlias('isFor'),
+                        { identifier: 'terms' },
+                    ],
+                })
+                .set('terms += $params')
+                .set('transaction += $params')
+                .with('terms, contract, transaction'),
+            {
+                consenterProfileId: consenter.profileId,
+                transaction,
+                domain,
+                messageKey:
+                    contract.name === 'AI Insights'
+                        ? 'consentFlowInsightsShared'
+                        : 'consentFlowTransactionCreated',
+            }
+        ).return('terms.id AS id')
     );
     assertAudienceMutation(result.records.length);
 
@@ -332,6 +340,7 @@ export const consentToContract = async (
                                 { identifier: 'terms' },
                             ],
                         })
+                        .raw(termsReferralSnapshotCypher('boostTransaction'))
                         .return('terms')
                         .run();
 
@@ -355,43 +364,7 @@ export const consentToContract = async (
         );
     }
 
-    // TODO: Improve notification handling for consent flow contracts
-    // TODO: Replace hardcoded string matching with contract type identification
-    // This should check a contract.type field instead of contract.name
-    const isAiInsights = contract.name === 'AI Insights';
-
-    const notificationMessage = getNotificationMessage(
-        isAiInsights ? 'consentFlowInsightsShared' : 'consentFlowTransactionCreated',
-        resolveRecipientLocale(contractOwner),
-        { consenter: consenter.displayName, contractName: contract.name }
-    );
-
-    const notificationMetadata = isAiInsights
-        ? {
-              type: 'AI Insight',
-              contractId: contract?.id,
-              contractUri: constructUri('contract', contract.id, domain),
-          }
-        : {};
-
-    await addNotificationToQueue({
-        type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
-        from: consenter,
-        to: contractOwner,
-        message: notificationMessage,
-        data: { transaction, metadata: notificationMetadata },
-    });
-
-    try {
-        await upsertRequestedForRelationship(
-            contract.id,
-            consenter.profileId,
-            'accepted',
-            'unseen'
-        );
-    } catch {
-        console.log('Unable to update contract request status');
-    }
+    await tryDispatchContractEvent(transaction.id);
 
     return result.summary.counters.containsUpdates();
 };

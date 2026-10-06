@@ -1,3 +1,12 @@
+import { SendContractRequestValidator, ContractRequestFieldsValidator } from '@learncard/types';
+import {
+    sendGenericContractRequest,
+    decideGenericContractRequest,
+    markGenericContractRequestSeen,
+    assertGenericRequestWriteScope,
+    canManageContractRequests,
+    resolveContractRequest,
+} from '@helpers/contract-requests.helpers';
 import { environment } from '@environment';
 import {
     smartResumeFingerprint,
@@ -51,10 +60,11 @@ import {
     isProfileConsentFlowContractAdmin,
     getWritersForContract,
 } from '@accesslayer/consentflowcontract/relationships/read';
+import { inflateObject } from '@helpers/objects.helpers';
 import { constructUri, getIdFromUri } from '@helpers/uri.helpers';
 import {
     getContractByUri,
-    getConsentFlowContractById,
+    getStoredContractRequest,
     getRequestedForList,
     getRequestedForForUser,
     getContractById,
@@ -68,7 +78,6 @@ import { areTermsValid } from '@helpers/contract.helpers';
 import { updateDidForProfile, getProfileIdFromString } from '@helpers/did.helpers';
 import {
     syncCredentialsToContract,
-    updateRequestedForStatusIfExists,
     updateTerms,
     pruneDeletedUrisFromConsentTerms,
     upsertRequestedForRelationship,
@@ -1108,14 +1117,6 @@ export const contractsRouter = t.router({
                     ctx.domain
                 );
 
-            try {
-                await updateRequestedForStatusIfExists(
-                    contractDetails.contract.id,
-                    profile.profileId,
-                    'accepted'
-                );
-            } catch {}
-
             const relationship = await getContractTermsForProfile(
                 profile,
                 contractDetails.contract
@@ -1207,6 +1208,7 @@ export const contractsRouter = t.router({
                     },
                     uri: constructUri('terms', record.terms.id, ctx.domain),
                     terms: record.terms.terms,
+                    ...(record.terms.referral ? { referral: record.terms.referral } : {}),
                     ...(record.terms.expiresAt ? { expiresAt: record.terms.expiresAt } : {}),
                     ...(record.terms.oneTime ? { oneTime: record.terms.oneTime } : {}),
                     consenter: updateDidForProfile(ctx.domain, profile),
@@ -1424,7 +1426,7 @@ export const contractsRouter = t.router({
                 });
             }
 
-            await Promise.all([withdrawTerms(relationship), deleteStorageForUri(uri)]);
+            await Promise.all([withdrawTerms(relationship, ctx.domain), deleteStorageForUri(uri)]);
 
             return true;
         }),
@@ -1636,7 +1638,8 @@ export const contractsRouter = t.router({
             const result = await syncCredentialsToContract(
                 relationship,
                 categories,
-                audienceVersion
+                audienceVersion,
+                ctx.domain
             );
 
             return result;
@@ -1857,6 +1860,49 @@ export const contractsRouter = t.router({
             return true;
         }),
 
+    sendContractRequest: profileRoute
+        .meta({
+            requiredScope: 'contracts:write',
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contracts/request',
+                tags: ['Contracts'],
+                summary: 'Send an attributed contract request',
+            },
+        })
+        .input(SendContractRequestValidator)
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) =>
+            sendGenericContractRequest(input, ctx.user.profile, ctx.domain)
+        ),
+
+    denyContractRequest: profileRoute
+        .meta({
+            requiredScope: 'contracts:write',
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contracts/deny-request',
+                tags: ['Contracts'],
+                summary: 'Deny a pending contract request as its target',
+            },
+        })
+        .input(z.object({ contractUri: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const contract = await getContractByUri(input.contractUri);
+            if (!contract)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
+            return decideGenericContractRequest({
+                contract,
+                targetProfileId: ctx.user.profile.profileId,
+                actorProfileId: ctx.user.profile.profileId,
+                status: 'denied',
+                domain: ctx.domain,
+            });
+        }),
+
     sendAiInsightsContractRequest: profileRoute
         .meta({
             openapi: {
@@ -1881,43 +1927,14 @@ export const contractsRouter = t.router({
             const { profile } = ctx.user;
             const { contractUri, targetProfileId, shareLink } = input;
 
-            const resolvedTargetProfileId = await getProfileIdFromString(
+            const { contract: contractByUri, target: targetProfile } = await resolveContractRequest(
+                contractUri,
                 targetProfileId,
-                ctx.domain
+                profile,
+                ctx.domain,
+                false
             );
-            if (!resolvedTargetProfileId) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
-            }
-
-            const contractByUri = await getContractByUri(contractUri);
-
-            if (!contractByUri)
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
-
-            const contract = await getConsentFlowContractById(contractByUri.id); // model instance
-
-            if (!contract) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
-            }
-
-            const writers = await getWritersForContract(contractByUri);
-            const isAuthorized = writers.some(writer => writer.profileId === profile.profileId);
-
-            if (!isAuthorized) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'You do not have permission to send requests for this contract.',
-                });
-            }
-
-            const targetProfile = await getProfileByProfileId(resolvedTargetProfileId);
-
-            if (!targetProfile) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Target profile not found.',
-                });
-            }
+            const resolvedTargetProfileId = targetProfile.profileId;
 
             try {
                 await upsertRequestedForRelationship(
@@ -1927,6 +1944,7 @@ export const contractsRouter = t.router({
                     null
                 );
             } catch (error) {
+                if (error instanceof TRPCError && error.code === 'CONFLICT') throw error;
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message: 'Unable to send request',
@@ -2059,9 +2077,9 @@ export const contractsRouter = t.router({
         )
         .output(
             z.array(
-                z.object({
+                ContractRequestFieldsValidator.extend({
                     profile: LCNProfileValidator,
-                    status: z.enum(['pending', 'accepted', 'denied']).nullable(),
+                    status: z.enum(['pending', 'accepted', 'denied', 'cancelled']).nullable(),
                     readStatus: z.enum(['unseen', 'seen']).nullable().optional(),
                 })
             )
@@ -2074,17 +2092,19 @@ export const contractsRouter = t.router({
 
             if (!contractByUri)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
-            const writers = await getWritersForContract(contractByUri);
-            const isAuthorized = writers.some(w => w.profileId === profile.profileId);
+            const isAuthorized = await canManageContractRequests(contractByUri, profile.profileId);
 
-            if (!isAuthorized) {
+            if (
+                !isAuthorized &&
+                !(await canReadContractData(contractByUri.id, profile.profileId))
+            ) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'You do not have permissions to view requests made for this contract.',
                 });
             }
 
-            const requests = await getRequestedForList(contractByUri.id);
+            const requests = await getRequestedForList(contractByUri.id, profile.profileId);
 
             return Promise.all(
                 requests.map(async request => {
@@ -2119,13 +2139,11 @@ export const contractsRouter = t.router({
             })
         )
         .output(
-            z
-                .object({
-                    profile: LCNProfileValidator,
-                    status: z.enum(['pending', 'accepted', 'denied']).nullable(),
-                    readStatus: z.enum(['unseen', 'seen']).nullable().optional(),
-                })
-                .nullable()
+            ContractRequestFieldsValidator.extend({
+                profile: LCNProfileValidator,
+                status: z.enum(['pending', 'accepted', 'denied', 'cancelled']).nullable(),
+                readStatus: z.enum(['unseen', 'seen']).nullable().optional(),
+            }).nullable()
         )
         .query(async ({ ctx, input }) => {
             const { profile } = ctx.user;
@@ -2152,10 +2170,9 @@ export const contractsRouter = t.router({
             const isCheckingOwnStatus = profile.profileId === resolvedTargetProfileId;
 
             if (!isCheckingOwnStatus) {
-                const writers = await getWritersForContract(contract);
-                const isAuthorized = writers.some(w => w.profileId === profile.profileId);
+                const isAuthorized = await canManageContractRequests(contract, profile.profileId);
 
-                if (!isAuthorized) {
+                if (!isAuthorized && !(await canReadContractData(contract.id, profile.profileId))) {
                     throw new TRPCError({
                         code: 'UNAUTHORIZED',
                         message:
@@ -2164,7 +2181,11 @@ export const contractsRouter = t.router({
                 }
             }
 
-            const requests = await getRequestedForForUser(contract.id, resolvedTargetProfileId);
+            const requests = await getRequestedForForUser(
+                contract.id,
+                resolvedTargetProfileId,
+                profile.profileId
+            );
 
             if (!requests?.[0]) return null;
 
@@ -2187,7 +2208,7 @@ export const contractsRouter = t.router({
                 tags: ['Contracts'],
                 summary: 'Marks a contract request as seen',
                 description:
-                    'Updates the read status of a contract request to "seen" for the specified target profile. Only contract writers are authorized to perform this action.',
+                    'Updates the read status of a contract request to "seen" for the specified target profile. Targets can mark their existing requests seen. Legacy writer behavior is retained for legacy requests.',
             },
         })
         .input(
@@ -2213,6 +2234,31 @@ export const contractsRouter = t.router({
 
             if (!contractByUri)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
+
+            const request = await getStoredContractRequest(
+                contractByUri.id,
+                resolvedTargetProfileId
+            );
+            if (request?.requestId) {
+                assertGenericRequestWriteScope(ctx.user.scope);
+                if (profile.profileId !== resolvedTargetProfileId)
+                    throw new TRPCError({
+                        code: 'UNAUTHORIZED',
+                        message: 'Only the target can mark this request seen',
+                    });
+                return markGenericContractRequestSeen(contractByUri.id, resolvedTargetProfileId);
+            }
+            if (profile.profileId === resolvedTargetProfileId) {
+                if (!request)
+                    throw new TRPCError({ code: 'NOT_FOUND', message: 'Request not found' });
+                await upsertRequestedForRelationship(
+                    contractByUri.id,
+                    resolvedTargetProfileId,
+                    undefined,
+                    'seen'
+                );
+                return true;
+            }
 
             const writers = await getWritersForContract(contractByUri);
             const isAuthorized = writers.some(w => w.profileId === profile.profileId);
@@ -2250,7 +2296,7 @@ export const contractsRouter = t.router({
                 tags: ['Contracts'],
                 summary: 'Cancels/removes a contract request',
                 description:
-                    'Removes a REQUESTED_FOR relationship, cancelling the request sent to the specified target profile. Only contract writers are authorized to perform this action.',
+                    'Cancels a pending generic request while retaining its history. Owner/writers, the requesting recipient, or the target may cancel. Legacy requests retain deletion behavior.',
             },
         })
         .input(
@@ -2276,6 +2322,21 @@ export const contractsRouter = t.router({
 
             if (!contractByUri)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
+
+            const request = await getStoredContractRequest(
+                contractByUri.id,
+                resolvedTargetProfileId
+            );
+            if (request?.requestId) {
+                assertGenericRequestWriteScope(ctx.user.scope);
+                return decideGenericContractRequest({
+                    contract: contractByUri,
+                    targetProfileId: resolvedTargetProfileId,
+                    actorProfileId: profile.profileId,
+                    status: 'cancelled',
+                    domain: ctx.domain,
+                });
+            }
 
             const isDenyingRequest = profile.profileId === resolvedTargetProfileId;
 
@@ -2335,10 +2396,15 @@ export const contractsRouter = t.router({
         )
         .output(
             z.array(
-                z.object({
-                    contract: ConsentFlowContractValidator.extend({ uri: z.string() }),
+                ContractRequestFieldsValidator.extend({
+                    contract: ConsentFlowContractValidator.extend({
+                        uri: z.string(),
+                        name: z.string().optional(),
+                        image: z.string().optional(),
+                        description: z.string().optional(),
+                    }),
                     profile: LCNProfileValidator,
-                    status: z.enum(['pending', 'accepted', 'denied']).nullable(),
+                    status: z.enum(['pending', 'accepted', 'denied', 'cancelled']).nullable(),
                     readStatus: z.enum(['unseen', 'seen']).nullable().optional(),
                 })
             )
@@ -2378,7 +2444,10 @@ export const contractsRouter = t.router({
                             sanitizeProfileForTier(updatedProfile, 'authenticated')
                         ),
                         contract: {
-                            ...request.contract,
+                            ...inflateObject(request.contract).contract,
+                            name: request.contract.name,
+                            image: request.contract.image,
+                            description: request.contract.description,
                             uri: constructUri('contract', request.contract.id, ctx.domain),
                         },
                     };
@@ -2405,7 +2474,7 @@ export const contractsRouter = t.router({
         )
         .output(
             z.array(
-                z.object({
+                ContractRequestFieldsValidator.extend({
                     profile: LCNProfileValidator,
                     status: z.enum(['pending', 'accepted', 'denied']).nullable(),
                     readStatus: z.enum(['unseen', 'seen']).nullable().optional(),
