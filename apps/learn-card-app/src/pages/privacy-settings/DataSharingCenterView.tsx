@@ -1,4 +1,5 @@
 import React from 'react';
+import { PendingContractRequests } from '../../components/contract-requests/ContractRequest';
 import * as m from '../../paraglide/messages.js';
 
 import { IonSpinner } from '@ionic/react';
@@ -49,6 +50,7 @@ const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({ vm, verif
                     )}
 
                     <div className="flex flex-col gap-6">
+                        <PendingContractRequests />
                         <TrustSummaryCard contracts={contracts} />
 
                         {shared && <SharedLinksSection vm={shared} delay={60} />}

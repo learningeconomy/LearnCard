@@ -1874,7 +1874,9 @@
             "name": "name",
             "email": "email",
             "profilePicture": "profile picture"
-        }
+        },
+        "reviewChanged": "The sharing details changed. Review them before connecting again.",
+        "retryPublication": "Your sharing choices are saved. Try again to finish sending them."
     },
     "recovery": {
         "automatic": {
@@ -3621,6 +3623,12 @@
                 "revoked": "Revoked",
                 "suspended": "Suspended"
             }
+        },
+        "consentAudience": {
+            "title": "Review who receives your data",
+            "description": "Your selected information will be available to everyone listed below.",
+            "confirm": "Confirm Sharing",
+            "cancel": "Cancel"
         }
     },
     "sdk": {
@@ -9392,5 +9400,30 @@
         "delete": "Delete reminder",
         "deleteLabel": "Delete reminder for {{verifier}}",
         "loadFailed": "History could not be loaded or updated. Check your connection and try again."
+    },
+    "contractRequests": {
+        "label": "Connect",
+        "referred": "{{referrer}} has referred you to {{owner}}.",
+        "invitation": "{{owner}} would like to connect.",
+        "accept": "Accept & Connect",
+        "details": "View Details",
+        "decline": "Decline",
+        "declineConfirm": "Decline this invitation?",
+        "declined": "Declined",
+        "connected": "Connected",
+        "cancelled": "Cancelled",
+        "notNow": "Not Now",
+        "dismiss": "Dismiss invitation",
+        "loading": "Loading invitation...",
+        "working": "Working...",
+        "unavailable": "This invitation is no longer available.",
+        "error": "Something went wrong. Please try again.",
+        "sharedWith": "Shared with",
+        "dataRequested": "Data requested",
+        "outcomes": "Credentials you may receive",
+        "none": "None",
+        "reviewFirst": "Review and choose your data before connecting.",
+        "pending": "Pending invitations",
+        "empty": "No pending invitations."
     }
 }

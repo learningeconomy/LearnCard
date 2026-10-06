@@ -10,6 +10,8 @@ import { appRouter, type AppRouter, createContext } from './app';
 import { openApiDocument } from './openapi';
 import { didFastifyPlugin } from './dids';
 import { ensureUserKeysIndexes, createEscrowHoldsIndexes } from './models';
+import { oidcFastifyPlugin } from './oidc';
+import { ensureAuthSubjectIndexes } from './models/AuthSubject';
 
 const server = Fastify({ maxParamLength: 5000 });
 
@@ -102,9 +104,14 @@ server.register(fastifyStatic, {
 });
 
 server.register(didFastifyPlugin);
+server.register(oidcFastifyPlugin);
 
 (async () => {
     try {
+        await ensureAuthSubjectIndexes().catch(error => {
+            // Login requests retry index creation and must succeed before writing subjects.
+            console.error('AuthSubject indexes unavailable at startup; login will retry:', error);
+        });
         console.log('Server starting on port ', environment.PORT || 3000);
         await ensureUserKeysIndexes();
         await createEscrowHoldsIndexes();
