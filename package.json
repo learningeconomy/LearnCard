@@ -36,6 +36,7 @@
         "test:coverage": "nx run-many -t test:coverage --all",
         "test:ui": "nx run-many -t test:ui --all",
         "test:e2e": "nx run e2e:test:e2e",
+        "test:referrals": "bun scripts/check-contract-referrals.ts",
         "run-network-tests": "nx run network-brain-service:build && bun run --cwd services/learn-card-network/brain-service test",
         "test:lc-2079": "bun run --cwd packages/learn-card-base test -- src/helpers/aiErrors.test.ts src/stores/nanoStores/chatStore.test.ts && bun run --cwd apps/learn-card-app test:unit -- src/helpers/aiError.helpers.test.ts src/components/new-ai-session/AiSessionErrorHandler.test.tsx",
         "verify:lc-2079": "bun run test:lc-2079 && bunx nx build learn-card-app",

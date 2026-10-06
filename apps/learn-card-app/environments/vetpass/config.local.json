@@ -15,7 +15,8 @@
     },
     "features": {
         "analytics": false,
-        "useSeededSkillFrameworks": true
+        "useSeededSkillFrameworks": true,
+        "contractRequests": true
     },
     "observability": {
         "sentryEnv": "development"

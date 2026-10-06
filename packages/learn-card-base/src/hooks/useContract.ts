@@ -1,7 +1,8 @@
+import type { LearnCardNetworkPluginMethods } from '@learncard/network-plugin';
 import { useQuery } from '@tanstack/react-query';
 import { CredentialCategoryEnum, useIsLoggedIn, useWallet } from 'learn-card-base';
 import {
-    ConsentFlowContract,
+    ConsentFlowContractRequestForProfile,
     ConsentFlowContractDetails,
     LCNProfile,
     PaginatedConsentFlowDataForDid,
@@ -36,14 +37,7 @@ export const useContract = (uri: string | undefined, enabled = true) => {
 export const useContractSentRequests = (uri: string | undefined, enabled = true) => {
     const { initWallet } = useWallet();
 
-    return useQuery<
-        | {
-              profile: LCNProfile;
-              status: 'pending' | 'accepted' | 'denied' | null;
-              readStatus?: 'unseen' | 'seen' | null;
-          }[]
-        | undefined
-    >({
+    return useQuery<ConsentFlowContractRequestForProfile[] | undefined>({
         queryKey: ['useContractSentRequests', uri!],
         queryFn: async () => {
             if (!uri) return;
@@ -70,11 +64,7 @@ export const useContractRequestStatusForProfile = (
 ) => {
     const { initWallet } = useWallet();
 
-    return useQuery<{
-        profile: LCNProfile;
-        status: 'pending' | 'accepted' | 'denied' | null;
-        readStatus?: 'unseen' | 'seen' | null;
-    } | null>({
+    return useQuery<ConsentFlowContractRequestForProfile | null>({
         queryKey: ['useContractRequestStatus', targetProfileId, contractUri!, contractId!],
         queryFn: async () => {
             try {
@@ -105,12 +95,7 @@ export const useAllContractRequestsForProfile = (targetProfileId: string, enable
     const { initWallet } = useWallet();
 
     return useQuery<
-        | {
-              contract: ConsentFlowContract & { uri: string };
-              profile: LCNProfile;
-              status: 'pending' | 'accepted' | 'denied' | null;
-              readStatus?: 'unseen' | 'seen' | null;
-          }[]
+        | Awaited<ReturnType<LearnCardNetworkPluginMethods['getAllContractRequestsForProfile']>>
         | undefined
     >({
         queryKey: ['useAllContractRequestsForProfile', targetProfileId],
