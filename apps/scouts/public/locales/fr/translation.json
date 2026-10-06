@@ -1589,6 +1589,7 @@
         "createBtn": "Créer un nouveau badge de mérite"
     },
     "consentFlow": {
+        "reviewChanged": "Les modalités de partage ont changé. Vérifiez-les avant de vous reconnecter.",
         "yes": "Oui",
         "no": "Non",
         "useDataTo": "utilisera les données pour :",

@@ -1755,6 +1755,7 @@
         "previewCredentials": "Preview {{count}} Credentials"
     },
     "consentFlow": {
+        "reviewChanged": "The sharing details changed. Review them before connecting again.",
         "guardianApprovalRequired": "Ask a current account manager to approve this connection, then try again.",
         "acceptAndSync": "Accept & Sync",
         "accepted": "Accepted",
@@ -1874,7 +1875,8 @@
             "name": "name",
             "email": "email",
             "profilePicture": "profile picture"
-        }
+        },
+        "retryPublication": "Your sharing choices are saved. Try again to finish sending them."
     },
     "recovery": {
         "automatic": {
@@ -3586,6 +3588,12 @@
         "skillsHub": "Skills Hub"
     },
     "base": {
+        "consentAudience": {
+            "title": "Review who receives your data",
+            "description": "Your selected information will be available to everyone listed below.",
+            "confirm": "Confirm Sharing",
+            "cancel": "Cancel"
+        },
         "verification": {
             "selfIssued": "Self Issued",
             "trustedIssuer": "Trusted Issuer",
@@ -9370,5 +9378,30 @@
         "saveError": "Could not save these credentials. Please try again.",
         "signInToSave": "Sign in to save",
         "saveHint": "Keep this signed collection with your received items."
+    },
+    "contractRequests": {
+        "label": "Connect",
+        "referred": "{{referrer}} has referred you to {{owner}}.",
+        "invitation": "{{owner}} would like to connect.",
+        "accept": "Accept & Connect",
+        "details": "View Details",
+        "decline": "Decline",
+        "declineConfirm": "Decline this invitation?",
+        "declined": "Declined",
+        "connected": "Connected",
+        "cancelled": "Cancelled",
+        "notNow": "Not Now",
+        "dismiss": "Dismiss invitation",
+        "loading": "Loading invitation...",
+        "working": "Working...",
+        "unavailable": "This invitation is no longer available.",
+        "error": "Something went wrong. Please try again.",
+        "sharedWith": "Shared with",
+        "dataRequested": "Data requested",
+        "outcomes": "Credentials you may receive",
+        "none": "None",
+        "reviewFirst": "Review and choose your data before connecting.",
+        "pending": "Pending invitations",
+        "empty": "No pending invitations."
     }
 }

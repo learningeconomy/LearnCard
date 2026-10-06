@@ -20,6 +20,8 @@ This app simulates what a partner's website does when integrating with LearnCard
 2. **Callback** — Receives the user back with `did` and `vp` query parameters
 3. **Send** — Uses the LearnCard SDK (server-side) to issue a credential to the consented user
 
+For the newer three-account referral journey, see [Partner Connect local demo](../consent-referral-demo/README.md). That example sets up synthetic accounts and lets you test recipient access, outcomes and signed updates through local APIs. This app remains useful for testing direct consent links and callbacks into the LearnCard app.
+
 ## Setup
 
 ### Prerequisites
