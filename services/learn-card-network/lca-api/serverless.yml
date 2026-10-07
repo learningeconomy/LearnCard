@@ -162,7 +162,7 @@ provider:
         KEYCLOAK_AUDIENCES: ${env:KEYCLOAK_AUDIENCES, ''}
         KEYCLOAK_JWKS_URL_OVERRIDES: ${env:KEYCLOAK_JWKS_URL_OVERRIDES, ''}
         OIDC_ISSUER: ${env:OIDC_ISSUER, ''}
-        OIDC_SIGNING_KEY_JWK: ${env:OIDC_SIGNING_KEY_JWK, ''}
+        OIDC_SIGNING_KEY_SECRET_ID: ${env:OIDC_SIGNING_KEY_SECRET_ID, ''}
         OIDC_CLIENT_ID: ${env:OIDC_CLIENT_ID, ''}
         OIDC_CLIENT_SECRET: ${env:OIDC_CLIENT_SECRET, ''}
         OIDC_REDIRECT_URIS: ${env:OIDC_REDIRECT_URIS, ''}
@@ -225,6 +225,8 @@ functions:
 
     oidc:
         handler: lambda.oidcHandler
+        # Only this function may read the private signing key (see OidcExecutionRole).
+        role: OidcExecutionRole
         vpc:
             securityGroupIds:
                 - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
@@ -317,6 +319,29 @@ resources:
                 ManagedPolicyArns:
                     - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
                     - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess
+        OidcExecutionRole:
+            Type: AWS::IAM::Role
+            Properties:
+                AssumeRolePolicyDocument:
+                    Version: '2012-10-17'
+                    Statement:
+                        - Effect: Allow
+                          Principal:
+                              Service: lambda.amazonaws.com
+                          Action: sts:AssumeRole
+                ManagedPolicyArns:
+                    - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+                    - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess
+                Policies:
+                    - PolicyName: oidc-signing-key
+                      PolicyDocument:
+                          Version: '2012-10-17'
+                          Statement:
+                              # SecretString is the private JWK JSON; only its id belongs in Lambda env.
+                              - Effect: Allow
+                                Action: secretsmanager:GetSecretValue
+                                Resource:
+                                    Fn::Sub: arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:lca-api/${sls:stage}/oidc-signing-jwk-*
         SigningAuthoritySeedKey:
             Type: AWS::KMS::Key
             DeletionPolicy: Retain

@@ -30,6 +30,7 @@ for (const key of [
     'KEYCLOAK_AUDIENCES',
     'KEYCLOAK_JWKS_URL_OVERRIDES',
     'OIDC_ISSUER',
+    'OIDC_SIGNING_KEY_SECRET_ID',
     'OIDC_CLIENT_ID',
     'OIDC_REDIRECT_URIS',
     'GOOGLE_OAUTH_CLIENT_IDS',
@@ -37,9 +38,43 @@ for (const key of [
 ]) {
     assert.equal(lca.env[key], '${{ vars.' + key + ' }}');
 }
-for (const key of ['OIDC_CLIENT_SECRET', 'OIDC_SIGNING_KEY_JWK']) {
+for (const key of ['OIDC_CLIENT_SECRET']) {
     assert.equal(lca.env[key], '${{ secrets.' + key + ' }}');
 }
+assert.equal(lca.env.OIDC_SIGNING_KEY_JWK, undefined);
+const lcaServerless = yaml.load(
+    fs.readFileSync(path.join(root, 'services/learn-card-network/lca-api/serverless.yml'), 'utf8')
+);
+assert.equal(lcaServerless.provider.environment.OIDC_SIGNING_KEY_JWK, undefined);
+assert.equal(
+    lcaServerless.provider.environment.OIDC_SIGNING_KEY_SECRET_ID,
+    "${env:OIDC_SIGNING_KEY_SECRET_ID, ''}"
+);
+// Only the oidc function may read the private signing key: a dedicated role, no shared grant.
+assert.equal(lcaServerless.provider.iam, undefined);
+assert.equal(lcaServerless.functions.oidc.role, 'OidcExecutionRole');
+for (const [name, fn] of Object.entries(lcaServerless.functions)) {
+    if (name !== 'oidc') assert.notEqual(fn.role, 'OidcExecutionRole', name);
+}
+const oidcRole = lcaServerless.resources.Resources.OidcExecutionRole.Properties;
+assert.deepEqual(
+    oidcRole.Policies.flatMap(policy => policy.PolicyDocument.Statement),
+    [
+        {
+            Effect: 'Allow',
+            Action: 'secretsmanager:GetSecretValue',
+            Resource: {
+                'Fn::Sub':
+                    'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:lca-api/${sls:stage}/oidc-signing-jwk-*',
+            },
+        },
+    ]
+);
+assert.deepEqual(
+    oidcRole.ManagedPolicyArns,
+    lcaServerless.resources.Resources.SigningAuthorityExecutionRole.Properties.ManagedPolicyArns,
+    'the oidc role keeps the same VPC/logging/X-Ray baseline as the other custom role'
+);
 
 const workflow = workflows.get('keycloak-infra.yml');
 const pluginInit = workflow.jobs.validate.steps.find(step => step.run === 'tflint --init');

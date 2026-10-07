@@ -45,7 +45,24 @@ deployment matrix). All unset = Keycloak sign-in disabled, identical to before.
 | var (optional) | `OIDC_REDIRECT_URIS`                                 | leave unset; derived as `<issuer>/broker/lca-api/endpoint`                                                      |
 | var (optional) | `KEYCLOAK_JWKS_URL_OVERRIDES`                        | leave unset outside local compose                                                                               |
 | secret         | `OIDC_CLIENT_SECRET`                                 | `broker_client_secret` from Secrets Manager `learncard-keycloak/<env>/<realm>/lca-api`                          |
-| secret         | `OIDC_SIGNING_KEY_JWK`                               | RS256 private JWK (`kid`, `alg`) from `learncard-keycloak/<env>/<realm>/lca-api-oidc-signing-jwk`               |
+| var            | `OIDC_SIGNING_KEY_SECRET_ID`                         | `lca-api/dev/oidc-signing-jwk` (secret name or full ARN in the lca-api Lambda account/region)                   |
+
+Deployed Lambdas receive only `OIDC_SIGNING_KEY_SECRET_ID`, not the private key,
+to stay within Lambda's environment size limit. Create `lca-api/<stage>/oidc-signing-jwk`
+in the Lambda's account and region with a **plain-string SecretString containing the
+RSA private JWK JSON** (`kty=RSA`, `d`, `kid`, `alg=RS256`), not a JSON wrapper or
+SecretBinary. Use the AWS-managed Secrets Manager encryption key. Only the `oidc`
+function's dedicated `OidcExecutionRole` can read it, and only
+`lca-api/${stage}/oidc-signing-jwk-*` ARNs (including AWS's suffix).
+For `lca-api-service-dev`, the stage is `dev` and the AWS account is `206533012615`.
+Set the GitHub environment **variable** `OIDC_SIGNING_KEY_SECRET_ID` to that name or
+ARN. `OIDC_CLIENT_SECRET` remains a GitHub secret and Lambda environment variable.
+
+The JWK is fetched once per process (concurrent requests share the load); failed
+loads retry on the next request and readiness returns 503. Restart/redeploy Lambda
+execution environments after rotating the secret to refresh cached keys.
+`OIDC_SIGNING_KEY_JWK` remains supported for local/Docker/CI and takes precedence
+over the secret id; it is no longer passed through the Lambda deployment workflow.
 
 Copy secrets without printing them, e.g.
 `aws secretsmanager get-secret-value --secret-id learncard-keycloak/staging/learncard/lca-api --query SecretString --output text | jq -r .broker_client_secret | gh secret set OIDC_CLIENT_SECRET --env <lca-api staging env>`.
