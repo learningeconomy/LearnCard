@@ -4,6 +4,35 @@ The LearnCard Application API (`lca-api`) is the tRPC service backing client-sid
 
 ## Build & Development Commands
 
+### Runtime secrets (backend config model, step 1)
+
+For Lambda `trpc`/`api`, set the deploy environment variable `RUNTIME_SECRETS_ID` to
+`lca-api/<stage>/runtime-secrets` (or its ARN in the Lambda account/region). Provision
+the secret before enabling the variable. Its SecretString is a flat JSON object of
+UPPER_SNAKE_CASE environment names to string values, initially:
+
+```json
+{ "GOOGLE_APPLICATION_CREDENTIAL": "{\"type\":\"service_account\",\"...\":\"...\"}" }
+```
+
+The Firebase JSON is a **string inside the bundle**, not a nested object. No secret
+values belong in checked-in files. `lambda.ts` loads and validates the bundle once
+before importing `lambdaApp.ts` and the environment schema. Non-empty explicit env
+values win; empty strings are unset. Failures stop startup with a sanitized error
+and can retry. Redeploy/recycle functions after rotating the bundle.
+
+When the id is absent, no AWS lookup occurs. Deploys retain the GitHub
+`GOOGLE_APPLICATION_CREDENTIAL` secret as a function-level fallback; keep that input
+until every stage has a bundle. Self-hosters, Docker, local development and CI keep
+using plain environment variables. Only `trpc`/`api` receive the bundle id; OIDC gets
+its broker settings and keeps its separate signing-key secret and IAM role.
+Keycloak token audiences are enforced by the verifier, not the shared schema,
+because the OIDC broker only needs issuers for redirect discovery.
+
+Next steps: **2** checked-in per-stage non-secret config; **3** Infisical → AWS
+secret sync; **4** brain-service and learn-cloud adoption. The pure parse/merge
+helpers can move into a shared package then; this step introduces none.
+
 - Build: `bun run build`
 - Dev: `bun run dev` — watches and rebuilds
 - Start: `bun run start` — local server (default port from env, typically 5100)
