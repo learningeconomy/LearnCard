@@ -133,15 +133,6 @@ provider:
     timeout: 29
     stage: ${opt:stage, "dev"}
     region: ${opt:region, "us-east-1"}
-    iam:
-        role:
-            statements:
-                # OIDC uses the generated execution role, not SigningAuthorityExecutionRole.
-                # SecretString is the private JWK JSON; only its id belongs in Lambda env.
-                - Effect: Allow
-                  Action: secretsmanager:GetSecretValue
-                  Resource:
-                      Fn::Sub: arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:lca-api/${sls:stage}/oidc-signing-jwk-*
     environment:
         LAMBDA_STAGE: ${opt:stage, "dev"}
         SEED: ${env:SEED, ''}
@@ -234,6 +225,8 @@ functions:
 
     oidc:
         handler: lambda.oidcHandler
+        # Only this function may read the private signing key (see OidcExecutionRole).
+        role: OidcExecutionRole
         vpc:
             securityGroupIds:
                 - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
@@ -289,6 +282,29 @@ resources:
                 ManagedPolicyArns:
                     - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
                     - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess
+        OidcExecutionRole:
+            Type: AWS::IAM::Role
+            Properties:
+                AssumeRolePolicyDocument:
+                    Version: '2012-10-17'
+                    Statement:
+                        - Effect: Allow
+                          Principal:
+                              Service: lambda.amazonaws.com
+                          Action: sts:AssumeRole
+                ManagedPolicyArns:
+                    - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+                    - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess
+                Policies:
+                    - PolicyName: oidc-signing-key
+                      PolicyDocument:
+                          Version: '2012-10-17'
+                          Statement:
+                              # SecretString is the private JWK JSON; only its id belongs in Lambda env.
+                              - Effect: Allow
+                                Action: secretsmanager:GetSecretValue
+                                Resource:
+                                    Fn::Sub: arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:lca-api/${sls:stage}/oidc-signing-jwk-*
         SigningAuthoritySeedKey:
             Type: AWS::KMS::Key
             DeletionPolicy: Retain

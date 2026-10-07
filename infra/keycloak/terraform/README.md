@@ -51,8 +51,9 @@ Deployed Lambdas receive only `OIDC_SIGNING_KEY_SECRET_ID`, not the private key,
 to stay within Lambda's environment size limit. Create `lca-api/<stage>/oidc-signing-jwk`
 in the Lambda's account and region with a **plain-string SecretString containing the
 RSA private JWK JSON** (`kty=RSA`, `d`, `kid`, `alg=RS256`), not a JSON wrapper or
-SecretBinary. Use the AWS-managed Secrets Manager encryption key. The execution role
-can read only `lca-api/${stage}/oidc-signing-jwk-*` ARNs (including AWS's suffix).
+SecretBinary. Use the AWS-managed Secrets Manager encryption key. Only the `oidc`
+function's dedicated `OidcExecutionRole` can read it, and only
+`lca-api/${stage}/oidc-signing-jwk-*` ARNs (including AWS's suffix).
 For `lca-api-service-dev`, the stage is `dev` and the AWS account is `206533012615`.
 Set the GitHub environment **variable** `OIDC_SIGNING_KEY_SECRET_ID` to that name or
 ARN. `OIDC_CLIENT_SECRET` remains a GitHub secret and Lambda environment variable.

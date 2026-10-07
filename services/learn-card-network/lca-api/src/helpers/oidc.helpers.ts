@@ -115,7 +115,13 @@ const resolveSigningJwk = async (configured?: string, secretId?: string): Promis
                 message: 'OIDC signing key could not be fetched',
             });
         }
-        return parseSigningJwk(secretString ?? '');
+        if (!secretString) {
+            throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'OIDC signing key secret has no SecretString value',
+            });
+        }
+        return parseSigningJwk(secretString);
     }
 
     if (isProduction()) {

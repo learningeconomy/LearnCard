@@ -268,6 +268,16 @@ describe('OIDC provider', () => {
             expect(sendSecret).toHaveBeenCalledTimes(2);
         });
 
+        it.each([{}, { SecretString: '' }, { SecretBinary: new Uint8Array([1]) }])(
+            'names the missing SecretString instead of an invalid JWK (%#)',
+            async result => {
+                sendSecret.mockResolvedValueOnce(result);
+                await expect(getOidcSigningKey()).rejects.toThrow(
+                    'OIDC signing key secret has no SecretString value'
+                );
+            }
+        );
+
         it('prefers the env JWK and reloads when its material changes', async () => {
             env.OIDC_SIGNING_KEY_JWK = privateJwk;
             expect((await getOidcSigningKey()).kid).toBe('test-key');

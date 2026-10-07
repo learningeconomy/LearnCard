@@ -50,17 +50,31 @@ assert.equal(
     lcaServerless.provider.environment.OIDC_SIGNING_KEY_SECRET_ID,
     "${env:OIDC_SIGNING_KEY_SECRET_ID, ''}"
 );
-assert.equal(lcaServerless.functions.oidc.role, undefined);
-assert.deepEqual(lcaServerless.provider.iam.role.statements, [
-    {
-        Effect: 'Allow',
-        Action: 'secretsmanager:GetSecretValue',
-        Resource: {
-            'Fn::Sub':
-                'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:lca-api/${sls:stage}/oidc-signing-jwk-*',
+// Only the oidc function may read the private signing key: a dedicated role, no shared grant.
+assert.equal(lcaServerless.provider.iam, undefined);
+assert.equal(lcaServerless.functions.oidc.role, 'OidcExecutionRole');
+for (const [name, fn] of Object.entries(lcaServerless.functions)) {
+    if (name !== 'oidc') assert.notEqual(fn.role, 'OidcExecutionRole', name);
+}
+const oidcRole = lcaServerless.resources.Resources.OidcExecutionRole.Properties;
+assert.deepEqual(
+    oidcRole.Policies.flatMap(policy => policy.PolicyDocument.Statement),
+    [
+        {
+            Effect: 'Allow',
+            Action: 'secretsmanager:GetSecretValue',
+            Resource: {
+                'Fn::Sub':
+                    'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:lca-api/${sls:stage}/oidc-signing-jwk-*',
+            },
         },
-    },
-]);
+    ]
+);
+assert.deepEqual(
+    oidcRole.ManagedPolicyArns,
+    lcaServerless.resources.Resources.SigningAuthorityExecutionRole.Properties.ManagedPolicyArns,
+    'the oidc role keeps the same VPC/logging/X-Ray baseline as the other custom role'
+);
 
 const workflow = workflows.get('keycloak-infra.yml');
 const pluginInit = workflow.jobs.validate.steps.find(step => step.run === 'tflint --init');
