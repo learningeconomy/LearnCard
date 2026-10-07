@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
     revision: 0,
@@ -11,8 +11,17 @@ const mocks = vi.hoisted(() => ({
     toggle: vi.fn(),
     clear: vi.fn(),
     remove: vi.fn(),
+    modal: vi.fn(),
+    close: vi.fn(),
 }));
-vi.mock('learn-card-base', () => ({ useWallet: () => ({ initWallet: mocks.initWallet }) }));
+vi.mock('learn-card-base', () => ({
+    useWallet: () => ({ initWallet: mocks.initWallet }),
+    useModal: () => ({ newModalWithToken: mocks.modal, forceCloseModalByToken: mocks.close }),
+    ModalTypes: { Center: 'center', FullScreen: 'fullscreen' },
+}));
+vi.mock('../../../helpers/verifier-history/useEligibility', () => ({
+    useVerifierHistoryEligibility: () => () => mocks.allowed,
+}));
 vi.mock('../../../i18n', () => ({ useLocale: () => 'en' }));
 vi.mock('../../../components/share-links/sharePrivacy', () => ({
     enterSharePrivacy: mocks.privacy,
@@ -57,6 +66,7 @@ beforeEach(() => {
     mocks.toggle.mockResolvedValue(undefined);
     mocks.clear.mockResolvedValue(true);
     mocks.remove.mockResolvedValue(true);
+    mocks.modal.mockReturnValue({ id: 7, generation: 1 });
 });
 describe('verifier history controls', () => {
     it('activates privacy before loading, excludes screenshots, and distinguishes handoff from acceptance', async () => {
@@ -137,7 +147,7 @@ describe('verifier history controls', () => {
         render(<VerifierHistorySection eligible />);
         await open();
         mocks.clear.mockResolvedValue(false);
-        mocks.load.mockResolvedValue({ enabled: false, receipts: [], cleanupComplete: false });
+        mocks.load.mockResolvedValue({ enabled: false, receipts: [], cleanupComplete: true });
         fireEvent.click(screen.getByRole('button', { name: 'Clear history' }));
         await screen.findByText(/Some records could not be read or removed/);
         expect(screen.getByRole('button', { name: 'Clear history' })).not.toBeDisabled();
@@ -166,6 +176,140 @@ describe('verifier history controls', () => {
             resolve({ enabled: true, receipts: [receipt], cleanupComplete: true })
         );
         await waitFor(() => expect(screen.queryByText(receipt.label)).not.toBeInTheDocument());
+    });
+    it('bounds a 500-entry preview and pages locally without more reads', async () => {
+        const receipts = Array.from({ length: 500 }, (_, i) => ({
+            ...receipt,
+            eventId: `event-${i}`,
+            label: `Verifier ${i}`,
+        }));
+        mocks.load.mockResolvedValue({ enabled: true, receipts, cleanupComplete: true });
+        render(<VerifierHistorySection eligible />);
+        await open();
+        const card = within(screen.getByRole('region', { name: 'Shared with verifiers' }));
+        expect(card.getAllByRole('listitem')).toHaveLength(5);
+        expect(card.queryByText('Verifier 5')).not.toBeInTheDocument();
+        fireEvent.click(card.getByRole('button', { name: 'View all 500' }));
+        render(mocks.modal.mock.calls[0][0]);
+        const dialog = within(screen.getByTestId('verifier-history-modal'));
+        expect(screen.getByTestId('verifier-history-modal')).toHaveAttribute(
+            'data-feedback-exclude'
+        );
+        expect(dialog.getAllByRole('listitem')).toHaveLength(20);
+        expect(dialog.getByText('Page 1 of 25')).toBeInTheDocument();
+        expect(dialog.getByRole('button', { name: 'Previous' })).toBeDisabled();
+        fireEvent.click(dialog.getByRole('button', { name: 'Next' }));
+        expect(dialog.getByText('Verifier 20')).toBeInTheDocument();
+        expect(dialog.queryByText('Verifier 0')).not.toBeInTheDocument();
+        fireEvent.click(dialog.getByRole('button', { name: 'Previous' }));
+        expect(dialog.getByText('Verifier 0')).toBeInTheDocument();
+        expect(mocks.load).toHaveBeenCalledTimes(1);
+        fireEvent.click(dialog.getByRole('button', { name: 'Done' }));
+        expect(mocks.close).toHaveBeenCalledWith({ id: 7, generation: 1 });
+        fireEvent.click(card.getByRole('button', { name: 'View all 500' }));
+        expect(mocks.modal).toHaveBeenCalledTimes(2);
+        act(() => mocks.modal.mock.calls[1][1].onClose());
+        fireEvent.click(card.getByRole('button', { name: 'View all 500' }));
+        expect(mocks.modal).toHaveBeenCalledTimes(3);
+    });
+    it('clamps the final page after deletion and updates the main preview count', async () => {
+        const receipts = Array.from({ length: 21 }, (_, i) => ({
+            ...receipt,
+            eventId: `event-${i}`,
+            label: `Verifier ${i}`,
+        }));
+        mocks.load.mockResolvedValue({ enabled: true, receipts, cleanupComplete: true });
+        render(<VerifierHistorySection eligible />);
+        await open();
+        fireEvent.click(screen.getByRole('button', { name: 'View all 21' }));
+        render(mocks.modal.mock.calls[0][0]);
+        const dialog = within(screen.getByTestId('verifier-history-modal'));
+        fireEvent.click(dialog.getByRole('button', { name: 'Next' }));
+        expect(dialog.getAllByRole('listitem')).toHaveLength(1);
+        expect(dialog.getByRole('button', { name: 'Next' })).toBeDisabled();
+        mocks.load.mockResolvedValue({
+            enabled: true,
+            receipts: receipts.slice(0, 20),
+            cleanupComplete: true,
+        });
+        fireEvent.click(dialog.getByRole('button', { name: 'Delete reminder for Verifier 20' }));
+        await waitFor(() =>
+            expect(mocks.remove).toHaveBeenCalledWith(expect.any(Object), 'event-20')
+        );
+        await dialog.findByText('Page 1 of 1');
+        expect(dialog.getAllByRole('listitem')).toHaveLength(20);
+        expect(screen.getByRole('button', { name: 'View all 20' })).toBeInTheDocument();
+        expect(mocks.load).toHaveBeenCalledTimes(2);
+    });
+    it.each(['account switch', 'eligibility loss'])(
+        'hides modal data on %s and ignores a late refresh',
+        async reason => {
+            const receipts = Array.from({ length: 6 }, (_, i) => ({
+                ...receipt,
+                eventId: `event-${i}`,
+            }));
+            mocks.load.mockResolvedValue({ enabled: true, receipts, cleanupComplete: true });
+            const card = render(<VerifierHistorySection eligible />);
+            await open();
+            fireEvent.click(screen.getByRole('button', { name: 'View all 6' }));
+            const content = mocks.modal.mock.calls[0][0];
+            const onUpdate = vi.fn();
+            const modal = render(React.cloneElement(content, { onUpdate }));
+            let resolve!: (value: unknown) => void;
+            mocks.load.mockImplementationOnce(
+                () =>
+                    new Promise(done => {
+                        resolve = done;
+                    })
+            );
+            fireEvent.click(
+                within(screen.getByTestId('verifier-history-modal')).getByRole('button', {
+                    name: 'Refresh',
+                })
+            );
+            await waitFor(() => expect(mocks.load).toHaveBeenCalledTimes(2));
+            if (reason === 'account switch') {
+                mocks.current = false;
+                mocks.revision++;
+            } else mocks.allowed = false;
+            card.rerender(<VerifierHistorySection eligible />);
+            modal.rerender(React.cloneElement(content, { onUpdate }));
+            expect(screen.queryByText(receipt.label)).not.toBeInTheDocument();
+            expect(
+                within(screen.getByTestId('verifier-history-modal')).queryByRole('button', {
+                    name: 'Clear history',
+                })
+            ).not.toBeInTheDocument();
+            await act(async () => resolve({ enabled: true, receipts, cleanupComplete: true }));
+            expect(onUpdate).not.toHaveBeenCalled();
+            expect(mocks.close).toHaveBeenCalled();
+        }
+    );
+    it('offers modal recovery after failure and propagates incomplete clear to the card', async () => {
+        const receipts = Array.from({ length: 6 }, (_, i) => ({
+            ...receipt,
+            eventId: `event-${i}`,
+        }));
+        mocks.load.mockResolvedValue({ enabled: true, receipts, cleanupComplete: true });
+        render(<VerifierHistorySection eligible />);
+        await open();
+        fireEvent.click(screen.getByRole('button', { name: 'View all 6' }));
+        render(mocks.modal.mock.calls[0][0]);
+        const dialog = within(screen.getByTestId('verifier-history-modal'));
+        mocks.load.mockRejectedValueOnce(new Error('PRIVATE_CANARY'));
+        fireEvent.click(dialog.getByRole('button', { name: 'Refresh' }));
+        expect(await dialog.findByRole('alert')).toHaveTextContent(
+            'History could not be loaded or updated'
+        );
+        expect(screen.queryByText('PRIVATE_CANARY')).not.toBeInTheDocument();
+        expect(dialog.getByRole('button', { name: 'Clear history' })).not.toBeDisabled();
+        mocks.clear.mockResolvedValue(false);
+        mocks.load.mockResolvedValue({ enabled: false, receipts: [], cleanupComplete: true });
+        fireEvent.click(dialog.getByRole('button', { name: 'Clear history' }));
+        await dialog.findByText(/Some records could not be read or removed/);
+        expect(dialog.getByText('No recorded disclosures.')).toBeInTheDocument();
+        expect(screen.getByRole('checkbox')).not.toBeChecked();
+        expect(screen.queryByRole('button', { name: 'View all 6' })).not.toBeInTheDocument();
     });
     it('does not load or offer recording for managed/ineligible accounts', () => {
         mocks.allowed = false;

@@ -65,6 +65,8 @@ For browser application requests (CHAPI or VC-API), use the credential list to s
 
 ### Private Verifier History
 
+The card shows the five newest reminders. Choose **View all** to open the full history, with 20 reminders per page. Refresh, Clear history and Delete reminder are available in the history window; changes also update the card.
+
 In **Data Sharing Center**, open **Shared with verifiers** to enable private recording, delete individual reminders or clear history. Recording is off by default and is unavailable for managed accounts. Disabling recording keeps previous reminders; clearing readable history keeps the preference.
 
 ```mermaid

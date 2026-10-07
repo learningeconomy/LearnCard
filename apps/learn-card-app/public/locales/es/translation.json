@@ -9336,6 +9336,11 @@
         "review": "Revisar"
     },
     "verifierHistory": {
+        "viewAll": "Ver los {{count}}",
+        "preview": "Se muestran {{shown}} de {{total}} recordatorios",
+        "page": "Página {{page}} de {{total}}",
+        "previous": "Anterior",
+        "next": "Siguiente",
         "saveFailed": "No se pudo actualizar el historial. No necesitas enviar tu información de nuevo.",
         "title": "Compartido con verificadores",
         "description": "Recordatorios privados de la información que decidiste enviar a otras aplicaciones.",

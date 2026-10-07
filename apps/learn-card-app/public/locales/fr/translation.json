@@ -9336,6 +9336,11 @@
         "review": "Vérifier"
     },
     "verifierHistory": {
+        "viewAll": "Voir les {{count}}",
+        "preview": "{{shown}} rappels affichés sur {{total}}",
+        "page": "Page {{page}} sur {{total}}",
+        "previous": "Précédent",
+        "next": "Suivant",
         "saveFailed": "L’historique n’a pas pu être mis à jour. Vous n’avez pas besoin de renvoyer vos informations.",
         "title": "Partagé avec des vérificateurs",
         "description": "Des rappels privés des informations que vous avez choisi d’envoyer à d’autres applications.",

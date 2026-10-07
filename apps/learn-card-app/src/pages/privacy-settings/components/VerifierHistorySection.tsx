@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useWallet } from 'learn-card-base';
+import React, { useState, useEffect, useRef } from 'react';
+import { useWallet, useModal, ModalTypes, type ModalInstanceToken } from 'learn-card-base';
 import { enterSharePrivacy } from '../../../components/share-links/sharePrivacy';
 import {
     captureHistoryAccount,
@@ -16,18 +16,22 @@ import {
     type HistoryContext,
 } from '../../../helpers/verifier-history/history';
 import * as m from '../../../paraglide/messages.js';
-import { useLocale } from '../../../i18n';
+import { VerifierHistoryList, historyButton as button } from './VerifierHistoryList';
+import { VerifierHistoryModal } from './VerifierHistoryModal';
+import GlassCard from './GlassCard';
 
 type Loaded = Awaited<ReturnType<typeof loadVerifierHistory>>;
 type State = { revision: number; context: HistoryContext; data: Loaded };
-const button =
-    'min-h-[44px] py-3 px-4 rounded-[20px] border border-solid border-grayscale-300 bg-grayscale-100 text-grayscale-700 font-medium text-sm hover:bg-grayscale-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:bg-grayscale-100 disabled:border-grayscale-200 disabled:text-grayscale-500 disabled:cursor-not-allowed disabled:hover:bg-grayscale-100';
 const VerifierHistorySection: React.FC<{ eligible: boolean; isEligible?: () => boolean }> = ({
     eligible,
     isEligible,
 }) => {
     const { initWallet } = useWallet();
-    const locale = useLocale();
+    const { newModalWithToken, forceCloseModalByToken } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.FullScreen,
+    });
+    const modal = useRef<{ token: ModalInstanceToken; revision: number } | null>(null);
     const revision = useHistoryAccountRevision();
     const allowed = isHistoryAccountEligible(eligible && (isEligible?.() ?? true));
     const [state, setState] = useState<State | null>(null);
@@ -37,6 +41,51 @@ const VerifierHistorySection: React.FC<{ eligible: boolean; isEligible?: () => b
     const visible =
         allowed && state?.revision === revision && state.context.isCurrent() ? state : null;
     const loading = busy === revision;
+    useEffect(() => {
+        if (modal.current && (!allowed || modal.current.revision !== revision)) {
+            forceCloseModalByToken(modal.current.token);
+            modal.current = null;
+        }
+    }, [allowed, revision, forceCloseModalByToken]);
+    useEffect(
+        () => () => {
+            if (modal.current) forceCloseModalByToken(modal.current.token);
+        },
+        [forceCloseModalByToken]
+    );
+    const openAll = () => {
+        if (!visible || loading || modal.current) return;
+        enterSharePrivacy();
+        const instance: { token?: ModalInstanceToken } = {};
+        const close = () => {
+            if (instance.token) forceCloseModalByToken(instance.token);
+            if (modal.current?.token === instance.token) modal.current = null;
+        };
+        instance.token = newModalWithToken(
+            <VerifierHistoryModal
+                context={visible.context}
+                initialData={visible.data}
+                onClose={close}
+                onUpdate={data => {
+                    if (
+                        visible.context.isCurrent() &&
+                        visible.context.eligible &&
+                        visible.revision === getHistoryAccountRevision()
+                    ) {
+                        setState({ ...visible, data });
+                        setError(null);
+                    }
+                }}
+            />,
+            {
+                sectionClassName: 'verifier-history-modal',
+                onClose: () => {
+                    if (modal.current?.token === instance.token) modal.current = null;
+                },
+            }
+        );
+        modal.current = { token: instance.token, revision };
+    };
     useEffect(() => {
         setState(previous => (previous?.revision === revision ? previous : null));
         setError(previous => (previous?.revision === revision ? previous : null));
@@ -76,184 +125,162 @@ const VerifierHistorySection: React.FC<{ eligible: boolean; isEligible?: () => b
     return (
         <section
             aria-labelledby="verifier-history-title"
-            className="rounded-[20px] border border-grayscale-200 bg-white p-6 font-poppins space-y-4 sentry-block ph-no-capture"
+            className="font-poppins sentry-block ph-no-capture"
+            data-html2canvas-ignore
             data-feedback-exclude
         >
-            <h2 id="verifier-history-title" className="text-xl font-semibold text-grayscale-900">
-                {m['verifierHistory.title']()}
-            </h2>
-            <p className="text-sm text-grayscale-600 leading-relaxed">
-                {m['verifierHistory.description']()}
-            </p>
-            {!allowed ? (
-                <p className="text-sm text-grayscale-600">
-                    {m['verifierHistory.managedUnavailable']()}
+            <div className="px-1 mb-2">
+                <h2
+                    id="verifier-history-title"
+                    className="text-[15px] font-semibold text-grayscale-900"
+                >
+                    {m['verifierHistory.title']()}
+                </h2>
+                <p className="text-sm text-grayscale-600 leading-relaxed">
+                    {m['verifierHistory.description']()}
                 </p>
-            ) : (
-                <>
-                    {!visible && (
-                        <button
-                            type="button"
-                            className={button}
-                            onClick={() => void run()}
-                            disabled={loading}
-                        >
-                            {loading ? m['verifierHistory.loading']() : m['verifierHistory.open']()}
-                        </button>
-                    )}
-                    {error?.revision === revision && (
-                        <>
-                            <p role="alert" className="text-sm text-red-700">
-                                {error.message}
-                            </p>
-                            {!visible && (
-                                <button
-                                    type="button"
-                                    className={button}
-                                    disabled={loading}
-                                    onClick={() =>
-                                        void run(context => clearVerifierHistory(context))
-                                    }
-                                >
-                                    {m['verifierHistory.clear']()}
-                                </button>
-                            )}
-                        </>
-                    )}
-                    {visible && (
-                        <>
-                            <label className="flex items-center gap-3 text-sm font-medium text-grayscale-700">
-                                <input
-                                    type="checkbox"
-                                    checked={visible.data.enabled}
-                                    disabled={loading}
-                                    onChange={event =>
-                                        void run(context =>
-                                            setVerifierHistoryEnabled(context, event.target.checked)
-                                        )
-                                    }
-                                />
-                                {m['verifierHistory.record']()}
-                            </label>
-                            <p className="text-xs text-grayscale-600 leading-relaxed">
-                                {m['verifierHistory.retention']()}
-                            </p>
-                            <p className="text-xs text-grayscale-600 leading-relaxed">
-                                {m['verifierHistory.limits']()}
-                            </p>
-                            {!visible.data.cleanupComplete && (
-                                <p role="status" className="text-sm text-amber-700">
-                                    {m['verifierHistory.cleanupPending']()}
+            </div>
+            <GlassCard className="p-6 space-y-4">
+                {!allowed ? (
+                    <p className="text-sm text-grayscale-600">
+                        {m['verifierHistory.managedUnavailable']()}
+                    </p>
+                ) : (
+                    <>
+                        {!visible && (
+                            <button
+                                type="button"
+                                className={button}
+                                onClick={() => void run()}
+                                disabled={loading}
+                            >
+                                {loading
+                                    ? m['verifierHistory.loading']()
+                                    : m['verifierHistory.open']()}
+                            </button>
+                        )}
+                        {error?.revision === revision && (
+                            <>
+                                <p role="alert" className="text-sm text-red-700">
+                                    {error.message}
                                 </p>
-                            )}
-                            <div className="flex flex-wrap gap-3">
-                                <button
-                                    type="button"
-                                    className={button}
-                                    disabled={loading}
-                                    onClick={() => void run()}
-                                >
-                                    {m['verifierHistory.refresh']()}
-                                </button>
-                                <button
-                                    type="button"
-                                    className={button}
-                                    disabled={
-                                        loading ||
-                                        (!visible.data.receipts.length &&
-                                            visible.data.cleanupComplete &&
-                                            error?.revision !== revision)
-                                    }
-                                    onClick={() =>
+                                {!visible && (
+                                    <button
+                                        type="button"
+                                        className={button}
+                                        disabled={loading}
+                                        onClick={() =>
+                                            void run(context => clearVerifierHistory(context))
+                                        }
+                                    >
+                                        {m['verifierHistory.clear']()}
+                                    </button>
+                                )}
+                            </>
+                        )}
+                        {visible && (
+                            <>
+                                <label className="flex items-center gap-3 text-sm font-medium text-grayscale-700">
+                                    <input
+                                        type="checkbox"
+                                        checked={visible.data.enabled}
+                                        disabled={loading}
+                                        onChange={event =>
+                                            void run(context =>
+                                                setVerifierHistoryEnabled(
+                                                    context,
+                                                    event.target.checked
+                                                )
+                                            )
+                                        }
+                                    />
+                                    {m['verifierHistory.record']()}
+                                </label>
+                                <p className="text-xs text-grayscale-600 leading-relaxed">
+                                    {m['verifierHistory.retention']()}
+                                </p>
+                                <p className="text-xs text-grayscale-600 leading-relaxed">
+                                    {m['verifierHistory.limits']()}
+                                </p>
+                                {!visible.data.cleanupComplete && (
+                                    <p role="status" className="text-sm text-amber-700">
+                                        {m['verifierHistory.cleanupPending']()}
+                                    </p>
+                                )}
+                                <div className="flex flex-wrap gap-3">
+                                    <button
+                                        type="button"
+                                        className={button}
+                                        disabled={loading}
+                                        onClick={() => void run()}
+                                    >
+                                        {m['verifierHistory.refresh']()}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={button}
+                                        disabled={
+                                            loading ||
+                                            (!visible.data.receipts.length &&
+                                                visible.data.cleanupComplete &&
+                                                error?.revision !== revision)
+                                        }
+                                        onClick={() =>
+                                            void run(context => clearVerifierHistory(context))
+                                        }
+                                    >
+                                        {m['verifierHistory.clear']()}
+                                    </button>
+                                </div>
+                                {loading && (
+                                    <p
+                                        role="status"
+                                        aria-live="polite"
+                                        className="text-sm text-grayscale-600"
+                                    >
+                                        {m['verifierHistory.loading']()}
+                                    </p>
+                                )}
+                                {!visible.data.receipts.length && (
+                                    <p className="text-sm text-grayscale-600">
+                                        {m['verifierHistory.empty']()}
+                                    </p>
+                                )}
+                                <VerifierHistoryList
+                                    receipts={visible.data.receipts.slice(0, 5)}
+                                    loading={loading}
+                                    onDelete={id =>
                                         void run(async context => {
-                                            await clearVerifierHistory(context);
+                                            if (!(await deleteVerifierReceipt(context, id)))
+                                                throw new Error('Deletion incomplete');
                                         })
                                     }
-                                >
-                                    {m['verifierHistory.clear']()}
-                                </button>
-                            </div>
-                            {loading && (
-                                <p
-                                    role="status"
-                                    aria-live="polite"
-                                    className="text-sm text-grayscale-600"
-                                >
-                                    {m['verifierHistory.loading']()}
-                                </p>
-                            )}
-                            {!visible.data.receipts.length && (
-                                <p className="text-sm text-grayscale-600">
-                                    {m['verifierHistory.empty']()}
-                                </p>
-                            )}
-                            <ul className="space-y-3" aria-label={m['verifierHistory.title']()}>
-                                {visible.data.receipts.map(receipt => (
-                                    <li
-                                        key={receipt.eventId}
-                                        className="rounded-2xl border border-grayscale-200 p-4 space-y-2"
-                                    >
-                                        <p className="text-sm font-medium text-grayscale-900 break-words">
-                                            {receipt.label ??
-                                                receipt.origin ??
-                                                m['verifierHistory.unknownVerifier']()}
-                                        </p>
-                                        {receipt.label && receipt.origin && (
-                                            <p className="text-xs text-grayscale-600 break-words">
-                                                {receipt.origin}
-                                            </p>
-                                        )}
+                                />
+                                {visible.data.receipts.length > 5 && (
+                                    <div className="flex flex-wrap items-center justify-between gap-3">
                                         <p className="text-xs text-grayscale-600">
-                                            {new Date(receipt.sentAt).toLocaleString(locale)} ·{' '}
-                                            {receipt.outcome === 'sent'
-                                                ? m['verifierHistory.sent']()
-                                                : m['verifierHistory.handedOff']()}
+                                            {m['verifierHistory.preview']({
+                                                shown: '5',
+                                                total: String(visible.data.receipts.length),
+                                            })}
                                         </p>
-                                        <p className="text-sm text-grayscale-700 break-words">
-                                            {receipt.titles
-                                                .map(title =>
-                                                    title === 'Credential'
-                                                        ? m['verifierHistory.credential']()
-                                                        : title
-                                                )
-                                                .join(', ')}
-                                        </p>
-                                        {receipt.purpose && (
-                                            <p className="text-xs text-grayscale-600 break-words">
-                                                {receipt.purpose}
-                                            </p>
-                                        )}
                                         <button
                                             type="button"
                                             className={button}
                                             disabled={loading}
-                                            onClick={() =>
-                                                void run(async context => {
-                                                    if (
-                                                        !(await deleteVerifierReceipt(
-                                                            context,
-                                                            receipt.eventId
-                                                        ))
-                                                    )
-                                                        throw new Error('Deletion incomplete');
-                                                })
-                                            }
-                                            aria-label={m['verifierHistory.deleteLabel']({
-                                                verifier:
-                                                    receipt.label ??
-                                                    receipt.origin ??
-                                                    m['verifierHistory.unknownVerifier'](),
-                                            })}
+                                            onClick={openAll}
                                         >
-                                            {m['verifierHistory.delete']()}
+                                            {m['verifierHistory.viewAll']({
+                                                count: String(visible.data.receipts.length),
+                                            })}
                                         </button>
-                                    </li>
-                                ))}
-                            </ul>
-                        </>
-                    )}
-                </>
-            )}
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </>
+                )}
+            </GlassCard>
         </section>
     );
 };
