@@ -195,6 +195,8 @@ export default tseslint.config(
             'services/learn-card-network/lca-api/lambdaApp.ts',
             'services/learn-card-network/brain-service/lambdaApp.ts',
             'services/learn-card-network/brain-service/*LambdaApp.ts',
+            'services/learn-card-network/learn-cloud-service/lambdaApp.ts',
+            'services/learn-card-network/learn-cloud-service/*LambdaApp.ts',
             'services/learn-card-network/{brain-service,lca-api,learn-cloud-service}/*Lambda.ts',
         ],
         ignores: [
@@ -217,6 +219,11 @@ export default tseslint.config(
             'services/learn-card-network/brain-service/contractEventsLambda.ts',
             'services/learn-card-network/brain-service/shareLinkMaintenanceLambda.ts',
             'services/learn-card-network/brain-service/src/config/applyDockerStageConfig.ts',
+            'services/learn-card-network/learn-cloud-service/lambda.ts',
+            'services/learn-card-network/learn-cloud-service/didWebLambda.ts',
+            'services/learn-card-network/learn-cloud-service/oidcLambda.ts',
+            'services/learn-card-network/learn-cloud-service/xApiLambda.ts',
+            'services/learn-card-network/learn-cloud-service/src/config/applyDockerStageConfig.ts',
         ],
         rules: {
             'no-restricted-syntax': [
