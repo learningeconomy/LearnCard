@@ -32,6 +32,24 @@ mock-provider regression checks; CI runs them without AWS credentials.
 
 ## lca-api wiring
 
+Lambda environment settings are function-scoped: `trpc`/`api` receive Keycloak
+verification and Google/Apple client IDs; `oidc` receives `KEYCLOAK_ISSUERS` and the
+`OIDC_*` settings below. Empty function-level keys are omitted.
+
+For backend config step 1, provision `lca-api/<stage>/runtime-secrets` in Secrets
+Manager and set the lca-api GitHub environment **variable** `RUNTIME_SECRETS_ID` to
+its name or ARN. Use a flat JSON object of UPPER_SNAKE_CASE keys to string values,
+starting with `GOOGLE_APPLICATION_CREDENTIAL` (the service-account JSON encoded as
+a string). Only `trpc`/`api` load it at cold start before environment validation;
+non-empty explicit env values win, empty strings do not. Failed reads fail closed
+without logging values. Recycle functions after rotation.
+
+Keep the GitHub `GOOGLE_APPLICATION_CREDENTIAL` secret: without a bundle id it is
+still passed directly to `trpc`/`api`, preserving production until provisioned.
+Self-hosters continue using plain env vars. The OIDC signing-key role is unchanged
+and cannot read the runtime bundle. Roadmap: step 2 checked-in per-stage non-secret
+config, step 3 Infisical → AWS sync, step 4 brain-service/learn-cloud adoption.
+
 `deploy.yml` passes these from lca-api's GitHub environment (the `lca_api_env` of the
 deployment matrix). All unset = Keycloak sign-in disabled, identical to before.
 
@@ -45,7 +63,24 @@ deployment matrix). All unset = Keycloak sign-in disabled, identical to before.
 | var (optional) | `OIDC_REDIRECT_URIS`                                 | leave unset; derived as `<issuer>/broker/lca-api/endpoint`                                                      |
 | var (optional) | `KEYCLOAK_JWKS_URL_OVERRIDES`                        | leave unset outside local compose                                                                               |
 | secret         | `OIDC_CLIENT_SECRET`                                 | `broker_client_secret` from Secrets Manager `learncard-keycloak/<env>/<realm>/lca-api`                          |
-| secret         | `OIDC_SIGNING_KEY_JWK`                               | RS256 private JWK (`kid`, `alg`) from `learncard-keycloak/<env>/<realm>/lca-api-oidc-signing-jwk`               |
+| var            | `OIDC_SIGNING_KEY_SECRET_ID`                         | `lca-api/dev/oidc-signing-jwk` (secret name or full ARN in the lca-api Lambda account/region)                   |
+
+Deployed Lambdas receive only `OIDC_SIGNING_KEY_SECRET_ID`, not the private key,
+to stay within Lambda's environment size limit. Create `lca-api/<stage>/oidc-signing-jwk`
+in the Lambda's account and region with a **plain-string SecretString containing the
+RSA private JWK JSON** (`kty=RSA`, `d`, `kid`, `alg=RS256`), not a JSON wrapper or
+SecretBinary. Use the AWS-managed Secrets Manager encryption key. Only the `oidc`
+function's dedicated `OidcExecutionRole` can read it, and only
+`lca-api/${stage}/oidc-signing-jwk-*` ARNs (including AWS's suffix).
+For `lca-api-service-dev`, the stage is `dev` and the AWS account is `206533012615`.
+Set the GitHub environment **variable** `OIDC_SIGNING_KEY_SECRET_ID` to that name or
+ARN. `OIDC_CLIENT_SECRET` remains a GitHub secret and Lambda environment variable.
+
+The JWK is fetched once per process (concurrent requests share the load); failed
+loads retry on the next request and readiness returns 503. Restart/redeploy Lambda
+execution environments after rotating the secret to refresh cached keys.
+`OIDC_SIGNING_KEY_JWK` remains supported for local/Docker/CI and takes precedence
+over the secret id; it is no longer passed through the Lambda deployment workflow.
 
 Copy secrets without printing them, e.g.
 `aws secretsmanager get-secret-value --secret-id learncard-keycloak/staging/learncard/lca-api --query SecretString --output text | jq -r .broker_client_secret | gh secret set OIDC_CLIENT_SECRET --env <lca-api staging env>`.
@@ -87,14 +122,14 @@ an authorized administrator confirms no other workflow still uses them.
 
 ### Required GitHub configuration
 
-| Scope                      | Variable                              | Purpose                                                                                               |
-| -------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Each environment           | `AWS_DEPLOY_ROLE_ARN`                 | Bootstrap deploy OIDC role                                                                            |
-| Each environment           | `TF_STATE_BUCKET`                     | That account's bootstrap state bucket                                                                 |
-| Each environment           | `KEYCLOAK_BOOTSTRAP_ADMIN_SECRET_ARN` | Existing secret ARN, never its value                                                                  |
-| Each environment, optional | `KEYCLOAK_CONTAINER_IMAGE`            | Manual service plan/apply override only, account-local `repo@sha256:...`; otherwise use running image |
-| Repository                 | `KEYCLOAK_STAGING_PLAN_ROLE_ARN`      | Staging plan role for main-branch drift checks only                                                   |
-| Repository                 | `KEYCLOAK_PRODUCTION_PLAN_ROLE_ARN`   | Production plan role for main-branch drift checks only; set after bootstrap                           |
+| Scope                                             | Variable                              | Purpose                                                                                               |
+| ------------------------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Each environment                                  | `AWS_DEPLOY_ROLE_ARN`                 | Bootstrap deploy OIDC role                                                                            |
+| Each environment                                  | `TF_STATE_BUCKET`                     | That account's bootstrap state bucket                                                                 |
+| Each environment, optional after first deployment | `KEYCLOAK_BOOTSTRAP_ADMIN_SECRET_ARN` | Explicit existing bootstrap secret ARN; otherwise reuse the ECS service's reference, never its value  |
+| Each environment, optional                        | `KEYCLOAK_CONTAINER_IMAGE`            | Manual service plan/apply override only, account-local `repo@sha256:...`; otherwise use running image |
+| Repository                                        | `KEYCLOAK_STAGING_PLAN_ROLE_ARN`      | Staging plan role for main-branch drift checks only                                                   |
+| Repository                                        | `KEYCLOAK_PRODUCTION_PLAN_ROLE_ARN`   | Production plan role for main-branch drift checks only; set after bootstrap                           |
 
 Region is pinned to `us-east-1`. Repository URLs are discovered from
 `/learncard-keycloak/<env>/bootstrap/ecr_repository_url` and checked against account
@@ -102,6 +137,28 @@ Region is pinned to `us-east-1`. Repository URLs are discovered from
 image digest directly from the build, not `KEYCLOAK_CONTAINER_IMAGE`. Tags are
 `<Keycloak-version>-<12-character-source-sha>` and immutable; reruns reuse that tag.
 ARM64 builds use QEMU/buildx, `provenance: false`, and no production rebuild.
+
+Before publishing an image or planning service changes, the workflow validates the
+bootstrap administrator secret reference. A nonempty
+`KEYCLOAK_BOOTSTRAP_ADMIN_SECRET_ARN` is authoritative. If it is unset, the workflow
+reads the existing `learncard-keycloak-<env>` ECS service's task definition and
+reuses its `keycloak` container's `KC_BOOTSTRAP_ADMIN_PASSWORD` secret ARN, just as
+the drift check does. These are metadata-only ECS reads using the existing deploy
+role permissions; the password and Terraform state are never read. Invalid explicit
+configuration, failed reads, ambiguous/missing references, and ARNs outside the
+expected account, region, or environment fail before image publishing or planning.
+Manual network-only plan/apply does not require a bootstrap secret reference.
+
+**First deployment or missing ECS reference:** an operator must set
+`KEYCLOAK_BOOTSTRAP_ADMIN_SECRET_ARN` in the matching `keycloak-staging` or
+`keycloak-production` GitHub environment to the ARN of an already-created secret
+under `learncard-keycloak/<env>/`, in that environment's account and `us-east-1`.
+Use the complete secret ARN, without ECS JSON-key/version selectors, never the
+password. The secret must contain a plain password string with no trailing newline
+and use the AWS-managed Secrets Manager key (see the [service runbook](service/README.md)).
+The bootstrap Terraform root does not create or publish this secret's ARN. This
+fallback cannot provision an absent secret, change permissions, or verify the
+password itself; the existing ECS/service prerequisites still apply.
 
 **Human bootstrap re-apply required before enabling this pipeline:** the new
 `infra/aws/bootstrap/deploy-pipeline.tf` attaches a protected `*-deploy-pipeline`

@@ -285,7 +285,7 @@ jobs:
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
               with:
-                  bun-version: 1.3.14
+                  bun-version: 1.4.2
 
             - name: Setup Bun cache
               uses: actions/cache@v6
@@ -736,11 +736,12 @@ jobs:
                   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
                   AUTHORIZED_DIDS: ${{ secrets.AUTHORIZED_DIDS }}
                   GOOGLE_APPLICATION_CREDENTIAL: ${{ secrets.GOOGLE_APPLICATION_CREDENTIAL }}
+                  RUNTIME_SECRETS_ID: ${{ vars.RUNTIME_SECRETS_ID }}
                   KEYCLOAK_ISSUERS: ${{ vars.KEYCLOAK_ISSUERS }}
                   KEYCLOAK_AUDIENCES: ${{ vars.KEYCLOAK_AUDIENCES }}
                   KEYCLOAK_JWKS_URL_OVERRIDES: ${{ vars.KEYCLOAK_JWKS_URL_OVERRIDES }}
                   OIDC_ISSUER: ${{ vars.OIDC_ISSUER }}
-                  OIDC_SIGNING_KEY_JWK: ${{ secrets.OIDC_SIGNING_KEY_JWK }}
+                  OIDC_SIGNING_KEY_SECRET_ID: ${{ vars.OIDC_SIGNING_KEY_SECRET_ID }}
                   OIDC_CLIENT_ID: ${{ vars.OIDC_CLIENT_ID }}
                   OIDC_CLIENT_SECRET: ${{ secrets.OIDC_CLIENT_SECRET }}
                   OIDC_REDIRECT_URIS: ${{ vars.OIDC_REDIRECT_URIS }}
@@ -767,17 +768,6 @@ jobs:
                   SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
                   SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
-                  # Keycloak sign-in (infra/keycloak/terraform/README.md). Unset = disabled, as before.
-                  KEYCLOAK_ISSUERS: ${{ vars.KEYCLOAK_ISSUERS }}
-                  KEYCLOAK_AUDIENCES: ${{ vars.KEYCLOAK_AUDIENCES }}
-                  KEYCLOAK_JWKS_URL_OVERRIDES: ${{ vars.KEYCLOAK_JWKS_URL_OVERRIDES }}
-                  OIDC_ISSUER: ${{ vars.OIDC_ISSUER }}
-                  OIDC_CLIENT_ID: ${{ vars.OIDC_CLIENT_ID }}
-                  OIDC_REDIRECT_URIS: ${{ vars.OIDC_REDIRECT_URIS }}
-                  OIDC_CLIENT_SECRET: ${{ secrets.OIDC_CLIENT_SECRET }}
-                  OIDC_SIGNING_KEY_JWK: ${{ secrets.OIDC_SIGNING_KEY_JWK }}
-                  GOOGLE_OAUTH_CLIENT_IDS: ${{ vars.GOOGLE_OAUTH_CLIENT_IDS }}
-                  APPLE_OAUTH_CLIENT_IDS: ${{ vars.APPLE_OAUTH_CLIENT_IDS }}
 
     # ============================================================================
     # SDK GENERATION (after brain-service deploy, only on staging)
@@ -1565,6 +1555,12 @@ jobs:
             - name: Checkout repository
               uses: actions/checkout@v7
 
+            - name: Set up AI Agent Node LTS
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: services/learn-card-network/ai-agent/.nvmrc
+                  package-manager-cache: false
+
             - name: Use composite setup action
               uses: ./.github/actions/setup
 
@@ -1577,6 +1573,12 @@ jobs:
 
             - name: Run AI Agent tests
               run: bun run --cwd services/learn-card-network/ai-agent test -- run
+
+            - name: Verify feed with real DIDKit WASM
+              run: bun run --cwd services/learn-card-network/ai-agent smoke:feed-wasm
+
+            - name: Verify private Sentry telemetry
+              run: bun run --cwd services/learn-card-network/ai-agent smoke:sentry
 
             - name: Build AI Agent
               run: bun run --cwd services/learn-card-network/ai-agent build
@@ -1603,6 +1605,12 @@ jobs:
         steps:
             - name: Checkout repository
               uses: actions/checkout@v7
+
+            - name: Set up AI Agent Node LTS
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: services/learn-card-network/ai-agent/.nvmrc
+                  package-manager-cache: false
 
             - name: Use composite setup action
               uses: ./.github/actions/setup

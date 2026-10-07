@@ -4,6 +4,35 @@ The LearnCard Application API (`lca-api`) is the tRPC service backing client-sid
 
 ## Build & Development Commands
 
+### Runtime secrets (backend config model, step 1)
+
+For Lambda `trpc`/`api`, set the deploy environment variable `RUNTIME_SECRETS_ID` to
+`lca-api/<stage>/runtime-secrets` (or its ARN in the Lambda account/region). Provision
+the secret before enabling the variable. Its SecretString is a flat JSON object of
+UPPER_SNAKE_CASE environment names to string values, initially:
+
+```json
+{ "GOOGLE_APPLICATION_CREDENTIAL": "{\"type\":\"service_account\",\"...\":\"...\"}" }
+```
+
+The Firebase JSON is a **string inside the bundle**, not a nested object. No secret
+values belong in checked-in files. `lambda.ts` loads and validates the bundle once
+before importing `lambdaApp.ts` and the environment schema. Non-empty explicit env
+values win; empty strings are unset. Failures stop startup with a sanitized error
+and can retry. Redeploy/recycle functions after rotating the bundle.
+
+When the id is absent, no AWS lookup occurs. Deploys retain the GitHub
+`GOOGLE_APPLICATION_CREDENTIAL` secret as a function-level fallback; keep that input
+until every stage has a bundle. Self-hosters, Docker, local development and CI keep
+using plain environment variables. Only `trpc`/`api` receive the bundle id; OIDC gets
+its broker settings and keeps its separate signing-key secret and IAM role.
+Keycloak token audiences are enforced by the verifier, not the shared schema,
+because the OIDC broker only needs issuers for redirect discovery.
+
+Next steps: **2** checked-in per-stage non-secret config; **3** Infisical → AWS
+secret sync; **4** brain-service and learn-cloud adoption. The pure parse/merge
+helpers can move into a shared package then; this step introduces none.
+
 - Build: `bun run build`
 - Dev: `bun run dev` — watches and rebuilds
 - Start: `bun run start` — local server (default port from env, typically 5100)
@@ -86,7 +115,7 @@ adopts the existing `email:<address>` identity's `subject` via `getOrCreateAuthS
 (`$setOnInsert`), so a user doesn't hit "Account already exists" switching from email-code to native
 social sign-in. It never runs the other direction, and an already-existing `<provider>:<sub>` record
 keeps its own `subject` — only a first-time native sign-in can be linked this way.
-Require `OIDC_ISSUER`, an exact redirect allowlist, and a token client secret; any deployed stage (`NODE_ENV=production` or `LAMBDA_STAGE` set) additionally requires an RSA private `OIDC_SIGNING_KEY_JWK`.
+Require `OIDC_ISSUER`, an exact redirect allowlist, and a token client secret. Deployed Lambdas use `OIDC_SIGNING_KEY_SECRET_ID` (name or ARN of `lca-api/<stage>/oidc-signing-jwk`) pointing to a plain-string Secrets Manager SecretString containing the RSA private JWK JSON (`kty=RSA`, `d`, `kid`, `alg=RS256`). The key is fetched and cached per process; failures return 503 and retry on the next request. Redeploy after rotation. `OIDC_SIGNING_KEY_JWK` remains supported for local/Docker/CI and takes precedence. Any deployed stage (`NODE_ENV=production` or `LAMBDA_STAGE` set) fails closed without a configured key.
 Login codes, tickets and authorization codes are consumed with `getDel` (`src/cache/getDel.ts`, Redis `GETDEL`, requires Redis >= 6.2).
 Rate limiting is two layers, both keyed on `request.ip` (API Gateway `sourceIp` under `serverless-http`; `x-forwarded-for` is attacker-controlled and never trusted). Both fail open if Redis is unreachable. **Layer 1 — failures only** (`src/helpers/rate-limit.helpers.ts`, Redis counters, 10-minute window): the ticket routes use 5 per email plus a 50-per-IP backstop; `/oidc/authorize` (bad client/redirect, invalid ticket) and `/oidc/token` (`invalid_client` only) each use 50 per IP and answer `429 temporarily_unavailable` + `Retry-After` (or an OAuth error redirect once the `redirect_uri` is validated). `invalid_grant` at the token endpoint is deliberately not counted: only the broker (one NAT IP) can reach that branch, and counting the codes it relays would let anyone lock every user out. **Layer 2 — all requests** (`@fastify/rate-limit`, registered in `oidcFastifyPlugin`, Redis-backed when available): 300/min per IP globally so Keycloak's discovery/JWKS polling is never blocked; 60/min per IP on the browser-facing `/oidc/authorize`; a 3000/min sanity ceiling on the server-to-server `/oidc/token` and `/oidc/userinfo` (every legitimate call shares the broker's egress IP, so a tight cap there is a global login ceiling). Layer 2 exists mainly so CodeQL's `js/missing-rate-limiting` recognises the routes; do not remove either layer.
 Unit coverage is in `test/oidc.spec.ts` and `test/auth-tickets.spec.ts`; broker import coverage is gated by `KEYCLOAK_INTEGRATION`.

@@ -38,7 +38,7 @@ variable "keycloak_image" {
 variable "keycloak_version" {
   description = "Descriptive image version; must match the selected digest (does not build an image)"
   type        = string
-  default     = "26.7.4"
+  default     = "26.8.0"
   validation {
     condition     = can(regex("^26\\.[0-9]+\\.[0-9]+$", var.keycloak_version))
     error_message = "This platform targets a pinned Keycloak 26.x release."

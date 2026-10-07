@@ -62,6 +62,7 @@
         "membersCount": "{{count}} members",
         "socialBoosts": "Social Boosts",
         "newChildOrOrganization": "New Child or Organization",
+        "newOrganization": "New Organization",
         "selectProfileType": "Select a Profile Type",
         "organizationProfile": "Organization Profile",
         "organization": "Organization",
@@ -2772,7 +2773,9 @@
             "verifying": "Verifying...",
             "forUser": "for {{name}}",
             "requiresFiveDigits": "PIN requires 5 digits",
-            "invalidPin": "Invalid PIN. Please try again"
+            "invalidPin": "Invalid PIN. Please try again",
+            "approvalRequiresPin": "A parent PIN is needed for this action. Switch to the parent account to set one up.",
+            "parentIdentityUnavailable": "Your account information is missing. Please sign in again."
         },
         "guardianInvite": {
             "shareTitle": "Guardian Invite",

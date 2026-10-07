@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 
 import type { ShareLinkOperationKind } from '@helpers/share-link-lifecycle';
+import type { ShareLinkPolicySnapshot } from '@helpers/share-link-policy/types';
 
 import type { ShareContentState, ShareLinkRecord, ShareLinkStatus } from '../../models/ShareLink';
 import type { Neo4jQueryResult, ShareLinkTransaction } from './transaction';
@@ -164,6 +165,20 @@ export const toShareLinkReservationRecord = (
     updatedAt: asString(props.updatedAt),
 });
 
+/** Legacy operation records have no policy ceiling; callers fall back to their reservation. */
+export const toShareLinkOperationPolicy = (
+    props: Record<string, unknown>
+): ShareLinkPolicySnapshot | null => {
+    if (typeof props.policyViewCountingEnabled !== 'boolean') return null;
+
+    return {
+        isMinor: asNullableBoolean(props.policyIsMinor),
+        policyResolved: asBoolean(props.policyResolved, false),
+        defaultExpiryDays: asNumber(props.policyDefaultExpiryDays, 30) === 365 ? 365 : 30,
+        viewCountingEnabled: props.policyViewCountingEnabled,
+    };
+};
+
 export const toShareLinkOperationRecord = (
     props: Record<string, unknown>
 ): ShareLinkOperationRecord => ({
@@ -300,6 +315,7 @@ export type WriteOperationInput = ShareLinkOperationKey & {
     requestHash: string;
     now: string;
     pruneAfter: string;
+    policy?: ShareLinkPolicySnapshot;
 };
 
 /**
@@ -326,8 +342,19 @@ export const writeOperationInProgress = async (
              o.status = 'in_progress',
              o.resultJson = null,
              o.resultVersion = null,
-             o.updatedAt = $now`,
-        input
+             o.updatedAt = $now
+         SET o += $policyProps`,
+        {
+            ...input,
+            policyProps: input.policy
+                ? {
+                      policyIsMinor: input.policy.isMinor,
+                      policyResolved: input.policy.policyResolved,
+                      policyDefaultExpiryDays: input.policy.defaultExpiryDays,
+                      policyViewCountingEnabled: input.policy.viewCountingEnabled,
+                  }
+                : {},
+        }
     );
 };
 

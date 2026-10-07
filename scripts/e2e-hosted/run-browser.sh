@@ -125,5 +125,8 @@ e2e_timed host_dependency_build build_test_dependencies
 e2e_timed playwright_runner_prepare prepare_browser_runner
 e2e_snapshot stack-running
 e2e_timed service_readiness wait_for_stack
+e2e_timed cloud_did_resolution bash -c \
+    'cd "$1/apps/learn-card-app" && bash "$1/scripts/e2e-hosted/verify-service-did-resolution.sh"' \
+    _ "$REPO_ROOT"
 e2e_timed playwright run_playwright
 e2e_timed accessibility run_accessibility

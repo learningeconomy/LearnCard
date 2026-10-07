@@ -192,9 +192,15 @@ export default tseslint.config(
             'packages/learn-card-base/src/**/*.{ts,tsx}',
             'services/learn-card-network/{brain-service,lca-api,learn-cloud-service}/src/**/*.{ts,tsx}',
             'services/learn-card-network/{brain-service,lca-api,learn-cloud-service}/lambda.ts',
+            'services/learn-card-network/lca-api/lambdaApp.ts',
             'services/learn-card-network/{brain-service,lca-api,learn-cloud-service}/*Lambda.ts',
         ],
-        ignores: ['**/*.{test,spec}.{ts,tsx}', '**/config/environment.ts'],
+        ignores: [
+            '**/*.{test,spec}.{ts,tsx}',
+            '**/config/environment.ts',
+            // This bootstrap populates env before the validating module can be imported.
+            'services/learn-card-network/lca-api/src/config/runtimeSecrets.ts',
+        ],
         rules: {
             'no-restricted-syntax': [
                 'error',

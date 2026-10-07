@@ -39,6 +39,7 @@ import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { ConsentFlowContractDetails, ConsentFlowTerms, LCNProfile } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
+import { useConsentAccountIdentity } from './useConsentAccountIdentity';
 
 type ConsentFlowConfirmationProps = {
     contractDetails: ConsentFlowContractDetails;
@@ -87,6 +88,7 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
     const { track } = useAnalytics();
 
     const currentUser = useCurrentUser();
+    const account = useConsentAccountIdentity();
     const isSwitchedProfile = switchedProfileStore.use.isSwitchedProfile();
 
     const { consentedContract } = useConsentFlow(contractDetails, app);
@@ -318,7 +320,11 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
                                 {isSwitchedProfile && (
                                     <>
                                         <div className="w-full text-center text-grayscale-900 text-[17px] font-poppins px-[30px] leading-[130%] tracking-[-0.25px]">
-                                            Add to {currentUser.name}'s
+                                            {account.isLoading
+                                                ? 'Loading profile...'
+                                                : account.displayName
+                                                  ? `Add to ${account.displayName}'s`
+                                                  : 'Add to your'}
                                         </div>
                                         <div className="w-full text-center text-grayscale-900 text-[17px] font-poppins px-[10px] leading-[130%] tracking-[-0.25px]">
                                             LearnCard
@@ -386,7 +392,11 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
             <ConsentFlowFooter
                 actionButtonText={mainFooterButtonText}
                 onActionButtonClick={mainFooterButtonAction}
-                actionButtonDisabled={isPreview || loadingShareAllCredentials}
+                actionButtonDisabled={
+                    isPreview ||
+                    loadingShareAllCredentials ||
+                    (isSwitchedProfile && account.isLoading)
+                }
                 secondaryButtonText={secondaryButtonText}
                 onSecondaryButtonClick={closeModal}
                 showBackButton={showBackButton}

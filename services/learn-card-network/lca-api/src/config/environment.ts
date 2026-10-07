@@ -14,6 +14,7 @@ import {
 export const lcaApiEnvironmentShape = {
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     LAMBDA_STAGE: optionalEnvironmentString,
+    RUNTIME_SECRETS_ID: optionalEnvironmentString,
     PORT: environmentPort.default(3000),
     SEED: requiredEnvironmentString,
     SA_SEED_KMS_KEY_ARN: optionalEnvironmentString,
@@ -36,6 +37,7 @@ export const lcaApiEnvironmentShape = {
     KEYCLOAK_JWKS_URL_OVERRIDES: optionalEnvironmentString,
     OIDC_ISSUER: optionalEnvironmentString,
     OIDC_SIGNING_KEY_JWK: optionalEnvironmentString,
+    OIDC_SIGNING_KEY_SECRET_ID: optionalEnvironmentString,
     OIDC_CLIENT_ID: optionalEnvironmentString,
     OIDC_CLIENT_SECRET: optionalEnvironmentString,
     OIDC_REDIRECT_URIS: optionalEnvironmentString,
