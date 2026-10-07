@@ -2,15 +2,7 @@ import { useState } from 'react';
 import { IonItem, IonLabel, IonList, IonPopover } from '@ionic/react';
 import type { VC } from '@learncard/types';
 
-import {
-    clrUniversityTranscript,
-    clrNdStudentTranscript,
-    clrGreatPlainsFull,
-    clrMinimal,
-    clrWestbridgeFull,
-    clrCompetencyAligned,
-    clrAchievementIdAssociations,
-} from '@learncard/credential-library';
+import { CLR_TRANSCRIPT_DEMO_FIXTURES as FIXTURES } from './clrTranscriptDemo.fixtures';
 
 import {
     normalizeClrTranscriptDisplayModel,
@@ -22,26 +14,6 @@ import {
     ClrTranscriptEmbedWidget,
     ClrTranscriptFullPage,
 } from '../../components/clr-transcript';
-
-const FIXTURES = {
-    westbridge: clrWestbridgeFull.credential as Record<string, unknown>,
-    university: clrUniversityTranscript.credential as Record<string, unknown>,
-    nd: clrNdStudentTranscript.credential as Record<string, unknown>,
-    greatPlains: clrGreatPlainsFull.credential as Record<string, unknown>,
-    minimal: clrMinimal.credential as Record<string, unknown>,
-    competencyAligned: clrCompetencyAligned.credential as Record<string, unknown>,
-    relationships: clrAchievementIdAssociations.credential as Record<string, unknown>,
-};
-
-const FIXTURE_LABELS: Record<string, string> = {
-    westbridge: 'Westbridge (Full)',
-    university: 'University',
-    nd: 'North Dakota',
-    greatPlains: 'Great Plains',
-    minimal: 'Minimal',
-    competencyAligned: 'Competency Aligned',
-    relationships: 'Relationships and Scales',
-};
 
 const VIEWER_LABELS: Record<string, string> = {
     student: 'Student',
@@ -63,7 +35,9 @@ const ClrTranscriptRendererDemo = () => {
     const [viewerPopoverOpen, setViewerPopoverOpen] = useState(false);
     const [viewerPopoverEvent, setViewerPopoverEvent] = useState<Event | undefined>(undefined);
 
-    const currentModel = normalizeClrTranscriptDisplayModel(FIXTURES[fixture]);
+    const currentModel = normalizeClrTranscriptDisplayModel(
+        FIXTURES[fixture].credential as Record<string, unknown>
+    );
 
     // return (
     //     <div className="bg-grayscale-10 h-screen overflow-y-auto font-poppins flex flex-col">
@@ -97,8 +71,10 @@ const ClrTranscriptRendererDemo = () => {
                         }}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-grayscale-200 bg-grayscale-50 text-sm font-medium text-grayscale-800"
                     >
-                        {FIXTURE_LABELS[fixture]}
-                        <span className="text-grayscale-400 text-xs">▾</span>
+                        {FIXTURES[fixture].label}
+                        <span aria-hidden="true" className="text-grayscale-400 text-xs">
+                            ▾
+                        </span>
                     </button>
 
                     <IonPopover
@@ -128,7 +104,7 @@ const ClrTranscriptRendererDemo = () => {
                                         }}
                                     >
                                         <IonLabel className="text-sm font-medium text-grayscale-900 font-poppins py-1">
-                                            {FIXTURE_LABELS[key]}
+                                            {FIXTURES[key].label}
                                         </IonLabel>
                                     </IonItem>
                                 ))}
@@ -213,7 +189,7 @@ const ClrTranscriptRendererDemo = () => {
                 {surface === ClrTranscriptSurface.Card && (
                     <ClrTranscriptCard
                         model={currentModel}
-                        boost={FIXTURES[fixture] as unknown as VC}
+                        boost={FIXTURES[fixture].credential as unknown as VC}
                         onViewDetails={() => setSurface(ClrTranscriptSurface.Full)}
                     />
                 )}
@@ -223,7 +199,7 @@ const ClrTranscriptRendererDemo = () => {
                 {surface === ClrTranscriptSurface.Full && (
                     <ClrTranscriptFullPage
                         model={currentModel}
-                        boost={FIXTURES[fixture] as unknown as VC}
+                        boost={FIXTURES[fixture].credential as unknown as VC}
                         options={{ viewer, surface }}
                         insetTop={false}
                     />
