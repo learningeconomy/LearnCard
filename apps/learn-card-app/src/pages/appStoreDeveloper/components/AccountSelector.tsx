@@ -136,7 +136,8 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
     const isSwitchedProfile = switchedProfileStore?.use?.isSwitchedProfile();
     const parentUser = currentUserStore.get.parentUser();
     const parentUserDid = currentUserStore.get.parentUserDid();
-    const isCurrentUserServiceProfile = currentLCNUser?.isServiceProfile;
+    const isCurrentUserServiceProfile =
+        currentLCNUser?.type !== 'child' && currentLCNUser?.isServiceProfile === true;
 
     const { mutateAsync: createBoost } = useCreateBoost();
     const { mutateAsync: addCredentialToWallet } = useAddCredentialToWallet();
@@ -174,7 +175,8 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
     // Filter to only show service profiles (organizations)
     const profileRecords = Array.isArray(profiles?.records) ? profiles.records : [];
     const serviceProfiles = profileRecords.filter(
-        ({ profile }: { profile: LCNProfile }) => profile.isServiceProfile
+        ({ profile }: { profile: LCNProfile }) =>
+            profile.type !== 'child' && profile.isServiceProfile
     );
 
     // Sync with external selection
@@ -269,7 +271,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
             profileId: currentLCNUser.profileId!,
             displayName: currentLCNUser.displayName!,
             image: currentLCNUser.image,
-            isServiceProfile: currentLCNUser.isServiceProfile ?? false,
+            isServiceProfile: isCurrentUserServiceProfile,
         };
 
         handleSelectProfile(accountProfile);

@@ -23,7 +23,6 @@ import {
     useToast,
     useModal,
 } from 'learn-card-base';
-import useGetCurrentLCNUser from 'learn-card-base/hooks/useGetCurrentLCNUser';
 import { useSignInAdapter } from 'learn-card-base';
 import { getLoginRedirectUrl } from '../../config/bootstrapTenantConfig';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
@@ -33,6 +32,7 @@ import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContrac
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import ConsentFlowError from './ConsentFlowError';
 import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
+import { useConsentAccountIdentity } from './useConsentAccountIdentity';
 
 import { getConsentFlowDidAuthRedirect } from './issueConsentFlowDidAuth';
 import useTheme from '../../theme/hooks/useTheme';
@@ -52,7 +52,7 @@ enum Step {
 
 const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }) => {
     const currentUser = useCurrentUser();
-    const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
+    const account = useConsentAccountIdentity();
     const brandingConfig = useBrandingConfig();
 
     const { colors } = useTheme();
@@ -241,9 +241,9 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
     }
 
     const hasCredentialFrontDoor = contractDetails?.frontDoorBoostUri;
-    const accountName =
-        currentLCNUser?.displayName || currentUser?.name || currentLCNUser?.profileId;
-    const accountLoading = !accountName && currentLCNUserLoading;
+    const accountName = account.displayName || account.profileId;
+    const accountImage = account.image;
+    const accountLoading = account.isLoading;
 
     if (hasCredentialFrontDoor && step === Step.credFrontDoor) {
         return <ConsentFlowCredFrontDoor contractDetails={contractDetails} />;
@@ -289,7 +289,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                         <UserProfilePicture
                             user={{
                                 displayName: accountName,
-                                image: currentLCNUser?.image || currentUser.profileImage,
+                                image: accountImage,
                             }}
                             customContainerClass="flex justify-center items-center h-[80px] w-[80px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-4xl"
                             customImageClass="h-full w-full object-cover"

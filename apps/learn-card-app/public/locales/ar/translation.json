@@ -62,6 +62,7 @@
         "membersCount": "{{count}} أعضاء",
         "socialBoosts": "تعزيزات اجتماعية",
         "newChildOrOrganization": "طفل أو مؤسسة جديدة",
+        "newOrganization": "مؤسسة جديدة",
         "selectProfileType": "اختر نوع الملف الشخصي",
         "organizationProfile": "ملف مؤسسة",
         "organization": "مؤسسة",
@@ -3035,7 +3036,9 @@
             "verifying": "جارٍ التحقق...",
             "forUser": "لـ {{name}}",
             "requiresFiveDigits": "يجب أن يتكون رقم التعريف من 5 أرقام",
-            "invalidPin": "رقم التعريف غير صحيح. يرجى المحاولة مرة أخرى"
+            "invalidPin": "رقم التعريف غير صحيح. يرجى المحاولة مرة أخرى",
+            "approvalRequiresPin": "يلزم رقم التعريف الشخصي لأحد الوالدين لهذا الإجراء. انتقل إلى حساب الوالد لإعداده.",
+            "parentIdentityUnavailable": "معلومات حسابك غير متوفرة. يرجى تسجيل الدخول مرة أخرى."
         },
         "guardianInvite": {
             "shareTitle": "دعوة ولي أمر",
