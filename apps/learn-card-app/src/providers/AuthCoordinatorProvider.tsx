@@ -112,6 +112,9 @@ const WALLET_INIT_TIMEOUT_MS = 15000;
 // this seam so provider-agnostic code (this file) never imports the Firebase
 // SDK directly. See `../auth/firebaseProviderInit` for what it registers.
 import '../auth/firebaseProviderInit';
+import { registerKeycloakFactories } from '../auth/registerKeycloakFactories';
+import { withKeycloakLogoutCleanup } from '../auth/withKeycloakLogoutCleanup';
+registerKeycloakFactories();
 import {
     countUserConfiguredRecoveryMethods,
     mergeAuthUserIntoCurrentUser,
@@ -1575,6 +1578,12 @@ const AuthSessionManager: React.FC<{
             {showEmailLinkGate && (
                 <EmailLinkOverlay
                     onSendCode={async (email: string) => {
+                        if (authProvider?.getProviderType() === 'keycloak') {
+                            throw new Error(
+                                'Email upgrades are not available for this account yet.'
+                            );
+                        }
+
                         const { serverUrl } = getSSSConfig();
 
                         const res = await fetch(`${serverUrl}/send-login-verification-code`, {
@@ -1601,6 +1610,14 @@ const AuthSessionManager: React.FC<{
                         }
                     }}
                     onVerifyCode={async (email: string, code: string) => {
+                        // The upgrade endpoint only links Firebase identities today. Do not
+                        // change the contact record without linking the Keycloak identity too.
+                        if (authProvider?.getProviderType() === 'keycloak') {
+                            throw new Error(
+                                'Email upgrades are not available for this account yet.'
+                            );
+                        }
+
                         if (!keyDerivation.upgradeContactMethod) {
                             throw new Error(
                                 'Contact method upgrade is not supported by the current key derivation strategy.'
@@ -1806,6 +1823,7 @@ const AuthSessionManager: React.FC<{
                         return (
                             <Overlay onDismiss={closeRecoverySetup}>
                                 <ReAuthOverlay
+                                    resumeMethod={recoverySetupOptionsRef.current.initialMethod}
                                     onSuccess={() => setRecoverySessionValid(true)}
                                     onCancel={closeRecoverySetup}
                                 />
@@ -2189,11 +2207,23 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
         }
     }, [queryClient, keyDerivation]);
 
+    const coordinatorAuthProvider = useMemo(
+        () =>
+            withKeycloakLogoutCleanup(authProvider, async () => {
+                try {
+                    await keyDerivation.cleanup?.();
+                } finally {
+                    await handleAppLogout();
+                }
+            }),
+        [authProvider, keyDerivation, handleAppLogout]
+    );
+
     return (
         <SignInAdapterProvider>
             <BaseAuthCoordinatorProvider
                 keyDerivation={keyDerivation}
-                authProvider={authProvider}
+                authProvider={coordinatorAuthProvider}
                 didFromPrivateKey={didFromPrivateKey}
                 signDidAuthVp={signDidAuthVp}
                 getCachedPrivateKey={getCachedPrivateKey}

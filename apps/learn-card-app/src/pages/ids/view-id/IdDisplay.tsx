@@ -1,5 +1,5 @@
 import React from 'react';
-import moment from 'moment';
+import { formatCredentialDate } from 'learn-card-base/helpers/credentialHelpers';
 
 // import useGetTroopNetwork from '../../hooks/useGetTroopNetwork';
 // import troopPageStore, { ScoutsRoleEnum } from '../../stores/troopPageStore';
@@ -8,9 +8,7 @@ import moment from 'moment';
 // import LeaderIdThumbPlaceholder from '../../components/svgs/LeaderIdThumbPlaceholder';
 // import NationalAdminIdThumbPlaceholder from '../../components/svgs/NationalAdminIdThumbPlaceholder';
 // import GlobalAdminIdThumbPlaceholder from '../../components/svgs/GlobalAdminIdThumbPlaceholder';
-import CredentialVerificationDisplay, {
-    getInfoFromCredential,
-} from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
+import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 // import { getIdBackgroundStyles, getRoleFromCred } from '../../helpers/troop.helpers';
 import { VC } from '@learncard/types';
 
@@ -38,10 +36,7 @@ const TroopID: React.FC<TroopIDProps> = ({
     subTextOverride,
     issuedDateOverride,
 }) => {
-    const { createdAt } = getInfoFromCredential(credential, 'MMMM DD, YYYY', {
-        uppercaseDate: false,
-    });
-    const issueDate = moment(createdAt).format('MM/D/YYYY');
+    const issueDate = formatCredentialDate(credential, 'MM/D/YYYY');
 
     // const backgroundStyles = getIdBackgroundStyles(undefined, credential);
     const backgroundStyles = {};

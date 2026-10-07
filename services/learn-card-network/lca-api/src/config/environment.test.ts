@@ -114,3 +114,33 @@ describe('signing-authority seed environment', () => {
         ).not.toThrow();
     });
 });
+
+describe('Keycloak startup configuration', () => {
+    it.each([undefined, '', '   ', ' , , '])('rejects missing audiences: %s', audiences => {
+        expect(() =>
+            parseLcaApiEnvironment({
+                NODE_ENV: 'test',
+                IS_OFFLINE: 'true',
+                KEYCLOAK_ISSUERS: 'https://identity.example/realms/learncard',
+                KEYCLOAK_AUDIENCES: audiences,
+            })
+        ).toThrow(/KEYCLOAK_AUDIENCES/);
+    });
+    it('allows disabled Keycloak and valid issuer/audience configuration', () => {
+        expect(() =>
+            parseLcaApiEnvironment({
+                NODE_ENV: 'test',
+                IS_OFFLINE: 'true',
+                KEYCLOAK_ISSUERS: ' , ',
+            })
+        ).not.toThrow();
+        expect(() =>
+            parseLcaApiEnvironment({
+                NODE_ENV: 'test',
+                IS_OFFLINE: 'true',
+                KEYCLOAK_ISSUERS: 'https://identity.example/realms/learncard',
+                KEYCLOAK_AUDIENCES: ' , learncard-app, ',
+            })
+        ).not.toThrow();
+    });
+});

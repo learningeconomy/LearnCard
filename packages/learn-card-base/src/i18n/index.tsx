@@ -28,6 +28,11 @@ const I18nContext = createContext<I18nContextValue | null>(null);
  * inside its own catalog/resolver.
  */
 export const EN_DEFAULTS: Record<string, string> = {
+    'consentAudience.title': 'Review who receives your data',
+    'consentAudience.description':
+        'Your selected information will be available to everyone listed below.',
+    'consentAudience.confirm': 'Confirm Sharing',
+    'consentAudience.cancel': 'Cancel',
     'common.close': 'Close',
     'common.select': 'Select',
     'verification.selfIssued': 'Self Issued',
