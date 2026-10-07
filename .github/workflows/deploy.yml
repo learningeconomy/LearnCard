@@ -736,6 +736,7 @@ jobs:
                   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
                   AUTHORIZED_DIDS: ${{ secrets.AUTHORIZED_DIDS }}
                   GOOGLE_APPLICATION_CREDENTIAL: ${{ secrets.GOOGLE_APPLICATION_CREDENTIAL }}
+                  RUNTIME_SECRETS_ID: ${{ vars.RUNTIME_SECRETS_ID }}
                   KEYCLOAK_ISSUERS: ${{ vars.KEYCLOAK_ISSUERS }}
                   KEYCLOAK_AUDIENCES: ${{ vars.KEYCLOAK_AUDIENCES }}
                   KEYCLOAK_JWKS_URL_OVERRIDES: ${{ vars.KEYCLOAK_JWKS_URL_OVERRIDES }}

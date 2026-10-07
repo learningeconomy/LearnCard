@@ -4,6 +4,24 @@ This monorepo uses [Infisical](https://infisical.com) to manage shared environme
 
 ## Quick Start
 
+### Lambda runtime bundles (lca-api only)
+
+Backend config step 1 adds an optional AWS Secrets Manager bundle named
+`lca-api/<stage>/runtime-secrets`. Set the deploy environment's GitHub variable
+`RUNTIME_SECRETS_ID` to its name or ARN after provisioning it. SecretString must
+be a flat JSON object of UPPER_SNAKE_CASE env names to strings, starting with
+`GOOGLE_APPLICATION_CREDENTIAL` (the Firebase JSON serialized as a string).
+The API functions load it before configuration validation; non-empty explicit
+environment values win and empty strings count as unset. Failed loads stop startup
+without exposing values. Rotation requires recycling the functions.
+
+Without the id, Lambda uses the existing GitHub Firebase secret fallback; keep
+that secret until all stages opt in. Local, Docker, CI and self-hosters keep using
+plain env vars. This does not change the Infisical commands below or sync secrets
+to AWS yet. Next: step 2 checked-in per-stage non-secret config, step 3 Infisical →
+AWS sync, step 4 brain-service/learn-cloud adoption. See
+[lca-api guidance](services/learn-card-network/lca-api/AGENTS.md#runtime-secrets-backend-config-model-step-1).
+
 ```bash
 # 1. Install the Infisical CLI (one-time)
 #    macOS:
