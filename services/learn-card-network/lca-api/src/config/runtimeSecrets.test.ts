@@ -35,7 +35,7 @@ describe('runtime secrets', () => {
         await loadRuntimeSecrets();
         expect(process.env.RUNTIME_TEST_VALUE).toBe('secret');
         expect(send).toHaveBeenCalledTimes(1);
-        expect(send.mock.calls[0][0].input).toEqual({ SecretId: 'lca-api/dev/runtime-secrets' });
+        expect(send.mock.calls[0]?.[0].input).toEqual({ SecretId: 'lca-api/dev/runtime-secrets' });
         expect(destroy).toHaveBeenCalledTimes(1);
     });
 
