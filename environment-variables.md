@@ -316,8 +316,11 @@ secret for the OIDC Lambda only. Keep it as a GitHub-environment secret on the
 OIDC function and **never** place it in the runtime bundle. The OIDC function
 makes no AWS Secrets Manager calls for it.
 
-Only functions using `SigningAuthorityExecutionRole` receive the bundle ID
-(`trpc`, `api`, `didWeb`, `swagger`, and `seedMigration`). OIDC uses a separate
+`trpc`, `api`, and `seedMigration` use `SigningAuthorityExecutionRole` and receive
+the bundle ID. `didWeb` and `swagger` also receive it, but use the Serverless
+default execution role with only a scoped runtime-bundle read grant, not the
+signing-authority KMS grant. Functions with explicit roles do not inherit that
+default role's permissions. OIDC uses a separate
 entrypoint and focused configuration so it needs no API seed or Mongo credentials
 in bundle mode. Its independent signing-key secret remains on `OidcExecutionRole`.
 

@@ -35,7 +35,8 @@ exports.provider = ({ options = {} } = {}) => ({
     ...functionEnvironment({ always: [], fallback: PROVIDER_SECRETS }),
 });
 
-// Only functions using SigningAuthorityExecutionRole get the runtime-bundle pointer.
+// API/migration and the default-role didWeb/swagger functions get the bundle pointer.
+// Reading the bundle does not grant the default role signing-authority KMS access.
 exports.api = () => functionEnvironment({ always: ['RUNTIME_SECRETS_ID'], fallback: API_SECRETS });
 
 // OIDC has its own signing-key secret and cannot read the runtime bundle.

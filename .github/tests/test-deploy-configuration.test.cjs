@@ -89,7 +89,29 @@ for (const name of ['trpc', 'api', 'swagger', 'didWeb', 'seedMigration']) {
         lcaServerless.functions[name].environment,
         '${file(./serverless.function-env.cjs):api}'
     );
-    assert.equal(lcaServerless.functions[name].role, 'SigningAuthorityExecutionRole');
+}
+const functionsWithRole = role =>
+    Object.entries(lcaServerless.functions)
+        .filter(([, fn]) => fn.role === role)
+        .map(([name]) => name)
+        .sort();
+// Explicit roles replace, rather than inherit, the provider's generated default role.
+assert.deepEqual(functionsWithRole(undefined), ['didWeb', 'swagger']);
+assert.deepEqual(functionsWithRole('SigningAuthorityExecutionRole'), [
+    'api',
+    'seedMigration',
+    'trpc',
+]);
+assert.deepEqual(functionsWithRole('OidcExecutionRole'), ['oidc']);
+for (const name of ['didWeb', 'swagger']) {
+    const fn = lcaServerless.functions[name];
+    assert.equal(Object.hasOwn(fn, 'role'), false, name);
+    assert.equal(
+        fn.dependsOn,
+        undefined,
+        `${name} must not depend on the signing-authority KMS grant`
+    );
+    assert.deepEqual(fn.vpc, lcaServerless.functions.trpc.vpc, `${name} stays in the service VPC`);
 }
 assert.equal(
     lcaServerless.functions.oidc.environment,
@@ -104,6 +126,22 @@ const runtimeStatement = {
             'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:lca-api/${sls:stage}/runtime-secrets-*',
     },
 };
+assert.deepEqual(lcaServerless.provider.iam, { role: { statements: [runtimeStatement] } });
+const seedKeyStatements =
+    lcaServerless.resources.Resources.SigningAuthoritySeedKey.Properties.KeyPolicy.Statement;
+assert.deepEqual(
+    seedKeyStatements.find(statement => statement.Sid === 'LcaApiSeedEncryption').Principal,
+    { AWS: { 'Fn::GetAtt': ['SigningAuthorityExecutionRole', 'Arn'] } }
+);
+assert.deepEqual(
+    seedKeyStatements.find(statement => statement.Sid === 'DenyOtherCryptographicPrincipals')
+        .Condition,
+    {
+        ArnNotEquals: {
+            'aws:PrincipalArn': { 'Fn::GetAtt': ['SigningAuthorityExecutionRole', 'Arn'] },
+        },
+    }
+);
 assert.deepEqual(
     lcaServerless.resources.Resources.SigningAuthorityExecutionRole.Properties.Policies.flatMap(
         policy => policy.PolicyDocument.Statement
@@ -251,7 +289,6 @@ withEnv({ SEED: 'x', MONGO_URI: 'x', MONGO_DB_NAME: 'x', RUNTIME_SECRETS_ID: 'bu
 });
 
 // Only the oidc function may read the private signing key: a dedicated role, no shared grant.
-assert.equal(lcaServerless.provider.iam, undefined);
 assert.equal(lcaServerless.functions.oidc.role, 'OidcExecutionRole');
 for (const [name, fn] of Object.entries(lcaServerless.functions)) {
     if (name !== 'oidc') assert.notEqual(fn.role, 'OidcExecutionRole', name);

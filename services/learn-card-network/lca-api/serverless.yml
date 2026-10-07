@@ -131,6 +131,15 @@ provider:
     region: ${opt:region, "us-east-1"}
     # Bundle mode emits only infra; fallback mode retains the existing GitHub secrets.
     environment: ${file(./serverless.function-env.cjs):provider}
+    # Only didWeb/swagger use this generated role. Explicit function roles do not inherit it.
+    # Bundle access must not grant cryptographic use of the hosted signing-authority KMS key.
+    iam:
+        role:
+            statements:
+                - Effect: Allow
+                  Action: secretsmanager:GetSecretValue
+                  Resource:
+                      Fn::Sub: arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:lca-api/${sls:stage}/runtime-secrets-*
     tracing:
         apiGateway: true
         lambda: true
@@ -169,8 +178,6 @@ functions:
 
     didWeb:
         handler: lambda.didWebHandler
-        role: SigningAuthorityExecutionRole
-        dependsOn: [SigningAuthoritySeedKeyPolicy]
         environment: ${file(./serverless.function-env.cjs):api}
         vpc:
             securityGroupIds:
@@ -215,9 +222,12 @@ functions:
 
     swagger:
         handler: lambda.swaggerUiHandler
-        role: SigningAuthorityExecutionRole
-        dependsOn: [SigningAuthoritySeedKeyPolicy]
         environment: ${file(./serverless.function-env.cjs):api}
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
         package:
             patterns:
                 - src/swagger-ui/**

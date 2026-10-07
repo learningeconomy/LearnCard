@@ -42,8 +42,12 @@ runtime secrets as environment fallbacks; keep those inputs
 until every stage has a bundle. Self-hosters, Docker, local development and CI keep
 using plain environment variables — copy `config/config.example.json` to a stage
 file (register its static import in `src/config/stageConfig.ts` and rebuild) or
-just supply a `.env`. `trpc`, `api`, `didWeb`, `swagger`, and `seedMigration` use
-`SigningAuthorityExecutionRole` and receive the bundle id. OIDC has an isolated
+just supply a `.env`. `trpc`, `api`, and `seedMigration` use
+`SigningAuthorityExecutionRole`. `didWeb` and `swagger` use the generated default
+role, with only a scoped runtime-bundle read grant in addition to Serverless's
+execution permissions, not signing-authority KMS access. All five receive the
+bundle id and run in the service VPC. Explicit function roles do not inherit the
+default role's grants. OIDC has an isolated
 `oidcLambda.ts` → `oidcLambdaApp.ts` import path and focused OIDC/cache schemas,
 so it never imports the API schema requiring seed and Mongo credentials. OIDC gets
 its broker settings and keeps its separate signing-key secret and IAM role.
