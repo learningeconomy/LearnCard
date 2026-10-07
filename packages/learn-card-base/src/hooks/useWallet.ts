@@ -26,6 +26,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/react-query';
 import type { CredentialMetadata, LCR } from 'learn-card-base/types/credential-records';
 import { getOrCreateSharedUriForWallet } from './useSharedUrisInTerms';
+import { loadContractAudience } from './consentAudience';
 import { getOrFetchConsentedContracts } from './useConsentedContracts';
 import { queueAiInsightCredentialRefresh } from 'learn-card-base/react-query/mutations/ai-passport';
 import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
@@ -235,9 +236,10 @@ export const useWallet = () => {
                 ) {
                     if (!record.uri) return;
 
+                    const audience = await loadContractAudience(learnCard, contract.uri);
                     const sharedUri = await getOrCreateSharedUriForWallet(
                         learnCard,
-                        contract.owner.did,
+                        audience.recipients,
                         queryClient,
                         record.uri,
                         category
@@ -251,9 +253,13 @@ export const useWallet = () => {
                             category,
                             sharedUri,
                         });
-                        await learnCard.invoke.syncCredentialsToContract(termsUri, {
-                            [category]: [sharedUri],
-                        });
+                        await learnCard.invoke.syncCredentialsToContract(
+                            termsUri,
+                            {
+                                [category]: [sharedUri],
+                            },
+                            audience.audienceVersion
+                        );
                         logWalletSync('syncCredentialsToContract completed', {
                             ownerDid: contract.owner.did,
                             contractUri: contract.uri,

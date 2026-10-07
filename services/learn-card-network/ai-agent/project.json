@@ -8,6 +8,13 @@
     "namedInputs": {
         "source": ["{projectRoot}/src/**/*", "{projectRoot}/public/**/*"],
         "tests": ["{projectRoot}/test/**/*"],
+        "runtimeDidAuth": [
+            "{projectRoot}/scripts/test-runtime-did-auth.mjs",
+            "{projectRoot}/scripts/runtime-did-auth-smoke.ts",
+            "{projectRoot}/Dockerfile",
+            "{workspaceRoot}/packages/plugins/didkit/src/didkit/**/*",
+            "{workspaceRoot}/packages/plugins/didkit/package.json"
+        ],
         "dist": ["{projectRoot}/dist/**/*"]
     },
     "targets": {
@@ -38,9 +45,18 @@
         "test": {
             "executor": "nx:run-script",
             "inputs": ["source", "tests"],
-            "dependsOn": [],
+            "dependsOn": ["test:runtime-did-auth"],
             "options": {
                 "script": "test"
+            }
+        },
+        "test:runtime-did-auth": {
+            "executor": "nx:run-script",
+            "cache": false,
+            "inputs": ["runtimeDidAuth", "^default"],
+            "dependsOn": [],
+            "options": {
+                "script": "test:runtime-did-auth"
             }
         }
     }

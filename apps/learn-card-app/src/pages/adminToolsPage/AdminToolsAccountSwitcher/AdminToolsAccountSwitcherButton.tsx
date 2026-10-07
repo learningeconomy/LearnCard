@@ -1,4 +1,5 @@
 import React from 'react';
+import type { ModalInstanceToken } from 'learn-card-base/components/modals/types/Modals';
 
 import CaretDown from 'learn-card-base/svgs/CaretDown';
 import AccountSwitcherModal from '../../../components/learncard/AccountSwitcherModal';
@@ -16,7 +17,7 @@ import { getProfileTypeDisplayText } from './admin-tools-switcher.helpers';
 export const AdminToolsAccountSwitcherButton: React.FC<{ showServiceProfilesOnly?: boolean }> = ({
     showServiceProfilesOnly,
 }) => {
-    const { newModal } = useModal({
+    const { newModalWithToken, forceCloseModalByToken } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,
     });
@@ -28,21 +29,25 @@ export const AdminToolsAccountSwitcherButton: React.FC<{ showServiceProfilesOnly
 
     return (
         <button
-            onClick={() =>
-                newModal(
+            onClick={() => {
+                const modalRef: { token?: ModalInstanceToken } = {};
+                modalRef.token = newModalWithToken(
                     <AccountSwitcherModal
                         showServiceProfiles
                         containerClassName="max-h-[70vh]"
                         showStepsFooter
                         showServiceProfilesOnly={showServiceProfilesOnly}
+                        onSwitchComplete={() => {
+                            if (modalRef.token) forceCloseModalByToken(modalRef.token);
+                        }}
                     />,
                     {
                         sectionClassName:
                             '!bg-transparent !border-none !shadow-none !max-w-[400px]',
                         hideButton: true,
                     }
-                )
-            }
+                );
+            }}
             className="w-full rounded-full pl-[2px] pr-4 py-[6px] flex items-center justify-between border-[1px] border-solid border-grayscale-100 bg-grayscale-100 mt-4 mb-4"
         >
             <div className="flex items-center justify-start">

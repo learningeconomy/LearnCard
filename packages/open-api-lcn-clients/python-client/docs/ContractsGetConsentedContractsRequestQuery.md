@@ -1,12 +1,11 @@
 # ContractsGetConsentedContractsRequestQuery
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**read** | [**ContractsGetConsentedContractsRequestQueryRead**](ContractsGetConsentedContractsRequestQueryRead.md) |  | [optional] 
-**write** | [**ContractsGetConsentedContractsRequestQueryWrite**](ContractsGetConsentedContractsRequestQueryWrite.md) |  | [optional] 
+| Name      | Type                                                                                                      | Description | Notes      |
+| --------- | --------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **read**  | [**ContractsGetConsentedContractsRequestQueryRead**](ContractsGetConsentedContractsRequestQueryRead.md)   |             | [optional] |
+| **write** | [**ContractsGetConsentedContractsRequestQueryWrite**](ContractsGetConsentedContractsRequestQueryWrite.md) |             | [optional] |
 
 ## Example
 
@@ -25,6 +24,5 @@ contracts_get_consented_contracts_request_query_dict = contracts_get_consented_c
 # create an instance of ContractsGetConsentedContractsRequestQuery from a dict
 contracts_get_consented_contracts_request_query_from_dict = ContractsGetConsentedContractsRequestQuery.from_dict(contracts_get_consented_contracts_request_query_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

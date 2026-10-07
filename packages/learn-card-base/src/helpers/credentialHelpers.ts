@@ -1,3 +1,4 @@
+import moment from 'moment';
 import {
     UnsignedVC,
     VC,
@@ -1247,11 +1248,24 @@ export const getAchievementsForCourse = (entries: EntryVC[]): EntryVC[] => {
     );
 };
 
+/**
+ * Returns the issuance date of a credential, checking both VC 1.1 (`issuanceDate`)
+ * and VC 2.0 (`validFrom`) fields. Uses `||` so empty strings fall through.
+ */
 export const getIssuanceDate = (credential?: VC): string | undefined => {
     if (credential?.boostCredential) {
-        return credential?.boostCredential?.issuanceDate;
+        return credential?.boostCredential?.issuanceDate || credential?.boostCredential?.validFrom;
     }
-    return credential?.issuanceDate;
+    return credential?.issuanceDate || credential?.validFrom;
+};
+
+/**
+ * Formats a credential's issuance date using the provided format string.
+ * Returns empty string if no valid date is found.
+ */
+export const formatCredentialDate = (credential?: VC, format: string = 'MMMM DD, YYYY'): string => {
+    const dateValue = getIssuanceDate(credential);
+    return dateValue ? moment(dateValue).format(format) : '';
 };
 
 export const getAchievementTypeDisplayText = (

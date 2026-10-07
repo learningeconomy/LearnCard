@@ -1,12 +1,11 @@
 # ProfileManagerCreateChildProfileManagerRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**parent_uri** | **str** |  | 
-**profile** | [**ProfileManagerCreateChildProfileManagerRequestProfile**](ProfileManagerCreateChildProfileManagerRequestProfile.md) |  | 
+| Name           | Type                                                                                                                  | Description | Notes |
+| -------------- | --------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **parent_uri** | **str**                                                                                                               |             |
+| **profile**    | [**ProfileManagerCreateChildProfileManagerRequestProfile**](ProfileManagerCreateChildProfileManagerRequestProfile.md) |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ profile_manager_create_child_profile_manager_request_dict = profile_manager_crea
 # create an instance of ProfileManagerCreateChildProfileManagerRequest from a dict
 profile_manager_create_child_profile_manager_request_from_dict = ProfileManagerCreateChildProfileManagerRequest.from_dict(profile_manager_create_child_profile_manager_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

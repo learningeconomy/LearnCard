@@ -1,12 +1,11 @@
 # AppStoreCreateListingRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**integration_id** | **str** |  | 
-**listing** | [**AppStoreCreateListingRequestListing**](AppStoreCreateListingRequestListing.md) |  | 
+| Name               | Type                                                                              | Description | Notes |
+| ------------------ | --------------------------------------------------------------------------------- | ----------- | ----- |
+| **integration_id** | **str**                                                                           |             |
+| **listing**        | [**AppStoreCreateListingRequestListing**](AppStoreCreateListingRequestListing.md) |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ app_store_create_listing_request_dict = app_store_create_listing_request_instanc
 # create an instance of AppStoreCreateListingRequest from a dict
 app_store_create_listing_request_from_dict = AppStoreCreateListingRequest.from_dict(app_store_create_listing_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

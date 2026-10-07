@@ -44,7 +44,7 @@ export type CredentialMetadata = {
     subcategory?: string;
     from?: string;
     date?: string;
-    sharedUris?: Record<string, string[]>; // {'contractUri': ['boostUri1', 'boostUri2']}
+    sharedUris?: Record<string, string[]>; // Full audience cache keys (legacy owner DID keys are retained for selection lookup)
     contractUri?: string;
     boostUri?: string;
     refresh?: CredentialRefreshMetadata;

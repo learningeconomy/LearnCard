@@ -1,3 +1,4 @@
+import type { ModalInstanceToken } from 'learn-card-base/components/modals/types/Modals';
 import React, { useEffect } from 'react';
 
 import { IonSkeletonText, useIonModal } from '@ionic/react';
@@ -39,7 +40,7 @@ export const FamilyMemberActionMenu: React.FC<{
     closeModal: () => void;
 }> = ({ credential, user, closeModal }) => {
     const history = useHistory();
-    const { newModal, closeAllModals } = useModal({
+    const { newModal, newModalWithToken, forceCloseModalByToken, closeAllModals } = useModal({
         mobile: ModalTypes.Cancel,
         desktop: ModalTypes.Cancel,
     });
@@ -67,8 +68,13 @@ export const FamilyMemberActionMenu: React.FC<{
     });
 
     const handleSwitchAccount = () => {
-        newModal(
-            <AccountSwitcherModal />,
+        const modalRef: { token?: ModalInstanceToken } = {};
+        modalRef.token = newModalWithToken(
+            <AccountSwitcherModal
+                onSwitchComplete={() => {
+                    if (modalRef.token) forceCloseModalByToken(modalRef.token);
+                }}
+            />,
             { sectionClassName: '!max-w-[400px]' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );

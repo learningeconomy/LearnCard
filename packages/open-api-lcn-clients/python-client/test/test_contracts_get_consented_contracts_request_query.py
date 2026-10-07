@@ -53,7 +53,7 @@ class TestContractsGetConsentedContractsRequestQuery(unittest.TestCase):
                         'key' : ''
                         }, ),
                 write = openapi_client.models.contracts_get_consented_contracts_request_query_write.contracts_getConsentedContracts_request_query_write(
-                    credentials = openapi_client.models.contracts_get_consented_data_for_contract_request_query_credentials.contracts_getConsentedDataForContract_request_query_credentials(
+                    credentials = openapi_client.models.contracts_get_consented_data_for_did_request_query_credentials.contracts_getConsentedDataForDid_request_query_credentials(
                         categories = {
                             'key' : True
                             }, ), 

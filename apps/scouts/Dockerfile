@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     build-essential \
     && rm -rf /var/lib/apt/lists/* \
-    && npm install -g bun@1.3.14
+    && npm install -g bun@1.4.2
 
 # Copy root workspace files
 COPY package.json bun.lock bunfig.toml nx.json tsconfig.json ./

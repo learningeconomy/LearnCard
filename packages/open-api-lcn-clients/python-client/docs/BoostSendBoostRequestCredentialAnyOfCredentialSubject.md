@@ -1,11 +1,10 @@
 # BoostSendBoostRequestCredentialAnyOfCredentialSubject
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | [optional] 
+| Name   | Type    | Description | Notes      |
+| ------ | ------- | ----------- | ---------- |
+| **id** | **str** |             | [optional] |
 
 ## Example
 
@@ -24,6 +23,5 @@ boost_send_boost_request_credential_any_of_credential_subject_dict = boost_send_
 # create an instance of BoostSendBoostRequestCredentialAnyOfCredentialSubject from a dict
 boost_send_boost_request_credential_any_of_credential_subject_from_dict = BoostSendBoostRequestCredentialAnyOfCredentialSubject.from_dict(boost_send_boost_request_credential_any_of_credential_subject_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -15,7 +15,7 @@ collect_service_artifacts() {
     cd "$SERVICE_DIR"
     docker compose logs --no-color > "$E2E_ARTIFACT_DIR/docker-compose.log" 2>&1
     e2e_snapshot before-cleanup
-    docker compose down --remove-orphans -v
+    e2e_timed stack_teardown docker compose down --remove-orphans -v
     e2e_snapshot after-cleanup
     e2e_render_summary
     exit "$status"
@@ -69,5 +69,8 @@ wait_for_service() {
     return 1
 }
 e2e_timed service_readiness wait_for_service
+e2e_timed cloud_did_resolution bash -c \
+    'cd "$1/tests/e2e" && bash "$1/scripts/e2e-hosted/verify-service-did-resolution.sh"' \
+    _ "$REPO_ROOT"
 e2e_timed service_e2e run_service_suite
 e2e_snapshot after-service-suite

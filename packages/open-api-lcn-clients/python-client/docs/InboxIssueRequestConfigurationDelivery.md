@@ -4,10 +4,10 @@ Configuration for the credential delivery i.e. email or SMS. When credentials ar
 
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**suppress** | **bool** | Whether to suppress delivery of the credential to the recipient. If true, the email/sms will not be sent to the recipient. Useful if you would like to manually send claim link to your users. | [optional] [default to False]
-**template** | [**InboxIssueRequestConfigurationDeliveryTemplate**](InboxIssueRequestConfigurationDeliveryTemplate.md) |  | [optional] 
+| Name         | Type                                                                                                    | Description                                                                                                                                                                                    | Notes                         |
+| ------------ | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| **suppress** | **bool**                                                                                                | Whether to suppress delivery of the credential to the recipient. If true, the email/sms will not be sent to the recipient. Useful if you would like to manually send claim link to your users. | [optional] [default to False] |
+| **template** | [**InboxIssueRequestConfigurationDeliveryTemplate**](InboxIssueRequestConfigurationDeliveryTemplate.md) |                                                                                                                                                                                                | [optional]                    |
 
 ## Example
 
@@ -26,6 +26,5 @@ inbox_issue_request_configuration_delivery_dict = inbox_issue_request_configurat
 # create an instance of InboxIssueRequestConfigurationDelivery from a dict
 inbox_issue_request_configuration_delivery_from_dict = InboxIssueRequestConfigurationDelivery.from_dict(inbox_issue_request_configuration_delivery_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -51,6 +51,9 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import endorsementsRequestStore from './stores/endorsementsRequestStore';
 import { useFirebase } from './hooks/useFirebase';
+import { useKeycloakRedirect } from './auth/useKeycloakRedirect';
+import { assertCurrentKeycloakReauth } from './auth/keycloakReauth';
+import MyLearnCardModal from './components/learncard/MyLearnCardModal';
 import { useSentryIdentify } from './constants/sentry';
 
 import { Modals, getLogger } from 'learn-card-base';
@@ -238,6 +241,18 @@ const AppRouter: React.FC = () => {
         location.pathname.includes('/app-store');
 
     const { newModal } = useModal();
+    const { refreshAuthSession, openRecoverySetup, authProvider } = useAppAuth();
+    const isKeycloak = useKeycloakRedirect(async intent => {
+        assertCurrentKeycloakReauth(intent, (await authProvider?.getCurrentUser())?.id);
+        if (!(await refreshAuthSession())) throw new Error('Session could not be restored');
+        assertCurrentKeycloakReauth(intent, (await authProvider?.getCurrentUser())?.id);
+        history.replace(intent.returnTo);
+        if (intent.action === 'account-recovery') {
+            newModal(<MyLearnCardModal branding={BrandingEnum.learncard} resumeRecovery />);
+        } else {
+            openRecoverySetup({ initialMethod: intent.initialMethod });
+        }
+    }, walletReady);
 
     useEffect(() => {
         if (isInsightsConsent && contract) {
@@ -462,7 +477,7 @@ const AppRouter: React.FC = () => {
     }, [saved_email]);
 
     useEffect(() => {
-        if (!saved_email) {
+        if (!saved_email && !isKeycloak) {
             verifyAppleLogin();
         }
     }, []);

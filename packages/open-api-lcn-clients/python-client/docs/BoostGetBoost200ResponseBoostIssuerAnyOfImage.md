@@ -1,13 +1,12 @@
 # BoostGetBoost200ResponseBoostIssuerAnyOfImage
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**type** | **str** |  | 
-**caption** | **str** |  | [optional] 
+| Name        | Type    | Description | Notes      |
+| ----------- | ------- | ----------- | ---------- |
+| **id**      | **str** |             |
+| **type**    | **str** |             |
+| **caption** | **str** |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ boost_get_boost200_response_boost_issuer_any_of_image_dict = boost_get_boost200_
 # create an instance of BoostGetBoost200ResponseBoostIssuerAnyOfImage from a dict
 boost_get_boost200_response_boost_issuer_any_of_image_from_dict = BoostGetBoost200ResponseBoostIssuerAnyOfImage.from_dict(boost_get_boost200_response_boost_issuer_any_of_image_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

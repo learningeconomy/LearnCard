@@ -173,6 +173,10 @@ const requestTimeoutSignal = (ms = SERVER_REQUEST_TIMEOUT_MS): AbortSignal | und
         ? AbortSignal.timeout(ms)
         : undefined;
 
+/** HTTP/2 responses have an empty statusText, so always lead with the numeric status. */
+const describeHttpStatus = (response: Response): string =>
+    response.statusText ? `${response.status} ${response.statusText}` : `${response.status}`;
+
 type EscrowEnrollmentResult =
     | { enrolled: false; reason: 'disabled' | 'opted-out' }
     | { enrolled: true; changed: false }
@@ -207,7 +211,7 @@ const fetchAuthShareRaw = async (
     if (!response.ok) {
         if (response.status === 404) return null;
 
-        throw new Error(`Failed to fetch key status: ${response.statusText}`);
+        throw new Error(`Failed to fetch key status: ${describeHttpStatus(response)}`);
     }
 
     return response.json();
@@ -239,7 +243,7 @@ const putAuthShare = async (
     });
 
     if (!response.ok) {
-        const message = `Failed to store auth share: ${response.statusText}`;
+        const message = `Failed to store auth share: ${describeHttpStatus(response)}`;
         // A gateway/server failure or request timeout can arrive AFTER commit.
         // Only an explicit client rejection proves this write was not accepted.
         if (response.status >= 400 && response.status < 500 && response.status !== 408) {
@@ -292,7 +296,7 @@ const requestFreshDidAuthVp = async (
     });
 
     if (!response.ok) {
-        throw new Error(`Failed to request DID challenge: ${response.statusText}`);
+        throw new Error(`Failed to request DID challenge: ${describeHttpStatus(response)}`);
     }
 
     const data = (await response.json()) as { challenge?: string };
@@ -412,7 +416,7 @@ const postRecoveryMethod = async (
     });
 
     if (!response.ok) {
-        throw new Error(`Failed to add recovery method: ${response.statusText}`);
+        throw new Error(`Failed to add recovery method: ${describeHttpStatus(response)}`);
     }
 };
 
@@ -551,7 +555,7 @@ const sendEmailBackupShare = async (
     });
 
     if (!response.ok) {
-        throw new Error(`Failed to send recovery share: ${response.statusText}`);
+        throw new Error(`Failed to send recovery share: ${describeHttpStatus(response)}`);
     }
 };
 
@@ -1780,7 +1784,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to mark migrated: ${response.statusText}`);
+                throw new Error(`Failed to mark migrated: ${describeHttpStatus(response)}`);
             }
         },
 
@@ -1796,7 +1800,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to activate SSS key: ${response.statusText}`);
+                throw new Error(`Failed to activate SSS key: ${describeHttpStatus(response)}`);
             }
         },
 

@@ -89,6 +89,10 @@ export const getCategoryForCredential = (
     // CLR credentials → Learning History
     if (types.includes('ClrCredential')) return 'Learning History';
 
+    // Administrative claims have no achievementType to classify.
+    if (types.includes('CourseEnrollmentCredential')) return 'Learning History';
+    if (types.includes('ExamAccommodationCredential')) return 'Accommodation';
+
     // Try to extract achievementType from credentialSubject
     const subject = credential.credentialSubject as Record<string, unknown> | undefined;
 

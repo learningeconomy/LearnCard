@@ -18,6 +18,10 @@ custom:
         number: 3
     config:
         CACHE_INSTANCE_SIZE: cache.t2.micro
+    # Lambda caps each function's environment at 4KB. Escrow config is only read
+    # by the trpc/api handlers, so it is attached per-function (not provider-wide)
+    # and unset keys are omitted entirely.
+    escrowEnvironment: ${file(./serverless.escrow-env.cjs)}
     esbuild:
         # serverless-esbuild does not support Bun as a Lambda artifact packager.
         # Bun remains the repo installer/runner; pnpm is used only for packaging externals.
@@ -145,13 +149,6 @@ provider:
         POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS: ${env:POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS, ''}
         POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS: ${env:POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS, ''}
         POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS: ${env:POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS, ''}
-        ESCROW_RELAY_URL: ${env:ESCROW_RELAY_URL, ''}
-        ESCROW_RELAY_AUTH_TOKEN: ${env:ESCROW_RELAY_AUTH_TOKEN, ''}
-        ESCROW_ENCLAVE_MODE: ${env:ESCROW_ENCLAVE_MODE, ''}
-        ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON: ${env:ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON, ''}
-        ESCROW_ENCLAVE_ACTIVE_KEY_ID: ${env:ESCROW_ENCLAVE_ACTIVE_KEY_ID, ''}
-        ESCROW_HOLD_DURATION_MS: ${env:ESCROW_HOLD_DURATION_MS, ''}
-        ESCROW_HOLD_RESTART_MIN_AGE_MS: ${env:ESCROW_HOLD_RESTART_MIN_AGE_MS, ''}
         POSTMARK_FROM_EMAIL: ${env:POSTMARK_FROM_EMAIL, ''}
         POSTMARK_BRAND_NAME: ${env:POSTMARK_BRAND_NAME, ''}
         PORT: ${opt:httpPort, "3000"}
@@ -161,6 +158,16 @@ provider:
         GOOGLE_APPLICATION_CREDENTIAL: ${env:GOOGLE_APPLICATION_CREDENTIAL, ''}
         SCOUTS_SSO_CLIENT_SECRET: ${env:SCOUTS_SSO_CLIENT_SECRET, ''}
         LEARN_CLOUD_URL: ${env:LEARN_CLOUD_URL, ''}
+        KEYCLOAK_ISSUERS: ${env:KEYCLOAK_ISSUERS, ''}
+        KEYCLOAK_AUDIENCES: ${env:KEYCLOAK_AUDIENCES, ''}
+        KEYCLOAK_JWKS_URL_OVERRIDES: ${env:KEYCLOAK_JWKS_URL_OVERRIDES, ''}
+        OIDC_ISSUER: ${env:OIDC_ISSUER, ''}
+        OIDC_SIGNING_KEY_SECRET_ID: ${env:OIDC_SIGNING_KEY_SECRET_ID, ''}
+        OIDC_CLIENT_ID: ${env:OIDC_CLIENT_ID, ''}
+        OIDC_CLIENT_SECRET: ${env:OIDC_CLIENT_SECRET, ''}
+        OIDC_REDIRECT_URIS: ${env:OIDC_REDIRECT_URIS, ''}
+        GOOGLE_OAUTH_CLIENT_IDS: ${env:GOOGLE_OAUTH_CLIENT_IDS, ''}
+        APPLE_OAUTH_CLIENT_IDS: ${env:APPLE_OAUTH_CLIENT_IDS, ''}
         SENTRY_DSN: ${env:SENTRY_DSN, ''}
         SENTRY_ENV: ${env:SENTRY_ENV, ''}
         REDIS_HOST:
@@ -181,6 +188,7 @@ functions:
         handler: lambda.trpcHandler
         role: SigningAuthorityExecutionRole
         dependsOn: [SigningAuthoritySeedKeyPolicy]
+        environment: ${self:custom.escrowEnvironment}
         vpc:
             securityGroupIds:
                 - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
@@ -193,6 +201,7 @@ functions:
         handler: lambda.openApiHandler
         role: SigningAuthorityExecutionRole
         dependsOn: [SigningAuthoritySeedKeyPolicy]
+        environment: ${self:custom.escrowEnvironment}
         vpc:
             securityGroupIds:
                 - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
@@ -213,6 +222,19 @@ functions:
             - httpApi: GET /.well-known/did.json
         url:
             cors: true
+
+    oidc:
+        handler: lambda.oidcHandler
+        # Only this function may read the private signing key (see OidcExecutionRole).
+        role: OidcExecutionRole
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - httpApi: GET /.well-known/openid-configuration
+            - httpApi: ANY /oidc/{proxy+}
 
     seedMigration:
         handler: seedMigrationLambda.handler
@@ -260,6 +282,29 @@ resources:
                 ManagedPolicyArns:
                     - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
                     - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess
+        OidcExecutionRole:
+            Type: AWS::IAM::Role
+            Properties:
+                AssumeRolePolicyDocument:
+                    Version: '2012-10-17'
+                    Statement:
+                        - Effect: Allow
+                          Principal:
+                              Service: lambda.amazonaws.com
+                          Action: sts:AssumeRole
+                ManagedPolicyArns:
+                    - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+                    - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess
+                Policies:
+                    - PolicyName: oidc-signing-key
+                      PolicyDocument:
+                          Version: '2012-10-17'
+                          Statement:
+                              # SecretString is the private JWK JSON; only its id belongs in Lambda env.
+                              - Effect: Allow
+                                Action: secretsmanager:GetSecretValue
+                                Resource:
+                                    Fn::Sub: arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:lca-api/${sls:stage}/oidc-signing-jwk-*
         SigningAuthoritySeedKey:
             Type: AWS::KMS::Key
             DeletionPolicy: Retain
@@ -457,6 +502,10 @@ resources:
             Properties:
                 AutoMinorVersionUpgrade: true
                 Engine: redis
+                # GETDEL (login codes/tickets/auth codes) needs Redis >= 6.2. The
+                # version is deliberately NOT pinned here: existing clusters are
+                # already on 7.x, and a pin below the running version is rejected
+                # by CloudFormation as a downgrade (failing the whole deploy).
                 CacheNodeType: ${self:custom.config.CACHE_INSTANCE_SIZE}
                 NumCacheNodes: 1
                 VpcSecurityGroupIds:
