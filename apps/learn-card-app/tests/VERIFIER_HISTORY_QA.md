@@ -17,7 +17,7 @@ The command starts its own local Vite server and signs in a synthetic adult acco
 adds a signed **QA University Diploma**, opens the actual selection/review screens, and
 asserts:
 
-- Opening Shared loads history automatically; loading is shown before the controls. Recording defaults off. OID4VP, VC-API and CHAPI send without history storage calls.
+- Opening Shared loads history automatically; loading uses the same placeholder rows as neighboring sections before the controls appear. Recording defaults off. OID4VP, VC-API and CHAPI send without history storage calls.
 - Opting in creates one encrypted entry after each transport. CHAPI is labelled as a
   handoff, not confirmed delivery or acceptance.
 - Clicking a verifier entry shows its recorded credential names without storage reads.

@@ -99,6 +99,24 @@ describe('verifier history controls', () => {
         expect(screen.getByText(/Deleting history cannot retract/)).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /Stop sharing/ })).not.toBeInTheDocument();
     });
+    it('shows loading feedback until the initial read resolves instead of empty history or controls', async () => {
+        let resolve!: (value: unknown) => void;
+        mocks.load.mockImplementationOnce(
+            () =>
+                new Promise(done => {
+                    resolve = done;
+                })
+        );
+        render(<VerifierHistorySection eligible />);
+        await waitFor(() => expect(mocks.load).toHaveBeenCalledTimes(1));
+        expect(screen.getByRole('status')).toHaveAttribute('aria-busy', 'true');
+        expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+        expect(screen.queryByText('No recorded disclosures.')).not.toBeInTheDocument();
+        await act(async () => resolve({ enabled: false, receipts: [], cleanupComplete: true }));
+        expect(screen.queryByRole('status')).not.toBeInTheDocument();
+        expect(screen.getByRole('checkbox')).not.toBeChecked();
+        expect(screen.getByText('No recorded disclosures.')).toBeInTheDocument();
+    });
     it('expands every recorded credential name without storage reads and keeps deletion separate', async () => {
         mocks.load.mockResolvedValue({
             enabled: true,

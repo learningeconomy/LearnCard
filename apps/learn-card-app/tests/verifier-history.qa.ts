@@ -221,6 +221,16 @@ test('verifier history: off/on, three transports, controls and paging @mocked', 
         await expect(page.getByRole('button', { name: 'Share', exact: true })).toBeHidden();
     };
     await test.step('Recording defaults off; no history storage calls in any send path', async () => {
+        await qa('pauseHistoryReads', true);
+        await nav('/privacy-and-data');
+        await expect(section.getByRole('status')).toHaveAttribute('aria-busy', 'true');
+        await expect(section.getByRole('checkbox')).toHaveCount(0);
+        await expect(section.getByText('No recorded disclosures.')).toHaveCount(0);
+        await info.attach('History loading placeholders', {
+            body: await section.screenshot({ animations: 'disabled' }),
+            contentType: 'image/png',
+        });
+        await qa('pauseHistoryReads', false);
         await openHistory();
         await expect(section.getByRole('checkbox')).not.toBeChecked();
         await info.attach('Automatically loaded empty history', {

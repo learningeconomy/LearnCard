@@ -20,6 +20,7 @@ import { VerifierHistoryList, historyButton as button } from './VerifierHistoryL
 import { VerifierHistoryModal } from './VerifierHistoryModal';
 import GlassCard from './GlassCard';
 import { useConfirmClearVerifierHistory } from './useConfirmClearVerifierHistory';
+import { VerifierHistoryLoading } from './VerifierHistoryLoading';
 
 type Loaded = Awaited<ReturnType<typeof loadVerifierHistory>>;
 type State = { revision: number; context: HistoryContext; data: Loaded };
@@ -187,15 +188,7 @@ const VerifierHistorySection: React.FC<{ eligible: boolean; isEligible?: () => b
                                 {m['verifierHistory.retry']()}
                             </button>
                         )}
-                        {!visible && !error && (
-                            <p
-                                role="status"
-                                aria-live="polite"
-                                className="text-sm text-grayscale-600"
-                            >
-                                {m['verifierHistory.loading']()}
-                            </p>
-                        )}
+                        {!visible && !error && <VerifierHistoryLoading initial />}
                         {error?.revision === revision && (
                             <>
                                 <p role="alert" className="text-sm text-red-700">
@@ -265,15 +258,7 @@ const VerifierHistorySection: React.FC<{ eligible: boolean; isEligible?: () => b
                                         {m['verifierHistory.clear']()}
                                     </button>
                                 </div>
-                                {loading && (
-                                    <p
-                                        role="status"
-                                        aria-live="polite"
-                                        className="text-sm text-grayscale-600"
-                                    >
-                                        {m['verifierHistory.loading']()}
-                                    </p>
-                                )}
+                                {loading && <VerifierHistoryLoading />}
                                 {!visible.data.receipts.length && (
                                     <p className="text-sm text-grayscale-600">
                                         {m['verifierHistory.empty']()}

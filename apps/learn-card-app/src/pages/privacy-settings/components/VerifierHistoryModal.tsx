@@ -12,6 +12,7 @@ import { historyButton, VerifierHistoryList } from './VerifierHistoryList';
 import * as m from '../../../paraglide/messages.js';
 import './VerifierHistoryModal.css';
 import { useConfirmClearVerifierHistory } from './useConfirmClearVerifierHistory';
+import { VerifierHistoryLoading } from './VerifierHistoryLoading';
 
 type Loaded = Awaited<ReturnType<typeof loadVerifierHistory>>;
 const PAGE_SIZE = 20;
@@ -131,11 +132,7 @@ export const VerifierHistoryModal: React.FC<{
                                 {m['verifierHistory.cleanupPending']()}
                             </p>
                         )}
-                        {busy && (
-                            <p role="status" className="text-sm text-grayscale-600">
-                                {m['verifierHistory.loading']()}
-                            </p>
-                        )}
+                        {busy && <VerifierHistoryLoading />}
                         {!data.receipts.length && (
                             <p className="text-sm text-grayscale-600">
                                 {m['verifierHistory.empty']()}

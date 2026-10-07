@@ -33,6 +33,22 @@ type FixtureWallet = HistoryWallet & {
 const documents: Document[] = [];
 const calls: string[] = [];
 let sequence = 0;
+let readGate: Promise<void> | undefined;
+let resumeRead: (() => void) | undefined;
+
+/** Deterministically hold a simulated read so QA can inspect the initial loading UI. */
+export const pauseHistoryReads = (paused: boolean): void => {
+    if (paused) {
+        if (!readGate)
+            readGate = new Promise(resolve => {
+                resumeRead = resolve;
+            });
+    } else {
+        resumeRead?.();
+        resumeRead = undefined;
+        readGate = undefined;
+    }
+};
 let reads = 0;
 let handoffs = 0;
 let wallet: FixtureWallet;
@@ -87,6 +103,7 @@ export const install = async (): Promise<void> => {
         learnCloudReadPage: async (_query, pagination) => {
             calls.push('read');
             reads++;
+            if (readGate) await readGate;
             const start = Number(pagination.cursor ?? 0);
             const end = start + pagination.limit;
             return {
