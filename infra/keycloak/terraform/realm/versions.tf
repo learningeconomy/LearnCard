@@ -24,5 +24,5 @@ provider "keycloak" {
   username         = var.bootstrap_admin ? "admin" : null
   password         = var.bootstrap_admin ? data.aws_secretsmanager_secret_version.automation.secret_string : null
   client_secret    = var.bootstrap_admin ? null : data.aws_secretsmanager_secret_version.automation.secret_string
-  keycloak_version = "26.7.4"
+  keycloak_version = "26.8.0"
 }
