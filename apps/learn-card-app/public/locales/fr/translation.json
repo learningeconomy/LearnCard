@@ -9331,6 +9331,10 @@
         "signInToSave": "Se connecter pour enregistrer",
         "saveHint": "Conservez cette collection signée dans vos éléments reçus."
     },
+    "verifierSelection": {
+        "hint": "Choisissez les justificatifs à envoyer à cette application.",
+        "review": "Vérifier"
+    },
     "verifierHistory": {
         "saveFailed": "L’historique n’a pas pu être mis à jour. Vous n’avez pas besoin de renvoyer vos informations.",
         "title": "Partagé avec des vérificateurs",

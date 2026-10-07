@@ -61,6 +61,8 @@ flowchart LR
     - **Link** — For sending digitally
     - **Presentation** — For formal verification requests
 
+For browser application requests (CHAPI or VC-API), use the credential list to search and filter by category. **View selected** shows the entire selected batch, even when search hides some items. **Deselect all** clears the selection. Open **Review** to check or remove items before sending; returning to selection sends nothing. Suggested credentials remain editable.
+
 ### Private Verifier History
 
 In **Data Sharing Center**, open **Shared with verifiers** to enable private recording, delete individual reminders or clear history. Recording is off by default and is unavailable for managed accounts. Disabling recording keeps previous reminders; clearing readable history keeps the preference.

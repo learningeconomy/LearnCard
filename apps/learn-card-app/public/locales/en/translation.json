@@ -9382,6 +9382,10 @@
         "signInToSave": "Sign in to save",
         "saveHint": "Keep this signed collection with your received items."
     },
+    "verifierSelection": {
+        "hint": "Choose the credentials you want to send to this application.",
+        "review": "Review"
+    },
     "verifierHistory": {
         "saveFailed": "History could not be updated. You don’t need to send your information again.",
         "title": "Shared with verifiers",

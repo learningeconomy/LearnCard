@@ -9331,6 +9331,10 @@
         "signInToSave": "Inicia sesión para guardar",
         "saveHint": "Guarda esta colección firmada con tus elementos recibidos."
     },
+    "verifierSelection": {
+        "hint": "Elige las credenciales que quieres enviar a esta aplicación.",
+        "review": "Revisar"
+    },
     "verifierHistory": {
         "saveFailed": "No se pudo actualizar el historial. No necesitas enviar tu información de nuevo.",
         "title": "Compartido con verificadores",

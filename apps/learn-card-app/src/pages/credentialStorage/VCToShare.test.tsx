@@ -29,8 +29,23 @@ vi.mock('@ionic/react', () => ({
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     getDefaultCategoryForCredential: () => 'Achievement',
 }));
-vi.mock('apps/learn-card-app/src/components/boost/boost-earned-card/BoostEarnedCard', () => ({
-    default: () => <div>Credential preview</div>,
+vi.mock('../../components/share-links/ShareCredentialSelectionRow', () => ({
+    ShareCredentialSelectionRow: ({
+        choice,
+        checked,
+        disabled,
+        onToggle,
+    }: {
+        choice: { credential: VC };
+        checked: boolean;
+        disabled: boolean;
+        onToggle: () => void;
+    }) => (
+        <label>
+            {String(choice.credential.name)}
+            <input type="checkbox" checked={checked} disabled={disabled} onChange={onToggle} />
+        </label>
+    ),
 }));
 vi.mock('../../helpers/verifier-history/history', () => ({
     beginVerifierDisclosure: mocks.begin,
@@ -50,7 +65,7 @@ const props = {
     handleVcSelection: vi.fn(),
     isVcSelected: () => true,
     currentUser: null,
-    getUniqueId: () => 'id',
+    getUniqueId: (vc: VC) => String(vc.name),
 };
 beforeEach(() => {
     vi.clearAllMocks();
@@ -64,6 +79,22 @@ beforeEach(() => {
     mocks.begin.mockResolvedValue({ finish: mocks.finish, isCurrent: () => mocks.current });
 });
 describe('credential disclosure recording', () => {
+    it('submits only the reviewed batch after a credential is deselected', async () => {
+        const onSubmit = vi.fn().mockResolvedValue(undefined);
+        render(
+            <VCToShare
+                {...props}
+                vcsToShare={[{ name: 'Diploma' } as VC, { name: 'Badge' } as VC]}
+                onSubmit={onSubmit}
+            />
+        );
+        fireEvent.click(screen.getByRole('checkbox', { name: 'Badge' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Share' }));
+        await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+        expect(mocks.sign.mock.calls[0][0].verifiableCredential).toEqual([{ name: 'Diploma' }]);
+        expect(props.handleVcSelection).toHaveBeenCalledWith('Badge');
+    });
+
     it('records CHAPI handoff only after respondWith, with no presentation diagnostics', async () => {
         mocks.reset.mockImplementationOnce(() => {
             throw new Error('STATE_CANARY');
