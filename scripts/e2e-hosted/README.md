@@ -49,8 +49,12 @@ The Bake groups export this stage through a cache-only target using `mode=min`.
 Browser and service base images import that shared dependency cache. Source and
 app image layers are loaded into Docker but never exported to the remote cache.
 This avoids uploading source layers that change on each commit. The new cache
-scope starts cold on its first CI run. Keep dependency versions aligned across
-stages when upgrading Bun.
+scope starts cold on its first CI run. The `manifests` and `dependencies` stages
+use Bun 1.4.2, which installs the repository's lockfile v3. Only the final `source`
+stage uses Bun 1.3.14 to preserve the local services' `localhost:host-gateway`
+mapping for did:web resolution. It copies installed dependencies and source;
+neither that stage nor the hosted Compose startup commands run `bun install`.
+Do not move dependency installation into the final runtime stage.
 
 ## Browser runtime
 
