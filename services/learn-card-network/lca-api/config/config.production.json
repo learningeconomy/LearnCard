@@ -1,0 +1,12 @@
+{
+    "DOMAIN_NAME": "api.learncard.app",
+    "POSTMARK_BRAND_NAME": "LearnCard",
+    "POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS": "universal-inbox-claim-1",
+    "POSTMARK_FROM_EMAIL": "learncard.com",
+    "POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS": "contact-method-verification-1",
+    "POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS": "recovery-email-verification",
+    "POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS": "recovery-key-backup",
+    "SA_SEED_ALLOW_LEGACY_READ": "false",
+    "SA_SEED_ENCRYPT_WRITES": "true",
+    "SENTRY_ENV": "lca-api-staging"
+}

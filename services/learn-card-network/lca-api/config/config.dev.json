@@ -1,0 +1,22 @@
+{
+    "APPLE_OAUTH_CLIENT_IDS": "com.learncard.app,app.learncard.www",
+    "DOMAIN_NAME": "staging.api.learncard.app",
+    "ESCROW_ENCLAVE_ACTIVE_KEY_ID": "staging-2026-09",
+    "ESCROW_HOLD_DURATION_MS": "600000",
+    "ESCROW_HOLD_RESTART_MIN_AGE_MS": "300000",
+    "GOOGLE_OAUTH_CLIENT_IDS": "776298253175-74or0s6rg2k2mmdks6d45ro0i4te1bvf.apps.googleusercontent.com,776298253175-kkf562eofl541vu0oedfdvrk40bpkbh7.apps.googleusercontent.com",
+    "KEYCLOAK_AUDIENCES": "learncard-app",
+    "KEYCLOAK_ISSUERS": "https://auth.staging.learncard.app/realms/learncard",
+    "OIDC_CLIENT_ID": "keycloak-broker",
+    "OIDC_ISSUER": "https://staging.api.learncard.app",
+    "OIDC_SIGNING_KEY_SECRET_ID": "lca-api/dev/oidc-signing-jwk",
+    "POSTMARK_BRAND_NAME": "LearnCard",
+    "POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS": "universal-inbox-claim-1",
+    "POSTMARK_FROM_EMAIL": "learncard.com",
+    "POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS": "contact-method-verification-1",
+    "POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS": "recovery-email-verification",
+    "POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS": "recovery-key-backup",
+    "SA_SEED_ALLOW_LEGACY_READ": "false",
+    "SA_SEED_ENCRYPT_WRITES": "true",
+    "SENTRY_ENV": "lcn-production"
+}
