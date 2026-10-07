@@ -25,15 +25,16 @@ COPY --from=manifests /manifests ./
 RUN --mount=type=cache,target=/root/.bun/install/cache \
     bun install
 
-# Bun 1.4.2 installs lockfile v3, but bypasses the localhost host-gateway mapping
-# used for did:web resolution between the local services. Keep installation and
-# execution separate until that runtime regression is fixed upstream.
-FROM oven/bun:1.3.14 AS source
+# Keep the installed dependency layers intact. Only the executable needs the
+# older runtime: Bun 1.4.2 bypasses the localhost host-gateway mapping used for
+# cross-service did:web resolution. Copying /app into a fresh base duplicates the
+# entire dependency tree and makes image export expensive.
+FROM oven/bun:1.3.14 AS compatible-runtime
 
-ENV SKIP_DIDKIT_NAPI=1
+FROM dependencies AS source
 
-WORKDIR /app
-
-COPY --from=dependencies /app ./
+COPY --from=compatible-runtime /usr/local/bin/bun /usr/local/bin/bun
+RUN test "$(bun --version)" = "1.3.14" \
+    && test "$(bunx --version)" = "1.3.14"
 
 COPY . .

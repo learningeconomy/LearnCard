@@ -116,3 +116,12 @@ bunx playwright test --config=playwright.mock.config.ts --repeat-each=2
 # With the real stack already running:
 E2E_EXTERNAL_STACK=true bunx playwright test --config=playwright.parallel.config.ts
 ```
+
+## Bun installer/runtime compatibility
+
+The dependency stage uses Bun 1.4.2 for lockfile v3. The source stage inherits
+those layers and copies only the Bun 1.3.14 executable from the compatible runtime
+image. Both `bun` and its `bunx` link are checked during the build. This retains
+the cross-service localhost/DID workaround without copying the installed `/app`
+tree into a fresh runtime base. The hosted DID-resolution preflight and full
+service/browser suites verify compatibility.
