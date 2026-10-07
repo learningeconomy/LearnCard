@@ -69,6 +69,7 @@
         "@learncard/email-templates": "workspace:*",
         "@learncard/helpers": "workspace:*",
         "@learncard/init": "workspace:*",
+        "@learncard/service-config": "workspace:*",
         "@learncard/types": "workspace:*",
         "@learncard/sss-key-manager": "workspace:*",
         "@sentry/serverless": "^7.61.0",
