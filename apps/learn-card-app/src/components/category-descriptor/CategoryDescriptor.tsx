@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { BoostCategoryOptionsEnum } from 'learn-card-base';
+import { BoostCategoryOptionsEnum, CredentialCategoryEnum } from 'learn-card-base';
 
 import * as m from '../../paraglide/messages.js';
 import { CATEGORY_DESCRIPTIONS } from './category-descriptions';
@@ -12,6 +12,7 @@ const DESCRIPTION_KEYS: Record<string, string> = {
     'Learning History': 'studies',
     'Social Badge': 'socialBadges',
     Achievement: 'achievements',
+    [CredentialCategoryEnum.qualifications]: 'qualifications',
     Accomplishment: 'portfolio',
     Skill: 'skills',
     'Work History': 'experiences',
@@ -19,7 +20,7 @@ const DESCRIPTION_KEYS: Record<string, string> = {
     ID: 'ids',
     Family: 'families',
     'AI Insight': 'aiInsights',
-    aiPathway: 'aiPathways',
+    [CredentialCategoryEnum.aiPathway]: 'aiPathways',
 };
 
 export const CategoryDescriptor: React.FC<{

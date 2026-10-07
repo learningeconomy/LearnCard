@@ -1,115 +1,42 @@
 import React from 'react';
 
-import { IonPage } from '@ionic/react';
 import ModalLayout from '../../layout/ModalLayout';
 
 import * as m from '../../paraglide/messages.js';
 import CategoryDescriptor from '../../components/category-descriptor/CategoryDescriptor';
-import { CredentialCategoryEnum } from 'learn-card-base';
-import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
-import { walletSubtypeToDefaultImageSrc, BoostCategoryOptionsEnum } from 'learn-card-base';
+import { CredentialCategoryEnum, categoryMetadata } from 'learn-card-base';
 
 const CategoryDescriptorModal: React.FC<{
     handleCloseModal: () => void;
-    title: string;
-}> = ({ handleCloseModal, title }) => {
-    const getCategoryandImgSrc = (title: string) => {
-        let imgSrc;
-        let category;
-
-        // TODO: swap these out to use categories instead of titles!
-        switch (title) {
-            case 'Studies':
-                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.learningHistory);
-                category = BoostCategoryOptionsEnum.learningHistory;
-                break;
-
-            case 'Badges':
-                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.socialBadges);
-                category = BoostCategoryOptionsEnum.socialBadge;
-                break;
-
-            case 'Achievements':
-                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.achievements);
-                category = BoostCategoryOptionsEnum.achievement;
-                break;
-
-            case 'Portfolio':
-                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.accomplishments);
-                category = BoostCategoryOptionsEnum.accomplishment;
-                break;
-
-            case 'Skills Hub':
-            case 'Skills':
-                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.skills);
-                category = BoostCategoryOptionsEnum.skill;
-                break;
-
-            case 'Experiences':
-                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.jobHistory);
-                category = BoostCategoryOptionsEnum.workHistory;
-                break;
-
-            case 'Assistance':
-                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.accommodations);
-                category = BoostCategoryOptionsEnum.accommodation;
-                break;
-
-            case 'IDs':
-                imgSrc = 'https://cdn.filestackcontent.com/9z6i0x3hSlG43paNZHag'; // not totally sure why this one's different. Leaving it.
-                // imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.ids)
-                category = BoostCategoryOptionsEnum.id;
-                break;
-
-            case 'Families':
-                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.families);
-                category = BoostCategoryOptionsEnum.family;
-                break;
-
-            case 'Insights':
-                imgSrc = 'https://cdn.filestackcontent.com/QAC1JmfQgGFccwM7EF0L';
-                category = CredentialCategoryEnum.aiInsight;
-                break;
-
-            case 'Pathways':
-                imgSrc = 'https://cdn.filestackcontent.com/QAC1JmfQgGFccwM7EF0L';
-                category = 'aiPathway' as CredentialCategoryEnum;
-                break;
-
-            default:
-                // Unknown titles must not crash the app: this modal is hosted by
-                // useIonModal (no error boundary), so a throw here unmounts the
-                // whole React root (white screen). Fall back to the skills visuals.
-                console.error(`CategoryDescriptorModal: unknown title "${title}"`);
-                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.skills);
-                category = BoostCategoryOptionsEnum.skill;
-                break;
-        }
-
-        return { imgSrc, category };
-    };
-
-    const { imgSrc, category } = getCategoryandImgSrc(title);
+    title?: string;
+    category: CredentialCategoryEnum;
+}> = ({ handleCloseModal, title, category }) => {
+    const categoryTitle = title ?? categoryMetadata[category].title;
+    const imgSrc =
+        category === CredentialCategoryEnum.id
+            ? 'https://cdn.filestackcontent.com/9z6i0x3hSlG43paNZHag'
+            : category === CredentialCategoryEnum.aiInsight ||
+                category === CredentialCategoryEnum.aiPathway
+              ? 'https://cdn.filestackcontent.com/QAC1JmfQgGFccwM7EF0L'
+              : categoryMetadata[category].defaultImageSrc;
 
     return (
-        <IonPage>
+        <div className="relative h-full">
             <ModalLayout
                 handleOnClick={handleCloseModal}
                 buttonText={m['wallet.categoryDescriptor.gotIt']()}
             >
                 <div className="p-[30px]">
-                    <img
-                        src={imgSrc}
-                        alt="learning history"
-                        className="w-[100px] h-[100px] m-auto"
-                    />
+                    <img src={imgSrc} alt="" className="w-[100px] h-[100px] m-auto" />
                     <p className="text-center text-[22px] font-poppins font-normal leading-[130%] text-grayscale-900">
-                        <strong>{m['wallet.categoryDescriptor.about']({ name: title })}</strong>
+                        <strong>
+                            {m['wallet.categoryDescriptor.about']({ name: categoryTitle })}
+                        </strong>
                     </p>
                     <CategoryDescriptor category={category} className="text-left mt-[10px]" />
                 </div>
             </ModalLayout>
-        </IonPage>
+        </div>
     );
 };
 
