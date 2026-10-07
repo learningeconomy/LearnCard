@@ -84,6 +84,7 @@
             "loginBgColor": "#353E64",
             "loginButtonBgColor": "#1E2440",
             "loginButtonTextColor": "#FFFFFF",
+            "passportCardBgColor": "#FFFFFF",
             "actionModalButtonColors": [
                 "#E2E3E9",
                 "#D1D5DB",
