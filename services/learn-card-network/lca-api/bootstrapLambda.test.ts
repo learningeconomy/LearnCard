@@ -1,62 +1,76 @@
 import type { APIGatewayProxyEventV2, Context } from 'aws-lambda';
 import { beforeEach, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ load: vi.fn(), imported: vi.fn(), handler: vi.fn() }));
-vi.mock('./src/config/runtimeSecrets', () => ({ loadRuntimeSecrets: mocks.load }));
-vi.mock('./lambdaApp', () => {
-    mocks.imported();
-    return Object.fromEntries(
+const mocks = vi.hoisted(() => ({ bootstrap: vi.fn(), getApp: vi.fn(), handler: vi.fn() }));
+
+vi.mock('@learncard/service-config', () => ({ bootstrapLambda: mocks.bootstrap }));
+vi.mock('./src/config/stageConfig', () => ({ base: {}, stages: { dev: {}, production: {} } }));
+vi.mock('./oidcLambda', () => ({ handler: mocks.handler }));
+vi.mock('./lambdaApp', () =>
+    Object.fromEntries(
         ['trpcHandler', 'openApiHandler', 'swaggerUiHandler', 'didWebHandler', 'oidcHandler'].map(
             name => [name, mocks.handler]
         )
-    );
-});
+    )
+);
 
 beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
-    mocks.load.mockResolvedValue(undefined);
+    mocks.bootstrap.mockReturnValue(mocks.getApp);
     mocks.handler.mockResolvedValue({ statusCode: 200 });
 });
 
-it('does not import the app before secrets resolve; shares bootstrap and forwards all arguments', async () => {
-    let release: () => void = () => {};
-    mocks.load.mockReturnValue(
-        new Promise<void>(resolve => {
-            release = resolve;
-        })
-    );
-    const lambda = await import('./lambda');
-    const event = { source: 'serverless-plugin-warmup' } as unknown as APIGatewayProxyEventV2;
-    const context = {} as Context;
-    const callback = vi.fn();
-    expect(mocks.imported).not.toHaveBeenCalled();
-    const invocations = [
-        lambda.trpcHandler(event, context, callback),
-        lambda.openApiHandler(event, context, callback),
-    ];
-    expect(mocks.imported).not.toHaveBeenCalled();
-    release();
-    await expect(Promise.all(invocations)).resolves.toEqual([
-        { statusCode: 200 },
-        { statusCode: 200 },
-    ]);
-    for (const handler of [lambda.swaggerUiHandler, lambda.didWebHandler, lambda.oidcHandler]) {
-        await handler(event, context);
-    }
-    // loadRuntimeSecrets memoizes internally; the app module is imported exactly once.
-    expect(mocks.imported).toHaveBeenCalledTimes(1);
-    expect(mocks.handler).toHaveBeenCalledTimes(5);
-    expect(mocks.handler).toHaveBeenCalledWith(event, context, callback);
+it('bootstraps the API once with checked-in stage config', async () => {
+    vi.stubEnv('AWS_LAMBDA_FUNCTION_NAME', 'lca-api-dev-api');
+    vi.stubEnv('LAMBDA_STAGE', 'dev');
+    await import('./lambda');
+    expect(mocks.bootstrap).toHaveBeenCalledTimes(1);
+    expect(mocks.bootstrap).toHaveBeenCalledWith({
+        base: {},
+        stages: { dev: {}, production: {} },
+        stage: 'dev',
+        importApp: expect.any(Function),
+    });
+    vi.unstubAllEnvs();
 });
 
-it('does not import the app on failure and retries bootstrap on the next invocation', async () => {
-    mocks.load.mockRejectedValueOnce(new Error('Unable to load runtime secrets bundle'));
-    const { oidcHandler } = await import('./lambda');
-    await expect(oidcHandler({}, {} as Context)).rejects.toThrow(
-        'Unable to load runtime secrets bundle'
+it('uses CONFIG_STAGE outside Lambda rather than LAMBDA_STAGE', async () => {
+    vi.stubEnv('AWS_LAMBDA_FUNCTION_NAME', '');
+    vi.stubEnv('LAMBDA_STAGE', 'production');
+    vi.stubEnv('CONFIG_STAGE', 'dev');
+    await import('./lambda');
+    expect(mocks.bootstrap).toHaveBeenCalledWith(expect.objectContaining({ stage: 'dev' }));
+    vi.unstubAllEnvs();
+});
+
+it('forwards every handler through its bootstrap accessor', async () => {
+    mocks.getApp.mockResolvedValue(
+        Object.fromEntries(
+            [
+                'trpcHandler',
+                'openApiHandler',
+                'swaggerUiHandler',
+                'didWebHandler',
+                'oidcHandler',
+            ].map(name => [name, mocks.handler])
+        )
     );
-    expect(mocks.imported).not.toHaveBeenCalled();
-    await expect(oidcHandler({}, {} as Context)).resolves.toEqual({ statusCode: 200 });
-    expect(mocks.load).toHaveBeenCalledTimes(2);
+    const lambda = await import('./lambda');
+    const event = {} as APIGatewayProxyEventV2;
+    const context = {} as Context;
+    const callback = vi.fn();
+    const handlers = [
+        lambda.trpcHandler,
+        lambda.openApiHandler,
+        lambda.swaggerUiHandler,
+        lambda.didWebHandler,
+    ];
+    for (const handler of handlers) await handler(event, context, callback);
+    expect(mocks.bootstrap).toHaveBeenCalledTimes(1);
+    expect(mocks.getApp).toHaveBeenCalledTimes(handlers.length);
+    expect(mocks.handler).toHaveBeenCalledTimes(handlers.length);
+    expect(mocks.handler).toHaveBeenCalledWith(event, context, callback);
+    await lambda.oidcHandler(event, context, callback);
+    expect(mocks.getApp).toHaveBeenCalledTimes(handlers.length);
 });
