@@ -723,47 +723,32 @@ jobs:
                   SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
                   SERVERLESS_DOMAIN_NAME: ${{ vars.SERVERLESS_DOMAIN_NAME }}
                   SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
-                  DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
-                  SEED: ${{ secrets.SEED }}
-                  METABASE_SECRET_KEY: ${{ secrets.METABASE_SECRET_KEY }}
-                  POSTMARK_SERVER_TOKEN: ${{ secrets.POSTMARK_SERVER_TOKEN }}
-                  POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS: ${{ vars.POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS }}
-                  POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS: ${{ vars.POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS }}
-                  POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS: ${{ vars.POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS }}
-                  POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS: ${{ vars.POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS }}
-                  POSTMARK_FROM_EMAIL: ${{ secrets.POSTMARK_FROM_EMAIL }}
-                  POSTMARK_BRAND_NAME: ${{ secrets.POSTMARK_BRAND_NAME }}
-                  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-                  AUTHORIZED_DIDS: ${{ secrets.AUTHORIZED_DIDS }}
-                  GOOGLE_APPLICATION_CREDENTIAL: ${{ secrets.GOOGLE_APPLICATION_CREDENTIAL }}
+                  # Optional per-stage runtime-secrets bundle id. When set, the bundle
+                  # supplies the credentials below and serverless.function-env.cjs omits the
+                  # GitHub fallbacks. Non-secret per-stage config is checked in, not passed here.
                   RUNTIME_SECRETS_ID: ${{ vars.RUNTIME_SECRETS_ID }}
-                  KEYCLOAK_ISSUERS: ${{ vars.KEYCLOAK_ISSUERS }}
-                  KEYCLOAK_AUDIENCES: ${{ vars.KEYCLOAK_AUDIENCES }}
-                  KEYCLOAK_JWKS_URL_OVERRIDES: ${{ vars.KEYCLOAK_JWKS_URL_OVERRIDES }}
-                  OIDC_ISSUER: ${{ vars.OIDC_ISSUER }}
-                  OIDC_SIGNING_KEY_SECRET_ID: ${{ vars.OIDC_SIGNING_KEY_SECRET_ID }}
-                  OIDC_CLIENT_ID: ${{ vars.OIDC_CLIENT_ID }}
-                  OIDC_CLIENT_SECRET: ${{ secrets.OIDC_CLIENT_SECRET }}
-                  OIDC_REDIRECT_URIS: ${{ vars.OIDC_REDIRECT_URIS }}
-                  GOOGLE_OAUTH_CLIENT_IDS: ${{ vars.GOOGLE_OAUTH_CLIENT_IDS }}
-                  APPLE_OAUTH_CLIENT_IDS: ${{ vars.APPLE_OAUTH_CLIENT_IDS }}
+                  # Credential fallbacks: used only when RUNTIME_SECRETS_ID is unset.
+                  SEED: ${{ secrets.SEED }}
                   MONGO_URI: ${{ secrets.MONGO_URI }}
                   MONGO_DB_NAME: ${{ secrets.MONGO_DB_NAME }}
+                  AUTHORIZED_DIDS: ${{ secrets.AUTHORIZED_DIDS }}
+                  METABASE_SECRET_KEY: ${{ secrets.METABASE_SECRET_KEY }}
+                  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+                  POSTMARK_SERVER_TOKEN: ${{ secrets.POSTMARK_SERVER_TOKEN }}
                   SCOUTS_SSO_CLIENT_SECRET: ${{ secrets.SCOUTS_SSO_CLIENT_SECRET }}
-                  # Compatibility first; advance these per environment using the seed-encryption runbook.
-                  SA_SEED_ENCRYPT_WRITES: ${{ vars.SA_SEED_ENCRYPT_WRITES || 'false' }}
-                  SA_SEED_ALLOW_LEGACY_READ: ${{ vars.SA_SEED_ALLOW_LEGACY_READ || 'true' }}
+                  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+                  GOOGLE_APPLICATION_CREDENTIAL: ${{ secrets.GOOGLE_APPLICATION_CREDENTIAL }}
                   LEARN_CLOUD_URL: ${{ secrets.LEARN_CLOUD_URL }}
-                  # Escrow recovery stays off unless the environment sets ESCROW_ENCLAVE_MODE.
-                  ESCROW_ENCLAVE_MODE: ${{ vars.ESCROW_ENCLAVE_MODE }}
-                  ESCROW_ENCLAVE_ACTIVE_KEY_ID: ${{ vars.ESCROW_ENCLAVE_ACTIVE_KEY_ID }}
-                  ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON: ${{ secrets.ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON }}
-                  ESCROW_HOLD_DURATION_MS: ${{ vars.ESCROW_HOLD_DURATION_MS }}
-                  ESCROW_HOLD_RESTART_MIN_AGE_MS: ${{ vars.ESCROW_HOLD_RESTART_MIN_AGE_MS }}
                   ESCROW_RELAY_URL: ${{ vars.ESCROW_RELAY_URL }}
                   ESCROW_RELAY_AUTH_TOKEN: ${{ secrets.ESCROW_RELAY_AUTH_TOKEN }}
-                  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-                  SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
+                  ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON: ${{ secrets.ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON }}
+                  # Non-secret deploy toggle that gates the escrow enclave key (not checked in).
+                  ESCROW_ENCLAVE_MODE: ${{ vars.ESCROW_ENCLAVE_MODE }}
+                  # OIDC exception: the broker secret and redirect list reach the oidc function
+                  # directly because OidcExecutionRole cannot read the runtime-secrets bundle.
+                  OIDC_CLIENT_SECRET: ${{ secrets.OIDC_CLIENT_SECRET }}
+                  OIDC_REDIRECT_URIS: ${{ vars.OIDC_REDIRECT_URIS }}
+                  # Build-time only (Sentry sourcemap upload, Maps key); not Lambda runtime env.
                   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
                   SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
                   SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}

@@ -129,36 +129,8 @@ provider:
     timeout: 29
     stage: ${opt:stage, "dev"}
     region: ${opt:region, "us-east-1"}
-    environment:
-        LAMBDA_STAGE: ${opt:stage, "dev"}
-        SEED: ${env:SEED, ''}
-        SA_SEED_KMS_KEY_ARN:
-            Fn::GetAtt: [SigningAuthoritySeedKey, Arn]
-        # First deployment upgrades readers only. Enable writes after every reader is compatible.
-        SA_SEED_ENCRYPT_WRITES: ${param:saSeedEncryptWrites, env:SA_SEED_ENCRYPT_WRITES, 'false'}
-        SA_SEED_ALLOW_LEGACY_READ: ${param:saSeedAllowLegacyRead, env:SA_SEED_ALLOW_LEGACY_READ, 'true'}
-        DOMAIN_NAME: ${env:DOMAIN_NAME, ''}
-        OPENAI_API_KEY: ${env:OPENAI_API_KEY, ''}
-        METABASE_SECRET_KEY: ${env:METABASE_SECRET_KEY, ''}
-        POSTMARK_SERVER_TOKEN: ${env:POSTMARK_SERVER_TOKEN, ''}
-        POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS: ${env:POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS, ''}
-        POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS: ${env:POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS, ''}
-        POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS: ${env:POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS, ''}
-        POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS: ${env:POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS, ''}
-        POSTMARK_FROM_EMAIL: ${env:POSTMARK_FROM_EMAIL, ''}
-        POSTMARK_BRAND_NAME: ${env:POSTMARK_BRAND_NAME, ''}
-        PORT: ${opt:httpPort, "3000"}
-        MONGO_URI: ${env:MONGO_URI, ''}
-        MONGO_DB_NAME: ${env:MONGO_DB_NAME, ''}
-        AUTHORIZED_DIDS: ${env:AUTHORIZED_DIDS, ''}
-        SCOUTS_SSO_CLIENT_SECRET: ${env:SCOUTS_SSO_CLIENT_SECRET, ''}
-        LEARN_CLOUD_URL: ${env:LEARN_CLOUD_URL, ''}
-        SENTRY_DSN: ${env:SENTRY_DSN, ''}
-        SENTRY_ENV: ${env:SENTRY_ENV, ''}
-        REDIS_HOST:
-            'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Address]
-        REDIS_PORT:
-            'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Port]
+    # Bundle mode emits only infra; fallback mode retains the existing GitHub secrets.
+    environment: ${file(./serverless.function-env.cjs):provider}
     tracing:
         apiGateway: true
         lambda: true
@@ -197,6 +169,9 @@ functions:
 
     didWeb:
         handler: lambda.didWebHandler
+        role: SigningAuthorityExecutionRole
+        dependsOn: [SigningAuthoritySeedKeyPolicy]
+        environment: ${file(./serverless.function-env.cjs):api}
         vpc:
             securityGroupIds:
                 - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
@@ -209,7 +184,7 @@ functions:
             cors: true
 
     oidc:
-        handler: lambda.oidcHandler
+        handler: oidcLambda.handler
         # Only this function may read the private signing key (see OidcExecutionRole).
         role: OidcExecutionRole
         environment: ${file(./serverless.function-env.cjs):oidc}
@@ -228,6 +203,9 @@ functions:
         timeout: 900
         reservedConcurrency: 1
         dependsOn: [SigningAuthoritySeedKeyPolicy]
+        # Shares the SigningAuthority role, so it reads the runtime bundle when present and
+        # falls back to the same credentials as trpc/api otherwise (it needs SEED + Mongo).
+        environment: ${file(./serverless.function-env.cjs):api}
         # IAM invoke only: intentionally no events, schedule, or function URL.
         vpc:
             securityGroupIds:
@@ -237,6 +215,9 @@ functions:
 
     swagger:
         handler: lambda.swaggerUiHandler
+        role: SigningAuthorityExecutionRole
+        dependsOn: [SigningAuthoritySeedKeyPolicy]
+        environment: ${file(./serverless.function-env.cjs):api}
         package:
             patterns:
                 - src/swagger-ui/**

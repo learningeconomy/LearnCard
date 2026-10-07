@@ -1,40 +1,42 @@
-// Empty-string keys still count toward Lambda's 4KB env limit, so emit only set values.
-// Enclave keys are gated on ESCROW_ENCLAVE_MODE: unsetting that one variable disables
-// escrow without deleting the stored key secret.
-const RELAY_KEYS = ['ESCROW_RELAY_URL', 'ESCROW_RELAY_AUTH_TOKEN'];
+const { functionEnvironment, pickNonEmpty } = require('@learncard/service-config/function-env.cjs');
 
-const ENCLAVE_KEYS = [
-    'ESCROW_ENCLAVE_MODE',
-    'ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON',
-    'ESCROW_ENCLAVE_ACTIVE_KEY_ID',
-    'ESCROW_HOLD_DURATION_MS',
-    'ESCROW_HOLD_RESTART_MIN_AGE_MS',
+const PROVIDER_SECRETS = [
+    'SEED',
+    'MONGO_URI',
+    'MONGO_DB_NAME',
+    'AUTHORIZED_DIDS',
+    'METABASE_SECRET_KEY',
+    'OPENAI_API_KEY',
+    'POSTMARK_SERVER_TOKEN',
+    'SCOUTS_SSO_CLIENT_SECRET',
+    'SENTRY_DSN',
+    'LEARN_CLOUD_URL',
 ];
 
-const pick = keys =>
-    Object.fromEntries(keys.filter(key => process.env[key]).map(key => [key, process.env[key]]));
+const API_SECRETS = [
+    'GOOGLE_APPLICATION_CREDENTIAL',
+    'POSTHOG_API_KEY',
+    'SA_SEED_LOCAL_KEK',
+    'ESCROW_RELAY_URL',
+    'ESCROW_RELAY_AUTH_TOKEN',
+    'ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON',
+    'ESCROW_ENCLAVE_MODE',
+    'KEYCLOAK_JWKS_URL_OVERRIDES',
+];
 
-exports.api = () => {
-    const keys = process.env.ESCROW_ENCLAVE_MODE ? [...RELAY_KEYS, ...ENCLAVE_KEYS] : RELAY_KEYS;
-    return pick([
-        ...keys,
-        'KEYCLOAK_ISSUERS',
-        'KEYCLOAK_AUDIENCES',
-        'KEYCLOAK_JWKS_URL_OVERRIDES',
-        'GOOGLE_OAUTH_CLIENT_IDS',
-        'APPLE_OAUTH_CLIENT_IDS',
-        process.env.RUNTIME_SECRETS_ID ? 'RUNTIME_SECRETS_ID' : 'GOOGLE_APPLICATION_CREDENTIAL',
-    ]);
-};
+// Serverless v3 supplies CLI options to file functions and preserves CF intrinsics.
+// No stage-file values are forwarded from the deployment environment.
+exports.provider = ({ options = {} } = {}) => ({
+    LAMBDA_STAGE: options.stage || 'dev',
+    PORT: String(options.httpPort || '3000'),
+    SA_SEED_KMS_KEY_ARN: { 'Fn::GetAtt': ['SigningAuthoritySeedKey', 'Arn'] },
+    REDIS_HOST: { 'Fn::GetAtt': ['ElasticCacheCluster', 'RedisEndpoint.Address'] },
+    REDIS_PORT: { 'Fn::GetAtt': ['ElasticCacheCluster', 'RedisEndpoint.Port'] },
+    ...functionEnvironment({ always: [], fallback: PROVIDER_SECRETS }),
+});
 
-// Audiences ride along so the shared schema can reject issuers without audiences at startup.
-exports.oidc = () =>
-    pick([
-        'KEYCLOAK_ISSUERS',
-        'KEYCLOAK_AUDIENCES',
-        'OIDC_ISSUER',
-        'OIDC_CLIENT_ID',
-        'OIDC_CLIENT_SECRET',
-        'OIDC_REDIRECT_URIS',
-        'OIDC_SIGNING_KEY_SECRET_ID',
-    ]);
+// Only functions using SigningAuthorityExecutionRole get the runtime-bundle pointer.
+exports.api = () => functionEnvironment({ always: ['RUNTIME_SECRETS_ID'], fallback: API_SECRETS });
+
+// OIDC has its own signing-key secret and cannot read the runtime bundle.
+exports.oidc = () => pickNonEmpty(['OIDC_CLIENT_SECRET', 'OIDC_REDIRECT_URIS']);
