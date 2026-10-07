@@ -9425,6 +9425,9 @@
         "review": "مراجعة"
     },
     "verifierHistory": {
+        "viewCredentials": "عرض الشهادات التي تمت مشاركتها مع {{verifier}}",
+        "credentialsCount": "الشهادات ({{count}})",
+        "credentialsList": "أسماء الشهادات المسجلة",
         "viewAll": "عرض الكل ({{count}})",
         "preview": "عرض {{shown}} من {{total}} سجلًا",
         "page": "الصفحة {{page}} من {{total}}",

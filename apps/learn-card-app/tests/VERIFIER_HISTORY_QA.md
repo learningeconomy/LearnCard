@@ -20,6 +20,7 @@ asserts:
 - Recording defaults off. OID4VP, VC-API and CHAPI send without history storage calls.
 - Opting in creates one encrypted entry after each transport. CHAPI is labelled as a
   handoff, not confirmed delivery or acceptance.
+- Clicking a verifier entry shows its recorded credential names without storage reads.
 - Turning recording off preserves existing entries. Going back from review sends nothing.
 - The main page shows five entries; the modal shows 20 per page. Next/Previous make
   no history storage reads. Deleting updates the main card, Escape permits reopening,

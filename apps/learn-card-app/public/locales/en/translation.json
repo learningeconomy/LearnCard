@@ -9387,6 +9387,9 @@
         "review": "Review"
     },
     "verifierHistory": {
+        "viewCredentials": "View credentials shared with {{verifier}}",
+        "credentialsCount": "Credentials ({{count}})",
+        "credentialsList": "Recorded credential names",
         "viewAll": "View all {{count}}",
         "preview": "Showing {{shown}} of {{total}} entries",
         "page": "Page {{page}} of {{total}}",

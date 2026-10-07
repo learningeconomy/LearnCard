@@ -179,7 +179,10 @@ export const addReminders = async (): Promise<void> => {
             outcome: 'sent',
             sentAt: new Date(Date.now() - index * 1000).toISOString(),
             label: 'Pagination QA verifier',
-            titles: ['QA University Diploma'],
+            titles:
+                index < 2
+                    ? ['QA University Diploma', 'QA First Aid Certificate', 'QA Volunteer Badge']
+                    : ['QA University Diploma'],
         });
         await wallet.invoke.learnCloudCreate({ scope: HISTORY_SCOPE, payload });
     }

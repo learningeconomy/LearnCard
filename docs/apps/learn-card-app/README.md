@@ -65,6 +65,8 @@ For browser application requests (CHAPI or VC-API), use the credential list to s
 
 ### Private Verifier History
 
+Click a verifier entry to expand the list of credential names recorded for that send. This uses the existing encrypted history; it does not fetch full credentials or show every claim sent.
+
 The card shows the five newest entries. Choose **View all** to open the full history, with 20 entries per page. Refresh, Clear history and Delete entry are available in the history window; changes also update the card.
 
 In **Data Sharing Center**, open **Shared with verifiers** to enable private recording, delete individual entries or clear history. Recording is off by default and is unavailable for managed accounts. Disabling recording keeps previous entries; clearing readable history keeps the preference.

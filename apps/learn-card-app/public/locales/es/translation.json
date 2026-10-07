@@ -9336,6 +9336,9 @@
         "review": "Revisar"
     },
     "verifierHistory": {
+        "viewCredentials": "Ver credenciales compartidas con {{verifier}}",
+        "credentialsCount": "Credenciales ({{count}})",
+        "credentialsList": "Nombres de credenciales registrados",
         "viewAll": "Ver los {{count}}",
         "preview": "Se muestran {{shown}} de {{total}} entradas",
         "page": "Página {{page}} de {{total}}",

@@ -9336,6 +9336,9 @@
         "review": "Vérifier"
     },
     "verifierHistory": {
+        "viewCredentials": "Voir les attestations partagées avec {{verifier}}",
+        "credentialsCount": "Attestations ({{count}})",
+        "credentialsList": "Noms des attestations enregistrés",
         "viewAll": "Voir les {{count}}",
         "preview": "{{shown}} entrées affichées sur {{total}}",
         "page": "Page {{page}} sur {{total}}",

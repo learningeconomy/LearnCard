@@ -282,19 +282,41 @@ test('verifier history: off/on, three transports, controls and paging @mocked', 
         await refresh();
         await expect(section.getByRole('listitem')).toHaveCount(5);
         await page.setViewportSize({ width: 1440, height: 1800 });
+        const previewEntry = section
+            .getByRole('button', { name: /View credentials shared with/ })
+            .first();
+        const previewReads = (await qa('status')).reads;
+        await previewEntry.press('Enter');
+        await expect(previewEntry).toHaveAttribute('aria-expanded', 'true');
+        await expect(
+            section.getByRole('list', { name: 'Recorded credential names' }).getByRole('listitem')
+        ).toHaveCount(3);
+        expect((await qa('status')).reads).toBe(previewReads);
         await info.attach('Five-entry history preview', {
             body: await section.screenshot({ animations: 'disabled' }),
             contentType: 'image/png',
         });
+        await previewEntry.press('Space');
+        await expect(previewEntry).toHaveAttribute('aria-expanded', 'false');
         await page.setViewportSize({ width: 1280, height: 900 });
         await section.getByRole('button', { name: 'View all 25', exact: true }).click();
         const dialog = page.getByRole('dialog', { name: 'Shared with verifiers', exact: true });
         await expect(dialog.getByRole('listitem')).toHaveCount(20);
         await expect(dialog).toHaveCSS('opacity', '1');
+        const modalEntry = dialog
+            .getByRole('button', { name: /View credentials shared with/ })
+            .first();
+        const detailReads = (await qa('status')).reads;
+        await modalEntry.click();
+        await expect(
+            dialog.getByRole('list', { name: 'Recorded credential names' }).getByRole('listitem')
+        ).toHaveCount(3);
+        expect((await qa('status')).reads).toBe(detailReads);
         await info.attach('Desktop full history', {
             body: await page.screenshot({ animations: 'disabled' }),
             contentType: 'image/png',
         });
+        await modalEntry.click();
         const before = (await qa('status')).reads;
         await dialog.getByRole('button', { name: 'Next', exact: true }).click();
         await expect(dialog.getByRole('listitem')).toHaveCount(5);
@@ -328,6 +350,15 @@ test('verifier history: off/on, three transports, controls and paging @mocked', 
             390
         );
         await expect(dialog).toHaveCSS('opacity', '1');
+        const mobileEntry = dialog
+            .getByRole('button', { name: /View credentials shared with/ })
+            .first();
+        const mobileReads = (await qa('status')).reads;
+        await mobileEntry.press('Enter');
+        await expect(
+            dialog.getByRole('list', { name: 'Recorded credential names' }).getByRole('listitem')
+        ).toHaveCount(3);
+        expect((await qa('status')).reads).toBe(mobileReads);
         await info.attach('Mobile full history', {
             body: await page.screenshot({ animations: 'disabled' }),
             contentType: 'image/png',

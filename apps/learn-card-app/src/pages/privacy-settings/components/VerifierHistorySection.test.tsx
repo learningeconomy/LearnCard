@@ -84,6 +84,45 @@ describe('verifier history controls', () => {
         expect(screen.getByText(/Deleting history cannot retract/)).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /Stop sharing/ })).not.toBeInTheDocument();
     });
+    it('expands every recorded credential name without storage reads and keeps deletion separate', async () => {
+        mocks.load.mockResolvedValue({
+            enabled: true,
+            receipts: [
+                {
+                    ...receipt,
+                    titles: ['Private diploma canary', 'Credential', 'Private diploma canary'],
+                },
+            ],
+            cleanupComplete: true,
+        });
+        render(<VerifierHistorySection eligible />);
+        await open();
+        const entry = screen.getByRole('button', {
+            name: 'View credentials shared with Private verifier canary',
+        });
+        expect(entry).toHaveAttribute('aria-expanded', 'false');
+        expect(
+            screen.queryByRole('list', { name: 'Recorded credential names' })
+        ).not.toBeInTheDocument();
+        fireEvent.click(entry);
+        expect(entry).toHaveAttribute('aria-expanded', 'true');
+        const names = screen.getByRole('list', { name: 'Recorded credential names' });
+        expect(names.id || names.parentElement?.id).toBe(entry.getAttribute('aria-controls'));
+        expect(
+            within(names)
+                .getAllByRole('listitem')
+                .map(item => item.textContent)
+        ).toEqual(['Private diploma canary', 'Credential', 'Private diploma canary']);
+        expect(mocks.load).toHaveBeenCalledTimes(1);
+        expect(mocks.remove).not.toHaveBeenCalled();
+        fireEvent.click(entry);
+        expect(entry).toHaveAttribute('aria-expanded', 'false');
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Delete entry for Private verifier canary' })
+        );
+        await waitFor(() => expect(mocks.remove).toHaveBeenCalledWith(expect.any(Object), 'event'));
+        expect(entry).toHaveAttribute('aria-expanded', 'false');
+    });
     it('supports opt-in, exact entry deletion and clear, reloading after each action', async () => {
         render(<VerifierHistorySection eligible />);
         await open();
