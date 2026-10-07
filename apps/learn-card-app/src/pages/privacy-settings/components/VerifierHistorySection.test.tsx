@@ -118,6 +118,21 @@ describe('verifier history controls', () => {
         expect(mocks.clear).toHaveBeenCalledTimes(1);
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
+    it('offers Clear after refreshing an already loaded empty history fails', async () => {
+        mocks.load.mockResolvedValue({ enabled: true, receipts: [], cleanupComplete: true });
+        render(<VerifierHistorySection eligible />);
+        await open();
+        expect(screen.getByRole('button', { name: 'Clear history' })).toBeDisabled();
+        mocks.load.mockRejectedValueOnce(new Error('Missing settings'));
+        fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+        await screen.findByRole('alert');
+        expect(screen.getByRole('button', { name: 'Clear history' })).not.toBeDisabled();
+        mocks.load.mockResolvedValue({ enabled: false, receipts: [], cleanupComplete: true });
+        fireEvent.click(screen.getByRole('button', { name: 'Clear history' }));
+        await waitFor(() => expect(mocks.clear).toHaveBeenCalledTimes(1));
+        await waitFor(() => expect(screen.getByRole('checkbox')).not.toBeChecked());
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
     it('shows incomplete Clear cleanup without implying all records were removed', async () => {
         render(<VerifierHistorySection eligible />);
         await open();

@@ -161,7 +161,8 @@ const VerifierHistorySection: React.FC<{ eligible: boolean; isEligible?: () => b
                                     disabled={
                                         loading ||
                                         (!visible.data.receipts.length &&
-                                            visible.data.cleanupComplete)
+                                            visible.data.cleanupComplete &&
+                                            error?.revision !== revision)
                                     }
                                     onClick={() =>
                                         void run(async context => {
