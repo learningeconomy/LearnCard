@@ -14,6 +14,7 @@ import {
 export const lcaApiEnvironmentShape = {
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     LAMBDA_STAGE: optionalEnvironmentString,
+    RUNTIME_SECRETS_ID: optionalEnvironmentString,
     PORT: environmentPort.default(3000),
     SEED: requiredEnvironmentString,
     SA_SEED_KMS_KEY_ARN: optionalEnvironmentString,
@@ -86,16 +87,8 @@ export const lcaApiEnvironmentSchema = z
         };
     })
     .superRefine((environment, context) => {
-        if (
-            environment.KEYCLOAK_ISSUERS?.split(',').some(value => value.trim()) &&
-            !environment.KEYCLOAK_AUDIENCES?.split(',').some(value => value.trim())
-        ) {
-            context.addIssue({
-                code: 'custom',
-                path: ['KEYCLOAK_AUDIENCES'],
-                message: 'Required when KEYCLOAK_ISSUERS is configured',
-            });
-        }
+        // OIDC uses issuers for redirect discovery without verifying Keycloak tokens.
+        // The Keycloak verifier itself requires audiences before accepting any token.
         if (environment.ESCROW_ENCLAVE_MODE === 'software') {
             try {
                 const keys = parseEscrowPrivateKeys(

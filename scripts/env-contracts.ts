@@ -123,6 +123,7 @@ const ENVIRONMENT_ENTRYPOINTS = [
     'services/learn-card-network/brain-service/lambda.ts',
     'services/learn-card-network/brain-service/didWebLambda.ts',
     'services/learn-card-network/lca-api/lambda.ts',
+    'services/learn-card-network/lca-api/lambdaApp.ts',
     'services/learn-card-network/lca-api/seedMigrationLambda.ts',
     'services/learn-card-network/learn-cloud-service/lambda.ts',
     'services/learn-card-network/learn-cloud-service/didWebLambda.ts',
@@ -133,6 +134,8 @@ const ENVIRONMENT_ENTRYPOINTS = [
 const ALLOWED_ENVIRONMENT_MODULES: Record<string, true> = {
     'services/learn-card-network/brain-service/src/config/environment.ts': true,
     'services/learn-card-network/lca-api/src/config/environment.ts': true,
+    // Bootstrap must read/write env before importing the validating environment module.
+    'services/learn-card-network/lca-api/src/config/runtimeSecrets.ts': true,
     'services/learn-card-network/learn-cloud-service/src/config/environment.ts': true,
 };
 
