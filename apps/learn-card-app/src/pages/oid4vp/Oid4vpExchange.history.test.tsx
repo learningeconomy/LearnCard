@@ -51,6 +51,7 @@ vi.mock('./components/RequestFinished', () => ({
         sharedClaimsBreakdown?: unknown[];
         redirectUri?: string;
         clientId?: string;
+        summary?: string;
     }) => (
         <div>
             Finished<span data-testid="success-details">{JSON.stringify(props)}</span>
@@ -111,7 +112,7 @@ beforeEach(() => {
         },
     });
     mocks.begin.mockResolvedValue({ finish: mocks.finish, isCurrent: () => mocks.current });
-    mocks.finish.mockResolvedValue('saved');
+    mocks.finish.mockImplementation(async () => (mocks.current ? 'saved' : 'skipped'));
     mocks.send.mockResolvedValue({ submitted: {} });
 });
 const approve = async () => {
@@ -144,6 +145,9 @@ describe('OID4VP disclosure account cancellation', () => {
         expect(screen.getByTestId('success-details')).toHaveTextContent('"sharedCredentials":[]');
         expect(screen.getByTestId('success-details')).not.toHaveTextContent('verifier.example');
         expect(screen.getByTestId('success-details')).not.toHaveTextContent('Diploma');
+        expect(screen.getByTestId('success-details')).toHaveTextContent('your account changed');
+        expect(mocks.finish).toHaveBeenCalledWith('sent');
+        expect(await mocks.finish.mock.results[0].value).toBe('skipped');
         expect(mocks.send).toHaveBeenCalledTimes(1);
     });
     it('retains success behavior and records only after one transport', async () => {

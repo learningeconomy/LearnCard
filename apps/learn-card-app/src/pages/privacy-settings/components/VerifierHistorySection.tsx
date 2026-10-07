@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useWallet, useModal, ModalTypes, type ModalInstanceToken } from 'learn-card-base';
 import { enterSharePrivacy } from '../../../components/share-links/sharePrivacy';
 import {
@@ -19,6 +19,7 @@ import * as m from '../../../paraglide/messages.js';
 import { VerifierHistoryList, historyButton as button } from './VerifierHistoryList';
 import { VerifierHistoryModal } from './VerifierHistoryModal';
 import GlassCard from './GlassCard';
+import { useConfirmClearVerifierHistory } from './useConfirmClearVerifierHistory';
 
 type Loaded = Awaited<ReturnType<typeof loadVerifierHistory>>;
 type State = { revision: number; context: HistoryContext; data: Loaded };
@@ -32,6 +33,8 @@ const VerifierHistorySection: React.FC<{ eligible: boolean; isEligible?: () => b
         mobile: ModalTypes.FullScreen,
     });
     const modal = useRef<{ token: ModalInstanceToken; revision: number } | null>(null);
+    const attemptedLoad = useRef<number | null>(null);
+    const inFlight = useRef<{ isSelectedAccount: () => boolean } | null>(null);
     const revision = useHistoryAccountRevision();
     const allowed = isHistoryAccountEligible(eligible && (isEligible?.() ?? true));
     const [state, setState] = useState<State | null>(null);
@@ -41,6 +44,7 @@ const VerifierHistorySection: React.FC<{ eligible: boolean; isEligible?: () => b
     const visible =
         allowed && state?.revision === revision && state.context.isCurrent() ? state : null;
     const loading = busy === revision;
+    const confirmClear = useConfirmClearVerifierHistory(allowed);
     useEffect(() => {
         if (modal.current && (!allowed || modal.current.revision !== revision)) {
             forceCloseModalByToken(modal.current.token);
@@ -91,37 +95,63 @@ const VerifierHistorySection: React.FC<{ eligible: boolean; isEligible?: () => b
         setError(previous => (previous?.revision === revision ? previous : null));
         setBusy(previous => (previous === revision ? previous : null));
     }, [revision]);
-    const run = async (action?: (context: HistoryContext) => Promise<unknown>) => {
-        if (loading || !allowed) return;
-        // Synchronous and sticky: recorders stop before any history decryption or render.
-        enterSharePrivacy();
-        const isSelectedAccount = captureHistoryAccount();
-        setBusy(revision);
-        setError(null);
-        let context = visible?.context;
-        try {
-            if (!context) {
-                const wallet = await initWallet();
-                if (!isSelectedAccount()) return;
-                context = captureHistoryContext(wallet, isEligible ?? eligible);
+    const run = useCallback(
+        async (action?: (context: HistoryContext) => Promise<unknown>) => {
+            if (inFlight.current?.isSelectedAccount() || !allowed) return;
+            // Synchronous and sticky: recorders stop before any history decryption or render.
+            enterSharePrivacy();
+            const isSelectedAccount = captureHistoryAccount();
+            const operation = { isSelectedAccount };
+            inFlight.current = operation;
+            setBusy(revision);
+            setError(null);
+            let context = visible?.context;
+            try {
+                if (!context) {
+                    const wallet = await initWallet();
+                    if (!isSelectedAccount()) return;
+                    context = captureHistoryContext(wallet, isEligible ?? eligible);
+                }
+                if (!context.isCurrent()) return;
+                const currentRevision = getHistoryAccountRevision();
+                setBusy(currentRevision);
+                const result = action ? await action(context) : undefined;
+                const data = await loadVerifierHistory(context);
+                if (result === false) data.cleanupComplete = false;
+                if (context.isCurrent()) setState({ revision: currentRevision, context, data });
+            } catch {
+                if (isSelectedAccount() && (!context || context.isCurrent()))
+                    setError({
+                        revision: getHistoryAccountRevision(),
+                        message: m['verifierHistory.loadFailed'](),
+                    });
+            } finally {
+                if (inFlight.current === operation) {
+                    inFlight.current = null;
+                    setBusy(null);
+                }
             }
-            if (!context.isCurrent()) return;
-            const currentRevision = getHistoryAccountRevision();
-            setBusy(currentRevision);
-            const result = action ? await action(context) : undefined;
-            const data = await loadVerifierHistory(context);
-            if (result === false) data.cleanupComplete = false;
-            if (context.isCurrent()) setState({ revision: currentRevision, context, data });
-        } catch {
-            if (isSelectedAccount() && (!context || context.isCurrent()))
-                setError({
-                    revision: getHistoryAccountRevision(),
-                    message: m['verifierHistory.loadFailed'](),
-                });
-        } finally {
-            if (isSelectedAccount()) setBusy(null);
-        }
-    };
+        },
+        [allowed, revision, visible, initWallet, isEligible, eligible]
+    );
+    useEffect(() => {
+        // Load once per account revision; failures require an explicit retry.
+        // Privacy exclusions activate in run() before any decryption starts.
+        if (
+            !allowed ||
+            visible ||
+            attemptedLoad.current === revision ||
+            inFlight.current?.isSelectedAccount()
+        )
+            return;
+        attemptedLoad.current = revision;
+        void run();
+    }, [allowed, revision, visible, busy, run]);
+    const requestClear = () =>
+        confirmClear(
+            () => void run(context => clearVerifierHistory(context)),
+            !visible || !!error || !visible.data.cleanupComplete
+        );
     return (
         <section
             aria-labelledby="verifier-history-title"
@@ -147,17 +177,24 @@ const VerifierHistorySection: React.FC<{ eligible: boolean; isEligible?: () => b
                     </p>
                 ) : (
                     <>
-                        {!visible && (
+                        {!visible && !loading && error?.revision === revision && (
                             <button
                                 type="button"
                                 className={button}
                                 onClick={() => void run()}
                                 disabled={loading}
                             >
-                                {loading
-                                    ? m['verifierHistory.loading']()
-                                    : m['verifierHistory.open']()}
+                                {m['verifierHistory.retry']()}
                             </button>
+                        )}
+                        {!visible && !error && (
+                            <p
+                                role="status"
+                                aria-live="polite"
+                                className="text-sm text-grayscale-600"
+                            >
+                                {m['verifierHistory.loading']()}
+                            </p>
                         )}
                         {error?.revision === revision && (
                             <>
@@ -169,9 +206,7 @@ const VerifierHistorySection: React.FC<{ eligible: boolean; isEligible?: () => b
                                         type="button"
                                         className={button}
                                         disabled={loading}
-                                        onClick={() =>
-                                            void run(context => clearVerifierHistory(context))
-                                        }
+                                        onClick={requestClear}
                                     >
                                         {m['verifierHistory.clear']()}
                                     </button>
@@ -225,9 +260,7 @@ const VerifierHistorySection: React.FC<{ eligible: boolean; isEligible?: () => b
                                                 visible.data.cleanupComplete &&
                                                 error?.revision !== revision)
                                         }
-                                        onClick={() =>
-                                            void run(context => clearVerifierHistory(context))
-                                        }
+                                        onClick={requestClear}
                                     >
                                         {m['verifierHistory.clear']()}
                                     </button>

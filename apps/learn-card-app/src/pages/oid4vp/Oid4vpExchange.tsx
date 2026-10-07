@@ -270,7 +270,7 @@ const Oid4vpExchange: React.FC = () => {
                     );
                 }
 
-                const history = await beginVerifierDisclosure(context, {
+                const disclosure = await beginVerifierDisclosure(context, {
                     protocol: 'oid4vp',
                     titles: visibleCredentialTitles(chosen.map(c => c.candidate.credential)),
                     label: clientInfo.display?.name,
@@ -349,8 +349,8 @@ const Oid4vpExchange: React.FC = () => {
                         callbacks: resilience.callbacks,
                     });
 
-                void history.finish('sent').then(result => {
-                    if (result === 'unavailable' && history.isCurrent())
+                void disclosure.finish('sent').then(recordingResult => {
+                    if (recordingResult === 'unavailable' && disclosure.isCurrent())
                         presentToast(m['verifierHistory.saveFailed'](), {
                             type: ToastTypeEnum.Error,
                         });
@@ -485,6 +485,9 @@ const Oid4vpExchange: React.FC = () => {
                 {phase.kind === 'finished' && (
                     <RequestFinished
                         redirectUri={phase.accountChanged ? undefined : phase.submitted.redirectUri}
+                        summary={
+                            phase.accountChanged ? m['verifierHistory.accountChanged']() : undefined
+                        }
                         clientId={phase.clientInfo?.clientId}
                         clientIdScheme={phase.clientInfo?.clientIdScheme}
                         clientDisplay={phase.clientInfo?.display}

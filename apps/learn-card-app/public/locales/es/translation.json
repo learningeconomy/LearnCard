@@ -9363,7 +9363,13 @@
         "credential": "Credencial",
         "delete": "Eliminar entrada",
         "deleteLabel": "Eliminar entrada de {{verifier}}",
-        "loadFailed": "No se pudo cargar o actualizar el historial. Comprueba tu conexión e inténtalo de nuevo."
+        "loadFailed": "No se pudo cargar o actualizar el historial. Comprueba tu conexión e inténtalo de nuevo.",
+        "retry": "Reintentar historial",
+        "clearTitle": "¿Borrar el historial privado?",
+        "clearBody": "Se eliminarán permanentemente todas las entradas del historial privado. Tus credenciales y la información ya enviada no cambian.",
+        "clearConsent": "La opción de registro se mantiene si se puede leer la configuración; de lo contrario, se desactiva.",
+        "clearRecovery": "No se pudo cargar parte del historial. Al borrarlo, también se eliminan las entradas ilegibles.",
+        "accountChanged": "El envío terminó, pero cambiaste de cuenta. Vuelve a la aplicación que lo solicitó para continuar."
     },
     "contractRequests": {
         "label": "Conectar",

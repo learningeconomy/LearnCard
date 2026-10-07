@@ -27,12 +27,18 @@ vi.mock('../../../components/share-links/sharePrivacy', () => ({
     enterSharePrivacy: mocks.privacy,
 }));
 vi.mock('../../../helpers/verifier-history/account', () => ({
-    captureHistoryAccount: () => () => mocks.current,
-    captureHistoryContext: (wallet: unknown) => ({
-        wallet,
-        eligible: mocks.allowed,
-        isCurrent: () => mocks.current,
-    }),
+    captureHistoryAccount: () => {
+        const revision = mocks.revision;
+        return () => mocks.current && mocks.revision === revision;
+    },
+    captureHistoryContext: (wallet: unknown) => {
+        const revision = mocks.revision;
+        return {
+            wallet,
+            eligible: mocks.allowed,
+            isCurrent: () => mocks.current && mocks.revision === revision,
+        };
+    },
     getHistoryAccountRevision: () => mocks.revision,
     useHistoryAccountRevision: () => mocks.revision,
     isHistoryAccountEligible: (eligible: boolean) => eligible && mocks.allowed,
@@ -53,8 +59,13 @@ const receipt = {
     outcome: 'handed-off',
 };
 const open = async () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Open private history' }));
     await screen.findByRole('checkbox');
+};
+const confirmClear = async () => {
+    expect(mocks.clear).not.toHaveBeenCalled();
+    const confirmation = render(mocks.modal.mock.calls.at(-1)![0]);
+    fireEvent.click(within(confirmation.container).getByRole('button', { name: 'Clear history' }));
+    confirmation.unmount();
 };
 beforeEach(() => {
     vi.clearAllMocks();
@@ -72,6 +83,10 @@ describe('verifier history controls', () => {
     it('activates privacy before loading, excludes screenshots, and distinguishes handoff from acceptance', async () => {
         render(<VerifierHistorySection eligible />);
         expect(mocks.load).not.toHaveBeenCalled();
+        expect(screen.getByRole('status')).toHaveTextContent('Updating history');
+        expect(
+            screen.queryByRole('button', { name: 'Open private history' })
+        ).not.toBeInTheDocument();
         expect(screen.queryByText(receipt.label)).not.toBeInTheDocument();
         await open();
         expect(mocks.privacy.mock.invocationCallOrder[0]).toBeLessThan(
@@ -135,6 +150,7 @@ describe('verifier history controls', () => {
         await waitFor(() => expect(mocks.remove).toHaveBeenCalledWith(expect.any(Object), 'event'));
         await waitFor(() => expect(screen.getByRole('checkbox')).not.toBeDisabled());
         fireEvent.click(screen.getByRole('button', { name: 'Clear history' }));
+        await confirmClear();
         await waitFor(() => expect(mocks.clear).toHaveBeenCalledTimes(1));
         await waitFor(() => expect(screen.getByRole('checkbox')).not.toBeDisabled());
         expect(mocks.load).toHaveBeenCalledTimes(4);
@@ -160,9 +176,9 @@ describe('verifier history controls', () => {
     it('offers Clear after an initial load failure and reloads the recovered state', async () => {
         mocks.load.mockRejectedValueOnce(new Error('Missing settings'));
         render(<VerifierHistorySection eligible />);
-        fireEvent.click(screen.getByRole('button', { name: 'Open private history' }));
         await screen.findByRole('alert');
         fireEvent.click(screen.getByRole('button', { name: 'Clear history' }));
+        await confirmClear();
         await screen.findByRole('checkbox');
         expect(mocks.clear).toHaveBeenCalledTimes(1);
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
@@ -178,6 +194,7 @@ describe('verifier history controls', () => {
         expect(screen.getByRole('button', { name: 'Clear history' })).not.toBeDisabled();
         mocks.load.mockResolvedValue({ enabled: false, receipts: [], cleanupComplete: true });
         fireEvent.click(screen.getByRole('button', { name: 'Clear history' }));
+        await confirmClear();
         await waitFor(() => expect(mocks.clear).toHaveBeenCalledTimes(1));
         await waitFor(() => expect(screen.getByRole('checkbox')).not.toBeChecked());
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
@@ -188,17 +205,13 @@ describe('verifier history controls', () => {
         mocks.clear.mockResolvedValue(false);
         mocks.load.mockResolvedValue({ enabled: false, receipts: [], cleanupComplete: true });
         fireEvent.click(screen.getByRole('button', { name: 'Clear history' }));
+        await confirmClear();
         await screen.findByText(/Some records could not be read or removed/);
         expect(screen.getByRole('button', { name: 'Clear history' })).not.toBeDisabled();
     });
     it('hides decrypted state synchronously on switch and rejects late loads', async () => {
         const { rerender } = render(<VerifierHistorySection eligible />);
         await open();
-        mocks.revision++;
-        mocks.current = false;
-        rerender(<VerifierHistorySection eligible />);
-        expect(screen.queryByText(receipt.label)).not.toBeInTheDocument();
-        mocks.current = true;
         let resolve!: (value: unknown) => void;
         mocks.load.mockImplementationOnce(
             () =>
@@ -206,15 +219,96 @@ describe('verifier history controls', () => {
                     resolve = done;
                 })
         );
-        fireEvent.click(screen.getByRole('button', { name: 'Open private history' }));
+        mocks.revision++;
+        rerender(<VerifierHistorySection eligible />);
+        expect(screen.queryByText(receipt.label)).not.toBeInTheDocument();
         await waitFor(() => expect(mocks.load).toHaveBeenCalledTimes(2));
-        mocks.current = false;
+        mocks.load.mockResolvedValue({ enabled: false, receipts: [], cleanupComplete: true });
         mocks.revision++;
         rerender(<VerifierHistorySection eligible />);
         await act(async () =>
             resolve({ enabled: true, receipts: [receipt], cleanupComplete: true })
         );
-        await waitFor(() => expect(screen.queryByText(receipt.label)).not.toBeInTheDocument());
+        await waitFor(() => expect(screen.getByRole('checkbox')).not.toBeChecked());
+        expect(screen.queryByText(receipt.label)).not.toBeInTheDocument();
+    });
+    it('loads once automatically and keeps recording off for a new account', async () => {
+        mocks.load.mockResolvedValue({ enabled: false, receipts: [], cleanupComplete: true });
+        const { rerender } = render(
+            <React.StrictMode>
+                <VerifierHistorySection eligible />
+            </React.StrictMode>
+        );
+        await open();
+        expect(screen.getByRole('checkbox')).not.toBeChecked();
+        expect(screen.getByText('No recorded disclosures.')).toBeInTheDocument();
+        expect(mocks.load).toHaveBeenCalledTimes(1);
+        rerender(
+            <React.StrictMode>
+                <VerifierHistorySection eligible />
+            </React.StrictMode>
+        );
+        expect(mocks.load).toHaveBeenCalledTimes(1);
+        expect(mocks.toggle).not.toHaveBeenCalled();
+    });
+    it('does not loop after an automatic load failure and offers a retry', async () => {
+        mocks.load.mockRejectedValueOnce(new Error('NETWORK_CANARY'));
+        render(<VerifierHistorySection eligible />);
+        await screen.findByRole('alert');
+        expect(mocks.load).toHaveBeenCalledTimes(1);
+        expect(screen.queryByText('NETWORK_CANARY')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Retry history' }));
+        await open();
+        expect(mocks.load).toHaveBeenCalledTimes(2);
+    });
+    it.each(['Cancel', 'dismiss'])('leaves history and consent unchanged on %s', async reason => {
+        render(<VerifierHistorySection eligible />);
+        await open();
+        fireEvent.click(screen.getByRole('button', { name: 'Clear history' }));
+        const [content, options] = mocks.modal.mock.calls.at(-1)!;
+        const confirmation = render(content);
+        expect(screen.getByTestId('verifier-history-clear-confirmation')).toHaveAttribute(
+            'data-feedback-exclude'
+        );
+        expect(
+            screen.getByText(/permanently deletes all private history entries/)
+        ).toBeInTheDocument();
+        if (reason === 'Cancel')
+            fireEvent.click(within(confirmation.container).getByRole('button', { name: 'Cancel' }));
+        else act(() => options.onClose());
+        // A stale confirmation callback cannot clear after Cancel or backdrop/Escape dismissal.
+        act(() => content.props.onConfirm());
+        expect(mocks.clear).not.toHaveBeenCalled();
+        expect(mocks.load).toHaveBeenCalledTimes(1);
+        expect(mocks.toggle).not.toHaveBeenCalled();
+    });
+    it.each(['account switch', 'eligibility loss'])(
+        'rejects a pending Clear on %s',
+        async reason => {
+            const card = render(<VerifierHistorySection eligible />);
+            await open();
+            fireEvent.click(screen.getByRole('button', { name: 'Clear history' }));
+            const content = mocks.modal.mock.calls.at(-1)![0];
+            if (reason === 'account switch') {
+                mocks.current = false;
+                mocks.revision++;
+            } else mocks.allowed = false;
+            card.rerender(<VerifierHistorySection eligible />);
+            act(() => content.props.onConfirm());
+            expect(mocks.close).toHaveBeenCalled();
+            expect(mocks.clear).not.toHaveBeenCalled();
+        }
+    );
+    it('confirms Clear only once even if its callback is repeated', async () => {
+        render(<VerifierHistorySection eligible />);
+        await open();
+        fireEvent.click(screen.getByRole('button', { name: 'Clear history' }));
+        const content = mocks.modal.mock.calls.at(-1)![0];
+        act(() => {
+            content.props.onConfirm();
+            content.props.onConfirm();
+        });
+        await waitFor(() => expect(mocks.clear).toHaveBeenCalledTimes(1));
     });
     it('bounds a 500-entry preview and pages locally without more reads', async () => {
         const receipts = Array.from({ length: 500 }, (_, i) => ({
@@ -345,6 +439,7 @@ describe('verifier history controls', () => {
         mocks.clear.mockResolvedValue(false);
         mocks.load.mockResolvedValue({ enabled: false, receipts: [], cleanupComplete: true });
         fireEvent.click(dialog.getByRole('button', { name: 'Clear history' }));
+        await confirmClear();
         await dialog.findByText(/Some records could not be read or removed/);
         expect(dialog.getByText('No recorded disclosures.')).toBeInTheDocument();
         expect(screen.getByRole('checkbox')).not.toBeChecked();

@@ -9414,7 +9414,13 @@
         "credential": "Credential",
         "delete": "Delete entry",
         "deleteLabel": "Delete entry for {{verifier}}",
-        "loadFailed": "History could not be loaded or updated. Check your connection and try again."
+        "loadFailed": "History could not be loaded or updated. Check your connection and try again.",
+        "retry": "Retry history",
+        "clearTitle": "Clear private history?",
+        "clearBody": "This permanently deletes all private history entries. Your credentials and information already sent stay unchanged.",
+        "clearConsent": "Recording stays as set when settings can be read; otherwise it turns off.",
+        "clearRecovery": "Some history could not be loaded. Clearing also removes unreadable entries.",
+        "accountChanged": "Sending completed, but your account changed. Return to the requesting application to continue."
     },
     "contractRequests": {
         "label": "Connect",

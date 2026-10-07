@@ -365,6 +365,30 @@ describe('private verifier history', () => {
         expect(await loadVerifierHistory(context)).toMatchObject({ cleanupComplete: false });
         expect(documents.size).toBe(4);
     });
+    it('Clear turns recording off when a read returns no settings, even from an enabled view', async () => {
+        const { context, wallet } = fixture();
+        await setVerifierHistoryEnabled(context, true);
+        await (await beginVerifierDisclosure(context, draft)).finish('sent');
+        vi.mocked(wallet.invoke.learnCloudReadPage).mockResolvedValueOnce({
+            records: [],
+            hasMore: false,
+        });
+        expect(await clearVerifierHistory(context)).toBe(true);
+        expect(await loadVerifierHistory(context)).toMatchObject({
+            enabled: false,
+            receipts: [],
+            cleanupComplete: false,
+        });
+    });
+    it('skips recording if the account switches after an attempt begins', async () => {
+        const { context, wallet, switchAccount } = fixture();
+        await setVerifierHistoryEnabled(context, true);
+        const attempt = await beginVerifierDisclosure(context, draft);
+        vi.mocked(wallet.invoke.learnCloudCreate).mockClear();
+        switchAccount();
+        expect(await attempt.finish('sent')).toBe('skipped');
+        expect(wallet.invoke.learnCloudCreate).not.toHaveBeenCalled();
+    });
     it('explicit Clear recovers missing Cloud settings without silently re-enabling recording', async () => {
         const { context, documents } = fixture();
         await setVerifierHistoryEnabled(context, true);

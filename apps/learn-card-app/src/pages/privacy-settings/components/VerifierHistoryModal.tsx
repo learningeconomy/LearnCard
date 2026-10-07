@@ -11,6 +11,7 @@ import {
 import { historyButton, VerifierHistoryList } from './VerifierHistoryList';
 import * as m from '../../../paraglide/messages.js';
 import './VerifierHistoryModal.css';
+import { useConfirmClearVerifierHistory } from './useConfirmClearVerifierHistory';
 
 type Loaded = Awaited<ReturnType<typeof loadVerifierHistory>>;
 const PAGE_SIZE = 20;
@@ -25,6 +26,7 @@ export const VerifierHistoryModal: React.FC<{
     const revision = useHistoryAccountRevision();
     const eligible = useVerifierHistoryEligibility();
     const current = context.isCurrent() && context.eligible && eligible();
+    const confirmClear = useConfirmClearVerifierHistory(current);
     const titleId = useId();
     const [data, setData] = useState(initialData);
     const [page, setPage] = useState(0);
@@ -98,7 +100,15 @@ export const VerifierHistoryModal: React.FC<{
                             disabled={
                                 busy || (!data.receipts.length && data.cleanupComplete && !error)
                             }
-                            onClick={() => void run(context => clearVerifierHistory(context))}
+                            onClick={() =>
+                                confirmClear(
+                                    () =>
+                                        void run(historyContext =>
+                                            clearVerifierHistory(historyContext)
+                                        ),
+                                    error || !data.cleanupComplete
+                                )
+                            }
                         >
                             {m['verifierHistory.clear']()}
                         </button>
@@ -138,8 +148,8 @@ export const VerifierHistoryModal: React.FC<{
                             )}
                             loading={busy}
                             onDelete={id =>
-                                void run(async context => {
-                                    if (!(await deleteVerifierReceipt(context, id)))
+                                void run(async historyContext => {
+                                    if (!(await deleteVerifierReceipt(historyContext, id)))
                                         throw new Error('Deletion incomplete');
                                 })
                             }

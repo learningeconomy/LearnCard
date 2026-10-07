@@ -346,7 +346,7 @@ export const clearVerifierHistory = async (context: HistoryContext): Promise<boo
     await append(context, {
         kind: 'settings',
         version: 1,
-        enabled: !scan.unknownConsent && (latestSettings(scan.records)?.enabled ?? false),
+        enabled: scan.unknownConsent ? false : (latestSettings(scan.records)?.enabled ?? false),
         revision: crypto.randomUUID(),
         generation: crypto.randomUUID(),
     });

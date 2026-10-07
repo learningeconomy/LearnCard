@@ -69,11 +69,11 @@ Click a verifier entry to expand the list of credential names recorded for that 
 
 The card shows the five newest entries. Choose **View all** to open the full history, with 20 entries per page. Refresh, Clear history and Delete entry are available in the history window; changes also update the card.
 
-In **Data Sharing Center**, open **Shared with verifiers** to enable private recording, delete individual entries or clear history. Recording is off by default and is unavailable for managed accounts. Disabling recording keeps previous entries; clearing readable history keeps the preference.
+In **Data Sharing Center**, **Shared with verifiers** loads automatically and shows recording controls and any entries. Recording is off by default and is unavailable for managed accounts. Disabling recording keeps previous entries; clearing readable history keeps the preference.
 
 ```mermaid
 flowchart LR
-    A[Open private history] --> B[Enable recording]
+    A[Open Data Sharing Center] --> B[Enable recording]
     B --> C[Send credentials]
     C --> D[Confirm current consent]
     D --> E[Save encrypted entry]
@@ -82,11 +82,15 @@ flowchart LR
 
 An entry records successful sending or a browser handoff, not verifier acceptance. It contains the visible credential titles and, where shown during review, the verifier name, origin and purpose. It contains no credentials, claims, credential addresses or link keys. Deleting history cannot retract information already sent.
 
-The app keeps an owner-encrypted consent snapshot on the device. Sending does not look up history in Cloud first. Without a readable local snapshot, recording is skipped until you open private history on that device; current consent is checked after sending before an entry is saved.
+The app keeps an owner-encrypted consent snapshot on the device. Sending does not look up history in Cloud first. Without a readable local snapshot, recording is skipped until you visit Data Sharing Center on that device; current consent is checked after sending before an entry is saved.
 
 History displays at most 500 entries from the last 90 days. Cleanup runs when history is successfully accessed; offline clients cannot guarantee immediate physical deletion. Unreadable records are hidden and are not automatically deleted. **Clear history** can remove them by their exact document IDs; unknown consent is then kept off for safety. Future-dated entries are hidden until the local clock catches up and are not removed solely because of clock skew.
 
+**Clear history** asks for confirmation before deleting entries, including from a recovery state. Cancel leaves history and recording unchanged. If a Clear read returns no settings, recording turns off for safety, even if it was previously on.
+
 If history cannot be loaded, **Clear history** remains available to reset recording to off when its settings are missing or unreadable. A cleanup warning means some records could not be removed; try Clear again. An unreadable encrypted document also prevents recording until recovery. A confirmed entry remains saved even when cleanup is incomplete.
+
+If your account changes after an OID4VP send completes, the success screen says so and hides the earlier account’s details. It does not redirect to the verifier under the new account; return to the requesting application to finish its session.
 
 ### Self-Assigning Skills
 

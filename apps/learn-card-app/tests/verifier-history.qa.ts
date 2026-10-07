@@ -33,8 +33,9 @@ test('verifier history: off/on, three transports, controls and paging @mocked', 
     const openHistory = async () => {
         await nav('/privacy-and-data');
         await expect(section).toBeVisible();
-        const open = section.getByRole('button', { name: 'Open private history', exact: true });
-        if (await open.isVisible()) await open.click();
+        await expect(
+            section.getByRole('button', { name: 'Open private history', exact: true })
+        ).toHaveCount(0);
         await expect(section.getByRole('checkbox')).toBeVisible();
     };
     const refresh = async () => {
@@ -222,6 +223,10 @@ test('verifier history: off/on, three transports, controls and paging @mocked', 
     await test.step('Recording defaults off; no history storage calls in any send path', async () => {
         await openHistory();
         await expect(section.getByRole('checkbox')).not.toBeChecked();
+        await info.attach('Automatically loaded empty history', {
+            body: await section.screenshot({ animations: 'disabled' }),
+            contentType: 'image/png',
+        });
         for (const [name, submit] of [
             ['OID4VP', oid],
             ['VC-API', vc],
@@ -364,6 +369,27 @@ test('verifier history: off/on, three transports, controls and paging @mocked', 
             contentType: 'image/png',
         });
         await dialog.getByRole('button', { name: 'Clear history', exact: true }).click();
+        const confirmation = page.getByRole('dialog', {
+            name: 'Clear private history?',
+            exact: true,
+        });
+        await expect(confirmation).toBeVisible();
+        await expect(
+            confirmation.getByRole('button', { name: 'Cancel', exact: true })
+        ).toBeFocused();
+        const beforeCancel = await qa('status');
+        await expect(confirmation).toHaveCSS('opacity', '1');
+        await info.attach('Clear confirmation', {
+            body: await page.screenshot({ animations: 'disabled' }),
+            contentType: 'image/png',
+        });
+        await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
+        await expect(confirmation).toBeHidden();
+        expect((await qa('status')).calls).toEqual(beforeCancel.calls);
+        expect((await qa('status')).receipts).toEqual(beforeCancel.receipts);
+        await dialog.getByRole('button', { name: 'Clear history', exact: true }).click();
+        await confirmation.getByRole('button', { name: 'Clear history', exact: true }).click();
+        await expect(confirmation).toBeHidden();
         await expect(dialog.getByRole('listitem')).toHaveCount(0);
         await dialog.getByRole('button', { name: 'Done', exact: true }).click();
         await expect(section.getByRole('checkbox')).toBeChecked();

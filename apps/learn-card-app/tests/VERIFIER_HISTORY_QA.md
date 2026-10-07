@@ -17,7 +17,7 @@ The command starts its own local Vite server and signs in a synthetic adult acco
 adds a signed **QA University Diploma**, opens the actual selection/review screens, and
 asserts:
 
-- Recording defaults off. OID4VP, VC-API and CHAPI send without history storage calls.
+- Opening Shared loads history automatically; loading is shown before the controls. Recording defaults off. OID4VP, VC-API and CHAPI send without history storage calls.
 - Opting in creates one encrypted entry after each transport. CHAPI is labelled as a
   handoff, not confirmed delivery or acceptance.
 - Clicking a verifier entry shows its recorded credential names without storage reads.
@@ -25,7 +25,7 @@ asserts:
 - The main page shows five entries; the modal shows 20 per page. Next/Previous make
   no history storage reads. Deleting updates the main card, Escape permits reopening,
   and managed-account eligibility closes the modal.
-- Mobile controls fit. Clear keeps readable consent and the credential remains selectable.
+- Mobile controls fit. Clear asks for confirmation; Cancel makes no storage calls. Confirmed Clear keeps readable consent and the credential remains selectable.
 
 **Pass:** Playwright reports `1 passed` and every named step is green. For screenshots and
 step details, open the HTML report:
@@ -74,7 +74,7 @@ consent. Make sure the account has at least one test credential visible in its c
 list. Receiving/claiming a credential is setup and should not create an outgoing entry.
 
 Open `APP_URL/privacy-and-data`, find **Shared with verifiers**, and
-click **Open private history**. Confirm **Keep private history** is unchecked.
+wait for history to load automatically. Confirm **Keep private history** is unchecked.
 
 ### Launch a request with VC Playground
 

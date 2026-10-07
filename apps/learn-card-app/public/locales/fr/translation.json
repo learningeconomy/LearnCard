@@ -9363,7 +9363,13 @@
         "credential": "Attestation",
         "delete": "Supprimer l’entrée",
         "deleteLabel": "Supprimer l’entrée pour {{verifier}}",
-        "loadFailed": "L’historique n’a pas pu être chargé ou mis à jour. Vérifiez votre connexion et réessayez."
+        "loadFailed": "L’historique n’a pas pu être chargé ou mis à jour. Vérifiez votre connexion et réessayez.",
+        "retry": "Réessayer le chargement",
+        "clearTitle": "Effacer l’historique privé ?",
+        "clearBody": "Toutes les entrées de l’historique privé seront supprimées définitivement. Vos justificatifs et les informations déjà envoyées restent inchangés.",
+        "clearConsent": "L’enregistrement conserve son réglage si les paramètres sont lisibles ; sinon, il est désactivé.",
+        "clearRecovery": "Une partie de l’historique n’a pas pu être chargée. L’effacement supprime aussi les entrées illisibles.",
+        "accountChanged": "L’envoi est terminé, mais vous avez changé de compte. Retournez dans l’application à l’origine de la demande pour continuer."
     },
     "contractRequests": {
         "label": "Connexion",
