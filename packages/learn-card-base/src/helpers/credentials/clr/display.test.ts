@@ -135,8 +135,17 @@ describe('canonical CLR display adapter', () => {
         expect(findClrRecordById(model, achievement.id)).toBeUndefined();
         expect(resolveClrRecord(model.canonical, achievement.id).resolution).toBe('ambiguous');
         expect(findClrRecordById(model, 'second')?.record.sourceCredentialId).toBe('second');
-        expect(model.relationships.first).toHaveLength(1);
-        expect(model.relationships.first[0].relatedRecordId).toBe('second');
+        expect(model.relationships.first).toHaveLength(2);
+        expect(model.relationships.first).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ relatedRecordId: 'second', navigable: true }),
+                expect.objectContaining({
+                    relatedRecordId: achievement.id,
+                    resolution: 'ambiguous',
+                    navigable: false,
+                }),
+            ])
+        );
         expect(getLinkedCompetencies('first', [], model.associations)).toEqual([]);
     });
 
@@ -228,5 +237,60 @@ describe('canonical CLR display adapter', () => {
             'credentialSubject[0].verifiableCredential[0].credentialSubject[0].result[0].status'
         );
         expect(model.courses[0].name?.sourcePath).toBe('credentialSubject[0].achievement[0].name');
+    });
+});
+
+describe('mixed CLR relationship navigation', () => {
+    it('opens qualifications and other records by identity even when names match', () => {
+        const model = normalizeClrTranscriptDisplayModel(
+            collection(
+                [],
+                [
+                    { id: 'qualification', name: 'Shared name', achievementType: 'License' },
+                    { id: 'other', name: 'Shared name', achievementType: 'VolunteerExperience' },
+                ]
+            )
+        );
+        expect(findClrRecordById(model, 'qualification')?.kind).toBe('award');
+        expect(findClrRecordById(model, 'other')?.kind).toBe('other');
+        expect(findClrRecordById(model, 'qualification')?.record).not.toBe(
+            findClrRecordById(model, 'other')?.record
+        );
+    });
+
+    it('retains unresolved targets alongside navigable mixed-record targets', () => {
+        const credential = collection(
+            [],
+            [
+                { id: 'course', name: 'Course', achievementType: 'Course' },
+                { id: 'qualification', name: 'Qualification', achievementType: 'License' },
+                { id: 'other', name: 'Other', achievementType: 'VolunteerExperience' },
+            ]
+        );
+        const model = normalizeClrTranscriptDisplayModel({
+            ...credential,
+            credentialSubject: {
+                ...(credential.credentialSubject as ClrJsonObject),
+                association: ['qualification', 'other', 'missing-record'].map(targetId => ({
+                    type: 'Association',
+                    associationType: 'isRelatedTo',
+                    sourceId: 'course',
+                    targetId,
+                })),
+            },
+        });
+        const courseId = model.courses[0].sourceCredentialId;
+        expect(model.relationships[courseId]).toHaveLength(3);
+        expect(model.relationships[courseId].map(edge => edge.navigable)).toEqual([
+            true,
+            true,
+            false,
+        ]);
+        expect(model.relationships[courseId][2]).toMatchObject({
+            relatedRecordId: 'missing-record',
+            relatedRecordName: 'missing-record',
+            resolution: 'unresolved',
+        });
+        expect(findClrRecordById(model, 'missing-record')).toBeUndefined();
     });
 });

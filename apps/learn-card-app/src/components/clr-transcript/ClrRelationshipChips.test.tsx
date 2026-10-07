@@ -59,4 +59,29 @@ describe('ClrRelationshipChips', () => {
         expect(screen.queryByRole('button', { name: /^Open / })).not.toBeInTheDocument();
         expect(onSelectRecord).not.toHaveBeenCalled();
     });
+    it('explicitly labels unresolved and ambiguous targets without navigation buttons', () => {
+        const edge = Object.values(model.relationships).flat()[0];
+        render(
+            <ClrRelationshipChips
+                relationships={[
+                    {
+                        ...edge,
+                        relatedRecordId: 'missing',
+                        resolution: 'unresolved',
+                        navigable: false,
+                    },
+                    {
+                        ...edge,
+                        relatedRecordId: 'duplicate',
+                        resolution: 'ambiguous',
+                        navigable: false,
+                    },
+                ]}
+                onSelectRecord={vi.fn()}
+            />
+        );
+        expect(screen.getByText('(Target unresolved)')).toBeInTheDocument();
+        expect(screen.getByText('(Target ambiguous)')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /^Open / })).not.toBeInTheDocument();
+    });
 });

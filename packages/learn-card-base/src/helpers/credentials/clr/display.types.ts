@@ -259,6 +259,7 @@ export type RelationshipDisplayModel = {
     relatedRecordName: string;
     label: string;
     navigable: boolean;
+    resolution?: import('./types').ClrAssociationResolution;
     source: SourceMappedField<string>;
 };
 
@@ -359,7 +360,9 @@ export type ClrNavigableRecord =
     | { kind: 'course'; record: CourseDisplayModel }
     | { kind: 'program'; record: ProgramDisplayModel }
     | { kind: 'assessment'; record: AssessmentDisplayModel }
-    | { kind: 'competency'; record: CompetencyDisplayModel };
+    | { kind: 'competency'; record: CompetencyDisplayModel }
+    | { kind: 'award'; record: AwardDisplayModel }
+    | { kind: 'other'; record: OtherAcademicRecordModel };
 
 export type ClrRecordNavigator = {
     selectRecord: (recordId: string) => void;

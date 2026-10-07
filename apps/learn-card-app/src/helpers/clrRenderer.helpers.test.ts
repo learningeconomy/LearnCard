@@ -662,7 +662,7 @@ describe('normalizeClrTranscriptDisplayModel', () => {
             );
         });
 
-        it('marks relationships to unsupported record types as non-navigable', () => {
+        it('makes award relationships navigable through the generic record route', () => {
             const credential = cloneRelationshipFixture();
             const foundation = credential.credentialSubject.verifiableCredential.find(
                 nested =>
@@ -697,7 +697,8 @@ describe('normalizeClrTranscriptDisplayModel', () => {
                 normalizedFoundation.sourceCredentialId
             ]?.find(relationship => relationship.relatedRecordName === 'Systems Thinking Award');
 
-            expect(awardRelationship?.navigable).toBe(false);
+            expect(awardRelationship?.navigable).toBe(true);
+            expect(awardRelationship?.relatedRecordId).toBe('urn:uuid:relationship-award');
         });
 
         it('ignores inherited object properties as competency relationship types', () => {

@@ -284,7 +284,7 @@ export const createClrTranscriptDisplayModel = (
         ];
     });
     const navigableIds = new Set(
-        [...courses, ...programs, ...competencies, ...assessments].map(
+        [...courses, ...programs, ...competencies, ...assessments, ...awards, ...otherRecords].map(
             record => record.sourceCredentialId
         )
     );

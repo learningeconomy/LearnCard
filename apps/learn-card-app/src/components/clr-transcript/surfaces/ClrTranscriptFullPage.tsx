@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 
+import ClrGenericRecordDetailPanel from '../ClrGenericRecordDetailPanel';
 import ClrCourseSection from '../ClrCourseSection';
 import ClrAssessmentSection from '../ClrAssessmentSection';
 import ClrAssessmentDetailPanel from '../ClrAssessmentDetailPanel';
@@ -85,6 +86,17 @@ export const createClrRecordNavigator = ({
                         adminMode={adminMode}
                         issuerName={model.header.issuerName?.value}
                         issuerLogo={issuerLogo}
+                    />
+                );
+                break;
+            case 'award':
+            case 'other':
+                openPanel(
+                    <ClrGenericRecordDetailPanel
+                        record={selected.record}
+                        model={model}
+                        onSelectRecord={navigator.selectRecord}
+                        adminMode={adminMode}
                     />
                 );
                 break;
@@ -197,16 +209,32 @@ const ClrTranscriptFullPage: React.FC<{
                     {(selectedView === 'StructuredTranscriptView' ||
                         selectedView === 'VerifierInspectionView') &&
                         model.awards.length > 0 && (
-                            <ClrAwardsSection awards={model.awards} records={model.records} />
+                            <ClrAwardsSection
+                                awards={model.awards}
+                                records={model.records}
+                                relationships={model.relationships}
+                                onSelectRecord={handleSelectRecord}
+                                onSelectAward={award =>
+                                    handleSelectRecord(award.sourceCredentialId)
+                                }
+                            />
                         )}
 
                     {selectedView !== 'SparseAcademicRecordView' && (
-                        <ClrOtherRecordsSection model={model} showSource={adminMode} />
+                        <ClrOtherRecordsSection
+                            model={model}
+                            showSource={adminMode}
+                            onSelectRecord={handleSelectRecord}
+                        />
                     )}
 
                     {/* Sparse / summary views */}
                     {selectedView === 'SparseAcademicRecordView' && (
-                        <SparseAcademicRecordView model={model} showSource={adminMode} />
+                        <SparseAcademicRecordView
+                            model={model}
+                            showSource={adminMode}
+                            onSelectRecord={handleSelectRecord}
+                        />
                     )}
                     {selectedView === 'CredentialSummaryView' && (
                         <CredentialSummaryView model={model} />

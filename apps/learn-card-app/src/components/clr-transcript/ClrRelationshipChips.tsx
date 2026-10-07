@@ -36,6 +36,16 @@ const ClrRelationshipChips: React.FC<{
                         ) : (
                             <span className="py-1.5 pl-3 pr-2 text-xs font-medium">
                                 {relationship.label}
+                                {relationship.resolution &&
+                                    relationship.resolution !== 'resolved' && (
+                                        <span className="ml-1 text-grayscale-500">
+                                            (
+                                            {relationship.resolution === 'ambiguous'
+                                                ? 'Target ambiguous'
+                                                : 'Target unresolved'}
+                                            )
+                                        </span>
+                                    )}
                             </span>
                         )}
                         <div className="pr-1.5">

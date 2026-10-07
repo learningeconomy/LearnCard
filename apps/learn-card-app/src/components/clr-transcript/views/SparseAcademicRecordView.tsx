@@ -11,7 +11,8 @@ import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credenti
 const SparseAcademicRecordView: React.FC<{
     model: ClrTranscriptDisplayModel;
     showSource?: boolean;
-}> = ({ model, showSource = false }) => {
+    onSelectRecord?: (id: string) => void;
+}> = ({ model, showSource = false, onSelectRecord }) => {
     return (
         <div className="space-y-4">
             {model.assessments.length > 0 && (
@@ -62,8 +63,20 @@ const SparseAcademicRecordView: React.FC<{
                     ))}
                 </div>
             )}
-            <ClrAwardsSection awards={model.awards} records={model.records} />
-            <ClrOtherRecordsSection model={model} showSource={showSource} />
+            <ClrAwardsSection
+                awards={model.awards}
+                records={model.records}
+                relationships={model.relationships}
+                onSelectRecord={onSelectRecord}
+                onSelectAward={
+                    onSelectRecord ? award => onSelectRecord(award.sourceCredentialId) : undefined
+                }
+            />
+            <ClrOtherRecordsSection
+                model={model}
+                showSource={showSource}
+                onSelectRecord={onSelectRecord}
+            />
         </div>
     );
 };

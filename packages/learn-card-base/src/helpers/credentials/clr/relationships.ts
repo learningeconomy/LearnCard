@@ -26,7 +26,12 @@ export const buildRelationshipGraph = (
         kind: RelationshipKind,
         labelPrefix: string
     ): void => {
-        if (!recordId || !relatedRecordId || !relatedRecordName) return;
+        if (!recordId) return;
+        const forward = recordId === association.sourceRecordId;
+        const resolution = forward ? association.targetResolution : association.sourceResolution;
+        relatedRecordId ??= forward ? association.targetId : association.sourceId;
+        relatedRecordName ??= relatedRecordId;
+        if (!relatedRecordId || !relatedRecordName) return;
 
         const dedupeKey = `${recordId}\u0000${kind}\u0000${relatedRecordId}`;
         if (seen.has(dedupeKey)) return;
@@ -38,7 +43,10 @@ export const buildRelationshipGraph = (
             recordId,
             relatedRecordId,
             relatedRecordName,
-            navigable: navigableRecordIds.has(relatedRecordId),
+            navigable:
+                (!resolution || resolution === 'resolved') &&
+                navigableRecordIds.has(relatedRecordId),
+            resolution,
             label: `${labelPrefix} ${relatedRecordName}`,
             source: association.source,
         });
@@ -181,6 +189,12 @@ export const findClrRecordById = (
 
     const competency = model.competencies.find(record => record.sourceCredentialId === id);
     if (competency) return { kind: 'competency', record: competency };
+
+    const award = model.awards.find(record => record.sourceCredentialId === id);
+    if (award) return { kind: 'award', record: award };
+
+    const other = model.otherRecords.find(record => record.sourceCredentialId === id);
+    if (other) return { kind: 'other', record: other };
 
     return undefined;
 };

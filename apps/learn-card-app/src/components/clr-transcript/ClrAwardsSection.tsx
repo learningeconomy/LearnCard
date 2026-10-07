@@ -1,6 +1,7 @@
 import React from 'react';
 import { ClrRecordDetails } from './ClrRecordDetails';
 import ClrResultWithScaleList from './ClrResultWithScaleList';
+import ClrRelationshipChips from './ClrRelationshipChips';
 import ClrAlignmentList from './ClrAlignmentList';
 import ClrTranscriptEvidenceList from './ClrTranscriptEvidenceList';
 import type { ClrNormalizedRecord } from 'learn-card-base/helpers/credentials/clr/types';
@@ -10,13 +11,18 @@ import { ChevronRight, Award } from 'lucide-react';
 import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
 import { formatAchievementType } from 'learn-card-base/helpers/credentials/clr/helpers';
 
-import type { AwardDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
+import type {
+    AwardDisplayModel,
+    RelationshipGraph,
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const ClrAwardsSection: React.FC<{
     awards: AwardDisplayModel[];
     records?: ClrNormalizedRecord[];
+    relationships?: RelationshipGraph;
+    onSelectRecord?: (id: string) => void;
     onSelectAward?: (award: AwardDisplayModel) => void;
-}> = ({ awards, records = [], onSelectAward }) => {
+}> = ({ awards, records = [], relationships = {}, onSelectRecord, onSelectAward }) => {
     if (awards.length === 0) return null;
 
     return (
@@ -92,7 +98,8 @@ const ClrAwardsSection: React.FC<{
                             {(award.results.length > 0 ||
                                 award.alignments.length > 0 ||
                                 award.evidence.length > 0 ||
-                                record) && (
+                                record ||
+                                relationships[award.sourceCredentialId]?.length) && (
                                 <div className="px-3 pb-4 sm:px-5">
                                     <ClrResultWithScaleList results={award.results} />
                                     {award.alignments.length > 0 && (
@@ -102,6 +109,12 @@ const ClrAwardsSection: React.FC<{
                                         <ClrTranscriptEvidenceList evidence={award.evidence} />
                                     )}
                                     <ClrRecordDetails record={record} />
+                                    <ClrRelationshipChips
+                                        relationships={
+                                            relationships[award.sourceCredentialId] ?? []
+                                        }
+                                        onSelectRecord={onSelectRecord}
+                                    />
                                 </div>
                             )}
                         </div>
