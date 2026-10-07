@@ -45,6 +45,8 @@ export interface AgentProviderRequest {
     tools: AgentToolDefinition[];
     signal?: AbortSignal;
     maxOutputTokens?: number;
+    /** Register raw provider data locally before parsing can throw. */
+    privacyObserver?: Pick<AgentRunObserver, 'onSensitiveContent'>;
 }
 
 export interface AgentTokenUsage {
@@ -60,6 +62,8 @@ export interface AgentModelRun {
 }
 
 export interface AgentRunObserver {
+    /** Local privacy registration only; never emitted or added to SDK scopes. */
+    onSensitiveContent?: (content: string | undefined) => void;
     onModelComplete?: (event: {
         runId: string;
         model: string;

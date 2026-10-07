@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { registerSensitiveContent } from './runAgent';
 
 import type {
     AgentMessage,
@@ -26,7 +27,16 @@ type OpenAIMessage = {
 const parseToolArguments = (rawArguments: string): Record<string, unknown> => {
     if (!rawArguments.trim()) return {};
 
-    const parsed = JSON.parse(rawArguments) as unknown;
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(rawArguments);
+    } catch (error) {
+        if (!(error instanceof SyntaxError)) throw error;
+        // Node includes a truncated model-output preview in JSON.parse errors.
+        // Do not retain the original message, stack or cause at this boundary.
+        // eslint-disable-next-line preserve-caught-error -- Native parser causes contain private model output.
+        throw new SyntaxError('Model returned malformed tool arguments.');
+    }
 
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
 
@@ -118,6 +128,7 @@ export const createOpenAIProvider = (apiKey: string): AgentProvider => {
             tools,
             signal,
             maxOutputTokens,
+            privacyObserver,
         }: AgentProviderRequest) => {
             const request: Record<string, unknown> = {
                 model,
@@ -138,6 +149,7 @@ export const createOpenAIProvider = (apiKey: string): AgentProvider => {
             const completion = signal
                 ? await client.chat.completions.create(request as never, { signal })
                 : await client.chat.completions.create(request as never);
+            registerSensitiveContent(completion, privacyObserver);
 
             const message = completion.choices[0]?.message;
 
