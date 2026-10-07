@@ -50,7 +50,38 @@ export type EnvironmentContract = {
     shape: z.ZodRawShape;
     injectedValues?: Record<string, string>;
     unmanagedKeys?: readonly string[];
+    // Deploy/runtime bootstrap controls (stage selection, secrets bundle id) read before the
+    // validating config module loads. Not in the schema; allowed in the example, never relaxes
+    // validation of a schema-managed value.
+    bootstrapKeys?: readonly string[];
+    // Checked-in per-stage config files (config/config*.json). Keys declared there are non-secret
+    // defaults/stage settings dedicated helpers read straight from process.env; the example may
+    // document them only if a stage file actually declares them, so typo'd keys still fail.
+    stageConfigPaths?: readonly string[];
 };
+
+const BRAIN_CONFIG_PATHS = [
+    'services/learn-card-network/brain-service/config/config.json',
+    'services/learn-card-network/brain-service/config/config.dev.json',
+    'services/learn-card-network/brain-service/config/config.production.json',
+] as const;
+
+const LEARN_CLOUD_CONFIG_PATHS = [
+    'services/learn-card-network/learn-cloud-service/config/config.json',
+    'services/learn-card-network/learn-cloud-service/config/config.dev.json',
+    'services/learn-card-network/learn-cloud-service/config/config.production.json',
+] as const;
+
+// Stage selection and the runtime secrets bundle id are resolved by the thin Lambda/Docker
+// bootstrap entrypoints before the validating config module is imported. The lca-api reference
+// contract keeps these inside its schema (see lcaApiEnvironmentShape); the brain/cloud services
+// adopted the extracted service-config model, so they declare them here instead.
+const SERVICE_BOOTSTRAP_KEYS = [
+    'CONFIG_STAGE',
+    'LAMBDA_STAGE',
+    'RUNTIME_SECRETS_ID',
+    'AWS_LAMBDA_FUNCTION_NAME',
+] as const;
 
 export const environmentContracts: readonly EnvironmentContract[] = [
     {
@@ -89,11 +120,17 @@ export const environmentContracts: readonly EnvironmentContract[] = [
         examplePath: EXAMPLE_PATHS[2],
         schema: brainService.brainServiceEnvironmentSchema,
         shape: brainService.brainServiceEnvironmentShape,
+        bootstrapKeys: SERVICE_BOOTSTRAP_KEYS,
+        stageConfigPaths: BRAIN_CONFIG_PATHS,
         unmanagedKeys: [
             'MONGO_URI',
             'MONGO_DB_NAME',
             'DEMO_PERSONA_SIGNING_AUTHORITY_ENDPOINT',
             'DEMO_PERSONA_SA_SEED',
+            // Optional owner-API namespace override read straight from process.env by
+            // share-link-owner/config.ts; defaults to SHARE_LINK_MAINTENANCE_NAMESPACE, so it is
+            // intentionally not seeded into the stage config files.
+            'SHARE_LINK_OWNER_API_NAMESPACE',
         ],
     },
     {
@@ -107,6 +144,11 @@ export const environmentContracts: readonly EnvironmentContract[] = [
         examplePath: EXAMPLE_PATHS[4],
         schema: learnCloudService.learnCloudServiceEnvironmentSchema,
         shape: learnCloudService.learnCloudServiceEnvironmentShape,
+        bootstrapKeys: SERVICE_BOOTSTRAP_KEYS,
+        stageConfigPaths: LEARN_CLOUD_CONFIG_PATHS,
+        // xAPI credentials and the JWT signing key are forwarded to the Lambda by
+        // serverless.function-env.cjs, not parsed by the service schema.
+        unmanagedKeys: ['XAPI_USERNAME', 'XAPI_PASSWORD', 'JWT_SIGNING_KEY'],
     },
 ];
 
@@ -121,7 +163,13 @@ const SOURCE_ROOTS = [
 
 const ENVIRONMENT_ENTRYPOINTS = [
     'services/learn-card-network/brain-service/lambda.ts',
+    'services/learn-card-network/brain-service/lambdaApp.ts',
     'services/learn-card-network/brain-service/didWebLambda.ts',
+    'services/learn-card-network/brain-service/didWebLambdaApp.ts',
+    'services/learn-card-network/brain-service/contractEventsLambda.ts',
+    'services/learn-card-network/brain-service/contractEventsLambdaApp.ts',
+    'services/learn-card-network/brain-service/shareLinkMaintenanceLambda.ts',
+    'services/learn-card-network/brain-service/shareLinkMaintenanceLambdaApp.ts',
     'services/learn-card-network/lca-api/lambda.ts',
     'services/learn-card-network/lca-api/lambdaApp.ts',
     'services/learn-card-network/lca-api/oidcLambda.ts',
@@ -129,9 +177,13 @@ const ENVIRONMENT_ENTRYPOINTS = [
     'services/learn-card-network/lca-api/seedMigrationLambda.ts',
     'services/learn-card-network/lca-api/seedMigrationApp.ts',
     'services/learn-card-network/learn-cloud-service/lambda.ts',
+    'services/learn-card-network/learn-cloud-service/lambdaApp.ts',
     'services/learn-card-network/learn-cloud-service/didWebLambda.ts',
+    'services/learn-card-network/learn-cloud-service/didWebLambdaApp.ts',
     'services/learn-card-network/learn-cloud-service/oidcLambda.ts',
+    'services/learn-card-network/learn-cloud-service/oidcLambdaApp.ts',
     'services/learn-card-network/learn-cloud-service/xApiLambda.ts',
+    'services/learn-card-network/learn-cloud-service/xApiLambdaApp.ts',
 ] as const;
 
 const ALLOWED_ENVIRONMENT_MODULES: Record<string, true> = {
@@ -140,12 +192,25 @@ const ALLOWED_ENVIRONMENT_MODULES: Record<string, true> = {
     'services/learn-card-network/lca-api/src/config/oidcEnvironment.ts': true,
     'services/learn-card-network/lca-api/src/config/cacheEnvironment.ts': true,
     // Stage bootstrap reads the deploy stage and applies checked-in config before the
-    // validating environment module is imported.
+    // validating environment module is imported. Each service keeps this in its stage
+    // module plus the Lambda/Docker entrypoints that run before the app loads.
     'services/learn-card-network/lca-api/lambda.ts': true,
     'services/learn-card-network/lca-api/oidcLambda.ts': true,
     'services/learn-card-network/lca-api/seedMigrationLambda.ts': true,
     'services/learn-card-network/lca-api/src/config/applyDockerStageConfig.ts': true,
+    'services/learn-card-network/brain-service/src/config/stageConfig.ts': true,
+    'services/learn-card-network/brain-service/src/config/applyDockerStageConfig.ts': true,
+    'services/learn-card-network/brain-service/lambda.ts': true,
+    'services/learn-card-network/brain-service/didWebLambda.ts': true,
+    'services/learn-card-network/brain-service/contractEventsLambda.ts': true,
+    'services/learn-card-network/brain-service/shareLinkMaintenanceLambda.ts': true,
     'services/learn-card-network/learn-cloud-service/src/config/environment.ts': true,
+    'services/learn-card-network/learn-cloud-service/src/config/stageConfig.ts': true,
+    'services/learn-card-network/learn-cloud-service/src/config/applyDockerStageConfig.ts': true,
+    'services/learn-card-network/learn-cloud-service/lambda.ts': true,
+    'services/learn-card-network/learn-cloud-service/didWebLambda.ts': true,
+    'services/learn-card-network/learn-cloud-service/oidcLambda.ts': true,
+    'services/learn-card-network/learn-cloud-service/xApiLambda.ts': true,
 };
 
 const walkSourceFiles = (root: string): string[] => {
@@ -230,25 +295,66 @@ export const findDirectEnvironmentReads = (): string[] => {
     return errors;
 };
 
-export const validateEnvironmentExamples = (): string[] => {
+const readStageConfig = (path: string): Record<string, string> => {
+    const parsed: unknown = JSON.parse(readFileSync(path, 'utf8'));
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error(`${path} must contain a flat config object`);
+    }
+    return Object.fromEntries(
+        Object.entries(parsed).map(([key, value]) => {
+            if (typeof value !== 'string' || !/^[A-Z][A-Z0-9_]*$/.test(key)) {
+                throw new Error(`${path} must contain environment names with string values`);
+            }
+            return [key, value];
+        })
+    );
+};
+
+export const loadStageConfigKeys = (paths: readonly string[] | undefined): Set<string> =>
+    new Set((paths ?? []).flatMap(path => Object.keys(readStageConfig(path))));
+
+// A field is required when its schema rejects an absent value: optional fields and fields with
+// a default accept `undefined`. Only required fields must be documented in the example; optional
+// non-secret defaults may be omitted.
+const isRequiredSchemaKey = (shape: z.ZodRawShape, key: string): boolean => {
+    const field = shape[key];
+
+    return field ? !field.safeParse(undefined).success : false;
+};
+
+export const validateEnvironmentExamples = (
+    contracts: readonly EnvironmentContract[] = environmentContracts
+): string[] => {
     const errors: string[] = [];
 
-    for (const contract of environmentContracts) {
+    for (const contract of contracts) {
         const values = parseEnvironmentExample(contract.examplePath);
         const schemaKeys = Object.keys(contract.shape);
-        const managedSchemaKeys = schemaKeys.filter(key => !contract.unmanagedKeys?.includes(key));
+        const stageConfigKeys = loadStageConfigKeys(contract.stageConfigPaths);
         const exampleKeys = Object.keys(values);
 
-        for (const key of managedSchemaKeys) {
-            if (!(key in values)) {
-                errors.push(`${contract.examplePath} does not document ${key}`);
-            }
+        const isDocumentableNonSchemaKey = (key: string): boolean =>
+            Boolean(contract.unmanagedKeys?.includes(key)) ||
+            Boolean(contract.bootstrapKeys?.includes(key)) ||
+            stageConfigKeys.has(key);
+
+        for (const key of schemaKeys) {
+            if (contract.unmanagedKeys?.includes(key)) continue;
+            if (key in values) continue;
+            if (
+                contract.stageConfigPaths &&
+                (stageConfigKeys.has(key) || !isRequiredSchemaKey(contract.shape, key))
+            )
+                continue;
+
+            errors.push(`${contract.examplePath} does not document required ${key}`);
         }
 
         for (const key of exampleKeys) {
-            if (!schemaKeys.includes(key) && !contract.unmanagedKeys?.includes(key)) {
-                errors.push(`${contract.examplePath} documents unknown key ${key}`);
-            }
+            if (schemaKeys.includes(key)) continue;
+            if (isDocumentableNonSchemaKey(key)) continue;
+
+            errors.push(`${contract.examplePath} documents unknown key ${key}`);
         }
 
         const result = contract.schema.safeParse({ ...values, ...contract.injectedValues });
@@ -258,6 +364,26 @@ export const validateEnvironmentExamples = (): string[] => {
                 errors.push(
                     `${contract.examplePath} ${issue.path.map(String).join('.') || '(environment)'}: ${issue.message}`
                 );
+            }
+        }
+
+        // Validate the actual bundled values too, layered over example credentials. The
+        // first path is the service base, followed by the dev and production overlays.
+        const [basePath, ...stagePaths] = contract.stageConfigPaths ?? [];
+        const base = basePath ? readStageConfig(basePath) : {};
+        for (const stagePath of stagePaths) {
+            const stageResult = contract.schema.safeParse({
+                ...values,
+                ...base,
+                ...readStageConfig(stagePath),
+                ...contract.injectedValues,
+            });
+            if (!stageResult.success) {
+                for (const issue of stageResult.error.issues) {
+                    errors.push(
+                        `${stagePath} ${issue.path.map(String).join('.') || '(environment)'}: ${issue.message}`
+                    );
+                }
             }
         }
     }
