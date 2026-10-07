@@ -29,7 +29,7 @@ import {
 } from './resume-builder.helpers';
 
 const vc = (category?: string, extra: Record<string, unknown> = {}): VC =>
-    ({ __category: category, ...extra } as unknown as VC);
+    ({ __category: category, ...extra }) as unknown as VC;
 
 describe('resume-builder helpers', () => {
     it('keeps LearnCloud list records and filters records without a URI', () => {

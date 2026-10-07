@@ -12,7 +12,6 @@ import {
     BoostCMSState,
     LCAStylesPackRegistryEntry,
     convertAttachmentsToEvidence,
-    defaultCategoryThumbImages,
     defaultIDCardImage,
     getAchievementTypeFromCustomType,
     isCustomBoostType,
@@ -140,9 +139,9 @@ export const addFallbackNameToCMSState = (state: BoostCMSState): BoostCMSState =
         ? replaceUnderscoresWithWhiteSpace(
               getAchievementTypeFromCustomType(state.basicInfo.achievementType ?? '') ?? ''
           )
-        : CATEGORY_TO_SUBCATEGORY_LIST[state.basicInfo.type]?.find(
+        : (CATEGORY_TO_SUBCATEGORY_LIST[state.basicInfo.type]?.find(
               options => options.type === state.basicInfo.achievementType
-          )?.title ?? '';
+          )?.title ?? '');
 
     return {
         ...state,
@@ -365,9 +364,11 @@ export const updateBoost = async (
     try {
         const alignments = vcInput.alignments ?? [];
         updatedCredential.credentialSubject = updatedCredential.credentialSubject ?? {};
-        (updatedCredential.credentialSubject as any).achievement =
-            (updatedCredential.credentialSubject as any).achievement ?? {};
-        (updatedCredential.credentialSubject as any).achievement.alignment = alignments;
+        const subject = updatedCredential.credentialSubject as {
+            achievement?: { alignment?: BoostCMSAlignment[] };
+        };
+        subject.achievement = subject.achievement ?? {};
+        subject.achievement.alignment = alignments;
     } catch (e) {
         log.warn('Failed to set nested alignments on updatedCredential', e);
     }
@@ -491,7 +492,7 @@ export const getBoostAdmin = async (wallet: BespokeLearnCard, boostUri: string) 
 export const getDefaultAchievementTypeImage = (
     category: string,
     achievementType: string,
-    currentBadgeImage: string,
+    _currentBadgeImage: string,
     stylesPack: LCAStylesPackRegistryEntry[] | undefined
 ): string => {
     const filteredStylePackEntries: LCAStylesPackRegistryEntry[] | undefined =
@@ -499,23 +500,12 @@ export const getDefaultAchievementTypeImage = (
     const defaultStylePackEntry: LCAStylesPackRegistryEntry | undefined =
         filteredStylePackEntries?.find(stylePackEntry => stylePackEntry.type === achievementType);
 
-    const defaultAchievementTypeImages = filteredStylePackEntries.flatMap(
-        stylePackEntry => stylePackEntry.url
-    );
-    const isDefaultAchievementTypeImage = defaultAchievementTypeImages.includes(currentBadgeImage);
-
-    const isDefaultCategoryImage: boolean = defaultCategoryThumbImages.includes(currentBadgeImage);
-
     const boostMetadata = getBoostMetadata(
         category as BoostCategoryOptionsEnum | CredentialCategoryEnum
     );
     const { CategoryImage } = boostMetadata || {};
 
     if (defaultStylePackEntry) return defaultStylePackEntry?.url;
-    else if (!defaultStylePackEntry && !isDefaultAchievementTypeImage) return CategoryImage || '';
-    // oxlint-disable-next-line no-dupe-else-if
-    else if (!defaultStylePackEntry && !isDefaultCategoryImage && !isDefaultAchievementTypeImage)
-        return currentBadgeImage;
 
     return CategoryImage || '';
 };
@@ -590,7 +580,7 @@ export const setQueryParam = (
     newValue: string
 ) => {
     if (history) {
-        let searchParams = new URLSearchParams(window.location.search);
+        const searchParams = new URLSearchParams(window.location.search);
         searchParams.set(queryParamName, newValue);
 
         history.replace({
@@ -603,7 +593,7 @@ export const setQueryParam = (
 };
 
 export const filterBoostRecipients = (recipients: BoostRecipientInfo[]) => {
-    let _recipients: BoostRecipientInfo[] = [];
+    const _recipients: BoostRecipientInfo[] = [];
 
     if (recipients?.length > 0) {
         recipients?.forEach(recipient => {
@@ -743,8 +733,7 @@ export const isCredentialExpired = (credential: VC) => {
 };
 
 export const getLearnCardBoostTemplates = (selectedCategory: BoostCategoryOptionsEnum) => {
-    let subCategoryTypes: { title: string; type: string; category: BoostCategoryOptionsEnum }[] =
-        [];
+    let subCategoryTypes: { title: string; type: string; category: BoostCategoryOptionsEnum }[];
 
     if (selectedCategory === BoostCategoryOptionsEnum.all) {
         const categoriesToFilterOut = [

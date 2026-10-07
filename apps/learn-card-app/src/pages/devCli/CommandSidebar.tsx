@@ -30,11 +30,21 @@ const CATEGORIES: CommandCategory[] = [
     { id: 'helpers', name: 'Helpers', icon: '🛠️', description: 'Utility functions and helpers' },
     { id: 'init', name: 'Initialization', icon: '⚡', description: 'Initialize LearnCard wallets' },
     { id: 'identity', name: 'Identity', icon: '🆔', description: 'DID and identity operations' },
-    { id: 'credentials', name: 'Credentials', icon: '📜', description: 'Issue, verify, and manage VCs' },
+    {
+        id: 'credentials',
+        name: 'Credentials',
+        icon: '📜',
+        description: 'Issue, verify, and manage VCs',
+    },
     { id: 'storage', name: 'Storage', icon: '💾', description: 'Store and retrieve data' },
     { id: 'profiles', name: 'Profiles', icon: '👤', description: 'Profile management' },
     { id: 'boosts', name: 'Boosts', icon: '🚀', description: 'Boost templates and sending' },
-    { id: 'activity', name: 'Activity', icon: '📊', description: 'Credential activity tracking and stats' },
+    {
+        id: 'activity',
+        name: 'Activity',
+        icon: '📊',
+        description: 'Credential activity tracking and stats',
+    },
 ];
 
 export const COMMANDS: CommandTemplate[] = [
@@ -43,7 +53,8 @@ export const COMMANDS: CommandTemplate[] = [
         id: 'generate-random-key',
         name: 'Generate Random Key',
         description: 'Generate a cryptographically secure random 32-byte hex key',
-        template: 'Array.from(crypto.getRandomValues(new Uint8Array(32)), dec => dec.toString(16).padStart(2, "0")).join("")',
+        template:
+            'Array.from(crypto.getRandomValues(new Uint8Array(32)), dec => dec.toString(16).padStart(2, "0")).join("")',
         params: [],
         category: 'helpers',
     },
@@ -61,7 +72,13 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'List all keys of an object',
         template: 'Object.keys({{object}})',
         params: [
-            { name: 'object', type: 'string', placeholder: 'learnCard.invoke', description: 'Object to inspect', required: true },
+            {
+                name: 'object',
+                type: 'string',
+                placeholder: 'learnCard.invoke',
+                description: 'Object to inspect',
+                required: true,
+            },
         ],
         category: 'helpers',
     },
@@ -71,7 +88,13 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Format an object as pretty JSON',
         template: 'JSON.stringify({{object}}, null, 2)',
         params: [
-            { name: 'object', type: 'string', placeholder: '_', description: 'Object to format', required: true },
+            {
+                name: 'object',
+                type: 'string',
+                placeholder: '_',
+                description: 'Object to format',
+                required: true,
+            },
         ],
         category: 'helpers',
     },
@@ -91,7 +114,13 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Create a LearnCard from a deterministic seed',
         template: 'await initLearnCard({ seed: "{{seed}}", didkit })',
         params: [
-            { name: 'seed', type: 'string', placeholder: 'my-secret-seed-hex', description: '64-char hex seed (shorter strings are zero-padded)', required: true },
+            {
+                name: 'seed',
+                type: 'string',
+                placeholder: 'my-secret-seed-hex',
+                description: '64-char hex seed (shorter strings are zero-padded)',
+                required: true,
+            },
         ],
         category: 'init',
     },
@@ -101,7 +130,13 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Create a LearnCard connected to LearnCard Network',
         template: 'await initLearnCard({ seed: "{{seed}}", network: true, didkit })',
         params: [
-            { name: 'seed', type: 'string', placeholder: 'my-secret-seed-hex', description: '64-char hex seed', required: true },
+            {
+                name: 'seed',
+                type: 'string',
+                placeholder: 'my-secret-seed-hex',
+                description: '64-char hex seed',
+                required: true,
+            },
         ],
         category: 'init',
     },
@@ -109,9 +144,16 @@ export const COMMANDS: CommandTemplate[] = [
         id: 'init-full',
         name: 'Full LearnCard (Recommended)',
         description: 'Create a fully configured LearnCard with network + cloud',
-        template: 'await initLearnCard({ seed: "{{seed}}", network: true, cloud: { url: "https://cloud.learncard.com" }, allowRemoteContexts: true, didkit })',
+        template:
+            'await initLearnCard({ seed: "{{seed}}", network: true, cloud: { url: "https://cloud.learncard.com" }, allowRemoteContexts: true, didkit })',
         params: [
-            { name: 'seed', type: 'string', placeholder: 'my-secret-seed-hex', description: '64-char hex seed', required: true },
+            {
+                name: 'seed',
+                type: 'string',
+                placeholder: 'my-secret-seed-hex',
+                description: '64-char hex seed',
+                required: true,
+            },
         ],
         category: 'init',
     },
@@ -137,7 +179,13 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Create a LearnCard connected to a custom VC-API endpoint',
         template: 'await initLearnCard({ vcApi: "{{vcApiUrl}}", didkit })',
         params: [
-            { name: 'vcApiUrl', type: 'string', placeholder: 'https://bridge.learncard.com', description: 'VC-API endpoint URL', required: true },
+            {
+                name: 'vcApiUrl',
+                type: 'string',
+                placeholder: 'https://bridge.learncard.com',
+                description: 'VC-API endpoint URL',
+                required: true,
+            },
         ],
         category: 'init',
     },
@@ -157,7 +205,13 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Resolve a DID to its DID Document',
         template: 'await learnCard.invoke.resolveDid("{{did}}")',
         params: [
-            { name: 'did', type: 'string', placeholder: 'did:web:example.com', description: 'DID to resolve', required: true },
+            {
+                name: 'did',
+                type: 'string',
+                placeholder: 'did:web:example.com',
+                description: 'DID to resolve',
+                required: true,
+            },
         ],
         category: 'identity',
     },
@@ -177,7 +231,13 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Sign and issue a Verifiable Credential',
         template: 'await learnCard.invoke.issueCredential({{credential}})',
         params: [
-            { name: 'credential', type: 'json', placeholder: 'learnCard.invoke.getTestVc()', description: 'Unsigned VC to sign', required: true },
+            {
+                name: 'credential',
+                type: 'json',
+                placeholder: 'learnCard.invoke.getTestVc()',
+                description: 'Unsigned VC to sign',
+                required: true,
+            },
         ],
         category: 'credentials',
     },
@@ -187,7 +247,13 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Verify a signed Verifiable Credential',
         template: 'await learnCard.invoke.verifyCredential({{credential}})',
         params: [
-            { name: 'credential', type: 'json', placeholder: 'signedVC', description: 'Signed VC to verify', required: true },
+            {
+                name: 'credential',
+                type: 'json',
+                placeholder: 'signedVC',
+                description: 'Signed VC to verify',
+                required: true,
+            },
         ],
         category: 'credentials',
     },
@@ -223,7 +289,13 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Upload a credential to LearnCard Network storage',
         template: "await learnCard.store['LearnCard Network'].upload({{credential}})",
         params: [
-            { name: 'credential', type: 'json', placeholder: 'signedVC', description: 'Signed credential to upload', required: true },
+            {
+                name: 'credential',
+                type: 'json',
+                placeholder: 'signedVC',
+                description: 'Signed credential to upload',
+                required: true,
+            },
         ],
         category: 'storage',
     },
@@ -233,7 +305,13 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Retrieve a credential by its LC URI',
         template: 'await learnCard.read.get("{{uri}}")',
         params: [
-            { name: 'uri', type: 'string', placeholder: 'lc:network:...', description: 'Credential URI', required: true },
+            {
+                name: 'uri',
+                type: 'string',
+                placeholder: 'lc:network:...',
+                description: 'Credential URI',
+                required: true,
+            },
         ],
         category: 'storage',
     },
@@ -259,8 +337,20 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Send a signed credential to another profile',
         template: 'await learnCard.invoke.sendCredential("{{profileId}}", {{credential}})',
         params: [
-            { name: 'profileId', type: 'string', placeholder: 'recipient-profile-id', description: 'Recipient profile ID', required: true },
-            { name: 'credential', type: 'json', placeholder: 'signedVC', description: 'Signed credential to send', required: true },
+            {
+                name: 'profileId',
+                type: 'string',
+                placeholder: 'recipient-profile-id',
+                description: 'Recipient profile ID',
+                required: true,
+            },
+            {
+                name: 'credential',
+                type: 'json',
+                placeholder: 'signedVC',
+                description: 'Signed credential to send',
+                required: true,
+            },
         ],
         category: 'storage',
     },
@@ -277,10 +367,16 @@ export const COMMANDS: CommandTemplate[] = [
     {
         id: 'get-other-profile',
         name: 'Get Profile by ID',
-        description: 'Get another user\'s profile',
+        description: "Get another user's profile",
         template: 'await learnCard.invoke.getProfile("{{profileId}}")',
         params: [
-            { name: 'profileId', type: 'string', placeholder: 'profile-id', description: 'Profile ID to look up', required: true },
+            {
+                name: 'profileId',
+                type: 'string',
+                placeholder: 'profile-id',
+                description: 'Profile ID to look up',
+                required: true,
+            },
         ],
         category: 'profiles',
     },
@@ -290,7 +386,13 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Search for profiles by display name',
         template: 'await learnCard.invoke.searchProfiles("{{query}}")',
         params: [
-            { name: 'query', type: 'string', placeholder: 'John', description: 'Search query', required: true },
+            {
+                name: 'query',
+                type: 'string',
+                placeholder: 'John',
+                description: 'Search query',
+                required: true,
+            },
         ],
         category: 'profiles',
     },
@@ -302,10 +404,44 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Create a new boost template with optional default permissions',
         template: `await learnCard.invoke.createBoost({{credential}}, { name: '{{name}}', category: '{{category}}'{{#defaultPermissions}}, defaultPermissions: { {{defaultPermissions}} }{{/defaultPermissions}} })`,
         params: [
-            { name: 'credential', type: 'json', placeholder: 'unsignedVC', description: 'Credential template', required: true },
-            { name: 'name', type: 'string', placeholder: 'My Boost', description: 'Boost name', required: true },
-            { name: 'category', type: 'select', options: ['Achievement', 'Qualifications', 'ID', 'Skill', 'Learning History', 'Work History', 'Social Badge'], defaultValue: 'Achievement', description: 'Category', required: true },
-            { name: 'defaultPermissions', type: 'json', placeholder: 'canIssue: true, canEdit: false', description: 'Default permissions for all users (canIssue, canEdit, canRevoke, canManagePermissions, canViewAnalytics)', required: false },
+            {
+                name: 'credential',
+                type: 'json',
+                placeholder: 'unsignedVC',
+                description: 'Credential template',
+                required: true,
+            },
+            {
+                name: 'name',
+                type: 'string',
+                placeholder: 'My Boost',
+                description: 'Boost name',
+                required: true,
+            },
+            {
+                name: 'category',
+                type: 'select',
+                options: [
+                    'Achievement',
+                    'Qualifications',
+                    'ID',
+                    'Skill',
+                    'Learning History',
+                    'Work History',
+                    'Social Badge',
+                ],
+                defaultValue: 'Achievement',
+                description: 'Category',
+                required: true,
+            },
+            {
+                name: 'defaultPermissions',
+                type: 'json',
+                placeholder: 'canIssue: true, canEdit: false',
+                description:
+                    'Default permissions for all users (canIssue, canEdit, canRevoke, canManagePermissions, canViewAnalytics)',
+                required: false,
+            },
         ],
         category: 'boosts',
     },
@@ -315,9 +451,36 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Create a boost that anyone can issue (community badge)',
         template: `await learnCard.invoke.createBoost({{credential}}, { name: '{{name}}', category: '{{category}}', defaultPermissions: { canIssue: true } })`,
         params: [
-            { name: 'credential', type: 'json', placeholder: 'unsignedVC', description: 'Credential template', required: true },
-            { name: 'name', type: 'string', placeholder: 'Community Badge', description: 'Boost name', required: true },
-            { name: 'category', type: 'select', options: ['Achievement', 'Qualifications', 'ID', 'Skill', 'Learning History', 'Work History', 'Social Badge'], defaultValue: 'Social Badge', description: 'Category', required: true },
+            {
+                name: 'credential',
+                type: 'json',
+                placeholder: 'unsignedVC',
+                description: 'Credential template',
+                required: true,
+            },
+            {
+                name: 'name',
+                type: 'string',
+                placeholder: 'Community Badge',
+                description: 'Boost name',
+                required: true,
+            },
+            {
+                name: 'category',
+                type: 'select',
+                options: [
+                    'Achievement',
+                    'Qualifications',
+                    'ID',
+                    'Skill',
+                    'Learning History',
+                    'Work History',
+                    'Social Badge',
+                ],
+                defaultValue: 'Social Badge',
+                description: 'Category',
+                required: true,
+            },
         ],
         category: 'boosts',
     },
@@ -327,11 +490,50 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Create a boost as a child of an existing boost',
         template: `await learnCard.invoke.createChildBoost('{{parentUri}}', {{credential}}, { name: '{{name}}', category: '{{category}}'{{#defaultPermissions}}, defaultPermissions: { {{defaultPermissions}} }{{/defaultPermissions}} })`,
         params: [
-            { name: 'parentUri', type: 'string', placeholder: 'urn:lc:boost:parent123', description: 'Parent boost URI', required: true },
-            { name: 'credential', type: 'json', placeholder: 'unsignedVC', description: 'Credential template', required: true },
-            { name: 'name', type: 'string', placeholder: 'Child Boost', description: 'Boost name', required: true },
-            { name: 'category', type: 'select', options: ['Achievement', 'Qualifications', 'ID', 'Skill', 'Learning History', 'Work History', 'Social Badge'], defaultValue: 'Achievement', description: 'Category', required: true },
-            { name: 'defaultPermissions', type: 'json', placeholder: 'canIssue: true', description: 'Default permissions for all users', required: false },
+            {
+                name: 'parentUri',
+                type: 'string',
+                placeholder: 'urn:lc:boost:parent123',
+                description: 'Parent boost URI',
+                required: true,
+            },
+            {
+                name: 'credential',
+                type: 'json',
+                placeholder: 'unsignedVC',
+                description: 'Credential template',
+                required: true,
+            },
+            {
+                name: 'name',
+                type: 'string',
+                placeholder: 'Child Boost',
+                description: 'Boost name',
+                required: true,
+            },
+            {
+                name: 'category',
+                type: 'select',
+                options: [
+                    'Achievement',
+                    'Qualifications',
+                    'ID',
+                    'Skill',
+                    'Learning History',
+                    'Work History',
+                    'Social Badge',
+                ],
+                defaultValue: 'Achievement',
+                description: 'Category',
+                required: true,
+            },
+            {
+                name: 'defaultPermissions',
+                type: 'json',
+                placeholder: 'canIssue: true',
+                description: 'Default permissions for all users',
+                required: false,
+            },
         ],
         category: 'boosts',
     },
@@ -341,10 +543,44 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Update boost metadata (name, category, permissions)',
         template: `await learnCard.invoke.updateBoost('{{uri}}', { name: '{{name}}', category: '{{category}}'{{#defaultPermissions}}, defaultPermissions: { {{defaultPermissions}} }{{/defaultPermissions}} })`,
         params: [
-            { name: 'uri', type: 'string', placeholder: 'lc:boost:...', description: 'Boost URI', required: true },
-            { name: 'name', type: 'string', placeholder: 'Updated Name', description: 'New boost name', required: false },
-            { name: 'category', type: 'select', options: ['Achievement', 'Qualifications', 'ID', 'Skill', 'Learning History', 'Work History', 'Social Badge'], defaultValue: 'Achievement', description: 'New category', required: false },
-            { name: 'defaultPermissions', type: 'json', placeholder: 'canIssue: true, canEdit: true', description: 'Default permissions (canIssue, canEdit, canRevoke, canManagePermissions, canViewAnalytics)', required: false },
+            {
+                name: 'uri',
+                type: 'string',
+                placeholder: 'lc:boost:...',
+                description: 'Boost URI',
+                required: true,
+            },
+            {
+                name: 'name',
+                type: 'string',
+                placeholder: 'Updated Name',
+                description: 'New boost name',
+                required: false,
+            },
+            {
+                name: 'category',
+                type: 'select',
+                options: [
+                    'Achievement',
+                    'Qualifications',
+                    'ID',
+                    'Skill',
+                    'Learning History',
+                    'Work History',
+                    'Social Badge',
+                ],
+                defaultValue: 'Achievement',
+                description: 'New category',
+                required: false,
+            },
+            {
+                name: 'defaultPermissions',
+                type: 'json',
+                placeholder: 'canIssue: true, canEdit: true',
+                description:
+                    'Default permissions (canIssue, canEdit, canRevoke, canManagePermissions, canViewAnalytics)',
+                required: false,
+            },
         ],
         category: 'boosts',
     },
@@ -353,7 +589,7 @@ export const COMMANDS: CommandTemplate[] = [
     {
         id: 'get-boosts',
         name: 'Get My Boosts (Paginated)',
-        description: 'Get boost templates you\'ve created',
+        description: "Get boost templates you've created",
         template: 'await learnCard.invoke.getPaginatedBoosts()',
         params: [],
         category: 'boosts',
@@ -364,7 +600,13 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Get a specific boost template',
         template: 'await learnCard.invoke.getBoost("{{uri}}")',
         params: [
-            { name: 'uri', type: 'string', placeholder: 'lc:boost:...', description: 'Boost URI', required: true },
+            {
+                name: 'uri',
+                type: 'string',
+                placeholder: 'lc:boost:...',
+                description: 'Boost URI',
+                required: true,
+            },
         ],
         category: 'boosts',
     },
@@ -382,7 +624,13 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Get child boosts of a parent boost',
         template: 'await learnCard.invoke.getBoostChildren("{{uri}}")',
         params: [
-            { name: 'uri', type: 'string', placeholder: 'lc:boost:parent...', description: 'Parent boost URI', required: true },
+            {
+                name: 'uri',
+                type: 'string',
+                placeholder: 'lc:boost:parent...',
+                description: 'Parent boost URI',
+                required: true,
+            },
         ],
         category: 'boosts',
     },
@@ -392,7 +640,13 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Get parent boosts of a child boost',
         template: 'await learnCard.invoke.getBoostParents("{{uri}}")',
         params: [
-            { name: 'uri', type: 'string', placeholder: 'lc:boost:child...', description: 'Child boost URI', required: true },
+            {
+                name: 'uri',
+                type: 'string',
+                placeholder: 'lc:boost:child...',
+                description: 'Child boost URI',
+                required: true,
+            },
         ],
         category: 'boosts',
     },
@@ -408,8 +662,20 @@ export const COMMANDS: CommandTemplate[] = [
     templateUri: '{{templateUri}}'
 })`,
         params: [
-            { name: 'recipient', type: 'string', placeholder: 'profile-id or DID', description: 'Recipient profile ID or DID', required: true },
-            { name: 'templateUri', type: 'string', placeholder: 'urn:lc:boost:abc123', description: 'Boost template URI', required: true },
+            {
+                name: 'recipient',
+                type: 'string',
+                placeholder: 'profile-id or DID',
+                description: 'Recipient profile ID or DID',
+                required: true,
+            },
+            {
+                name: 'templateUri',
+                type: 'string',
+                placeholder: 'urn:lc:boost:abc123',
+                description: 'Boost template URI',
+                required: true,
+            },
         ],
         category: 'boosts',
     },
@@ -426,9 +692,27 @@ export const COMMANDS: CommandTemplate[] = [
     }
 })`,
         params: [
-            { name: 'recipient', type: 'string', placeholder: 'profile-id', description: 'Recipient profile ID', required: true },
-            { name: 'templateUri', type: 'string', placeholder: 'urn:lc:boost:abc123', description: 'Boost template URI', required: true },
-            { name: 'templateData', type: 'json', placeholder: 'courseName: "Web Dev 101",\ngrade: "A"', description: 'Key-value pairs for template variables', required: true },
+            {
+                name: 'recipient',
+                type: 'string',
+                placeholder: 'profile-id',
+                description: 'Recipient profile ID',
+                required: true,
+            },
+            {
+                name: 'templateUri',
+                type: 'string',
+                placeholder: 'urn:lc:boost:abc123',
+                description: 'Boost template URI',
+                required: true,
+            },
+            {
+                name: 'templateData',
+                type: 'json',
+                placeholder: 'courseName: "Web Dev 101",\ngrade: "A"',
+                description: 'Key-value pairs for template variables',
+                required: true,
+            },
         ],
         category: 'boosts',
     },
@@ -446,10 +730,43 @@ export const COMMANDS: CommandTemplate[] = [
     }
 })`,
         params: [
-            { name: 'recipient', type: 'string', placeholder: 'profile-id', description: 'Recipient profile ID', required: true },
-            { name: 'credential', type: 'json', placeholder: 'unsignedVC', description: 'Unsigned credential', required: true },
-            { name: 'name', type: 'string', placeholder: 'Course Completion', description: 'Boost name', required: true },
-            { name: 'category', type: 'select', options: ['Achievement', 'Qualifications', 'ID', 'Skill', 'Learning History', 'Work History', 'Social Badge'], defaultValue: 'Achievement', description: 'Category', required: true },
+            {
+                name: 'recipient',
+                type: 'string',
+                placeholder: 'profile-id',
+                description: 'Recipient profile ID',
+                required: true,
+            },
+            {
+                name: 'credential',
+                type: 'json',
+                placeholder: 'unsignedVC',
+                description: 'Unsigned credential',
+                required: true,
+            },
+            {
+                name: 'name',
+                type: 'string',
+                placeholder: 'Course Completion',
+                description: 'Boost name',
+                required: true,
+            },
+            {
+                name: 'category',
+                type: 'select',
+                options: [
+                    'Achievement',
+                    'Qualifications',
+                    'ID',
+                    'Skill',
+                    'Learning History',
+                    'Work History',
+                    'Social Badge',
+                ],
+                defaultValue: 'Achievement',
+                description: 'Category',
+                required: true,
+            },
         ],
         category: 'boosts',
     },
@@ -461,9 +778,28 @@ export const COMMANDS: CommandTemplate[] = [
     encrypt: {{encrypt}}
 })`,
         params: [
-            { name: 'recipient', type: 'string', placeholder: 'profile-id', description: 'Recipient profile ID', required: true },
-            { name: 'boostUri', type: 'string', placeholder: 'lc:boost:...', description: 'Boost URI', required: true },
-            { name: 'encrypt', type: 'select', options: ['true', 'false'], defaultValue: 'true', description: 'Encrypt credential', required: false },
+            {
+                name: 'recipient',
+                type: 'string',
+                placeholder: 'profile-id',
+                description: 'Recipient profile ID',
+                required: true,
+            },
+            {
+                name: 'boostUri',
+                type: 'string',
+                placeholder: 'lc:boost:...',
+                description: 'Boost URI',
+                required: true,
+            },
+            {
+                name: 'encrypt',
+                type: 'select',
+                options: ['true', 'false'],
+                defaultValue: 'true',
+                description: 'Encrypt credential',
+                required: false,
+            },
         ],
         category: 'boosts',
     },
@@ -475,7 +811,13 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'List all admin profiles for a boost',
         template: 'await learnCard.invoke.getBoostAdmins("{{uri}}")',
         params: [
-            { name: 'uri', type: 'string', placeholder: 'lc:boost:...', description: 'Boost URI', required: true },
+            {
+                name: 'uri',
+                type: 'string',
+                placeholder: 'lc:boost:...',
+                description: 'Boost URI',
+                required: true,
+            },
         ],
         category: 'boosts',
     },
@@ -485,8 +827,20 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Grant admin permissions to a profile',
         template: 'await learnCard.invoke.addBoostAdmin("{{boostUri}}", "{{profileId}}")',
         params: [
-            { name: 'boostUri', type: 'string', placeholder: 'lc:boost:...', description: 'Boost URI', required: true },
-            { name: 'profileId', type: 'string', placeholder: 'profile-id', description: 'Profile to grant admin', required: true },
+            {
+                name: 'boostUri',
+                type: 'string',
+                placeholder: 'lc:boost:...',
+                description: 'Boost URI',
+                required: true,
+            },
+            {
+                name: 'profileId',
+                type: 'string',
+                placeholder: 'profile-id',
+                description: 'Profile to grant admin',
+                required: true,
+            },
         ],
         category: 'boosts',
     },
@@ -496,8 +850,20 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Remove admin permissions from a profile',
         template: 'await learnCard.invoke.removeBoostAdmin("{{boostUri}}", "{{profileId}}")',
         params: [
-            { name: 'boostUri', type: 'string', placeholder: 'lc:boost:...', description: 'Boost URI', required: true },
-            { name: 'profileId', type: 'string', placeholder: 'profile-id', description: 'Profile to remove admin', required: true },
+            {
+                name: 'boostUri',
+                type: 'string',
+                placeholder: 'lc:boost:...',
+                description: 'Boost URI',
+                required: true,
+            },
+            {
+                name: 'profileId',
+                type: 'string',
+                placeholder: 'profile-id',
+                description: 'Profile to remove admin',
+                required: true,
+            },
         ],
         category: 'boosts',
     },
@@ -507,8 +873,20 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Get permissions for a profile on a boost',
         template: 'await learnCard.invoke.getBoostPermissions("{{boostUri}}", "{{profileId}}")',
         params: [
-            { name: 'boostUri', type: 'string', placeholder: 'lc:boost:...', description: 'Boost URI', required: true },
-            { name: 'profileId', type: 'string', placeholder: 'profile-id', description: 'Profile ID (optional, defaults to self)', required: false },
+            {
+                name: 'boostUri',
+                type: 'string',
+                placeholder: 'lc:boost:...',
+                description: 'Boost URI',
+                required: true,
+            },
+            {
+                name: 'profileId',
+                type: 'string',
+                placeholder: 'profile-id',
+                description: 'Profile ID (optional, defaults to self)',
+                required: false,
+            },
         ],
         category: 'boosts',
     },
@@ -521,10 +899,36 @@ export const COMMANDS: CommandTemplate[] = [
     canRevoke: {{canRevoke}}
 }, '{{profileId}}')`,
         params: [
-            { name: 'boostUri', type: 'string', placeholder: 'lc:boost:...', description: 'Boost URI', required: true },
-            { name: 'canIssue', type: 'select', options: ['true', 'false'], defaultValue: 'true', description: 'Can issue boost', required: true },
-            { name: 'canRevoke', type: 'select', options: ['true', 'false'], defaultValue: 'false', description: 'Can revoke issued boosts', required: true },
-            { name: 'profileId', type: 'string', placeholder: 'profile-id', description: 'Profile to update', required: true },
+            {
+                name: 'boostUri',
+                type: 'string',
+                placeholder: 'lc:boost:...',
+                description: 'Boost URI',
+                required: true,
+            },
+            {
+                name: 'canIssue',
+                type: 'select',
+                options: ['true', 'false'],
+                defaultValue: 'true',
+                description: 'Can issue boost',
+                required: true,
+            },
+            {
+                name: 'canRevoke',
+                type: 'select',
+                options: ['true', 'false'],
+                defaultValue: 'false',
+                description: 'Can revoke issued boosts',
+                required: true,
+            },
+            {
+                name: 'profileId',
+                type: 'string',
+                placeholder: 'profile-id',
+                description: 'Profile to update',
+                required: true,
+            },
         ],
         category: 'boosts',
     },
@@ -534,7 +938,13 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Get profiles that received this boost',
         template: 'await learnCard.invoke.getPaginatedBoostRecipients("{{uri}}")',
         params: [
-            { name: 'uri', type: 'string', placeholder: 'lc:boost:...', description: 'Boost URI', required: true },
+            {
+                name: 'uri',
+                type: 'string',
+                placeholder: 'lc:boost:...',
+                description: 'Boost URI',
+                required: true,
+            },
         ],
         category: 'boosts',
     },
@@ -544,7 +954,13 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Count profiles that received this boost',
         template: 'await learnCard.invoke.countBoostRecipients("{{uri}}")',
         params: [
-            { name: 'uri', type: 'string', placeholder: 'lc:boost:...', description: 'Boost URI', required: true },
+            {
+                name: 'uri',
+                type: 'string',
+                placeholder: 'lc:boost:...',
+                description: 'Boost URI',
+                required: true,
+            },
         ],
         category: 'boosts',
     },
@@ -554,7 +970,13 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Delete a boost template',
         template: 'await learnCard.invoke.deleteBoost("{{uri}}")',
         params: [
-            { name: 'uri', type: 'string', placeholder: 'lc:boost:...', description: 'Boost URI to delete', required: true },
+            {
+                name: 'uri',
+                type: 'string',
+                placeholder: 'lc:boost:...',
+                description: 'Boost URI to delete',
+                required: true,
+            },
         ],
         category: 'boosts',
     },
@@ -568,18 +990,38 @@ export const COMMANDS: CommandTemplate[] = [
     limit: {{limit}}, integrationId: "{{integrationId}}"
 })`,
         params: [
-            { name: 'limit', type: 'number', placeholder: '25', defaultValue: '25', description: 'Max results to return', required: false },
-            { name: 'integrationId', type: 'string', placeholder: 'your-integration-id', description: 'Filter by integration ID (optional)', required: false },
+            {
+                name: 'limit',
+                type: 'number',
+                placeholder: '25',
+                defaultValue: '25',
+                description: 'Max results to return',
+                required: false,
+            },
+            {
+                name: 'integrationId',
+                type: 'string',
+                placeholder: 'your-integration-id',
+                description: 'Filter by integration ID (optional)',
+                required: false,
+            },
         ],
         category: 'activity',
     },
     {
         id: 'get-activity-stats',
         name: 'Get Activity Stats',
-        description: 'Get aggregated credential activity stats (issued, claimed, failed, claim rate)',
+        description:
+            'Get aggregated credential activity stats (issued, claimed, failed, claim rate)',
         template: `await learnCard.invoke.getActivityStats({ integrationId: "{{integrationId}}" })`,
         params: [
-            { name: 'integrationId', type: 'string', placeholder: 'your-integration-id', description: 'Integration ID (optional)', required: false },
+            {
+                name: 'integrationId',
+                type: 'string',
+                placeholder: 'your-integration-id',
+                description: 'Integration ID (optional)',
+                required: false,
+            },
         ],
         category: 'activity',
     },
@@ -589,7 +1031,13 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Get details of a specific credential activity by its activity ID',
         template: 'await learnCard.invoke.getActivity({ activityId: "{{activityId}}" })',
         params: [
-            { name: 'activityId', type: 'string', placeholder: 'activity-uuid', description: 'Activity ID to look up', required: true },
+            {
+                name: 'activityId',
+                type: 'string',
+                placeholder: 'activity-uuid',
+                description: 'Activity ID to look up',
+                required: true,
+            },
         ],
         category: 'activity',
     },
@@ -599,7 +1047,13 @@ export const COMMANDS: CommandTemplate[] = [
         description: 'Get all events in a credential activity chain (e.g., CREATED → CLAIMED)',
         template: 'await learnCard.invoke.getActivityChain({ activityId: "{{activityId}}" })',
         params: [
-            { name: 'activityId', type: 'string', placeholder: 'activity-uuid', description: 'Activity ID to look up the chain for', required: true },
+            {
+                name: 'activityId',
+                type: 'string',
+                placeholder: 'activity-uuid',
+                description: 'Activity ID to look up the chain for',
+                required: true,
+            },
         ],
         category: 'activity',
     },
@@ -623,7 +1077,9 @@ const CommandSidebar: React.FC<CommandSidebarProps> = ({ onInsertCommand, isOpen
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
             commands = commands.filter(
-                cmd => cmd.name.toLowerCase().includes(query) || cmd.description.toLowerCase().includes(query)
+                cmd =>
+                    cmd.name.toLowerCase().includes(query) ||
+                    cmd.description.toLowerCase().includes(query)
             );
         } else if (selectedCategory) {
             commands = commands.filter(cmd => cmd.category === selectedCategory);
@@ -663,7 +1119,10 @@ const CommandSidebar: React.FC<CommandSidebarProps> = ({ onInsertCommand, isOpen
 
             // Handle conditional sections: {{#paramName}}...{{/paramName}}
             // If value is empty, remove the entire section; otherwise, keep content and replace {{paramName}}
-            const conditionalRegex = new RegExp(`\\{\\{#${param.name}\\}\\}([\\s\\S]*?)\\{\\{/${param.name}\\}\\}`, 'g');
+            const conditionalRegex = new RegExp(
+                `\\{\\{#${param.name}\\}\\}([\\s\\S]*?)\\{\\{/${param.name}\\}\\}`,
+                'g'
+            );
 
             if (value.trim()) {
                 // Keep the content inside the conditional, then replace the param placeholder
@@ -752,10 +1211,7 @@ const CommandSidebar: React.FC<CommandSidebarProps> = ({ onInsertCommand, isOpen
             <div className="command-list">
                 {filteredCommands.map(command => (
                     <div key={command.id} className="command-card">
-                        <div
-                            className="command-header"
-                            onClick={() => handleQuickInsert(command)}
-                        >
+                        <div className="command-header" onClick={() => handleQuickInsert(command)}>
                             <div className="command-info">
                                 <h3>{command.name}</h3>
                                 <p>{command.description}</p>
@@ -773,7 +1229,9 @@ const CommandSidebar: React.FC<CommandSidebarProps> = ({ onInsertCommand, isOpen
                                     ⏎
                                 </button>
                             ) : (
-                                <span className={`expand-icon ${expandedCommand === command.id ? 'expanded' : ''}`}>
+                                <span
+                                    className={`expand-icon ${expandedCommand === command.id ? 'expanded' : ''}`}
+                                >
                                     ▼
                                 </span>
                             )}
@@ -794,18 +1252,36 @@ const CommandSidebar: React.FC<CommandSidebarProps> = ({ onInsertCommand, isOpen
 
                                         {param.type === 'select' ? (
                                             <select
-                                                value={paramValues[command.id]?.[param.name] || param.defaultValue || ''}
-                                                onChange={e => handleParamChange(command.id, param.name, e.target.value)}
+                                                value={
+                                                    paramValues[command.id]?.[param.name] ||
+                                                    param.defaultValue ||
+                                                    ''
+                                                }
+                                                onChange={e =>
+                                                    handleParamChange(
+                                                        command.id,
+                                                        param.name,
+                                                        e.target.value
+                                                    )
+                                                }
                                             >
                                                 {param.options?.map(opt => (
-                                                    <option key={opt} value={opt}>{opt}</option>
+                                                    <option key={opt} value={opt}>
+                                                        {opt}
+                                                    </option>
                                                 ))}
                                             </select>
                                         ) : param.type === 'json' ? (
                                             <textarea
                                                 placeholder={param.placeholder}
                                                 value={paramValues[command.id]?.[param.name] || ''}
-                                                onChange={e => handleParamChange(command.id, param.name, e.target.value)}
+                                                onChange={e =>
+                                                    handleParamChange(
+                                                        command.id,
+                                                        param.name,
+                                                        e.target.value
+                                                    )
+                                                }
                                                 rows={3}
                                             />
                                         ) : (
@@ -813,7 +1289,13 @@ const CommandSidebar: React.FC<CommandSidebarProps> = ({ onInsertCommand, isOpen
                                                 type={param.type === 'number' ? 'number' : 'text'}
                                                 placeholder={param.placeholder}
                                                 value={paramValues[command.id]?.[param.name] || ''}
-                                                onChange={e => handleParamChange(command.id, param.name, e.target.value)}
+                                                onChange={e =>
+                                                    handleParamChange(
+                                                        command.id,
+                                                        param.name,
+                                                        e.target.value
+                                                    )
+                                                }
                                             />
                                         )}
                                     </div>

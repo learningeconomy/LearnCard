@@ -106,7 +106,7 @@ export type EntryVC = AchievementCredential & {
             id: string;
             description: string;
             alignment: [
-                { type: ['Alignment']; targetName: string; targetUrl: string; targetCode: string }
+                { type: ['Alignment']; targetName: string; targetUrl: string; targetCode: string },
             ];
         };
     };

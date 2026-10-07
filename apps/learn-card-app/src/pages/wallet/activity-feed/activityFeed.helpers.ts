@@ -275,7 +275,7 @@ export const toActivityFeedVM = (record: RawActivity, myProfileId?: string): Act
     const actorName =
         direction === 'sent'
             ? m['passport.activity.you']()
-            : record.actorProfileId ?? m['passport.activity.someone']();
+            : (record.actorProfileId ?? m['passport.activity.someone']());
     const isSelf =
         direction === 'sent' &&
         Boolean(myProfileId) &&

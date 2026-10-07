@@ -25,3 +25,5 @@ Use an orange Qualifications palette across Passport tiles, category pages, Boos
 Fix About Qualifications to display Qualifications artwork and explain professional credentials instead of falling back to Skills. Select descriptor content by category rather than the translated title, add the description in every supported language, and present the modal through the shared inset-owning surface.
 
 Use white Passport category-card backgrounds in Neutral Mode for both tile and list views. Preserve the existing Colorful category backgrounds and icons.
+
+Recognize French Qualification and Qualifications labels as legitimate cognates in the untranslated-value guard, and normalize the changed-file formatting required by CI. Resolve existing Boost helper lint errors without changing credential updates, template ordering, recipient filtering, query parameters, or image selection.
