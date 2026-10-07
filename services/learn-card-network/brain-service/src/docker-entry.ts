@@ -1,3 +1,5 @@
+import './config/applyDockerStageConfig';
+
 import { dispatchContractEvents } from '@helpers/contract-events.helpers';
 import { configureInboxBatchBodyLimit } from '@helpers/inbox-batch-http.helpers';
 import { environment } from '@environment';
