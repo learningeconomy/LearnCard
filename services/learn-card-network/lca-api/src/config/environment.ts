@@ -87,8 +87,16 @@ export const lcaApiEnvironmentSchema = z
         };
     })
     .superRefine((environment, context) => {
-        // OIDC uses issuers for redirect discovery without verifying Keycloak tokens.
-        // The Keycloak verifier itself requires audiences before accepting any token.
+        if (
+            environment.KEYCLOAK_ISSUERS?.split(',').some(value => value.trim()) &&
+            !environment.KEYCLOAK_AUDIENCES?.split(',').some(value => value.trim())
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['KEYCLOAK_AUDIENCES'],
+                message: 'Required when KEYCLOAK_ISSUERS is configured',
+            });
+        }
         if (environment.ESCROW_ENCLAVE_MODE === 'software') {
             try {
                 const keys = parseEscrowPrivateKeys(

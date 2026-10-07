@@ -3,13 +3,12 @@ import { loadRuntimeSecrets } from './src/config/runtimeSecrets';
 type LambdaApp = typeof import('./lambdaApp');
 let application: Promise<LambdaApp> | undefined;
 
-const getApplication = (): Promise<LambdaApp> => {
-    application ??= loadRuntimeSecrets()
-        .then(() => import('./lambdaApp'))
-        .catch(error => {
-            application = undefined;
-            throw error;
-        });
+const getApplication = async (): Promise<LambdaApp> => {
+    // A failed fetch is retried by loadRuntimeSecrets itself on the next invocation.
+    await loadRuntimeSecrets();
+    // Import once. The bundler caches a failed module evaluation (e.g. invalid config),
+    // so re-importing could not recover; the error keeps surfacing until redeploy.
+    application ??= import('./lambdaApp');
     return application;
 };
 

@@ -44,7 +44,7 @@ it('does not import the app before secrets resolve; shares bootstrap and forward
     for (const handler of [lambda.swaggerUiHandler, lambda.didWebHandler, lambda.oidcHandler]) {
         await handler(event, context);
     }
-    expect(mocks.load).toHaveBeenCalledTimes(1);
+    // loadRuntimeSecrets memoizes internally; the app module is imported exactly once.
     expect(mocks.imported).toHaveBeenCalledTimes(1);
     expect(mocks.handler).toHaveBeenCalledTimes(5);
     expect(mocks.handler).toHaveBeenCalledWith(event, context, callback);

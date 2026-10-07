@@ -47,8 +47,8 @@ export const loadRuntimeSecrets = (): Promise<void> => {
                 const result = await client.send(new GetSecretValueCommand({ SecretId: secretId }));
                 const secrets = parseRuntimeSecrets(result.SecretString);
                 const merged = mergeRuntimeSecrets(process.env, secrets);
-                for (const key of Object.keys(secrets)) {
-                    process.env[key] = merged[key];
+                for (const [key, value] of Object.entries(secrets)) {
+                    process.env[key] = merged[key] ?? value;
                 }
             } finally {
                 client.destroy();

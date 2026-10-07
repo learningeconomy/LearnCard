@@ -11,9 +11,8 @@ const ENCLAVE_KEYS = [
     'ESCROW_HOLD_RESTART_MIN_AGE_MS',
 ];
 
-const pick = keys => Object.fromEntries(
-    keys.filter(key => process.env[key]).map(key => [key, process.env[key]])
-);
+const pick = keys =>
+    Object.fromEntries(keys.filter(key => process.env[key]).map(key => [key, process.env[key]]));
 
 exports.api = () => {
     const keys = process.env.ESCROW_ENCLAVE_MODE ? [...RELAY_KEYS, ...ENCLAVE_KEYS] : RELAY_KEYS;
@@ -28,11 +27,14 @@ exports.api = () => {
     ]);
 };
 
-exports.oidc = () => pick([
-    'KEYCLOAK_ISSUERS',
-    'OIDC_ISSUER',
-    'OIDC_CLIENT_ID',
-    'OIDC_CLIENT_SECRET',
-    'OIDC_REDIRECT_URIS',
-    'OIDC_SIGNING_KEY_SECRET_ID',
-]);
+// Audiences ride along so the shared schema can reject issuers without audiences at startup.
+exports.oidc = () =>
+    pick([
+        'KEYCLOAK_ISSUERS',
+        'KEYCLOAK_AUDIENCES',
+        'OIDC_ISSUER',
+        'OIDC_CLIENT_ID',
+        'OIDC_CLIENT_SECRET',
+        'OIDC_REDIRECT_URIS',
+        'OIDC_SIGNING_KEY_SECRET_ID',
+    ]);

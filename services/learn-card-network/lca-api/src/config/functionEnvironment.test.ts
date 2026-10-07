@@ -19,6 +19,7 @@ const authKeys = [
 ];
 const oidcKeys = [
     'KEYCLOAK_ISSUERS',
+    'KEYCLOAK_AUDIENCES',
     'OIDC_ISSUER',
     'OIDC_CLIENT_ID',
     'OIDC_CLIENT_SECRET',

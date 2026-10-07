@@ -116,7 +116,7 @@ describe('signing-authority seed environment', () => {
 });
 
 describe('Keycloak startup configuration', () => {
-    it.each([undefined, '', ' , , '])('allows issuer-only OIDC configuration: %s', audiences => {
+    it.each([undefined, '', '   ', ' , , '])('rejects missing audiences: %s', audiences => {
         expect(() =>
             parseLcaApiEnvironment({
                 NODE_ENV: 'test',
@@ -124,7 +124,7 @@ describe('Keycloak startup configuration', () => {
                 KEYCLOAK_ISSUERS: 'https://identity.example/realms/learncard',
                 KEYCLOAK_AUDIENCES: audiences,
             })
-        ).not.toThrow();
+        ).toThrow(/KEYCLOAK_AUDIENCES/);
     });
     it('allows disabled Keycloak and valid issuer/audience configuration', () => {
         expect(() =>
