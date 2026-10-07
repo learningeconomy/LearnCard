@@ -6,7 +6,7 @@ import * as m from '../../../paraglide/messages.js';
 export const historyButton =
     'min-h-[44px] py-3 px-4 rounded-[20px] border border-solid border-grayscale-300 bg-grayscale-100 text-grayscale-700 font-medium text-sm hover:bg-grayscale-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:bg-grayscale-100 disabled:border-grayscale-200 disabled:text-grayscale-500 disabled:cursor-not-allowed disabled:hover:bg-grayscale-100';
 
-/** Render only the visible preview/page; deletion always targets an exact reminder. */
+/** Render only the visible preview/page; deletion always targets an exact entry. */
 export const VerifierHistoryList: React.FC<{
     receipts: VerifierReceipt[];
     loading: boolean;

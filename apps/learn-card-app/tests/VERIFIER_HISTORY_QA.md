@@ -18,10 +18,10 @@ adds a signed **QA University Diploma**, opens the actual selection/review scree
 asserts:
 
 - Recording defaults off. OID4VP, VC-API and CHAPI send without history storage calls.
-- Opting in creates one encrypted reminder after each transport. CHAPI is labelled as a
+- Opting in creates one encrypted entry after each transport. CHAPI is labelled as a
   handoff, not confirmed delivery or acceptance.
-- Turning recording off preserves existing reminders. Going back from review sends nothing.
-- The main page shows five reminders; the modal shows 20 per page. Next/Previous make
+- Turning recording off preserves existing entries. Going back from review sends nothing.
+- The main page shows five entries; the modal shows 20 per page. Next/Previous make
   no history storage reads. Deleting updates the main card, Escape permits reopening,
   and managed-account eligibility closes the modal.
 - Mobile controls fit. Clear keeps readable consent and the credential remains selectable.
@@ -70,7 +70,7 @@ Sign in using a disposable test account with an adult primary profile, not a man
 child, service or switched profile. Use synthetic credentials only. Start with an account
 that has never enabled recording if testing the default; Clear does **not** reset readable
 consent. Make sure the account has at least one test credential visible in its credential
-list. Receiving/claiming a credential is setup and should not create an outgoing reminder.
+list. Receiving/claiming a credential is setup and should not create an outgoing entry.
 
 Open `APP_URL/privacy-and-data`, find **Shared with verifiers**, and
 click **Open private history**. Confirm **Keep private history** is unchecked.
@@ -120,14 +120,14 @@ new request to run again:
    category filters, **View selected**, review deselection and **Go back**. Only the
    final reviewed selection should be sent; going back or cancelling sends nothing.
 2. Return to **Shared with verifiers** and click **Refresh**. With recording off there
-   should be no new reminder. With recording on there should be one new reminder with
+   should be no new entry. With recording on there should be one new entry with
    the title and current timestamp. OID4VP/VC-API say **Sent; acceptance unknown**;
    CHAPI says **Handed to the application; delivery unconfirmed**. Generic requesting-app
    text is expected when no verifier identity was available during review.
-3. Turn recording off: previous reminders remain. Delete a test reminder and confirm the
+3. Turn recording off: previous entries remain. Delete a test entry and confirm the
    credential remains in the account. Enable recording again, then Clear readable history:
    the list empties and **Keep private history** stays checked. This cannot undo a prior send.
-4. With more than five reminders, confirm the five-item preview and **View all** modal.
+4. With more than five entries, confirm the five-item preview and **View all** modal.
    With more than 20, check Next/Previous. Use the automated fixture for this instead of
    manually sending hundreds of credentials. Check desktop and mobile widths.
 

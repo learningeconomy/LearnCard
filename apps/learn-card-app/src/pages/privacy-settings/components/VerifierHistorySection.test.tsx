@@ -84,14 +84,14 @@ describe('verifier history controls', () => {
         expect(screen.getByText(/Deleting history cannot retract/)).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /Stop sharing/ })).not.toBeInTheDocument();
     });
-    it('supports opt-in, exact reminder deletion and clear, reloading after each action', async () => {
+    it('supports opt-in, exact entry deletion and clear, reloading after each action', async () => {
         render(<VerifierHistorySection eligible />);
         await open();
         fireEvent.click(screen.getByRole('checkbox'));
         await waitFor(() => expect(mocks.toggle).toHaveBeenCalledWith(expect.any(Object), true));
         await waitFor(() => expect(screen.getByRole('checkbox')).not.toBeDisabled());
         fireEvent.click(
-            screen.getByRole('button', { name: 'Delete reminder for Private verifier canary' })
+            screen.getByRole('button', { name: 'Delete entry for Private verifier canary' })
         );
         await waitFor(() => expect(mocks.remove).toHaveBeenCalledWith(expect.any(Object), 'event'));
         await waitFor(() => expect(screen.getByRole('checkbox')).not.toBeDisabled());
@@ -232,7 +232,7 @@ describe('verifier history controls', () => {
             receipts: receipts.slice(0, 20),
             cleanupComplete: true,
         });
-        fireEvent.click(dialog.getByRole('button', { name: 'Delete reminder for Verifier 20' }));
+        fireEvent.click(dialog.getByRole('button', { name: 'Delete entry for Verifier 20' }));
         await waitFor(() =>
             expect(mocks.remove).toHaveBeenCalledWith(expect.any(Object), 'event-20')
         );

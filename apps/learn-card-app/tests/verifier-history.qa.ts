@@ -264,10 +264,6 @@ test('verifier history: off/on, three transports, controls and paging @mocked', 
         ]);
         expect(state.plaintextLeak).toBe(false);
         expect(state.privateSession).toBe(true);
-        await info.attach('History after all three protocols', {
-            body: await section.screenshot(),
-            contentType: 'image/png',
-        });
     });
     await test.step('Turning off preserves history; cancel review sends nothing', async () => {
         await setRecording(false);
@@ -279,15 +275,26 @@ test('verifier history: off/on, three transports, controls and paging @mocked', 
         await expect(page.getByRole('button', { name: 'Review', exact: true })).toBeVisible();
         expect((await qa('status')).handoffs).toBe(before);
     });
-    await test.step('Five-reminder preview, 20 per modal page; paging makes no storage reads', async () => {
+    await test.step('Five-entry preview, 20 per modal page; paging makes no storage reads', async () => {
         await openHistory();
         await setRecording(true);
         await qa('addReminders');
         await refresh();
         await expect(section.getByRole('listitem')).toHaveCount(5);
+        await page.setViewportSize({ width: 1440, height: 1800 });
+        await info.attach('Five-entry history preview', {
+            body: await section.screenshot({ animations: 'disabled' }),
+            contentType: 'image/png',
+        });
+        await page.setViewportSize({ width: 1280, height: 900 });
         await section.getByRole('button', { name: 'View all 25', exact: true }).click();
         const dialog = page.getByRole('dialog', { name: 'Shared with verifiers', exact: true });
         await expect(dialog.getByRole('listitem')).toHaveCount(20);
+        await expect(dialog).toHaveCSS('opacity', '1');
+        await info.attach('Desktop full history', {
+            body: await page.screenshot({ animations: 'disabled' }),
+            contentType: 'image/png',
+        });
         const before = (await qa('status')).reads;
         await dialog.getByRole('button', { name: 'Next', exact: true }).click();
         await expect(dialog.getByRole('listitem')).toHaveCount(5);
@@ -296,10 +303,10 @@ test('verifier history: off/on, three transports, controls and paging @mocked', 
         await expect(dialog.getByRole('listitem')).toHaveCount(20);
         expect((await qa('status')).reads).toBe(before);
         await dialog
-            .getByRole('button', { name: /Delete reminder/ })
+            .getByRole('button', { name: /Delete entry/ })
             .first()
             .click();
-        await expect(section).toContainText('Showing 5 of 24 reminders');
+        await expect(section).toContainText('Showing 5 of 24 entries');
         await dialog.getByRole('button', { name: 'Done', exact: true }).click();
         await section.getByRole('button', { name: 'View all 24', exact: true }).click();
         await page.keyboard.press('Escape');
@@ -320,8 +327,9 @@ test('verifier history: off/on, three transports, controls and paging @mocked', 
         expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
             390
         );
+        await expect(dialog).toHaveCSS('opacity', '1');
         await info.attach('Mobile full history', {
-            body: await page.screenshot(),
+            body: await page.screenshot({ animations: 'disabled' }),
             contentType: 'image/png',
         });
         await dialog.getByRole('button', { name: 'Clear history', exact: true }).click();

@@ -65,26 +65,26 @@ For browser application requests (CHAPI or VC-API), use the credential list to s
 
 ### Private Verifier History
 
-The card shows the five newest reminders. Choose **View all** to open the full history, with 20 reminders per page. Refresh, Clear history and Delete reminder are available in the history window; changes also update the card.
+The card shows the five newest entries. Choose **View all** to open the full history, with 20 entries per page. Refresh, Clear history and Delete entry are available in the history window; changes also update the card.
 
-In **Data Sharing Center**, open **Shared with verifiers** to enable private recording, delete individual reminders or clear history. Recording is off by default and is unavailable for managed accounts. Disabling recording keeps previous reminders; clearing readable history keeps the preference.
+In **Data Sharing Center**, open **Shared with verifiers** to enable private recording, delete individual entries or clear history. Recording is off by default and is unavailable for managed accounts. Disabling recording keeps previous entries; clearing readable history keeps the preference.
 
 ```mermaid
 flowchart LR
     A[Open private history] --> B[Enable recording]
     B --> C[Send credentials]
     C --> D[Confirm current consent]
-    D --> E[Save encrypted reminder]
-    E --> F[View or clear reminders]
+    D --> E[Save encrypted entry]
+    E --> F[View or clear entries]
 ```
 
-A reminder records successful sending or a browser handoff, not verifier acceptance. It contains the visible credential titles and, where shown during review, the verifier name, origin and purpose. It contains no credentials, claims, credential addresses or link keys. Deleting history cannot retract information already sent.
+An entry records successful sending or a browser handoff, not verifier acceptance. It contains the visible credential titles and, where shown during review, the verifier name, origin and purpose. It contains no credentials, claims, credential addresses or link keys. Deleting history cannot retract information already sent.
 
-The app keeps an owner-encrypted consent snapshot on the device. Sending does not look up history in Cloud first. Without a readable local snapshot, recording is skipped until you open private history on that device; current consent is checked after sending before a reminder is saved.
+The app keeps an owner-encrypted consent snapshot on the device. Sending does not look up history in Cloud first. Without a readable local snapshot, recording is skipped until you open private history on that device; current consent is checked after sending before an entry is saved.
 
-History displays at most 500 entries from the last 90 days. Cleanup runs when history is successfully accessed; offline clients cannot guarantee immediate physical deletion. Unreadable records are hidden and are not automatically deleted. **Clear history** can remove them by their exact document IDs; unknown consent is then kept off for safety. Future-dated reminders are hidden until the local clock catches up and are not removed solely because of clock skew.
+History displays at most 500 entries from the last 90 days. Cleanup runs when history is successfully accessed; offline clients cannot guarantee immediate physical deletion. Unreadable records are hidden and are not automatically deleted. **Clear history** can remove them by their exact document IDs; unknown consent is then kept off for safety. Future-dated entries are hidden until the local clock catches up and are not removed solely because of clock skew.
 
-If history cannot be loaded, **Clear history** remains available to reset recording to off when its settings are missing or unreadable. A cleanup warning means some records could not be removed; try Clear again. An unreadable encrypted document also prevents recording until recovery. A confirmed reminder remains saved even when cleanup is incomplete.
+If history cannot be loaded, **Clear history** remains available to reset recording to off when its settings are missing or unreadable. A cleanup warning means some records could not be removed; try Clear again. An unreadable encrypted document also prevents recording until recovery. A confirmed entry remains saved even when cleanup is incomplete.
 
 ### Self-Assigning Skills
 
