@@ -124,7 +124,10 @@ const ENVIRONMENT_ENTRYPOINTS = [
     'services/learn-card-network/brain-service/didWebLambda.ts',
     'services/learn-card-network/lca-api/lambda.ts',
     'services/learn-card-network/lca-api/lambdaApp.ts',
+    'services/learn-card-network/lca-api/oidcLambda.ts',
+    'services/learn-card-network/lca-api/oidcLambdaApp.ts',
     'services/learn-card-network/lca-api/seedMigrationLambda.ts',
+    'services/learn-card-network/lca-api/seedMigrationApp.ts',
     'services/learn-card-network/learn-cloud-service/lambda.ts',
     'services/learn-card-network/learn-cloud-service/didWebLambda.ts',
     'services/learn-card-network/learn-cloud-service/oidcLambda.ts',
@@ -134,8 +137,14 @@ const ENVIRONMENT_ENTRYPOINTS = [
 const ALLOWED_ENVIRONMENT_MODULES: Record<string, true> = {
     'services/learn-card-network/brain-service/src/config/environment.ts': true,
     'services/learn-card-network/lca-api/src/config/environment.ts': true,
-    // Bootstrap must read/write env before importing the validating environment module.
-    'services/learn-card-network/lca-api/src/config/runtimeSecrets.ts': true,
+    'services/learn-card-network/lca-api/src/config/oidcEnvironment.ts': true,
+    'services/learn-card-network/lca-api/src/config/cacheEnvironment.ts': true,
+    // Stage bootstrap reads the deploy stage and applies checked-in config before the
+    // validating environment module is imported.
+    'services/learn-card-network/lca-api/lambda.ts': true,
+    'services/learn-card-network/lca-api/oidcLambda.ts': true,
+    'services/learn-card-network/lca-api/seedMigrationLambda.ts': true,
+    'services/learn-card-network/lca-api/src/config/applyDockerStageConfig.ts': true,
     'services/learn-card-network/learn-cloud-service/src/config/environment.ts': true,
 };
 

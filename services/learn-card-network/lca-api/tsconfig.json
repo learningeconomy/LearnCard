@@ -22,6 +22,7 @@
             "@accesslayer/*": ["src/accesslayer/*"],
             "@cache": ["src/cache/index.ts"],
             "@cache/*": ["src/cache/*"],
+            "@config/*": ["src/config/*"],
             "@environment": ["src/config/environment.ts"],
             "@helpers/*": ["src/helpers/*"],
             "@instance": ["src/instance.ts"],
