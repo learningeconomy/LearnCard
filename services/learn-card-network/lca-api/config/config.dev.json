@@ -18,5 +18,5 @@
     "POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS": "recovery-key-backup",
     "SA_SEED_ALLOW_LEGACY_READ": "false",
     "SA_SEED_ENCRYPT_WRITES": "true",
-    "SENTRY_ENV": "lcn-production"
+    "SENTRY_ENV": "lca-api-staging"
 }
