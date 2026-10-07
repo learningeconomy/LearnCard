@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM oven/bun:1.3.14 AS build
+FROM oven/bun:1.4.2 AS build
 
 ENV NODE_ENV=production \
     SKIP_DIDKIT_NAPI=1
@@ -17,7 +17,7 @@ RUN bun build services/learn-card-network/ai-agent/scripts/runtime-did-auth-smok
     --outfile=services/learn-card-network/ai-agent/dist/runtime-did-auth-smoke.js \
     --external='@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
 
-FROM oven/bun:1.3.14-alpine
+FROM oven/bun:1.4.2-alpine
 
 RUN apk upgrade --no-cache
 

@@ -368,13 +368,13 @@ the drift workflow and protected deploy jobs; promotion reuses a staging digest.
 Set these **GitHub environment variables**, with main-only deployment branches and
 required production review/prevent-self-approval:
 
-| Variable                              | Value                                                   |
-| ------------------------------------- | ------------------------------------------------------- |
-| `AWS_DEPLOY_ROLE_ARN`                 | Bootstrap deploy role ARN                               |
-| `TF_STATE_BUCKET`                     | Bootstrap state bucket                                  |
-| `AWS_REGION`                          | us-east-1 (default)                                     |
-| `KEYCLOAK_CONTAINER_IMAGE`            | Service's account-local ARM64 digest URI                |
-| `KEYCLOAK_BOOTSTRAP_ADMIN_SECRET_ARN` | Service bootstrap password secret ARN, not its contents |
+| Variable                              | Value                                                                                                                              |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `AWS_DEPLOY_ROLE_ARN`                 | Bootstrap deploy role ARN                                                                                                          |
+| `TF_STATE_BUCKET`                     | Bootstrap state bucket                                                                                                             |
+| `AWS_REGION`                          | us-east-1 (default)                                                                                                                |
+| `KEYCLOAK_CONTAINER_IMAGE`            | Service's account-local ARM64 digest URI                                                                                           |
+| `KEYCLOAK_BOOTSTRAP_ADMIN_SECRET_ARN` | Existing bootstrap secret ARN override; required for first deployment, otherwise discovered from the ECS service's task definition |
 
 Set repository variables `KEYCLOAK_STAGING_PLAN_ROLE_ARN` and
 `KEYCLOAK_PRODUCTION_PLAN_ROLE_ARN` for main-branch drift checks only. These roles
