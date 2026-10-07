@@ -8,6 +8,7 @@ import { useModal, useWallet, useGetConnections } from 'learn-card-base';
 import TroopButton from './TroopButton';
 import { VC } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 const log = getLogger('address-book-selection-modal');
 
 type AddressBookSelectionModalProps = {
@@ -123,10 +124,10 @@ const AddressBookSelectionModal: React.FC<AddressBookSelectionModalProps> = ({
             <IonRow class="w-full max-w-[600px] px-3 py-[20px]">
                 <IonCol className="flex w-full items-center justify-start">
                     <div className="cursor-pointer text-grayscale-900" onClick={closeModal}>
-                        <CaretLeft />
+                        <CaretLeft className="rtl-mirror" />
                     </div>
                     <h1 className="text-[22px] font-notoSans font-normal text-grayscale-900 ml-[15px]">
-                        Select from Contacts
+                        {m['addressBook.selectFromContacts']()}
                     </h1>
                 </IonCol>
             </IonRow>
@@ -135,7 +136,7 @@ const AddressBookSelectionModal: React.FC<AddressBookSelectionModalProps> = ({
                     <IonCol className="flex w-full items-center justify-start">
                         <IonInput
                             autocapitalize="on"
-                            placeholder="Search..."
+                            placeholder={m['common.search']()}
                             value={search}
                             className="bg-white text-grayscale-800 ion-padding rounded-[15px] text-base font-medium tracking-wider subpixel-antialiased font-notoSans"
                             onIonInput={e => setSearch(e?.detail?.value as string)}
@@ -153,10 +154,10 @@ const AddressBookSelectionModal: React.FC<AddressBookSelectionModalProps> = ({
                         <AllContactsIcon />
                         <div className="flex flex-col items-start ml-2">
                             <span className="text-sp-purple-base text-[12px] font-bold font-notoSans">
-                                All Contacts
+                                {m['addressBook.allContacts']()}
                             </span>
                             <span className="text-grayscale-800 text-[17px] font-normal font-notoSans">
-                                {data?.length} Contacts
+                                {m['addressBook.contactsCount']({ count: data?.length ?? 0 })}
                             </span>
                         </div>
                         {selectedGroup === 'all' && (

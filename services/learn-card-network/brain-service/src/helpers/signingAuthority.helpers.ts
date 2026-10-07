@@ -1,5 +1,5 @@
-import dotenv from 'dotenv';
-import { Agent } from 'undici';
+import { environment } from '@environment';
+import { Agent, fetch as undiciFetch, type Response as UndiciResponse } from 'undici';
 import { getDidWebLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 import { VCValidator, JWEValidator } from '@learncard/types';
@@ -11,10 +11,10 @@ import { trace, traceCrypto, traceHttp } from '@tracing';
 import { PerfTracker } from '@helpers/perf';
 import { benchContextStorage } from '@helpers/bench-context.helpers';
 import { appendBitstringStatusListEntries } from './status-list.helpers';
+import { getBitstringStatusListEntries } from '@learncard/helpers';
+import type { IssuedCredential } from '../types/credential';
 
-dotenv.config();
-
-const IS_TEST_ENVIRONMENT = process.env.NODE_ENV === 'test';
+const IS_TEST_ENVIRONMENT = environment.NODE_ENV === 'test';
 
 // LC-1644 Phase 4e: the SA HTTP call previously used a 21s timeout with no retry.
 // In practice a healthy SA responds in ~220ms warm / ~1.5s cold; when it fails it's
@@ -124,19 +124,40 @@ export async function issueCredentialWithSigningAuthority(
     signingAuthorityForUser: SigningAuthorityForUserType,
     domain: string,
     encrypt = true,
-    ownerDidOverride?: string
-): Promise<VC | JWE> {
+    ownerDidOverride?: string,
+    // LC-2135: managed credential refresh publishes new versions of an already-issued
+    // credential. Allocating fresh Bitstring status entries per version would leak
+    // writes and replace the descriptor the issuer supplied, so refresh publication
+    // opts out. Defaults to true so every existing caller is preserved.
+    appendCredentialStatus = true,
+    // Additional authorized readers (e.g. a contract owner delegating issuance).
+    additionalEncryptionRecipients: string[] = []
+): Promise<IssuedCredential> {
     const issuerEndpoint = `${signingAuthorityForUser.signingAuthority.endpoint}/credentials/issue`;
     const saName = signingAuthorityForUser.relationship.name;
     const saDid = signingAuthorityForUser.relationship.did;
     const ownerProfile = getIssuerOwnerProfile(issuer);
     const ownerDid =
         ownerDidOverride ?? getDidWeb(domain ?? 'network.learncard.com', ownerProfile.profileId);
-    const credentialToIssue = await appendBitstringStatusListEntries(
-        credential,
-        ownerProfile.profileId,
-        domain
-    );
+    const subjects = Array.isArray(credential.credentialSubject)
+        ? credential.credentialSubject
+        : [credential.credentialSubject];
+    const subjectIds = subjects.map(subject => subject?.id);
+    if (encrypt && (!subjectIds.length || subjectIds.some(id => !id))) {
+        throw new SaIssueError({
+            message: 'Encrypted credential issuance requires a DID for every subject',
+            status: 400,
+            kind: 'validation_error',
+            retryable: false,
+        });
+    }
+    const credentialToIssue = appendCredentialStatus
+        ? await appendBitstringStatusListEntries(credential, ownerProfile.profileId, domain)
+        : credential;
+    // Capture the exact unsigned body once. Retries reuse both this body and its
+    // status coordinates, even if the caller later mutates its input object.
+    const serializedCredential = JSON.stringify(credentialToIssue);
+    const statusEntries = getBitstringStatusListEntries(JSON.parse(serializedCredential));
 
     const logContext = {
         issuer: getIssuerProfileId(issuer),
@@ -147,7 +168,7 @@ export async function issueCredentialWithSigningAuthority(
         encrypt,
     };
 
-    return trace(
+    const issuedCredential = await trace(
         'signing-authority',
         'issueCredentialWithSigningAuthority',
         async () => {
@@ -155,7 +176,9 @@ export async function issueCredentialWithSigningAuthority(
 
             try {
                 if (IS_TEST_ENVIRONMENT) {
-                    return await _mockIssueCredentialWithSigningAuthority(credentialToIssue);
+                    return await _mockIssueCredentialWithSigningAuthority(
+                        JSON.parse(serializedCredential)
+                    );
                 }
 
                 console.log('[SA Helper] Initiating credential issuance', logContext);
@@ -165,8 +188,18 @@ export async function issueCredentialWithSigningAuthority(
                 );
                 perf.mark('initDid');
 
-                const brainDid = learnCard.id.did();
-                console.log('[SA Helper] Brain DID resolved:', brainDid);
+                // Brain authenticates the request but must not be able to decrypt the response.
+                const encryption = encrypt
+                    ? {
+                          recipients: [
+                              ...new Set([
+                                  ...subjectIds,
+                                  ownerDid,
+                                  ...additionalEncryptionRecipients,
+                              ]),
+                          ],
+                      }
+                    : undefined;
 
                 const didJwt = await traceCrypto('getDidAuthVp', () =>
                     learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' })
@@ -177,24 +210,14 @@ export async function issueCredentialWithSigningAuthority(
                     console.error('[SA Helper] Failed to generate DID Auth VP - got falsy value');
                 }
 
-                const subjectId = Array.isArray(credentialToIssue?.credentialSubject)
-                    ? credentialToIssue?.credentialSubject[0]?.id
-                    : credentialToIssue?.credentialSubject?.id;
-
-                const encryption = encrypt
-                    ? {
-                          recipients: [brainDid, ...(subjectId ? [subjectId] : [])],
-                      }
-                    : undefined;
-
                 console.log('[SA Helper] Request details:', {
-                    subjectId,
+                    subjectIds,
                     encryptionRecipients: encryption?.recipients,
                     credentialType: credentialToIssue?.type,
                 });
 
                 const requestBody = JSON.stringify({
-                    credential: credentialToIssue,
+                    credential: JSON.parse(serializedCredential),
                     signingAuthority: {
                         ownerDid,
                         name: saName,
@@ -202,7 +225,6 @@ export async function issueCredentialWithSigningAuthority(
                     },
                     encryption,
                 });
-
                 /**
                  * One HTTP attempt against the SA. Throws a structured SaIssueError that
                  * carries the status + body + classification the retry loop needs to decide
@@ -212,12 +234,12 @@ export async function issueCredentialWithSigningAuthority(
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-                    let response: Response;
+                    let response: UndiciResponse;
                     try {
                         response = await traceHttp(
                             'fetch-lca-api',
                             () =>
-                                fetch(issuerEndpoint, {
+                                undiciFetch(issuerEndpoint, {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/json',
@@ -227,7 +249,7 @@ export async function issueCredentialWithSigningAuthority(
                                     signal: controller.signal,
                                     // LC-1644 Task 3: keepAlive + pooling via shared undici Agent
                                     dispatcher: getSaAgent(),
-                                } as RequestInit & { dispatcher: Agent }),
+                                }),
                             { endpoint: issuerEndpoint, attempt: attemptIndex + 1 }
                         );
                     } catch (err) {
@@ -241,9 +263,7 @@ export async function issueCredentialWithSigningAuthority(
                         throw new SaIssueError({
                             message: isAbort
                                 ? `SA request aborted after ${REQUEST_TIMEOUT_MS}ms timeout`
-                                : `SA network error: ${
-                                      err instanceof Error ? err.message : String(err)
-                                  }`,
+                                : `SA network error: ${err instanceof Error ? err.message : String(err)}`,
                             status: 0,
                             kind: isAbort ? 'timeout' : 'network',
                             retryable: true,
@@ -272,9 +292,7 @@ export async function issueCredentialWithSigningAuthority(
                             ...logContext,
                         });
                         throw new SaIssueError({
-                            message: `LCA-API returned ${response.status}${
-                                response.statusText ? ` ${response.statusText}` : ''
-                            }`,
+                            message: `LCA-API returned ${response.status}${response.statusText ? ` ${response.statusText}` : ''}`,
                             status: response.status,
                             body: errorBody,
                             kind,
@@ -282,9 +300,16 @@ export async function issueCredentialWithSigningAuthority(
                         });
                     }
 
-                    const res = await trace('internal', 'parseResponse', () => response.json());
+                    const res = await trace<unknown>('internal', 'parseResponse', () =>
+                        response.json()
+                    );
+                    const isInternalServerError =
+                        typeof res === 'object' &&
+                        res !== null &&
+                        'code' in res &&
+                        res.code === 'INTERNAL_SERVER_ERROR';
 
-                    if (!res || res?.code === 'INTERNAL_SERVER_ERROR') {
+                    if (!res || isInternalServerError) {
                         console.error(
                             '[SA Helper] LCA-API returned error in body:',
                             JSON.stringify(res)
@@ -398,4 +423,5 @@ export async function issueCredentialWithSigningAuthority(
             saEndpoint: signingAuthorityForUser.signingAuthority.endpoint,
         }
     );
+    return { kind: 'issued-credential', credential: issuedCredential, statusEntries };
 }

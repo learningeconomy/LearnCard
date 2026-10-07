@@ -52,6 +52,8 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
 
     const { labels } = theme?.categories.find(c => c.categoryId === category) || {};
     const { headerTextColor, helperTextColor } = colors;
+    const accessibleHeaderTextColor =
+        headerTextColor === 'text-white' ? 'text-grayscale-900' : headerTextColor;
 
     // Resolve a Paraglide message by dotted key, returning undefined when the
     // key has no compiled message so callers can fall back to tenant theme copy.
@@ -151,12 +153,13 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                     />
                 )}
                 <h2
-                    className={`select-none whitespace-nowrap flex flex-col gap-[4px] ${headerTextColor}`}
+                    className={`select-none whitespace-nowrap flex flex-col gap-[4px] ${accessibleHeaderTextColor}`}
                 >
                     <span className="font-poppins text-[30px] leading-[100%] flex items-center">
                         {countLoading && (
                             <IonSpinner
                                 name="crescent"
+                                aria-label={m['common.loading']()}
                                 className="text-white w-[20px] h-[20px] mr-[5px]"
                             />
                         )}{' '}

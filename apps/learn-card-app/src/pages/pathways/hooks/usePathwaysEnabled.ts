@@ -10,13 +10,8 @@
  *      `apps/learn-card-app/environments/<tenant>/config.json`.
  *
  *   2. **Per-user rollout dial** — the `enableJourneys` LaunchDarkly
- *      flag. Named after the user-facing label ("Journey") to stay
- *      visually distinct from the existing `hideAiPathways` flag that
- *      gates the legacy `/ai/pathways` feature — with both flags
- *      living in LaunchDarkly, naming overlap would be a footgun.
- *      Lets us target individual accounts (yourself, internal QA)
- *      without flipping a whole tenant on, and supports gradual
- *      percentage rollout when we're ready to widen access.
+ *      flag. It lets us target individual accounts without flipping a
+ *      whole tenant on and supports gradual percentage rollout.
  *
  * Used by:
  *   - `Routes.tsx` to conditionally mount the `/pathways` route.

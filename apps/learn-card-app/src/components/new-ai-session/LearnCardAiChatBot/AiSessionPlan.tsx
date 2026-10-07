@@ -1,4 +1,7 @@
 import React from 'react';
+
+import { m } from '../../../paraglide/messages.js';
+
 import { useStore } from '@nanostores/react';
 import { motion } from 'motion/react';
 
@@ -85,7 +88,7 @@ export const AiSessionPlan: React.FC = () => {
             <motion.section variants={sectionVariants} className="flex flex-col gap-8 mt-4">
                 <h2 className="flex items-center text-[21px] font-bold text-grayscale-900">
                     <Puzzle className="w-[32px] h-[32px] mr-2" />
-                    Skills You Can Earn
+                    {m['aiSession.plan.skills']()}
                 </h2>
 
                 {plan.skills?.length > 0 ? (
@@ -122,7 +125,7 @@ export const AiSessionPlan: React.FC = () => {
             <motion.section variants={sectionVariants} className="flex flex-col gap-6">
                 <h2 className="flex items-center text-[21px] font-bold text-grayscale-900">
                     <BullsEye className="w-[32px] h-[32px] mr-2" />
-                    Objectives
+                    {m['aiSession.plan.objectives']()}
                 </h2>
 
                 {plan.objectives?.length > 0 ? (
@@ -146,7 +149,7 @@ export const AiSessionPlan: React.FC = () => {
             <motion.section variants={sectionVariants} className="flex flex-col gap-6">
                 <h2 className="flex items-center text-[21px] font-bold text-grayscale-900">
                     <Compass className="w-[32px] h-[32px] mr-2" />
-                    Roadmap
+                    {m['aiSession.plan.roadmap']()}
                 </h2>
 
                 {plan.roadmap?.length > 0 ? (
@@ -183,7 +186,7 @@ export const AiSessionPlan: React.FC = () => {
             <motion.section variants={sectionVariants}>
                 {!isStreaming && !loading ? (
                     <h2 className="text-[29px] font-bold text-grayscale-900">
-                        Ready to Get Started
+                        {m['aiSession.plan.readyToStart']()}
                     </h2>
                 ) : (
                     <IonSkeletonText animated style={{ width: '55%', height: 28 }} />

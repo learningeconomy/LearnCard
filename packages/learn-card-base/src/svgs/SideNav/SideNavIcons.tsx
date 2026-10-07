@@ -1,6 +1,7 @@
+import React from 'react';
 import Rocket from 'learn-card-base/svgs/Rocket';
 import GlobeStand from 'learn-card-base/svgs/GlobeStand';
-import NotificationIcon2 from 'learn-card-base/svgs/NotificationIcon2';
+import NotificationIcon from 'learn-card-base/svgs/NotificationIcon';
 import UnicornIcon from 'learn-card-base/svgs/UnicornIcon';
 import ThinnerShieldChevron from 'learn-card-base/svgs/ShieldChevron';
 
@@ -22,11 +23,15 @@ import DashboardTwoTonedIcon from './DashboardTwoTonedIcon';
 import DashboardColorfulIcon from './DashboardColorfulIcon';
 import DashboardFormalIcon from './DashboardFormalIcon';
 
+const NotificationIconV2: React.FC<{ className?: string }> = ({ className }) => (
+    <NotificationIcon className={className} version="2" />
+);
+
 export const SideNavIcons = {
     // primary links
     Rocket,
     GlobeStand,
-    NotificationIcon2,
+    NotificationIcon2: NotificationIconV2,
     UnicornIcon,
     ThinnerShieldChevron,
 

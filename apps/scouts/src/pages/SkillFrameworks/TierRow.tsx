@@ -92,7 +92,7 @@ const TierRow: React.FC<TierRowProps> = ({
                 />
             </div>
 
-            <SkinnyCaretRight className="ml-auto text-grayscale-700 h-[25px] w-[25px] shrink-0" />
+            <SkinnyCaretRight className="rtl-mirror ml-auto text-grayscale-700 h-[25px] w-[25px] shrink-0" />
         </div>
     );
 };

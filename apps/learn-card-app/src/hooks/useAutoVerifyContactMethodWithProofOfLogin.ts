@@ -1,21 +1,19 @@
 import { useEffect, useRef } from 'react';
-import { Capacitor } from '@capacitor/core';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
 import { useVerifyContactMethodWithProofOfLogin } from 'learn-card-base/react-query/mutations/firebase';
-import { auth } from '../firebase/firebase';
+import { useAppAuth } from '../providers/AuthCoordinatorProvider';
 import {
     useIsLoggedIn,
     useIsCurrentUserLCNUser,
     currentUserStore,
-    firebaseAuthStore,
+    authUserStore,
+    getLogger,
 } from 'learn-card-base';
-import { captureException } from '@sentry/react';
 import autoVerifyStore from '../stores/autoVerifyStore';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 // Verification cache settings
 const VERIFY_CACHE_TTL_MS = 30 * 60_000; // 30 minutes
+const log = getLogger('auto-verify-contact');
 
 type VerifyCacheEntry = { fingerprint: string; ts: number };
 
@@ -40,11 +38,11 @@ const markVerified = (uid: string | null | undefined, fingerprint: string): void
 };
 
 export const useAutoVerifyContactMethodWithProofOfLogin = () => {
-    const flags = useFlags();
     const { data: isLCNUser, isLoading } = useIsCurrentUserLCNUser();
     const isLoggedIn = useIsLoggedIn();
     const currentUser = currentUserStore.get.currentUser();
-    const firebaseAuthUser = firebaseAuthStore.useTracked.currentUser();
+    const authUser = authUserStore.useTracked.currentUser();
+    const { authProvider } = useAppAuth();
 
     const { mutateAsync: verifyContact } = useVerifyContactMethodWithProofOfLogin();
 
@@ -59,26 +57,11 @@ export const useAutoVerifyContactMethodWithProofOfLogin = () => {
         if (inFlightRef.current) return;
 
         (async () => {
-            if (
-                isLoading ||
-                !isLCNUser ||
-                !isLoggedIn ||
-                !flags?.enableAutoVerifyContactMethodWithProofOfLogin
-            )
-                return;
+            if (isLoading || !isLCNUser || !isLoggedIn) return;
             try {
                 inFlightRef.current = true;
 
-                let token: string | undefined;
-
-                if (Capacitor.isNativePlatform()) {
-                    const res = await FirebaseAuthentication.getIdToken({ forceRefresh: true });
-                    token = res?.token || undefined;
-                } else {
-                    const firebaseAuth = auth();
-                    const user = firebaseAuth?.currentUser;
-                    token = user ? await user.getIdToken(true) : undefined;
-                }
+                const token = await authProvider?.getIdToken(true);
 
                 if (!token) return;
 
@@ -92,7 +75,9 @@ export const useAutoVerifyContactMethodWithProofOfLogin = () => {
                                 .map(b => b.toString(16).padStart(2, '0'))
                                 .join('');
                         }
-                    } catch {}
+                    } catch (error) {
+                        log.warn('Unable to hash contact fingerprint', error);
+                    }
                     return value; // fallback
                 };
 
@@ -111,12 +96,12 @@ export const useAutoVerifyContactMethodWithProofOfLogin = () => {
                 }
             } catch (e) {
                 // Capture with Sentry; verification is best-effort and should not block app flow
-                captureException(e);
+                log.error(e);
             } finally {
                 inFlightRef.current = false;
             }
         })();
-    }, [isLoggedIn, isLCNUser, isLoading, firebaseAuthUser, flags, currentUser]);
+    }, [isLoggedIn, isLCNUser, isLoading, authUser, currentUser, authProvider]);
 };
 
 export default useAutoVerifyContactMethodWithProofOfLogin;

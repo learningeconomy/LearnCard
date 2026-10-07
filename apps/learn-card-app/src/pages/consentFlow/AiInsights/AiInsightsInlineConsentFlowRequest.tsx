@@ -71,13 +71,13 @@ export const AiInsightsInlineConsentFlowRequest: React.FC<{
                         onClick={handleDeny}
                         className={`text-grayscale-900 flex-1 text-sm font-semibold bg-white px-4 py-2 rounded-full border border-grayscale-200 border-solid ${buttonStyle}`}
                     >
-                        Deny
+                        {m['arabicFixes.deny']()}
                     </button>
                     <button
                         onClick={handleAccept}
                         className="text-white flex-1 text-sm font-semibold px-4 py-2 rounded-full bg-indigo-500"
                     >
-                        Approve
+                        {m['arabicFixes.approve']()}
                     </button>
                     {!hideCloseButton && (
                         <button

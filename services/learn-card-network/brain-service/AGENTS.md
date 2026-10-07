@@ -2,54 +2,54 @@
 
 ## Build & Development Commands
 
--   Build: `bun run build` or `bun run build:docker`
--   Dev: `bun run dev` - Watches files and rebuilds
--   Start server: `bun run start` - Runs local server on port 3000
--   Start on port 4000: `bun run start-p-4000`
--   Deploy: `bun run serverless-deploy`
+- Build: `bun run build` or `bun run build:docker`
+- Dev: `bun run dev` - Watches files and rebuilds
+- Start server: `bun run start` - Runs local server on port 3000
+- Start on port 4000: `bun run start-p-4000`
+- Deploy: `bun run serverless-deploy`
 
 ### Skill Framework Seeding
 
--   Auto-bootstrap seeds default public skill frameworks in non-production when the database has no `SkillFramework` nodes.
--   Disable auto-bootstrap with `SKIP_SKILL_FRAMEWORK_SEED=true`.
--   Re-seed manually with `bun run skill-frameworks seed [local|staging]` from `services/learn-card-network/brain-service`.
--   Grant framework admin access to an existing profile with `bun run skill-frameworks add-admin [local|staging]` and enter the profile id when prompted.
--   If no stage is provided, the CLI defaults to `local` and prints a note.
--   Use `SKILL_FRAMEWORK_SEED_OWNER_PROFILE_ID` to override the default `network-seed` owner profile when needed.
--   The seed command is idempotent and will not duplicate framework or skill nodes.
+- Auto-bootstrap seeds default public skill frameworks in non-production when the database has no `SkillFramework` nodes.
+- Disable auto-bootstrap with `SKIP_SKILL_FRAMEWORK_SEED=true`.
+- Re-seed manually with `bun run skill-frameworks seed [local|staging]` from `services/learn-card-network/brain-service`.
+- Grant framework admin access to an existing profile with `bun run skill-frameworks add-admin [local|staging]` and enter the profile id when prompted.
+- If no stage is provided, the CLI defaults to `local` and prints a note.
+- Use `SKILL_FRAMEWORK_SEED_OWNER_PROFILE_ID` to override the default `network-seed` owner profile when needed.
+- The seed command is idempotent and will not duplicate framework or skill nodes.
 
 ## Test Commands
 
--   Run all tests: `bun run test`
--   Run all tests once (non-watch): `bun run test -- run` (equivalent to `vitest run`)
--   Watch mode: `bun run test:watch`
--   Run single test: `bun run test test/consentflow.spec.ts`
--   Run single test once (non-watch): `bun run test -- run test/consentflow.spec.ts`
--   Run specific test: `bun run test -t "should allow setting and retrieving the image field for a contract"`
+- Run all tests: `bun run test`
+- Run all tests once (non-watch): `bun run test -- run` (equivalent to `vitest run`)
+- Watch mode: `bun run test:watch`
+- Run single test: `bun run test test/consentflow.spec.ts`
+- Run single test once (non-watch): `bun run test -- run test/consentflow.spec.ts`
+- Run specific test: `bun run test -t "should allow setting and retrieving the image field for a contract"`
 
 ## Code Style Guidelines
 
--   **TypeScript**: Strict typing with interfaces/types defined in `src/types/`
--   **Imports**: Use path aliases (`@helpers/*`, `@models`, `@routes`, etc.)
--   **Error Handling**: Use trpc error codes (`UNAUTHORIZED`, `BAD_REQUEST`, etc.)
--   **Naming**:
-    -   PascalCase for classes, types, interfaces
-    -   camelCase for variables, functions, methods
--   **Models Structure**: Database models in `src/models/` with relationships defined
--   **Access Layer**: Database operations go in `src/accesslayer/` folders
--   **Routes**: API endpoints defined in `src/routes/` using tRPC
--   **Variable Exports**: Avoid one-line default exports; use named exports
--   **Return Types**: Always specify explicit return types for functions
+- **TypeScript**: Strict typing with interfaces/types defined in `src/types/`
+- **Imports**: Use path aliases (`@helpers/*`, `@models`, `@routes`, etc.)
+- **Error Handling**: Use trpc error codes (`UNAUTHORIZED`, `BAD_REQUEST`, etc.)
+- **Naming**:
+    - PascalCase for classes, types, interfaces
+    - camelCase for variables, functions, methods
+- **Models Structure**: Database models in `src/models/` with relationships defined
+- **Access Layer**: Database operations go in `src/accesslayer/` folders
+- **Routes**: API endpoints defined in `src/routes/` using tRPC
+- **Variable Exports**: Avoid one-line default exports; use named exports
+- **Return Types**: Always specify explicit return types for functions
 
 ## ConsentFlow Architecture
 
 ConsentFlow is a consent management system where:
 
--   **Profiles** can create and consent to **Contracts**
--   **Contracts** define data access requirements (read/write permissions)
--   **Terms** record a profile's consent to a contract
--   **Transactions** record actions taken against Terms (consent, withdraw, update, sync)
--   **Credentials** can be issued through contract consent or synced by users from their existing credentials
+- **Profiles** can create and consent to **Contracts**
+- **Contracts** define data access requirements (read/write permissions)
+- **Terms** record a profile's consent to a contract
+- **Transactions** record actions taken against Terms (consent, withdraw, update, sync)
+- **Credentials** can be issued through contract consent or synced by users from their existing credentials
 
 ### Relationship Flow
 
@@ -62,62 +62,62 @@ ConsentFlow is a consent management system where:
 
 ### Transaction Types
 
--   **Consent Transaction**: Created when a user initially consents to a contract
--   **Update Transaction**: Created when a user updates their terms
--   **Withdraw Transaction**: Created when a user withdraws consent
--   **Sync Transaction**: Created when a user syncs credentials to specific categories
--   **Write Transaction**: Created when credentials are issued through a contract (usually via auto-boosts)
+- **Consent Transaction**: Created when a user initially consents to a contract
+- **Update Transaction**: Created when a user updates their terms
+- **Withdraw Transaction**: Created when a user withdraws consent
+- **Sync Transaction**: Created when a user syncs credentials to specific categories
+- **Write Transaction**: Created when credentials are issued through a contract (usually via auto-boosts)
 
 ### Neo4j & Neogma Integration
 
--   Neo4j is used as the graph database for storing entities and relationships
--   Neogma serves as an ORM providing model definitions with schemas
--   Models define node labels, properties, relationships, and primary keys
--   Relationships are defined with direction, name, and target model
--   QueryBuilder is used for complex queries with relationship traversal
+- Neo4j is used as the graph database for storing entities and relationships
+- Neogma serves as an ORM providing model definitions with schemas
+- Models define node labels, properties, relationships, and primary keys
+- Relationships are defined with direction, name, and target model
+- QueryBuilder is used for complex queries with relationship traversal
 
 ### Handling Nested Objects
 
--   Neo4j can't store deeply nested objects directly
--   The system uses:
-    -   `flattenObject()`: Converts nested structures to dot-notation keys
-    -   `inflateObject()`: Restores flattened objects to nested structure
--   Example conversion:
+- Neo4j can't store deeply nested objects directly
+- The system uses:
+    - `flattenObject()`: Converts nested structures to dot-notation keys
+    - `inflateObject()`: Restores flattened objects to nested structure
+- Example conversion:
     ```json
     // Original
     { "contract": { "read": { "personal": { "name": true } } } }
     // Flattened
     { "contract.read.personal.name": true }
     ```
--   This pattern is essential for storing complex objects in Neo4j
+- This pattern is essential for storing complex objects in Neo4j
 
 ### Common Data Flow Patterns
 
--   **Data Queries**: Use `convertDataQueryToNeo4jQuery()` for Neo4j compatibility
--   **Category Filtering**: Use `shouldIncludeCategory()` to filter credentials by category
--   **Relationship Creation**: Follow the pattern shown in the relationship creation functions
--   **Transaction Recording**: Create transactions for all important actions
+- **Data Queries**: Use `convertDataQueryToNeo4jQuery()` for Neo4j compatibility
+- **Category Filtering**: Use `shouldIncludeCategory()` to filter credentials by category
+- **Relationship Creation**: Follow the pattern shown in the relationship creation functions
+- **Transaction Recording**: Create transactions for all important actions
 
 ### Signing Authorities
 
--   Signing Authorities are external services that sign credentials on behalf of profiles
--   Each profile can register multiple signing authorities via `usesSigningAuthority` relationships
--   Signing authorities are stored in the SigningAuthority model with an endpoint URL
--   The relationship between Profile and SigningAuthority contains:
-    -   `name`: A name identifier for the signing authority (e.g., "default")
-    -   `did`: The DID that the signing authority will use to sign credentials
--   When issuing credentials through a signing authority:
+- Signing Authorities are external services that sign credentials on behalf of profiles
+- Each profile can register multiple signing authorities via `usesSigningAuthority` relationships
+- Signing authorities are stored in the SigningAuthority model with an endpoint URL
+- The relationship between Profile and SigningAuthority contains:
+    - `name`: A name identifier for the signing authority (e.g., "default")
+    - `did`: The DID that the signing authority will use to sign credentials
+- When issuing credentials through a signing authority:
     1. The system makes a request to the signing authority's endpoint
     2. It passes the unsigned credential, owner DID, and signing authority details
     3. The signing authority signs the credential and returns it
     4. The `issueCredentialWithSigningAuthority()` helper handles this flow
--   A common pattern is to get a signing authority with `getSigningAuthorityForUserByName(profile, endpoint, name)`
+- A common pattern is to get a signing authority with `getSigningAuthorityForUserByName(profile, endpoint, name)`
 
 ### AutoBoosts
 
--   AutoBoosts are credentials automatically issued when a user consents to a contract
--   An existing Boost is attached to a Contract via the `AUTO_RECEIVE` relationship
--   When creating a contract with autoboosts, an array of autoboosts must be provided, each with a boost URI and signing authority:
+- AutoBoosts are credentials automatically issued when a user consents to a contract
+- An existing Boost is attached to a Contract via the `AUTO_RECEIVE` relationship
+- When creating a contract with autoboosts, an array of autoboosts must be provided, each with a boost URI and signing authority:
     ```typescript
     {
         // other contract fields
@@ -139,24 +139,24 @@ ConsentFlow is a consent management system where:
         ];
     }
     ```
--   The signing authority information is stored on each `AUTO_RECEIVE` relationship
--   When a user consents to a contract, all attached AutoBoosts are:
+- The signing authority information is stored on each `AUTO_RECEIVE` relationship
+- When a user consents to a contract, all attached AutoBoosts are:
     1. Issued using the specified signing authority of the contract owner
     2. Sent to the consenting user
     3. Recorded with a 'write' action transaction on the terms
--   AutoBoosts are processed during:
-    -   Initial consent via `consentToContract()`
-    -   Re-consent via `reconsentTerms()`
-    -   Terms update via `updateTerms()`
--   The contract owner MUST have the specified signing authority configured for each autoboost to work correctly
--   If a specified signing authority doesn't exist, that specific autoboost will be skipped with an error message
--   Multiple autoboosts can use the same signing authority or different ones
+- AutoBoosts are processed during:
+    - Initial consent via `consentToContract()`
+    - Re-consent via `reconsentTerms()`
+    - Terms update via `updateTerms()`
+- The contract owner MUST have the specified signing authority configured for each autoboost to work correctly
+- If a specified signing authority doesn't exist, that specific autoboost will be skipped with an error message
+- Multiple autoboosts can use the same signing authority or different ones
 
 ### Credential Syncing
 
--   Users can sync their existing credentials to a contract they've consented to
--   Syncing uses the `syncCredentialsToContract` API endpoint
--   The sync process:
+- Users can sync their existing credentials to a contract they've consented to
+- Syncing uses the `syncCredentialsToContract` API endpoint
+- The sync process:
     1. User identifies which credentials to share in which categories
     2. User calls `syncCredentialsToContract` with `termsUri` and a map of categories to credential URIs:
         ```typescript
@@ -175,11 +175,29 @@ ConsentFlow is a consent management system where:
     4. System creates a 'sync' transaction with the categorized credentials
     5. System updates the terms by adding the synced credentials to the shared arrays for each category
     6. Contract owner receives a notification about the sync action
--   The transaction and terms data use the same structure format for categories
--   All synced credentials are added to the existing shared arrays (if any) for each category
--   Duplicate credential URIs are automatically deduplicated
+- The transaction and terms data use the same structure format for categories
+- All synced credentials are added to the existing shared arrays (if any) for each category
+- Duplicate credential URIs are automatically deduplicated
 
 ## Service-Level Boost Sending via Signing Authority
+
+New Boost issuance always stores the issuer's payload unchanged: `sendBoost()` does
+not decrypt or counter-sign credentials. There is no rollout flag or legacy issuance
+branch. Signing-authority encryption targets the subject and issuing owner, excluding
+brain; the trusted signing authority still has access. Claim links and consent
+autoboosts also request encryption. INSTANCE_OF, sent/received, contract/listing,
+acceptance, and notification behavior is preserved.
+
+VerifyBoost supports both existing wrapped credentials and new unwrapped credentials.
+Display and unwrap-if-present helpers retain legacy support. The post-message handler
+only passes `boostCredential` as a modal prop; it does not construct or sign a wrapper.
+Compatibility tests create legacy fixtures independently of production issuance.
+
+For encrypted storage, public status-list coordinates are retained from the unsigned SA request in an
+in-memory sidecar and persisted as `Credential.statusEntries`. Revocation and suspension
+use these coordinates without decrypting the credential. Issuers must allocate status
+entries before signing; the SDK's `sendBoost` already does this. Inbox finalization and
+VC-API presentations still explicitly request plaintext for their existing protocols.
 
 ### Context
 
@@ -187,26 +205,26 @@ For certain workflows, such as sending a boost (credential) to another profile v
 
 ### Signing Authorities & Credential Issuance
 
--   **Signing Authority**: An external service registered by a user/profile that can sign credentials on their behalf.
--   Users register signing authorities by specifying an endpoint and a name.
--   When sending a boost via HTTP, the service uses the registered signing authority to sign the credential and deliver it to the recipient.
+- **Signing Authority**: An external service registered by a user/profile that can sign credentials on their behalf.
+- Users register signing authorities by specifying an endpoint and a name.
+- When sending a boost via HTTP, the service uses the registered signing authority to sign the credential and deliver it to the recipient.
 
 ### Example: `/boost/send/via-signing-authority` Route
 
--   **Input:** `{ profileId, boostUri, signingAuthority: { name, endpoint } }`
--   **Flow:**
+- **Input:** `{ profileId, boostUri, signingAuthority: { name, endpoint } }`
+- **Flow:**
     1. Fetch the boost by URI.
     2. Fetch the recipient profile.
     3. Prepare an unsigned VC for the recipient.
     4. Use the specified signing authority to sign the VC.
     5. Deliver the signed VC to the recipient via the network.
--   **Testing:** E2E tests should POST directly to the route using fetch, after registering a signing authority for the sender.
+- **Testing:** E2E tests should POST directly to the route using fetch, after registering a signing authority for the sender.
 
 ### Best Practices for AI Assistants
 
--   Always check for the availability of key material before issuing credentials server-side. If unavailable, require a signing authority.
--   Document the expected flow, security implications, and how to set up signing authorities in both code and tests.
--   Prefer direct HTTP calls in E2E tests for service-only routes, and demonstrate signing authority setup in test code.
+- Always check for the availability of key material before issuing credentials server-side. If unavailable, require a signing authority.
+- Document the expected flow, security implications, and how to set up signing authorities in both code and tests.
+- Prefer direct HTTP calls in E2E tests for service-only routes, and demonstrate signing authority setup in test code.
 
 ## Profile Connection Invites
 
@@ -214,25 +232,25 @@ LearnCard supports creating and managing profile connection invitation links wit
 
 ### Overview
 
--   Invites are identified by a `challenge` string and are scoped to the profile that created them.
+- Invites are identified by a `challenge` string and are scoped to the profile that created them.
 
--   Each invite tracks `maxUses` and `usesRemaining`.
+- Each invite tracks `maxUses` and `usesRemaining`.
 
--   Unlimited invites have `maxUses = null` and `usesRemaining = null`.
+- Unlimited invites have `maxUses = null` and `usesRemaining = null`.
 
--   Expiration is expressed in seconds. `0` means no expiration.
+- Expiration is expressed in seconds. `0` means no expiration.
 
 ### Routes
 
 #### Generate Invite
 
--   Method: `POST`
+- Method: `POST`
 
--   Path: `/profile/generate-invite`
+- Path: `/profile/generate-invite`
 
--   Scope: `connections:write`
+- Scope: `connections:write`
 
--   Input:
+- Input:
 
     ```json
     {
@@ -242,13 +260,13 @@ LearnCard supports creating and managing profile connection invitation links wit
     }
     ```
 
-    -   `expiration` (number, optional): Seconds until expiration. Defaults to 30 days. Use `0` for no expiration.
+    - `expiration` (number, optional): Seconds until expiration. Defaults to 30 days. Use `0` for no expiration.
 
-    -   `challenge` (string, optional): Custom challenge; if omitted, a UUID is generated.
+    - `challenge` (string, optional): Custom challenge; if omitted, a UUID is generated.
 
-    -   `maxUses` (integer, optional): Minimum `0`. Defaults to `1` (single-use). Use `0` for unlimited usage.
+    - `maxUses` (integer, optional): Minimum `0`. Defaults to `1` (single-use). Use `0` for unlimited usage.
 
--   Response:
+- Response:
 
     ```json
     {
@@ -260,13 +278,13 @@ LearnCard supports creating and managing profile connection invitation links wit
 
 #### List Invites
 
--   Method: `GET`
+- Method: `GET`
 
--   Path: `/profile/invites`
+- Path: `/profile/invites`
 
--   Scope: `connections:read`
+- Scope: `connections:read`
 
--   Output: Array of invites
+- Output: Array of invites
 
     ```json
     [
@@ -285,55 +303,55 @@ LearnCard supports creating and managing profile connection invitation links wit
     ]
     ```
 
--   Notes:
+- Notes:
 
-    -   Exhausted invites (where `usesRemaining === 0`) are omitted.
+    - Exhausted invites (where `usesRemaining === 0`) are omitted.
 
-    -   `expiresIn` is `null` if the invite never expires.
+    - `expiresIn` is `null` if the invite never expires.
 
 #### Invalidate Invite
 
--   Method: `POST`
+- Method: `POST`
 
--   Path: `/profile/invite/{challenge}/invalidate`
+- Path: `/profile/invite/{challenge}/invalidate`
 
--   Scope: `connections:write`
+- Scope: `connections:write`
 
--   Output: `true` on success.
+- Output: `true` on success.
 
 #### Connect Using Invite
 
--   Method: `POST`
+- Method: `POST`
 
--   Path: `/profile/{profileId}/connect/{challenge}`
+- Path: `/profile/{profileId}/connect/{challenge}`
 
--   Scope: `profiles:write`
+- Scope: `profiles:write`
 
--   Behavior:
+- Behavior:
 
-    -   Validates that the invite exists, is not expired, and has remaining uses (or is unlimited).
+    - Validates that the invite exists, is not expired, and has remaining uses (or is unlimited).
 
-    -   On successful connection, consumes one use for finite invites (decrements `usesRemaining`).
+    - On successful connection, consumes one use for finite invites (decrements `usesRemaining`).
 
-    -   Returns `404` if invite is invalid or expired.
+    - Returns `404` if invite is invalid or expired.
 
 ### Behavior & Storage Details
 
--   Cache key format: `inviteChallenge:{profileId}:{challenge}`.
+- Cache key format: `inviteChallenge:{profileId}:{challenge}`.
 
--   Stored value is JSON with `{ maxUses, usesRemaining }`.
+- Stored value is JSON with `{ maxUses, usesRemaining }`.
 
--   Unlimited usage: `maxUses = null` and `usesRemaining = null`.
+- Unlimited usage: `maxUses = null` and `usesRemaining = null`.
 
--   Expiration TTL:
+- Expiration TTL:
 
-    -   `expiration = 0` stores without TTL (never expires); `expiresIn` will be `null`.
+    - `expiration = 0` stores without TTL (never expires); `expiresIn` will be `null`.
 
-    -   Positive `expiration` stores the TTL in seconds; listing returns remaining seconds as `expiresIn`.
+    - Positive `expiration` stores the TTL in seconds; listing returns remaining seconds as `expiresIn`.
 
--   When `usesRemaining` reaches `0`, the invite is considered exhausted and will not be listed. The key may be deleted during consumption.
+- When `usesRemaining` reaches `0`, the invite is considered exhausted and will not be listed. The key may be deleted during consumption.
 
--   Backward compatibility: Older invites stored as `'valid'` or `'never'` are parsed and treated as single-use or unlimited, respectively.
+- Backward compatibility: Older invites stored as `'valid'` or `'never'` are parsed and treated as single-use or unlimited, respectively.
 
 ### Examples
 
@@ -372,7 +390,7 @@ curl -X POST \
 
 ### Testing
 
--   See `test/profiles.spec.ts` for unit/integration coverage of generation, listing, consumption, unlimited behavior, and invalidation.
+- See `test/profiles.spec.ts` for unit/integration coverage of generation, listing, consumption, unlimited behavior, and invalidation.
 
 ## Tracing & Performance Monitoring
 
@@ -380,9 +398,9 @@ The brain service includes a modular tracing system for performance monitoring a
 
 ### Architecture
 
--   **TracingManager**: Central coordinator that manages providers and span lifecycle using `AsyncLocalStorage` for request-scoped trace context
--   **TracingProvider**: Interface for output backends (console, JSON, Sentry)
--   **Spans**: Represent timed operations with `traceId`, `spanId`, `parentSpanId`, timing, and status
+- **TracingManager**: Central coordinator that manages providers and span lifecycle using `AsyncLocalStorage` for request-scoped trace context
+- **TracingProvider**: Interface for output backends (console, JSON, Sentry)
+- **Spans**: Represent timed operations with `traceId`, `spanId`, `parentSpanId`, timing, and status
 
 ### Trace Functions
 
@@ -573,10 +591,10 @@ ON MATCH SET received.status = "revoked", received.revokedAt = $revokedAt
 
 ### Connection Source Keys
 
--   Pattern: `boost:${boostId}`
--   Connections can have multiple sources (from multiple boosts)
--   On revoke, only the source key from the revoked boost is removed
--   Connection deleted only when all source keys are removed
+- Pattern: `boost:${boostId}`
+- Connections can have multiple sources (from multiple boosts)
+- On revoke, only the source key from the revoked boost is removed
+- Connection deleted only when all source keys are removed
 
 ### Parent Boost Handling
 
@@ -616,16 +634,16 @@ Apps can send notifications to users via the `APP_NOTIFICATION` type. There are 
 
 When the user has the app open in LearnCard, the Partner Connect SDK can trigger a self-notification via the `send-notification` app event type. This is handled by `handleSendNotificationEvent` in `src/routes/app-store.ts`.
 
--   **Rate limit**: 10 notifications per user per app per hour (Redis key: `app-notif-rate:{listingId}:{profileId}`)
--   **Auth**: User must have the app installed or own the integration
+- **Rate limit**: 10 notifications per user per app per hour (Redis key: `app-notif-rate:{listingId}:{profileId}`)
+- **Auth**: User must have the app installed or own the integration
 
 ### 2. Server-to-Server Route (Primary)
 
 App backends send notifications to arbitrary users who have the app installed.
 
--   **Route**: `POST /app-store/listing/{listingId}/notify`
--   **Scope**: `app-store:write`
--   **Auth**: Caller must own the listing's integration (`verifyListingOwnership`)
+- **Route**: `POST /app-store/listing/{listingId}/notify`
+- **Scope**: `app-store:write`
+- **Auth**: Caller must own the listing's integration (`verifyListingOwnership`)
 
 **Input:**
 
@@ -641,16 +659,16 @@ App backends send notifications to arbitrary users who have the app installed.
 }
 ```
 
--   `recipient`: Accepts a profileId, `did:web:...`, or `did:key:...` (resolved via `getProfileIdFromString`)
--   `title` / `body`: At least one required
--   `actionPath`: Deep link path within the app
--   `category`: Grouping category (e.g. `'reward'`, `'announcement'`)
--   `priority`: `'normal'` (default) or `'high'`
+- `recipient`: Accepts a profileId, `did:web:...`, or `did:key:...` (resolved via `getProfileIdFromString`)
+- `title` / `body`: At least one required
+- `actionPath`: Deep link path within the app
+- `category`: Grouping category (e.g. `'reward'`, `'announcement'`)
+- `priority`: `'normal'` (default) or `'high'`
 
 **Guards:**
 
--   Recipient must have the app installed (`hasProfileInstalledApp`)
--   Rate limit: 60 notifications per listing per hour (Redis key: `app-notif-server-rate:{listingId}`)
+- Recipient must have the app installed (`hasProfileInstalledApp`)
+- Rate limit: 60 notifications per listing per hour (Redis key: `app-notif-server-rate:{listingId}`)
 
 **Notification shape:**
 
@@ -708,10 +726,10 @@ Multiple parallel `APP_COUNTER` relationships (one per key) can exist between th
 
 ### Limits
 
--   Max **50 counter keys** per user per app (`MAX_COUNTER_KEYS_PER_USER_PER_APP`)
--   Max **100 writes** per user per app per minute (Redis rate limit key: `app-counter-rate:{listingId}:{profileId}`)
--   Counter keys: alphanumeric + `_` / `-`, max 64 chars
--   Amount: any finite integer
+- Max **50 counter keys** per user per app (`MAX_COUNTER_KEYS_PER_USER_PER_APP`)
+- Max **100 writes** per user per app per minute (Redis rate limit key: `app-counter-rate:{listingId}:{profileId}`)
+- Counter keys: alphanumeric + `_` / `-`, max 64 chars
+- Amount: any finite integer
 
 ### Key Files
 
@@ -799,10 +817,10 @@ bun run seed:dev-app -- --promotion FEATURED_CAROUSEL
 
 ### Prerequisites
 
--   Neo4j running (`bun run dev:services` from `apps/learn-card-app` or local Docker)
--   Redis running (same)
--   MongoDB running (same)
--   Falls back to local docker-compose defaults if no `.env` is present
+- Neo4j running (`bun run dev:services` from `apps/learn-card-app` or local Docker)
+- Redis running (same)
+- MongoDB running (same)
+- Falls back to local docker-compose defaults if no `.env` is present
 
 ### Re-running
 
@@ -857,10 +875,10 @@ Tenant is resolved once per request in `createContext` via `resolveTenantFromReq
 
 ### Rules for Route Authors
 
--   **Always pass `branding: ctx.tenant?.emailBranding`** to `deliveryService.send()`. Emails sent without it render with LearnCard defaults regardless of the caller's tenant.
--   **Use `getFrom({ mailbox, branding })`** for the from-address so the domain matches the tenant (e.g. `recovery@vetpass.app` for VetPass).
--   **Use the local template ID as the `templateAlias`** (e.g. `'inbox-claim'`, `'guardian-approval'`). These are pre-registered as sentinels in `LOCAL_TEMPLATE_MAP` — env-var overrides are optional, never required.
--   **Do not write plain-text fallbacks.** If local rendering fails for a sentinel alias, the adapter re-throws so the error surfaces — don't silently send unbranded text.
+- **Always pass `branding: ctx.tenant?.emailBranding`** to `deliveryService.send()`. Emails sent without it render with LearnCard defaults regardless of the caller's tenant.
+- **Use `getFrom({ mailbox, branding })`** for the from-address so the domain matches the tenant (e.g. `recovery@vetpass.app` for VetPass).
+- **Use the local template ID as the `templateAlias`** (e.g. `'inbox-claim'`, `'guardian-approval'`). These are pre-registered as sentinels in `LOCAL_TEMPLATE_MAP` — env-var overrides are optional, never required.
+- **Do not write plain-text fallbacks.** If local rendering fails for a sentinel alias, the adapter re-throws so the error surfaces — don't silently send unbranded text.
 
 ### Adding a New Template
 
@@ -870,3 +888,17 @@ Tenant is resolved once per request in `createContext` via `resolveTenantFromReq
 4. Call `deliveryService.send()` from the route, passing `branding: ctx.tenant?.emailBranding`.
 
 See [Tenant-Branded Emails (architecture)](../../../docs/core-concepts/tenant-branded-emails.md) for the end-to-end flow and [Configure Tenant-Branded Emails](../../../docs/how-to-guides/configure-tenant-branded-emails.md) for operator-facing setup.
+
+### Attributed contract requests and event delivery
+
+- Integrator documentation lives in `docs/how-to-guides/consent-flow/brokered-referrals.md`, with the complete lifecycle sequence in `docs/core-concepts/consent-and-permissions/brokered-referral-lifecycle.md` and webhook fields in `docs/sdks/learncard-network/contract-requests-and-events.md`. Keep embedded `docs/snippets/contract-requests/` modules synchronized with `node scripts/check-docs-snippets.mjs --fix`; `tests/e2e/tests/docs-contract-requests.spec.ts` executes them against synthetic local services. The brain route `getConsentedDataForDid` is the SDK's `getConsentFlowDataForDid`; polling reconciles current state but cannot trigger learner claim/live sync. Scope grants never replace role or consent authorization.
+- Generic `REQUESTED_FOR` edges have `requestId`, `requestedBy`, optional `externalReferenceId`/`message`, and `requestedAt`. Exact pending retries are idempotent; conflicting or terminal requests do not reopen. Legacy edges have no request ID and retain legacy AI behavior.
+- Snapshot referral identity onto Terms and every related transaction, including issuance and maintenance. Do not infer historical correlation from the latest mutable request edge.
+- Append `ConsentFlowEvent` + per-recipient `ConsentFlowEventDelivery` in the same locked query as consent/request state changes. The contract audience lock serializes request decisions, consent and recipient changes.
+- `contract-events.helpers.ts` dispatches a bounded batch with leases; scheduler Lambda and Docker use the same worker. Contract notification callers opt in to typed permanent rejection errors (missing/disabled webhook or definitive HTTP 4xx, excluding 408/425/429); legacy boolean notification callers keep their behavior. Temporary failures and negative storage acknowledgements retry with exponential backoff (1 minute up to 1 hour), at most 12 claims or 24 hours from event creation. Count claims before external work so abandoned leases consume the budget. Terminal deliveries are delivered/skipped/rejected/failed; cleanup discards payload/message once all deliveries are terminal, retaining stable IDs and coarse failure reasons. Serialize fan-out completion on the event lock and recheck the lease before updating delivery state. Cleanup requires a running worker. Successful SQS enqueue completes the outbox delivery; its consumer acknowledges permanent contract rejection and leaves temporary failures to the queue policy. Consumers deduplicate `data.metadata.deliveryKey`.
+- Recheck current audience membership and consent/category permissions before outbox delivery and again in the SQS consumer. Nonaudience requesters receive only a decision, no transaction payload or Terms URI.
+- Referral management is separate from data access: owner/writers can inspect all requests; recipient-only callers can inspect only their own `requestedBy` requests, and targets their own incoming status. Enforce the role predicate in the Neo4j read query too, not just an earlier route check. Hidden status returns null like a missing request. Denial/cancellation fan-out is owner plus original requester, excluding the actor; suppress former broad queued deliveries. Consent data still reaches the current audience, but redact another referrer's `externalReferenceId` from metadata AND transaction.referral (and private message) unless the recipient is owner/writer or the original requester. Keep the full stored snapshot for learner-only history/exports.
+- Referral clients pass `expectedRequestId` through SDK/consent options. Check exact ID + pending status and contract expiry under the same contract lock as consent/re-consent writes, including after a route loaded a snapshot. Direct/legacy calls omit the ID and remain independent of invitation cancellation, but expired contracts cannot accept new consent. Only actual already-consented errors count as idempotent success in the app; other conflicts return to review.
+- Contract integration tests use `bun run test:integration -- test/contract-requests.spec.ts`; the default unit config excludes them.
+- From the repository root, `bun run test:referrals` wraps the referral and notification integration suites with Docker preflight, a synthetic seed, container reuse disabled, readable suite results, and temporary logs. `--full` includes consent/credential regressions. It uses the existing integration global setup and mock-instance database, never a configured live database; it does not start HTTP services or test the app.
+- Inline dispatch matches one event by its unique ID. Global cleanup uses indexed `cleanupPending=true`, removed on final cleanup; pending deliveries carry immutable `eventCreatedAt` and use separate indexed UNION branches for next attempt, age and attempts, deduplicated before claiming. The global worker runs a serialized one-time `indexed-outbox-v1` backfill for older retained bodies/pending deliveries. Drain old service writers before that backfill during rollout. Never replace this with a nullable event-ID OR or an every-tick history scan. Preserve the event lock and recheck pending deliveries after locking. The 12-attempt schedule normally exhausts after about six hours of uninterrupted failures; 24 hours is an additional age ceiling.

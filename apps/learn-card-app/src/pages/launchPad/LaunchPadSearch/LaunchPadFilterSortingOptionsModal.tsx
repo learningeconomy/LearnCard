@@ -10,7 +10,6 @@ import {
     LaunchPadSortOptionsEnum,
 } from './launchpad-search.helpers';
 import { useModal } from 'learn-card-base';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 export const LaunchPadFilterSortingOptionsModal: React.FC<{
     filterBy: LaunchPadFilterOptionsEnum;
@@ -18,10 +17,7 @@ export const LaunchPadFilterSortingOptionsModal: React.FC<{
     sortBy: LaunchPadSortOptionsEnum;
     setSortBy: React.Dispatch<React.SetStateAction<LaunchPadSortOptionsEnum>>;
 }> = ({ filterBy, setFilterBy, sortBy, setSortBy }) => {
-    const flags = useFlags();
     const { closeModal } = useModal();
-
-    const enableLaunchPadUpdates = flags?.enableLaunchPadUpdates;
 
     const [_filterBy, _setFilterBy] = useState<LaunchPadFilterOptionsEnum>(filterBy);
     const [_sortBy, _setSortBy] = useState<LaunchPadSortOptionsEnum>(sortBy);
@@ -36,14 +32,6 @@ export const LaunchPadFilterSortingOptionsModal: React.FC<{
         <>
             <IonList className="py-4 rounded-[20px] bg-white">
                 {LAUNCHPAD_SORT_OPTIONS.map(option => {
-                    if (
-                        !enableLaunchPadUpdates &&
-                        (option.type === LaunchPadSortOptionsEnum.mostUsed ||
-                            option.type === LaunchPadSortOptionsEnum.recentlyAdded)
-                    ) {
-                        return null;
-                    }
-
                     return (
                         <IonItem
                             className="font-notoSans text-sm flex items-center justify-start text-left"

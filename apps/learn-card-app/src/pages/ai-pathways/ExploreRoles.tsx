@@ -125,7 +125,7 @@ const ExploreRoles: React.FC<ExploreRolesProps> = ({ initialSearchQuery = '' }) 
 
     return (
         <div className="h-full bg-grayscale-100 overflow-hidden text-grayscale-900 flex flex-col">
-            <header className="px-4 py-5 bg-white safe-area-top-margin flex flex-col gap-4 z-20 relative shadow-bottom-1-5 rounded-b-[20px]">
+            <header className="px-4 py-5 bg-white flex flex-col gap-4 z-20 relative shadow-bottom-1-5 rounded-b-[20px]">
                 <div className="flex items-start gap-2.5">
                     <div className="flex items-center gap-2.5 flex-1 min-w-0">
                         <RolesIcon className="w-[50px] h-[50px] shrink-0" />

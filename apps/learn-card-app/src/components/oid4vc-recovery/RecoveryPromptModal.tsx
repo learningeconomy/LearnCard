@@ -15,7 +15,7 @@ export const RecoveryPromptModal: React.FC<RecoveryPromptModalProps> = ({ prompt
     if (!prompt) return null;
 
     return (
-        <Overlay>
+        <Overlay onDismiss={prompt.cancelCta ? () => onResolve(false) : undefined}>
             <div className={`${SEVERITY_HEADER_CLASS[prompt.severity]} p-6 sm:rounded-t-[20px]`}>
                 <h2 className="text-xl font-semibold text-white">{prompt.title}</h2>
             </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 import X from '../../../svgs/X';
-import { useRenderMethodEnabled } from '../../../../hooks/useRenderMethodEnabled';
+
 import OpenSyllabusMetaData from './OpenSyllabusMetaData';
 import BoostSideMenuMediaDetails from './BoostSideMenuMediaDetails';
 import BoostDisplayStyleSelector from './BoostDisplayStyleSelector';
@@ -10,7 +10,7 @@ import SdJwtVcClaimsBox from './SdJwtVcClaimsBox';
 import CredentialIssuerInformation from './CredentialIssuerInformation';
 import EndorsementCard from '../../../boost-endorsements/EndorsementCard';
 import BoostPreviewTabs from '../../../boost-preview-tabs/BoostPreviewTabs';
-import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
+import BoostFooterLayout from '../../../accessibility/AccessibleBoostFooterLayout';
 import SkillsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/SkillsBox';
 import BoostEndorsementDetails from '../../../boost-endorsements/BoostEndorsementDetails';
 import EndorsementsList from '../../../boost-endorsements/EndorsementsList/EndorsementsList';
@@ -38,6 +38,8 @@ import * as m from '../../../../paraglide/messages.js';
 
 type BoostDetailsSideBarProps = {
     credential: VC;
+    endorsementCredential?: VC;
+    shareCredentialUri?: string;
     categoryType?: CredentialCategoryEnum;
     customSkillsComponent?: React.ReactNode;
     verificationItems: VerificationItem[];
@@ -53,6 +55,8 @@ type BoostDetailsSideBarProps = {
 };
 const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     credential,
+    endorsementCredential: endorsementCredentialProp,
+    shareCredentialUri,
     categoryType,
     customSkillsComponent,
     verificationItems,
@@ -66,8 +70,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     issuancesSummaryComponent,
     isPreview = false,
 }) => {
-    const enableRenderMethod = useRenderMethodEnabled();
-
+    const endorsementCredential = endorsementCredentialProp ?? credential;
     const selectedTab = boostPreviewStore.useTracked.selectedTab();
 
     const { closeModal } = useModal();
@@ -114,7 +117,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
         </div>
     );
 
-    let activeTabDetails = null;
+    let activeTabDetails: React.ReactNode;
     switch (selectedTab) {
         case BoostPreviewTabsEnum.Details:
             activeTabDetails = (
@@ -132,7 +135,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                         {isMediaDisplay && <BoostSideMenuMediaDetails credential={credential} />}
 
                         {!isMediaDisplay && dateRangeText && (
-                            <span className="text-grayscale-500 font-poppins text-[12px] font-[500] w-full">
+                            <span className="text-grayscale-600 font-poppins text-[12px] font-[500] w-full">
                                 {dateRangeText}
                             </span>
                         )}
@@ -159,11 +162,8 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                         </div>
                     )}
 
-                    {!isMediaDisplay && renderMethodCredential && enableRenderMethod && (
-                        <BoostDisplayStyleSelector
-                            credential={renderMethodCredential}
-                            enableRenderMethod={enableRenderMethod}
-                        />
+                    {!isMediaDisplay && renderMethodCredential && (
+                        <BoostDisplayStyleSelector credential={renderMethodCredential} />
                     )}
 
                     <CredentialResultsBox results={results} creditsEarned={creditsEarned} />
@@ -184,14 +184,15 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
 
                     {!hideEndorsementRequestCard && (
                         <EndorsementCard
-                            credential={credential}
+                            credential={endorsementCredential}
+                            shareCredentialUri={shareCredentialUri}
                             categoryType={categoryType}
                             existingEndorsements={existingEndorsements}
                         />
                     )}
 
                     <EndorsementsList
-                        credential={credential}
+                        credential={endorsementCredential}
                         categoryType={categoryType}
                         existingEndorsements={existingEndorsements}
                     />
@@ -235,7 +236,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
         case BoostPreviewTabsEnum.Endorsements:
             activeTabDetails = (
                 <BoostEndorsementDetails
-                    credential={credential}
+                    credential={endorsementCredential}
                     categoryType={categoryType}
                     existingEndorsements={existingEndorsements}
                 />
@@ -261,10 +262,13 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                 <div className="min-h-full mx-auto px-[2px]">
                     {isMobile && (
                         <button
+                            type="button"
                             className="text-grayscale-900 flex items-center justify-center gap-[5px] px-[10px] py-[5px] rounded-[10px] bg-white/90 shadow-md mb-[20px]"
                             onClick={handleClose}
                         >
-                            <X className="w-[20px]" />
+                            <span aria-hidden="true">
+                                <X className="w-[20px]" />
+                            </span>
                             Close
                         </button>
                     )}

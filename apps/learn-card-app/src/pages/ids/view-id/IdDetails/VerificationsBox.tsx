@@ -32,6 +32,7 @@ const VerificationsBox: React.FC<VerificationsBoxProps> = ({ verificationItems }
             </h3>
             <button
                 className="absolute top-[0px] right-[0px] p-2"
+                aria-label="About verification"
                 onClick={e => {
                     e.stopPropagation();
                     setShowInfo(!showInfo);

@@ -201,8 +201,8 @@ const ApiTokenStep: React.FC<{
                     loading
                         ? 'Checking...'
                         : hasActiveToken
-                        ? `${activeGrants.length} token${activeGrants.length > 1 ? 's' : ''} ready`
-                        : 'No API tokens found'
+                          ? `${activeGrants.length} token${activeGrants.length > 1 ? 's' : ''} ready`
+                          : 'No API tokens found'
                 }
                 description={
                     hasActiveToken ? 'Copy a token to use in your code' : 'Create one to continue'
@@ -457,12 +457,12 @@ const SigningAuthorityStep: React.FC<{
                               'developerPortal.guides.issueCredentials.signingAuthorityStep.statusChecking'
                           ]()
                         : hasSigningAuthority
-                        ? m[
-                              'developerPortal.guides.issueCredentials.signingAuthorityStep.statusReady'
-                          ]()
-                        : m[
-                              'developerPortal.guides.issueCredentials.signingAuthorityStep.statusWarning'
-                          ]()
+                          ? m[
+                                'developerPortal.guides.issueCredentials.signingAuthorityStep.statusReady'
+                            ]()
+                          : m[
+                                'developerPortal.guides.issueCredentials.signingAuthorityStep.statusWarning'
+                            ]()
                 }
                 description={
                     hasSigningAuthority

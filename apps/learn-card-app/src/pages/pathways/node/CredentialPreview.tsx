@@ -133,8 +133,8 @@ const CredentialPreview: React.FC<CredentialPreviewProps> = ({ node, ownerDid })
                                     {evidenceCount === 0
                                         ? 'No evidence attached'
                                         : evidenceCount === 1
-                                        ? '1 piece of evidence'
-                                        : `${evidenceCount} pieces of evidence`}
+                                          ? '1 piece of evidence'
+                                          : `${evidenceCount} pieces of evidence`}
                                 </span>
 
                                 {endorsementCount > 0 && (

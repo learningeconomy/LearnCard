@@ -1,17 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactCodeInput from 'react-code-input';
 import PhoneInput from 'react-phone-number-input';
 import { Capacitor } from '@capacitor/core';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { z } from 'zod';
 
-import {
-    authStore,
-    isPlatformAndroid,
-    destroyRecaptcha,
-    useToast,
-    ToastTypeEnum,
-} from 'learn-card-base';
+import { useSignInAdapter, useToast, ToastTypeEnum } from 'learn-card-base';
 import { useFirebase } from '../../../hooks/useFirebase';
 
 import { IonCol, IonInput, IonCheckbox, IonToggle, IonRouterLink } from '@ionic/react';
@@ -19,6 +12,9 @@ import { IonCol, IonInput, IonCheckbox, IonToggle, IonRouterLink } from '@ionic/
 import { PhoneFormStepsEnum } from 'learn-card-base';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('phone-form');
+
+import * as m from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
 
 import 'react-phone-number-input/style.css';
 
@@ -31,6 +27,7 @@ const CodeValidator = z.object({
 });
 
 const PhoneForm: React.FC = () => {
+    const adapter = useSignInAdapter();
     const {
         sendSmsAuthCode,
         verifySmsAuthCode,
@@ -40,7 +37,7 @@ const PhoneForm: React.FC = () => {
     const { presentToast } = useToast();
 
     const [currentStep, setCurrentStep] = useState<PhoneFormStepsEnum>(PhoneFormStepsEnum.phone);
-    const [phone, setPhone] = useState<any>('');
+    const [phone, setPhone] = useState<string>('');
     const [code, setCode] = useState<string | number>('');
     const [password, setPassword] = useState<string | null | undefined>('');
 
@@ -50,45 +47,61 @@ const PhoneForm: React.FC = () => {
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isResendCodeLoading, setIsResendCodeLoading] = useState<boolean>(false);
+    const [phoneSession, setPhoneSession] = useState(0);
+    const sessionGeneration = useRef(0);
+
+    // The adapter subscriptions below are set up once per session; keep the latest
+    // hook function reachable so the auto-verify callback never runs a stale closure.
+    const loginAfterAutoVerifiedSMSRef = useRef(loginAfterAutoVerifiedSMS);
+    loginAfterAutoVerifiedSMSRef.current = loginAfterAutoVerifiedSMS;
 
     useEffect(() => {
-        FirebaseAuthentication.addListener('phoneCodeSent', e => {
-            log.debug('📞📞📞 phoneCodeSent::res 📞📞📞', e);
-
-            const verificationId = e?.verificationId;
-
-            if (e?.verificationId) {
-                authStore.set.verificationId(verificationId);
+        const generation = sessionGeneration.current;
+        const removeCodeSent = adapter.onPhoneCodeSent(() => {
+            if (Capacitor.isNativePlatform()) {
                 showSuccessToast();
                 setCurrentStep(PhoneFormStepsEnum.verification);
-                setIsLoading(false);
-                setIsResendCodeLoading(false);
-            } else {
                 setIsLoading(false);
                 setIsResendCodeLoading(false);
             }
         });
 
-        FirebaseAuthentication.addListener('phoneVerificationCompleted', e => {
-            loginAfterAutoVerifiedSMS(
-                e?.verificationCode,
+        const removeCompleted = adapter.onPhoneVerificationCompleted(verificationCode => {
+            loginAfterAutoVerifiedSMSRef.current(
+                verificationCode,
                 () => {
+                    if (generation !== sessionGeneration.current) return;
                     setIsLoading(false);
                 },
                 (err: string) => {
+                    if (generation !== sessionGeneration.current) return;
                     setIsLoading(false);
                     setCodeError(err);
                 }
             );
         });
 
-        // FirebaseAuthentication.addListener('authStateChange', e => {
-        //     log.debug('📞📞📞 authStateChange::res 📞📞📞', e);
-        // });
-    }, []);
+        const removeFailed = adapter.onPhoneVerificationFailed(error => {
+            setIsLoading(false);
+            setIsResendCodeLoading(false);
+            setError(error instanceof Error ? error.message : '');
+            setCodeError('');
+            setCurrentStep(PhoneFormStepsEnum.phone);
+        });
+
+        return () => {
+            sessionGeneration.current += 1;
+            removeCodeSent();
+            removeCompleted();
+            removeFailed();
+            adapter.cleanup?.();
+        };
+    }, [adapter, phoneSession]);
 
     const resetForm = () => {
-        destroyRecaptcha();
+        sessionGeneration.current += 1;
+        adapter.cleanup?.();
+        setPhoneSession(session => session + 1);
         setCurrentStep(PhoneFormStepsEnum.phone);
         setPhone('');
         setCode('');
@@ -132,7 +145,7 @@ const PhoneForm: React.FC = () => {
     };
 
     const showSuccessToast = () => {
-        presentToast('A verification code has been sent', {
+        presentToast(m['login.verificationSentToast'](), {
             type: ToastTypeEnum.Success,
             hasDismissButton: true,
         });
@@ -140,6 +153,7 @@ const PhoneForm: React.FC = () => {
 
     const handleOnClick = async (e: React.FormEvent, resendCode = false) => {
         e.preventDefault();
+        const generation = sessionGeneration.current;
         if (!resendCode) {
             setIsLoading(true);
         } else {
@@ -150,33 +164,27 @@ const PhoneForm: React.FC = () => {
             if (validate()) {
                 // native sms auth
                 if (Capacitor.isNativePlatform()) {
-                    FirebaseAuthentication.signInWithPhoneNumber({
-                        phoneNumber: phone,
-                        skipNativeAuth: isPlatformAndroid() ? true : false,
+                    void adapter.sendPhoneOtp(phone).catch(error => {
+                        if (generation !== sessionGeneration.current) return;
+                        log.error('Phone verification failed', error);
+                        setIsLoading(false);
+                        setIsResendCodeLoading(false);
+                        setError(error instanceof Error ? error.message : '');
+                        setCurrentStep(PhoneFormStepsEnum.phone);
                     });
-                    // .then(({ verificationId }) => {
-                    //     authStore.set.verificationId(verificationId);
-                    //     showSuccessToast();
-                    //     setCurrentStep(PhoneFormStepsEnum.verification);
-                    //     setIsLoading(false);
-                    //     setIsResendCodeLoading(false);
-                    // })
-                    // .catch(err => {
-                    //     setIsLoading(false);
-                    //     setIsResendCodeLoading(false);
-                    //     setError(err.errorMessage);
-                    // });
                 } else {
                     // web sms auth
                     sendSmsAuthCode(
                         phone,
                         () => {
+                            if (generation !== sessionGeneration.current) return;
                             setIsLoading(false);
                             setIsResendCodeLoading(false);
                             showSuccessToast();
                             setCurrentStep(PhoneFormStepsEnum.verification);
                         },
                         (err: string) => {
+                            if (generation !== sessionGeneration.current) return;
                             setIsLoading(false);
                             setIsResendCodeLoading(false);
                             setError(err);
@@ -187,10 +195,8 @@ const PhoneForm: React.FC = () => {
         } else if (currentStep === PhoneFormStepsEnum.verification) {
             if (validateCode()) {
                 if (Capacitor.isNativePlatform()) {
-                    const verificationId = authStore.get.verificationId();
                     // native sms code  verification
                     await verifySmsAuthCodeOnNative(
-                        verificationId,
                         code,
                         () => {
                             setIsLoading(false);
@@ -225,19 +231,21 @@ const PhoneForm: React.FC = () => {
     let activeStep: React.ReactNode | null = null;
     let formTitle: React.ReactNode | null = null;
     let buttonTitle: string | null = null;
-    const resendCodeButtonText: string = isResendCodeLoading ? 'Sending Code...' : 'Resend Code';
+    const resendCodeButtonText = isResendCodeLoading
+        ? m['common.sendingCode']()
+        : m['common.resendCode']();
 
     if (currentStep === PhoneFormStepsEnum.phone) {
         formTitle = (
             <p className="font-medium text-sm text-grayscale-600 uppercase">
-                Login With Phone Number
+                {m['login.loginWithPhone']()}
             </p>
         );
 
         activeStep = (
             <IonCol size="12">
                 <PhoneInput
-                    placeholder="Phone Number"
+                    placeholder={m['login.phonePlaceholder']()}
                     countryOptionsOrder={['US', 'CA', 'AU', '|', '...']}
                     defaultCountry="US"
                     value={phone}
@@ -256,14 +264,20 @@ const PhoneForm: React.FC = () => {
                 )}
             </IonCol>
         );
-        buttonTitle = isLoading ? 'Loading...' : 'Send Code';
+        buttonTitle = isLoading ? m['common.loading']() : m['login.sendCode']();
     } else if (currentStep === PhoneFormStepsEnum.verification) {
         formTitle = (
             <p className=" text-grayscale-600 font-bold text-center text-lg">
-                Enter verification code or{' '}
-                <span className="login-start-over-span text-indigo-500" onClick={resetForm}>
-                    start over
-                </span>
+                <TransP
+                    m={m['common.enterVerificationCode']}
+                    components={[
+                        <span
+                            className="login-start-over-span text-indigo-500"
+                            onClick={resetForm}
+                            key="reset"
+                        />,
+                    ]}
+                />
             </p>
         );
         activeStep = (
@@ -288,35 +302,17 @@ const PhoneForm: React.FC = () => {
                 )}
             </IonCol>
         );
-        buttonTitle = buttonTitle = isLoading ? 'Verifying...' : 'Verify';
+        buttonTitle = isLoading ? m['common.verifying']() : m['common.verify']();
     } else if (currentStep === PhoneFormStepsEnum.passwordExistingUser) {
-        formTitle = <p className="font-medium text-grayscale-600 uppercase">Password</p>;
-        activeStep = (
-            <IonCol size="12">
-                <IonInput
-                    autocapitalize="on"
-                    className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
-                    placeholder="Password"
-                    // todo: add view password toggle
-                    onIonInput={e => setPassword(e.detail.value)}
-                    value={password}
-                    type="password"
-                />
-                <IonCol size="12" className="flex items-center justify-end mt-3">
-                    <p className="mr-3 text-gray-700 font-medium text-lg">Stay Signed In</p>{' '}
-                    <IonToggle />
-                </IonCol>
-            </IonCol>
+        formTitle = (
+            <p className="font-medium text-grayscale-600 uppercase">{m['common.password']()}</p>
         );
-        buttonTitle = 'Login';
-    } else if (currentStep === PhoneFormStepsEnum.passwordNewUser) {
-        formTitle = 'Password';
         activeStep = (
             <IonCol size="12">
                 <IonInput
                     autocapitalize="on"
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
-                    placeholder="Password"
+                    placeholder={m['common.password']()}
                     // todo: add view password toggle
                     onIonInput={e => setPassword(e.detail.value)}
                     value={password}
@@ -324,16 +320,44 @@ const PhoneForm: React.FC = () => {
                 />
                 <IonCol size="12" className="flex items-center justify-end mt-3">
                     <p className="mr-3 text-gray-700 font-medium text-lg">
-                        Agree to{' '}
-                        <IonRouterLink href="#" className="font-semibold login-terms-span">
-                            Terms
-                        </IonRouterLink>
+                        {m['common.staySignedIn']()}
+                    </p>{' '}
+                    <IonToggle />
+                </IonCol>
+            </IonCol>
+        );
+        buttonTitle = m['common.login']();
+    } else if (currentStep === PhoneFormStepsEnum.passwordNewUser) {
+        formTitle = m['common.password']();
+        activeStep = (
+            <IonCol size="12">
+                <IonInput
+                    autocapitalize="on"
+                    className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
+                    placeholder={m['common.password']()}
+                    // todo: add view password toggle
+                    onIonInput={e => setPassword(e.detail.value)}
+                    value={password}
+                    type="password"
+                />
+                <IonCol size="12" className="flex items-center justify-end mt-3">
+                    <p className="mr-3 text-gray-700 font-medium text-lg">
+                        <TransP
+                            m={m['common.agreeToTerms']}
+                            components={[
+                                <IonRouterLink
+                                    href="#"
+                                    className="font-semibold login-terms-span"
+                                    key="terms"
+                                />,
+                            ]}
+                        />
                     </p>{' '}
                     <IonCheckbox />
                 </IonCol>
             </IonCol>
         );
-        buttonTitle = 'Create Account';
+        buttonTitle = m['common.createAccount']();
     }
 
     return (
@@ -363,12 +387,12 @@ const PhoneForm: React.FC = () => {
                     size="12"
                     className="text-center mt-4 text-gray-700 font-medium text-lg login-existing-account"
                 >
-                    <p>Already have an account?</p>
+                    <p>{m['common.alreadyHaveAccount']()}</p>
                     <button
                         onClick={resetForm}
                         className="w-full text-center font-bold text-lg login-reset-btn"
                     >
-                        Use a different email address
+                        {m['common.differentEmail']()}
                     </button>
                 </IonCol>
             )}

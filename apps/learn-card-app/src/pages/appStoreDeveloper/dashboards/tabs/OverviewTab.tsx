@@ -13,8 +13,8 @@ import {
 import type { LCNIntegration, AppStoreListing } from '@learncard/types';
 
 import type { DashboardConfig, DashboardStats, CredentialTemplate } from '../types';
-import { openExternalLink } from 'src/helpers/externalLinkHelpers';
-import { IssuanceList } from 'src/components/issuances/IssuanceList';
+import { openExternalLink } from '../../../../helpers/externalLinkHelpers';
+import { IssuanceList } from '../../../../components/issuances/IssuanceList';
 
 interface OverviewTabProps {
     integration: LCNIntegration;

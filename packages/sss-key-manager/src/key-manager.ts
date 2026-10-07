@@ -31,6 +31,7 @@ import {
 
 import { shareToRecoveryPhrase, recoveryPhraseToShare } from './recovery-phrase';
 
+/** @deprecated Use `createSSSStrategy` with AuthCoordinator. */
 export class SSSKeyManager implements SSSKeyDerivationProvider {
     readonly name = 'sss';
 
@@ -311,6 +312,7 @@ export class SSSKeyManager implements SSSKeyDerivationProvider {
     }
 }
 
+/** @deprecated Use `createSSSStrategy` with AuthCoordinator. */
 export function createSSSKeyManager(config: SSSKeyManagerConfig): SSSKeyManager {
     return new SSSKeyManager(config);
 }

@@ -5,12 +5,7 @@ import { m } from '../../paraglide/messages.js';
 import { useHistory } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { IonSpinner } from '@ionic/react';
-import {
-    useGetCurrentLCNUser,
-    useGetEnrichedSession,
-    useModal,
-    useDeviceTypeByWidth,
-} from 'learn-card-base';
+import { useDeviceTypeByWidth, useGetEnrichedSession, useModal } from 'learn-card-base';
 import { useWallet } from 'learn-card-base/hooks/useWallet';
 import { AiSessionsIconWithShape } from 'learn-card-base/svgs/wallet/AiSessionsIcon';
 
@@ -52,7 +47,6 @@ const TopicNewSessionGate: React.FC<Props> = ({
     const history = useHistory();
     const queryClient = useQueryClient();
     const { initWallet } = useWallet();
-    const { currentLCNUser } = useGetCurrentLCNUser();
     const { closeAllModals } = useModal();
     const { isDesktop } = useDeviceTypeByWidth();
 
@@ -81,9 +75,7 @@ const TopicNewSessionGate: React.FC<Props> = ({
             if (app && app.type !== AiPassportAppsEnum.learncardapp && app.url) {
                 closeAllModals?.();
                 const uri = topicBoostUri ?? topicUri;
-                window.location.href = `${app.url}/chats?topicUri=${encodeURIComponent(
-                    uri
-                )}&did=${encodeURIComponent(currentLCNUser?.did ?? '')}`;
+                window.location.href = `${app.url}/chats?topicUri=${encodeURIComponent(uri)}`;
                 return;
             }
             setPhase('chat');

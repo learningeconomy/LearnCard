@@ -4,7 +4,7 @@ description: LCA API routes for SSS key management and QR login
 
 # LCA API — Key Management & QR Login
 
-The LCA API (`lca-api`) provides server-side routes for SSS key share storage, recovery method management, and cross-device QR login. These routes are consumed by the [SSS Key Manager](../sss-key-manager.md) client library.
+The LCA API (`lca-api`) provides server-side routes for SSS key share storage, recovery method management, and cross-device QR login. These routes are consumed by the [SSS Key Manager](https://github.com/learningeconomy/LearnCard/tree/main/packages/sss-key-manager) client library.
 
 ## Base URL
 
@@ -358,7 +358,7 @@ Delete all key data for a user. Requires DID-Auth.
 
 ## QR Login Routes (`/qr-login/*`)
 
-These routes implement the ephemeral relay for [cross-device login](../../core-concepts/identities-and-keys/cross-device-login.md). All session data lives in Redis with short TTLs.
+These routes implement the ephemeral relay for cross-device login (QR sign-in between a signed-in device and a new one). All session data lives in Redis with short TTLs.
 
 ### Create Session
 

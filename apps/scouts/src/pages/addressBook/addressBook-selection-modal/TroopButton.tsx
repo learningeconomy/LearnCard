@@ -1,6 +1,7 @@
 import React from 'react';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { VC } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
 
 interface TroopButtonProps {
     record: VC;
@@ -37,9 +38,7 @@ const TroopButton: React.FC<TroopButtonProps> = ({
             />
             <div className="flex flex-col items-start text-grayscale-900">
                 <p>{record?.boostCredential?.name}</p>
-                <p>
-                    {count} {count === 1 ? 'Contact' : 'Contacts'}{' '}
-                </p>
+                <p>{m['addressBook.contactsCount']({ count })}</p>
             </div>
             {selectedGroup === record.uri && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center text-white rounded-full bg-emerald-700 shadow-3xl w-8 h-8">

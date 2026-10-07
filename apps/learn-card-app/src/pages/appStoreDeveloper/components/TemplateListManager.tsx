@@ -349,9 +349,9 @@ if (result.credentialUri) {
                                 editingTemplate?.boostUri === template.boostUri
                                     ? 'border-blue-300 bg-blue-50'
                                     : showCodeSnippets &&
-                                      selectedTemplateForCode?.boostUri === template.boostUri
-                                    ? 'border-emerald-300 bg-emerald-50'
-                                    : 'border-gray-200 bg-white hover:border-gray-300'
+                                        selectedTemplateForCode?.boostUri === template.boostUri
+                                      ? 'border-emerald-300 bg-emerald-50'
+                                      : 'border-gray-200 bg-white hover:border-gray-300'
                             }`}
                         >
                             <div className="flex items-start gap-3">
@@ -361,8 +361,8 @@ if (result.credentialUri) {
                                         template.imageUrl
                                             ? ''
                                             : featureType === 'peer-badges'
-                                            ? 'bg-gradient-to-br from-violet-100 to-purple-100'
-                                            : 'bg-gradient-to-br from-emerald-100 to-cyan-100'
+                                              ? 'bg-gradient-to-br from-violet-100 to-purple-100'
+                                              : 'bg-gradient-to-br from-emerald-100 to-cyan-100'
                                     }`}
                                 >
                                     {template.imageUrl ? (

@@ -1,7 +1,7 @@
 import { useEffect, useCallback, memo, useState } from 'react';
 import { App } from '@capacitor/app';
 import { Capacitor, PluginListenerHandle } from '@capacitor/core';
-import { useLocation, useHistory } from 'react-router-dom';
+import { useLocation, useHistory, RouteComponentProps } from 'react-router-dom';
 import queryString from 'query-string';
 
 import {
@@ -47,6 +47,9 @@ import { useLaunchDarklyIdentify } from 'learn-card-base/hooks/useLaunchDarklyId
 import { useIsChapiInteraction } from 'learn-card-base/stores/chapiStore';
 import { useSentryIdentify, initSentry } from './constants/sentry';
 import { useSetFirebaseAnalyticsUserId } from './hooks/useSetFirebaseAnalyticsUserId';
+import * as m from './paraglide/messages.js';
+import { useLocale } from './i18n';
+import { VC } from '@learncard/types';
 
 const Routes = lazyWithRetry(() => import('./Routes').then(module => ({ default: module.Routes })));
 
@@ -64,9 +67,12 @@ const getBackgroundGradientForNavbar = ({ path }: NavbarGradientProps): string =
 };
 
 const AppRouter: React.FC = () => {
+    // AppRouter is memoized, so it must subscribe to locale context for its
+    // message calls below to rerender after an in-place language switch.
+    useLocale();
     const { isLoading: coordinatorLoading, walletReady } = useAppAuth();
 
-    // The coordinator detects Firebase auth changes via firebaseAuthStore and
+    // The coordinator detects auth changes via authUserStore and
     // handles the full lifecycle (authenticating → deriving_key → ready).
     // Once walletReady is true, we always show the app regardless of other signals.
     const initLoading = walletReady ? false : coordinatorLoading;
@@ -124,8 +130,8 @@ const AppRouter: React.FC = () => {
                 handleCloseModal={closeBoostSelectModal}
                 showCloseButton={false}
                 showNewBoost={true}
-                history={history as any}
-                boostCredential={{} as any}
+                history={history as RouteComponentProps['history']}
+                boostCredential={{} as VC}
                 boostUri=""
                 profileId=""
             />
@@ -241,7 +247,7 @@ const AppRouter: React.FC = () => {
                                             outlineStar="currentColor"
                                             inlineStar="currentColor"
                                         />
-                                        Boosts
+                                        {m['navigation.boosts']()}
                                     </IonTabButton>
                                     <IonTabButton
                                         tab={tabRoutes.tab2}
@@ -259,7 +265,7 @@ const AppRouter: React.FC = () => {
                                                 firewood="#FFFFFF"
                                                 flames="#4D006E"
                                             />
-                                            <p>Campfire</p>
+                                            <p>{m['navigation.campfire']()}</p>
                                         </div>
                                     </IonTabButton>
                                     <IonTabButton
@@ -268,7 +274,7 @@ const AppRouter: React.FC = () => {
                                         className="nav-tab-badges"
                                     >
                                         <MeritBadgesIcon className="h-[40px] w-[40px] mt-[0px] mb-0" />
-                                        Badges
+                                        {m['navigation.badges']()}
                                     </IonTabButton>
                                 </IonTabBar>
                             ) : (

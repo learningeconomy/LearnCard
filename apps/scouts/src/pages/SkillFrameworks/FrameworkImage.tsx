@@ -1,5 +1,6 @@
 import React from 'react';
 import SkillsFrameworkIcon from '../../components/svgs/SkillsFrameworkIcon';
+import * as m from '../../paraglide/messages.js';
 
 type FrameworkImageProps = {
     image?: string;
@@ -16,7 +17,7 @@ const FrameworkImage: React.FC<FrameworkImageProps> = ({
         return (
             <img
                 src={image}
-                alt="Framework Thumbnail"
+                alt={m['skillFrameworks.fwImageLabel']()}
                 className={`rounded-full object-cover shrink-0 ${sizeClassName}`}
             />
         );

@@ -20,7 +20,7 @@ export const BoostPageViewMode = {
 } as const;
 export type BoostPageViewModeType = (typeof BoostPageViewMode)[keyof typeof BoostPageViewMode];
 
-type EarnedAndManagedTabsProps = {
+export type EarnedAndManagedTabsProps = {
     activeTab: CredentialListTabEnum | string;
     handleActiveTab: (selectedTab: any) => void;
     handlePlusClick?: () => void;
@@ -43,6 +43,8 @@ type EarnedAndManagedTabsProps = {
     hideSearch?: boolean;
     lightSearchInput?: boolean;
     showEarnedAndManaged?: boolean;
+    earnedLabel?: React.ReactNode;
+    managedLabel?: React.ReactNode;
 };
 
 export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
@@ -65,11 +67,18 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
     hideSearch = false,
     lightSearchInput = false,
     showEarnedAndManaged,
+    earnedLabel = 'Earned',
+    managedLabel = 'Managed',
 }) => {
     const location = useLocation();
     const history = useHistory();
 
     const { searchString, isSearchActive } = credentialSearchStore.useStore();
+    const searchInputRef = React.useRef<HTMLInputElement>(null);
+
+    React.useEffect(() => {
+        if (isSearchActive) searchInputRef.current?.focus();
+    }, [isSearchActive]);
 
     const handleOnChange = (tab: CredentialListTabEnum) => {
         if (tab === CredentialListTabEnum.Managed) {
@@ -115,6 +124,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                         {isSearchActive && (
                             <>
                                 <input
+                                    ref={searchInputRef}
                                     type="text"
                                     value={searchString}
                                     onChange={e =>
@@ -132,7 +142,6 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                                             ? 'bg-white bg-opacity-25 text-grayscale-900 placeholder-grayscale-900'
                                             : 'bg-black bg-opacity-25 text-white placeholder-white'
                                     }`}
-                                    autoFocus
                                 />
                                 {searchString && (
                                     <button
@@ -175,7 +184,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                                         : inactiveLabelClassName
                                 }`}
                             >
-                                Earned
+                                {earnedLabel}
                             </IonLabel>
                         </IonSegmentButton>
                         {showManaged && (
@@ -191,7 +200,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                                             : inactiveLabelClassName
                                     }`}
                                 >
-                                    Managed
+                                    {managedLabel}
                                 </IonLabel>
                             </IonSegmentButton>
                         )}
@@ -222,6 +231,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                                 <img
                                     src={viewModeToggleIconOverride}
                                     className="w-[20px] h-[20px]"
+                                    alt=""
                                 />
                             )}
                             {!viewModeToggleIconOverride && <GridIcon />}

@@ -31,7 +31,9 @@ import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
 import ConsentFlowSelectiveSharingWarning from './ConsentFlowSelectiveSharingWarning';
+import * as m from '../../paraglide/messages.js';
 import { CredentialMetadata } from 'learn-card-base/types/credential-records';
+import { formatLocaleDate } from '../../i18n/formatters';
 
 type ConsentFlowReadSharingModalProps = {
     term: ConsentFlowTerm;
@@ -42,11 +44,11 @@ type ConsentFlowReadSharingModalProps = {
 };
 
 const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = ({
-    initialTerm,
-    saveTerm,
+    term: initialTerm,
+    setTerm: saveTerm,
     category,
-    contractOwnerDid,
-}: any) => {
+    contractOwnerDid: _contractOwnerDid,
+}) => {
     const { newModal, closeModal } = useModal();
     const infiniteScrollRef = useRef<HTMLDivElement>(null);
 
@@ -65,7 +67,10 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
             <div className="w-full h-full transparent flex items-center justify-center">
                 <IonDatetime
                     onIonChange={e => {
-                        setTerm({ ...term, shareUntil: moment(e.detail.value as string).toISOString() });
+                        setTerm({
+                            ...term,
+                            shareUntil: moment(e.detail.value as string).toISOString(),
+                        });
                     }}
                     value={term?.shareUntil ? moment(term?.shareUntil).format('YYYY-MM-DD') : null}
                     id="datetime"
@@ -88,15 +93,19 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
         fetchNextPage,
     } = useGetCredentialList(category as CredentialCategory);
 
-    const onScreen = useOnScreen(infiniteScrollRef as any, '-300px', [
-        records?.pages?.[0]?.records?.length,
-    ]);
+    const onScreen = useOnScreen(
+        infiniteScrollRef as React.MutableRefObject<HTMLDivElement>,
+        '-300px',
+        [records?.pages?.[0]?.records?.length]
+    );
 
     useEffect(() => {
         if (onScreen && hasNextPage) fetchNextPage();
     }, [fetchNextPage, hasNextPage, onScreen]);
 
-    const allCreds = records?.pages.flatMap(page => page?.records);
+    const allCreds = records?.pages
+        .flatMap(page => page?.records)
+        .filter((credential): credential is NonNullable<typeof credential> => Boolean(credential));
     const allUris = allCreds?.map(credential => credential?.uri) ?? [];
 
     const totalCount = typeof count === 'number' ? count : '?';
@@ -106,19 +115,20 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
         closeModal();
     };
 
-    const getAlreadySharedUri = (credential: CredentialRecord<CredentialMetadata>) => {
-        return credential.sharedUris?.[contractOwnerDid]?.at(-1);
-    };
+    // Historical copies identify the original credential for selection only.
+    // Submission materializes it for the current audience before reusing any ciphertext.
+    const getAlreadySharedUris = (credential: CredentialRecord<CredentialMetadata>) =>
+        Object.values(credential.sharedUris ?? {}).flat();
 
     const getIsSelected = (credential: CredentialRecord<CredentialMetadata>) => {
-        const alreadySharedUri = getAlreadySharedUri(credential);
+        const alreadySharedUris = getAlreadySharedUris(credential);
         return term.shared?.some(
-            (termUri: string) => credential.uri === termUri || alreadySharedUri === termUri
+            (termUri: string) => credential.uri === termUri || alreadySharedUris.includes(termUri)
         );
     };
 
     const toggleCredentialSelected = (credential: CredentialRecord<CredentialMetadata>) => {
-        const alreadySharedUri = getAlreadySharedUri(credential);
+        const alreadySharedUris = getAlreadySharedUris(credential);
         const isSelected = getIsSelected(credential);
 
         if (term.shareAll) {
@@ -129,7 +139,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                             ...term,
                             shareAll: false,
                             shared: allUris.filter(
-                                uri => uri !== credential.uri && uri !== alreadySharedUri
+                                uri => uri !== credential.uri && !alreadySharedUris.includes(uri)
                             ),
                         });
                     }}
@@ -147,8 +157,10 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
             ...term,
             shareAll: false,
             shared: isSelected
-                ? term?.shared?.filter((uri: string) => uri !== credential.uri && uri !== alreadySharedUri)
-                : [...(term.shared ?? []), alreadySharedUri || credential.uri],
+                ? term?.shared?.filter(
+                      (uri: string) => uri !== credential.uri && !alreadySharedUris.includes(uri)
+                  )
+                : [...(term.shared ?? []), credential.uri],
         });
     };
 
@@ -161,14 +173,9 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
             setFormerSharedUris(term.shared ?? []);
         }
 
-        const allSharedUris = allCreds
-            ?.map(cred => {
-                if (!cred) return;
-                return getAlreadySharedUri(cred) ?? cred.uri;
-            })
-            .filter(c => !!c);
+        const allSharedUris = allCreds?.map(credential => credential.uri) ?? [];
 
-        setTerm({ ...term, shared: allSharedUris as string[], shareAll: true, sharing: true });
+        setTerm({ ...term, shared: allSharedUris, shareAll: true, sharing: true });
     };
 
     const handleSelectiveSharing = () => {
@@ -199,7 +206,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                         <IonRow className="w-full flex items-center gap-3 max-w-[760px] mx-auto">
                             <IonCol size="12" className="flex items-center gap-3">
                                 <button type="button" onClick={saveAndClose} className="shrink-0">
-                                    <CaretLeft />
+                                    <CaretLeft className="rtl-mirror" />
                                 </button>
 
                                 <IconComponent className="h-[30px] w-[30px] shrink-0" />
@@ -228,10 +235,10 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                         className="flex flex-col flex-1 gap-1"
                                     >
                                         <h6 className="text-grayscale-900 text-lg font-poppins">
-                                            Live Syncing
+                                            {m['consentFlow.liveSyncing']()}
                                         </h6>
                                         <span className="text-grayscale-700 text-sm font-poppins">
-                                            Continuously share all {plural}.
+                                            {m['consentFlow.contShareAll']({ plural })}
                                         </span>
                                     </label>
 
@@ -259,7 +266,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                             }
                                             className="text-sm font-poppins text-grayscale-900"
                                         >
-                                            Set an expiration date?
+                                            {m['consentFlow.setExpDate']()}
                                         </label>
                                         <IonToggle
                                             color="emerald-700"
@@ -287,7 +294,11 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                             openDatePicker();
                                         }}
                                     >
-                                        {moment(term.shareUntil).format('MMMM Do, YYYY')}
+                                        {formatLocaleDate(term.shareUntil, {
+                                            month: 'long',
+                                            day: 'numeric',
+                                            year: 'numeric',
+                                        })}
                                         <Calendar className="w-[30px] text-grayscale-700" />
                                     </button>
                                 )}
@@ -300,10 +311,10 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                         className="flex flex-col flex-1 gap-1"
                                     >
                                         <h6 className="text-grayscale-900 text-lg font-poppins">
-                                            Selective Sharing
+                                            {m['consentFlow.selectiveSharing']()}
                                         </h6>
                                         <span className="text-grayscale-700 text-sm font-poppins">
-                                            Only share selected {plural}.
+                                            {m['consentFlow.onlyShareSel']({ plural })}
                                         </span>
                                     </label>
 
@@ -324,10 +335,10 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                         className="flex flex-col flex-1 gap-1"
                                     >
                                         <h6 className="text-grayscale-900 text-lg font-poppins">
-                                            Not Sharing
+                                            {m['consentFlow.notSharing']()}
                                         </h6>
                                         <span className="text-grayscale-700 text-sm font-poppins">
-                                            Don't share any {plural}.
+                                            {m['consentFlow.dontShare']({ plural })}
                                         </span>
                                     </label>
 
@@ -349,15 +360,18 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                 <header className="w-full flex justify-center sticky -top-1 z-10 p-5 border-t border-solid border-grayscale-300 bg-grayscale-100">
                                     <section className="flex justify-between w-full max-w-[800px]">
                                         <output className="text-lg font-semibold font-poppins">
-                                            Sharing{' '}
-                                            {term.shareAll ? totalCount : term.shared?.length ?? 0}/
-                                            {totalCount}
+                                            {m['consentFlow.sharingCount']({
+                                                count: term.shareAll
+                                                    ? totalCount
+                                                    : (term.shared?.length ?? 0),
+                                                total: totalCount,
+                                            })}
                                         </output>
 
                                         {term.shareAll && (
                                             <output className="rounded-[20px] pl-4 pr-3 py-1 flex items-center gap-1 bg-grayscale-50 text-emerald-800">
                                                 <span className="font-poppins text-sm font-semibold">
-                                                    Live Syncing All
+                                                    {m['consentFlow.liveSyncingAll']()}
                                                 </span>
                                                 <Checkmark className="h-5 w-5" strokeWidth="3" />
                                             </output>
@@ -379,9 +393,11 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                                     <BoostEarnedCard
                                                         className="[&>button>.check-btn-overlay]:right-[5px] [&>button>.check-btn-overlay]:left-[unset]"
                                                         key={record.uri}
-                                                        credential={record as any}
+                                                        uri={record.uri}
                                                         defaultImg={categoryImgUrl}
-                                                        categoryType={record.category as any}
+                                                        categoryType={
+                                                            record.category as CredentialCategory
+                                                        }
                                                         verifierState
                                                         onCheckMarkClick={() => {
                                                             toggleCredentialSelected(record);

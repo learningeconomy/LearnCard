@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import { ErrorBoundary } from 'react-error-boundary';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { IonContent, IonPage } from '@ionic/react';
 import { useLocation } from 'react-router-dom';
@@ -20,6 +20,7 @@ import AiInsightsUserRequestsToast from './toasts/AiInsightsUserRequestsToast';
 import AiInsightsPromptBoxContainer from './ai-inisghts-prompt/AiInsightsPromptBoxContainer';
 import { m } from '../../paraglide/messages.js';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
+import AiAgentDebug from './agent-debug/AiAgentDebug';
 
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
 import {
@@ -30,9 +31,8 @@ import {
     useExistingAiInsightCredential,
     useGetCredentialsForSkills,
     aiInsightRefreshStore,
-    useToast,
-    ToastTypeEnum,
 } from 'learn-card-base';
+import { AiServiceError, type AiErrorCode } from 'learn-card-base/helpers/aiErrors';
 import { useLoadingLine } from '../../stores/loadingStore';
 import {
     aggregateCategorizedEntries,
@@ -47,10 +47,10 @@ import { useAllContractRequestsForProfile } from 'learn-card-base';
 import { AiInsightsTabsEnum } from './ai-insight-tabs/ai-insights-tabs.helpers';
 import AiInsightsWidgets from './AiInsightsWidgets';
 import { useGlobalSkillFrameworks } from '../../helpers/globalSkillFrameworks.helpers';
+import { getAiErrorCopy } from '../../helpers/aiError.helpers';
 
 type Flags = {
-    hideAiPathways?: boolean;
-    showGenerateAiInsightsButton?: boolean;
+    enableAiAgentDebugTab?: boolean;
 };
 
 type ContractRequestRecord = {
@@ -62,7 +62,6 @@ const AiInsights: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { isAiEnabled, isLoading: aiFeatureGateLoading } = useAiFeatureGate();
-    const { presentToast } = useToast();
     const location = useLocation();
     const globalSkillFrameworks = useGlobalSkillFrameworks();
     const globalSkillFrameworkIds = useMemo(
@@ -71,7 +70,10 @@ const AiInsights: React.FC = () => {
     );
 
     const [selectedTab, setSelectedTab] = useState(AiInsightsTabsEnum.MyInsights);
+    const flags = useFlags<Flags>();
+    const showAgentDebugTab = flags?.enableAiAgentDebugTab ?? !IS_PRODUCTION;
     const autoGenerateAiInsightsAttemptedRef = useRef(false);
+    const [aiInsightErrorCode, setAiInsightErrorCode] = useState<AiErrorCode | null>(null);
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -80,15 +82,21 @@ const AiInsights: React.FC = () => {
             tab === AiInsightsTabsEnum.MyInsights ||
             tab === AiInsightsTabsEnum.LearnerInsights ||
             tab === AiInsightsTabsEnum.SharedInsights ||
-            tab === AiInsightsTabsEnum.ChildInsights
+            tab === AiInsightsTabsEnum.ChildInsights ||
+            (tab === AiInsightsTabsEnum.AgentDebug && showAgentDebugTab)
         ) {
             setSelectedTab(tab);
         }
-    }, [location.search]);
+    }, [location.search, showAgentDebugTab]);
 
     const colors = getThemedCategoryColors(CredentialCategoryEnum.aiInsight);
     const { backgroundSecondaryColor } = colors;
-    const flags = useFlags<Flags>();
+
+    useEffect(() => {
+        if (!showAgentDebugTab && selectedTab === AiInsightsTabsEnum.AgentDebug) {
+            setSelectedTab(AiInsightsTabsEnum.MyInsights);
+        }
+    }, [selectedTab, showAgentDebugTab]);
 
     const {
         data: allResolvedCreds,
@@ -145,16 +153,17 @@ const AiInsights: React.FC = () => {
         if (!canGenerateAiInsights) {
             return;
         }
+        setAiInsightErrorCode(null);
 
         createAiInsightCredential(undefined, {
-            onError: () => {
-                presentToast('Something went wrong. Please try again.', {
-                    type: ToastTypeEnum.Error,
-                    hasDismissButton: true,
-                });
+            onError: error => {
+                const code =
+                    error instanceof AiServiceError ? error.payload.code : 'ai_unknown_error';
+
+                setAiInsightErrorCode(code);
             },
         });
-    }, [canGenerateAiInsights, createAiInsightCredential, presentToast]);
+    }, [canGenerateAiInsights, createAiInsightCredential]);
     const canAutoGenerateAiInsights =
         selectedTab === AiInsightsTabsEnum.MyInsights &&
         isAiEnabled &&
@@ -164,6 +173,7 @@ const AiInsights: React.FC = () => {
         !consentedContractsLoading &&
         !existingAiInsightCredentialLoading &&
         !createAiInsightCredentialLoading &&
+        !aiInsightErrorCode &&
         !aiInsightCredentialToDisplay &&
         hasWalletCredentials &&
         !autoGenerateAiInsightsAttemptedRef.current;
@@ -216,7 +226,7 @@ const AiInsights: React.FC = () => {
         () =>
             Object.entries(skillsMap) as [
                 string,
-                RawCategorizedEntry[] & { totalSkills: number; totalSubskills: number }
+                RawCategorizedEntry[] & { totalSkills: number; totalSubskills: number },
             ][],
         [skillsMap]
     );
@@ -252,28 +262,23 @@ const AiInsights: React.FC = () => {
             ];
         });
     }, [pendingRequests]);
+    const aiInsightErrorCopy = aiInsightErrorCode ? getAiErrorCopy(aiInsightErrorCode) : undefined;
 
     const myInsights = (
         <>
-            <div className="flex items-center justify-center w-full">
-                {flags?.showGenerateAiInsightsButton && (
-                    <button
-                        className="bg-indigo-600 text-white rounded-[16px] w-full py-2 shadow-button-bottom font-semibold"
-                        type="button"
-                        disabled={createAiInsightCredentialLoading || !canGenerateAiInsights}
-                        onClick={generateAiInsights}
-                    >
-                        {createAiInsightCredentialLoading
-                            ? m['aiInsights.generating']()
-                            : m['aiInsights.generateAiInsights']()}
-                    </button>
-                )}
-            </div>
-
             {contractRequest}
             <ShareInsightsCard />
 
             {topSkills.length > 0 && <AiInsightsTopSkills topSkills={topSkills} />}
+            {aiInsightErrorCopy && (
+                <div
+                    className="w-full rounded-[15px] border border-red-100 bg-red-50 p-4 text-start text-red-700"
+                    role="alert"
+                >
+                    <h2 className="font-semibold">{aiInsightErrorCopy.title}</h2>
+                    <p>{aiInsightErrorCopy.body}</p>
+                </div>
+            )}
             <AiInsightsLearningSnapshots
                 aiInsightCredential={aiInsightCredentialToDisplay}
                 isLoading={learningSnapshotsIsLoading}
@@ -294,15 +299,14 @@ const AiInsights: React.FC = () => {
             <AiInsightsWidgets />
 
             <AiInsightsPromptBoxContainer />
-            {!flags?.hideAiPathways && (
-                <AiFeatureLinks features={['ai-sessions', 'skills-hub', 'pathways']} />
-            )}
+            <AiFeatureLinks features={['ai-sessions', 'skills-hub', 'pathways']} />
         </>
     );
 
     const childInsights = <ChildInsights />;
     const learningInsights = <LearnerInsights />;
     const sharedInsights = <SharedInsights />;
+    const agentDebug = <AiAgentDebug />;
 
     let activeInsights;
     if (selectedTab === AiInsightsTabsEnum.MyInsights) {
@@ -311,6 +315,8 @@ const AiInsights: React.FC = () => {
         activeInsights = sharedInsights;
     } else if (selectedTab === AiInsightsTabsEnum.ChildInsights) {
         activeInsights = childInsights;
+    } else if (selectedTab === AiInsightsTabsEnum.AgentDebug && showAgentDebugTab) {
+        activeInsights = agentDebug;
     } else {
         activeInsights = learningInsights;
     }
@@ -332,6 +338,7 @@ const AiInsights: React.FC = () => {
                                 <AiInsightsTabs
                                     selectedTab={selectedTab}
                                     setSelectedTab={setSelectedTab}
+                                    showAgentDebugTab={showAgentDebugTab}
                                     className="w-full mb-4"
                                 />
                                 {activeInsights}

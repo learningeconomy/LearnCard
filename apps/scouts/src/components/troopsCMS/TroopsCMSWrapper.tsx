@@ -9,6 +9,7 @@ import {
 } from 'learn-card-base';
 import useTroopMembers from '../../hooks/useTroopMembers';
 import useTroopIds from '../../hooks/useTroopIds';
+import { environment } from '../../config/environment';
 
 const TroopsCMS = lazyWithRetry(() => import('./TroopsCMS'));
 
@@ -26,6 +27,14 @@ import { VC } from '@learncard/types';
 import { MemberTabsEnum } from '../../pages/troop/TroopPageMembersBox';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('troops-cms-wrapper');
+type EditingBoostMeta = {
+    network?: {
+        networkType?: string;
+        country?: string;
+        region?: string;
+        organization?: string;
+    };
+};
 
 type TroopsCMSWrapperProps = {
     parentUri?: string;
@@ -136,22 +145,34 @@ export const TroopsCMSWrapper: React.FC<TroopsCMSWrapperProps> = ({
     useEffect(() => {
         if (!isEdit || !editingBoost?.meta) return;
 
-        const network = (editingBoost as any)?.meta?.network as
-            | { networkType?: string; country?: string; region?: string; organization?: string }
-            | undefined;
+        // The shared Boost metadata type does not include the Scouts network extension.
+        const metadata = editingBoost.meta as EditingBoostMeta;
+        const network = metadata.network;
 
         if (network && Object.keys(network).length > 0) {
-            if (process.env.NODE_ENV !== 'test') {
+            if (environment.MODE !== 'test') {
                 log.debug('TroopsCMSWrapper::editingBoost.meta.network', network);
             }
             setState(prev => ({
                 ...prev,
                 networkFields: {
                     ...prev.networkFields,
-                    networkType: network?.networkType ?? prev.networkFields?.networkType ?? '',
-                    country: network?.country ?? prev.networkFields?.country ?? '',
-                    region: network?.region ?? prev.networkFields?.region ?? '',
-                    organization: network?.organization ?? prev.networkFields?.organization ?? '',
+                    networkType:
+                        (typeof network.networkType === 'string' && network.networkType) ||
+                        prev.networkFields?.networkType ||
+                        '',
+                    country:
+                        (typeof network.country === 'string' && network.country) ||
+                        prev.networkFields?.country ||
+                        '',
+                    region:
+                        (typeof network.region === 'string' && network.region) ||
+                        prev.networkFields?.region ||
+                        '',
+                    organization:
+                        (typeof network.organization === 'string' && network.organization) ||
+                        prev.networkFields?.organization ||
+                        '',
                 },
             }));
         }

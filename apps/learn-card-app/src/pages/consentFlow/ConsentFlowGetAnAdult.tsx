@@ -62,7 +62,8 @@ export const ConsentFlowGetAnAdultPrompt: React.FC<ConsentFlowGetAnAdultPromptPr
                 <div className="flex flex-col gap-[10px] items-center">
                     <UserProfilePicture
                         user={parentUser}
-                        customContainerClass="h-[60px] w-[60px]"
+                        customContainerClass="h-[60px] w-[60px] overflow-hidden"
+                        customImageClass="h-full w-full object-cover"
                     />
                     <div>
                         <p className="text-grayscale-900 font-poppins text-[20px] leading-[130%] tracking-[-0.25px] text-center">

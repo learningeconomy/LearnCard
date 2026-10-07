@@ -1,5 +1,3 @@
-import { getLogger } from '../logging/logger';
-const log = getLogger('tenant-config-schema');
 /**
  * TenantConfig Zod Schema — single source of truth for:
  *   - Runtime validation of config from edge functions, localStorage, baked JSON
@@ -38,6 +36,7 @@ export const tenantApiConfigSchema = z
         xapi: urlOrPlaceholder().optional(),
         notificationsEndpoint: urlOrPlaceholder().optional(),
         aiService: urlOrPlaceholder().optional(),
+        aiAgentService: urlOrPlaceholder().optional(),
         corsProxyApiKey: z.string().optional(),
     })
     .passthrough();
@@ -56,9 +55,33 @@ export const tenantFirebaseConfigSchema = z
     })
     .passthrough();
 
+export const tenantKeycloakConfigSchema = z
+    .object({
+        serverUrl: z.string().url(),
+        realm: z.string().min(1),
+        clientId: z.string().min(1),
+        scopes: z.array(z.string()).default(['openid', 'profile', 'email', 'phone']),
+        redirectUri: z.string().optional(),
+        postLogoutRedirectUri: z.string().optional(),
+        /**
+         * Native only. Static page (apps/learn-card-app/public/auth/continue.html on the tenant web domain)
+         * opened first in the system auth sheet so it shows a branded loader instead of blank redirects.
+         * Omit to open the Keycloak authorize URL directly.
+         */
+        authBridgeUrl: z.string().url().optional(),
+    })
+    .passthrough();
+
+export type TenantKeycloakConfig = z.infer<typeof tenantKeycloakConfigSchema>;
+
 export const tenantSSSConfigSchema = z
     .object({
         serverUrl: urlOrPlaceholder().default('https://api.learncard.app/trpc'),
+        escrowRelayPublicKey: z.string().default(''),
+        escrowRelayKeyId: z.string().default(''),
+        escrowEnclaveMode: z.enum(['off', 'software', 'nitro']).default('off'),
+        escrowEnclavePublicKeys: z.array(z.string()).default([]),
+        escrowEnclaveMeasurements: z.array(z.object({ imageSha384: z.string() })).default([]),
         enableEmailBackupShare: z.boolean().default(true),
         requireEmailForPhoneUsers: z.boolean().default(true),
     })
@@ -83,13 +106,47 @@ export const tenantAuthConfigSchema = z
         // is used at runtime. Each block is self-contained with its own schema.
         // Unknown providers pass through via the parent .passthrough().
         firebase: tenantFirebaseConfigSchema.optional(),
+        keycloak: tenantKeycloakConfigSchema.optional(),
 
         // Key-derivation strategy config blocks — only the one matching
         // `keyDerivation` is used at runtime.
         sss: tenantSSSConfigSchema.optional(),
         web3Auth: tenantWeb3AuthConfigSchema.optional(),
     })
-    .passthrough();
+    .passthrough()
+    .superRefine((auth, context) => {
+        if (auth.provider === 'keycloak' && !auth.keycloak) {
+            context.addIssue({
+                code: 'custom',
+                path: ['keycloak'],
+                message: 'Required when auth.provider is keycloak',
+            });
+        }
+
+        if (auth.provider === 'firebase' && !auth.firebase) {
+            context.addIssue({
+                code: 'custom',
+                path: ['firebase'],
+                message: 'Required when auth.provider is firebase',
+            });
+        }
+
+        if (auth.keyDerivation === 'sss' && !auth.sss) {
+            context.addIssue({
+                code: 'custom',
+                path: ['sss'],
+                message: 'Required when auth.keyDerivation is sss',
+            });
+        }
+
+        if (auth.keyDerivation === 'web3auth' && !auth.web3Auth) {
+            context.addIssue({
+                code: 'custom',
+                path: ['web3Auth'],
+                message: 'Required when auth.keyDerivation is web3auth',
+            });
+        }
+    });
 
 export const tenantFilestackStorageConfigSchema = z
     .object({
@@ -124,6 +181,7 @@ const deleteSuccessStylesSchema = z
 export const tenantBrandingConfigSchema = z
     .object({
         name: z.string().default('LearnCard'),
+        contractRequestLabel: z.string().optional(),
         shortName: z.string().optional(),
         logoUrl: z.string().optional(),
         faviconUrl: z.string().optional(),
@@ -170,8 +228,19 @@ export const tenantBrandingConfigSchema = z
     })
     .passthrough();
 
+export const samplePersonaConfigSchema = z
+    .object({
+        id: z.string().min(1),
+        contractUri: z.string().min(1),
+        displayName: z.string().min(1).optional(),
+        description: z.string().min(1).optional(),
+    })
+    .passthrough();
+
 export const tenantFeatureConfigSchema = z
     .object({
+        /** Generic referral UI. Requires the enableContractRequests LaunchDarkly flag too. */
+        contractRequests: z.boolean().default(false),
         aiFeatures: z.boolean().default(true),
         appStore: z.boolean().default(true),
         analytics: z.boolean().default(true),
@@ -187,9 +256,7 @@ export const tenantFeatureConfigSchema = z
 
         /**
          * Dashboard home — makes `/dashboard` the post-login landing route and the
-         * first side-menu entry instead of the Passport (`/wallet`) home. Default
-         * off. Paired with the `enableDashboardHome` LaunchDarkly flag; both must
-         * be on. See `apps/learn-card-app/src/pages/dashboard/hooks/useDashboardAsHome.ts`.
+         * first side-menu entry instead of the Passport (`/wallet`) home.
          */
         dashboardHome: z.boolean().default(false),
 
@@ -200,6 +267,8 @@ export const tenantFeatureConfigSchema = z
          * set `true` in the `config.local.json` / `config.staging.json` overlays.
          */
         useSeededSkillFrameworks: z.boolean().default(false),
+        samplePersonas: z.array(samplePersonaConfigSchema).default([]),
+        legacySamplePersonaContractUris: z.array(z.string().min(1)).default([]),
     })
     .passthrough();
 
@@ -349,6 +418,7 @@ export type TenantStorageConfig = z.infer<typeof tenantStorageConfigSchema>;
 export type TenantFilestackStorageConfig = z.infer<typeof tenantFilestackStorageConfigSchema>;
 export type TenantS3StorageConfig = z.infer<typeof tenantS3StorageConfigSchema>;
 export type TenantBrandingConfig = z.infer<typeof tenantBrandingConfigSchema>;
+export type SamplePersonaConfig = z.infer<typeof samplePersonaConfigSchema>;
 export type TenantFeatureConfig = z.infer<typeof tenantFeatureConfigSchema>;
 export type TenantObservabilityConfig = z.infer<typeof tenantObservabilityConfigSchema>;
 export type TenantLinksConfig = z.infer<typeof tenantLinksConfigSchema>;
@@ -361,45 +431,67 @@ export type TenantEcosystemConfig = z.infer<typeof tenantEcosystemConfigSchema>;
 // Validation helpers
 // -----------------------------------------------------------------
 
-/**
- * Parse and validate a raw config object. Returns the validated config
- * with defaults applied, or null + logs errors.
- */
-export const parseTenantConfig = (raw: unknown, source: string): TenantConfig | null => {
-    const result = tenantConfigSchema.safeParse(raw);
+export class TenantConfigValidationError extends Error {
+    readonly source: string;
 
-    if (result.success) {
-        return result.data;
+    readonly issues: readonly ZodIssue[];
+
+    constructor(source: string, issues: readonly ZodIssue[]) {
+        const details = issues
+            .map(issue => {
+                const path = issue.path.length ? issue.path.map(String).join('.') : '(config)';
+
+                return `${path}\n  ${issue.message}`;
+            })
+            .join('\n\n');
+
+        super(`Invalid TenantConfig from ${source}\n\n${details}`);
+        this.name = 'TenantConfigValidationError';
+        this.source = source;
+        this.issues = issues;
     }
+}
 
-    log.warn(
-        `[TenantConfig] Invalid config from ${source}:`,
-        result.error.issues.map((i: ZodIssue) => `${i.path.join('.')}: ${i.message}`).join(', ')
-    );
-
-    return null;
-};
-
-/**
- * Parse a partial config (e.g. from an edge function that only sends overrides).
- * Uses `.partial()` on the root so top-level sections are optional.
- */
-const partialTenantConfigSchema = tenantConfigSchema.partial();
-
-export const parsePartialTenantConfig = (
+const parseWithSource = <Schema extends z.ZodType>(
+    schema: Schema,
     raw: unknown,
     source: string
-): Partial<TenantConfig> | null => {
-    const result = partialTenantConfigSchema.safeParse(raw);
+): z.output<Schema> => {
+    const result = schema.safeParse(raw);
 
-    if (result.success) {
-        return result.data as Partial<TenantConfig>;
-    }
+    if (result.success) return result.data;
 
-    log.warn(
-        `[TenantConfig] Invalid partial config from ${source}:`,
-        result.error.issues.map((i: ZodIssue) => `${i.path.join('.')}: ${i.message}`).join(', ')
-    );
-
-    return null;
+    throw new TenantConfigValidationError(source, result.error.issues);
 };
+
+/** Parse and validate a complete tenant config. Invalid explicit config throws. */
+export const parseTenantConfig = (raw: unknown, source: string): TenantConfig =>
+    parseWithSource(tenantConfigSchema, raw, source);
+
+/**
+ * A tenant config *overlay* — a sparse set of overrides that is deep-merged onto
+ * a base (baked config or the LearnCard defaults) before full validation.
+ *
+ * Deliberately NOT `tenantConfigSchema.partial()`:
+ *   - `.partial()` is shallow, so a partial `auth` block (e.g. only `web3Auth`)
+ *     would run the full `tenantAuthConfigSchema` cross-field refinements
+ *     against the overlay alone and fail ("Required when auth.provider is
+ *     firebase") even though the merged result is valid.
+ *   - `.default()`s would be materialized into the overlay and then clobber
+ *     the base values during the merge.
+ *
+ * Only the shape needed by the resolver is checked here; everything else is
+ * validated on the merged result via `parseTenantConfig`.
+ */
+const tenantConfigOverlaySchema = z
+    .object({
+        tenantId: z.string().optional(),
+        domain: z.string().optional(),
+    })
+    .passthrough();
+
+export type TenantConfigOverlay = z.infer<typeof tenantConfigOverlaySchema>;
+
+/** Shape-check a root-level tenant overlay. Non-object payloads throw. */
+export const parseTenantConfigOverlay = (raw: unknown, source: string): TenantConfigOverlay =>
+    parseWithSource(tenantConfigOverlaySchema, raw, source);

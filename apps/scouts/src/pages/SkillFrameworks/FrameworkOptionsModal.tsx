@@ -4,6 +4,7 @@ import { ModalTypes, useModal, useWallet } from 'learn-card-base';
 
 import Pencil from '../../components/svgs/Pencil';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
+import * as m from '../../paraglide/messages.js';
 import DeleteFrameworkConfirmationModal from './DeleteFrameworkConfirmationModal';
 
 import { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
@@ -55,14 +56,14 @@ const FrameworkOptionsModal: React.FC<FrameworkOptionsModalProps> = ({ framework
                 className="flex items-center gap-[10px] py-[10px] font-notoSans text-[18px] text-grayscale-800"
             >
                 <Pencil version={3} className="w-[35px] h-[35px]" />
-                Edit Framework
+                {m['skillFrameworks.editFwOpt']()}
             </button>
             <button
                 onClick={handleDeleteFramework}
                 className="flex items-center gap-[10px] py-[10px] font-notoSans text-[18px] text-grayscale-800"
             >
                 <TrashBin version="thin" className="w-[35px] h-[35px]" />
-                Delete Framework
+                {m['skillFrameworks.delFwOpt']()}
             </button>
         </div>
     );

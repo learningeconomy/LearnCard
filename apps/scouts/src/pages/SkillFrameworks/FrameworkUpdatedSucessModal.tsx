@@ -1,5 +1,6 @@
 import React from 'react';
-import { conditionalPluralize, useModal } from 'learn-card-base';
+import { useModal } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 import CheckCircle from 'learn-card-base/svgs/CheckCircle';
 import FrameworkImage from './FrameworkImage';
 import SkillsFrameworkIcon from '../../components/svgs/SkillsFrameworkIcon';
@@ -49,7 +50,7 @@ const FrameworkUpdatedSucessModal: React.FC<FrameworkUpdatedSucessModalProps> = 
 
                 <div className="flex gap-[5px] items-center text-emerald-501 font-poppins text-[22px] font-[600]">
                     <CheckCircle className="w-[30px] h-[30px]" color="currentColor" />
-                    Update Successful
+                    {m['skillFrameworks.updSuccess']()}
                 </div>
 
                 <div className="text-center text-[22px] font-poppins text-grayscale-900 space-y-[4px]">
@@ -59,18 +60,24 @@ const FrameworkUpdatedSucessModal: React.FC<FrameworkUpdatedSucessModalProps> = 
                                 <>
                                     <strong className="font-[600] font-poppins">
                                         {skillsCreated === 1
-                                            ? '1 competency'
-                                            : `${skillsCreated} competencies`}
+                                            ? m['skillFrameworks.skillOne']()
+                                            : m['skillFrameworks.skillOther']({
+                                                  count: skillsCreated,
+                                              })}
                                     </strong>
-                                    {tiersCreated > 0 && ' and '}
+                                    {tiersCreated > 0 && m['skillFrameworks.andWord']()}
                                 </>
                             )}
                             {tiersCreated > 0 && (
                                 <strong className="font-[600] font-poppins">
-                                    {conditionalPluralize(tiersCreated, 'tier')}
+                                    {tiersCreated === 1
+                                        ? m['skillFrameworks.tierOne']()
+                                        : m['skillFrameworks.tierOther']({ count: tiersCreated })}
                                 </strong>
                             )}{' '}
-                            {skillsCreated + tiersCreated === 1 ? 'has' : 'have'} been added
+                            {skillsCreated + tiersCreated === 1
+                                ? m['skillFrameworks.hasAdded']()
+                                : m['skillFrameworks.haveAdded']()}
                         </p>
                     )}
                     {(skillsUpdated > 0 || tiersUpdated > 0) && (
@@ -79,18 +86,24 @@ const FrameworkUpdatedSucessModal: React.FC<FrameworkUpdatedSucessModalProps> = 
                                 <>
                                     <strong className="font-[600] font-poppins">
                                         {skillsUpdated === 1
-                                            ? '1 competency'
-                                            : `${skillsUpdated} competencies`}
+                                            ? m['skillFrameworks.skillOne']()
+                                            : m['skillFrameworks.skillOther']({
+                                                  count: skillsUpdated,
+                                              })}
                                     </strong>
-                                    {tiersUpdated > 0 && ' and '}
+                                    {tiersUpdated > 0 && m['skillFrameworks.andWord']()}
                                 </>
                             )}
                             {tiersUpdated > 0 && (
                                 <strong className="font-[600] font-poppins">
-                                    {conditionalPluralize(tiersUpdated, 'tier')}
+                                    {tiersUpdated === 1
+                                        ? m['skillFrameworks.tierOne']()
+                                        : m['skillFrameworks.tierOther']({ count: tiersUpdated })}
                                 </strong>
                             )}{' '}
-                            {skillsUpdated + tiersUpdated === 1 ? 'has' : 'have'} been updated
+                            {skillsUpdated + tiersUpdated === 1
+                                ? m['skillFrameworks.hasUpdated']()
+                                : m['skillFrameworks.haveUpdated']()}
                         </p>
                     )}
                     {(skillsDeleted > 0 || tiersDeleted > 0) && (
@@ -99,18 +112,24 @@ const FrameworkUpdatedSucessModal: React.FC<FrameworkUpdatedSucessModalProps> = 
                                 <>
                                     <strong className="font-[600] font-poppins">
                                         {skillsDeleted === 1
-                                            ? '1 competency'
-                                            : `${skillsDeleted} competencies`}
+                                            ? m['skillFrameworks.skillOne']()
+                                            : m['skillFrameworks.skillOther']({
+                                                  count: skillsDeleted,
+                                              })}
                                     </strong>
-                                    {tiersDeleted > 0 && ' and '}
+                                    {tiersDeleted > 0 && m['skillFrameworks.andWord']()}
                                 </>
                             )}
                             {tiersDeleted > 0 && (
                                 <strong className="font-[600] font-poppins">
-                                    {conditionalPluralize(tiersDeleted, 'tier')}
+                                    {tiersDeleted === 1
+                                        ? m['skillFrameworks.tierOne']()
+                                        : m['skillFrameworks.tierOther']({ count: tiersDeleted })}
                                 </strong>
                             )}{' '}
-                            {skillsDeleted + tiersDeleted === 1 ? 'has' : 'have'} been removed
+                            {skillsDeleted + tiersDeleted === 1
+                                ? m['skillFrameworks.hasRemoved']()
+                                : m['skillFrameworks.haveRemoved']()}
                         </p>
                     )}
                 </div>
@@ -124,7 +143,7 @@ const FrameworkUpdatedSucessModal: React.FC<FrameworkUpdatedSucessModalProps> = 
                     className="bg-indigo-500 text-white py-[10px] px-[20px] rounded-[30px] flex gap-[10px] items-center justify-center font-[600] text-[17px] font-notoSans leading-[24px] tracking-[0.25px] shadow-bottom-3-4"
                 >
                     <SkillsFrameworkIcon className="w-[25px] h-[25px]" version="outlined" />
-                    Browse Framework
+                    {m['skillFrameworks.browseFw']()}
                 </button>
             )}
             <button
@@ -135,7 +154,7 @@ const FrameworkUpdatedSucessModal: React.FC<FrameworkUpdatedSucessModalProps> = 
                 }}
                 className="bg-white text-grayscale-900 py-[10px] px-[20px] rounded-[30px] flex gap-[10px] items-center justify-center text-[17px] font-poppins leading-[24px] tracking-[-0.25px] shadow-bottom-3-4"
             >
-                Close
+                {m['common.close']()}
             </button>
         </div>
     );

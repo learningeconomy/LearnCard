@@ -783,8 +783,8 @@ const MapModeInner: React.FC = () => {
                 effectiveLayout === 'navigate' && anyMemberOnRoute
                     ? true
                     : nb
-                    ? group.memberIds.some(mid => nb.nodeIds.has(mid))
-                    : true;
+                      ? group.memberIds.some(mid => nb.nodeIds.has(mid))
+                      : true;
 
             nodes.push({
                 id: group.id,
@@ -1148,15 +1148,15 @@ const MapModeInner: React.FC = () => {
                                 ? '#10B981'
                                 : '#6EE7B7'
                             : inFocus
-                            ? '#10B981'
-                            : '#A7F3D0'
+                              ? '#10B981'
+                              : '#A7F3D0'
                         : allDone
-                        ? inFocus
-                            ? '#10B981'
-                            : '#A7F3D0'
-                        : inFocus
-                        ? '#9CA3AF'
-                        : '#E5E7EB',
+                          ? inFocus
+                              ? '#10B981'
+                              : '#A7F3D0'
+                          : inFocus
+                            ? '#9CA3AF'
+                            : '#E5E7EB',
                     strokeWidth: anyOutgoingOnRoute ? (inFocus ? 2.25 : 1.75) : inFocus ? 1.5 : 1,
                     strokeDasharray: anyOutgoingOnRoute && !allDone ? '6 5' : undefined,
                     opacity: inFocus ? 1 : 0.7,
@@ -1644,7 +1644,9 @@ const MapModeInner: React.FC = () => {
             */}
             {isDesktop && (
                 <FocusActionBar
-                    node={focusId ? activePathway.nodes.find(n => n.id === focusId) ?? null : null}
+                    node={
+                        focusId ? (activePathway.nodes.find(n => n.id === focusId) ?? null) : null
+                    }
                     nextOnRoute={nextNodeOnRoute}
                     onOpen={openNode}
                 />

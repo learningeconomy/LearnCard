@@ -3,6 +3,8 @@ import { useHistory } from 'react-router-dom';
 
 import { useIsLoggedIn } from 'learn-card-base';
 
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 import { openToS, openPP } from '../../helpers/externalLinkHelpers';
 
 const SharedBoostPageFooter: React.FC = () => {
@@ -20,20 +22,21 @@ const SharedBoostPageFooter: React.FC = () => {
                             onClick={openToS}
                             className="flex items-center justify-center text-white font-bold text-xs mr-2"
                         >
-                            Terms of Service •
+                            {m['login.termsOfService']()} {'•'}
                         </button>
                         <button
                             onClick={openPP}
                             className="flex items-center text-white font-bold text-xs"
                         >
-                            Privacy Policy
+                            {m['login.privacyPolicy']()}
                         </button>
                     </div>
                     <div>
                         <p className="flex text-white text-xs">
-                            POWERED BY CONSENT FLOW • You own your own data • All connections
-                            are&nbsp;
-                            <u>encrypted</u>
+                            <TransP
+                                m={m['credsBundle.footerTagline']}
+                                components={[<u key="u" />]}
+                            />
                         </p>
                     </div>
                     <div className="w-[214px]" />
@@ -62,27 +65,26 @@ export const SharedBoostPageFooterMobile: React.FC = () => {
                     className="bg-emerald-600 text-white rounded-full shadow-bottom uppercase font-mouse text-3xl tracking-wide px-4 py-2 mb-2"
                     onClick={redirectHome}
                 >
-                    Get LearnCard
+                    {m['credsBundle.getLearnCard']()}
                 </button>
                 <div className="flex mb-2 mt-2">
                     <button
                         onClick={openToS}
                         className="flex items-center justify-center text-emerald-600 font-bold text-xs mr-2"
                     >
-                        Terms of Service <span className="text-grayscale-900">&nbsp;•</span>
+                        {m['login.termsOfService']()}{' '}
+                        <span className="text-grayscale-900">{' •'}</span>
                     </button>
                     <button
                         onClick={openPP}
                         className="flex items-center text-emerald-600 font-bold text-xs"
                     >
-                        Privacy Policy
+                        {m['login.privacyPolicy']()}
                     </button>
                 </div>
                 <div>
                     <p className="text-grayscale-900 text-xs text-center">
-                        POWERED BY CONSENT FLOW • You own your own <br /> data • All connections
-                        are&nbsp;
-                        <u>encrypted</u>
+                        <TransP m={m['credsBundle.footerTagline']} components={[<u key="u" />]} />
                     </p>
                 </div>
             </div>

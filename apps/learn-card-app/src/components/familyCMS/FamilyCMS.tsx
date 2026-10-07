@@ -62,10 +62,11 @@ import { VC } from '@learncard/types';
 import { LearnCardRolesEnum } from '../onboarding/onboarding.helpers';
 import * as m from '../../paraglide/messages.js';
 
-const StateValidator = z.object({
-    name: z.string().min(1, 'Name is required!'),
-    description: z.string().min(1, 'Description is required!'),
-});
+const getStateValidator = () =>
+    z.object({
+        name: z.string().min(1, m['arabicFixes.nameRequired']()),
+        description: z.string().min(1, m['arabicFixes.descriptionRequired']()),
+    });
 
 type FamilyCMSProps = {
     credential?: VC;
@@ -172,7 +173,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
                         itemType="family"
                         onRecover={handleRecover}
                         onDiscard={handleDiscard}
-                        discardButtonText="Create New Family"
+                        discardButtonText={m['family.createNewFamily']()}
                     />,
                     { sectionClassName: '!max-w-[400px]' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
@@ -182,7 +183,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
     }, [hasRecoveredState, recoveredState, clearRecoveredState, newModal, closeModal]);
 
     const validate = () => {
-        const parsedData = StateValidator.safeParse({
+        const parsedData = getStateValidator().safeParse({
             name: state?.basicInfo.name,
             description: state?.basicInfo?.description,
         });
@@ -224,9 +225,8 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
                             boostUri
                         );
 
-                        const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
-                            sentBoost
-                        );
+                        const issuedVcUri =
+                            await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
 
                         setIssuedVCUri(issuedVCUri);
 
@@ -278,6 +278,10 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
             if (dependents?.length > 0) {
                 await Promise.all(
                     dependents?.map(async dependent => {
+                        const profileId = dependent.profileId;
+
+                        if (!profileId) throw new Error('Dependent profile ID is required');
+
                         const managerDid = await wallet.invoke.createChildProfileManager(boostUri, {
                             displayName: dependent?.name,
                             bio: dependent?.shortBio,
@@ -292,7 +296,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
                         const learnCardDisplayStyles = dependent?.learnCardID;
 
                         const childDid = await managerLc.invoke.createManagedProfile({
-                            profileId: dependent.profileId!, // uuid
+                            profileId, // uuid
                             displayName: '',
                             bio: '',
                             shortBio: '',
@@ -336,7 +340,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
                         // handle boosting someone else
                         const { sentBoostUri } = await sendBoostCredential(
                             wallet,
-                            dependent?.profileId!,
+                            profileId,
                             boostUri,
                             { skipNotification: true }
                         );
@@ -366,10 +370,10 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
                                 canViewAnalytics: false,
                                 canManageChildrenProfiles: false,
                             },
-                            dependent?.profileId!
+                            profileId
                         );
 
-                        await wallet.invoke.removeBoostAdmin(boostUri, dependent?.profileId!);
+                        await wallet.invoke.removeBoostAdmin(boostUri, profileId);
                     })
                 );
             }

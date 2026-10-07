@@ -95,7 +95,7 @@ export const FamilyCMSColorPicker: React.FC<{
                             showBackdrop: false,
                         });
                     }}
-                    className="w-[50px] h-[50px] min-w-[50px] min-h-[50px] rounded-[10px] mr-2 shadow-soft-bottom"
+                    className="w-[50px] h-[50px] min-w-[50px] min-h-[50px] rounded-[10px] me-2 shadow-soft-bottom"
                     style={{
                         backgroundColor: color ? color : '#353E64',
                     }}
@@ -109,7 +109,7 @@ export const FamilyCMSColorPicker: React.FC<{
                         type="text"
                     />
 
-                    <Eyedropper className="absolute w-[30px] h-[30px] right-2 text-grayscale-900" />
+                    <Eyedropper className="absolute w-[30px] h-[30px] end-2 text-grayscale-900" />
                 </div>
             </div>
         </div>

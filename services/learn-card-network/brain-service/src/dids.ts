@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import Fastify, { FastifyPluginAsync } from 'fastify';
 import fastifyCors from '@fastify/cors';
 import _sodium from 'libsodium-wrappers';
@@ -37,7 +38,7 @@ const encodeKey = (key: Uint8Array) => {
 };
 
 const getRefId = (entry: any): string =>
-    typeof entry === 'string' ? entry : entry?.id ?? JSON.stringify(entry);
+    typeof entry === 'string' ? entry : (entry?.id ?? JSON.stringify(entry));
 
 const dedupeRefs = <T>(entries: T[] = []): T[] => {
     const seen = new Set<string>();
@@ -172,11 +173,11 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
         const domainName: string = request.hostname || (request as any).requestContext.domainName;
         const _domain =
-            !domainName || process.env.IS_OFFLINE
-                ? `localhost%3A${process.env.PORT || 3000}`
+            !domainName || environment.IS_OFFLINE
+                ? `localhost%3A${environment.PORT || 3000}`
                 : domainName.replace(/:/g, '%3A');
 
-        const domain = process.env.DOMAIN_NAME || _domain;
+        const domain = environment.DOMAIN_NAME || _domain;
 
         const didDoc = await learnCard.invoke.resolveDid(profile.did);
         const key = profile.did.split(':')[2];
@@ -253,23 +254,23 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
         }
 
         if (saDocs) {
-            saDocs.map(sa => {
-                (finalDoc.verificationMethod = [
+            saDocs.forEach(sa => {
+                finalDoc.verificationMethod = [
                     ...(finalDoc.verificationMethod || []),
                     ...sa.verificationMethod,
-                ]),
-                    (finalDoc.authentication = [
-                        ...(finalDoc.authentication || []),
-                        ...sa.authentication,
-                    ]),
-                    (finalDoc.assertionMethod = [
-                        ...(finalDoc.assertionMethod || []),
-                        ...sa.assertionMethod,
-                    ]),
-                    (finalDoc.keyAgreement = [
-                        ...(finalDoc.keyAgreement || []),
-                        ...(sa.keyAgreement || []),
-                    ]);
+                ];
+                finalDoc.authentication = [
+                    ...(finalDoc.authentication || []),
+                    ...sa.authentication,
+                ];
+                finalDoc.assertionMethod = [
+                    ...(finalDoc.assertionMethod || []),
+                    ...sa.assertionMethod,
+                ];
+                finalDoc.keyAgreement = [
+                    ...(finalDoc.keyAgreement || []),
+                    ...(sa.keyAgreement || []),
+                ];
             });
         }
 
@@ -372,11 +373,11 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
         const domainName: string = request.hostname || (request as any).requestContext.domainName;
         const _domain =
-            !domainName || process.env.IS_OFFLINE
-                ? `localhost%3A${process.env.PORT || 3000}`
+            !domainName || environment.IS_OFFLINE
+                ? `localhost%3A${environment.PORT || 3000}`
                 : domainName.replace(/:/g, '%3A');
 
-        const domain = process.env.DOMAIN_NAME || _domain;
+        const domain = environment.DOMAIN_NAME || _domain;
         const did = getAppDidWeb(domain, slug);
 
         const didDoc = await learnCard.invoke.resolveDid(authorityDid);
@@ -505,11 +506,11 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
         const domainName: string = request.hostname || (request as any).requestContext.domainName;
         const _domain =
-            !domainName || process.env.IS_OFFLINE
-                ? `localhost%3A${process.env.PORT || 3000}`
+            !domainName || environment.IS_OFFLINE
+                ? `localhost%3A${environment.PORT || 3000}`
                 : domainName.replace(/:/g, '%3A');
 
-        const domain = process.env.DOMAIN_NAME || _domain;
+        const domain = environment.DOMAIN_NAME || _domain;
 
         const did = getManagedDidWeb(domain, id);
 
@@ -596,11 +597,11 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
         const domainName: string = request.hostname || (request as any).requestContext.domainName;
         const _domain =
-            !domainName || process.env.IS_OFFLINE
-                ? `localhost%3A${process.env.PORT || 3000}`
+            !domainName || environment.IS_OFFLINE
+                ? `localhost%3A${environment.PORT || 3000}`
                 : domainName.replace(/:/g, '%3A');
 
-        const domain = process.env.DOMAIN_NAME || _domain;
+        const domain = environment.DOMAIN_NAME || _domain;
 
         const did = learnCard.id.did();
         const didDoc = await learnCard.invoke.resolveDid(did);
@@ -636,7 +637,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
     });
 
     fastify.get('/test/clear-cache', async (_request, reply) => {
-        if (!process.env.IS_OFFLINE) return reply.status(403).send();
+        if (!environment.IS_OFFLINE) return reply.status(403).send();
 
         const learnCard = await getEmptyLearnCard();
 

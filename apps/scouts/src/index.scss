@@ -18,6 +18,12 @@ body.scanner-active > * {
 
 @import './assets/sass/modals.scss';
 @import './assets/sass/header.scss';
+
+// Physical left/right navigation icons must follow the document direction.
+// Use the independent `scale` property so existing rotate transforms still compose.
+[dir='rtl'] .rtl-mirror {
+    scale: -1 1;
+}
 @import './assets/sass/notification.scss';
 @import './assets/sass/nav.scss';
 @import './assets/sass/learncard-card.scss';
@@ -35,6 +41,7 @@ body.scanner-active > * {
 @import './assets/sass//idPage.scss';
 @import './assets/sass/share-page.scss';
 @import './assets/sass/credentialPage.scss';
+@import '../../../packages/learn-card-base/src/assets/styles/safe-area.scss';
 @import '../../../packages/learn-card-base/src/assets/styles/modal.scss';
 @import './assets/sass/troops-cms.scss';
 @import './assets/sass/skills-page.scss';

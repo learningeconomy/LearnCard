@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
 
 import { useModal, useListMySkillFrameworks, ModalTypes } from 'learn-card-base';
 
@@ -44,7 +45,7 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
                         version="filled-dots"
                         color="currentColor"
                     />
-                    Select a Framework
+                    {m['skillFrameworks.selectFw']()}
                 </h2>
 
                 {isLoadingFrameworks && (
@@ -83,14 +84,14 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
                     className="bg-indigo-500 text-white py-[10px] px-[20px] rounded-[30px] flex gap-[10px] items-center justify-center font-[600] text-[17px] font-notoSans leading-[24px] tracking-[0.25px] shadow-button-bottom"
                 >
                     <Plus className="w-[25px] h-[25px]" />
-                    Create Framework
+                    {m['skillFrameworks.createFw']()}
                 </button>
             )}
             <button
                 onClick={closeModal}
                 className="bg-white text-grayscale-900 py-[10px] px-[20px] rounded-[30px] flex gap-[10px] items-center justify-center text-[17px] font-poppins leading-[24px] tracking-[-0.25px] shadow-button-bottom"
             >
-                Back
+                {m['common.back']()}
             </button>
         </div>
     );

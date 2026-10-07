@@ -1,8 +1,15 @@
 import React from 'react';
 
 import TruncateTextBox from '../../../../pages/troop/TroopIdDetails/TruncateTextBox';
+import * as m from '../../../../paraglide/messages.js';
 
-import { scoutPermissions, TroopsCMSState, TroopsCMSViewModeEnum } from '../../troopCMSState';
+import {
+    scoutPermissions,
+    permissionTitle,
+    permissionRole,
+    TroopsCMSState,
+    TroopsCMSViewModeEnum,
+} from '../../troopCMSState';
 
 export const TroopIDPreviewBackFace: React.FC<{
     rootViewMode: TroopsCMSViewModeEnum;
@@ -27,16 +34,16 @@ export const TroopIDPreviewBackFace: React.FC<{
     let permissionsTitle = '';
     let permissions = [];
     if (isInGlobalViewMode) {
-        permissionsTitle = 'Global Admin Permissions';
+        permissionsTitle = m['troops.globalAdminPermissions']();
         permissions = scoutPermissions?.global ?? [];
     } else if (isInNetworkViewMode) {
-        permissionsTitle = 'National Admin Permissions';
+        permissionsTitle = m['troops.nationalAdminPermissions']();
         permissions = scoutPermissions?.network ?? [];
     } else if (isInTroopViewMode && isInLeaderViewMode) {
-        permissionsTitle = 'Leader Permissions';
+        permissionsTitle = m['troops.leaderPermissions']();
         permissions = scoutPermissions?.leader ?? [];
     } else if (isInTroopViewMode && isInMemberViewMode) {
-        permissionsTitle = 'Scout Permissions';
+        permissionsTitle = m['troops.scoutPermissions']();
         permissions = scoutPermissions?.member ?? [];
     }
 
@@ -44,23 +51,23 @@ export const TroopIDPreviewBackFace: React.FC<{
         <div className="rounded-t-[20px] rounded-b-[20px] shadow-box-bottom overflow-hidden flex flex-col">
             <TruncateTextBox
                 className="mb-4"
-                headerText="Details"
-                subHeaderText="About"
+                headerText={m['common.details']()}
+                subHeaderText={m['common.about']()}
                 text={networkDescription}
             >
                 <div className="flex flex-col gap-[5px] font-notoSans text-[14px] pt-[10px] border-t-[1px] border-solid border-grayscale-200 w-full">
                     <div className="flex gap-[4px]">
                         <span className="font-[600] text-grayscale-900 font-notoSans">
-                            Issued by:
+                            {m['troops.issuedBy']()}
                         </span>
                         <span className="text-grayscale-700 font-notoSans">
-                            {isInTroopViewMode && 'Troop'} {network?.basicInfo?.name}
+                            {isInTroopViewMode && m['troops.troop']()} {network?.basicInfo?.name}
                         </span>
                     </div>
                     {!isInGlobalViewMode && !isInNetworkViewMode && (
                         <div className="flex gap-[4px]">
                             <span className="font-[600] text-grayscale-900 font-notoSans">
-                                National Network:
+                                {m['troops.nationalNetwork']()}
                             </span>
                             <span className="text-grayscale-700 font-notoSans">{networkName}</span>
                         </div>
@@ -68,7 +75,7 @@ export const TroopIDPreviewBackFace: React.FC<{
                     {!isInGlobalViewMode && (
                         <div className="flex gap-[4px]">
                             <span className="font-[600] text-grayscale-900 font-notoSans">
-                                Global Network:
+                                {m['troops.globalNetwork']()}
                             </span>
                             <span className="text-grayscale-700 font-notoSans">
                                 {globalNetworkName}
@@ -87,12 +94,14 @@ export const TroopIDPreviewBackFace: React.FC<{
                                 className="w-full flex flex-col last-of-type:border-none border-b-[1px] border-b-solid border-b-grayscale-200 py-2"
                             >
                                 <h4 className="text-sm font-semibold font-notoSans">
-                                    {permission?.title}
+                                    {permissionTitle(permission?.titleKey)}
                                 </h4>
                                 <div className="flex">
-                                    {permission?.roles.map((role, i) => {
-                                        const isLast = i === permission.roles.length - 1; // Check if it's the last item
-                                        const _role = isLast ? role : `${role},`; // Conditionally add the comma
+                                    {permission?.roleKeys.map((role, i) => {
+                                        const isLast = i === permission.roleKeys.length - 1; // Check if it's the last item
+                                        const _role = isLast
+                                            ? permissionRole(role)
+                                            : `${permissionRole(role)},`; // Conditionally add the comma
 
                                         return (
                                             <p

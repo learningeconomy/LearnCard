@@ -178,7 +178,7 @@ const deepMerge = (
     return result;
 };
 
-const resolveStageConfig = (stage: string): Record<string, any> => {
+const resolveStageConfig = (stage: string): Record<string, unknown> => {
     const projectDir = join(ENVIRONMENTS_DIR, PROJECT_ID);
     const basePath = join(projectDir, 'config.json');
 
@@ -199,27 +199,15 @@ const resolveStageConfig = (stage: string): Record<string, any> => {
 };
 
 /**
- * Maps a resolved stage config to the env vars the scouts app consumes.
- * These become vite build defines (see vite.config.ts) and are forwarded
- * into docker compose via ${VAR:-default} substitution in the compose files.
+ * The application resolves endpoint configuration from the validated stage JSON.
+ * The CLI passes only the explicit stage selector to Vite.
  */
-const configToEnv = (config: Record<string, any>): Record<string, string> => {
-    const env: Record<string, string> = {};
-    const apis = config.apis ?? {};
+const resolveStageEnv = (stage: string): Record<string, string> => {
+    const selectedStage =
+        stage === 'local' ? 'development' : stage === 'staging' ? 'staging' : 'production';
 
-    if (apis.brainService) env.LCN_URL = apis.brainService;
-    if (apis.brainServiceApi) env.LCN_API_URL = apis.brainServiceApi;
-    if (apis.cloudService) env.CLOUD_URL = apis.cloudService;
-    if (apis.xapi) env.LEARN_CLOUD_XAPI_URL = apis.xapi;
-    if (apis.lcaApi) env.API_URL = apis.lcaApi;
-    if (config.auth?.sss?.serverUrl) env.VITE_SSS_SERVER_URL = config.auth.sss.serverUrl;
-    if (config.observability?.sentryEnv) env.SENTRY_ENV = config.observability.sentryEnv;
-
-    return env;
+    return { VITE_NODE_ENV: selectedStage };
 };
-
-const resolveStageEnv = (stage: string): Record<string, string> =>
-    configToEnv(resolveStageConfig(stage));
 
 const getEnvFileLabel = (): string => {
     if (existsSync(SCOUTS_ENV_PATH)) {
@@ -363,8 +351,8 @@ const startDevPreset = async (
         preset === 'docker' && noBuild
             ? 'bun run lc dev fast'
             : preset === 'services' && noBuild
-            ? 'bun run lc dev services fast'
-            : details.shortcut;
+              ? 'bun run lc dev services fast'
+              : details.shortcut;
     const label = `[${details.option}] ${details.label}`;
 
     if (preset === 'docker' && noBuild === undefined) {

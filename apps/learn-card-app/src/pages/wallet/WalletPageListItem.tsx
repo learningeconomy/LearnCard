@@ -58,10 +58,17 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
     const passportCardTextColor = themeColors?.defaults?.passportCardTextColor;
 
     let countDisplay: React.ReactNode | null = (
-        <p className={`font-poppins text-[14px] ${passportCardTextColor ?? 'text-grayscale-900'}`}>
+        <div
+            className={`font-poppins text-[14px] ${passportCardTextColor ?? 'text-grayscale-900'}`}
+        >
             {loading ? (
                 <div className="flex items-center gap-[5px]">
-                    <IonSpinner name="crescent" className="h-[14px] w-[14px]" />{' '}
+                    <IonSpinner
+                        name="crescent"
+                        role="status"
+                        aria-label={m['common.loading']()}
+                        className="h-[14px] w-[14px]"
+                    />{' '}
                     {m['wallet.items']()}
                 </div>
             ) : count === 1 ? (
@@ -69,7 +76,7 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
             ) : (
                 m['wallet.itemCountOther']({ count })
             )}
-        </p>
+        </div>
     );
 
     if (
@@ -80,10 +87,10 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
     }
 
     return (
-        <div
-            role="button"
+        <button
+            type="button"
             onClick={() => handleItemClick(categoryType)}
-            className={`flex gap-[10px] w-full rounded-[15px] p-[10px] shadow-bottom-2-6 border-[3px] border-white ${
+            className={`flex gap-[10px] w-full rounded-[15px] p-[10px] shadow-bottom-2-6 border-[3px] border-white text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                 !passportCardBgColor ? `bg-${primaryColor}` : ''
             }`}
             style={passportCardBgColor ? { backgroundColor: passportCardBgColor } : undefined}
@@ -115,7 +122,7 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
                 )}
                 <SkinnyCaretRight className="w-[20px] h-[20px]" />
             </div>
-        </div>
+        </button>
     );
 };
 

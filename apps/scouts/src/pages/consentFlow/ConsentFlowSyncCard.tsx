@@ -11,8 +11,11 @@ import HandshakeIcon from '../../components/svgs/HandshakeIcon';
 import { getMinimumTermsForContract } from '../../helpers/contract.helpers';
 
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 import {
+    isAlreadyConsentedError,
+    isConsentConflict,
     useModal,
     useToast,
     useWallet,
@@ -68,11 +71,14 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
 
     const [loading, setLoading] = useState(false);
 
-    const { data: contract } = useContract(contractUri);
+    const { data: contract, refetch: refetchContract } = useContract(
+        contractUri ?? _contractDetails?.uri
+    );
+    const [refreshedContract, setRefreshedContract] = useState<ConsentFlowContractDetails>();
 
-    const contractDetails = _contractDetails || contract;
+    const contractDetails = refreshedContract || _contractDetails || contract;
 
-    const currentUser = useCurrentUser()!!!!!!!!!;
+    const currentUser = useCurrentUser()!;
 
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
     const { mutateAsync: consentToContract, isPending } = useConsentToContract(
@@ -89,80 +95,20 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
         if (contractDetails?.contract) {
             setTerms(getMinimumTermsForContract(contractDetails.contract, currentUser));
         }
-    }, [JSON.stringify(contractDetails?.contract ?? '')]);
+    }, [JSON.stringify(contractDetails ?? '')]);
 
     const history = useHistory();
     const location = useLocation();
 
     const { returnTo } = queryString.parse(location.search);
 
-    const _returnTo = Array.isArray(returnTo) ? returnTo[0] ?? '' : returnTo ?? '';
+    const _returnTo = Array.isArray(returnTo) ? (returnTo[0] ?? '') : (returnTo ?? '');
 
     // state for handling - data share duration
     const [shareDuration, setShareDuration] = useState<{
         oneTimeShare: boolean;
         customDuration: string;
     }>({ oneTimeShare: false, customDuration: '' });
-
-    // Extract httpStatus from various possible error shapes (tRPC, fetch, stringified JSON, etc.)
-    const getHttpStatusFromError = (err: unknown): number | undefined => {
-        const asRecord = (val: unknown): Record<string, unknown> | null =>
-            val !== null && typeof val === 'object' ? (val as Record<string, unknown>) : null;
-
-        // Direct object shapes (e.g., TRPCClientError)
-        const rec = asRecord(err);
-        if (rec) {
-            const direct = rec['httpStatus'];
-            if (typeof direct === 'number') return direct;
-
-            const data = asRecord(rec['data']);
-            const dataStatus = data?.['httpStatus'];
-            if (typeof dataStatus === 'number') return dataStatus;
-
-            const shape = asRecord(rec['shape']);
-            const shapeData = asRecord(shape?.['data']);
-            const shapeStatus = shapeData?.['httpStatus'];
-            if (typeof shapeStatus === 'number') return shapeStatus;
-
-            const response = asRecord(rec['response']);
-            const responseStatus = response?.['status'];
-            if (typeof responseStatus === 'number') return responseStatus;
-        }
-
-        // Stringified JSON in error.message or error string
-        const msg = err instanceof Error ? err.message : String(err);
-        try {
-            const firstBrace = msg.indexOf('{');
-            const firstBracket = msg.indexOf('[');
-            const starts: number[] = [firstBrace, firstBracket].filter(i => i >= 0);
-            const start = starts.length ? Math.min(...starts) : -1;
-
-            if (start >= 0) {
-                const jsonText = msg.slice(start).trim();
-                const parsed: unknown = JSON.parse(jsonText);
-
-                if (Array.isArray(parsed)) {
-                    for (const item of parsed) {
-                        const itemRec = asRecord(item);
-                        const errorRec = asRecord(itemRec?.['error']);
-                        const dataRec = asRecord(errorRec?.['data']) ?? asRecord(itemRec?.['data']);
-                        const hs = dataRec?.['httpStatus'] ?? itemRec?.['httpStatus'];
-                        if (typeof hs === 'number') return hs as number;
-                    }
-                } else {
-                    const objRec = asRecord(parsed);
-                    const errorRec = asRecord(objRec?.['error']);
-                    const dataRec = asRecord(errorRec?.['data']) ?? asRecord(objRec?.['data']);
-                    const hs = dataRec?.['httpStatus'] ?? objRec?.['httpStatus'];
-                    if (typeof hs === 'number') return hs as number;
-                }
-            }
-        } catch {
-            // ignore JSON parse errors
-        }
-
-        return undefined;
-    };
 
     const handleAcceptContract = async () => {
         if (!contractDetails?.contract) return;
@@ -223,26 +169,23 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                 } else history.push(redirectUrl);
                 // } else
             } else {
-                presentToast(`You are now connected with ${contractDetails.name}!`, {
+                presentToast(m['consentFlow.connectedMsg']({ name: contractDetails.name }), {
                     type: ToastTypeEnum.Success,
                 });
                 history.push(`/`);
                 // history.push(`/launchpad?uri=${contractDetails.uri}`);
             }
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : String(err);
-            const httpStatus = getHttpStatusFromError(err);
-            if (httpStatus === 409 || msg.includes("You've already consented to this contract")) {
+            if (isAlreadyConsentedError(err)) {
                 const redirectUrl = contractDetails?.redirectUrl;
 
                 newModal(
                     <div className="w-full bg-white rounded-[16px] shadow-3xl p-5 text-center">
                         <h3 className="text-xl font-semibold text-grayscale-900 mb-2">
-                            Already Consented
+                            {m['consentFlow.alreadyConsented']()}
                         </h3>
                         <p className="text-sm text-grayscale-700 mb-5">
-                            You've already consented to this connection. Any new credentials will be
-                            synced to your account soon!
+                            {m['consentFlow.alreadyConsentedDesc']()}
                         </p>
                         <div className="flex items-center justify-center gap-3">
                             {redirectUrl ? (
@@ -267,7 +210,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                         }
                                     }}
                                 >
-                                    Continue
+                                    {m['common.continue']()}
                                 </button>
                             ) : (
                                 <button
@@ -277,7 +220,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                         history.push('/campfire');
                                     }}
                                 >
-                                    Take me Home
+                                    {m['consentFlow.takeMeHome']()}
                                 </button>
                             )}
                         </div>
@@ -290,12 +233,21 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                 return;
             }
 
+            if (isConsentConflict(err)) {
+                const refreshed = await refetchContract();
+                if (refreshed.data) setRefreshedContract(refreshed.data);
+                presentToast(m['consentFlow.reviewChanged'](), { type: ToastTypeEnum.Error });
+                return;
+            }
+
             // Show generic unknown error modal for all other errors
             newModal(
                 <div className="w-full bg-white rounded-[16px] shadow-3xl p-5 text-center">
-                    <h3 className="text-xl font-semibold text-grayscale-900 mb-2">Unknown Error</h3>
+                    <h3 className="text-xl font-semibold text-grayscale-900 mb-2">
+                        {m['consentFlow.unknownError']()}
+                    </h3>
                     <p className="text-sm text-grayscale-700 mb-5">
-                        There was an unknown error. Please try again.
+                        {m['consentFlow.unknownErrorDesc']()}
                     </p>
                     <div className="flex items-center justify-center gap-3">
                         <button
@@ -304,7 +256,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                 closeAllModals();
                             }}
                         >
-                            Okay
+                            {m['consentFlow.okay']()}
                         </button>
                     </div>
                 </div>,
@@ -386,7 +338,8 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                         className="text-indigo-500 font-bold text-base flex mt-2 items-center justify-center disabled:opacity-50"
                         disabled={!contractDetails?.contract || isPreview}
                     >
-                        Edit Access <RightArrow className="w-[20px] h-[20px]" />
+                        {m['consentFlow.editAccess']()}{' '}
+                        <RightArrow className="rtl-mirror w-[20px] h-[20px]" />
                     </button>
                 </div>
 
@@ -397,9 +350,13 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                         className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-sp-purple-base font-poppins text-xl w-full shadow-3xl normal max-w-[320px] disabled:opacity-50"
                         disabled={!contractDetails?.contract || loading || isPreview}
                     >
-                        {loading ? 'Allowing...' : 'Allow'}
+                        {m[loading ? 'consentFlow.allowing' : 'consentFlow.allow']()}
                     </button>
-                    <IonLoading isOpen={isPending} message="Consenting..." mode="ios" />
+                    <IonLoading
+                        isOpen={isPending}
+                        message={m['consentFlow.consenting']()}
+                        mode="ios"
+                    />
                     <button
                         onClick={() => {
                             history.push('/');
@@ -407,17 +364,14 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                         type="button"
                         className="text-grayscale-900 text-center text-base w-full font-medium mt-4"
                     >
-                        Cancel
+                        {m['common.cancel']()}
                     </button>
                 </div>
             </div>
             <IonRow className="flex items-center justify-center mt-4 w-full">
                 <IonCol className="flex flex-col items-center justify-center text-center">
                     <p className="text-center text-sm font-normal w-[90%] px-16 text-grayscale-600 border-t border-t-grayscale-200 pb-[30px] pt-[20px]">
-                        All connections are{' '}
-                        <b>
-                            <u>encrypted.</u>
-                        </b>
+                        {m['consentFlow.allConnEncrypted']()}
                     </p>
                 </IonCol>
             </IonRow>

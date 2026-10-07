@@ -19,11 +19,22 @@ import {
     ModalTypes,
     useWallet,
     useGetCurrentLCNUser,
+    useTenantBaseUrl,
+    getLogger,
 } from 'learn-card-base';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
-import { EndorsementRequestState } from './endorsement-request.helpers';
+import {
+    EndorsementRequestState,
+    getEndorsementRequestBaseUrl,
+} from './endorsement-request.helpers';
 import { VC } from '@learncard/types';
 import * as m from '../../../paraglide/messages.js';
+import { getEndorsementTargetId } from 'learn-card-base/helpers/credentialHelpers';
+
+const log = getLogger('endorsement-request-options');
+
+type LinkGenerationFailureStage =
+    'identity-resolution' | 'incomplete-share-link' | 'invalid-share-link' | 'share-mutation';
 
 const schema = zod.object({
     email: zod.string().email(),
@@ -31,10 +42,24 @@ const schema = zod.object({
 
 export const EndorsementRequestOptions: React.FC<{
     credential: VC;
+    shareCredentialUri?: string;
     categoryType: CredentialCategoryEnum;
     endorsementRequest: EndorsementRequestState;
     setEndorsementRequest: React.Dispatch<React.SetStateAction<EndorsementRequestState>>;
-}> = ({ credential, categoryType, endorsementRequest, setEndorsementRequest }) => {
+}> = ({
+    credential,
+    shareCredentialUri,
+    categoryType,
+    endorsementRequest,
+    setEndorsementRequest,
+}) => {
+    const [credentialIdentity, setCredentialIdentity] = useState<
+        { source: VC; target: VC } | undefined
+    >();
+    const targetCredential =
+        credentialIdentity?.source === credential ? credentialIdentity.target : undefined;
+    const credentialId = targetCredential?.id;
+    const credentialUri = shareCredentialUri ?? credentialId;
     const { currentLCNUser } = useGetCurrentLCNUser();
 
     const { initWallet } = useWallet();
@@ -43,6 +68,7 @@ export const EndorsementRequestOptions: React.FC<{
         desktop: ModalTypes.FullScreen,
     });
     const { achievementType, title } = useGetVCInfo(credential, categoryType);
+    const endorsementRequestBaseUrl = getEndorsementRequestBaseUrl(useTenantBaseUrl());
     const { track } = useAnalytics();
 
     const { presentToast } = useToast();
@@ -53,19 +79,38 @@ export const EndorsementRequestOptions: React.FC<{
 
     const { mutate: shareEarnedBoost, isPending: isLinkLoading } = useShareBoostMutation();
 
-    const handleLinkGenerationError = () => {
+    const handleLinkGenerationError = (stage: LinkGenerationFailureStage, error?: unknown) => {
+        const diagnostics = {
+            stage,
+            hasCredentialId: Boolean(credentialId),
+            hasCredentialUri: Boolean(credentialUri),
+            hasShareCredentialUri: Boolean(shareCredentialUri),
+            isCertifiedBoostCredential: Boolean(
+                credential.type?.includes('CertifiedBoostCredential')
+            ),
+        };
+
+        if (error) {
+            log.warn('endorsement.request.link.failed', error, diagnostics);
+        } else {
+            log.warn('endorsement.request.link.failed', diagnostics);
+        }
+
         setShareLink(undefined);
-        presentToast(m['toasts.boost.endorsementRequestFailed'](), {
+        setIsGeneratingShareLink(false);
+        presentToast(m['endorsement.request.options.linkGenerationFailed'](), {
             type: ToastTypeEnum.Error,
             hasDismissButton: true,
         });
     };
 
     const generateShareLink = () => {
+        if (!credentialId || !credentialUri) return;
+
         setShareLink(undefined);
         setIsGeneratingShareLink(true);
         shareEarnedBoost(
-            { credential, credentialUri: credential.id },
+            { credential, credentialUri, credentialId },
             {
                 onSuccess(data) {
                     try {
@@ -75,15 +120,16 @@ export const EndorsementRequestOptions: React.FC<{
                         const pin = url.searchParams.get('pin');
 
                         if (!uri || !seed || !pin) {
-                            handleLinkGenerationError();
+                            handleLinkGenerationError('incomplete-share-link');
                             return;
                         }
 
-                        const endorsementUrl = new URL('/', url.origin);
+                        const endorsementUrl = new URL('/', endorsementRequestBaseUrl);
                         endorsementUrl.search = new URLSearchParams({
                             uri,
                             seed,
                             pin,
+                            credentialId,
                             endorsementRequest: 'true',
                         }).toString();
                         setShareLink(endorsementUrl.toString());
@@ -92,11 +138,13 @@ export const EndorsementRequestOptions: React.FC<{
                             boostType: achievementType,
                             method: 'Share Boost',
                         });
-                    } catch {
-                        handleLinkGenerationError();
+                    } catch (error) {
+                        handleLinkGenerationError('invalid-share-link', error);
                     }
                 },
-                onError: handleLinkGenerationError,
+                onError(error) {
+                    handleLinkGenerationError('share-mutation', error);
+                },
                 onSettled() {
                     setIsGeneratingShareLink(false);
                 },
@@ -113,14 +161,36 @@ export const EndorsementRequestOptions: React.FC<{
     };
 
     useEffect(() => {
+        let cancelled = false;
+
+        setShareLink(undefined);
+        setIsGeneratingShareLink(true);
+
+        void getEndorsementTargetId(credential)
+            .then(id => {
+                if (!cancelled) {
+                    setCredentialIdentity({ source: credential, target: { id } as VC });
+                }
+            })
+            .catch(error => {
+                if (!cancelled) handleLinkGenerationError('identity-resolution', error);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [credential]);
+
+    useEffect(() => {
         generateShareLink();
-    }, [credential.id]);
+    }, [credentialId, credentialUri]);
 
     const presentShareBoostLink = () => {
         const shareBoostLinkModalProps = {
             handleClose: () => closeModal(),
             boost: credential,
-            boostUri: credential.id,
+            boostUri: credentialUri,
+            credentialId,
             categoryType,
             hideLinkedIn: true,
             isEndorsementRequest: true,
@@ -156,10 +226,10 @@ export const EndorsementRequestOptions: React.FC<{
 
         try {
             await wallet.invoke.sendEndorsementShareLink(
-                endorsementRequest?.email!,
+                result.data.email,
                 shareLink,
                 {
-                    name: currentLCNUser?.displayName!,
+                    name: currentLCNUser?.displayName ?? '',
                 },
                 {
                     name: title,

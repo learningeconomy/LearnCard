@@ -65,7 +65,7 @@ export const DEFAULT_REGISTRY: ActionDescriptor[] = [
         eligible: state => state.hasSkillProfile,
         weight: () => 100,
         build: (state, { handlers, icons }) =>
-            state.showAiInsights
+            state.aiInsightsEnabled
                 ? {
                       Icon: icons.understand,
                       label: m['dashboard.quickActions.insightsLabel'](),

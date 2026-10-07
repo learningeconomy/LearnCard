@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation } from 'swiper/modules';
+import type { Swiper as SwiperInstance } from 'swiper';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-media-preview');
 
@@ -11,7 +12,7 @@ import BoostDetailsSideBar from './BoostDetailsSideBar';
 import SlimCaretRight from '../../../svgs/SlimCaretRight';
 import { IonContent, IonPage } from '@ionic/react';
 import MediaCollapseButton from './helpers/MediaCollapseButton';
-import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
+import BoostFooterLayout from '../../../accessibility/AccessibleBoostFooterLayout';
 
 import {
     useModal,
@@ -20,23 +21,31 @@ import {
     BoostCategoryOptionsEnum,
     DisplayTypeEnum,
 } from 'learn-card-base';
-import { VC } from '@learncard/types';
+import { VC, VerificationItem } from '@learncard/types';
 import { VideoMetadata } from 'learn-card-base';
 import { canEmbedVideoIframe, ExternalVideoFallback, getExternalVideoUrl } from '@learncard/react';
-import { getExistingAttachmentsOrEvidence } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    getCredentialName,
+    getExistingAttachmentsOrEvidence,
+} from 'learn-card-base/helpers/credentialHelpers';
 import { getAttachmentSource } from 'learn-card-base/helpers/attachment.helpers';
 import { getFilestackPreviewUrl } from 'learn-card-base/filestack/images/images.helpers';
 import { resolvePdfDocumentResource } from '../../../../pages/ids/view-id/IdDetails/helpers/pdfDocumentResource.helpers';
+import * as m from '../../../../paraglide/messages.js';
 
 export const BoostMediaPreview: React.FC<{
     credential: VC;
+    endorsementCredential?: VC;
+    shareCredentialUri?: string;
     openDetailsSideModal: () => void;
     handleShareBoost: () => void;
     onDotsClick: () => void;
-    verifications: any;
+    verifications: VerificationItem[];
     handleCloseModal?: () => void;
 }> = ({
     credential,
+    endorsementCredential,
+    shareCredentialUri,
     openDetailsSideModal,
     handleShareBoost,
     onDotsClick,
@@ -45,7 +54,7 @@ export const BoostMediaPreview: React.FC<{
 }) => {
     const { closeModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
-    const swiperRef = useRef<any>(null);
+    const swiperRef = useRef<SwiperInstance | null>(null);
     const [currentSlide, setCurrentSlide] = useState(0);
 
     const [videoMetaData, setVideoMetaData] = useState<VideoMetadata | null>(null);
@@ -151,6 +160,7 @@ export const BoostMediaPreview: React.FC<{
             mediaContent = (
                 <>
                     <iframe
+                        title={attachment.title || attachment.fileName || 'Credential document'}
                         src={documentUrl}
                         style={{
                             width: '100%',
@@ -237,7 +247,11 @@ export const BoostMediaPreview: React.FC<{
                             <SwiperSlide key={index}>
                                 <img
                                     src={img.url}
-                                    alt={`Image ${index + 1}`}
+                                    alt={
+                                        img.title ||
+                                        img.fileName ||
+                                        `Credential attachment ${index + 1}`
+                                    }
                                     className="object-contain w-full h-full"
                                 />
                             </SwiperSlide>
@@ -246,19 +260,27 @@ export const BoostMediaPreview: React.FC<{
 
                     {!isFirstSlide && (
                         <button
+                            type="button"
+                            aria-label="Previous image"
                             onClick={() => swiperRef.current?.slidePrev()}
                             className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-20 shadow-md hover:bg-gray-200 opacity-50"
                         >
-                            <SlimCaretLeft className="w-5 h-auto" />
+                            <span aria-hidden="true">
+                                <SlimCaretLeft className="w-5 h-auto" />
+                            </span>
                         </button>
                     )}
 
                     {!isLastSlide && (
                         <button
+                            type="button"
+                            aria-label="Next image"
                             onClick={() => swiperRef.current?.slideNext()}
                             className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-20 shadow-md hover:bg-gray-200 opacity-50"
                         >
-                            <SlimCaretRight className="w-5 h-auto" />
+                            <span aria-hidden="true">
+                                <SlimCaretRight className="w-5 h-auto" />
+                            </span>
                         </button>
                     )}
                 </>
@@ -293,6 +315,9 @@ export const BoostMediaPreview: React.FC<{
 
     return (
         <IonPage className="grayscale-800 h-full">
+            <h1 className="sr-only">
+                {getCredentialName(credential) || m['claim.modal.credentialFallback']()}
+            </h1>
             <BoostFooterLayout contentOwnsScroll footerClassName="z-50" footerProps={footerProps}>
                 {isMobile ? (
                     <IonContent fullscreen className="h-full">
@@ -304,6 +329,8 @@ export const BoostMediaPreview: React.FC<{
                         {!isFullScreen && (
                             <BoostDetailsSideBar
                                 credential={credential}
+                                endorsementCredential={endorsementCredential}
+                                shareCredentialUri={shareCredentialUri}
                                 categoryType={BoostCategoryOptionsEnum.accomplishment}
                                 verificationItems={verifications}
                                 renderMethodCredential={credential}

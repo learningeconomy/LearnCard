@@ -27,11 +27,16 @@
                 "script": "test"
             }
         },
-        "test:watch": {
-            "executor": "./tools/executors/workspace:run-command",
+        "typecheck": {
+            "executor": "nx:run-script",
             "options": {
-                "command": "bun run test:watch",
-                "cwd": "{root}/packages/learn-card-helpers"
+                "script": "typecheck"
+            }
+        },
+        "test:watch": {
+            "executor": "nx:run-script",
+            "options": {
+                "script": "test:watch"
             }
         }
     }

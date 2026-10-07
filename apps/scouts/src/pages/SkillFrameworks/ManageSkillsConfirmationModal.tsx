@@ -1,5 +1,6 @@
 import React from 'react';
-import { conditionalPluralize, useModal } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
+import { useModal } from 'learn-card-base';
 import ExclamationCircle from 'learn-card-base/svgs/ExclamationCircle';
 
 type ManageSkillsConfirmationModalProps = {
@@ -55,18 +56,26 @@ const ManageSkillsConfirmationModal: React.FC<ManageSkillsConfirmationModalProps
                                     <>
                                         <strong className="font-[600] font-poppins">
                                             {skillsCreated === 1
-                                                ? '1 competency'
-                                                : skillsCreated + ' competencies'}
+                                                ? m['skillFrameworks.compOne']()
+                                                : m['skillFrameworks.compOther']({
+                                                      count: skillsCreated,
+                                                  })}
                                         </strong>
-                                        {tiersCreated > 0 && ' and '}
+                                        {tiersCreated > 0 && m['skillFrameworks.andWord']()}
                                     </>
                                 )}
                                 {tiersCreated > 0 && (
                                     <strong className="font-[600] font-poppins">
-                                        {conditionalPluralize(tiersCreated, 'tier')}
+                                        {tiersCreated === 1
+                                            ? m['skillFrameworks.tierOne']()
+                                            : m['skillFrameworks.tierOther']({
+                                                  count: tiersCreated,
+                                              })}
                                     </strong>
                                 )}{' '}
-                                {skillsCreated + tiersCreated === 1 ? 'has' : 'have'} been added
+                                {skillsCreated + tiersCreated === 1
+                                    ? m['skillFrameworks.hasAdded']()
+                                    : m['skillFrameworks.haveAdded']()}
                             </p>
                         )}
                         {(skillsUpdated > 0 || tiersUpdated > 0) && (
@@ -75,18 +84,26 @@ const ManageSkillsConfirmationModal: React.FC<ManageSkillsConfirmationModalProps
                                     <>
                                         <strong className="font-[600] font-poppins">
                                             {skillsUpdated === 1
-                                                ? '1 competency'
-                                                : skillsUpdated + ' competencies'}
+                                                ? m['skillFrameworks.compOne']()
+                                                : m['skillFrameworks.compOther']({
+                                                      count: skillsUpdated,
+                                                  })}
                                         </strong>
-                                        {tiersUpdated > 0 && ' and '}
+                                        {tiersUpdated > 0 && m['skillFrameworks.andWord']()}
                                     </>
                                 )}
                                 {tiersUpdated > 0 && (
                                     <strong className="font-[600] font-poppins">
-                                        {conditionalPluralize(tiersUpdated, 'tier')}
+                                        {tiersUpdated === 1
+                                            ? m['skillFrameworks.tierOne']()
+                                            : m['skillFrameworks.tierOther']({
+                                                  count: tiersUpdated,
+                                              })}
                                     </strong>
                                 )}{' '}
-                                {skillsUpdated + tiersUpdated === 1 ? 'has' : 'have'} been updated
+                                {skillsUpdated + tiersUpdated === 1
+                                    ? m['skillFrameworks.hasUpdated']()
+                                    : m['skillFrameworks.haveUpdated']()}
                             </p>
                         )}
                         {(skillsDeleted > 0 || tiersDeleted > 0) && (
@@ -95,18 +112,26 @@ const ManageSkillsConfirmationModal: React.FC<ManageSkillsConfirmationModalProps
                                     <>
                                         <strong className="font-[600] font-poppins">
                                             {skillsDeleted === 1
-                                                ? '1 competency'
-                                                : skillsDeleted + ' competencies'}
+                                                ? m['skillFrameworks.compOne']()
+                                                : m['skillFrameworks.compOther']({
+                                                      count: skillsDeleted,
+                                                  })}
                                         </strong>
-                                        {tiersDeleted > 0 && ' and '}
+                                        {tiersDeleted > 0 && m['skillFrameworks.andWord']()}
                                     </>
                                 )}
                                 {tiersDeleted > 0 && (
                                     <strong className="font-[600] font-poppins">
-                                        {conditionalPluralize(tiersDeleted, 'tier')}
+                                        {tiersDeleted === 1
+                                            ? m['skillFrameworks.tierOne']()
+                                            : m['skillFrameworks.tierOther']({
+                                                  count: tiersDeleted,
+                                              })}
                                     </strong>
                                 )}{' '}
-                                {skillsDeleted + tiersDeleted === 1 ? 'has' : 'have'} been removed
+                                {skillsDeleted + tiersDeleted === 1
+                                    ? m['skillFrameworks.hasRemoved']()
+                                    : m['skillFrameworks.haveRemoved']()}
                             </p>
                         )}
                     </div>
@@ -127,7 +152,7 @@ const ManageSkillsConfirmationModal: React.FC<ManageSkillsConfirmationModalProps
                 onClick={closeModal}
                 className="bg-grayscale-10 rounded-[30px] px-[20px] py-[10px] shadow-bottom-4-4 font-poppins text-[17px] leading-[130%] tracking-[-0.25px] text-grayscale-900"
             >
-                Cancel
+                {m['common.cancel']()}
             </button>
         </div>
     );

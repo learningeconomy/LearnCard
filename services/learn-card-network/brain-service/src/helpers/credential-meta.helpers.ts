@@ -1,3 +1,25 @@
+import type { InboxCredentialType } from '@learncard/types';
+import { isEncryptedInboxCredential } from '@helpers/inbox-encryption.helpers';
+
+/** Read legacy plaintext metadata during migration without decrypting escrow on read routes. */
+export const getInboxCredentialMeta = (
+    record: InboxCredentialType
+): {
+    credentialName?: string;
+    achievementType?: string;
+} => {
+    const legacy =
+        record.currentStatus === 'PENDING' &&
+        record.credential &&
+        !isEncryptedInboxCredential(record.credential)
+            ? parseCredentialMeta(record.credential)
+            : {};
+    return {
+        credentialName: record.credentialName ?? legacy.credentialName,
+        achievementType: record.achievementType ?? legacy.achievementType,
+    };
+};
+
 /**
  * Extracts credential metadata (name, achievementType) from a stored credential JSON string.
  * Used across guardian approval/rejection flows to populate notification data.

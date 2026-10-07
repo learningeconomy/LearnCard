@@ -26,7 +26,8 @@ export const WalletPageViewModeSelector: React.FC = () => {
 
     return (
         <button
-            className={`rounded-[5px] fix-ripple flex items-center justify-center h-[40px] w-[40px] border-[1px] border-solid ${containerClass}`}
+            type="button"
+            className={`rounded-[5px] fix-ripple flex items-center justify-center h-[40px] w-[40px] border-[1px] border-solid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${containerClass}`}
             aria-label={isGrid ? 'Switch to list view' : 'Switch to grid view'}
             onClick={() => passportPageStore.set.setViewMode(nextMode)}
         >

@@ -218,6 +218,8 @@ export const createWeb3AuthStrategy = (
                 primaryDid: null,
                 recoveryMethods: [],
                 authShare: 'web3auth', // placeholder — coordinator requires non-null to proceed
+                shareVersion: null,
+                sssActivationState: null,
             };
         },
 

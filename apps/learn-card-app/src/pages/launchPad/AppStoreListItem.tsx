@@ -7,6 +7,7 @@ import { ThreeDotVertical } from '@learncard/react';
 import useTheme from '../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../theme/colors';
 import useAppLaunch from './useAppLaunch';
+import * as m from '../../paraglide/messages.js';
 
 type AppStoreListItemProps = {
     listing: AppStoreListing | InstalledApp;
@@ -47,7 +48,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
             className="w-full max-w-[600px] ion-no-border px-[12px] py-[12px] max-h-[76px] border-gray-200 border-b-2 last:border-b-0 flex bg-white items-center justify-between notificaion-list-item overflow-visible rounded-[12px] mt-2 first:mt-4 shadow-sm"
         >
             <div className="flex items-center justify-start w-full bg-white-100">
-                <div className="rounded-lg w-[50px] h-[50px] mr-3 min-w-[50px] min-h-[50px]">
+                <div className="rounded-lg w-[50px] h-[50px] me-3 min-w-[50px] min-h-[50px]">
                     <img
                         className="w-full h-full object-cover bg-white rounded-lg"
                         src={listing.icon_url}
@@ -60,7 +61,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                 </div>
 
                 <div className="right-side flex justify-between w-full">
-                    <div className="flex flex-col items-start justify-center text-left flex-1 min-w-0">
+                    <div className="flex flex-col items-start justify-center text-start flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 min-w-0 w-full">
                             <p className="text-grayscale-900 font-medium line-clamp-1 min-w-0">
                                 {listing.display_name}
@@ -72,12 +73,12 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                             )}
                         </div>
 
-                        <p className="text-grayscale-600 font-medium text-[12px] line-clamp-2 pr-1">
+                        <p className="text-grayscale-600 font-medium text-[12px] line-clamp-2 pe-1">
                             {listing.tagline}
                         </p>
                     </div>
 
-                    <div className="flex app-connect-btn-container items-center ml-2 gap-2 shrink-0">
+                    <div className="flex app-connect-btn-container items-center ms-2 gap-2 shrink-0">
                         {isInstalledLoading ? (
                             <button className={buttonClass} disabled>
                                 <IonSpinner name="dots" className="w-4 h-4" />
@@ -85,7 +86,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                         ) : isInstalled || installedAt || launchConfig.skipInstallation ? (
                             <>
                                 <button onClick={handleLaunch} className={connectedButtonClass}>
-                                    Open
+                                    {m['common.open']()}
                                 </button>
 
                                 <button
@@ -108,7 +109,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                                 }}
                                 className={buttonClass}
                             >
-                                Get
+                                {m['launchpad.appCard.get']()}
                             </button>
                         )}
                     </div>

@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { PendingContractRequests } from '../contract-requests/ContractRequest';
+import { ContractAudience } from '../contract-requests/ContractAudience';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('manage-data-sharing-modal');
 
@@ -103,7 +105,7 @@ const RevokeAccessConfirmationModal: React.FC<RevokeAccessConfirmationModalProps
                             <TransP
                                 m={m['dataSharing.revokeConfirm.body']}
                                 values={{ name, brand: brandName }}
-                                components={[<span className="font-medium" />]}
+                                components={[<span key="app-name" className="font-medium" />]}
                             />
                         )}
                     </p>
@@ -118,8 +120,8 @@ const RevokeAccessConfirmationModal: React.FC<RevokeAccessConfirmationModalProps
                         {isRevoking || isWorking
                             ? m['dataSharing.revoking']()
                             : isLearnCardAiContract
-                            ? m['dataSharing.disableAiRevoke']()
-                            : m['dataSharing.confirmRevoke']()}
+                              ? m['dataSharing.disableAiRevoke']()
+                              : m['dataSharing.confirmRevoke']()}
                     </button>
 
                     <button
@@ -174,7 +176,7 @@ const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose
                         className="p-1 -ml-1"
                         aria-label={m['common.back']()}
                     >
-                        <ChevronLeft className="w-6 h-6 text-grayscale-700" />
+                        <ChevronLeft className="w-6 h-6 text-grayscale-700 rtl:rotate-180" />
                     </button>
 
                     <div className="flex items-center gap-2">
@@ -191,6 +193,7 @@ const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose
                 </p>
             </div>
 
+            <PendingContractRequests />
             {contracts.length === 0 ? (
                 <div className="flex flex-col items-center justify-center px-6 pt-4 pb-10 text-center">
                     <Shield className="w-12 h-12 text-grayscale-300 mb-4" />
@@ -351,10 +354,11 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
 
                 const unsignedDidAuthVp = await wallet.invoke.newPresentation(delegateCredential);
 
-                const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
+                const vp = await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
                     proofPurpose: 'authentication',
                     proofFormat: 'jwt',
-                })) as any as string;
+                });
+                if (typeof vp !== 'string') throw new Error('Expected a signed presentation token');
 
                 urlObj.searchParams.set('vp', vp);
             }
@@ -410,33 +414,37 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
         step === 'edit'
             ? m['dataSharing.editAccess']()
             : step === 'activity'
-            ? m['dataSharing.activityFeed']()
-            : m['dataSharing.appDetails']();
+              ? m['dataSharing.activityFeed']()
+              : m['dataSharing.appDetails']();
 
     return (
-        <div className="bg-white rounded-[20px] min-w-[350px] max-w-[450px] w-full h-[80vh] overflow-hidden flex flex-col min-h-0">
-            <div className="shrink-0 flex items-center gap-3 px-6 pt-6 pb-4">
+        <div className="bg-white rounded-[20px] max-w-[450px] w-full h-[80vh] overflow-hidden flex flex-col min-h-0 font-poppins">
+            <div className="shrink-0 flex items-center gap-3 px-6 py-5 border-b border-grayscale-200">
                 <button
                     onClick={handleBack}
                     aria-label={m['common.back']()}
-                    className="p-1 -ml-1 rounded-full hover:bg-grayscale-10 transition-colors"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center -ms-2 rounded-[20px] hover:bg-grayscale-10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
-                    <ChevronLeft className="w-6 h-6 text-grayscale-700" />
+                    <ChevronLeft className="w-6 h-6 text-grayscale-700 rtl:rotate-180" />
                 </button>
 
                 {image ? (
-                    <img src={image} alt={name} className="w-8 h-8 rounded-lg object-cover" />
+                    <img
+                        src={image}
+                        alt={name}
+                        className="w-10 h-10 shrink-0 rounded-xl object-cover"
+                    />
                 ) : (
-                    <div className="w-8 h-8 rounded-lg bg-grayscale-100 flex items-center justify-center">
+                    <div className="w-10 h-10 shrink-0 rounded-xl bg-grayscale-100 flex items-center justify-center">
                         <Shield className="w-4 h-4 text-grayscale-400" />
                     </div>
                 )}
 
                 <div className="min-w-0">
-                    <h2 className="text-lg font-semibold text-grayscale-900 truncate leading-tight">
+                    <h2 className="text-base font-semibold text-grayscale-900 leading-snug break-words">
                         {stepTitle}
                     </h2>
-                    <p className="text-xs text-grayscale-500 truncate">{name}</p>
+                    <p className="text-xs text-grayscale-600 break-words">{name}</p>
                 </div>
             </div>
 
@@ -449,6 +457,10 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
                             </p>
                         )}
 
+                        <ContractAudience
+                            contract={contractDetails}
+                            testId="contract-shared-with"
+                        />
                         <h4 className="text-xs font-semibold tracking-wider text-grayscale-500 uppercase mb-2">
                             {m['dataSharing.dataAccess']()}
                         </h4>

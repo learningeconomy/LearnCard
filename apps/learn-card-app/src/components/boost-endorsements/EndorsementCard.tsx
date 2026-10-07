@@ -19,10 +19,11 @@ import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
 
 export const EndorsementCard: React.FC<{
+    shareCredentialUri?: string;
     credential: VC;
     categoryType: CredentialCategoryEnum;
     existingEndorsements?: VC[];
-}> = ({ credential, categoryType, existingEndorsements = [] }) => {
+}> = ({ credential, shareCredentialUri, categoryType, existingEndorsements = [] }) => {
     const isLoggedIn = useIsLoggedIn();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { title, badgeThumbnail, achievementType, displayType, isCurrentUserSubject } =
@@ -46,8 +47,8 @@ export const EndorsementCard: React.FC<{
     const badgeScaleClass = isCertificateDisplayType
         ? 'w-[120px] min-w-[120px] scale-[0.7]'
         : isMeritStyleBadge
-        ? 'w-[138px] min-w-[138px] scale-[0.8]'
-        : 'w-full';
+          ? 'w-[138px] min-w-[138px] scale-[0.8]'
+          : 'w-full';
 
     const categoryMeta = getBoostMetadata(
         (categoryType as unknown as BoostCategoryOptionsEnum) ??
@@ -119,14 +120,18 @@ export const EndorsementCard: React.FC<{
                         <TransP
                             m={m['endorsement.request.header.text']}
                             values={{ categoryType: categoryTypeString, title }}
-                            components={[<span className="font-semibold" />]}
+                            components={[<span key="title" className="font-semibold" />]}
                         />
                     </p>
                 </div>
             </div>
 
             <div className="flex items-center w-full pl-4">
-                <EndorsementButton credential={credential} categoryType={categoryType} />
+                <EndorsementButton
+                    credential={credential}
+                    shareCredentialUri={shareCredentialUri}
+                    categoryType={categoryType}
+                />
             </div>
         </div>
     ) : null;

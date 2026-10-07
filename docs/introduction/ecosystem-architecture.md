@@ -2,7 +2,7 @@
 description: How LearnCard and LearnCloud fit together, and how they interoperate with the world.
 ---
 
-# Ecosystem Architecture
+# How LearnCard Is Built
 
 **LearnCard** is the lifelong-learning passport — the wallet, app, CLI, and SDK a learner (or any app acting on their behalf) uses to **collect, understand, and navigate** their learning and employment record. **LearnCloud** is the open API platform behind it: a network for sending and receiving credentials, encrypted personal storage, and an AI layer that turns the passport into something useful.
 
@@ -178,7 +178,7 @@ This is the same model that makes any conformant wallet — DCC, MATTR, Procivis
 **Plug in via standards, not custom code.** A partner that publishes a conformant Verifiable Credential is already interoperable with LearnCard — no special integration required.
 {% endhint %}
 
-→ Deep dives: [Verifiable Credentials](../core-concepts/credentials-and-data/verifiable-credentials-vcs.md) · [DIDs](../core-concepts/identities-and-keys/decentralized-identifiers-dids.md) · [Skill Frameworks & OpenSALT](../sdks/learncard-network/skills-and-opensalt.md) · [Partner Connect SDK](../sdks/partner-connect.md) · [Interoperability](interoperability.md)
+→ Deep dives: [Verifiable Credentials](../core-concepts/credentials-and-data/verifiable-credentials-vcs.md) · [DIDs](../core-concepts/identities-and-keys/decentralized-identifiers-dids.md) · [Skill Frameworks & OpenSALT](../sdks/learncard-network/skills-and-opensalt.md) · [Partner Connect SDK](../sdks/partner-connect/README.md) · [Interoperability](interoperability.md)
 
 ---
 
@@ -224,8 +224,35 @@ Authentication shows up in two places, deliberately decoupled:
 
 **Guardian gating** is supported via approval tokens and a `guardianStatus` field on inbox credentials, used when the holder is a minor or when the issuer requires guardian co-signature before a credential can be claimed.
 
-→ Deep dives: [Auth Coordinator](../core-concepts/architecture-and-principles/auth-coordinator.md) · [Signing Authorities](../core-concepts/identities-and-keys/signing-authorities.md) · [Trust Registries](../core-concepts/identities-and-keys/trust-registries.md) · [Universal Inbox](../core-concepts/network-and-interactions/universal-inbox.md) · [Guardian-Gated Credentials](../how-to-guides/implement-flows/guardian-gated-credentials.md) · [ConsentFlow Overview](../core-concepts/consent-and-permissions/consentflow-overview.md)
+→ Deep dives: [SSS Key Manager](https://github.com/learningeconomy/LearnCard/tree/main/packages/sss-key-manager) · [Signing Authorities](../core-concepts/identities-and-keys/signing-authorities.md) · [Trust Registries](../core-concepts/identities-and-keys/trust-registries.md) · [Universal Inbox](../core-concepts/network-and-interactions/universal-inbox.md) · [Guardian-Gated Credentials](../how-to-guides/send-credentials.md#guardian-gated-credentials) · [ConsentFlow Overview](../core-concepts/consent-and-permissions/consentflow-overview.md)
 
+## How the network handles a credential
+
+The SDK and network divide the credential lifecycle into these core procedures:
+
+- **Construct** — assemble an unsigned credential from a template and subject data.
+- **Issue** — apply the issuer's signature to make the credential tamper-evident.
+- **Exchange** — transmit a credential or presentation between participants.
+- **Verify** — check signatures and validate content against expected rules or schemas.
+- **Store** — retain a credential in the holder's chosen repository.
+- **Present** — select credentials and construct a presentation for a verifier.
+- **Prove** — sign the presentation with the holder's key to prove control of their DID.
+
+Profile connections have a separate request/accept lifecycle:
+
+```mermaid
+stateDiagram-v2
+    NOT_CONNECTED --> PENDING_REQUEST_SENT: Send request
+    NOT_CONNECTED --> PENDING_REQUEST_RECEIVED: Receive request
+    PENDING_REQUEST_SENT --> CONNECTED: Other profile accepts
+    PENDING_REQUEST_RECEIVED --> CONNECTED: Accept request
+    PENDING_REQUEST_SENT --> NOT_CONNECTED: Cancel request
+    PENDING_REQUEST_RECEIVED --> NOT_CONNECTED: Reject request
+    CONNECTED --> NOT_CONNECTED: Disconnect
+    CONNECTED --> BLOCKED: Block profile
+```
+
+`LCNProfileConnectionStatusEnum` contains `NOT_CONNECTED`, `PENDING_REQUEST_SENT`, `PENDING_REQUEST_RECEIVED`, and `CONNECTED`. `BLOCKED` above represents a separate blocking relationship, not an enum value; blocking can also occur without a connection or while a request is pending.
 ---
 
 ## What you can build with it
@@ -249,11 +276,11 @@ You don't need every layer. Most teams start with one and grow into others.
 
 If you're...
 
--   **Building an app** → start with the [Wallet SDK](../sdks/learncard-core/README.md)
--   **Working cloud-side** → start with the [Network API](../sdks/learncard-network/README.md) or [Storage API](../sdks/learncloud-storage-api/README.md)
--   **Issuing credentials** → start with [Boost Credentials](../core-concepts/credentials-and-data/boost-credentials.md)
--   **Building consent flows** → start with [ConsentFlow Overview](../core-concepts/consent-and-permissions/consentflow-overview.md)
--   **Connecting an AI agent** → start with [Connect AI Agent](../how-to-guides/connect-systems/connect-ai-agent.md)
--   **Integrating into a school or state** → start with [Use Cases & Possibilities](use-cases-and-possibilities.md)
+- **Building an app** → start with the [Wallet SDK](../sdks/learncard-core/README.md)
+- **Working cloud-side** → start with the [Network API](../sdks/learncard-network/README.md) or [Storage API](../sdks/learncloud-storage-api/README.md)
+- **Issuing credentials** → start with [Credential Templates (Boosts)](../core-concepts/credentials-and-data/boost-credentials.md)
+- **Building consent flows** → start with [ConsentFlow Overview](../core-concepts/consent-and-permissions/consentflow-overview.md)
+- **Connecting an AI agent** → start with [Connect AI Agent](../how-to-guides/connect-systems/connect-ai-agent.md)
+- **Integrating into a school or state** → start with [What Do You Want to Build?](what-do-you-want-to-build.md)
 
-Or jump straight into [Your First Integration](../quick-start/your-first-integration.md).
+Or jump straight into [the Quickstart](../quick-start/your-first-integration.md).

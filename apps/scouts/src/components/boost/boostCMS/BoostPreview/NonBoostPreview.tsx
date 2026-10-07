@@ -7,6 +7,7 @@ import { IonContent, IonFooter, IonPage, IonRow, IonToolbar } from '@ionic/react
 
 import { VC, VerificationItem } from '@learncard/types';
 import { useWallet, BoostCategoryOptionsEnum } from 'learn-card-base';
+import * as m from '../../../../paraglide/messages.js';
 import { useHighlightedCredentials } from '../../../../hooks/useHighlightedCredentials';
 import { getRoleFromCred, getScoutsNounForRole } from '../../../../helpers/troop.helpers';
 import X from 'learn-card-base/svgs/X';
@@ -119,7 +120,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                     className={`flex flex-col items-center justify-center overflow-x-auto pb-32 ${boostPreviewWrapperCustomClass} ${
                         shouldUseHostCardPadding ? 'px-1' : ''
                     } ${isCertificate ? 'pt-14 md:pt-20' : ''} ${
-                        isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''
+                        isID ? '!px-0 mt-[calc(20px+var(--ion-safe-area-top,0px))]' : ''
                     }`}
                 >
                     <section className={`w-full ${shouldUseHostCardPadding ? 'px-6' : ''}`}>
@@ -166,11 +167,11 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                         >
                             {isFront ? (
                                 <>
-                                    Details <FatArrow direction="right" />
+                                    {m['common.details']()} <FatArrow direction="right" />
                                 </>
                             ) : (
                                 <>
-                                    <FatArrow direction="left" /> Back
+                                    <FatArrow direction="left" /> {m['common.back']()}
                                 </>
                             )}
                         </button>

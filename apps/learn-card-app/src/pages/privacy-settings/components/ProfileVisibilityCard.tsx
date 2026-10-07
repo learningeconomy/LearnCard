@@ -75,11 +75,11 @@ const ProfileVisibilityCard: React.FC<ProfileVisibilityCardProps> = ({
                     <p className="text-[14px] font-medium text-grayscale-900">
                         {m['settings.privacy.profileVisibility']()}
                     </p>
-                    <p className="text-sm text-grayscale-500">
+                    <p className="text-sm text-grayscale-600">
                         {m['settings.privacy.viewProfileHint']()}
                     </p>
                     <RadioGroup
-                        name="profile-visibility"
+                        aria-label={m['settings.privacy.profileVisibility']()}
                         value={visibility}
                         onChange={onChangeVisibility}
                         options={visibilityOptions}
@@ -96,7 +96,7 @@ const ProfileVisibilityCard: React.FC<ProfileVisibilityCardProps> = ({
                         <p className="text-[15px] font-medium text-grayscale-900">
                             {m['settings.privacy.showEmail']()}
                         </p>
-                        <p className="text-sm text-grayscale-500 mt-0.5">
+                        <p className="text-sm text-grayscale-600 mt-0.5">
                             {m['settings.privacy.showEmailHint']()}
                         </p>
                     </div>
@@ -115,11 +115,11 @@ const ProfileVisibilityCard: React.FC<ProfileVisibilityCardProps> = ({
                     <p className="text-[14px] font-medium text-grayscale-900">
                         {m['settings.privacy.connectionRequests']()}
                     </p>
-                    <p className="text-sm text-grayscale-500">
+                    <p className="text-sm text-grayscale-600">
                         {m['settings.privacy.connectionRequestsDesc']()}
                     </p>
                     <RadioGroup
-                        name="allow-connection-requests"
+                        aria-label={m['settings.privacy.connectionRequests']()}
                         value={allowConnectionRequests}
                         onChange={onChangeConnectionRequests}
                         options={connectionRequestOptions}

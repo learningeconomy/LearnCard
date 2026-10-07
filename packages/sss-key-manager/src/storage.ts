@@ -214,9 +214,7 @@ export async function getDeviceShare(id: string = DEFAULT_DEVICE_SHARE_ID): Prom
             !('iv' in (raw as Record<string, unknown>))
         ) {
             console.warn(
-                `SSS Storage: entry "${id}" is not a valid EncryptedPayload (type=${typeof raw}, keys=${
-                    typeof raw === 'object' ? Object.keys(raw as object).join(',') : 'n/a'
-                }). Skipping.`
+                `SSS Storage: entry "${id}" is not a valid EncryptedPayload (type=${typeof raw}, keys=${typeof raw === 'object' ? Object.keys(raw as object).join(',') : 'n/a'}). Skipping.`
             );
             return null;
         }
@@ -426,6 +424,9 @@ export function createAdaptiveStorage() {
 
         clearAllShares: (id?: string) =>
             isPublicComputerMode() ? sessionClearAllShares(id) : clearAllShares(id),
+
+        deleteDeviceShare: (id?: string) =>
+            isPublicComputerMode() ? sessionDeleteDeviceShare(id) : deleteDeviceShare(id),
 
         storeShareVersion: (version: number, id?: string) =>
             isPublicComputerMode()

@@ -22,7 +22,7 @@ const Checkbox: React.FC<CheckboxProps> = ({
             aria-checked={checked}
             disabled={disabled}
             onClick={() => !disabled && onChange(!checked)}
-            className={`inline-flex items-center gap-[5px] px-[10px] py-[5px] rounded-[10px] transition-colors duration-200 ease-in-out border-[1px] border-solid
+            className={`inline-flex items-center gap-[5px] px-[10px] py-[5px] rounded-[10px] transition-colors duration-200 ease-in-out border-[1px] border-solid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2
                 ${
                     checked
                         ? 'bg-emerald-50 border-emerald-200'

@@ -13,6 +13,7 @@ import VerifierStateBadgeAndText, {
 } from '../CertificateDisplayCard/VerifierStateBadgeAndText';
 import { BoostAchievementCredential } from '../../types';
 import { KnownDIDRegistryType } from '../../types';
+import { useT } from '../../i18n';
 
 type FlippedComponentProps = React.PropsWithChildren<{
     flipId?: string;
@@ -65,6 +66,22 @@ const BadgeThumbnailPlaceholder: React.FC = () => (
         />
     </svg>
 );
+const BadgeThumbnail: React.FC<{ imageUrl: string }> = ({ imageUrl }) => {
+    const [errored, setErrored] = React.useState(false);
+
+    return errored ? (
+        <div className="vc-front-image h-[130px] w-[130px] rounded-[10px] bg-grayscale-100 flex items-center justify-center">
+            <BadgeThumbnailPlaceholder />
+        </div>
+    ) : (
+        <img
+            className="vc-front-image h-[130px] w-[130px] rounded-[10px] bg-white object-cover"
+            src={imageUrl}
+            alt="credential thumbnail"
+            onError={() => setErrored(true)}
+        />
+    );
+};
 
 const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     credential,
@@ -82,15 +99,9 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     unknownVerifierTitle,
     onVerifierClick,
 }) => {
+    const t = useT();
     const issuerImage = getImageFromProfile(issuer ?? '');
     const issueeImage = getImageFromProfile(issuee ?? '');
-
-    const [thumbErrored, setThumbErrored] = React.useState(false);
-
-    // Reset the broken-image flag whenever the thumbnail source changes.
-    React.useEffect(() => {
-        setThumbErrored(false);
-    }, [imageUrl]);
 
     const issueeDisplay = resolveProfileDisplay(issuee, '');
     const issuerDisplay = resolveProfileDisplay(issuer, '');
@@ -182,20 +193,9 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     return (
         <Flipped inverseFlipId="card">
             <section className="vc-front-face w-full px-[15px] flex flex-col items-center gap-[15px]">
-                {imageUrl &&
-                    !customThumbComponent &&
-                    (thumbErrored ? (
-                        <div className="vc-front-image h-[130px] w-[130px] rounded-[10px] bg-grayscale-100 flex items-center justify-center">
-                            <BadgeThumbnailPlaceholder />
-                        </div>
-                    ) : (
-                        <img
-                            className="vc-front-image h-[130px] w-[130px] rounded-[10px] bg-white object-cover"
-                            src={imageUrl}
-                            alt="credential thumbnail"
-                            onError={() => setThumbErrored(true)}
-                        />
-                    ))}
+                {imageUrl && !customThumbComponent && (
+                    <BadgeThumbnail key={imageUrl} imageUrl={imageUrl} />
+                )}
 
                 {customThumbComponent && customThumbComponent}
                 <div className="vc-issue-info-box bg-white flex flex-col items-center gap-[5px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
@@ -241,7 +241,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                                     {!issuerDisplay.isMissing && (
                                         <span className="issued-by max-w-full break-words text-center line-clamp-2 text-[14px]">
                                             <span className="font-medium text-grayscale-900">
-                                                By
+                                                {t('credential.by')}
                                             </span>{' '}
                                             {issuerDisplay.isDidValue ? (
                                                 <span className="font-[600] font-poppins break-words">

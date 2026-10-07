@@ -5,6 +5,7 @@ import {
     type Context as AWSContext,
 } from 'aws-lambda';
 import { TRPCError } from '@trpc/server';
+import { withInboxBatchBodyLimit } from './inbox-batch-http.helpers';
 import { type IncomingMessage, type ServerResponse } from 'http';
 
 import { OpenApiRouter } from 'trpc-to-openapi';
@@ -183,36 +184,36 @@ export const createOpenApiAwsLambdaHandler = <TRouter extends OpenApiRouter>(
         maxBodySize: undefined, // AWS Lambda handles body size limits
     });
 
-    return async (
-        event: AWSAPIGatewayEvent,
-        _context: AWSContext
-    ): Promise<APIGatewayProxyResult> => {
-        try {
-            const req = createRequestFromEvent(event);
-            const { res, promise } = createResponseHandler();
+    return withInboxBatchBodyLimit(
+        async (event: AWSAPIGatewayEvent, _context: AWSContext): Promise<APIGatewayProxyResult> => {
+            try {
+                const req = createRequestFromEvent(event);
+                const { res, promise } = createResponseHandler();
 
-            // Execute the handler
-            await openApiHttpHandler(req, res);
+                // Execute the handler
+                await openApiHttpHandler(req, res);
 
-            return await promise;
-        } catch (cause) {
-            // Handle any uncaught errors
-            const error = cause instanceof Error ? cause : new Error('Unknown error');
-            const statusCode =
-                error instanceof TRPCError ? (error.code === 'NOT_FOUND' ? 404 : 500) : 500;
+                return await promise;
+            } catch (cause) {
+                // Handle any uncaught errors
+                const error = cause instanceof Error ? cause : new Error('Unknown error');
+                const statusCode =
+                    error instanceof TRPCError ? (error.code === 'NOT_FOUND' ? 404 : 500) : 500;
 
-            return {
-                statusCode,
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    error: {
-                        message: error.message || 'Internal server error',
-                        code: error instanceof TRPCError ? error.code : 'INTERNAL_SERVER_ERROR',
+                return {
+                    statusCode,
+                    headers: {
+                        'Content-Type': 'application/json',
                     },
-                }),
-            } satisfies APIGatewayProxyResult;
-        }
-    };
+                    body: JSON.stringify({
+                        error: {
+                            message: error.message || 'Internal server error',
+                            code: error instanceof TRPCError ? error.code : 'INTERNAL_SERVER_ERROR',
+                        },
+                    }),
+                } satisfies APIGatewayProxyResult;
+            }
+        },
+        'openapi'
+    );
 };

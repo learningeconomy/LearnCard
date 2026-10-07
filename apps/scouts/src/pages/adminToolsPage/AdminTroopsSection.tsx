@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
 
 import { useGetIDs } from 'learn-card-base';
 
@@ -15,7 +16,7 @@ const AdminTroopsSection: React.FC<AdminTroopsSectionProps> = () => {
         <div className="min-w-[400px]">
             <h2 className="flex gap-[10px] items-center mb-[10px] text-sp-green-base text-[22px]">
                 <GreenScoutsPledge2 className="h-[36px] w-[36px]" />
-                Troops
+                {m['adminTools.troops']()}
             </h2>
 
             <div className="flex flex-col gap-[10px] pl-[15px]">

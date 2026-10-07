@@ -22,7 +22,7 @@ export const AiAssessmentPreviewHeader: React.FC<{
         session?.record?.contractUri || topicRecord?.contractUri || ''
     );
     return (
-        <div className="w-full absolute top-0 overflow-hidden flex flex-col z-50 safe-area-top-margin">
+        <div className="w-full absolute top-0 overflow-hidden flex flex-col z-50 mt-[var(--lc-overlay-inset-top,var(--ion-safe-area-top,0px))]">
             <div className="w-full flex items-center justify-center flex-col bg-transparent relative">
                 {showBackButton && (
                     <button

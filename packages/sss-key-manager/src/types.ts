@@ -16,8 +16,14 @@ export {
     type AuthProvider,
     type RecoveryMethodInfo,
     type RecoveryResult,
+    type IdentityRecoverySession,
     type ServerKeyStatus,
+    type SssActivationState,
     type KeyDerivationStrategy,
+    type DidAuthVpSigner,
+    type EscrowEnrollmentOptions,
+    type EscrowEnrollmentState,
+    type EscrowPinStatus,
 } from '@learncard/types';
 
 import type {
@@ -25,6 +31,7 @@ import type {
     AuthProviderType,
     KeyDerivationStrategy,
     RecoveryMethodInfo,
+    SssActivationState,
 } from '@learncard/types';
 
 // ---------------------------------------------------------------------------
@@ -59,7 +66,70 @@ export const SecurityLevels: readonly SecurityLevel[] = ['basic', 'enhanced', 'a
  * SSS recovery method type identifiers.
  * These are the specific recovery methods supported by the SSS strategy.
  */
-export type RecoveryMethodType = 'passkey' | 'backup' | 'phrase' | 'email';
+export type RecoveryMethodType = 'passkey' | 'backup' | 'phrase' | 'email' | 'escrow';
+
+/** Trust policy for the enclave that receives recovery material. */
+export type EscrowAttestationPolicy =
+    | { mode: 'software'; pinnedPublicKeys: string[] }
+    | { mode: 'nitro'; pinnedMeasurements: { imageSha384: string }[]; rootCertificatePem?: string };
+
+/** Public status of an escrow recovery waiting period. */
+export interface EscrowHoldStatus {
+    holdId: string;
+    releasePolicy: 'hold' | 'pin';
+    status: 'pending' | 'cancelled' | 'completed' | 'expired';
+    requestedAt: string;
+    releaseAfter: string;
+    cancelledAt?: string;
+    completedAt?: string;
+}
+
+/** Persist these secrets securely until completion; a null token means an existing hold. */
+export type EscrowRecoveryStart = EscrowHoldStatus & {
+    resumeToken: string | null;
+    clientEphemeralPrivateKey: string;
+    pinSalt?: string;
+};
+
+/** The account has no available PIN release policy. */
+export class EscrowPinUnavailableError extends Error {
+    constructor() {
+        super('PIN recovery is not available for this account.');
+        this.name = 'EscrowPinUnavailableError';
+    }
+}
+
+/** A failed PIN attempt consumes its hold; another attempt must start a fresh hold. */
+export class EscrowPinMismatchError extends Error {
+    constructor(public readonly attemptsRemaining: number) {
+        super('Incorrect PIN.');
+        this.name = 'EscrowPinMismatchError';
+    }
+}
+
+/** Temporary throttle: retry after cooldown with a fresh hold, never retry /complete. */
+export class EscrowPinThrottledError extends Error {
+    constructor() {
+        super('Too many tries right now. Wait a minute and try again.');
+        this.name = 'EscrowPinThrottledError';
+    }
+}
+
+/** A pending waiting-period request is too recent to restart. */
+export class EscrowHoldRestartThrottledError extends Error {
+    constructor(public readonly retryAfter?: string) {
+        super('A recovery request was started recently. Please wait before restarting.');
+        this.name = 'EscrowHoldRestartThrottledError';
+    }
+}
+
+/** PIN recovery is exhausted; delayed escrow recovery remains available. */
+export class EscrowPinLockedError extends Error {
+    constructor() {
+        super('Too many incorrect PIN attempts. You can still recover by waiting.');
+        this.name = 'EscrowPinLockedError';
+    }
+}
 
 export interface PasskeyRecoveryMethod {
     type: 'passkey';
@@ -79,14 +149,14 @@ export interface RecoveryPhraseRecoveryMethod {
 
 /** @deprecated Use RecoveryInput instead. Kept for legacy SSSKeyManager class. */
 export type RecoveryMethod =
-    | PasskeyRecoveryMethod
-    | BackupFileRecoveryMethod
-    | RecoveryPhraseRecoveryMethod;
+    PasskeyRecoveryMethod | BackupFileRecoveryMethod | RecoveryPhraseRecoveryMethod;
 
 /**
  * SSS-specific recovery input — what the user provides to recover their key.
  */
 export type RecoveryInput =
+    | { method: 'escrow-pin'; pin: string }
+    | { method: 'escrow'; holdId: string; resumeToken: string; clientEphemeralPrivateKey: string }
     | { method: 'passkey'; credentialId: string }
     | { method: 'phrase'; phrase: string }
     | { method: 'backup'; fileContents: string; password: string }
@@ -96,19 +166,33 @@ export type RecoveryInput =
  * SSS-specific recovery setup input — what the user provides to set up a method.
  */
 export type RecoverySetupInput =
+    | { method: 'escrow'; pin?: string }
     | { method: 'passkey' }
     | { method: 'phrase' }
     | { method: 'backup'; password: string; did: string }
-    | { method: 'email' };
+    | { method: 'email'; email: string };
 
 /**
  * SSS-specific recovery setup result.
  */
 export type RecoverySetupResult =
+    | { method: 'escrow'; shareVersion: number }
     | { method: 'passkey'; credentialId: string }
-    | { method: 'phrase'; phrase: string }
+    | {
+          method: 'phrase';
+          phrase: string;
+          challengeWordIndices: number[];
+          /** Shuffled choices per challenged word (the answer plus decoys not in the phrase). */
+          challengeWordOptions: string[][];
+      }
     | { method: 'backup'; backupFile: BackupFile }
     | { method: 'email' };
+
+/** Proof supplied after a pending recovery method has been created. */
+export type RecoveryConfirmationInput =
+    | { method: 'phrase'; challengeWords: string[] }
+    | { method: 'backup'; fileContents: string; password: string }
+    | { method: 'email'; code: string };
 
 // ---------------------------------------------------------------------------
 // SSS-specific: Share & encryption types
@@ -141,6 +225,8 @@ export interface UserKeyRecord {
     recoveryMethods: RecoveryMethodInfo[];
     migratedFromWeb3Auth: boolean;
     migratedAt?: Date;
+    sssActivationState?: SssActivationState;
+    provisionalCreatedAt?: Date;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -150,6 +236,8 @@ export interface BackupFile {
     createdAt: string;
     primaryDid: string;
     shareVersion?: number;
+    /** SHA-256 checksum of the decrypted share, used to verify a just-written file. */
+    shareChecksum?: string;
     encryptedShare: {
         ciphertext: string;
         iv: string;
@@ -184,7 +272,8 @@ export interface SSSKeyManagerConfig {
 export type SSSKeyDerivationStrategy = KeyDerivationStrategy<
     RecoveryInput,
     RecoverySetupInput,
-    RecoverySetupResult
+    RecoverySetupResult,
+    RecoveryConfirmationInput
 >;
 
 // ---------------------------------------------------------------------------

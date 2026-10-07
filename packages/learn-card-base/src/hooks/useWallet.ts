@@ -26,6 +26,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/react-query';
 import type { CredentialMetadata, LCR } from 'learn-card-base/types/credential-records';
 import { getOrCreateSharedUriForWallet } from './useSharedUrisInTerms';
+import { loadContractAudience } from './consentAudience';
 import { getOrFetchConsentedContracts } from './useConsentedContracts';
 import { queueAiInsightCredentialRefresh } from 'learn-card-base/react-query/mutations/ai-passport';
 import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
@@ -234,9 +235,10 @@ export const useWallet = () => {
                 ) {
                     if (!record.uri) return;
 
+                    const audience = await loadContractAudience(learnCard, contract.uri);
                     const sharedUri = await getOrCreateSharedUriForWallet(
                         learnCard,
-                        contract.owner.did,
+                        audience.recipients,
                         queryClient,
                         record.uri,
                         category
@@ -250,9 +252,13 @@ export const useWallet = () => {
                             category,
                             sharedUri,
                         });
-                        await learnCard.invoke.syncCredentialsToContract(termsUri, {
-                            [category]: [sharedUri],
-                        });
+                        await learnCard.invoke.syncCredentialsToContract(
+                            termsUri,
+                            {
+                                [category]: [sharedUri],
+                            },
+                            audience.audienceVersion
+                        );
                         logWalletSync('syncCredentialsToContract completed', {
                             ownerDid: contract.owner.did,
                             contractUri: contract.uri,
@@ -379,19 +385,40 @@ export const useWallet = () => {
 
     const storeAndAddVCToWallet = async (
         vc: VC,
-        metadata: Partial<{ title: string; imgUrl: string }> = {},
+        metadata: Partial<{
+            title: string;
+            imgUrl: string;
+            allowDuplicate: boolean;
+            inboxDeliveryId: string;
+            boostUri: string;
+        }> = {},
         location: 'SQLite' | 'LearnCloud' = 'LearnCloud',
         skipLCNUser?: boolean // skip steps requiring a LCN account eg didweb
     ): Promise<{ result: boolean; credentialUri: string; category: string }> => {
-        const { title, imgUrl } = metadata;
-        const _id = vc.id || uuidv4();
+        const {
+            title,
+            imgUrl,
+            allowDuplicate,
+            inboxDeliveryId,
+            boostUri: sourceBoostUri,
+        } = metadata;
+        const _id = inboxDeliveryId
+            ? vc.id || `inbox:${inboxDeliveryId}`
+            : allowDuplicate
+              ? uuidv4()
+              : vc.id || uuidv4();
         let returnUri: string | undefined;
 
         try {
             const wallet = await getWallet();
 
             const category = await getCategoryForCredential(vc, wallet);
-            const boostUri = vc.boostId ?? unwrapBoostCredential(vc)?.boostId;
+            if (inboxDeliveryId) {
+                const existing = await wallet.index[location].get({ inboxDeliveryId });
+                const saved = existing[0] ?? (await wallet.index[location].get({ id: _id }))[0];
+                if (saved) return { result: true, credentialUri: saved.uri, category };
+            }
+            const boostUri = sourceBoostUri ?? vc.boostId ?? unwrapBoostCredential(vc)?.boostId;
             let result: boolean | undefined;
 
             if (skipLCNUser) {
@@ -401,6 +428,7 @@ export const useWallet = () => {
                     uri: uri2,
                     category,
                     ...(boostUri ? { boostUri } : {}),
+                    ...(inboxDeliveryId ? { inboxDeliveryId } : {}),
                     ...(title ? { title } : {}),
                     ...(imgUrl ? { imgUrl } : {}),
                 };
@@ -417,6 +445,7 @@ export const useWallet = () => {
                     uri,
                     category,
                     ...(boostUri ? { boostUri } : {}),
+                    ...(inboxDeliveryId ? { inboxDeliveryId } : {}),
                     ...(title ? { title } : {}),
                     ...(imgUrl ? { imgUrl } : {}),
                 };
@@ -503,7 +532,7 @@ export const useWallet = () => {
         input: AddVCInput & { skipSync?: boolean },
         location: 'SQLite' | 'LearnCloud' = 'LearnCloud'
     ) => {
-        const { uri, id, title, imgUrl, contractUri, skipSync } = input;
+        const { uri, id, title, imgUrl, contractUri, boostUri: sourceBoostUri, skipSync } = input;
         let _id = id;
         if (!uri) throw new Error('No uri was provided, uri required');
 
@@ -517,7 +546,8 @@ export const useWallet = () => {
             if (!vc) throw new Error('No credential was found at the provided URI');
 
             const category = await getCategoryForCredential(vc as VC, wallet);
-            const boostUri = vc?.boostId ?? unwrapBoostCredential(vc as VC)?.boostId;
+            const boostUri =
+                sourceBoostUri ?? vc?.boostId ?? unwrapBoostCredential(vc as VC)?.boostId;
 
             logWalletSync('Adding credential to wallet', {
                 uri,

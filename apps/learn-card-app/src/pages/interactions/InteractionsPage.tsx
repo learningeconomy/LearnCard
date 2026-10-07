@@ -155,7 +155,7 @@ const InteractionsPage: React.FC = () => {
                             className="ion-justify-content-center ion-align-items-center"
                             style={{ height: '100%' }}
                         >
-                            <IonCol size="auto">
+                            <IonCol size="auto" className="ion-text-center">
                                 <IonSpinner
                                     name="crescent"
                                     style={{ width: '50px', height: '50px' }}

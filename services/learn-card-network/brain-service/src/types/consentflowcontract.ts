@@ -3,8 +3,24 @@ import {
     ConsentFlowTermsValidator,
     ConsentFlowTermsStatusValidator,
     ConsentFlowTransactionActionValidator,
+    ConsentFlowGuardianApprovalValidator,
+    ConsentFlowReferralValidator,
 } from '@learncard/types';
 import { z } from 'zod';
+
+type FlatGuardianApproval = {
+    [
+        Key in keyof z.infer<
+            typeof ConsentFlowGuardianApprovalValidator
+        > as `guardianApproval.${Key}`
+    ]?: string;
+};
+
+type FlatReferral = {
+    [Key in keyof z.infer<typeof ConsentFlowReferralValidator> as `referral.${Key}`]?: string;
+};
+
+type FlatConsentTerms = Partial<Record<`terms.${string}`, string | boolean | string[]>>;
 
 export const DbContractValidator = z.object({
     id: z.string(),
@@ -20,6 +36,8 @@ export const DbContractValidator = z.object({
     createdAt: z.string(),
     updatedAt: z.string(),
     expiresAt: z.string().optional(),
+    audienceVersion: z.coerce.number().int().nonnegative().optional(),
+    hasConsented: z.boolean().optional(),
 });
 
 export type DbContractType = z.infer<typeof DbContractValidator>;
@@ -29,18 +47,36 @@ export const DbTransactionValidator = z.object({
     id: z.string(),
     action: ConsentFlowTransactionActionValidator,
     terms: ConsentFlowTermsValidator,
+    guardianApproval: ConsentFlowGuardianApprovalValidator.optional(),
+    referral: ConsentFlowReferralValidator.optional(),
     date: z.string(),
     expiresAt: z.string().optional(),
     oneTime: z.boolean().optional(),
 });
 
 export type DbTransactionType = z.infer<typeof DbTransactionValidator>;
-export type FlatDbTransactionType = DbTransactionType & { terms: any };
+export type FlatDbTransactionType = Omit<
+    DbTransactionType,
+    'guardianApproval' | 'terms' | 'referral'
+> &
+    FlatConsentTerms &
+    FlatGuardianApproval &
+    FlatReferral;
 
 export const DbTermsValidator = z.object({
+    smartResumeFingerprint: z.string().optional(),
+    smartResumePublicationStatus: z.enum(['pending', 'sending', 'failed', 'succeeded']).optional(),
+    smartResumeLeaseId: z.string().optional(),
+    smartResumeLeaseUntil: z.coerce.number().optional(),
+    smartResumeMutationVersion: z.coerce.number().optional(),
+    smartResumeRedirectUrl: z.string().optional(),
+    mutationVersion: z.coerce.number().int().nonnegative().optional(),
     id: z.string(),
     status: ConsentFlowTermsStatusValidator,
-    terms: ConsentFlowTermsValidator,
+    // Neo4j has no properties to store for entirely empty permission objects.
+    terms: ConsentFlowTermsValidator.prefault({}),
+    guardianApproval: ConsentFlowGuardianApprovalValidator.optional(),
+    referral: ConsentFlowReferralValidator.optional(),
     createdAt: z.string().optional(),
     updatedAt: z.string().optional(),
     expiresAt: z.string().optional(),
@@ -48,4 +84,7 @@ export const DbTermsValidator = z.object({
 });
 
 export type DbTermsType = z.infer<typeof DbTermsValidator>;
-export type FlatDbTermsType = DbTermsType & { terms: any };
+export type FlatDbTermsType = Omit<DbTermsType, 'guardianApproval' | 'terms' | 'referral'> &
+    FlatConsentTerms &
+    FlatGuardianApproval &
+    FlatReferral;

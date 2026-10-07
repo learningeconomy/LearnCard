@@ -62,14 +62,15 @@ interface OrganizationSetupStepProps {
     onComplete: (organization: OrganizationProfile) => void;
 }
 
-const NameValidator = z.object({
-    name: z
-        .string()
-        .nonempty('Name is required.')
-        .min(3, 'Must contain at least 3 characters.')
-        .max(30, 'Must contain at most 30 characters.')
-        .regex(/^[A-Za-z0-9 ]+$/, 'Alpha numeric characters only'),
-});
+const getNameValidator = () =>
+    z.object({
+        name: z
+            .string()
+            .nonempty(m['arabicFixes.nameRequired']())
+            .min(3, 'Must contain at least 3 characters.')
+            .max(30, 'Must contain at most 30 characters.')
+            .regex(/^[A-Za-z0-9 ]+$/, 'Alpha numeric characters only'),
+    });
 
 const ProfileIDValidator = z.object({
     profileId: z
@@ -100,7 +101,8 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
     const isSwitchedProfile = switchedProfileStore?.use?.isSwitchedProfile();
     const parentUser = currentUserStore.get.parentUser();
     const parentUserDid = currentUserStore.get.parentUserDid();
-    const isCurrentUserServiceProfile = currentLCNUser?.isServiceProfile;
+    const isCurrentUserServiceProfile =
+        currentLCNUser?.type !== 'child' && currentLCNUser?.isServiceProfile === true;
 
     const { mutateAsync: createBoost } = useCreateBoost();
     const { mutateAsync: addCredentialToWallet } = useAddCredentialToWallet();
@@ -136,9 +138,10 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
     });
 
     // Filter to only show service profiles (organizations)
-    const profileRecords = (profiles as any)?.records ?? [];
+    const profileRecords = Array.isArray(profiles?.records) ? profiles.records : [];
     const serviceProfiles = profileRecords.filter(
-        ({ profile }: { profile: LCNProfile }) => profile.isServiceProfile
+        ({ profile }: { profile: LCNProfile }) =>
+            profile.type !== 'child' && profile.isServiceProfile
     );
 
     // Check profile uniqueness
@@ -171,7 +174,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
     };
 
     const validateName = () => {
-        const result = NameValidator.safeParse({ name: orgName });
+        const result = getNameValidator().safeParse({ name: orgName });
         if (!result.success) {
             setNameError(result.error.issues[0]?.message || 'Invalid name');
             return false;
@@ -194,7 +197,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
         return true;
     };
 
-    const handleSelectExistingProfile = async (profile: LCNProfile, manager: LCNProfile) => {
+    const handleSelectExistingProfile = async (profile: LCNProfile) => {
         const orgProfile: OrganizationProfile = {
             did: profile.did!,
             profileId: profile.profileId!,
@@ -205,15 +208,8 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
 
         setSelectedProfile(orgProfile);
 
-        // Switch to this profile
-        const switchedUser = {
-            ...manager,
-            did: profile.did,
-            profileId: profile.profileId,
-            isServiceProfile: profile.isServiceProfile,
-        };
-
-        await handleSwitchAccount(switchedUser as LCNProfile);
+        // The manager grants access, but the switched identity is the organization.
+        await handleSwitchAccount(profile);
     };
 
     const handleUseCurrentAccount = () => {
@@ -224,7 +220,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
             profileId: currentLCNUser.profileId!,
             displayName: currentLCNUser.displayName!,
             image: currentLCNUser.image,
-            isServiceProfile: currentLCNUser.isServiceProfile ?? false,
+            isServiceProfile: isCurrentUserServiceProfile,
         };
 
         setSelectedProfile(orgProfile);
@@ -232,10 +228,14 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
 
     const handleUseParentAccount = async () => {
         if (!parentUser || !parentUserDid) return;
+        const parentProfileId =
+            'profileId' in parentUser && typeof parentUser.profileId === 'string'
+                ? parentUser.profileId
+                : (parentUser.name ?? '');
 
         const parentProfile: OrganizationProfile = {
             did: parentUserDid,
-            profileId: (parentUser as any).profileId ?? parentUser.name ?? '',
+            profileId: parentProfileId,
             displayName: parentUser.name ?? 'Personal Account',
             image: parentUser.profileImage,
             isServiceProfile: false,
@@ -370,9 +370,8 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                 );
 
                 if (sentBoost) {
-                    const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
-                        sentBoost
-                    );
+                    const issuedVcUri =
+                        await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
                     if (issuedVcUri) {
                         await addCredentialToWallet({ uri: issuedVcUri });
                     }
@@ -401,10 +400,13 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
 
             presentToast(`Organization "${orgName}" created successfully!`);
             setMode('select');
-        } catch (e: any) {
-            presentToast(`Failed to create organization: ${e?.message}`, {
-                type: ToastTypeEnum.Error,
-            });
+        } catch (e) {
+            presentToast(
+                `Failed to create organization: ${e instanceof Error ? e.message : String(e)}`,
+                {
+                    type: ToastTypeEnum.Error,
+                }
+            );
             log.error('Error creating organization:', e);
         } finally {
             setIsCreating(false);
@@ -558,18 +560,10 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
 
                             <div className="space-y-2">
                                 {serviceProfiles.map(
-                                    (
-                                        {
-                                            profile,
-                                            manager,
-                                        }: { profile: LCNProfile; manager: LCNProfile },
-                                        index: number
-                                    ) => (
+                                    ({ profile }: { profile: LCNProfile }, index: number) => (
                                         <button
                                             key={index}
-                                            onClick={() =>
-                                                handleSelectExistingProfile(profile, manager)
-                                            }
+                                            onClick={() => handleSelectExistingProfile(profile)}
                                             disabled={isSwitching}
                                             className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
                                                 selectedProfile?.did === profile.did
@@ -756,15 +750,15 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                                         isUniqueValid
                                             ? 'bg-emerald-100 text-emerald-700'
                                             : uniqueProfileFetching
-                                            ? 'bg-amber-100 text-amber-700'
-                                            : 'bg-gray-100 text-gray-500'
+                                              ? 'bg-amber-100 text-amber-700'
+                                              : 'bg-gray-100 text-gray-500'
                                     }`}
                                 >
                                     {uniqueProfileFetching
                                         ? 'Checking...'
                                         : isUniqueValid
-                                        ? 'Available'
-                                        : 'Must be unique'}
+                                          ? 'Available'
+                                          : 'Must be unique'}
                                 </span>
                             </div>
 

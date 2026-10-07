@@ -1,13 +1,12 @@
 # InboxSendGuardianApprovalEmailRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**guardian_email** | **str** |  | 
-**ttl_hours** | **int** |  | [optional] 
-**template** | [**InboxSendGuardianApprovalEmailRequestTemplate**](InboxSendGuardianApprovalEmailRequestTemplate.md) |  | [optional] 
+| Name               | Type                                                                                                  | Description | Notes      |
+| ------------------ | ----------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **guardian_email** | **str**                                                                                               |             |
+| **ttl_hours**      | **int**                                                                                               |             | [optional] |
+| **template**       | [**InboxSendGuardianApprovalEmailRequestTemplate**](InboxSendGuardianApprovalEmailRequestTemplate.md) |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ inbox_send_guardian_approval_email_request_dict = inbox_send_guardian_approval_e
 # create an instance of InboxSendGuardianApprovalEmailRequest from a dict
 inbox_send_guardian_approval_email_request_from_dict = InboxSendGuardianApprovalEmailRequest.from_dict(inbox_send_guardian_approval_email_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

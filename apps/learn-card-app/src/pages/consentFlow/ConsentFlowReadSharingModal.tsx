@@ -33,6 +33,7 @@ import ConsentFlowSelectiveSharingWarning from './ConsentFlowSelectiveSharingWar
 import { CredentialMetadata } from 'learn-card-base/types/credential-records';
 
 import useTheme from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 type ConsentFlowReadSharingModalProps = {
     term: ConsentFlowTerm;
@@ -47,7 +48,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
     setTerm: saveTerm,
     category,
     required,
-    contractOwnerDid,
+    contractOwnerDid: _contractOwnerDid,
 }) => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -94,17 +95,21 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
         fetchNextPage,
     } = useGetCredentialList(category as CredentialCategory);
 
-    const hasCredentials = records?.pages?.[0]?.records?.length > 0;
+    const hasCredentials = (records?.pages?.[0]?.records?.length ?? 0) > 0;
 
-    const onScreen = useOnScreen(infiniteScrollRef as any, '200px', [
-        records?.pages?.[0]?.records?.length,
-    ]);
+    const onScreen = useOnScreen(
+        infiniteScrollRef as React.MutableRefObject<HTMLDivElement>,
+        '200px',
+        [records?.pages?.[0]?.records?.length]
+    );
 
     useEffect(() => {
         if (onScreen && hasNextPage) fetchNextPage();
     }, [fetchNextPage, hasNextPage, onScreen]);
 
-    const allCreds = records?.pages.flatMap(page => page?.records);
+    const allCreds = records?.pages
+        .flatMap(page => page?.records)
+        .filter((credential): credential is NonNullable<typeof credential> => Boolean(credential));
     const allUris = allCreds?.map(credential => credential?.uri) ?? [];
 
     const totalCount = typeof count === 'number' ? count : '?';
@@ -114,19 +119,20 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
         closeModal();
     };
 
-    const getAlreadySharedUri = (credential: CredentialRecord<CredentialMetadata>) => {
-        return credential.sharedUris?.[contractOwnerDid]?.at(-1);
-    };
+    // Historical copies identify the original credential for selection only.
+    // Submission materializes it for the current audience before reusing any ciphertext.
+    const getAlreadySharedUris = (credential: CredentialRecord<CredentialMetadata>) =>
+        Object.values(credential.sharedUris ?? {}).flat();
 
     const getIsSelected = (credential: CredentialRecord<CredentialMetadata>) => {
-        const alreadySharedUri = getAlreadySharedUri(credential);
+        const alreadySharedUris = getAlreadySharedUris(credential);
         return term.shared?.some(
-            termUri => credential.uri === termUri || alreadySharedUri === termUri
+            termUri => credential.uri === termUri || alreadySharedUris.includes(termUri)
         );
     };
 
     const toggleCredentialSelected = (credential: CredentialRecord<CredentialMetadata>) => {
-        const alreadySharedUri = getAlreadySharedUri(credential);
+        const alreadySharedUris = getAlreadySharedUris(credential);
         const isSelected = getIsSelected(credential);
 
         if (term.shareAll) {
@@ -137,7 +143,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                             ...term,
                             shareAll: false,
                             shared: allUris.filter(
-                                uri => uri !== credential.uri && uri !== alreadySharedUri
+                                uri => uri !== credential.uri && !alreadySharedUris.includes(uri)
                             ),
                         });
                     }}
@@ -154,8 +160,10 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
             ...term,
             shareAll: false,
             shared: isSelected
-                ? term?.shared?.filter(uri => uri !== credential.uri && uri !== alreadySharedUri)
-                : [...(term.shared ?? []), alreadySharedUri || credential.uri],
+                ? term?.shared?.filter(
+                      uri => uri !== credential.uri && !alreadySharedUris.includes(uri)
+                  )
+                : [...(term.shared ?? []), credential.uri],
         });
     };
 
@@ -168,12 +176,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
             setFormerSharedUris(term.shared ?? []);
         }
 
-        const allSharedUris = allCreds
-            ?.map(cred => {
-                if (!cred) return;
-                return getAlreadySharedUri(cred) ?? cred.uri;
-            })
-            .filter(c => !!c);
+        const allSharedUris = allCreds?.map(credential => credential.uri) ?? [];
 
         setTerm({ ...term, shared: allSharedUris, shareAll: true, sharing: true });
     };
@@ -235,10 +238,10 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                         className="flex flex-col flex-1 gap-1"
                                     >
                                         <h6 className="text-grayscale-900 text-lg font-poppins">
-                                            Live Syncing
+                                            {m['arabicFixes.liveSyncing']()}
                                         </h6>
                                         <span className="text-grayscale-700 text-sm font-poppins">
-                                            Continuously share all {plural}.
+                                            {m['arabicFixes.continuousShare']({ items: plural })}
                                         </span>
                                     </label>
 
@@ -266,7 +269,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                             }
                                             className="text-sm font-poppins text-grayscale-900"
                                         >
-                                            Set an expiration date?
+                                            {m['arabicFixes.setExpirationDate']()}
                                         </label>
                                         <IonToggle
                                             color="emerald-700"
@@ -311,10 +314,12 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                         className="flex flex-col flex-1 gap-1"
                                     >
                                         <h6 className="text-grayscale-900 text-lg font-poppins">
-                                            Selective Sharing
+                                            {m['arabicFixes.selectiveSharing']()}
                                         </h6>
                                         <span className="text-grayscale-700 text-sm font-poppins">
-                                            Only share selected {plural}.
+                                            {m['arabicFixes.selectiveSharingHelp']({
+                                                items: plural,
+                                            })}
                                         </span>
                                     </label>
 
@@ -336,10 +341,10 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                             className="flex flex-col flex-1 gap-1"
                                         >
                                             <h6 className="text-grayscale-900 text-lg font-poppins">
-                                                Not Sharing
+                                                {m['arabicFixes.notSharing']()}
                                             </h6>
                                             <span className="text-grayscale-700 text-sm font-poppins">
-                                                Don't share any {plural}.
+                                                {m['arabicFixes.notSharingHelp']({ items: plural })}
                                             </span>
                                         </label>
 
@@ -362,15 +367,18 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                 <header className="w-full flex justify-center sticky -top-1 z-10 p-5 border-t border-solid border-grayscale-300 bg-grayscale-100">
                                     <section className="flex justify-between w-full max-w-[800px]">
                                         <output className="text-lg font-semibold font-poppins">
-                                            Sharing{' '}
-                                            {term.shareAll ? totalCount : term.shared?.length ?? 0}/
-                                            {totalCount}
+                                            {m['arabicFixes.sharingCount']({
+                                                selected: term.shareAll
+                                                    ? totalCount
+                                                    : (term.shared?.length ?? 0),
+                                                total: totalCount,
+                                            })}
                                         </output>
 
                                         {term.shareAll && (
                                             <output className="rounded-[20px] pl-4 pr-3 py-1 flex items-center gap-1 bg-grayscale-50 text-emerald-800">
                                                 <span className="font-poppins text-sm font-semibold">
-                                                    Live Syncing All
+                                                    {m['arabicFixes.liveSyncingAll']()}
                                                 </span>
                                                 <Checkmark className="h-5 w-5" strokeWidth="3" />
                                             </output>

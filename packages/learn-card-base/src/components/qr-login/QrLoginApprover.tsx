@@ -9,7 +9,7 @@
  * the device share, then calls onDone.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useQrLoginApprover } from '../../hooks/useQrLogin';
 
@@ -64,6 +64,11 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
 
     const [codeInput, setCodeInput] = useState('');
     const [mode, setMode] = useState<'choose' | 'scan' | 'code'>('choose');
+    const codeInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (mode === 'code') codeInputRef.current?.focus();
+    }, [mode]);
 
     const handleScan = useCallback(async () => {
         if (!onScanQr) return;
@@ -125,6 +130,7 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
                 <div className="space-y-2">
                     {onScanQr && (
                         <button
+                            aria-label="Scan QR code"
                             onClick={handleScan}
                             className="w-full p-4 rounded-2xl bg-grayscale-10 hover:bg-grayscale-100 text-grayscale-900 flex items-center gap-4 transition-colors"
                         >
@@ -207,6 +213,8 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
                 )}
 
                 <input
+                    ref={codeInputRef}
+                    aria-label="Device link code"
                     type="text"
                     inputMode="numeric"
                     maxLength={8}
@@ -214,7 +222,6 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
                     onChange={e => setCodeInput(e.target.value.replace(/\D/g, '').slice(0, 8))}
                     placeholder="00000000"
                     className="w-full text-center font-mono text-3xl tracking-[0.3em] py-3 px-4 border border-grayscale-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent mb-5 text-grayscale-900 placeholder:text-grayscale-300 bg-white"
-                    autoFocus
                 />
 
                 <button

@@ -19,6 +19,16 @@ vi.mock('learn-card-base/hooks/useSocialLogins', () => ({
 }));
 
 vi.mock('learn-card-base', () => ({
+    useSignInAdapter: () => ({
+        capabilities: {
+            google: true,
+            apple: true,
+            social: true,
+            phoneOtp: true,
+            emailOtp: true,
+            emailLink: true,
+        },
+    }),
     SocialLoginTypes: {
         apple: 'apple',
         google: 'google',
@@ -61,6 +71,8 @@ vi.mock('../../../theme/hooks/useTheme', () => ({
 }));
 
 vi.mock('../../../paraglide/messages.js', () => ({
+    'login.email.button': () => 'Sign in with Email',
+    'login.phone.button': () => 'Sign in with SMS',
     'login.social.or': () => 'or',
     'login.social.provider.apple': () => 'Apple',
     'login.social.provider.google': () => 'Google',

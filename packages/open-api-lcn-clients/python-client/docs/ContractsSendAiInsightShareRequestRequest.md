@@ -1,13 +1,12 @@
 # ContractsSendAiInsightShareRequestRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**child_profile_id** | **str** |  | [optional] 
-**target_profile_id** | **str** |  | 
-**share_link** | **str** |  | 
+| Name                  | Type    | Description | Notes      |
+| --------------------- | ------- | ----------- | ---------- |
+| **child_profile_id**  | **str** |             | [optional] |
+| **target_profile_id** | **str** |             |
+| **share_link**        | **str** |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ contracts_send_ai_insight_share_request_request_dict = contracts_send_ai_insight
 # create an instance of ContractsSendAiInsightShareRequestRequest from a dict
 contracts_send_ai_insight_share_request_request_from_dict = ContractsSendAiInsightShareRequestRequest.from_dict(contracts_send_ai_insight_share_request_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

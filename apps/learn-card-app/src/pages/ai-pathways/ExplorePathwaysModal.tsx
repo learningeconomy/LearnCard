@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Swiper and legacy API payloads are dynamically shaped. */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('explore-pathways-modal');
@@ -19,10 +20,10 @@ import {
 } from 'learn-card-base';
 
 import { Plus, X } from 'lucide-react';
-import PuzzlePiece from 'src/components/svgs/PuzzlePiece';
-import SlimCaretLeft from 'src/components/svgs/SlimCaretLeft';
-import SlimCaretRight from 'src/components/svgs/SlimCaretRight';
-import Pencil from 'src/components/svgs/Pencil';
+import PuzzlePiece from '../../components/svgs/PuzzlePiece';
+import SlimCaretLeft from '../../components/svgs/SlimCaretLeft';
+import SlimCaretRight from '../../components/svgs/SlimCaretRight';
+import Pencil from '../../components/svgs/Pencil';
 import SkillTag from '../skills/SkillTag';
 import SkillSearchSelector from '../skills/SkillSearchSelector';
 import {
@@ -312,7 +313,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
 
     return (
         <div className="h-full relative bg-grayscale-50 overflow-hidden text-grayscale-900 flex flex-col">
-            <div className="px-[15px] py-[20px] bg-white safe-area-top-margin flex flex-col gap-[15px] z-20 relative shadow-bottom-1-5 rounded-b-[20px]">
+            <div className="px-[15px] py-[20px] bg-white flex flex-col gap-[15px] z-20 relative shadow-bottom-1-5 rounded-b-[20px]">
                 <div className="flex items-center gap-[10px] text-grayscale-900">
                     <WalletIcons.AiPathwaysIconWithShape className="w-[50px] h-[50px]" />
                     <h5 className="text-[21px] font-poppins font-[600] leading-[24px]">

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as m from '../../paraglide/messages.js';
 import { useModal, useWallet } from 'learn-card-base';
 import { IonSpinner, IonInput } from '@ionic/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -45,7 +46,7 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
         },
         onError: error => {
             log.error('Failed to add admin:', error);
-            alert('Failed to add admin. Please check the Profile ID and try again.');
+            alert(m['skillFrameworks.toasts.addAdminFail']());
         },
     });
 
@@ -60,7 +61,7 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
         },
         onError: error => {
             log.error('Failed to remove admin:', error);
-            alert('Failed to remove admin. Please try again.');
+            alert(m['skillFrameworks.toasts.removeAdminFail']());
         },
     });
 
@@ -72,9 +73,7 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
     };
 
     const handleRemoveAdmin = (profileId: string) => {
-        const confirmed = window.confirm(
-            'Are you sure you want to remove this admin? They will lose management access to this framework.'
-        );
+        const confirmed = window.confirm(m['skillFrameworks.confirmRemAdmin']());
 
         if (confirmed) {
             removeAdminMutation.mutate(profileId);
@@ -86,7 +85,7 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
             <div className="py-[10px] pl-[10px] pr-[20px] flex gap-[10px] items-center shadow-bottom-1-5">
                 <ScoutsTroopIcon className="w-[65px] h-[65px]" />
                 <p className="text-grayscale-800 font-poppins text-[20px] leading-[130%] tracking-[-0.25px]">
-                    Manage Admins
+                    {m['skillFrameworks.mgAdmins']()}
                 </p>
                 <CaretDown className="ml-auto text-grayscale-800" />
             </div>
@@ -95,13 +94,13 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
                 {/* Add Admin Section */}
                 <div className="bg-white p-[15px] rounded-[10px] flex flex-col gap-[10px]">
                     <p className="text-grayscale-900 font-poppins text-[16px] font-[600]">
-                        Add New Admin
+                        {m['skillFrameworks.addNewAdmin']()}
                     </p>
                     <div className="flex gap-[10px]">
                         <IonInput
                             onIonInput={e => setNewAdminProfileId(e.detail.value ?? '')}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] !px-[15px] !h-[40px] flex-1"
-                            placeholder="Enter Profile ID"
+                            placeholder={m['skillFrameworks.enterPid']()}
                             value={newAdminProfileId}
                         />
                         <button
@@ -109,7 +108,9 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
                             disabled={!newAdminProfileId.trim() || addAdminMutation.isPending}
                             className="bg-emerald-700 text-white px-[20px] py-[7px] rounded-[30px] text-[14px] font-poppins font-[600] disabled:bg-grayscale-600 whitespace-nowrap"
                         >
-                            {addAdminMutation.isPending ? 'Adding...' : 'Add Admin'}
+                            {addAdminMutation.isPending
+                                ? m['skillFrameworks.adding']()
+                                : m['skillFrameworks.addAdmin']()}
                         </button>
                     </div>
                 </div>
@@ -117,7 +118,7 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
                 {/* Current Admins List */}
                 <div className="flex flex-col gap-[10px]">
                     <p className="text-grayscale-900 font-poppins text-[16px] font-[600]">
-                        Current Admins ({admins.length})
+                        {m['skillFrameworks.curAdmins']({ count: admins.length })}
                     </p>
 
                     {isLoading ? (
@@ -127,13 +128,13 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
                     ) : isError ? (
                         <div className="text-center py-[40px]">
                             <p className="text-red-600 font-poppins text-[14px]">
-                                Failed to load admins. Please try again.
+                                {m['skillFrameworks.failAdmins']()}
                             </p>
                         </div>
                     ) : admins.length === 0 ? (
                         <div className="text-center py-[40px] bg-white rounded-[10px]">
                             <p className="text-grayscale-600 font-poppins text-[14px]">
-                                No admins yet. Add one above.
+                                {m['skillFrameworks.noAdminsYet']()}
                             </p>
                         </div>
                     ) : (
@@ -158,7 +159,7 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
                                     )}
                                     <div className="flex flex-col flex-1">
                                         <p className="text-grayscale-900 font-poppins text-[14px] font-[600]">
-                                            {admin.displayName || 'Unknown'}
+                                            {admin.displayName || m['skillFrameworks.unknown']()}
                                         </p>
                                         <p className="text-grayscale-600 font-poppins text-[12px]">
                                             {admin.profileId}
@@ -184,7 +185,7 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
                     onClick={closeModal}
                     className="bg-emerald-700 text-white px-[20px] py-[7px] rounded-[30px] text-[17px] font-poppins flex-1 font-[600] leading-[130%] tracking-[-0.25px] shadow-button-bottom"
                 >
-                    Done
+                    {m['skillFrameworks.done']()}
                 </button>
             </div>
         </section>

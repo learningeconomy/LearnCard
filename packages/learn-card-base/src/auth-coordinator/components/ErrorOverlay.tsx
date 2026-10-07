@@ -20,7 +20,7 @@ export const ErrorOverlay: React.FC<ErrorOverlayProps> = ({
     onRetry,
     onLogout,
 }) => (
-    <Overlay>
+    <Overlay onDismiss={onLogout}>
         <div className="p-8 text-center space-y-5">
             <div className="w-14 h-14 mx-auto rounded-full bg-red-50 flex items-center justify-center">
                 <span className="text-red-500 text-2xl font-semibold">!</span>

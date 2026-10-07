@@ -1,13 +1,12 @@
 # InboxGetMyIssuedCredentials200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**has_more** | **bool** |  | 
-**records** | [**List[InboxGetMyIssuedCredentials200ResponseRecordsInner]**](InboxGetMyIssuedCredentials200ResponseRecordsInner.md) |  | 
-**cursor** | **str** |  | [optional] 
+| Name         | Type                                                                                                                  | Description | Notes      |
+| ------------ | --------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **has_more** | **bool**                                                                                                              |             |
+| **records**  | [**List[InboxGetMyIssuedCredentials200ResponseRecordsInner]**](InboxGetMyIssuedCredentials200ResponseRecordsInner.md) |             |
+| **cursor**   | **str**                                                                                                               |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ inbox_get_my_issued_credentials200_response_dict = inbox_get_my_issued_credentia
 # create an instance of InboxGetMyIssuedCredentials200Response from a dict
 inbox_get_my_issued_credentials200_response_from_dict = InboxGetMyIssuedCredentials200Response.from_dict(inbox_get_my_issued_credentials200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

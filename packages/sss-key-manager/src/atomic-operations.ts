@@ -22,6 +22,7 @@ export interface AtomicUpdateOptions {
 export interface StorageOperations {
     storeDevice: (share: string) => Promise<void>;
     storeAuth: (share: string) => Promise<void>;
+    clearDevice?: () => Promise<void>;
     getDevice?: () => Promise<string | null>;
     getAuth?: () => Promise<string | null>;
 }
@@ -47,6 +48,14 @@ export class AtomicUpdateError extends Error {
     ) {
         super(message);
         this.name = 'AtomicUpdateError';
+    }
+}
+
+/** A write was explicitly rejected, rather than its outcome being unknown. */
+export class ShareWriteRejectedError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'ShareWriteRejectedError';
     }
 }
 
@@ -98,13 +107,16 @@ export async function splitAndVerify(privateKey: string): Promise<AtomicSplitRes
  *
  * This function ensures that either:
  * 1. Both device and auth shares are updated successfully, OR
- * 2. The previous state is restored (rollback)
+ * 2. A rejected write restores the previous state (rollback), OR
+ * 3. An indeterminate write preserves the new device share for reconciliation
  *
  * The operation flow:
  * 1. Generate and verify new shares
  * 2. Store device share locally
  * 3. Store auth share on server
- * 4. If step 3 fails, rollback step 2
+ * 4. Roll back only if step 3 throws ShareWriteRejectedError. Network failures
+ *    may happen after commit and must never destroy the new device share.
+ *    Callers can stage storeDevice in a separate entry to retain both versions.
  *
  * @param privateKey - The private key to split
  * @param storage - Storage operations for device and auth shares
@@ -150,11 +162,30 @@ export async function atomicShareUpdate(
         // Phase 3: Store auth share on server
         await storage.storeAuth(newShares.authShare);
     } catch (e) {
-        // ROLLBACK: Restore previous device share if we have it
-        if (options.previousDeviceShare && deviceStored) {
+        if (!(e instanceof ShareWriteRejectedError)) {
+            throw new AtomicUpdateError(
+                'Auth share write outcome unknown; device share preserved for reconciliation',
+                'store_auth',
+                false,
+                e instanceof Error ? e : undefined
+            );
+        }
+
+        let rolledBack = false;
+
+        // ROLLBACK: restore the previous share, or remove the newly-written
+        // share when this was an initial setup with no previous local state.
+        if (deviceStored) {
             try {
-                await storage.storeDevice(options.previousDeviceShare);
-                options.onRollback?.('Server storage failed, restored previous device share');
+                if (options.previousDeviceShare !== undefined) {
+                    await storage.storeDevice(options.previousDeviceShare);
+                    options.onRollback?.('Server storage failed, restored previous device share');
+                    rolledBack = true;
+                } else if (storage.clearDevice) {
+                    await storage.clearDevice();
+                    options.onRollback?.('Server storage failed, removed new device share');
+                    rolledBack = true;
+                }
             } catch (rollbackError) {
                 // Rollback failed - this is a critical error
                 // The user may be in an inconsistent state
@@ -166,9 +197,11 @@ export async function atomicShareUpdate(
         }
 
         throw new AtomicUpdateError(
-            'Failed to store auth share on server, rolled back device share',
+            rolledBack
+                ? 'Failed to store auth share on server, rolled back device share'
+                : 'Failed to store auth share on server; rollback did not complete',
             'store_auth',
-            !!options.previousDeviceShare,
+            rolledBack,
             e instanceof Error ? e : undefined
         );
     }

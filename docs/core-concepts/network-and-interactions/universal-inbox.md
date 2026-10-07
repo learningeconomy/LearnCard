@@ -1,45 +1,193 @@
 # Universal Inbox
 
-This document explains the core concepts behind the Universal Inbox feature. It's designed to give you a deep understanding of what it is, the problems it solves for both developers and end-users, and why it is a critical component of the LearnCard ecosystem.
+The Universal Inbox is what lets you send a credential to an **email address or phone number** instead of a LearnCard account. It's why `send({ recipient: 'jane@example.com' })` works even when Jane has never heard of LearnCard.
 
-## What is Universal Inbox?
+## What it does
 
-At its core, the **Universal Inbox** is an API that allows any person or organization to send a verifiable credential to any recipient using a common identifier, like an email address or phone number.
+When the recipient isn't a LearnCard profile, the network:
 
-It acts as a smart and secure "digital mailbox." An issuer can send a credential to `user@example.com` without needing to know if that person already has a LearnCard Passport. The Universal Inbox holds the credential securely and sends a simple notification to the user. When the user clicks the link in the notification, the system seamlessly guides them through either logging into their existing passport or creating a new one to claim their credential.
+1. Holds the credential in an inbox keyed to that email or phone.
+2. Sends the recipient a message — your name, what they've received, and a claim link.
+3. When they follow the link, walks them through signing in or creating an account.
+4. Delivers the credential into the account they just proved they own, and tells you it was claimed.
 
-Think of it as the universal on-ramp to the LearnCard ecosystem. It's the bridge that connects traditional communication methods with the world of self-sovereign identity.
+If the recipient **already** has a LearnCard account with that email or phone verified, steps 2–3 are skipped: the credential goes straight to their account and your `send()` comes back with `status: 'ISSUED'` instead of `'PENDING'`.
 
-## The Problem It Solves
+```mermaid
+sequenceDiagram
+    participant You
+    participant Inbox as Universal Inbox
+    participant Jane
+    You->>Inbox: send({ recipient: 'jane@example.com', … })
+    Inbox-->>You: { status: 'PENDING', claimUrl, issuanceId }
+    Inbox->>Jane: email with claim link
+    Jane->>Inbox: opens link, verifies email, signs in or signs up
+    Inbox->>Jane: credential delivered to her account
+    Inbox-->>You: webhook ISSUANCE_CLAIMED
+```
 
-Before the Universal Inbox, issuing a credential involved significant friction for both the issuer and the recipient.
+## What it doesn't do
 
-### **For the Issuer (the Developer):**
+It never creates an account for the recipient. The person proves they control the address, then creates or unlocks their own account with their own key. You get an inbox record and a claim status; you never get their account or their key. The invitation is centralized (an email), the result is not.
 
 -   **The Old Problem:** To send a credential, a developer first had to solve a complex "chicken-and-egg" problem. Do they ask the user for their LearnCard DID? What if the user doesn't have one? Do they build a UI to manage one-off "claim links"? This forced every integrating partner to become an expert in decentralized identity concepts just to perform a simple action.
 -   **The Solution:** The Universal Inbox removes this burden entirely. It provides a single, simple API endpoint (`POST /inbox/issue`). The developer only needs to provide the credential data and the recipient's email. Our system handles the rest, abstracting away the complexity of whether the user is new or existing.
+## Things you'll rely on
 
-### **For the Recipient (the End-User):**
+- **`claimUrl`** — returned on every `PENDING` send. Pass `suppressDelivery: true` to skip the email and deliver the link yourself (in your own email, on a receipt, in a QR code).
+- **`issuanceId`** — the handle for this send. Webhooks reference it; use it to reconcile.
+- **Guardian gating** — add `options.guardianEmail` and a parent must approve before the recipient can claim. Once a guardian has a LearnCard account managing the child, every future send to that child is gated automatically. See [Guardian-Gated Credentials](../../how-to-guides/send-credentials.md#guardian-gated-credentials).
+- **Phone delivery** is limited to issuers listed in the [trusted registry](../identities-and-keys/trust-registries.md).
 
 -   **The Old Problem:** The user had to be educated about what a LearnCard Passport was _before_ they could receive their first credential. This created a learning curve and a barrier to entry.
 -   **The Solution:** The Universal Inbox meets the user where they already are: their email inbox or text messages. The first interaction they have is a simple, familiar notification: "State University has sent you a digital record." The experience of creating a passport becomes a natural and necessary step to claiming something of value, not an abstract concept they have to learn upfront.
+## Security and retention
 
-## Why It Matters
+Until the recipient has an account there is no recipient key to encrypt to, so the network holds the waiting credential encrypted to itself. At claim time it decrypts once, saves a copy encrypted only to the claimant's DID, marks the claim issued, and deletes the service-readable copy — all in one transaction. After that, neither the network nor you can read it.
 
-The Universal Inbox is more than just a feature; it's a strategic pillar for adoption and growth.
+- **Claim window.** `send()` and `/inbox/issue` hold a credential for **30 days** by default; embedded claim buttons default to 720. Set `options.expiresInDays` on `send()` (or `configuration.expiresInDays` on the inbox routes), 1–720, to shorten it. Use the shortest practical window for transcripts, CLRs, and other sensitive learner records. This controls how long the payload is claimable, not the credential's own validity dates.
+- **Claims are single-use.** Once delivered, re-running the claim returns nothing new. Clients should persist what they receive immediately.
+- **Recovery.** If the claiming client loses the response, the same DID can fetch its deliveries for **seven days** via `POST /inbox/deliveries` (`inbox:read` scope) or `learnCard.invoke.recoverInboxCredentials()`. Records come back as `{ id, credential, expiresAt }` with `credential` as a JWE the holder decrypts locally; use `id` to deduplicate.
+- **Issuer routes return metadata only.** `/inbox/issued`, `/inbox/credentials/{id}`, and the `/inbox/claim` tracking record never include the credential body. Content is only available through the claim response or recovery.
 
-1. **It Radically Simplifies Integration:** By providing a familiar, RESTful API that feels like using services like Postmark or Twilio, we dramatically lower the barrier to entry. Developers can integrate our most powerful feature in minutes, not days, accelerating the growth of our entire ecosystem.
-2. **It Bridges the Centralized and Decentralized Worlds:** This is the most critical function. True adoption of self-sovereign identity requires a smooth transition from the systems people use every day. The Universal Inbox is that transition. It uses centralized identifiers (email, phone) as a secure and user-friendly invitation into a decentralized, user-owned world.
-3. **It Upholds Our Core Principles Without Compromise:** Despite its simplicity, the Universal Inbox never compromises on self-sovereignty. The partner never creates a passport on the user's behalf. The user, and only the user, creates their account and controls their private keys. The system simplifies the _invitation and delivery_, not the fundamental principles of ownership and control.
+Direct deliveries to existing accounts don't go through this escrow; they are stored to the recipient before the inbox receipt is written and remain readable to both parties.
 
-In short, the Universal Inbox makes the powerful and complex world of verifiable credentials feel simple, intuitive, and accessible to everyone.
+## Build with it
 
-## Guardian-Gated Credentials
+- [Send & Issue Credentials](../../how-to-guides/send-credentials.md) — the `send()` call and its response
+- [Know When a Credential Is Claimed](../../tutorials/listen-to-webhooks.md) — the webhooks
+- [Universal Inbox API](../../sdks/learncard-network/universal-inbox-api.md) — the lower-level REST surface
 
-When issuing credentials to minors or managed accounts, the Universal Inbox supports **guardian gating**. By specifying a `guardianEmail` when sending a credential, the system requires a trusted guardian to approve the credential before the recipient can claim it.
+## Batch Issuance
 
 -   The guardian receives an approval email with a secure OTP challenge
 -   The credential remains in `AWAITING_GUARDIAN` status until the guardian acts
 -   Once a guardian creates a LearnCard account and establishes a MANAGES relationship with the child, all future credentials to that child are automatically guardian-gated — no `guardianEmail` needed from the issuer
+Use `POST /inbox/issue-batch` (tRPC `inbox.issueBatch`) or
+`learnCard.invoke.sendCredentialsViaInbox(batch)` to queue 1–100 credentials.
+Submission requires `inbox:write`; polling requires `inbox:read` and the submitting
+issuer profile. Single issuance stays synchronous.
 
-This enables COPPA-friendly credential issuance workflows where parental consent is required. See the [Guardian-Gated Credentials](../../how-to-guides/implement-flows/guardian-gated-credentials.md) guide for implementation details.
+```typescript
+const receipt = await learnCard.invoke.sendCredentialsViaInbox({
+    requestId: 'semester-2026-chunk-001',
+    configuration: {
+        signingAuthority: { endpoint: 'https://issuer.example/sign', name: 'default' },
+    },
+    items: [
+        {
+            recipient: { type: 'email', value: 'student@example.com' },
+            credential: transcript,
+            idempotencyKey: 'semester-2026-student-001',
+        },
+    ],
+});
+
+const batch = await learnCard.invoke.waitForInboxCredentialBatch(receipt.batchId, {
+    timeoutMs: 10 * 60_000,
+    intervalMs: 2_000,
+});
+// A polling timeout does not cancel work. Keep batchId to check again later.
+const failedItems = batch.items.filter(item => item.result?.success === false);
+```
+
+Submission returns HTTP **202** with `batchId`, `status: 'QUEUED'`, and `createdAt`.
+Replaying a `requestId` returns the original batch ID with its current processing state.
+Poll `GET /inbox/batches/{batchId}` for ordered `items`, each with an `index`,
+processing `state`, and a `result` when available. Results retain their `success`
+flag and issuance details or error. The summary reports `total`, `succeeded`,
+`failed`, `deduplicated`, `completed`, `pending`, and `unconfirmed`.
+`completed` counts all terminal items regardless of outcome. `failed` excludes
+`unconfirmed`; these counts plus `succeeded` and `pending` sum to `total`.
+Results remain available for 30 days after all items finish processing, including
+items marked `NEEDS_RECONCILIATION`.
+
+Batch states are `QUEUED`, `PROCESSING`, `COMPLETED`, and `NEEDS_RECONCILIATION`.
+The last state can coexist with unfinished items; use `done` to check
+whether processing has finished, including unconfirmed outcomes. Credential status `PENDING` means waiting for a claim, which is
+separate from queue processing.
+
+Batch configuration supplies defaults. Item configuration overrides it with a
+deep merge; arrays replace defaults. The existing signing, claiming, webhook,
+guardian, and tenant-branding behavior applies. Both single and batch issuance
+accept `configuration.guardianEmail`; it must differ from the recipient email,
+ignoring case. Batches validate this at submission after applying item overrides.
+Set an item's `configuration.guardianEmail` to `null` to clear a batch-level guardian
+default for that recipient. Other omitted item settings inherit their batch defaults.
+
+### Retries and recovery
+
+An optional `requestId` (1–256 characters) makes submission retries safe for 24 hours.
+The same issuer, payload, domain, and tenant ID return the original receipt without
+another quota charge. Reusing it with changed input returns HTTP 409.
+
+An optional item `idempotencyKey` (up to 256 characters) durably stores a successful
+result for 24 hours per issuer. Reusing it returns the same issuance with
+`deduplicated: true`, without another credential, email, or webhook. Changed input
+returns a per-item `CONFLICT` with `IDEMPOTENCY_MISMATCH`. Overlapping attempts
+retry with backoff for up to five total attempts, then return `CONFLICT` with `IN_PROGRESS`
+if the original attempt is still processing or unconfirmed. Within a batch, only the
+first occurrence of a key is attempted; later occurrences always conflict.
+
+Validation, preparation, and explicitly side-effect-free preflight failures release
+the key. Correct the input and resubmit that item under the same item key, using a
+new batch request ID. Transient preparation and signing failures retry up to five
+worker attempts before delivery begins. Signing retries can leave unused credential-status
+allocations, but do not repeat delivery. Worker retries do not consume additional quota.
+
+If a worker fails after delivery or inbox persistence may have started, it does not automatically issue
+again. The item is flagged for reconciliation and its reservation remains blocked
+until resolved, beyond the normal 24-hour replay window. If known, `issuanceId`
+and `claimUrl` accompany the failure. Check the issuer's sent inbox records and
+contact support; do not work around uncertainty with a new key. This is not an
+exactly-once transaction across credential storage, email, and webhooks.
+
+Jobs, quotas, results, replay reservations, and dispatch records live in Neo4j.
+Payloads and results are encrypted at rest. Once no items remain queued or processing,
+the original batch payload is removed. Job metadata and results are pruned after
+30 days, even when an outcome is unconfirmed; unresolved client-keyed replay reservations
+remain blocked until reconciliation. Internal reservations for unkeyed items are collected
+after their batch items are pruned. Save any returned reconciliation IDs before results expire.
+Redis is still used by other inbox features, but is not the batch
+job store.
+
+### Limits and background processing
+
+Each request supports at most **100 items** and **4 MiB (4,194,304 bytes)** of JSON.
+Oversized requests return 413. Keep margin for the Lambda invocation envelope and
+split large CLR batches by bytes as well as item count.
+
+The default quota is **10,000 admitted items per hour per issuer**, including
+item replays and failures. Rejected batches consume no units: at 9,950/10,000, a
+rejected 100-item batch still leaves room for 50 items. Admission is atomic.
+Operators can set `INBOX_BATCH_ITEMS_PER_HOUR`; on HTTP 429, wait for the current
+window to expire (at most 3,600 seconds).
+
+The HTTP request persists admission without waiting for signing or delivery.
+A dedicated SQS queue runs up to ten inbox workers independently of notifications.
+The dispatcher normally publishes work within one minute and retries publication
+failures using durable dispatch records. After SQS accepts a message, the durable
+outbox schedules a 30-minute fallback publication in case delivery never occurs.
+Each worker has a five-minute timeout.
+Interrupted preparation can retry; interrupted issuance may require reconciliation.
+Queue redelivery does not repeat a completed item.
+
+### Local development and operations
+
+From `services/learn-card-network/brain-service`, run
+`docker compose -f compose.inbox.yml up -d`. Set:
+
+```bash
+INBOX_QUEUE_ENDPOINT=http://localhost:9324
+INBOX_QUEUE_URL=http://localhost:9324/000000000000/inbox
+INBOX_DEAD_LETTER_QUEUE_URL=http://localhost:9324/000000000000/inbox-dlq
+```
+
+Run `bun run inbox:worker` alongside the existing backend and its usual dependencies.
+There is no inline fallback when queue configuration is missing. Restarting the
+worker leaves accepted jobs intact.
+
+Run `bun run test:inbox:e2e` for isolated Neo4j, Redis, and SQS emulator tests.
+Monitor queue age, dead-letter depth, dispatcher failures, and unconfirmed items.
+Worker concurrency is configured on the dedicated queue in Serverless. The queues
+are isolated, but inbox workers still share database and signing-service capacity.

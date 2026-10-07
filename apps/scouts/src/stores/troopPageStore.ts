@@ -3,14 +3,11 @@ import { createStore } from '@udecode/zustood';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { VC } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
-const log = getLogger('troop-page-store');
+import { ScoutsRoleEnum } from './troopRole';
 
-export enum ScoutsRoleEnum {
-    scout,
-    leader,
-    national,
-    global,
-}
+export { ScoutsRoleEnum } from './troopRole';
+
+const log = getLogger('troop-page-store');
 
 type TroopPageStore = {
     credential: VC | undefined;

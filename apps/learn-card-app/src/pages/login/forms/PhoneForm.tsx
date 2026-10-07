@@ -1,27 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as m from '../../../paraglide/messages.js';
 import { TransP } from '../../../i18n/TransP';
 import Countdown from 'react-countdown';
-import ReactCodeInput from 'react-code-input';
 import PhoneInput from 'react-phone-number-input';
 import { Capacitor } from '@capacitor/core';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { z } from 'zod';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('phone-form');
 
-import {
-    authStore,
-    isPlatformAndroid,
-    destroyRecaptcha,
-    useToast,
-    ToastTypeEnum,
-} from 'learn-card-base';
+import { useSignInAdapter, useToast, ToastTypeEnum } from 'learn-card-base';
 import { useFirebase } from '../../../hooks/useFirebase';
 import { useTheme } from '../../../theme/hooks/useTheme';
 
 import { IonCol } from '@ionic/react';
 import AppStoreDownloadButtons from '../appStoreButtons/AppStoreDownloadButtons';
+import AccessibleCodeInput from './AccessibleCodeInput';
 
 import { PhoneFormStepsEnum } from 'learn-card-base';
 
@@ -61,6 +54,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
     showSocialLogins,
 }) => {
     const { theme } = useTheme();
+    const adapter = useSignInAdapter();
     const loginButtonBgColor = theme.colors.defaults.loginButtonBgColor;
     const loginButtonTextColor = theme.colors.defaults.loginButtonTextColor;
 
@@ -73,7 +67,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
     const { presentToast } = useToast();
 
     const [currentStep, setCurrentStep] = useState<PhoneFormStepsEnum>(PhoneFormStepsEnum.phone);
-    const [phone, setPhone] = useState<any>('');
+    const [phone, setPhone] = useState<string>('');
     const [code, setCode] = useState<string>('');
     const [autoValidateCodeTriggered, setAutoValidateCodeTriggered] = useState(false);
 
@@ -84,29 +78,25 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isResendCodeLoading, setIsResendCodeLoading] = useState<boolean>(false);
 
+    // The adapter subscriptions below are set up once per adapter; keep the latest
+    // hook function reachable so the auto-verify callback never runs a stale closure.
+    const loginAfterAutoVerifiedSMSRef = useRef(loginAfterAutoVerifiedSMS);
+    loginAfterAutoVerifiedSMSRef.current = loginAfterAutoVerifiedSMS;
+
     useEffect(() => {
-        FirebaseAuthentication.addListener('phoneCodeSent', e => {
-            log.info('📞📞📞 phoneCodeSent::res 📞📞📞', e);
-
-            const verificationId = e?.verificationId;
-
-            if (e?.verificationId) {
-                authStore.set.verificationId(verificationId);
+        const unsubscribeSent = adapter.onPhoneCodeSent(() => {
+            if (Capacitor.isNativePlatform()) {
                 showSuccessToast();
                 setCurrentStep(PhoneFormStepsEnum.verification);
                 setIsLoading(false);
                 setIsResendCodeLoading(false);
                 setShowSocialLogins(false);
-            } else {
-                setIsLoading(false);
-                setIsResendCodeLoading(false);
             }
         });
 
-        FirebaseAuthentication.addListener('phoneVerificationCompleted', e => {
-            log.info('📞📞📞 phoneVerificationCompleted::res 📞📞📞', e);
-            loginAfterAutoVerifiedSMS(
-                e?.verificationCode,
+        const unsubscribeCompleted = adapter.onPhoneVerificationCompleted(code => {
+            loginAfterAutoVerifiedSMSRef.current(
+                code ?? '',
                 () => {
                     setIsLoading(false);
                 },
@@ -116,10 +106,26 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 }
             );
         });
-    }, []);
+        const unsubscribeFailed = adapter.onPhoneVerificationFailed(error => {
+            setIsLoading(false);
+            setIsResendCodeLoading(false);
+            setError(error instanceof Error ? error.message : '');
+            setCodeError('');
+            setCode('');
+            setAutoValidateCodeTriggered(false);
+            setCurrentStep(PhoneFormStepsEnum.phone);
+            setShowSocialLogins(true);
+        });
+        return () => {
+            unsubscribeSent();
+            unsubscribeCompleted();
+            unsubscribeFailed();
+            adapter.cleanup?.();
+        };
+    }, [adapter]);
 
     const resetForm = () => {
-        destroyRecaptcha();
+        adapter.cleanup?.();
         setCurrentStep(PhoneFormStepsEnum.phone);
         setPhone('');
         setCode('');
@@ -183,22 +189,12 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
             if (validate()) {
                 // native sms auth
                 if (Capacitor.isNativePlatform()) {
-                    FirebaseAuthentication.signInWithPhoneNumber({
-                        phoneNumber: phone,
-                        skipNativeAuth: isPlatformAndroid() ? true : false,
+                    void adapter.sendPhoneOtp(phone).catch(error => {
+                        log.error('Phone code request failed', error);
+                        setIsLoading(false);
+                        setIsResendCodeLoading(false);
+                        setError(error instanceof Error ? error.message : '');
                     });
-                    // .then(({ verificationId }) => {
-                    //     authStore.set.verificationId(verificationId);
-                    //     showSuccessToast();
-                    //     setCurrentStep(PhoneFormStepsEnum.verification);
-                    //     setIsLoading(false);
-                    //     setIsResendCodeLoading(false);
-                    // })
-                    // .catch(err => {
-                    //     setIsLoading(false);
-                    //     setIsResendCodeLoading(false);
-                    //     setError(err.errorMessage);
-                    // });
                 } else {
                     // web sms auth
                     sendSmsAuthCode(
@@ -221,10 +217,8 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
         } else if (currentStep === PhoneFormStepsEnum.verification) {
             if (validateCode()) {
                 if (Capacitor.isNativePlatform()) {
-                    const verificationId = authStore.get.verificationId();
                     // native sms code  verification
                     await verifySmsAuthCodeOnNative(
-                        verificationId,
                         code,
                         () => {
                             setIsLoading(false);
@@ -272,7 +266,19 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
 
         activeStep = (
             <IonCol size="12" className="ion-no-padding">
+                <label htmlFor="login-phone" className="sr-only">
+                    {m['login.phone.placeholder']()}
+                </label>
                 <PhoneInput
+                    id="login-phone"
+                    aria-invalid={Boolean(errors?.phone || error)}
+                    aria-describedby={
+                        errors?.phone?.[0]
+                            ? 'login-phone-error'
+                            : error
+                              ? 'login-phone-service-error'
+                              : undefined
+                    }
                     placeholder={m['login.phone.placeholder']()}
                     countryOptionsOrder={['US', 'CA', 'AU', '|', '...']}
                     defaultCountry="US"
@@ -283,24 +289,37 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                     }`}
                 />
                 {errors?.phone?.[0] && (
-                    <p className="w-full text-center mt-2 text-red-500 font-medium">
+                    <p
+                        id="login-phone-error"
+                        role="alert"
+                        className="w-full text-center mt-2 text-red-500 font-medium"
+                    >
                         {errors?.phone?.[0]}
                     </p>
                 )}
                 {error && (
-                    <p className="w-full text-center mt-2 text-red-500 font-medium">{error}</p>
+                    <p
+                        id="login-phone-service-error"
+                        role="alert"
+                        className="w-full text-center mt-2 text-red-500 font-medium"
+                    >
+                        {error}
+                    </p>
                 )}
             </IonCol>
         );
         buttonTitle = isLoading ? m['common.loading']() : m['login.phone.button']();
         disabled = !phone || isLoading;
     } else if (currentStep === PhoneFormStepsEnum.verification) {
+        const verificationError = errors?.code?.[0] ?? codeError;
         formTitle = (
             <TransP
                 m={m['common.enterVerificationCode']}
                 components={[
-                    <span
+                    <button
                         key="0"
+                        type="button"
+                        aria-label="Start over"
                         className={startOverClassNameOverride ?? 'text-white underline font-bold'}
                         onClick={resetForm}
                     />,
@@ -312,8 +331,11 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 size="12"
                 className="w-full flex flex-col items-center justify-center ion-no-padding ion-no-margin mb-[20px]"
             >
-                <ReactCodeInput
+                <AccessibleCodeInput
                     name="phoneVerification"
+                    label={m['common.enterVerificationCode']()}
+                    errorId={verificationError ? 'login-phone-code-error' : undefined}
+                    isValid={!verificationError}
                     inputMode="numeric"
                     fields={6}
                     type="text"
@@ -322,13 +344,14 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                         verificationCodeInputClassName ?? ''
                     } ${errors.code || codeError ? 'react-code-input-error' : ''}`}
                 />
-                {errors?.code?.[0] && (
-                    <p className="w-full text-center mt-2 text-red-500 font-medium">
-                        {errors?.code?.[0]}
+                {verificationError && (
+                    <p
+                        id="login-phone-code-error"
+                        role="alert"
+                        className="w-full text-center mt-2 text-red-500 font-medium"
+                    >
+                        {verificationError}
                     </p>
-                )}
-                {codeError && (
-                    <p className="w-full text-center mt-2 text-red-500 font-medium">{codeError}</p>
                 )}
             </IonCol>
         );
@@ -345,6 +368,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
             {activeStep}
             <div className="flex items-center justify-center mt-[20px] pb-[20px]">
                 <button
+                    type="submit"
                     onClick={handleOnClick}
                     className={`ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${
                         !loginButtonBgColor ? 'bg-grayscale-900' : ''
@@ -366,6 +390,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                         renderer={({ seconds, completed }) =>
                             completed ? (
                                 <button
+                                    type="button"
                                     onClick={e => {
                                         e.preventDefault();
                                         e.stopPropagation();
@@ -380,6 +405,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                                 </button>
                             ) : (
                                 <button
+                                    type="button"
                                     disabled
                                     className={
                                         resendCodeButtonClassNameOverride ??

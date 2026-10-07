@@ -1,12 +1,7 @@
 import React, { useState } from 'react';
-import { IonCol, IonRow } from '@ionic/react';
-import {
-    BoostCMSMediaAttachment,
-    BoostCMSState,
-    boostMediaOptions,
-    BoostMediaOptionsEnum,
-} from 'learn-card-base';
-import { Updater } from 'use-immer';
+import * as m from '../../../../../paraglide/messages.js';
+import { BoostCMSMediaAttachment, BoostCMSState } from 'learn-card-base';
+import { BoostMediaOptionsEnum } from '../../../boost';
 import { curriedStateSlice } from '@learncard/helpers';
 import BoostCMSMediaPhotoUpload from './BoostCMSMediaPhotoUpload';
 import BoostCMSMediaDocumentUpload from './BoostCMSMediaDocumentUpload';
@@ -20,6 +15,7 @@ import {
 } from 'learn-card-base';
 import { IMAGE_MIME_TYPES, VIEWER_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import BoostMediaModalLayoutWrapper from './BoostMediaModalLayoutWrapper';
+import BoostCMSMediaTypeSelector from './BoostCMSMediaTypeSelector';
 
 type CreateMediaAttachmentFormProps = {
     initialState?: BoostCMSState;
@@ -33,56 +29,6 @@ type CreateMediaAttachmentFormProps = {
     hideBackButton?: boolean;
 };
 
-const BoostCMSMediaTypeSelector: React.FC<{
-    state: BoostCMSMediaState;
-    setState: Updater<BoostCMSMediaState>;
-    onSave: any;
-    setActiveMediaType: React.Dispatch<React.SetStateAction<BoostMediaOptionsEnum | undefined>>;
-    handleImageSelect: () => void;
-    handleDocumentSelect: () => void;
-    handleCloseModal?: () => void;
-}> = ({
-    setActiveMediaType,
-    handleCloseModal,
-    onSave,
-    state,
-    setState,
-    handleImageSelect,
-    handleDocumentSelect,
-}) => {
-    return (
-        <IonRow className="flex w-full">
-            <IonCol className="flex items-center justify-center flex-wrap">
-                {boostMediaOptions.map(({ id, type, title, color, Icon }) => {
-                    return (
-                        <button
-                            key={id}
-                            className={`flex flex-col items-center justify-center text-center w-[45%] ion-padding h-[122px] m-2 bg-${color} rounded-[20px]`}
-                            onClick={() => {
-                                if (type === BoostMediaOptionsEnum.photo) {
-                                    handleImageSelect();
-                                }
-                                if (type === BoostMediaOptionsEnum.document) {
-                                    handleDocumentSelect();
-                                }
-                                if (
-                                    type !== BoostMediaOptionsEnum.photo &&
-                                    type !== BoostMediaOptionsEnum.document
-                                ) {
-                                    setActiveMediaType(type);
-                                }
-                            }}
-                        >
-                            <Icon className="h-[40px] text-white max-h-[40px] max-w-[40px]" />
-                            <p className="text-white text-2xl font-notoSans">{title}</p>
-                        </button>
-                    );
-                })}
-            </IonCol>
-        </IonRow>
-    );
-};
-
 const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps> = ({
     initialState,
     initialIndex,
@@ -94,8 +40,8 @@ const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps> = ({
     hideBackButton,
 }) => {
     const [state, setState] = useBoostCMSMediaState(initialState);
-    const [activeMediaType, setActiveMediaType] = useState<BoostMediaOptionsEnum | undefined>(
-        initialActiveMediaType
+    const [activeMediaType, setActiveMediaType] = useState<BoostMediaOptionsEnum | null>(
+        initialActiveMediaType ?? null
     );
     const [uploadProgress, setUploadProgress] = useState<number | boolean>(false);
     const [uploadedPhotos, setUploadedPhotos] = useState<BoostCMSMediaAttachment[]>([]);
@@ -241,25 +187,22 @@ const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps> = ({
                 <div className="flex items-center justify-between w-full mb-4 bg-grayscale-100 ion-padding rounded-[20px]">
                     <div className="flex items-center justify-start w-[80%]">
                         <p className="font-medium text-[#FF3636]">
-                            {uploadProgress?.toString?.()}% uploaded
+                            {m['boostCMS.uploadProgress']({ progress: uploadProgress as number })}
                         </p>
                     </div>
                 </div>
             )}
             <BoostCMSMediaTypeSelector
-                state={state}
                 handleImageSelect={handleImageSelect}
                 handleDocumentSelect={handleDocumentSelect}
                 setActiveMediaType={setActiveMediaType}
-                setState={setState}
-                onSave={onSave}
             />
             <div className="w-full flex items-center justify-center mt-[20px]">
                 <button
                     onClick={() => handleCloseModal?.()}
                     className="text-grayscale-900 text-center text-sm"
                 >
-                    Cancel
+                    {m['common.cancel']()}
                 </button>
             </div>
         </>

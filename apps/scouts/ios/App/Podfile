@@ -1,4 +1,4 @@
-require_relative '../../../../node_modules/.bun/@capacitor+ios@8.3.1+2a604cb248d57ff2/node_modules/@capacitor/ios/scripts/pods_helpers'
+require_relative '../../../../node_modules/@capacitor/ios/scripts/pods_helpers'
  
 platform :ios, '15.5'
 use_frameworks!
@@ -9,35 +9,35 @@ use_frameworks!
 install! 'cocoapods', :disable_input_output_paths => true, :deterministic_uuids => false
  
 def capacitor_pods
-  pod 'Capacitor', :path => '../../../../node_modules/.bun/@capacitor+ios@8.3.1+2a604cb248d57ff2/node_modules/@capacitor/ios'
-  pod 'CapacitorCordova', :path => '../../../../node_modules/.bun/@capacitor+ios@8.3.1+2a604cb248d57ff2/node_modules/@capacitor/ios'
-  pod 'CapacitorCommunitySqlite', :path => '../../../../node_modules/.bun/@capacitor-community+sqlite@8.1.0+2a604cb248d57ff2/node_modules/@capacitor-community/sqlite'
-  pod 'CapacitorFirebaseAnalytics', :path => '../../../../node_modules/.bun/@capacitor-firebase+analytics@8.2.0+2a604cb248d57ff2/node_modules/@capacitor-firebase/analytics'
-  pod 'CapacitorFirebaseAuthentication', :path => '../../../../node_modules/.bun/@capacitor-firebase+authentication@8.2.0+2a604cb248d57ff2/node_modules/@capacitor-firebase/authentication'
-  pod 'CapacitorMlkitBarcodeScanning', :path => '../../../../node_modules/.bun/@capacitor-mlkit+barcode-scanning@8.0.1+2a604cb248d57ff2/node_modules/@capacitor-mlkit/barcode-scanning'
-  pod 'CapacitorApp', :path => '../../../../node_modules/.bun/@capacitor+app@8.1.0+2a604cb248d57ff2/node_modules/@capacitor/app'
-  pod 'CapacitorBrowser', :path => '../../../../node_modules/.bun/@capacitor+browser@8.0.3+2a604cb248d57ff2/node_modules/@capacitor/browser'
-  pod 'CapacitorCamera', :path => '../../../../node_modules/.bun/@capacitor+camera@8.2.0+2a604cb248d57ff2/node_modules/@capacitor/camera'
-  pod 'CapacitorClipboard', :path => '../../../../node_modules/.bun/@capacitor+clipboard@8.0.1+2a604cb248d57ff2/node_modules/@capacitor/clipboard'
-  pod 'CapacitorHaptics', :path => '../../../../node_modules/.bun/@capacitor+haptics@8.0.2+2a604cb248d57ff2/node_modules/@capacitor/haptics'
-  pod 'CapacitorKeyboard', :path => '../../../../node_modules/.bun/@capacitor+keyboard@8.0.3+2a604cb248d57ff2/node_modules/@capacitor/keyboard'
-  pod 'CapacitorLocalNotifications', :path => '../../../../node_modules/.bun/@capacitor+local-notifications@8.0.2+2a604cb248d57ff2/node_modules/@capacitor/local-notifications'
-  pod 'CapacitorNetwork', :path => '../../../../node_modules/.bun/@capacitor+network@8.0.1+2a604cb248d57ff2/node_modules/@capacitor/network'
-  pod 'CapacitorPushNotifications', :path => '../../../../node_modules/.bun/@capacitor+push-notifications@8.0.3+2a604cb248d57ff2/node_modules/@capacitor/push-notifications'
-  pod 'CapacitorShare', :path => '../../../../node_modules/.bun/@capacitor+share@8.0.1+2a604cb248d57ff2/node_modules/@capacitor/share'
-  pod 'CapacitorSplashScreen', :path => '../../../../node_modules/.bun/@capacitor+splash-screen@8.0.1+2a604cb248d57ff2/node_modules/@capacitor/splash-screen'
-  pod 'CapacitorStatusBar', :path => '../../../../node_modules/.bun/@capacitor+status-bar@8.0.2+2a604cb248d57ff2/node_modules/@capacitor/status-bar'
-  pod 'CapawesomeCapacitorBadge', :path => '../../../../node_modules/.bun/@capawesome+capacitor-badge@8.0.2+2a604cb248d57ff2/node_modules/@capawesome/capacitor-badge'
-  pod 'CapgoCapacitorUpdater', :path => '../../../../node_modules/.bun/@capgo+capacitor-updater@8.47.7+2a604cb248d57ff2/node_modules/@capgo/capacitor-updater'
-  pod 'CapacitorNativeSettings', :path => '../../../../node_modules/.bun/capacitor-native-settings@8.1.0+2a604cb248d57ff2/node_modules/capacitor-native-settings'
-  pod 'CapacitorPluginSafeArea', :path => '../../../../node_modules/.bun/capacitor-plugin-safe-area@5.0.0+2a604cb248d57ff2/node_modules/capacitor-plugin-safe-area'
+  pod 'Capacitor', :path => '../../../../node_modules/@capacitor/ios'
+  pod 'CapacitorCordova', :path => '../../../../node_modules/@capacitor/ios'
+  pod 'CapacitorCommunitySqlite', :path => '../../../../node_modules/@capacitor-community/sqlite'
+  pod 'CapacitorFirebaseAnalytics', :path => '../../../../node_modules/@capacitor-firebase/analytics'
+  pod 'CapacitorFirebaseAuthentication', :path => '../../../../node_modules/@capacitor-firebase/authentication'
+  pod 'CapacitorMlkitBarcodeScanning', :path => '../../../../node_modules/@capacitor-mlkit/barcode-scanning'
+  pod 'CapacitorApp', :path => '../../../../node_modules/@capacitor/app'
+  pod 'CapacitorBrowser', :path => '../../../../node_modules/@capacitor/browser'
+  pod 'CapacitorCamera', :path => '../../../../node_modules/@capacitor/camera'
+  pod 'CapacitorClipboard', :path => '../../../../node_modules/@capacitor/clipboard'
+  pod 'CapacitorHaptics', :path => '../../../../node_modules/@capacitor/haptics'
+  pod 'CapacitorKeyboard', :path => '../../../../node_modules/@capacitor/keyboard'
+  pod 'CapacitorLocalNotifications', :path => '../../../../node_modules/@capacitor/local-notifications'
+  pod 'CapacitorNetwork', :path => '../../../../node_modules/@capacitor/network'
+  pod 'CapacitorPushNotifications', :path => '../../../../node_modules/@capacitor/push-notifications'
+  pod 'CapacitorShare', :path => '../../../../node_modules/@capacitor/share'
+  pod 'CapacitorSplashScreen', :path => '../../../../node_modules/@capacitor/splash-screen'
+  pod 'CapacitorStatusBar', :path => '../../../../node_modules/@capacitor/status-bar'
+  pod 'CapawesomeCapacitorBadge', :path => '../../../../node_modules/@capawesome/capacitor-badge'
+  pod 'CapgoCapacitorUpdater', :path => '../../../../node_modules/@capgo/capacitor-updater'
+  pod 'CapacitorNativeSettings', :path => '../../../../node_modules/capacitor-native-settings'
+  pod 'CapacitorPluginSafeArea', :path => '../../../../node_modules/capacitor-plugin-safe-area'
 end
  
 target 'App' do
   capacitor_pods
   # Add your Pods here
-  pod 'CapacitorFirebaseAuthentication/Google', :path => '../../../../node_modules/.bun/@capacitor-firebase+authentication@8.2.0+2a604cb248d57ff2/node_modules/@capacitor-firebase/authentication'
-  pod 'CapacitorFirebaseAnalytics/AnalyticsWithoutAdIdSupport', :path => '../../../../node_modules/.bun/@capacitor-firebase+analytics@8.2.0+2a604cb248d57ff2/node_modules/@capacitor-firebase/analytics'
+  pod 'CapacitorFirebaseAuthentication/Google', :path => '../../../../node_modules/@capacitor-firebase/authentication'
+  pod 'CapacitorFirebaseAnalytics/AnalyticsWithoutAdIdSupport', :path => '../../../../node_modules/@capacitor-firebase/analytics'
   pod 'Firebase/Messaging' # FCM push notifications
 end
  
@@ -46,11 +46,47 @@ post_install do |installer|
   assertDeploymentTarget(installer)
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
+      if target.name == 'CapacitorMlkitBarcodeScanning'
+        config.build_settings['EXCLUDED_SOURCE_FILE_NAMES[sdk=iphonesimulator*]'] = 'BarcodeScanner.swift BarcodeScannerHelper.swift BarcodeScannerPlugin.swift BarcodeScannerView.swift ScanSettings.swift'
+      end
+
       if target.respond_to?(:product_type) and target.product_type == "com.apple.product-type.bundle"
         target.build_configurations.each do |config|
             config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
         end
       end
     end
+  end
+end
+
+# Google ML Kit 8 only ships an x86_64 simulator slice. Keep its settings for
+# physical-device Debug builds, but remove them from arm64 simulator builds.
+post_integrate do |installer|
+  ml_kit_names = '(?:GoogleMLKit|MLImage|MLKitBarcodeScanning|MLKitCommon|MLKitVision)'
+  app_support_path = installer.sandbox.root + 'Target Support Files/Pods-App'
+  scanner_support_path = installer.sandbox.root + 'Target Support Files/CapacitorMlkitBarcodeScanning'
+  xcconfig_paths = ['debug', 'release'].flat_map do |configuration|
+    [
+      app_support_path + "Pods-App.#{configuration}.xcconfig",
+      scanner_support_path + "CapacitorMlkitBarcodeScanning.#{configuration}.xcconfig"
+    ]
+  end
+
+  xcconfig_paths.each do |xcconfig_path|
+    xcconfig = File.readlines(xcconfig_path).flat_map do |line|
+      next [] if line.start_with?('EXCLUDED_ARCHS[sdk=iphonesimulator*] = arm64')
+
+      setting = line.match(/^([A-Z_]+) = (.*#{ml_kit_names}.*)$/)
+      next [line] unless setting
+
+      key = setting[1]
+      device_value = setting[2]
+      simulator_value = device_value.gsub(/\s+-framework\s+"#{ml_kit_names}"/, '')
+      simulator_value = simulator_value.gsub(/\s+"[^"]*#{ml_kit_names}[^"]*"/, '')
+      simulator_value = simulator_value.gsub(/\s+\$\{PODS_ROOT\}\/GoogleMLKit\S*/, '')
+      ["#{key} = #{simulator_value}\n", "#{key}[sdk=iphoneos*] = #{device_value}\n"]
+    end
+
+    File.write(xcconfig_path, xcconfig.join)
   end
 end

@@ -11,6 +11,7 @@ import { Boost, VC } from '@learncard/types';
 import { BoostMenuType } from '../hooks/useBoostMenu';
 import { BoostCategoryOptionsEnum, ModalTypes, useModal, useConfirmation } from 'learn-card-base';
 import { isTroopCategory } from '../../../helpers/troop.helpers';
+import * as m from '../../../paraglide/messages.js';
 
 type BoostOptionsMenuProps = {
     handleCloseModal: () => void;
@@ -84,7 +85,7 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
 
     const selfBoostConfirmationAlert = async () => {
         await confirm({
-            text: 'Are you sure you want to delete this?',
+            text: m['boost.areYouSureDelete'](),
             onConfirm: async () => {
                 await handleDelete();
                 closeAllModals();
@@ -112,7 +113,7 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
     if (showDeleteButton) {
         boostMenuOptions.push({
             id: 1,
-            title: 'Delete',
+            title: m['common.delete'](),
             icon: <TrashBin className="text-grayscale-900" />,
             onClick: () => selfBoostConfirmationAlert(),
         });
@@ -121,7 +122,7 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
     if (menuType === BoostMenuType.earned) {
         boostMenuOptions.push({
             id: 2,
-            title: 'Share',
+            title: m['common.share'](),
             icon: <ReplyIcon version="2" className="text-grayscale-900" />,
             onClick: () => handleShare(),
         });
@@ -129,7 +130,7 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
 
     boostMenuOptions.push({
         id: 3,
-        title: 'View Data',
+        title: m['common.viewData'](),
         icon: <BracketsIcon className="text-grayscale-900" />,
         onClick: () => presentViewJsonModal(),
     });

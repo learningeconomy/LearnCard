@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /**
  * Tests for the origin-resolution layer of @learncard/partner-connect.
  *
@@ -8,6 +9,8 @@
  *   3. How wildcard patterns behave both as whitelist entries and when
  *      rejecting untrusted event origins at runtime.
  */
+
+import type { MockInstance } from 'vitest';
 
 import { PartnerConnect } from './index';
 
@@ -72,15 +75,15 @@ function clearSessionStorage(): void {
 }
 
 // Silence expected log output from the SDK in passing tests.
-let consoleLogSpy: jest.SpyInstance;
-let consoleWarnSpy: jest.SpyInstance;
-let consoleErrorSpy: jest.SpyInstance;
+let consoleLogSpy: MockInstance;
+let consoleWarnSpy: MockInstance;
+let consoleErrorSpy: MockInstance;
 
 beforeEach(() => {
     clearSessionStorage();
-    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 
 afterEach(() => {

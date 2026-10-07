@@ -15,6 +15,7 @@ import { BadgeDataRow, ImageTrackingType } from './AdminToolsBulkBoostImportOpti
 import { IonSpinner } from '@ionic/react';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
+import * as m from '../../../paraglide/messages.js';
 
 export const AdminToolsBulkBoostImportUploadStep: React.FC<{
     fileInfo: { type: string; size: string; name: string } | null;
@@ -28,7 +29,7 @@ export const AdminToolsBulkBoostImportUploadStep: React.FC<{
     hasMissingImages: boolean;
     csvData: BadgeDataRow[];
     imageTracking: ImageTrackingType;
-    handlePreview: (csvRow: any) => void;
+    handlePreview: (csvRow: BadgeDataRow) => void;
     handleDeleteRow: (rowIndex: number) => void;
     showLoader: boolean;
 }> = ({
@@ -94,14 +95,13 @@ export const AdminToolsBulkBoostImportUploadStep: React.FC<{
                 <h4
                     className={`text-${primaryColor} font-notoSans text-left mb-2 text-sm font-semibold`}
                 >
-                    Step 2
+                    {m['bulkImport.step']({ number: 2 })}
                 </h4>
-                <p className="text-xl text-grayscale-900 text-left mb-4">Upload Your .csv File</p>
-
-                <p className="text-left text-grayscale-700 text-sm">
-                    If you used filenames instead of URLs, upload a ZIP file containing those image
-                    files.
+                <p className="text-xl text-grayscale-900 text-left mb-4">
+                    {m['bulkImport.uploadCsvTitle']()}
                 </p>
+
+                <p className="text-left text-grayscale-700 text-sm">{m['bulkImport.zipHelp']()}</p>
 
                 <div
                     className={`w-full flex gap-[5px] rounded-[10px] bg-${primaryColor} bg-opacity-[10%] justify-center ion-padding mt-4`}
@@ -113,11 +113,10 @@ export const AdminToolsBulkBoostImportUploadStep: React.FC<{
                             <CircleCheckOutlineIcon
                                 className={`inline mr-2 text-${primaryColor}`}
                             />{' '}
-                            Check Before Uploading
+                            {m['bulkImport.checkBeforeUploading']()}
                         </p>
                         <p className={`text-xs text-${primaryColor} font-poppins mt-2`}>
-                            Ensure all images are in place and any file errors are fixed before
-                            continuing.
+                            {m['bulkImport.checkBeforeUploadingDescription']()}
                         </p>
                     </div>
                 </div>
@@ -135,7 +134,8 @@ export const AdminToolsBulkBoostImportUploadStep: React.FC<{
                             onClick={triggerFileInput}
                             className={`w-full flex rounded-[30px] items-center justify-center  py-2 font-semibold text-[17px] bg-${primaryColor} text-white mt-4`}
                         >
-                            <UploadIcon className="inline mr-2" strokeWidth="2" /> Upload
+                            <UploadIcon className="inline mr-2" strokeWidth="2" />{' '}
+                            {m['common.upload']()}
                         </button>
                     </>
                 )}
@@ -188,7 +188,9 @@ export const AdminToolsBulkBoostImportUploadStep: React.FC<{
                             ) : (
                                 <UploadIcon className="inline mr-2" strokeWidth="2" />
                             )}
-                            {showLoader ? 'Uploading...' : 'Upload Images Zip'}
+                            {showLoader
+                                ? m['bulkImport.uploading']()
+                                : m['bulkImport.uploadImagesZip']()}
                         </button>
                     </>
                 )}
@@ -224,7 +226,8 @@ export const AdminToolsBulkBoostImportUploadStep: React.FC<{
                         onClick={handlePreviewAllCredentials}
                         className={`w-full flex rounded-[30px] items-center justify-center  py-2 font-semibold text-[17px] bg-emerald-700 text-white mt-4`}
                     >
-                        <EyeIcon className="inline mr-2" /> Preview {csvData.length} Credentials
+                        <EyeIcon className="inline mr-2" />{' '}
+                        {m['bulkImport.previewCredentials']({ count: csvData.length })}
                     </button>
                 )}
             </div>

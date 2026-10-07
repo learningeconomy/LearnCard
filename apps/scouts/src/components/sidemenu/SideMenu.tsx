@@ -11,6 +11,7 @@ import SideMenuSecondaryLinks from './SideMenuSecondaryLinks';
 import SideMenuRootLinks from './SideMenuRootLinks';
 
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
+import * as m from '../../paraglide/messages.js';
 import { sideMenuScoutPassStyles } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
@@ -133,7 +134,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum }> = ({ branding = BrandingEnu
                                     onClick={handleBoost}
                                     className={`learn-card-boost-button bg-sp-blue-ocean py-[2px] rounded-full w-full max-w-[90%]`}
                                 >
-                                    Boost{' '}
+                                    {m['launchPad.boost']()}{' '}
                                     <BoostOutline2
                                         className="ml-[5px]"
                                         outsideStar="#FFFFFF"
@@ -164,7 +165,9 @@ const SideMenu: React.FC<{ branding: BrandingEnum }> = ({ branding = BrandingEnu
                     className="ion-no-border ion-no-padding px-4"
                     style={{ '--border-width': '0', '--border-color': 'transparent' }}
                 >
-                    <p className="text-grayscale-900 opacity-50 text-xs">V {version}</p>
+                    <p className="text-grayscale-900 opacity-50 text-xs">
+                        {m['sidemenu.version']({ version })}
+                    </p>
                 </IonToolbar>
             </IonFooter>
         </IonMenu>

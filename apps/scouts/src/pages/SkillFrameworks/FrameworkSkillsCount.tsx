@@ -1,6 +1,7 @@
 import React from 'react';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
-import { conditionalPluralize, useCountSkillsInFramework } from 'learn-card-base';
+import { useCountSkillsInFramework } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 type FrameworkSkillsCountProps = {
     frameworkId?: string;
@@ -38,9 +39,9 @@ const FrameworkSkillsCount: React.FC<FrameworkSkillsCountProps> = ({
                 <span className={`${textClassName} font-poppins font-[600]`}>
                     {countToUse !== undefined
                         ? countToUse === 1
-                            ? '1 competency'
-                            : `${countToUse} competencies`
-                        : '... competencies'}
+                            ? m['skillFrameworks.skillOne']()
+                            : m['skillFrameworks.skillOther']({ count: countToUse })
+                        : m['skillFrameworks.skillLoading']()}
                 </span>
             ) : (
                 <span className="font-poppins font-[600]">{countToUse ?? '...'}</span>

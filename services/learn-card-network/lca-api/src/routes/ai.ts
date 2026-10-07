@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
@@ -7,6 +8,11 @@ import { TRPCError } from '@trpc/server';
 
 import * as filestack from 'filestack-js';
 import { BoostSkillHierarchy, BoostSkillHierarchyValidator } from 'types/skills';
+import {
+    aiLocaleInstruction,
+    aiSkillsHierarchyRule,
+    aiTitleCharsetRule,
+} from '@helpers/aiLocale.helpers';
 const client = filestack.init('A7RsW3VzfSNO2TCsFJ6Eiz');
 
 export enum BoostCategoryOptionsEnum {
@@ -84,8 +90,8 @@ const IconListContainerValidator = z.object({
     ),
 });
 
-const openai = process.env.OPENAI_API_KEY
-    ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const openai = environment.OPENAI_API_KEY
+    ? new OpenAI({ apiKey: environment.OPENAI_API_KEY })
     : undefined;
 
 export const aiRouter = t.router({
@@ -101,7 +107,7 @@ export const aiRouter = t.router({
                     'This route generates a title, description, category, type, skills, and narrative for a boost based on an arbitrary description',
             },
         })
-        .input(z.object({ description: z.string().nonempty() }))
+        .input(z.object({ description: z.string().nonempty(), locale: z.string().optional() }))
         .output(AIResponseValidator)
         .query(async ({ input, ctx }) => {
             const {
@@ -122,7 +128,10 @@ export const aiRouter = t.router({
                     {
                         role: 'system',
                         content:
-                            'Generate a title using only letters A-Z with a maximum length of 24 characters and separate words with spaces if there is more than one, description, category, type, and narrative for a boost based on an arbitrary description. The narrative is no longer than 300 characters and answers the question "How do you earn this boost?"\n\nStrict constraints:\n- category MUST be EXACTLY one of: "Social Badge", "Achievement", "Course", "ID", "Work History", "Learning History", "Accomplishment", "Accommodation". Use exact casing and spelling; do NOT invent other categories.\n- type MUST be EXACTLY one of: "Certificate", "Badge", "ID". Use exact casing and spelling; do NOT invent other types.\n\nOutput requirements:\n- Return ONLY a JSON object with the keys "title", "description", "category", "type", and optional "narrative".\n- Do not include explanations, markdown, or extra fields.\n- Ensure the JSON parses without code fences.',
+                            `Generate a title ${aiTitleCharsetRule(
+                                input.locale
+                            )} with a maximum length of 24 characters and separate words with spaces if there is more than one, description, category, type, and narrative for a boost based on an arbitrary description. The narrative is no longer than 300 characters and answers the question "How do you earn this boost?"\n\nStrict constraints:\n- category MUST be EXACTLY one of: "Social Badge", "Achievement", "Course", "ID", "Work History", "Learning History", "Accomplishment", "Accommodation". Use exact casing and spelling; do NOT invent other categories.\n- type MUST be EXACTLY one of: "Certificate", "Badge", "ID". Use exact casing and spelling; do NOT invent other types.\n\nOutput requirements:\n- Return ONLY a JSON object with the keys "title", "description", "category", "type", and optional "narrative".\n- Do not include explanations, markdown, or extra fields.\n- Ensure the JSON parses without code fences.` +
+                            aiLocaleInstruction(input.locale),
                     },
                     { role: 'user', content: description },
                 ],
@@ -168,8 +177,7 @@ export const aiRouter = t.router({
                 messages: [
                     {
                         role: 'system',
-                        content:
-                            'Generate *NO MORE THAN 3* skills for the provided description about a boost that matches the given skills hierarchy',
+                        content: `Generate *NO MORE THAN 3* skills for the provided description about a boost that matches the given skills hierarchy. ${aiSkillsHierarchyRule}`,
                     },
                     { role: 'user', content: description },
                 ],

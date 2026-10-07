@@ -4,6 +4,7 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import { IonTextarea } from '@ionic/react';
 
 import { BoostCMSState } from '../../../boost';
+import * as m from '../../../../../paraglide/messages.js';
 import {
     replaceUnderscoresWithWhiteSpace,
     getAchievementTypeFromCustomType,
@@ -46,7 +47,7 @@ const BoostCMSCustomTypeForm: React.FC<{
 
     return (
         <div className="max-w-[600px] flex flex-col items-start justify-center w-full mt-2">
-            <p className="font-medium ml-[5px] mb-[5px]">Custom Type Name</p>
+            <p className="font-medium ml-[5px] mb-[5px]">{m['boostCMS.customTypeName']()}</p>
             <IonTextarea
                 autocapitalize="on"
                 value={formattedText}

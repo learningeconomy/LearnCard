@@ -1,13 +1,68 @@
 import { describe, it, expect } from 'vitest';
 
-import { tenantConfigSchema, parseTenantConfig } from '../tenantConfigSchema';
+import {
+    tenantConfigSchema,
+    tenantAuthConfigSchema,
+    parseTenantConfig,
+} from '../tenantConfigSchema';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../tenantDefaults';
 
 describe('tenantConfigSchema', () => {
+    it('accepts Keycloak with default scopes', () => {
+        const auth = tenantAuthConfigSchema.parse({
+            provider: 'keycloak',
+            sss: {},
+            keycloak: {
+                serverUrl: 'https://auth.example.org',
+                realm: 'learncard',
+                clientId: 'app',
+            },
+        });
+        expect(auth.keycloak?.scopes).toEqual(['openid', 'profile', 'email', 'phone']);
+    });
+
+    it('requires the Keycloak block for the Keycloak provider', () => {
+        const result = tenantAuthConfigSchema.safeParse({ provider: 'keycloak', sss: {} });
+        expect(result.success).toBe(false);
+        expect(result.error?.issues).toContainEqual(
+            expect.objectContaining({ path: ['keycloak'] })
+        );
+    });
+
+    it('preserves unknown Keycloak config keys', () => {
+        const auth = tenantAuthConfigSchema.parse({
+            provider: 'keycloak',
+            sss: {},
+            keycloak: {
+                serverUrl: 'https://auth.example.org',
+                realm: 'learncard',
+                clientId: 'app',
+                future: true,
+            },
+        });
+        expect(auth.keycloak?.future).toBe(true);
+    });
+
     it('validates the default config successfully', () => {
         const result = tenantConfigSchema.safeParse(DEFAULT_LEARNCARD_TENANT_CONFIG);
 
         expect(result.success).toBe(true);
+    });
+
+    it('requires strategy-specific auth configuration', () => {
+        const result = tenantConfigSchema.safeParse({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            auth: {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth,
+                keyDerivation: 'web3auth',
+                web3Auth: undefined,
+            },
+        });
+
+        expect(result.success).toBe(false);
+        expect(result.error?.issues.some(issue => issue.path.join('.') === 'auth.web3Auth')).toBe(
+            true
+        );
     });
 
     it('returns the full config shape from defaults', () => {
@@ -72,6 +127,11 @@ describe('tenantConfigSchema', () => {
         expect(result.auth.provider).toBe('firebase');
         expect(result.auth.keyDerivation).toBe('sss');
         expect(result.auth.sss?.enableEmailBackupShare).toBe(true);
+        expect(result.auth.sss?.escrowRelayPublicKey).toBe('');
+        expect(result.auth.sss?.escrowRelayKeyId).toBe('');
+        expect(result.auth.sss?.escrowEnclaveMode).toBe('off');
+        expect(result.auth.sss?.escrowEnclavePublicKeys).toEqual([]);
+        expect(result.auth.sss?.escrowEnclaveMeasurements).toEqual([]);
         expect(result.auth.sss?.requireEmailForPhoneUsers).toBe(true);
         expect(result.branding.defaultTheme).toBe('colorful');
         expect(result.branding.loginRedirectPath).toBe('/waitingsofa?loginCompleted=true');
@@ -79,6 +139,34 @@ describe('tenantConfigSchema', () => {
         expect(result.features.analytics).toBe(true);
         expect(result.observability.analyticsProvider).toBe('noop');
         expect(result.storage.provider).toBe('filestack');
+    });
+
+    it('validates sample persona contract configuration', () => {
+        const result = tenantConfigSchema.parse({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            features: {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG.features,
+                samplePersonas: [
+                    {
+                        id: 'student',
+                        contractUri: 'lc:network:network.example/trpc:contract:student',
+                    },
+                ],
+                legacySamplePersonaContractUris: [
+                    'lc:network:network.example/trpc:contract:legacy',
+                ],
+            },
+        });
+
+        expect(result.features.samplePersonas).toEqual([
+            {
+                id: 'student',
+                contractUri: 'lc:network:network.example/trpc:contract:student',
+            },
+        ]);
+        expect(result.features.legacySamplePersonaContractUris).toEqual([
+            'lc:network:network.example/trpc:contract:legacy',
+        ]);
     });
 
     it('accepts S3 storage config and preserves extra fields', () => {
@@ -187,9 +275,9 @@ describe('parseTenantConfig', () => {
         expect(config.tenantId).toBe('learncard');
     });
 
-    it('returns null for invalid input', () => {
-        const result = parseTenantConfig({ tenantId: 'bad' } as unknown, 'test');
-
-        expect(result).toBeNull();
+    it('throws actionable errors for invalid input', () => {
+        expect(() => parseTenantConfig({ tenantId: 'bad' }, 'test fixture')).toThrow(
+            /Invalid TenantConfig from test fixture/
+        );
     });
 });

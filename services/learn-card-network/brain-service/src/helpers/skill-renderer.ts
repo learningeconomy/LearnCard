@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 export type SkillRenderData = {
     skill: {
         id: string;
@@ -19,7 +20,7 @@ export const renderSkillPage = (data: SkillRenderData): string => {
         skill.description ||
         `Explore the ${skill.statement} skill in the ${framework.name} framework.`;
 
-    const domain = process.env.DOMAIN_NAME || 'scoutnetwork.org';
+    const domain = environment.DOMAIN_NAME || 'scoutnetwork.org';
     const isScouts = domain.includes('scout');
     const sanitizedDomain = domain.replace(/^https?:\/\//, '');
     const skillUrl = `https://${sanitizedDomain}/frameworks/${framework.id}/skills/${skill.id}`;

@@ -7,6 +7,11 @@ import base from './playwright.config';
  * this tier is fast and deterministic and can run on every PR. The real-backend
  * tier (playwright.config.ts) skips `@mocked` tests via grepInvert.
  */
+const mockPort = Number(process.env.PW_MOCK_PORT ?? 3010);
+const recordVideo = process.env.PW_RECORD_VIDEO === 'true';
+if (!Number.isInteger(mockPort) || mockPort < 1024 || mockPort > 65535)
+    throw new Error('Invalid PW_MOCK_PORT');
+
 const config: PlaywrightTestConfig = {
     ...base,
     // Only load the mocked specs. Collecting the full suite would pull heavy
@@ -19,11 +24,16 @@ const config: PlaywrightTestConfig = {
     // does a real demo email login against the backend, which this tier avoids.
     globalSetup: undefined,
     retries: 0,
+    workers: 2,
+    fullyParallel: true,
     use: {
         ...base.use,
+        baseURL: `http://localhost:${mockPort}`,
         // Start unauthenticated — mocked tests drive auth through the seed flow
         // against stubbed endpoints, not a saved real session.
         storageState: undefined,
+        // Opt in to retained recordings of successful tests for review.
+        video: recordVideo ? { mode: 'on', size: { width: 1280, height: 800 } } : base.use?.video,
     },
     webServer: {
         // Build the LOCAL tenant config so the app points at localhost:4000/4100/5100
@@ -31,9 +41,15 @@ const config: PlaywrightTestConfig = {
         // config would call network.learncard.com and miss every recorded entry.
         // Use bun (the repo's declared packageManager); a `pnpm` here is rejected by
         // corepack against the bun packageManager spec.
-        command:
-            'bun scripts/prepare-native-config.ts learncard --stage local && bunx vite --host --port 3000',
-        url: 'http://localhost:3000',
+        //
+        // Compile paraglide BEFORE vite starts. Otherwise paraglideVitePlugin writes the
+        // ~8MB src/paraglide/messages/_index.js while Vite's dep scanner is already
+        // reading it; the scan fails on the truncated file ("Failed to scan for
+        // dependencies"), so deps are discovered lazily mid-test and Vite's
+        // re-optimize full-page reload lands during sign-in (flaky LaunchPad test).
+        // With the output already on disk, the plugin's startup compile is a no-op.
+        command: `bun scripts/prepare-native-config.ts learncard --stage local && bun run i18n:compile && bunx vite --host --port ${mockPort} --strictPort`,
+        url: `http://localhost:${mockPort}`,
         timeout: 5 * 60 * 1000,
         reuseExistingServer: !process.env.CI,
         ignoreHTTPSErrors: true,

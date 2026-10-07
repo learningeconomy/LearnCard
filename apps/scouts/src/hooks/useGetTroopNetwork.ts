@@ -4,6 +4,7 @@ import { ScoutsRoleEnum } from '../stores/troopPageStore';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { VC } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
+import { environment } from '../config/environment';
 const log = getLogger('use-get-troop-network');
 
 interface NetworkRecord {
@@ -53,7 +54,7 @@ export const useGetTroopNetwork = ({
         error,
     } = useGetBoostParents(uri, generationsUp, undefined, shouldFetchParents);
 
-    if (process.env.NODE_ENV !== 'test') {
+    if (environment.MODE !== 'test') {
         try {
             log.debug('useGetTroopNetwork::params', {
                 uri,
@@ -96,7 +97,7 @@ export const useGetTroopNetwork = ({
     const network = findNetworkByRole(parentBoosts?.records);
 
     if (network) {
-        if (process.env.NODE_ENV !== 'test') {
+        if (environment.MODE !== 'test') {
             log.debug('useGetTroopNetwork::selectedNetwork', {
                 type: network?.type,
                 name: network?.name,
@@ -113,7 +114,7 @@ export const useGetTroopNetwork = ({
         };
     }
 
-    if (process.env.NODE_ENV !== 'test') {
+    if (environment.MODE !== 'test') {
         log.debug('useGetTroopNetwork::noNetworkFound', {
             role,
             recordsCount: parentBoosts?.records?.length ?? 0,

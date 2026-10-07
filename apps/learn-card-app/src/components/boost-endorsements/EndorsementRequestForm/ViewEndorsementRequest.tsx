@@ -44,8 +44,8 @@ const ViewEndorsementRequest: React.FC<{
     const [boost, setBoost] = useState<VC[] | undefined>();
     const [category, setCategory] = useState<string>('');
 
-    const { credentialWithEdits } = useGetCredentialWithEdits(boost, uri);
-    let _boost = credentialWithEdits ?? boost;
+    const { credentialWithEdits } = useGetCredentialWithEdits(boost);
+    const _boost = credentialWithEdits ?? boost;
 
     // Get credential from ceramic
     const fetchCredential = async (uri: string) => {
@@ -121,7 +121,7 @@ const ViewEndorsementRequest: React.FC<{
     }, [pin, seed, uri, tryRefetch]);
 
     return (
-        <section className="h-full w-full flex flex-col items-start justify-start overflow-y-scroll bg-grayscale-50 gap-4 pb-[200px]">
+        <section className="relative h-full w-full flex flex-col items-start justify-start overflow-y-scroll bg-grayscale-50 gap-4 pb-[200px]">
             {!isClaimed && (
                 <EndorsementFormHeader
                     credential={_boost}

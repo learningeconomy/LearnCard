@@ -165,7 +165,7 @@ const GroupedCredentialsBySkillsList: React.FC<BoostGroupedBySkillsModalProps> =
                                 className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
                                 style={{ opacity: 0.8 }}
                             >
-                                <SlimCaretLeft className="w-5 h-auto" />
+                                <SlimCaretLeft className="rtl-mirror w-5 h-auto" />
                             </button>
                         )}
 
@@ -177,7 +177,7 @@ const GroupedCredentialsBySkillsList: React.FC<BoostGroupedBySkillsModalProps> =
                                 className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-50 shadow-md hover:bg-gray-200 transition-all duration-200"
                                 style={{ opacity: 0.8 }}
                             >
-                                <SlimCaretRight className="w-5 h-auto" />
+                                <SlimCaretRight className="rtl-mirror w-5 h-auto" />
                             </button>
                         )}
                     </div>

@@ -43,9 +43,13 @@ const UserVerifyEmail: React.FC = () => {
 
     return (
         <div className="bg-white flex items-center justify-center h-full w-full">
-            <div className="w-full flex flex-col items-center justify-center max-w-[600px] ion-padding rounded-[16px] p-6 mx-4">
+            <div
+                className="w-full flex flex-col items-center justify-center max-w-[600px] ion-padding rounded-[16px] p-6 mx-4"
+                aria-live="polite"
+                aria-busy={isVerified === null || verifyEmailLoading}
+            >
                 <div className="flex items-center justify-center rounded-[12px] overflow-hidden w-[60px] h-[60px] mb-4">
-                    <img src={appIcon} className="w-full h-full object-cover" />
+                    <img src={appIcon} alt="" className="w-full h-full object-cover" />
                 </div>
 
                 {(isVerified === null || verifyEmailLoading) && (
@@ -65,6 +69,7 @@ const UserVerifyEmail: React.FC = () => {
                             {m['profile.verify.success']()}
                         </h1>
                         <button
+                            type="button"
                             onClick={() => history.push('/')}
                             className={`mt-2 bg-${primaryColor} py-[10px] px-[20px] rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white shadow-button-bottom flex gap-[5px] items-center justify-center w-[80%] max-w-[280px]`}
                         >
@@ -82,6 +87,7 @@ const UserVerifyEmail: React.FC = () => {
                             {m['profile.verify.failedDesc']()}
                         </p>
                         <button
+                            type="button"
                             onClick={() => history.push('/')}
                             className={`bg-${primaryColor} py-[10px] px-[20px] rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white shadow-button-bottom flex gap-[5px] items-center justify-center w-[80%] max-w-[280px]`}
                         >

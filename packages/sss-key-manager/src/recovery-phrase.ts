@@ -27,7 +27,7 @@ function bytesToBits(bytes: Uint8Array): string {
         .join('');
 }
 
-function bitsToBytes(bits: string): Uint8Array {
+function bitsToBytes(bits: string): Uint8Array<ArrayBuffer> {
     const bytes = new Uint8Array(Math.ceil(bits.length / 8));
     for (let i = 0; i < bytes.length; i++) {
         bytes[i] = parseInt(bits.slice(i * 8, (i + 1) * 8).padEnd(8, '0'), 2);
@@ -35,7 +35,7 @@ function bitsToBytes(bits: string): Uint8Array {
     return bytes;
 }
 
-async function computeChecksum(data: Uint8Array): Promise<string> {
+async function computeChecksum(data: Uint8Array<ArrayBuffer>): Promise<string> {
     const hash = await crypto.subtle.digest('SHA-256', data);
     const hashBits = bytesToBits(new Uint8Array(hash));
     const checksumLength = Math.floor(data.length / 4);
@@ -131,4 +131,44 @@ export function countWords(phrase: string): number {
         .trim()
         .split(/\s+/)
         .filter(w => w.length > 0).length;
+}
+
+/** Uniform random integer in [0, max) without modulo bias. */
+function randomIndex(max: number): number {
+    const limit = 0x1_0000_0000 - (0x1_0000_0000 % max);
+    for (;;) {
+        const value = crypto.getRandomValues(new Uint32Array(1))[0];
+        if (value === undefined) throw new Error('Failed to choose recovery phrase words');
+        if (value < limit) return value % max;
+    }
+}
+
+/**
+ * Builds tap-to-confirm choices for each challenged word: the correct word plus
+ * `optionCount - 1` decoys, shuffled. Decoys never appear anywhere in the phrase,
+ * so a choice can only be right for its own position.
+ */
+export async function buildRecoveryPhraseChallengeOptions(
+    phrase: string,
+    challengeWordIndices: number[],
+    optionCount = 6
+): Promise<string[][]> {
+    const words = phrase.trim().split(/\s+/);
+    const phraseWords = new Set(words);
+    const decoyPool = (await getWordlist()).filter(word => !phraseWords.has(word));
+
+    return challengeWordIndices.map(wordIndex => {
+        const answer = words[wordIndex];
+        if (!answer) throw new Error('Recovery phrase challenge index is out of range');
+
+        const options = new Set<string>([answer]);
+        while (options.size < optionCount) options.add(decoyPool[randomIndex(decoyPool.length)]!);
+
+        const shuffled = [...options];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = randomIndex(i + 1);
+            [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
+        }
+        return shuffled;
+    });
 }

@@ -1,5 +1,4 @@
 import React from 'react';
-import moment from 'moment';
 
 import useManagedBoost from '../../../../hooks/useManagedBoost';
 import BlueCheckMark from '../../../../components/svgs/BlueCheckMark';
@@ -8,6 +7,7 @@ import { Boost } from '@learncard/types';
 import { useGetCurrentLCNUser, useModal, BoostCategoryOptionsEnum } from 'learn-card-base';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { boostCategoryOptions } from 'apps/scouts/src/components/boost/boost-options/boostOptions';
+import { formatLocaleDate } from '../../../../i18n/formatters';
 
 type BulkParentSelectorCredentialItemProps = {
     boost?: Boost;
@@ -34,7 +34,7 @@ const BulkParentSelectorCredentialItem: React.FC<BulkParentSelectorCredentialIte
 
     if (!cred?.name) return <></>;
 
-    const issueDate = moment(cred?.issuanceDate).format('MM/DD/YYYY');
+    const issueDate = formatLocaleDate(cred?.issuanceDate, { dateStyle: 'short' });
     const isSelected = parentUri === boost?.uri;
 
     return (

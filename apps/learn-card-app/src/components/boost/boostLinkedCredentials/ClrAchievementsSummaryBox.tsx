@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-type ClrAchievement = {
+export type ClrAchievement = {
     id?: string;
     type?: string[];
     name?: string;
@@ -9,7 +9,7 @@ type ClrAchievement = {
     criteria?: { narrative?: string };
 };
 
-type ClrAssociation = {
+export type ClrAssociation = {
     type?: string[];
     associationType?: string;
     sourceId?: string;

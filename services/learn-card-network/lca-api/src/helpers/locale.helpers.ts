@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import axios from 'axios';
 
 import cache from '@cache';
@@ -8,7 +9,7 @@ import cache from '@cache';
  * `NETWORK_BRAIN_SERVICE_URL`; defaults to production.
  */
 const BRAIN_SERVICE_URL =
-    process.env.NETWORK_BRAIN_SERVICE_URL || 'https://network.learncard.com/api';
+    environment.NETWORK_BRAIN_SERVICE_URL || 'https://network.learncard.com/api';
 
 /** Max time we'll wait on the locale lookup before falling back. Login must not block on it. */
 const LOOKUP_TIMEOUT_MS = 1500;

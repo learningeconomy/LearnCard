@@ -33,7 +33,7 @@ const state: DashboardState = {
     hasGoal: true,
     hasSkillProfile: true,
     pathwaysEnabled: true,
-    showAiInsights: true,
+    aiInsightsEnabled: true,
 };
 
 const understandActive = DEFAULT_REGISTRY.find(action => action.id === 'understand-active');
@@ -50,7 +50,7 @@ describe('understand-active quick action', () => {
 
     it('uses the skills icon when linking to skills', () => {
         const action = understandActive.build(
-            { ...state, showAiInsights: false },
+            { ...state, aiInsightsEnabled: false },
             { handlers, icons }
         );
 

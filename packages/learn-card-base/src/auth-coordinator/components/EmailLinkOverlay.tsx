@@ -11,7 +11,7 @@
  * displays `err.message` directly without any provider-specific parsing.
  */
 
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 
 import { Overlay } from './Overlay';
 
@@ -40,6 +40,8 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [step, setStep] = useState<'email' | 'code' | 'success'>('email');
+    const emailInputId = useId();
+    const verificationCodeInputId = useId();
 
     const handleSendCode = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -99,6 +101,12 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
         setStep('success');
     };
 
+    const handleChangeEmail = (): void => {
+        setStep('email');
+        setCode('');
+        setError(null);
+    };
+
     const handleResendCode = async () => {
         setError(null);
         setLoading(true);
@@ -121,7 +129,7 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
 
     if (step === 'success') {
         return (
-            <Overlay>
+            <Overlay onDismiss={onComplete}>
                 <div className="p-8 text-center space-y-5">
                     <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 flex items-center justify-center">
                         <svg
@@ -158,7 +166,7 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
 
     if (step === 'code') {
         return (
-            <Overlay>
+            <Overlay onDismiss={loading ? undefined : handleChangeEmail}>
                 <form onSubmit={handleVerifyCode} className="p-8 space-y-5">
                     <div className="text-center space-y-2">
                         <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 flex items-center justify-center">
@@ -208,11 +216,15 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
                     )}
 
                     <div>
-                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                        <label
+                            htmlFor={verificationCodeInputId}
+                            className="block text-xs font-medium text-grayscale-700 mb-1.5"
+                        >
                             Verification Code
                         </label>
 
                         <input
+                            id={verificationCodeInputId}
                             type="text"
                             inputMode="numeric"
                             pattern="[0-9]*"
@@ -250,11 +262,7 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
                         <div className="flex items-center justify-between">
                             <button
                                 type="button"
-                                onClick={() => {
-                                    setStep('email');
-                                    setCode('');
-                                    setError(null);
-                                }}
+                                onClick={handleChangeEmail}
                                 disabled={loading}
                                 className="text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
                             >
@@ -277,7 +285,7 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
     }
 
     return (
-        <Overlay>
+        <Overlay onDismiss={loading ? undefined : onLogout}>
             <form onSubmit={handleSendCode} className="p-8 space-y-5">
                 <div className="text-center space-y-2">
                     <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 flex items-center justify-center">
@@ -326,11 +334,15 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
                 )}
 
                 <div>
-                    <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                    <label
+                        htmlFor={emailInputId}
+                        className="block text-xs font-medium text-grayscale-700 mb-1.5"
+                    >
                         Email Address
                     </label>
 
                     <input
+                        id={emailInputId}
                         type="email"
                         value={email}
                         onChange={e => setEmail(e.target.value)}

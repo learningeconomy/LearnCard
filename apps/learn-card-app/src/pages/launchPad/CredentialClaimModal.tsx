@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { IonSpinner } from '@ionic/react';
 import { X, Check, Loader2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('credential-claim-modal');
 
@@ -10,6 +11,7 @@ import {
     ToastTypeEnum,
     BoostPageViewMode,
     BoostCategoryOptionsEnum,
+    connectionPromptKeys,
 } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 
@@ -41,6 +43,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
 }) => {
     const { initWallet, addVCtoWallet } = useWallet();
     const { presentToast } = useToast();
+    const queryClient = useQueryClient();
 
     const [isLoading, setIsLoading] = useState(true);
     const [isClaiming, setIsClaiming] = useState(false);
@@ -200,6 +203,16 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
 
             if (acceptResult.status === 'rejected') {
                 log.warn('Failed to accept credential server-side:', acceptResult.reason);
+            } else if (
+                wallet &&
+                addResult.status === 'fulfilled' &&
+                addResult.value === true &&
+                acceptResult.value === true
+            ) {
+                // Prompt visibility depends on both the network acceptance and the
+                // credential being present locally. Invalidate only after both have
+                // succeeded so a fast local write cannot dismiss the prompt early.
+                await queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all });
             }
 
             // Fire-and-forget the notification metadata update. The user already sees claim

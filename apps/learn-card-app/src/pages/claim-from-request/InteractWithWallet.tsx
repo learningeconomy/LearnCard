@@ -140,8 +140,8 @@ const InteractWithWallet: React.FC<{
                         <h1 className="text-xl font-semibold text-grayscale-900 mb-2">
                             Invalid request link
                         </h1>
-                        <p className="text-grayscale-500 text-sm">
-                            Missing or invalid vc_request_url.
+                        <p className="text-grayscale-600 text-sm">
+                            The request link is missing or invalid.
                         </p>
                     </div>
                 </div>
@@ -169,6 +169,8 @@ const InteractWithWallet: React.FC<{
                     <div className="mb-6 p-4 bg-grayscale-10 border border-grayscale-200 rounded-2xl inline-block">
                         <div className="w-[200px] h-[200px] bg-white p-2 rounded-xl">
                             <QRCodeSVG
+                                role="img"
+                                aria-label="QR code for this credential request"
                                 value={deeplink}
                                 className="w-full h-full"
                                 bgColor="transparent"
@@ -177,9 +179,12 @@ const InteractWithWallet: React.FC<{
                     </div>
 
                     <div className="mb-6 w-full text-left">
-                        <label className="block text-xs font-medium text-grayscale-700 uppercase tracking-wide mb-2">
+                        <p
+                            id="wallet-selector-label"
+                            className="block text-xs font-medium text-grayscale-700 uppercase tracking-wide mb-2"
+                        >
                             Open with:
-                        </label>
+                        </p>
                         <InteractSelector
                             wallets={wallets}
                             selectedIndex={selectedIndex}
@@ -194,7 +199,7 @@ const InteractWithWallet: React.FC<{
                         {buttonText}
                     </a>
 
-                    <p className="mt-5 text-xs text-grayscale-500">
+                    <p className="mt-5 text-xs text-grayscale-600">
                         Scan the QR code or tap the button above.
                     </p>
                 </div>
@@ -216,36 +221,40 @@ const InteractSelectorOptions: React.FC<{
     });
     return (
         <div className="p-6 font-poppins">
-            <p className="text-lg font-semibold text-grayscale-900 mb-4">Select a wallet</p>
-            <IonList className="w-full h-full bg-transparent">
-                {wallets.map((wallet, idx) => {
-                    const isSelected = idx === selectedIndex;
-                    return (
-                        <li
-                            key={wallet.name}
-                            onClick={() => {
-                                closeModal();
-                                setSelectedIndex(idx);
-                            }}
-                            className={`w-full rounded-[20px] p-3 flex items-center justify-between mb-3 cursor-pointer transition-colors border ${
-                                isSelected
-                                    ? 'bg-grayscale-10 border-grayscale-300'
-                                    : 'bg-white border-transparent hover:bg-grayscale-10'
-                            }`}
-                        >
-                            <div className="flex items-center justify-start">
-                                <div className="w-10 h-10 bg-grayscale-100 rounded-2xl mr-3 overflow-hidden flex items-center justify-center">
-                                    {wallet.icon}
-                                </div>
-                                <div className="flex flex-col items-start justify-center">
-                                    <h4 className="text-grayscale-900 font-medium text-sm">
-                                        {wallet.name}
-                                    </h4>
-                                </div>
-                            </div>
-                        </li>
-                    );
-                })}
+            <h1 className="text-lg font-semibold text-grayscale-900 mb-4">Select an app</h1>
+            <IonList className="w-full h-full bg-transparent" role="presentation">
+                <ul className="m-0 p-0 list-none">
+                    {wallets.map((wallet, idx) => {
+                        const isSelected = idx === selectedIndex;
+                        return (
+                            <li key={wallet.name}>
+                                <button
+                                    type="button"
+                                    aria-label={wallet.name}
+                                    aria-pressed={isSelected}
+                                    onClick={() => {
+                                        closeModal();
+                                        setSelectedIndex(idx);
+                                    }}
+                                    className={`w-full rounded-[20px] p-3 flex items-center justify-between mb-3 cursor-pointer transition-colors border ${
+                                        isSelected
+                                            ? 'bg-grayscale-10 border-grayscale-300'
+                                            : 'bg-white border-transparent hover:bg-grayscale-10'
+                                    }`}
+                                >
+                                    <div className="flex items-center justify-start">
+                                        <div className="w-10 h-10 bg-grayscale-100 rounded-2xl mr-3 overflow-hidden flex items-center justify-center">
+                                            {wallet.icon}
+                                        </div>
+                                        <span className="text-grayscale-900 font-medium text-sm">
+                                            {wallet.name}
+                                        </span>
+                                    </div>
+                                </button>
+                            </li>
+                        );
+                    })}
+                </ul>
             </IonList>
         </div>
     );
@@ -262,6 +271,9 @@ const InteractSelector: React.FC<{
     });
     return (
         <button
+            type="button"
+            aria-labelledby="wallet-selector-label"
+            aria-haspopup="dialog"
             onClick={() => {
                 newModal(
                     <InteractSelectorOptions
@@ -278,12 +290,14 @@ const InteractSelector: React.FC<{
                     {wallets[selectedIndex]?.icon}
                 </div>
                 <div className="flex flex-col items-start justify-center">
-                    <h4 className="text-grayscale-900 font-medium text-sm line-clamp-1">
+                    <span className="text-grayscale-900 font-medium text-sm line-clamp-1">
                         {wallets[selectedIndex]?.name}
-                    </h4>
+                    </span>
                 </div>
             </div>
-            <CaretDown className="w-5 h-5 text-grayscale-500 mr-2" />
+            <span aria-hidden="true">
+                <CaretDown className="w-5 h-5 text-grayscale-500 mr-2" />
+            </span>
         </button>
     );
 };

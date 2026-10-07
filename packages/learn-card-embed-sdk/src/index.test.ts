@@ -1,3 +1,6 @@
+import { vi } from 'vitest';
+import type { MockInstance } from 'vitest';
+
 import { init } from './index';
 
 function setupTarget(id = 'mount') {
@@ -24,16 +27,16 @@ function parseEmbedConfigFromSrcdoc(html: string): any {
 }
 
 describe('LearnCard Embed SDK', () => {
-    let openSpy: jest.SpyInstance;
+    let openSpy: MockInstance;
 
     beforeEach(() => {
         document.body.innerHTML = '';
-        openSpy = jest.spyOn(window, 'open').mockImplementation(() => null as any);
+        openSpy = vi.spyOn(window, 'open').mockImplementation(() => null as any);
     });
 
     afterEach(() => {
         openSpy.mockRestore();
-        jest.restoreAllMocks();
+        vi.restoreAllMocks();
     });
 
     test('renders claim button into target and injects styles', () => {
@@ -84,7 +87,7 @@ describe('LearnCard Embed SDK', () => {
     test('completes flow with onSuccess: calls onSuccess AND opens wallet', () => {
         setupTarget();
 
-        const onSuccess = jest.fn();
+        const onSuccess = vi.fn();
 
         init({
             target: '#mount',
@@ -153,7 +156,7 @@ describe('LearnCard Embed SDK', () => {
     test('walletUrl empty string suppresses window.open', () => {
         setupTarget();
 
-        const onSuccess = jest.fn();
+        const onSuccess = vi.fn();
 
         init({
             target: '#mount',

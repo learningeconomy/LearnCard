@@ -4,7 +4,6 @@ import SadCloud from '../../svgs/SadCloud';
 import { m } from '../../../paraglide/messages.js';
 
 import { useHistory } from 'react-router-dom';
-import { useGetCurrentLCNUser } from 'learn-card-base';
 import { LaunchPadAppListItem } from 'learn-card-base';
 import { VC } from '@learncard/types';
 import { AiPassportAppsEnum } from '../../ai-passport-apps/aiPassport-apps.helpers';
@@ -18,7 +17,6 @@ export const AiSessionsEmptyState: React.FC<{
     primaryColor?: string;
 }> = ({ topicsTitle, topicBoost, app, primaryColor }) => {
     const history = useHistory();
-    const { currentLCNUser } = useGetCurrentLCNUser();
 
     return (
         <div className="flex flex-col items-center justify-center h-full w-full text-center p-6">
@@ -39,9 +37,7 @@ export const AiSessionsEmptyState: React.FC<{
                     if (app?.type === AiPassportAppsEnum.learncardapp) {
                         history.push(`/chats?topicUri=${encodeURIComponent(uri)}`);
                     } else if (app?.url) {
-                        window.location.href = `${app.url}/chats?topicUri=${encodeURIComponent(
-                            uri
-                        )}&did=${encodeURIComponent(currentLCNUser?.did ?? '')}`;
+                        window.location.href = `${app.url}/chats?topicUri=${encodeURIComponent(uri)}`;
                     } else {
                         history.push(`/chats?topicUri=${encodeURIComponent(uri)}`);
                     }

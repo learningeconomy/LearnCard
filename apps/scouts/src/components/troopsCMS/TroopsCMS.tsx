@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { z } from 'zod';
 
 import { IonPage } from '@ionic/react';
+import * as m from '../../paraglide/messages.js';
 import TroopsCMSLayout from './TroopsCMSLayout';
 import TroopsCMSThumbnail from './TroopsCMSThumbnail';
 import TroopsCMSHeader from './TroopsCMSHeader/TroopsCMSHeader';
@@ -40,13 +41,13 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('troops-cms');
 
 const StateValidator = z.object({
-    name: z.string().min(1, 'Name is required!'),
-    description: z.string().min(1, 'Description is required!'),
+    name: z.string().min(1, () => m['troops.nameRequired']()),
+    description: z.string().min(1, () => m['troops.descriptionRequired']()),
 });
 
 const TroopStateValidator = z.object({
     troopNumber: z.number().min(0),
-    description: z.string().min(1, 'Description is required!'),
+    description: z.string().min(1, () => m['troops.descriptionRequired']()),
 });
 
 type TroopsCMSProps = {
@@ -390,7 +391,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
         } catch (e) {
             setIsPublishLoading(false);
             log.error('handlePublishBoost::error', e);
-            presentToast(`Error issuing boost`, {
+            presentToast(m['troops.toasts.errorIssuingBoost'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -473,7 +474,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
         } catch (e) {
             setIsPublishLoading(false);
             log.error('handleEditBoost::error', e);
-            presentToast(`Error editing boost`, {
+            presentToast(m['troops.toasts.errorEditingBoost'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -483,7 +484,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
     return (
         <IonPage>
             {(isLoading || isSaveLoading || isPublishLoading) && (
-                <BoostLoader text={'Loading...'} darkBackground />
+                <BoostLoader text={m['troops.loading']()} darkBackground />
             )}
             <TroopsCMSHeader
                 state={state}

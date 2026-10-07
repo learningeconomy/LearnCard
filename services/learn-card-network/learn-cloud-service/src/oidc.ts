@@ -1,8 +1,9 @@
+import { environment } from '@environment';
 import Fastify, { FastifyPluginAsync } from 'fastify';
 import fastifyCors from '@fastify/cors';
 import { generateJwk } from '@helpers/auth.helpers';
 
-const ISSUER = process.env.SERVER_URL || 'http://localhost:4100';
+const ISSUER = environment.SERVER_URL || 'http://localhost:4100';
 
 const openidConfiguration = {
     issuer: ISSUER,

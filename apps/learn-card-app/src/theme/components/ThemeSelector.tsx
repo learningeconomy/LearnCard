@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import * as m from '../../paraglide/messages.js';
 
@@ -30,7 +29,6 @@ export enum themeSelectorViewMode {
 export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
     viewMode = themeSelectorViewMode.Full,
 }) => {
-    const flags = useFlags();
     const { theme, colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
@@ -59,8 +57,6 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
         });
         applyTheme(themeSelected);
     };
-
-    if (flags?.enableThemeToggle === false) return null;
 
     if (!isThemeSwitchingEnabled()) return null;
 

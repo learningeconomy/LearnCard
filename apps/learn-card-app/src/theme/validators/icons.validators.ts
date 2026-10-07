@@ -28,6 +28,12 @@ export const CategoryIconsSchema = z
         // validateThemeData, which would silently drop `IconSolid` at
         // runtime (same failure mode as `navbar.dashboard` in LC-1921).
         IconSolid: componentLike.optional().describe('React component for flat solid glyph'),
+        IconDark: componentLike
+            .optional()
+            .describe('Dark variant (grayscale-700) for inactive states'),
+        IconWhite: componentLike
+            .optional()
+            .describe('White variant for active states on dark backgrounds'),
     })
     .describe('Credential Category Icons');
 export type CategoryIcons = z.infer<typeof CategoryIconsSchema>;
@@ -63,7 +69,7 @@ const sideMenuFixedKeys = [
  * validation fails and the registry ends up empty, which surfaces as
  * `"No themes registered"` at app boot.
  */
-const sideMenuExtraKeys = ['pathways', 'dashboard'] as const;
+const sideMenuExtraKeys = ['pathways', 'myAssistant', 'dashboard'] as const;
 
 export const SideMenuIconsSchema = z
     .object({

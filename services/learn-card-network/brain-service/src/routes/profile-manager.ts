@@ -18,6 +18,7 @@ import { checkIfProfileExists } from '@accesslayer/profile/read';
 import { ProfileManagerType, ProfileManagerValidator } from 'types/profile-manager';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { createProfile } from '@accesslayer/profile/create';
+import { PublicProfileIdValidator } from '@helpers/profile.helpers';
 import { createManagesRelationship } from '@accesslayer/profile-manager/relationships/create';
 import { deleteManagesRelationship } from '@accesslayer/profile-manager/relationships/delete';
 import { getBoostByUri } from '@accesslayer/boost/read';
@@ -28,6 +29,7 @@ import {
 import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
 import { updateProfileManager } from '@accesslayer/profile-manager/update';
 import { getProfileManagerById } from '@accesslayer/profile-manager/read';
+import { ProfileManager } from '@models';
 
 export const profileManagersRouter = t.router({
     createProfileManager: profileRoute
@@ -118,9 +120,31 @@ export const profileManagersRouter = t.router({
             },
             requiredScope: 'profileManagers:write',
         })
-        .input(LCNProfileValidator.omit({ did: true }))
+        .input(
+            LCNProfileValidator.omit({ did: true }).extend({
+                profileId: PublicProfileIdValidator,
+            })
+        )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
+            // Org onboarding also uses this API. Only the persisted Family parent
+            // (or an explicit child type), not a client service flag, defines a child path.
+            if (input.isServiceProfile) {
+                const parents = await ProfileManager.findRelationships({
+                    alias: 'childOf',
+                    where: { source: { id: ctx.user.manager.id } },
+                });
+                if (
+                    input.type === 'child' ||
+                    parents.some(({ target }) => target.category === 'Family')
+                ) {
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message: 'Child profiles cannot be service profiles.',
+                    });
+                }
+            }
+
             const profileExists = await checkIfProfileExists(input);
 
             if (profileExists) {

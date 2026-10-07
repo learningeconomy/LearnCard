@@ -1,4 +1,5 @@
 @import './fonts';
+@import '../../components/modals/surfaces/surfaces.scss';
 
 #center-modal.new-post-overlay {
     overflow: hidden;
@@ -221,7 +222,7 @@
     bottom: 0;
     transition: all 300ms ease;
     animation: center-modal-background-intro 300ms normal none ease-out;
-    padding-top: calc(env(safe-area-inset-top) + 0px);
+    // padding-top removed [LC-1962]: the .lc-surface section owns the top inset now
 
     &.closed {
         background-color: transparent;
@@ -588,6 +589,18 @@
     }
 }
 
+// In RTL, flex-end places the "right" modal on the physical left. Mirror its
+// motion as well so it enters from and exits toward the edge it is attached to.
+html[dir='rtl'] #right-modal {
+    &.closed > section {
+        transform: translateX(-100vw);
+    }
+
+    & > section {
+        animation-name: right-modal-intro-rtl;
+    }
+}
+
 #center-modal {
     z-index: 100000;
     display: flex;
@@ -599,7 +612,7 @@
     position: fixed;
     height: 100%;
     width: 100vw;
-    top: env(safe-area-inset-top);
+    top: 0; // was env(safe-area-inset-top) [LC-1962]: .lc-overlay--inset-container padding owns it
     left: 0;
     right: 0;
     bottom: 0;
@@ -1262,6 +1275,16 @@
     }
 }
 
+@keyframes right-modal-intro-rtl {
+    0% {
+        transform: translateX(-100vw);
+    }
+
+    100% {
+        transform: translateX(0%);
+    }
+}
+
 @keyframes right-modal-background-intro {
     0% {
         opacity: 0;
@@ -1338,7 +1361,7 @@
 }
 
 #full-screen-modal.modal-full-bg {
-    margin-top: calc(0px + env(safe-area-inset-top));
+    // margin-top removed [LC-1962]: surface owns the top inset
 
     .full-screen-modal-dimmer {
         background-color: #efefef;
@@ -1565,4 +1588,20 @@
 
 .country-select-modal > section {
     display: block !important;
+}
+
+@keyframes lc-overlay-opacity-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lc-auth-overlay.animate-fade-in-up {
+        animation: lc-overlay-opacity-in 150ms ease-out both !important;
+    }
 }

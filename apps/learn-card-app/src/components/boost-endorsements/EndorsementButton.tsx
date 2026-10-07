@@ -10,30 +10,27 @@ import * as m from '../../paraglide/messages.js';
 
 const EndorsementButton: React.FC<{
     credential: VC;
+    shareCredentialUri?: string;
     className?: string;
     categoryType: CredentialCategoryEnum;
     onClick?: () => void;
-}> = ({ className, credential, categoryType, onClick }) => {
+}> = ({ className, credential, shareCredentialUri, categoryType, onClick }) => {
     const { newModal } = useModal({ mobile: ModalTypes.Right, desktop: ModalTypes.Right });
     const { isCurrentUserSubject } = useGetVCInfo(credential, categoryType);
 
-    let buttonStyles = '';
-    let iconStyles = '';
-
-    if (isCurrentUserSubject) {
-        buttonStyles = 'bg-grayscale-900';
-        iconStyles = 'text-grayscale-600';
-    } else {
-        buttonStyles = 'bg-teal-400';
-        iconStyles = 'text-teal-400';
-    }
+    const buttonStyles = isCurrentUserSubject ? 'bg-grayscale-900' : 'bg-teal-400';
+    const iconStyles = isCurrentUserSubject ? 'text-grayscale-600' : 'text-teal-400';
 
     const handleOnEndorsementClick = () => {
         // if (onClick) onClick?.();
         // boostPreviewStore.set.updateSelectedTab(BoostPreviewTabsEnum.Endorsements);
         if (isCurrentUserSubject) {
             newModal(
-                <EndorsementRequestForm credential={credential} categoryType={categoryType} />
+                <EndorsementRequestForm
+                    credential={credential}
+                    shareCredentialUri={shareCredentialUri}
+                    categoryType={categoryType}
+                />
             );
         } else {
             newModal(<EndorsementForm credential={credential} categoryType={categoryType} />);

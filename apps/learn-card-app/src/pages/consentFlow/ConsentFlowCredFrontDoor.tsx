@@ -31,7 +31,7 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
     isPreview,
 }) => {
     const history = useHistory();
-    const currentUser = useCurrentUser()!!!!!!!!!;
+    const currentUser = useCurrentUser()!;
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { newModal, closeModal } = useModal();
 
@@ -79,7 +79,7 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
         );
     };
 
-    const handleAccept = async (terms?: ConsentFlowTerms) => {
+    const handleAccept = async (terms?: ConsentFlowTerms, beforeSubmit?: () => Promise<void>) => {
         setIsLoading(true);
         setIsSyncingCredentials(false);
         try {
@@ -88,6 +88,7 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
                 terms: terms ?? getMinimumTermsForContract(contractDetails.contract, currentUser),
                 expiresAt: '',
                 oneTime: false,
+                beforeSubmit,
             });
 
             setIsSyncingCredentials(true);
@@ -142,7 +143,7 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
                                     claimBtnText: hasAlreadyConsented ? 'Accepted' : undefined,
                                 }}
                             >
-                                <section className="min-h-full w-full pt-[calc(30px+env(safe-area-inset-top))] boost-preview-display">
+                                <section className="min-h-full w-full pt-[calc(30px+var(--ion-safe-area-top,0px))] boost-preview-display">
                                     <VCDisplayCardWrapper2
                                         credential={boost}
                                         checkProof={false}

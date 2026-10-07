@@ -1,3 +1,4 @@
+import { isServiceProfileExemptFromGuardianship } from '@helpers/profile.helpers';
 import { QueryBuilder, BindParam } from 'neogma';
 import mapValues from 'lodash/mapValues';
 import {
@@ -15,9 +16,11 @@ import {
 } from '@models';
 import {
     DbTermsType,
+    DbTermsValidator,
     FlatDbTermsType,
     DbContractType,
     FlatDbContractType,
+    DbContractValidator,
     FlatDbTransactionType,
     DbTransactionType,
 } from 'types/consentflowcontract';
@@ -32,14 +35,19 @@ import {
     HolderExportMetadata,
     LCNProfile,
 } from '@learncard/types';
+import { ConsentFlowGuardianApprovalValidator } from '@learncard/types';
 import { FlatBoostType } from 'types/boost';
 import { constructUri, getIdFromUri } from '@helpers/uri.helpers';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
-import { convertDataQueryToNeo4jQuery, shouldIncludeCategory } from '@helpers/contract.helpers';
+import { shouldIncludeCategory } from '@helpers/contract.helpers';
 import { ProfileType } from 'types/profile';
 import { CredentialType } from 'types/credential';
 import { getBoostUri } from '@helpers/boost.helpers';
 import { getCredentialUri } from '@helpers/credential.helpers';
+import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
+import { getDidWeb, updateDidForProfile } from '@helpers/did.helpers';
+import { getProfileByProfileId } from '@accesslayer/profile/read';
+import { sanitizeProfileForTier } from '@helpers/profile-privacy.helpers';
 
 export const isProfileConsentFlowContractAdmin = async (
     profile: ProfileType,
@@ -78,6 +86,25 @@ export const hasProfileConsentedToContract = async (
     const result = await query.return('count(terms) AS count').run();
 
     return Number(result.records[0]?.get('count') ?? 0) > 0;
+};
+
+export const hasGuardianApprovalHistory = async (terms: DbTermsType): Promise<boolean> => {
+    if (terms.guardianApproval) return true;
+
+    const result = await new QueryBuilder()
+        .match({
+            related: [
+                { identifier: 'transaction', model: ConsentFlowTransaction },
+                ConsentFlowTransaction.getRelationshipByAlias('isFor'),
+                { model: ConsentFlowTerms, where: { id: terms.id } },
+            ],
+        })
+        .where('transaction.`guardianApproval.guardianProfileId` IS NOT NULL')
+        .return('transaction.id')
+        .limit(1)
+        .run();
+
+    return result.records.length > 0;
 };
 
 export const getContractDetailsById = async (
@@ -135,7 +162,7 @@ export const getContractTermsForProfile = async (
             .run()
     );
 
-    return result.length > 0 ? inflateObject<DbTermsType>(result[0]!.terms) : null;
+    return result.length > 0 ? DbTermsValidator.parse(inflateObject(result[0]!.terms)) : null;
 };
 
 export const getContractTermsById = async (
@@ -255,6 +282,7 @@ export const getConsentedContractsForProfile = async (
         owner: LCNProfile;
         terms: DbTermsType;
         autoBoosts: string[];
+        recipients: ProfileType[];
     }[]
 > => {
     let query = new QueryBuilder(
@@ -289,9 +317,19 @@ export const getConsentedContractsForProfile = async (
         owner: LCNProfile;
         terms: FlatDbTermsType;
         boost: any[];
+        recipients: { properties: ProfileType }[];
     }>(
         await query
-            .return('DISTINCT contract, owner, terms, COLLECT(boost) as boost')
+            .with('contract, owner, terms, COLLECT(boost) as boost')
+            .match({
+                optional: true,
+                related: [
+                    { identifier: 'contract' },
+                    ConsentFlowContract.getRelationshipByAlias('sharesDataWith'),
+                    { identifier: 'recipient', model: Profile },
+                ],
+            })
+            .return('contract, owner, terms, boost, COLLECT(DISTINCT recipient) as recipients')
             .orderBy('terms.updatedAt')
             .limit(limit)
             .run()
@@ -299,6 +337,7 @@ export const getConsentedContractsForProfile = async (
 
     return results.map(result => ({
         ...result,
+        recipients: result.recipients.map(recipient => recipient.properties),
         contract: inflateObject(result.contract),
         terms: inflateObject(result.terms),
         autoBoosts: result.boost.map(boost => getBoostUri(boost.properties.id, domain)),
@@ -388,11 +427,21 @@ export const getHolderExportMetadataForProfile = async (
                     createdAt: record.contract.createdAt,
                     updatedAt: record.contract.updatedAt,
                     uri: constructUri('contract', record.contract.id, domain),
-                    owner: record.owner,
+                    owner: updateDidForProfile(domain, record.owner),
                     ...(record.contract.expiresAt ? { expiresAt: record.contract.expiresAt } : {}),
                     autoBoosts: record.autoBoosts,
+                    // This is the audience at export time, not a historical consent snapshot.
+                    audienceVersion: Number(record.contract.audienceVersion ?? 0),
+                    recipients: record.recipients.map(recipient => {
+                        const publicProfile = updateDidForProfile(domain, recipient);
+                        return {
+                            ...sanitizeProfileForTier(publicProfile, 'unauthenticated'),
+                            did: publicProfile.did,
+                        };
+                    }),
                 },
                 terms: record.terms.terms,
+                ...(record.terms.referral ? { referral: record.terms.referral } : {}),
                 transactions,
             });
         }
@@ -418,102 +467,141 @@ export const getHolderExportMetadataForProfile = async (
     };
 };
 
+/** Match filters against currently permitted data before counting a page. */
+const matchesConsentedDataQuery = (
+    term: DbTermsType,
+    query: ConsentFlowDataQuery,
+    now: number
+): boolean =>
+    // Legacy boolean data queries test field presence, including an explicit false value.
+    (query.anonymize === undefined || query.anonymize === (term.terms.read.anonymize != null)) &&
+    Object.entries(query.personal ?? {}).every(
+        ([key, required]) => required === (term.terms.read.personal?.[key] != null)
+    ) &&
+    Object.entries(query.credentials?.categories ?? {}).every(([name, required]) => {
+        const category = term.terms.read.credentials.categories[name];
+        const shared =
+            term.terms.read.credentials.sharing !== false &&
+            !!category?.sharing &&
+            isConsentExpiryActive(category.shareUntil, now) &&
+            !!category.shared?.length;
+        return required === shared;
+    });
+
+const projectConsentedData = (
+    term: DbTermsType,
+    query: ConsentFlowDataQuery,
+    now: number
+): ConsentFlowContractData => ({
+    date: term.updatedAt!,
+    credentials: {
+        categories: mapValues(term.terms.read.credentials?.categories ?? {}, (category, name) =>
+            term.terms.read.credentials.sharing !== false &&
+            category.sharing &&
+            isConsentExpiryActive(category.shareUntil, now) &&
+            shouldIncludeCategory(query.credentials?.categories, name)
+                ? (category.shared ?? [])
+                : []
+        ),
+    },
+    personal: term.terms.read.personal ?? {},
+});
+
+/** Filters reduce candidates in Neo4j; batches then reject invalid/expired grants.
+ * Do not cap scanned candidates: doing so would silently hide valid matches later in a page.
+ * Expiry and negative category filters still require the authoritative JS permission check.
+ */
+const getPermittedContractData = async (
+    viewerProfileId: string,
+    { query = {}, limit, cursor }: { query?: ConsentFlowDataQuery; limit: number; cursor?: string },
+    contractId?: string
+): Promise<ConsentFlowContractData[]> => {
+    const now = Date.now();
+    const records: ConsentFlowContractData[] = [];
+    const personalFilters = Object.entries(query.personal ?? {}).map(([name, required]) => ({
+        key: `terms.read.personal.${name}`,
+        required,
+    }));
+    const sharedCategories = Object.entries(query.credentials?.categories ?? {})
+        .filter(([, required]) => required)
+        .map(([name]) => ({
+            sharingKey: `terms.read.credentials.categories.${name}.sharing`,
+            sharedKey: `terms.read.credentials.categories.${name}.shared`,
+        }));
+    const batchSize = Math.max(limit, 50);
+    let offset = 0;
+    while (records.length < limit) {
+        const dbQuery = new QueryBuilder(
+            new BindParam({ cursor, personalFilters, sharedCategories })
+        )
+            .match({
+                related: [
+                    { identifier: 'terms', model: ConsentFlowTerms },
+                    ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
+                    {
+                        model: ConsentFlowContract,
+                        identifier: 'contract',
+                        ...(contractId ? { where: { id: contractId } } : {}),
+                    },
+                    '-[:CREATED_BY|SHARES_DATA_WITH]->',
+                    { model: Profile, where: { profileId: viewerProfileId } },
+                ],
+            })
+            .where(
+                "(terms.status = 'live' OR (terms.status = 'stale' AND terms.oneTime = true))" +
+                    (cursor ? ' AND terms.updatedAt < $cursor' : '') +
+                    ' AND all(filter IN $personalFilters WHERE filter.required = (terms[filter.key] IS NOT NULL))' +
+                    ' AND (size($sharedCategories) = 0 OR coalesce(terms.`terms.read.credentials.sharing`, true) = true)' +
+                    ' AND all(category IN $sharedCategories WHERE terms[category.sharingKey] = true AND' +
+                    " (terms[category.sharedKey] IS NOT NULL OR any(key IN keys(terms) WHERE key STARTS WITH category.sharedKey + '.')))"
+            );
+        const results = convertQueryResultToPropertiesObjectArray<{
+            terms: FlatDbTermsType;
+            contract: FlatDbContractType;
+        }>(
+            await dbQuery
+                .return('DISTINCT terms, contract')
+                .orderBy('terms.updatedAt DESC, terms.id ASC')
+                .skip(offset)
+                .limit(batchSize)
+                .run()
+        );
+        for (const result of results) {
+            const term = DbTermsValidator.safeParse(inflateObject(result.terms));
+            const contract = DbContractValidator.safeParse(inflateObject(result.contract));
+            if (
+                !term.success ||
+                !contract.success ||
+                !isConsentExpiryActive(term.data.expiresAt, now) ||
+                !isConsentExpiryActive(contract.data.expiresAt, now) ||
+                !matchesConsentedDataQuery(term.data, query, now)
+            )
+                continue;
+            records.push(projectConsentedData(term.data, query, now));
+            if (records.length >= limit) return records;
+        }
+        if (results.length < batchSize) break;
+        offset += batchSize;
+    }
+    return records;
+};
+
 export const getConsentedDataForProfile = async (
     profileId: string,
-    { query = {}, limit, cursor }: { query?: ConsentFlowDataQuery; limit: number; cursor?: string }
-): Promise<ConsentFlowContractData[]> => {
-    const _dbQuery = new QueryBuilder(
-        new BindParam({
-            params: flattenObject({ terms: convertDataQueryToNeo4jQuery(query) }),
-            cursor,
-        })
-    ).match({
-        related: [
-            { identifier: 'terms', model: ConsentFlowTerms },
-            ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
-            { model: ConsentFlowContract },
-            ConsentFlowContract.getRelationshipByAlias('createdBy'),
-            { model: Profile, where: { profileId } },
-        ],
-        // The following is custom Cypher logic that has the following behavior:
-        // If query key is true, ensure all resulting terms have that key
-        // If query key is false, ensure no resulting terms have that key
-        // If query key is not present, return all terms whether they have it or not
-    }).where(`
-all(key IN keys($params) WHERE 
-    CASE $params[key]
-        WHEN true THEN terms[key] IS NOT NULL AND terms[key] <> []
-        WHEN false THEN terms[key] IS NULL OR terms[key] = []
-    END
-)
-`);
-
-    const dbQuery = cursor ? _dbQuery.raw('terms.updatedAt < $cursor') : _dbQuery;
-
-    const results = convertQueryResultToPropertiesObjectArray<{
-        terms: FlatDbTermsType;
-    }>(await dbQuery.return('DISTINCT terms').orderBy('terms.updatedAt DESC').limit(limit).run());
-
-    const terms = results.map(result => inflateObject<any>(result.terms));
-
-    return terms.map(term => ({
-        date: term.updatedAt!,
-        credentials: {
-            categories: mapValues(
-                term.terms.read.credentials.categories,
-                category => category.shared ?? []
-            ),
-        },
-        personal: term.terms.read.personal,
-    }));
-};
+    options: { query?: ConsentFlowDataQuery; limit: number; cursor?: string }
+): Promise<ConsentFlowContractData[]> => getPermittedContractData(profileId, options);
 
 export const getConsentedDataForContract = async (
     id: string,
-    { query = {}, limit, cursor }: { query?: ConsentFlowDataQuery; limit: number; cursor?: string }
-): Promise<ConsentFlowContractData[]> => {
-    const _dbQuery = new QueryBuilder(
-        new BindParam({
-            params: flattenObject({ terms: flattenObject(convertDataQueryToNeo4jQuery(query)) }),
-            cursor,
-        })
-    ).match({
-        related: [
-            { identifier: 'terms', model: ConsentFlowTerms },
-            ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
-            { model: ConsentFlowContract, where: { id: id } },
-        ],
-        // The following is custom Cypher logic that has the following behavior:
-        // If query key is true, ensure all resulting terms have that key
-        // If query key is false, ensure no resulting terms have that key
-        // If query key is not present, return all terms whether they have it or not
-    }).where(`
-all(key IN keys($params) WHERE 
-    CASE $params[key]
-        WHEN true THEN terms[key] IS NOT NULL AND terms[key] <> []
-        WHEN false THEN terms[key] IS NULL OR terms[key] = []
-    END
-)
-`);
+    viewerProfileId: string,
+    options: { query?: ConsentFlowDataQuery; limit: number; cursor?: string }
+): Promise<ConsentFlowContractData[]> => getPermittedContractData(viewerProfileId, options, id);
 
-    const dbQuery = cursor ? _dbQuery.where('terms.updatedAt < $cursor') : _dbQuery;
-
-    const results = convertQueryResultToPropertiesObjectArray<{
-        terms: FlatDbTermsType;
-    }>(await dbQuery.return('DISTINCT terms').orderBy('terms.updatedAt DESC').limit(limit).run());
-
-    const terms = results.map(result => inflateObject<any>(result.terms));
-
-    return terms.map(term => ({
-        date: term.updatedAt!,
-        credentials: {
-            categories: mapValues(
-                term.terms.read.credentials.categories,
-                category => category.shared ?? []
-            ),
-        },
-        personal: term.terms.read.personal,
-    }));
+// Empty expiry values historically mean no expiry. Invalid nonempty values never authorize access.
+const isConsentExpiryActive = (expiresAt: string | undefined, now: number): boolean => {
+    if (!expiresAt?.trim()) return true;
+    const expiry = Date.parse(expiresAt);
+    return Number.isFinite(expiry) && expiry > now;
 };
 
 export const getConsentedDataBetweenProfiles = async (
@@ -530,78 +618,164 @@ export const getConsentedDataBetweenProfiles = async (
     const convertedContractQuery = id ? convertObjectRegExpToNeo4j({ id }) : {};
     const { whereClause: contractWhereClause, params: contractQueryParams } =
         buildWhereForQueryBuilder('contract', convertedContractQuery as any);
+    const now = Date.now();
+    const [managers, consenterProfile] = await Promise.all([
+        getProfilesThatManageAProfile(consenterProfileId),
+        getProfileByProfileId(consenterProfileId),
+    ]);
+    const isManagedProfile = managers.length > 0;
+    const requiresManagerApproval =
+        isManagedProfile &&
+        !isServiceProfileExemptFromGuardianship(
+            consenterProfile?.isServiceProfile,
+            consenterProfile?.type
+        );
+    const records: ConsentFlowContractDataForDid[] = [];
+    const batchSize = Math.max(limit, 50);
+    let offset = 0;
 
-    const _dbQuery = new QueryBuilder(
-        new BindParam({
-            params: flattenObject({ terms: flattenObject(convertDataQueryToNeo4jQuery(params)) }),
-            cursor,
-            ...contractQueryParams,
-        })
-    ).match({
-        related: [
-            { model: Profile, where: { profileId: consenterProfileId } },
-            ConsentFlowTerms.getRelationshipByAlias('createdBy'),
-            { identifier: 'terms', model: ConsentFlowTerms },
-            ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
-            { model: ConsentFlowContract, identifier: 'contract' },
-            ConsentFlowContract.getRelationshipByAlias('createdBy'),
-            { model: Profile, where: { profileId: ownerProfileId } },
-        ],
-        // The following is custom Cypher logic that has the following behavior:
-        // If query key is true, ensure all resulting terms have that key
-        // If query key is false, ensure no resulting terms have that key
-        // If query key is not present, return all terms whether they have it or not
-    }).where(`
-all(key IN keys($params) WHERE 
-    CASE $params[key]
-        WHEN true THEN terms[key] IS NOT NULL AND terms[key] <> []
-        WHEN false THEN terms[key] IS NULL OR terms[key] = []
-    END
-)
+    // Filter dates after parsing, but fetch bounded batches so invalid or expired grants
+    // cannot truncate an otherwise full page or require loading every grant at once.
+    while (records.length < limit) {
+        const _dbQuery = new QueryBuilder(
+            new BindParam({
+                cursor,
+                ...contractQueryParams,
+            })
+        ).match({
+            related: [
+                { model: Profile, where: { profileId: consenterProfileId } },
+                ConsentFlowTerms.getRelationshipByAlias('createdBy'),
+                { identifier: 'terms', model: ConsentFlowTerms },
+                ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
+                { model: ConsentFlowContract, identifier: 'contract' },
+                '-[:CREATED_BY|SHARES_DATA_WITH]->',
+                { model: Profile, where: { profileId: ownerProfileId } },
+            ],
+            // The following is custom Cypher logic that has the following behavior:
+            // If query key is true, ensure all resulting terms have that key
+            // If query key is false, ensure no resulting terms have that key
+            // If query key is not present, return all terms whether they have it or not
+        }).where(`
+(terms.status = 'live' OR (terms.status = 'stale' AND terms.oneTime = true))
 AND ${contractWhereClause}
 `);
 
-    const dbQuery = cursor ? _dbQuery.raw(' AND terms.updatedAt < $cursor') : _dbQuery;
+        const dbQuery = _dbQuery.match({
+            optional: true,
+            related: [
+                { identifier: 'transaction', model: ConsentFlowTransaction },
+                ConsentFlowTransaction.getRelationshipByAlias('isFor'),
+                { identifier: 'terms' },
+            ],
+        }).with(`terms, contract,
+            coalesce(terms.createdAt, min(CASE WHEN transaction.action = 'consent' THEN transaction.date END)) AS createdAt,
+            coalesce(terms.updatedAt, max(transaction.date), terms.createdAt) AS date,
+            count(transaction.\`guardianApproval.guardianProfileId\`) > 0 AS hadGuardianApproval`);
 
-    const results = convertQueryResultToPropertiesObjectArray<{
-        terms: FlatDbTermsType;
-        contract: FlatDbContractType;
-    }>(
-        await dbQuery
-            .return('DISTINCT terms, contract')
-            .orderBy('terms.updatedAt DESC')
-            .limit(limit)
-            .run()
-    );
+        if (cursor) dbQuery.where('date < $cursor');
 
-    const inflatedResults = results.map(result => ({
-        term: inflateObject<any>(result.terms) as DbTermsType,
-        contract: inflateObject<any>(result.contract) as DbContractType,
-    }));
+        const results = convertQueryResultToPropertiesObjectArray<{
+            terms: FlatDbTermsType;
+            contract: FlatDbContractType;
+            createdAt: string | null;
+            date: string;
+            hadGuardianApproval: boolean;
+        }>(
+            await dbQuery
+                .return('terms, contract, createdAt, date, hadGuardianApproval')
+                .orderBy('date DESC, terms.id ASC')
+                .skip(offset)
+                .limit(batchSize)
+                .run()
+        );
 
-    return inflatedResults.map(({ term, contract }) => ({
-        date: term.updatedAt!,
-        contractUri: constructUri('contract', contract.id, domain),
-        credentials: Object.entries(term.terms.read.credentials.categories)
-            .flatMap(([category, { shared, sharing, shareUntil }]) => {
-                if (
-                    !sharing ||
-                    (shareUntil && new Date(shareUntil) < new Date()) ||
-                    !shouldIncludeCategory(params.credentials?.categories, category)
-                ) {
-                    return false as any as { category: string; uri: string };
-                }
+        for (const result of results) {
+            const parsedTerm = DbTermsValidator.safeParse(inflateObject(result.terms));
+            const parsedContract = DbContractValidator.safeParse(inflateObject(result.contract));
+            if (!parsedTerm.success || !parsedContract.success) {
+                // Never log stored consent data, identifiers, or raw validation errors.
+                console.warn('consented_data: invalid_stored_grant');
+                continue;
+            }
+            const term = parsedTerm.data;
+            const contract = parsedContract.data;
+            if (
+                !isConsentExpiryActive(term.expiresAt, now) ||
+                !isConsentExpiryActive(contract.expiresAt, now)
+            )
+                continue;
 
-                return (
-                    shared?.map(uri => ({
-                        category: category,
-                        uri,
-                    })) ?? []
+            if (!matchesConsentedDataQuery(term, params, now)) continue;
+
+            const parsedApproval = ConsentFlowGuardianApprovalValidator.safeParse(
+                term.guardianApproval
+            );
+            const approval = parsedApproval.success ? parsedApproval.data : undefined;
+            const required =
+                requiresManagerApproval || !!term.guardianApproval || result.hadGuardianApproval;
+            const approved =
+                !!approval &&
+                approval.contractUpdatedAt === contract.updatedAt &&
+                managers.some(
+                    manager =>
+                        manager.profileId === approval.guardianProfileId &&
+                        (manager.did === approval.guardianDid ||
+                            getDidWeb(domain, manager.profileId) === approval.guardianDid)
                 );
-            })
-            .filter(Boolean),
-        personal: term.terms.read.personal,
-    }));
+
+            const permittedData = projectConsentedData(term, params, now);
+            records.push({
+                date: result.date,
+                ...(result.createdAt ? { createdAt: result.createdAt } : {}),
+                contractUpdatedAt: contract.updatedAt,
+                ...(contract.expiresAt?.trim() ? { contractExpiresAt: contract.expiresAt } : {}),
+                ...(contract.reasonForAccessing !== undefined
+                    ? { reasonForAccessing: contract.reasonForAccessing }
+                    : {}),
+                guardian: { required, approved, ...(approval ? { approval } : {}) },
+                contractUri: constructUri('contract', contract.id, domain),
+                termsUri: constructUri('terms', term.id, domain),
+                status: term.status,
+                ...(term.expiresAt?.trim() ? { expiresAt: term.expiresAt } : {}),
+                terms: {
+                    ...term.terms,
+                    read: {
+                        ...term.terms.read,
+                        credentials: {
+                            ...term.terms.read.credentials,
+                            categories: mapValues(
+                                term.terms.read.credentials.categories,
+                                (category, name) => ({
+                                    ...category,
+                                    shared: permittedData.credentials.categories[name] ?? [],
+                                })
+                            ),
+                        },
+                    },
+                },
+                credentials: Object.entries(term.terms.read.credentials.categories).flatMap(
+                    ([category, { shared, sharing, shareUntil }]) => {
+                        if (
+                            term.terms.read.credentials.sharing === false ||
+                            !sharing ||
+                            !isConsentExpiryActive(shareUntil, now) ||
+                            !shouldIncludeCategory(params.credentials?.categories, category)
+                        )
+                            return [];
+
+                        return shared?.map(uri => ({ category, uri })) ?? [];
+                    }
+                ),
+                personal: term.terms.read.personal,
+            });
+            if (records.length >= limit) return records;
+        }
+        if (results.length < batchSize) break;
+        offset += batchSize;
+    }
+
+    return records;
 };
 
 export const getTransactionsForTerms = async (

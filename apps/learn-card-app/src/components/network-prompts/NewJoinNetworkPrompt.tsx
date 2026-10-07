@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { auth } from '../../firebase/firebase';
-import { updateProfile } from 'firebase/auth';
+import { useSignInAdapter } from 'learn-card-base';
 import { z } from 'zod';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('new-join-network-prompt');
@@ -37,14 +36,15 @@ import { m } from '../../paraglide/messages.js';
 
 import useTheme from '../../theme/hooks/useTheme';
 
-const StateValidator = z.object({
-    name: z
-        .string()
-        .nonempty(' Name is required.')
-        .min(3, ' Must contain at least 3 character(s).')
-        .max(30, ' Must contain at most 30 character(s).')
-        .regex(/^[A-Za-z0-9 ]+$/, ' Alpha numeric characters(s) only'),
-});
+const getStateValidator = () =>
+    z.object({
+        name: z
+            .string()
+            .nonempty(m['arabicFixes.nameRequired']())
+            .min(3, ' Must contain at least 3 character(s).')
+            .max(30, ' Must contain at most 30 character(s).')
+            .regex(/^[A-Za-z0-9 ]+$/, ' Alpha numeric characters(s) only'),
+    });
 
 const ProfileIDStateValidator = z.object({
     profileId: z
@@ -63,6 +63,7 @@ type NewJoinNetworkPromptProps = {
 };
 
 const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleCloseModal }) => {
+    const adapter = useSignInAdapter();
     const { initWallet } = useWallet();
     const { newModal } = useModal();
     const { refetch } = useGetCurrentLCNUser();
@@ -122,7 +123,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
     });
 
     const validate = () => {
-        const parsedData = StateValidator.safeParse({
+        const parsedData = getStateValidator().safeParse({
             name: name,
         });
 
@@ -234,16 +235,16 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
         // ! APPLE HOT FIX
         if (typeOfLogin === SocialLoginTypes.apple) {
             // ! apple's guidelines: name should NOT be required
-            const firebaseUser = auth()?.currentUser;
+            const firebaseUser = adapter.getCurrentUser();
             if (!firebaseUser) {
                 presentLogoutErrorModal();
                 setIsLoading(false);
                 return;
             }
 
-            await updateProfile(firebaseUser, {
+            await adapter.updateProfile?.({
                 displayName: name ?? '',
-                photoURL: photo ?? '',
+                photoUrl: photo ?? '',
             });
 
             handleStorageUpdate();
@@ -273,7 +274,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     } else {
                         // update firebase profile
                         try {
-                            const firebaseUser = auth()?.currentUser;
+                            const firebaseUser = adapter.getCurrentUser();
                             if (!firebaseUser) {
                                 presentLogoutErrorModal();
                                 setIsLoading(false);
@@ -281,9 +282,9 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                                 return;
                             }
 
-                            await updateProfile(firebaseUser, {
+                            await adapter.updateProfile?.({
                                 displayName: name,
-                                photoURL: photo,
+                                photoUrl: photo,
                             });
                         } catch (e: unknown) {
                             presentLogoutErrorModal();

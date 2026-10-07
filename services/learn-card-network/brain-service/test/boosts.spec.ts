@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { vi } from 'vitest';
+import type { UnsignedVC } from '@learncard/types';
 
 import { getClient, getUser } from './helpers/getClient';
 import { sendBoost, testUnsignedBoost, testVc } from './helpers/send';
@@ -24,6 +25,7 @@ import { neogma } from '@instance';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { sendSpy, addNotificationToQueueSpy } from './helpers/spies';
 import * as notifications from '@helpers/notifications.helpers';
+import { areProfilesConnected } from '@helpers/connection.helpers';
 
 // Mock delivery service for inbox routing tests
 const deliverySendSpy = vi.fn().mockResolvedValue(undefined);
@@ -749,6 +751,46 @@ describe('Boosts', () => {
             expect(credentialUri).toBeDefined();
         });
 
+        it('includes the source Boost URI in received-notification metadata', async () => {
+            const notificationSpy = vi
+                .spyOn(notifications, 'addNotificationToQueue')
+                .mockImplementation(addNotificationToQueueSpy);
+            addNotificationToQueueSpy.mockClear();
+
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+            const userBProfile = (await userB.clients.fullAuth.profile.getProfile())!;
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userB.learnCard.id.did(),
+                },
+                boostId: uri,
+            });
+
+            const credentialUri = await userA.clients.fullAuth.boost.sendBoost({
+                profileId: userBProfile.profileId,
+                uri,
+                credential,
+            });
+
+            await vi.waitFor(() => {
+                expect(addNotificationToQueueSpy).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        data: {
+                            vcUris: [credentialUri],
+                            metadata: { boostUri: uri },
+                        },
+                    })
+                );
+            });
+
+            notificationSpy.mockRestore();
+        });
+
         it('should allow sending a boost to did:web', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
                 credential: testUnsignedBoost,
@@ -990,7 +1032,7 @@ describe('Boosts', () => {
                 userA.clients.fullAuth.boost.send({
                     type: 'boost',
                     templateUri: boostUri,
-                } as any)
+                } as unknown as Parameters<typeof userA.clients.fullAuth.boost.send>[0])
             ).rejects.toThrow();
         });
 
@@ -999,7 +1041,7 @@ describe('Boosts', () => {
                 userA.clients.fullAuth.boost.send({
                     type: 'boost',
                     recipient: 'userb',
-                } as any)
+                } as unknown as Parameters<typeof userA.clients.fullAuth.boost.send>[0])
             ).rejects.toThrow();
         });
 
@@ -1277,6 +1319,45 @@ describe('Boosts', () => {
             expect(result.inbox).toBeDefined();
             expect(result.inbox?.claimUrl).toBeDefined();
             expect(result.inbox?.claimUrl).toContain('interactions');
+        });
+
+        it('should pass expiresInDays through to the inbox claim window', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const before = Date.now();
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'expires@example.com',
+                templateUri: boostUri,
+                options: { expiresInDays: 3 },
+            });
+
+            const record = await userA.clients.fullAuth.inbox.getInboxCredential({
+                credentialId: result.inbox!.issuanceId,
+            });
+            const expiresInMs = new Date(record.expiresAt).getTime() - before;
+            const threeDays = 3 * 24 * 60 * 60 * 1000;
+            expect(expiresInMs).toBeGreaterThan(threeDays - 60_000);
+            expect(expiresInMs).toBeLessThanOrEqual(threeDays + 60_000);
+        });
+
+        it('should reject expiresInDays outside 1-720', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            for (const expiresInDays of [0, 721, 1.5]) {
+                await expect(
+                    userA.clients.fullAuth.boost.send({
+                        type: 'boost',
+                        recipient: 'expires-invalid@example.com',
+                        templateUri: boostUri,
+                        options: { expiresInDays },
+                    })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            }
         });
 
         it('should pass webhookUrl to inbox configuration', async () => {
@@ -2198,9 +2279,13 @@ describe('Boosts', () => {
             const credentialWithAlignment = {
                 ...testUnsignedBoost,
                 credentialSubject: {
-                    ...(testUnsignedBoost.credentialSubject as any),
+                    ...(testUnsignedBoost.credentialSubject as Record<string, unknown>),
                     achievement: {
-                        ...(testUnsignedBoost.credentialSubject as any).achievement,
+                        ...((
+                            testUnsignedBoost.credentialSubject as {
+                                achievement?: Record<string, unknown>;
+                            }
+                        ).achievement ?? {}),
                         alignment: [
                             {
                                 id: skillId,
@@ -2221,27 +2306,37 @@ describe('Boosts', () => {
             // Update the boost with the credential containing the malformed alignment
             await userA.clients.fullAuth.boost.updateBoost({
                 uri,
-                updates: { credential: credentialWithAlignment as any },
+                updates: { credential: credentialWithAlignment as UnsignedVC },
             });
 
             // Resolve the updated credential and check the alignments
-            const resolvedCredential = await userA.clients.fullAuth.storage.resolve({ uri });
+            const resolvedCredential = (await userA.clients.fullAuth.storage.resolve({
+                uri,
+            })) as UnsignedVC;
 
             // Check that alignments exist and have proper format
-            const credentialSubject = resolvedCredential.credentialSubject;
-            const achievement = Array.isArray(credentialSubject)
-                ? credentialSubject[0]?.achievement
-                : (credentialSubject as any)?.achievement;
+            type Alignment = {
+                id?: string;
+                targetCode?: string;
+                type?: unknown;
+                targetUrl?: string;
+            };
+            type SubjectWithAchievement = { achievement?: { alignment?: Alignment[] } };
+            const credentialSubject = resolvedCredential.credentialSubject as
+                SubjectWithAchievement | SubjectWithAchievement[];
+            const achievement = (
+                Array.isArray(credentialSubject) ? credentialSubject[0] : credentialSubject
+            )?.achievement;
 
             expect(achievement).toBeDefined();
-            expect(achievement.alignment).toBeDefined();
-            expect(Array.isArray(achievement.alignment)).toBe(true);
-            expect(achievement.alignment.length).toBeGreaterThan(0);
+            expect(achievement!.alignment).toBeDefined();
+            expect(Array.isArray(achievement!.alignment)).toBe(true);
+            expect(achievement!.alignment!.length).toBeGreaterThan(0);
 
             // Find our alignment
-            const alignment = achievement.alignment.find(
-                (a: any) => a.id === skillId || a.targetCode === 'ATS001'
-            );
+            const alignment = achievement!.alignment!.find(
+                a => a.id === skillId || a.targetCode === 'ATS001'
+            )!;
             expect(alignment).toBeDefined();
 
             // Verify the alignment type was normalized from string to array
@@ -2250,7 +2345,7 @@ describe('Boosts', () => {
 
             // Verify targetUrl was constructed from frameworkId and id
             expect(typeof alignment.targetUrl).toBe('string');
-            expect(alignment.targetUrl.length).toBeGreaterThan(0);
+            expect(alignment.targetUrl!.length).toBeGreaterThan(0);
             expect(alignment.targetUrl).toContain(frameworkId);
             expect(alignment.targetUrl).toContain(skillId);
         });
@@ -2891,6 +2986,49 @@ describe('Boosts', () => {
             } else {
                 expect(sa).toBeDefined();
             }
+        });
+
+        it('creates both prompt directions for a claim-link acceptance using the credential trigger', async () => {
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
+            const boostUri = boosts.records[0]!.uri;
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+            expect(sa).toBeDefined();
+
+            const challenge = 'connection-prompt-claim';
+            await userA.clients.fullAuth.boost.generateClaimLink({
+                boostUri,
+                challenge,
+                claimLinkSA: {
+                    endpoint: sa!.signingAuthority.endpoint,
+                    name: sa!.relationship.name,
+                },
+            });
+
+            const credentialUri = await userB.clients.fullAuth.boost.claimBoostWithLink({
+                boostUri,
+                challenge,
+            });
+            const [claimerPrompts, senderPrompts, claimer, sender] = await Promise.all([
+                userB.clients.fullAuth.profile.pendingConnectionPrompts(),
+                userA.clients.fullAuth.profile.pendingConnectionPrompts(),
+                userB.clients.fullAuth.profile.getProfile(),
+                userA.clients.fullAuth.profile.getProfile(),
+            ]);
+
+            expect(claimerPrompts).toHaveLength(1);
+            expect(claimerPrompts[0]).toMatchObject({
+                surface: 'POST_CLAIM',
+                triggerId: `credential:${getIdFromUri(credentialUri)}`,
+            });
+            expect(senderPrompts).toHaveLength(1);
+            expect(senderPrompts[0]).toMatchObject({
+                surface: 'NOTIFICATION',
+                triggerId: `credential:${getIdFromUri(credentialUri)}`,
+            });
+            expect(await areProfilesConnected(claimer!, sender!)).toBe(false);
         });
 
         it("should auto-accept a boost you've claimed", async () => {
@@ -7652,13 +7790,17 @@ describe('Boosts', () => {
                     uri,
                     // Use $in single value to exercise typed map path reliably
                     profileQuery: { profileId: { $in: ['userb'] } },
-                } as any);
+                } as unknown as Parameters<
+                    typeof userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount
+                >[0]);
             expect(onlyUserB).toBe(1);
 
             const inQuery = await userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount({
                 uri,
                 profileQuery: { profileId: { $in: ['userb', 'userd'] } },
-            } as any);
+            } as unknown as Parameters<
+                typeof userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount
+            >[0]);
             expect(inQuery).toBe(1);
         });
 
@@ -7690,7 +7832,9 @@ describe('Boosts', () => {
                     // Provide regex pattern. The server supports
                     // string-form '/pattern/flags' for convenience.
                     profileQuery: { profileId: { $regex: '/userb/i' } },
-                } as any);
+                } as unknown as Parameters<
+                    typeof userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount
+                >[0]);
 
             expect(regexCount).toBe(1);
         });

@@ -36,12 +36,12 @@ describe('LearnCard SDK', () => {
     });
     describe('emptyLearnCard', () => {
         it('should work', async () => {
-            await expect(initLearnCard()).resolves.toBeDefined();
+            await expect(initLearnCard({ didkit })).resolves.toBeDefined();
         });
 
         it('should allow verifying a credential', async () => {
             const learnCard = await getLearnCard();
-            const emptyLearnCard = await initLearnCard();
+            const emptyLearnCard = await initLearnCard({ didkit });
 
             const issuedVc = await learnCard.invoke.issueCredential(learnCard.invoke.getTestVc());
             const verificationResult = await emptyLearnCard.invoke.verifyCredential(
@@ -61,7 +61,7 @@ describe('LearnCard SDK', () => {
 
         it('should allow verifying a presentation', async () => {
             const learnCard = await getLearnCard();
-            const emptyLearnCard = await initLearnCard();
+            const emptyLearnCard = await initLearnCard({ didkit });
 
             const issuedVp = await learnCard.invoke.issuePresentation(
                 await learnCard.invoke.getTestVp()
@@ -74,7 +74,7 @@ describe('LearnCard SDK', () => {
 
         it('should only allow a subset of methods', async () => {
             const learnCard = await getLearnCard();
-            const emptyLearnCard = await initLearnCard();
+            const emptyLearnCard = await initLearnCard({ didkit });
 
             expect(Object.keys(emptyLearnCard.invoke).length).toBeLessThan(
                 Object.keys(learnCard.invoke).length
@@ -556,7 +556,7 @@ describe('LearnCard SDK', () => {
         // at top of file...
         // // Mocks
         // import { ethers } from 'ethers';
-        // jest.m0ck('ethers'); // won't compile event if this is commented out (when it's spelled correctly)
+        // vi.mock('ethers'); // won't compile even if this is commented out
 
         //    const learnCard = await getLearnCard();
 

@@ -47,7 +47,7 @@ import {
     isInboxActivity,
     isAutoDelivery,
     getActivityLabel,
-} from 'src/pages/appStoreDeveloper/dashboards/hooks/useIntegrationActivity';
+} from '../../pages/appStoreDeveloper/dashboards/hooks/useIntegrationActivity';
 
 export interface IssuanceDetailModalProps {
     item: CredentialActivityRecord;
@@ -134,16 +134,16 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                 action === 'revoke'
                     ? m['issue.confirmRevoke']()
                     : action === 'suspend'
-                    ? m['issue.confirmSuspend']()
-                    : m['issue.confirmUnsuspend'](),
+                      ? m['issue.confirmSuspend']()
+                      : m['issue.confirmUnsuspend'](),
             onConfirm: async () => {
                 try {
                     const mutation =
                         action === 'revoke'
                             ? revokeRecipient
                             : action === 'suspend'
-                            ? suspendRecipient
-                            : unsuspendRecipient;
+                              ? suspendRecipient
+                              : unsuspendRecipient;
                     await mutation.mutateAsync({
                         boostUri: item.boostUri!,
                         recipientProfileId: item.recipientProfile!.profileId,

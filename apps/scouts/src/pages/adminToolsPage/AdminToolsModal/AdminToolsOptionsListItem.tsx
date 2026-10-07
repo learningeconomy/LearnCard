@@ -87,7 +87,7 @@ export const AdminToolOptionsListItem: React.FC<{
                         {count}
                     </p>
                 )}
-                <SlimCaretRight className="w-[25px] h-[26px] text-grayscale-500" />
+                <SlimCaretRight className="rtl-mirror w-[25px] h-[26px] text-grayscale-500" />
             </div>
         </li>
     );

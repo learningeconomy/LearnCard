@@ -57,78 +57,75 @@ export const OnboardingRoleItem: React.FC<OnboardingRoleItemProps> = ({
         : undefined;
 
     return (
-        <li
-            role="button"
-            className={`w-full text-grayscale-900 border-solid flex items-start justify-between border-[1px] rounded-[10px] p-4 text-left list-none ${activeStyles}`}
-            onClick={e => {
-                e.stopPropagation();
+        <li className="w-full list-none">
+            <button
+                type="button"
+                aria-pressed={isSelected}
+                className={`w-full text-grayscale-900 border-solid flex items-start justify-between border-[1px] rounded-[10px] p-4 text-left ${activeStyles}`}
+                onClick={e => {
+                    e.stopPropagation();
 
-                if (handleEdit) {
-                    handleEdit();
-                    return;
-                }
+                    if (handleEdit) {
+                        handleEdit();
+                        return;
+                    }
 
-                if (!roleItem) return;
+                    if (!roleItem) return;
 
-                setRole(roleItem.type);
-            }}
-        >
-            <div className="flex flex-1 min-w-0 flex-col items-start gap-[5px]">
-                <div className="flex items-center justify-between w-full gap-3">
-                    <div className={`flex items-center min-w-0 ${hasIcon ? 'gap-3' : ''}`}>
-                        {hasIcon && (
-                            <span
-                                className="flex shrink-0 items-center justify-center h-[36px] w-[36px] rounded-full"
-                                style={iconBgStyle}
-                            >
-                                <img
-                                    src={iconSrc}
-                                    alt={`${roleItem ? getRoleTitle(roleItem.type) : ''} icon`}
-                                    className="h-[28px] w-[28px] object-contain"
-                                />
-                            </span>
-                        )}
-
-                        <p className="font-semibold text-[17px] font-poppins min-w-0">
-                            {!showDescription && isSelected && (
-                                <span className="text-grayscale-800 font-normal">
-                                    {m['onboarding.profile.imA']()}
+                    setRole(roleItem.type);
+                }}
+            >
+                <div className="flex flex-1 min-w-0 flex-col items-start gap-[5px]">
+                    <div className="flex items-center justify-between w-full gap-3">
+                        <div className={`flex items-center min-w-0 ${hasIcon ? 'gap-3' : ''}`}>
+                            {hasIcon && (
+                                <span
+                                    className="flex shrink-0 items-center justify-center h-[36px] w-[36px] rounded-full"
+                                    style={iconBgStyle}
+                                >
+                                    <img
+                                        src={iconSrc}
+                                        alt=""
+                                        className="h-[28px] w-[28px] object-contain"
+                                    />
                                 </span>
                             )}
-                            {!showDescription && !isSelected
-                                ? m['onboarding.profile.selectRole']()
-                                : roleItem
-                                ? getRoleTitle(roleItem.type)
-                                : ''}
-                        </p>
+
+                            <p className="font-semibold text-[17px] font-poppins min-w-0">
+                                {!showDescription && isSelected && (
+                                    <span className="text-grayscale-800 font-normal">
+                                        {m['onboarding.profile.imA']()}
+                                    </span>
+                                )}
+                                {!showDescription && !isSelected
+                                    ? m['onboarding.profile.selectRole']()
+                                    : roleItem
+                                    ? getRoleTitle(roleItem.type)
+                                    : ''}
+                            </p>
+                        </div>
+
+                        {handleEdit ? (
+                            <span aria-hidden="true">
+                                <Pencil
+                                    className="w-[28px] h-[28px] shrink-0 text-grayscale-900"
+                                    strokeWidth="2"
+                                />
+                            </span>
+                        ) : (
+                            isSelected && (
+                                <Checkmark className="w-[20px] h-[20px] text-[#2A2F55] shrink-0 mt-[-6px]" />
+                            )
+                        )}
                     </div>
 
-                    {handleEdit ? (
-                        <button
-                            type="button"
-                            onClick={e => {
-                                e.stopPropagation();
-                                handleEdit?.();
-                            }}
-                        >
-                            <Pencil
-                                className="w-[28px] h-[28px] shrink-0 text-grayscale-900"
-                                strokeWidth="2"
-                            />
-                        </button>
-                    ) : (
-                        isSelected && (
-                            <Checkmark className="w-[20px] h-[20px] text-[#2A2F55] shrink-0 mt-[-6px]" />
-                        )
+                    {showDescription && roleItem && (
+                        <p className="text-grayscale-600 text-[14px] font-poppins">
+                            {getRoleDescription(roleItem.type)}
+                        </p>
                     )}
                 </div>
-
-                {showDescription && roleItem && (
-                    <p className="text-grayscale-600 text-[14px] font-poppins">
-                        {getRoleDescription(roleItem.type)}
-                    </p>
-                )}
-            </div>
+            </button>
         </li>
     );
 };

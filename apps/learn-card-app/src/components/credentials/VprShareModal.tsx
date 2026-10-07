@@ -152,14 +152,17 @@ export const VprShareModal: React.FC<VprShareModalProps> = ({
     });
 
     return (
-        <div className="flex flex-col h-full w-full bg-grayscale-100" style={{
-            paddingTop: 'max(1.5rem, env(safe-area-inset-top))',
-        }}>
+        <div
+            className="flex flex-col h-full w-full bg-grayscale-100"
+            style={{
+                paddingTop: '1.5rem',
+            }}
+        >
             {/* Header */}
-            <div 
+            <div
                 className="bg-white border-b border-grayscale-200 p-6"
                 style={{
-                    paddingTop: 'max(1.5rem, env(safe-area-inset-top))',
+                    paddingTop: '1.5rem',
                 }}
             >
                 <h2 className="text-2xl font-bold text-grayscale-900 text-center">
@@ -228,12 +231,12 @@ export const VprShareModal: React.FC<VprShareModalProps> = ({
             </div>
 
             {/* Footer with Action Buttons */}
-            <div 
+            <div
                 className="bg-white border-t border-grayscale-200 p-6"
                 style={{
-                    paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
-                    paddingLeft: 'max(1.5rem, env(safe-area-inset-left))',
-                    paddingRight: 'max(1.5rem, env(safe-area-inset-right))',
+                    paddingBottom: '1.5rem',
+                    paddingLeft: '1.5rem',
+                    paddingRight: '1.5rem',
                 }}
             >
                 <div className="flex items-center justify-between mb-4">

@@ -1,26 +1,11 @@
 import React, { useMemo } from 'react';
-import {
-    useGetCredentialList,
-    useModal,
-    ModalTypes,
-    categoryMetadata,
-    CredentialCategoryEnum,
-} from 'learn-card-base';
-import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
+import { useGetCredentialList, useModal, ModalTypes } from 'learn-card-base';
+import PassportCredentialCard, { ActivityIndexRecord } from './PassportCredentialCard';
 import { AllCredentialsModal } from './AllCredentialsModal';
-import { resolveActivityCategory, isHiddenActivity } from './activityFeed.helpers';
+import { isHiddenActivity } from './activityFeed.helpers';
 import * as m from '../../../paraglide/messages.js';
 
 const MAX_ITEMS = 5;
-
-type IndexRecord = {
-    id?: string;
-    uri: string;
-    category?: string;
-    title?: string;
-    date?: string;
-    imgUrl?: string;
-};
 
 export const RecentlyAdded: React.FC = () => {
     const { newModal, closeModal } = useModal({
@@ -36,7 +21,8 @@ export const RecentlyAdded: React.FC = () => {
         });
 
     const items = useMemo(() => {
-        const records = (data?.pages?.flatMap(p => p?.records ?? []) ?? []) as IndexRecord[];
+        const records = (data?.pages?.flatMap(p => p?.records ?? []) ??
+            []) as ActivityIndexRecord[];
         return records
             .filter(r => r?.uri && !isHiddenActivity(r.category))
             .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
@@ -46,39 +32,29 @@ export const RecentlyAdded: React.FC = () => {
     if (items.length === 0) return null;
 
     return (
-        <div className="mb-[24px]">
+        <section className="mb-[24px]">
             <div className="flex items-center justify-between mb-[10px]">
-                <h3 className="font-poppins text-[13px] tracking-[1px] text-grayscale-500">
+                <h2 className="font-poppins text-[13px] tracking-[1px] text-grayscale-800">
                     {m['passport.activity.recent']()}
-                </h3>
+                </h2>
                 <button
                     type="button"
                     onClick={openSeeAll}
-                    className="font-poppins text-[13px] font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                    className="font-poppins text-[13px] font-medium text-grayscale-800 hover:text-grayscale-900 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     {m['passport.activity.seeAll']()}
                 </button>
             </div>
             <div className="-mx-6 flex gap-3 overflow-x-auto px-6 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:gap-2 md:overflow-visible md:px-0 md:flex-wrap">
-                {items.map(record => {
-                    const category = resolveActivityCategory(record.category);
-                    return (
-                        <div key={record.uri} className="shrink-0 snap-start">
-                            <BoostEarnedCard
-                                record={record}
-                                categoryType={category}
-                                defaultImg={
-                                    categoryMetadata[category as CredentialCategoryEnum]
-                                        ?.defaultImageSrc
-                                }
-                                useWrapper={false}
-                                hideCardOptionsMenu
-                            />
-                        </div>
-                    );
-                })}
+                {items.map(record => (
+                    <PassportCredentialCard
+                        key={record.uri}
+                        record={record}
+                        className="shrink-0 snap-start"
+                    />
+                ))}
             </div>
-        </div>
+        </section>
     );
 };
 

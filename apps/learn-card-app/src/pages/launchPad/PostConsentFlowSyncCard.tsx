@@ -80,7 +80,8 @@ const PostConsentFlowSyncCard: React.FC<PostConsentFlowSyncCardProps> = ({
 
     const { mutateAsync: updateTerms, isPending: updatingTerms } = useUpdateTerms(
         consentedContract?.uri,
-        consentedContract?.contract?.owner.did ?? ''
+        consentedContract?.contract?.owner.did ?? '',
+        consentedContract?.contract?.uri
     );
     const { mutateAsync: consentToContract, isPending: consentingToContract } =
         useConsentToContract(
@@ -127,13 +128,12 @@ const PostConsentFlowSyncCard: React.FC<PostConsentFlowSyncCardProps> = ({
                         unsignedDelegateCredential
                     );
 
-                    const unsignedDidAuthVp = await wallet.invoke.newPresentation(
-                        delegateCredential
-                    );
+                    const unsignedDidAuthVp =
+                        await wallet.invoke.newPresentation(delegateCredential);
                     const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
                         proofPurpose: 'authentication',
                         proofFormat: 'jwt',
-                    })) as any as string;
+                    })) as unknown as string;
 
                     urlObj.searchParams.set('vp', vp);
                 }
@@ -152,7 +152,7 @@ const PostConsentFlowSyncCard: React.FC<PostConsentFlowSyncCardProps> = ({
     }
 
     return (
-        <section className="w-full flex flex-col gap-[20px] items-center px-[20px] py-[30px] bg-white shadow-bottom rounded-[24px] max-w-[400px] disable-scrollbars safe-area-top-margin">
+        <section className="w-full flex flex-col gap-[20px] items-center px-[20px] py-[30px] bg-white shadow-bottom rounded-[24px] max-w-[400px] disable-scrollbars mt-[var(--ion-safe-area-top,0px)]">
             <div className="w-full flex items-center justify-center pt-2">
                 <h6 className="tracking-[12px] text-base font-bold text-black">
                     {brandingConfig?.name}

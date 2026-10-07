@@ -11,7 +11,6 @@ import {
 import { getLogger } from 'learn-card-base';
 const log = getLogger('use-consent-flow');
 
-import PostConsentFlowSyncCard from '../launchPad/PostConsentFlowSyncCard';
 import FullScreenConsentFlow from './FullScreenConsentFlow';
 import FullScreenGameFlow from '../consentFlow/GameFlow/FullScreenGameFlow';
 
@@ -28,7 +27,7 @@ export const useConsentFlow = (
     });
 
     // fetch contract if needed
-    const { data: _contract } = useContract(contractUri, !Boolean(contract));
+    const { data: _contract } = useContract(contractUri, !contract);
     contract = contract ?? _contract;
 
     const { data: consentedContracts, isLoading: consentedContractLoading } =
@@ -40,7 +39,8 @@ export const useConsentFlow = (
 
     const { mutateAsync: updateTermsMutation } = useUpdateTerms(
         consentedContract?.uri ?? '',
-        consentedContract?.contract?.owner.did ?? ''
+        consentedContract?.contract?.owner.did ?? '',
+        consentedContract?.contract?.uri
     );
     // isPending from useUpdateTerms isn't working, so we'll do it ourselves 😤
     const [updatingTerms, setUpdatingTerms] = useState(false);
@@ -54,13 +54,7 @@ export const useConsentFlow = (
         onCloseCallback?: () => void,
         onBackCallback?: () => void
     ) => {
-        if (hasConsented && false) {
-            // handled by FullScreenConsentFlow with isPostConsent
-            //   this is removable, just keeping it around as a reference for now
-            newModal(<PostConsentFlowSyncCard consentedContract={consentedContract!} />, {
-                sectionClassName: '!max-w-[400px]',
-            });
-        } else if (contract?.needsGuardianConsent && !hasConsented) {
+        if (contract?.needsGuardianConsent && !hasConsented) {
             newModal(
                 <FullScreenGameFlow contractDetails={contract} />,
                 {},
@@ -93,7 +87,8 @@ export const useConsentFlow = (
         shareDuration: {
             oneTimeShare: boolean;
             customDuration: string;
-        }
+        },
+        beforeSubmit?: () => Promise<void>
     ) => {
         try {
             setUpdatingTerms(true);
@@ -101,6 +96,7 @@ export const useConsentFlow = (
                 terms,
                 oneTime: shareDuration.oneTimeShare,
                 expiresAt: shareDuration.customDuration,
+                beforeSubmit,
             });
         } finally {
             setUpdatingTerms(false);

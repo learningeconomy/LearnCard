@@ -1,21 +1,14 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import { Sparkles, ArrowRight, Code2, Rocket } from 'lucide-react';
 import * as m from '../../paraglide/messages.js';
 
 export const LaunchPadBecomeAnApp: React.FC = () => {
     const history = useHistory();
-    const flags = useFlags();
 
     const handleClick = () => {
         history.push('/app-store/developer');
     };
-
-    // Only show if the feature flag is enabled
-    if (!flags.joinOurDeveloperCommunityAd) {
-        return null;
-    }
 
     return (
         <div className="w-full max-w-[600px] mt-4 px-2">

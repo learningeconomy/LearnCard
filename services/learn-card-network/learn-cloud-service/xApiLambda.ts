@@ -2,11 +2,13 @@ import serverlessHttp from 'serverless-http';
 import * as Sentry from '@sentry/serverless';
 
 import xApiApp from './src/xapi';
+import { environment } from './src/config/environment';
+import { toServerlessApplication } from './src/helpers/serverlessApplication';
 
 Sentry.AWSLambda.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.SENTRY_ENV,
-    enabled: Boolean(process.env.SENTRY_DSN),
+    dsn: environment.SENTRY_DSN,
+    environment: environment.SENTRY_ENV,
+    enabled: Boolean(environment.SENTRY_DSN),
     tracesSampleRate: 1.0,
     integrations: [
         new Sentry.Integrations.Console(),
@@ -16,4 +18,6 @@ Sentry.AWSLambda.init({
     ],
 });
 
-export const xApiHandler = Sentry.AWSLambda.wrapHandler(serverlessHttp(xApiApp));
+export const xApiHandler = Sentry.AWSLambda.wrapHandler(
+    serverlessHttp(toServerlessApplication(xApiApp))
+);

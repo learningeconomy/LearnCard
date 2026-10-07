@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- legacy error payload is dynamically shaped. */
 import React, { useEffect, useState } from 'react';
 import {
     useManageSelfAssignedSkillsBoost,
@@ -9,8 +10,8 @@ import {
 } from 'learn-card-base';
 import { IonSpinner } from '@ionic/react';
 
-import SkillSearchSelector from 'src/pages/skills/SkillSearchSelector';
-import { SelectedSkill } from 'src/pages/skills/skillTypes';
+import SkillSearchSelector from '../../../pages/skills/SkillSearchSelector';
+import { SelectedSkill } from '../../../pages/skills/skillTypes';
 import {
     SKILL_PROFILE_PROFESSIONAL_TITLE_KEY,
     SkillProfileProfessionalTitleData,

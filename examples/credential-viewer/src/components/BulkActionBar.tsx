@@ -4,6 +4,7 @@ import { useWallet } from '../context/WalletContext';
 
 interface BulkActionBarProps {
     selectedCount: number;
+    canSendAll: boolean;
     onIssueAll: () => void;
     onSendAll: () => void;
     onClearSelection: () => void;
@@ -11,6 +12,7 @@ interface BulkActionBarProps {
 
 export const BulkActionBar: React.FC<BulkActionBarProps> = ({
     selectedCount,
+    canSendAll,
     onIssueAll,
     onSendAll,
     onClearSelection,
@@ -50,9 +52,15 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
 
             <button
                 onClick={onSendAll}
-                disabled={!isConnected}
+                disabled={!isConnected || !canSendAll}
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed flex items-center gap-1.5"
-                title={!isConnected ? 'Connect wallet first' : undefined}
+                title={
+                    !canSendAll
+                        ? 'SD-JWT VC fixtures cannot use the Boost send flow.'
+                        : !isConnected
+                        ? 'Connect wallet first'
+                        : undefined
+                }
             >
                 <svg
                     className="w-3.5 h-3.5"

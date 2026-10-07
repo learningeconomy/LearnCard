@@ -19,7 +19,6 @@ import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/Crede
 import BoostLoader from '../boostLoader/BoostLoader';
 import BoostCMSConfirmationPrompt from './BoostCMSConfirmationPrompts/BoostCMSConfirmationPrompt';
 import BoostCMSTitleForm from './boostCMSForms/boostCMSTitleForm/BoostCMSTitleForm';
-import BoostCMSPublish from './boostCMSForms/boostCMSPublish/boostCMSPublish';
 import BoostSuccessConfirmation from './BoostSuccessConfirmation/BoostSuccessConfirmation';
 import BoostCMSIDAppearanceController from './boostCMSForms/boostCMSAppearance/BoostCMSIDAppearanceController';
 import BoostCMSIDCard from '../boost-id-card/BoostIDCard';
@@ -53,7 +52,6 @@ import {
     unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import useWallet from 'learn-card-base/hooks/useWallet';
 import {
@@ -89,7 +87,6 @@ const UpdateBoostCMS: React.FC = () => {
     const query = usePathQuery();
 
     const { track } = useAnalytics();
-    const flags = useFlags();
 
     const { initWallet, addVCtoWallet } = useWallet();
     const { presentToast } = useToast();
@@ -361,26 +358,7 @@ const UpdateBoostCMS: React.FC = () => {
     const handleNextStep = async () => {
         dissmissModal();
         if (currentStep === BoostCMSStepsEnum.create) {
-            // When skipPublishStep flag is enabled, skip directly to issueTo without updating the boost yet
-            if (flags?.skipPublishStep) {
-                setSkippedPublishStep(true);
-                setCurrentStep(BoostCMSStepsEnum.issueTo);
-                track(AnalyticsEvents.BOOST_CMS_ISSUE_TO, {
-                    timestamp: Date.now(),
-                    action: 'issue_to',
-                    boostType: state?.basicInfo?.achievementType,
-                    category: state?.basicInfo?.type,
-                });
-            } else {
-                setCurrentStep(BoostCMSStepsEnum.publish);
-                track(AnalyticsEvents.BOOST_CMS_PUBLISH, {
-                    timestamp: Date.now(),
-                    action: 'publish',
-                    boostType: state?.basicInfo?.achievementType,
-                    category: state?.basicInfo?.type,
-                });
-            }
-        } else if (currentStep === BoostCMSStepsEnum.publish) {
+            setSkippedPublishStep(true);
             setCurrentStep(BoostCMSStepsEnum.issueTo);
             track(AnalyticsEvents.BOOST_CMS_ISSUE_TO, {
                 timestamp: Date.now(),
@@ -400,20 +378,13 @@ const UpdateBoostCMS: React.FC = () => {
     };
 
     const handlePrevStep = () => {
-        if (currentStep === BoostCMSStepsEnum.publish) {
-            setCurrentStep(BoostCMSStepsEnum.create);
-        } else if (currentStep === BoostCMSStepsEnum.issueTo) {
+        if (currentStep === BoostCMSStepsEnum.issueTo) {
             if (issueMode) {
                 history.replace(
                     `/boost/update?uri=${_boostUri}&boostUserType=${_boostUserType}&boostCategoryType=${_boostCategoryType}&boostSubCategoryType=${_boostSubCategoryType}`
                 );
             }
-            // When skipPublishStep flag is enabled, go back to create step (since publish was skipped)
-            if (flags?.skipPublishStep) {
-                setCurrentStep(BoostCMSStepsEnum.create);
-            } else {
-                handleConfirmationModal();
-            }
+            setCurrentStep(BoostCMSStepsEnum.create);
         }
     };
 
@@ -662,7 +633,7 @@ const UpdateBoostCMS: React.FC = () => {
                 showSaveAndQuitButton={
                     currentStep !== BoostCMSStepsEnum.confirmation && !isEditDisabled
                 }
-                showIssueButton={currentStep === BoostCMSStepsEnum.publish && !isEditDisabled}
+                showIssueButton={false}
                 selectedVCType={state?.basicInfo?.type}
                 isEditMode
             />
@@ -793,17 +764,6 @@ const UpdateBoostCMS: React.FC = () => {
                 />
                 <BoostCMSAdminsForm state={state} setState={setState} disabled={isEditDisabled} /> */}
             </>
-        );
-    } else if (currentStep === BoostCMSStepsEnum.publish) {
-        activeBoostCMSStep = (
-            <BoostCMSPublish
-                handlePreview={handlePreview}
-                handleSaveAndQuit={handleSaveAndQuit}
-                handlePublishBoost={handlePublishBoost}
-                showSaveAsDraftButton={!isEditDisabled}
-                isSaveLoading={isSaveLoading}
-                isPublishLoading={isPublishLoading}
-            />
         );
     } else if (currentStep === BoostCMSStepsEnum.issueTo) {
         activeBoostCMSStep = (

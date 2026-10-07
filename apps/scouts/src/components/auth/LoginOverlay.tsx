@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Typewriter from 'typewriter-effect';
 import _ from 'lodash';
 
@@ -6,25 +6,30 @@ import { IonRow } from '@ionic/react';
 
 import ScoutPassTextLogo from '../../assets/images/scoutpass-text-logo.svg';
 import ScoutPassLogo from '../../assets/images/scoutpass-logo.svg';
-
-const messagesSource = [
-    'Badges coming right up!',
-    'Waving a magic boost wand!',
-    'Fetching your badge brilliance!',
-    'Unlocking your secret stardust!',
-    'Brewing your digital delights!',
-    'Summoning your boost superpowers!',
-    'Your digital treasure is near!',
-    'Preparing your badge bonanza!',
-    'Badges loading with pizzazz!',
-    'Get ready for boost spark!',
-];
+import * as m from '../../paraglide/messages.js';
+import { useLocale } from '../../i18n';
 
 export const LoginOverlay: React.FC<{ isOpen: boolean }> = ({ isOpen }) => {
+    const locale = useLocale();
     const [shouldRender, setShouldRender] = useState(isOpen);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [typewriterKey, setTypewriterKey] = useState(0);
-    const messages = useMemo(() => _.shuffle(messagesSource), [typewriterKey]);
+    const messages = useMemo(
+        () =>
+            _.shuffle([
+                m['login.loadingMessages.badgesComing'](),
+                m['login.loadingMessages.magicBoostWand'](),
+                m['login.loadingMessages.badgeBrilliance'](),
+                m['login.loadingMessages.secretStardust'](),
+                m['login.loadingMessages.digitalDelights'](),
+                m['login.loadingMessages.boostSuperpowers'](),
+                m['login.loadingMessages.digitalTreasure'](),
+                m['login.loadingMessages.badgeBonanza'](),
+                m['login.loadingMessages.badgesPizzazz'](),
+                m['login.loadingMessages.boostSpark'](),
+            ]),
+        [typewriterKey, locale]
+    );
 
     useEffect(() => {
         if (isOpen) {
@@ -56,12 +61,12 @@ export const LoginOverlay: React.FC<{ isOpen: boolean }> = ({ isOpen }) => {
                 style={{ backgroundColor: '#622599' }}
             >
                 <div className="w-full flex items-center justify-center flex-col absolute top-[40%] left-[50%] translate-x-[-50%]">
-                    <img src={ScoutPassLogo} alt="ScoutPass logo" className="w-[55px]" />
-                    <img src={ScoutPassTextLogo} alt="ScoutPass text logo" className="mt-4" />
+                    <img src={ScoutPassLogo} alt="" className="w-[55px]" />
+                    <img src={ScoutPassTextLogo} alt="" className="mt-4" />
                     <div className="w-full flex items-center justify-center text-center text-[18px] px-6 mt-[20px]">
                         {!isTransitioning && (
                             <Typewriter
-                                key={typewriterKey}
+                                key={`${locale}-${typewriterKey}`}
                                 options={{
                                     strings: messages,
                                     autoStart: true,

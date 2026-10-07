@@ -9,3 +9,9 @@
 export { createFirebaseAuthProvider } from './createFirebaseAuthProvider';
 
 export type { FirebaseAuthConfig } from './createFirebaseAuthProvider';
+export { createKeycloakAuthProvider } from './createKeycloakAuthProvider';
+export type {
+    KeycloakAuthProviderConfig,
+    KeycloakAuthProvider,
+    UserManagerLike,
+} from './createKeycloakAuthProvider';

@@ -1,15 +1,18 @@
 import React, { useState, useCallback } from 'react';
 
-import type { CredentialFixture } from '@learncard/credential-library';
-import { prepareFixture } from '@learncard/credential-library';
+import {
+    isSdJwtVcFixture,
+    prepareFixture,
+    type LibraryFixture,
+} from '@learncard/credential-library';
 
 import { Badge } from './Badge';
 import { SPEC_LABELS, SPEC_COLORS, CATEGORY_COLORS, DEFAULT_CATEGORY_COLOR } from '../lib/colors';
 import { useWallet } from '../context/WalletContext';
-import { getCategoryForCredential, ALL_CATEGORIES, type CredentialCategory } from '../lib/category';
+import { getCategoryForFixture, ALL_CATEGORIES, type CredentialCategory } from '../lib/category';
 
 interface IssuePanelProps {
-    fixtures: CredentialFixture[];
+    fixtures: LibraryFixture[];
     onClose: () => void;
 }
 
@@ -23,7 +26,7 @@ interface IssueResult {
 }
 
 export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => {
-    const { did, issueAndStore } = useWallet();
+    const { did, issueAndStore, materializeAndStoreSdJwt } = useWallet();
 
     const [step, setStep] = useState<IssueStep>('confirm');
     const [result, setResult] = useState<IssueResult>({
@@ -58,16 +61,25 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
             const fixture = fixtures[i];
 
             try {
-                const unsigned = prepareFixture(fixture, {
-                    issuerDid: did,
-                    subjectDid: did,
-                });
-
                 const override = categoryOverrides[fixture.id] || undefined;
 
-                const { uri } = await issueAndStore(unsigned as Record<string, unknown>, override);
+                if (isSdJwtVcFixture(fixture)) {
+                    const { uri } = await materializeAndStoreSdJwt(fixture, override);
 
-                uris.push(uri);
+                    uris.push(uri);
+                } else {
+                    const unsigned = prepareFixture(fixture, {
+                        issuerDid: did,
+                        subjectDid: did,
+                    });
+
+                    const { uri } = await issueAndStore(
+                        unsigned as Record<string, unknown>,
+                        override
+                    );
+
+                    uris.push(uri);
+                }
                 succeeded++;
             } catch (err) {
                 const msg = err instanceof Error ? err.message : String(err);
@@ -81,7 +93,7 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
 
         setResult({ succeeded, failed, uris, errors });
         setStep(failed > 0 && succeeded === 0 ? 'error' : 'success');
-    }, [did, fixtures, issueAndStore, categoryOverrides]);
+    }, [did, fixtures, issueAndStore, materializeAndStoreSdJwt, categoryOverrides]);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -178,9 +190,7 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
                     <div className="space-y-1.5">
                         {fixtures.map(f => {
                             const specColor = SPEC_COLORS[f.spec];
-                            const detectedCategory = getCategoryForCredential(
-                                f.credential as Record<string, unknown>
-                            );
+                            const detectedCategory = getCategoryForFixture(f);
                             const effectiveCategory = (categoryOverrides[f.id] ||
                                 detectedCategory) as CredentialCategory;
                             const catColor =
@@ -267,7 +277,7 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
                                 <div className="flex items-center justify-between text-xs">
                                     <span className="text-gray-500">Action</span>
                                     <span className="text-gray-300">
-                                        Sign → Upload Encrypted → Index
+                                        Generate → Upload Encrypted → Index
                                     </span>
                                 </div>
                             </div>
@@ -280,9 +290,7 @@ export const IssuePanel: React.FC<IssuePanelProps> = ({ fixtures, onClose }) => 
                             </button>
 
                             <p className="text-[11px] text-gray-600 leading-relaxed">
-                                Each fixture will be prepared with your DID, signed via{' '}
-                                <code className="text-gray-500">issueCredential()</code>, uploaded
-                                encrypted to LearnCloud, and added to your LearnCloud index.
+                                Generate, upload encrypted, and index each selected credential.
                             </p>
                         </div>
                     )}

@@ -4,7 +4,7 @@ import { useOptionalAuthCoordinator } from '../auth-coordinator/AuthCoordinatorP
 import { walletStore } from '../stores/walletStore';
 import { connectivityStore } from '../stores/connectivityStore';
 import { walletModeStore } from '../stores/walletModeStore';
-import { useIsLoggedIn } from '../stores/currentUserStore';
+import { currentUserStore, useIsLoggedIn } from '../stores/currentUserStore';
 
 import { deriveAuthStatus, type AuthGateState, type CoordinatorStatus } from './authStatus';
 
@@ -40,9 +40,23 @@ export const useAuthGateState = (
     const isOffline = connectivityStore.use.status() === 'offline';
     const walletMode = walletModeStore.use.mode();
 
+    const currentUser = currentUserStore.use.currentUser();
+    // Demo/seed sign-in initializes a wallet directly, without an identity provider.
+    // Require its in-memory key; persisted user metadata alone is not a session.
+    const directKeySession =
+        !!currentUser?.privateKey &&
+        (currentUser.uid === 'demo' || currentUser.uid === '') &&
+        !currentUser.typeOfLogin;
     const walletReady = !!wallet;
+    // Other hooks may initialize the wallet while direct sign-in is still
+    // setting up its network mode. That window must not authorize navigation
+    // with an unconfirmed profile before the onboarding decision is ready.
     const coordinatorStatus = resolveCoordinatorStatus(
-        coordinator?.state.status,
+        coordinator?.state.status === 'idle' && directKeySession
+            ? walletReady && walletMode !== null
+                ? 'ready'
+                : 'deriving_key'
+            : coordinator?.state.status,
         walletReady,
         isLoggedIn
     );

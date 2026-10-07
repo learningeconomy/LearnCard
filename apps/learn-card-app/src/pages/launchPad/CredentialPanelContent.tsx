@@ -151,7 +151,7 @@ const NotificationPanelCard: React.FC<NotificationPanelCardProps> = ({
                         }}
                         className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/80 hover:bg-white text-gray-700 font-semibold text-[13px] border border-gray-200 transition-colors"
                     >
-                        Open
+                        {m['common.open']()}
                         <ExternalLink className="w-3.5 h-3.5" />
                     </button>
                 )}
@@ -339,7 +339,7 @@ const CredentialPanelContent: React.FC<CredentialPanelContentProps> = ({
     const showTabs = listingId !== undefined;
 
     return (
-        <div className="flex flex-col h-full bg-white safe-area-top-margin">
+        <div className="flex flex-col h-full bg-white">
             {/* Panel Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-indigo-500 to-purple-600">
                 <div>

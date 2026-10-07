@@ -141,8 +141,11 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
                                 </div>
 
                                 {/* Privacy note */}
-                                <div className="flex items-start gap-2.5 text-xs text-grayscale-500">
-                                    <Shield className="w-4 h-4 flex-shrink-0 mt-0.5 text-grayscale-400" />
+                                <div className="flex items-start gap-2.5 text-xs text-grayscale-600">
+                                    <Shield
+                                        aria-hidden="true"
+                                        className="w-4 h-4 flex-shrink-0 mt-0.5 text-grayscale-400"
+                                    />
 
                                     <p className="leading-relaxed">
                                         {m['claim.didAuth.privacy']()}

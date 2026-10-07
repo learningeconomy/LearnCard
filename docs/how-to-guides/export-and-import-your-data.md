@@ -4,12 +4,12 @@ description: 'How-To Guide: Export, restore, and import all of your LearnCard da
 
 # Export & Import Your Data
 
-This guide is a step-by-step recipe for taking **all of your LearnCard data** with you: your keys, credentials, presentations, consent records, and more. You can save it as a single encrypted file, restore your original account from it, or copy its contents into a brand-new account.
+This is the command-line recipe for taking **all of a LearnCard account's data** somewhere else — for developers, power users, and anyone auditing the [holder-continuity guarantee](../core-concepts/architecture-and-principles/holder-continuity.md). It covers your keys, credentials, presentations, consent records, and more. You can save it as a single encrypted file, restore your original account from it, or copy its contents into a brand-new account.
 
 {% hint style="success" %}
 **Our commitment to holder continuity**
 
-Your data is yours. LearnCard is built so that you can always export everything that defines your identity and move it elsewhere — **without asking us for permission and without our servers needing to cooperate.** The export is a normal ZIP file built on open standards (W3C Verifiable Credentials, DIDs, JSON), so it stays useful for verification and migration even if LearnCard services are unavailable. Read the full commitment in [Holder Continuity](../core-concepts/holder-continuity.md).
+Your data is yours. LearnCard is built so that you can always export everything that defines your identity and move it elsewhere — **without asking us for permission and without our servers needing to cooperate.** The export is a normal ZIP file built on open standards (W3C Verifiable Credentials, DIDs, JSON), so it stays useful for verification and migration even if LearnCard services are unavailable. Read the full commitment in [Holder Continuity](../core-concepts/architecture-and-principles/holder-continuity.md).
 {% endhint %}
 
 ---
@@ -18,13 +18,13 @@ Your data is yours. LearnCard is built so that you can always export everything 
 
 An export ("bundle") is a single password-protected ZIP file containing:
 
--   Your **key material** (private-key seed, recovery phrase, and JWKs) — encrypted
--   Your **DID** and DID document
--   All of your **Verifiable Credentials and Presentations** — exactly as issued, with signatures preserved
--   Your **wallet index** records (so credentials keep their titles and categories)
--   Your **consent records** and transaction history
--   **Status-list snapshots** for credential revocation state at export time
--   A readable `manifest.json` listing every file and its SHA-256 hash
+- Your **key material** (private-key seed, recovery phrase, and JWKs) — encrypted
+- Your **DID** and DID document
+- All of your **Verifiable Credentials and Presentations** — exactly as issued, with signatures preserved
+- Your **wallet index** records (so credentials keep their titles and categories)
+- Your **consent records** and transaction history
+- **Status-list snapshots** for credential revocation state at export time
+- A readable `manifest.json` listing every file and its SHA-256 hash
 
 Everything sensitive is encrypted per-file using **Argon2id + AES-256-GCM**. The `manifest.json` itself stays readable so you can inspect the contents without the password.
 
@@ -34,8 +34,8 @@ Everything sensitive is encrypted per-file using **Argon2id + AES-256-GCM**. The
 
 ### Prerequisites
 
--   An initialized LearnCard wallet (`@learncard/init`)
--   The `@learncard/holder-continuity` package installed:
+- An initialized LearnCard wallet (`@learncard/init`)
+- The `@learncard/holder-continuity` package installed:
 
 ```bash
 bun add @learncard/holder-continuity
@@ -163,8 +163,8 @@ console.log(report.errors); // any entries that failed
 
 ## Related
 
-{% content-ref url="../core-concepts/holder-continuity.md" %}
-[holder-continuity.md](../core-concepts/holder-continuity.md)
+{% content-ref url="../core-concepts/architecture-and-principles/holder-continuity.md" %}
+[holder-continuity.md](../core-concepts/architecture-and-principles/holder-continuity.md)
 {% endcontent-ref %}
 
 {% content-ref url="../sdks/learncard-cli.md" %}

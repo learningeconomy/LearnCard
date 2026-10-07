@@ -4,19 +4,14 @@ import * as Sentry from '@sentry/react';
 import { Capacitor } from '@capacitor/core';
 import { IonApp, setupIonicReact } from '@ionic/react';
 
-import {
-    SCOUTPASS_NETWORK_URL,
-    networkStore,
-    SCOUTPASS_API_ENDPOINT,
-    useIsLoggedIn,
-    SCOUTCLOUD_URL,
-    lazyWithRetry,
-} from 'learn-card-base';
+import { useIsLoggedIn, lazyWithRetry } from 'learn-card-base';
 
 import firstStartupStore, {
     useIntroSlidesCompleted,
 } from 'learn-card-base/stores/firstStartupStore';
 import IntroSlides from './components/intro-slides/IntroSlides';
+import { useEnforceVisibleLocale } from './i18n/useLanguageSelectorConfig';
+import { useLocale } from './i18n';
 
 import LoginLoadingPage from './pages/login/LoginPageLoader/LoginLoader';
 
@@ -51,11 +46,15 @@ const FullApp = lazyWithRetry(() => import('./FullApp'));
 
 setupIonicReact({ swipeBackEnabled: false });
 
-networkStore.set.networkUrl(SCOUTPASS_NETWORK_URL);
-networkStore.set.cloudUrl(SCOUTCLOUD_URL);
-networkStore.set.apiEndpoint(SCOUTPASS_API_ENDPOINT);
-
 const App: React.FC = () => {
+    // Subscribe at the application boundary so catalog-backed data getters
+    // rerender even when their leaf component does not consume locale context.
+    useLocale();
+
+    // Keep the active locale within the LaunchDarkly-allowed set (falls a hidden
+    // locale back to a visible one). Must run unconditionally, above the
+    // intro-slides early return, since hooks can't sit behind a conditional.
+    useEnforceVisibleLocale();
     useIntroSlidesCompleted();
     const introSlidesCompleted = firstStartupStore.get.introSlidesCompleted();
     const isLoggedIn = useIsLoggedIn();

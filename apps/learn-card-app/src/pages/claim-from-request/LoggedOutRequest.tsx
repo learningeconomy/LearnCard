@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { buildInboxClaimRedirect } from './inboxClaimGate';
 import { useIonModal } from '@ionic/react';
 import ClaimBoostLoggedOutPrompt from 'learn-card-base/components/boost/claimBoostLoggedOutPrompt/ClaimBoostLoggedOutPrompt';
 import { redirectStore } from 'learn-card-base';
@@ -16,9 +17,9 @@ const LoggedOutRequest: React.FC<{ vc_request_url?: string | (string | null)[] |
     vc_request_url,
 }) => {
     useEffect(() => {
-        const redirectTo = `/request?vc_request_url=${vc_request_url}`;
-        redirectStore.set.lcnRedirect(redirectTo);
-    }, []);
+        const redirectTo = buildInboxClaimRedirect(vc_request_url);
+        if (redirectTo) redirectStore.set.lcnRedirect(redirectTo);
+    }, [vc_request_url]);
 
     return (
         <ClaimLoginPage
@@ -70,12 +71,14 @@ export const SomeoneSentYouACredentialRequest: React.FC<{
                 <p className="text-white/85 text-[17px] font-medium leading-relaxed max-w-[380px]">
                     Sign into {brandingConfig?.name} to view and claim,
                     <br />
-                    <span onClick={handleInteractionModal}>
-                        or{' '}
-                        <span className="underline cursor-pointer text-white hover:text-white/90">
-                            claim with another wallet.
-                        </span>
-                    </span>
+                    or{' '}
+                    <button
+                        type="button"
+                        onClick={handleInteractionModal}
+                        className="p-0 border-0 bg-transparent underline cursor-pointer text-white hover:text-white/90"
+                    >
+                        claim with another wallet.
+                    </button>
                 </p>
             </div>
         </div>
@@ -125,6 +128,7 @@ export const SomeoneSentYouACredentialRequestMobile: React.FC<{
                     Someone sent you a credential
                 </h1>
                 <button
+                    type="button"
                     className="bg-white text-grayscale-800 font-semibold flex items-center justify-center p-4 py-2 rounded-[15px] h-[54px] text-[17px] shadow-soft-bottom"
                     onClick={onClick}
                 >
@@ -140,12 +144,13 @@ export const SomeoneSentYouACredentialRequestMobile: React.FC<{
                     OR
                     <hr className="w-[25%] ml-[20px] border-white/30" />
                 </div>
-                <span
+                <button
+                    type="button"
                     className="mt-[25px] text-white underline cursor-pointer font-semibold flex items-center justify-center p-4 py-2 h-[54px] text-[17px]"
                     onClick={handleInteractionModal}
                 >
                     Claim with Other Wallet
-                </span>
+                </button>
             </div>
 
             <GenericErrorBoundary hideGoHome>

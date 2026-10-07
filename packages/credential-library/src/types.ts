@@ -5,7 +5,15 @@ import type { UnsignedVC, VC } from '@learncard/types';
 // Credential Spec — which standard does this credential conform to?
 // ---------------------------------------------------------------------------
 
-export const CREDENTIAL_SPECS = ['vc-v1', 'vc-v2', 'obv3', 'clr-v2', 'europass', 'custom'] as const;
+export const CREDENTIAL_SPECS = [
+    'vc-v1',
+    'vc-v2',
+    'obv3',
+    'clr-v2',
+    'europass',
+    'sd-jwt-vc',
+    'custom',
+] as const;
 
 export type CredentialSpec = (typeof CREDENTIAL_SPECS)[number];
 
@@ -56,6 +64,8 @@ export const CREDENTIAL_FEATURES = [
     'attachments',
     'associations',
     'nested-credentials',
+    'selective-disclosure',
+    'holder-binding',
 ] as const;
 
 export type CredentialFeature = (typeof CREDENTIAL_FEATURES)[number];
@@ -76,14 +86,18 @@ export const FIXTURE_VALIDITIES = ['valid', 'invalid', 'tampered'] as const;
 
 export type FixtureValidity = (typeof FIXTURE_VALIDITIES)[number];
 
+export const FIXTURE_KINDS = ['w3c-vc', 'sd-jwt-vc'] as const;
+
+export type FixtureKind = (typeof FIXTURE_KINDS)[number];
+
 // Used for intentionally malformed fixtures that violate the UnsignedVC type
 export type InvalidCredential = Record<string, unknown>;
 
 // ---------------------------------------------------------------------------
-// CredentialFixture — the core type wrapping a credential with metadata
+// BaseCredentialFixture — metadata shared by all fixture formats
 // ---------------------------------------------------------------------------
 
-export interface CredentialFixture<T extends UnsignedVC | VC = UnsignedVC> {
+export interface BaseCredentialFixture {
     /** Unique fixture ID, e.g. 'obv3/minimal-badge' */
     id: string;
 
@@ -111,21 +125,60 @@ export interface CredentialFixture<T extends UnsignedVC | VC = UnsignedVC> {
     /** Whether this fixture is intentionally valid, invalid, or tampered */
     validity: FixtureValidity;
 
+    /** Additional free-form tags for ad-hoc filtering */
+    tags?: string[];
+}
+
+// ---------------------------------------------------------------------------
+// CredentialFixture — a W3C Verifiable Credential fixture
+// ---------------------------------------------------------------------------
+
+export interface CredentialFixture<T extends UnsignedVC | VC = UnsignedVC>
+    extends BaseCredentialFixture {
+    /** Omitted for backwards compatibility; W3C VC is the default fixture kind */
+    kind?: 'w3c-vc';
+
+    /** SD-JWT VC uses a separate template fixture variant */
+    spec: Exclude<CredentialSpec, 'sd-jwt-vc'>;
+
     /** The actual credential JSON */
     credential: T;
 
     /** Zod validator this credential should pass (if valid) or fail (if invalid) */
     validator?: z.ZodType;
-
-    /** Additional free-form tags for ad-hoc filtering */
-    tags?: string[];
 }
+
+export interface SdJwtVcTemplate {
+    format: 'dc+sd-jwt';
+    vct: string;
+    claims: Record<string, unknown>;
+    selectivelyDisclosable: string[];
+}
+
+export interface SdJwtVcFixture extends BaseCredentialFixture {
+    kind: 'sd-jwt-vc';
+    id: `sd-jwt-vc/${string}`;
+    spec: 'sd-jwt-vc';
+    signed: false;
+    template: SdJwtVcTemplate;
+}
+
+export type LibraryFixture = CredentialFixture | SdJwtVcFixture;
+
+export const isSdJwtVcFixture = (fixture: LibraryFixture): fixture is SdJwtVcFixture =>
+    fixture.kind === 'sd-jwt-vc';
+
+export const isCredentialFixture = (fixture: LibraryFixture): fixture is CredentialFixture =>
+    !isSdJwtVcFixture(fixture);
 
 // ---------------------------------------------------------------------------
 // Filter — used to query the registry
 // ---------------------------------------------------------------------------
 
 export interface FixtureFilter {
+    /** Match any of the given fixture kinds (omitted W3C kind is treated as w3c-vc) */
+    kind?: FixtureKind | FixtureKind[];
+
     /** Match any of the given specs */
     spec?: CredentialSpec | CredentialSpec[];
 

@@ -1,13 +1,12 @@
 # SkillsGetFrameworkSkillTree200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**has_more** | **bool** |  | 
-**cursor** | **str** |  | 
-**records** | [**List[Schema1]**](Schema1.md) |  | 
+| Name         | Type                            | Description | Notes |
+| ------------ | ------------------------------- | ----------- | ----- |
+| **has_more** | **bool**                        |             |
+| **cursor**   | **str**                         |             |
+| **records**  | [**List[Schema1]**](Schema1.md) |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ skills_get_framework_skill_tree200_response_dict = skills_get_framework_skill_tr
 # create an instance of SkillsGetFrameworkSkillTree200Response from a dict
 skills_get_framework_skill_tree200_response_from_dict = SkillsGetFrameworkSkillTree200Response.from_dict(skills_get_framework_skill_tree200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -45,7 +45,12 @@ const LearnCardIdView: React.FC<LearnCardIdViewProps> = ({ user }) => {
                     customContainerClass="h-[80px] w-[80px] shrink-0 text-[40px]"
                     customImageClass="h-[80px] w-[80px] shrink-0 text-[40px] object-cover"
                     customSize={120}
-                    user={user ?? currentLCNUser}
+                    user={
+                        user ?? {
+                            displayName: idName,
+                            image: currentLCNUser?.image || currentUser?.profileImage,
+                        }
+                    }
                 />
 
                 <div className="flex flex-col items-start pr-[10px] overflow-hidden text-white">
@@ -65,11 +70,12 @@ const LearnCardIdView: React.FC<LearnCardIdViewProps> = ({ user }) => {
             </div>
 
             <div
-                className="flex flex-col justify-center px-[10px] py-[4px] h-[45px] bg-white"
+                dir="ltr"
+                className="flex items-center justify-between gap-[10px] px-[10px] py-[4px] h-[45px] bg-white"
                 // style={{ backgroundColor: credential?.boostID?.accentColor }}
             >
                 <span
-                    className="flex items-center gap-[5px] font-notoSans text-[14px] font-[600] text-grayscale-900"
+                    className="min-w-0 truncate font-notoSans text-[14px] font-[600] text-grayscale-900"
                     // style={{ color: credential?.boostID?.accentFontColor }}
                 >
                     {/* <CredentialVerificationDisplay
@@ -78,23 +84,23 @@ const LearnCardIdView: React.FC<LearnCardIdViewProps> = ({ user }) => {
                             /> */}
                     {brandingConfig?.name}
                 </span>
-            </div>
 
-            <div
-                className="rounded-full h-[54px] w-[54px] absolute right-[10px] bottom-[10px] flex items-center justify-center bg-white"
-                // style={{ backgroundColor: credential?.boostID?.accentColor }}
-            >
-                <img
-                    src={brandMark}
-                    alt="Brand mark"
-                    className="rounded-full h-[50px] w-[50px]"
-                    onError={e => {
-                        if (!e.currentTarget.dataset.fallbackApplied) {
-                            e.currentTarget.dataset.fallbackApplied = 'true';
-                            e.currentTarget.src = DEFAULT_BRAND_MARK;
-                        }
-                    }}
-                />
+                <div
+                    className="rounded-full h-[54px] w-[54px] shrink-0 -translate-y-[14px] flex items-center justify-center bg-white"
+                    // style={{ backgroundColor: credential?.boostID?.accentColor }}
+                >
+                    <img
+                        src={brandMark}
+                        alt="Brand mark"
+                        className="rounded-full h-[50px] w-[50px]"
+                        onError={e => {
+                            if (!e.currentTarget.dataset.fallbackApplied) {
+                                e.currentTarget.dataset.fallbackApplied = 'true';
+                                e.currentTarget.src = DEFAULT_BRAND_MARK;
+                            }
+                        }}
+                    />
+                </div>
             </div>
         </div>
     );

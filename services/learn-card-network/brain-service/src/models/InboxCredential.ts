@@ -6,13 +6,18 @@ import { Profile, ProfileInstance } from './Profile';
 import ContactMethod, { ContactMethodInstance } from './ContactMethod';
 
 export type InboxCredentialType = {
+    refreshId?: string;
     id: string;
-    credential: string; // JSON - signed or unsigned credential
+    credential?: string; // Versioned JWE; removed immediately after successful finalization
     isSigned: boolean;
-    currentStatus: 'PENDING' | 'CLAIMED' | 'EXPIRED' | 'DELIVERED';
+    currentStatus: 'PENDING' | 'ISSUED' | 'CLAIMED' | 'EXPIRED' | 'DELIVERED';
     isAccepted?: boolean;
     expiresAt: string;
     createdAt: string;
+    finalizedAt?: string;
+    expiredAt?: string;
+    credentialName?: string;
+    achievementType?: string;
     issuerDid: string;
     webhookUrl?: string;
     boostUri?: string; // URI of the boost this credential is an instance of
@@ -82,8 +87,9 @@ export const InboxCredential = ModelFactory<InboxCredentialType, InboxCredential
     {
         label: 'InboxCredential',
         schema: {
+            refreshId: { type: 'string', required: false },
             id: { type: 'string', required: true, uniqueItems: true },
-            credential: { type: 'string', required: true },
+            credential: { type: 'string', required: false },
             isSigned: { type: 'boolean', required: true },
             currentStatus: {
                 type: 'string',
@@ -99,6 +105,10 @@ export const InboxCredential = ModelFactory<InboxCredentialType, InboxCredential
             isAccepted: { type: 'boolean', required: false, default: false },
             expiresAt: { type: 'string', required: true },
             createdAt: { type: 'string', required: true },
+            finalizedAt: { type: 'string', required: false },
+            expiredAt: { type: 'string', required: false },
+            credentialName: { type: 'string', required: false },
+            achievementType: { type: 'string', required: false },
             issuerDid: { type: 'string', required: true },
             webhookUrl: { type: 'string', required: false },
             boostUri: { type: 'string', required: false },

@@ -1,10 +1,11 @@
 import React from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 import AdminToolOptionsListItem from './AdminToolsOptionsListItem';
 
 import {
-    adminToolOptions,
-    developerToolOptions,
+    getAdminToolOptions,
+    getDeveloperToolOptions,
     AdminToolOptionsEnum,
 } from './admin-tools.helpers';
 
@@ -16,12 +17,12 @@ export const AdminToolOptionsList: React.FC<{ shortCircuitDevTool?: AdminToolOpt
             <div className="w-full bg-white items-center justify-center flex flex-col shadow-2xl p-[15px] mt-4 rounded-[15px]">
                 <div className="w-full flex items-center justify-start">
                     <h4 className="text-xl text-grayscale-900 font-notoSans font-[600]">
-                        Admin Tools
+                        {m['adminTools.adminToolsHeading']()}
                     </h4>
                 </div>
                 <div className="w-full flex items-center justify-start">
                     <ul className="w-full">
-                        {adminToolOptions.map(option => (
+                        {getAdminToolOptions().map(option => (
                             <AdminToolOptionsListItem
                                 shortCircuitDevTool={shortCircuitDevTool}
                                 option={option}
@@ -39,7 +40,7 @@ export const AdminToolOptionsList: React.FC<{ shortCircuitDevTool?: AdminToolOpt
                 </div>
                 <div className="w-full flex items-center justify-start">
                     <ul className="w-full">
-                        {developerToolOptions.map(option => (
+                        {getDeveloperToolOptions().map(option => (
                             <AdminToolOptionsListItem
                                 shortCircuitDevTool={shortCircuitDevTool}
                                 option={option}

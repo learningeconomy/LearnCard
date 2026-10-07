@@ -40,8 +40,15 @@ node_modules
 docs/superpowers/plans/
 docs/superpowers/specs/
 docs/superpowers
+# Internal agent plans and audit records are published to Obsidian/Confluence instead.
+docs/plans/
 internal-docs/*
-.github/copilot-instructions.m
+!internal-docs/README.md
+!internal-docs/app-flows/
+!internal-docs/architecture/
+!internal-docs/implementation-notes/
+!internal-docs/plans/
+.github/copilot-instructions.md
 .worktrees/
 CLAUDE.local.md
 
@@ -58,3 +65,11 @@ services/learn-card-network/lca-api/.env.scouts
 
 # Sisyphus agent working directory (local only)
 .sisyphus/
+
+# Local credential-refresh QA issuer keys and replay state
+/.credential-refresh-qa/
+e2e-artifacts/
+
+# CloudFormation deployment inputs
+**/*.parameters.json
+!**/*.parameters.example.json

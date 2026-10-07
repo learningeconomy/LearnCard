@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as m from '../../../../paraglide/messages.js';
 
 import BulkBoostPreviewItem from './BulkBoostPreviewItem';
 
@@ -31,7 +32,9 @@ const BulkBoostPreviewModal: React.FC<{
             <div className="absolute top-0 left-0 bg-white px-4 py-[24px] shadow-header w-full z-10">
                 <div className="max-w-[600px] flex items-center justify-between mx-auto">
                     <h2 className="text-grayscale-800 text-xl">
-                        Preview {_csvData?.length ?? 0} Credentials
+                        {m['adminTools.bulkImport.previewCredentials']({
+                            count: _csvData?.length ?? 0,
+                        })}
                     </h2>
                 </div>
             </div>
@@ -59,7 +62,7 @@ const BulkBoostPreviewModal: React.FC<{
                         onClick={closeModal}
                         className="bg-white flex-1 p-[7px] text-grayscale-900 font-poppins text-[17px] rounded-[30px] border-[1px] border-solid border-grayscale-200 shadow-button-bottom h-[44px]"
                     >
-                        Close
+                        {m['common.close']()}
                     </button>
                 </div>
             </footer>

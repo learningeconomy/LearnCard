@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import queryString from 'query-string';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { Capacitor } from '@capacitor/core';
 
 import { useHistory, useLocation } from 'react-router-dom';
@@ -20,16 +19,14 @@ import {
     useSQLiteStorage,
     useContract,
     redirectStore,
+    useSignInAdapter,
 } from 'learn-card-base';
-import { SocialLoginTypes } from 'learn-card-base/hooks/useSocialLogins';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
+import * as m from '../../paraglide/messages.js';
 import { LOGIN_REDIRECTS } from 'learn-card-base/constants/redirects';
-import { auth } from '../../firebase/firebase';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
-import { getLogger } from 'learn-card-base';
-const log = getLogger('external-consent-flow-door');
 
 enum Step {
     landing,
@@ -37,11 +34,11 @@ enum Step {
 }
 
 const ExternalConsentFlowDoor: React.FC = () => {
+    const adapter = useSignInAdapter();
     const currentUser = useCurrentUser();
 
     const history = useHistory();
     const location = useLocation();
-    const firebaseAuth = auth();
     const queryClient = useQueryClient();
     const { initWallet } = useWallet();
     const { logout: coordinatorLogout } = useAuthCoordinator();
@@ -54,19 +51,11 @@ const ExternalConsentFlowDoor: React.FC = () => {
 
     const [step, setStep] = useState(Step.landing);
 
-    const contractUri = Array.isArray(uri) ? uri[0] ?? '' : uri ?? '';
+    const contractUri = Array.isArray(uri) ? (uri[0] ?? '') : (uri ?? '');
     const { data: contractDetails, isPending } = useContract(contractUri);
 
     // TODO duplicated from QRCodeUserCard, should turn into helper
     const handleLogout = async () => {
-        const typeOfLogin = authStore?.get?.typeOfLogin();
-        const nativeSocialLogins = [
-            SocialLoginTypes.apple,
-            SocialLoginTypes.sms,
-            SocialLoginTypes.passwordless,
-            SocialLoginTypes.google,
-        ];
-
         const redirectUrl =
             IS_PRODUCTION || Capacitor.getPlatform() === 'android'
                 ? LOGIN_REDIRECTS[BrandingEnum.learncard].redirectUrl
@@ -78,16 +67,8 @@ const ExternalConsentFlowDoor: React.FC = () => {
                 await pushUtilities.revokePushToken(initWallet, deviceToken);
             }
 
-            await firebaseAuth.signOut(); // sign out of web layer
-            if (nativeSocialLogins.includes(typeOfLogin) && Capacitor.isNativePlatform()) {
-                try {
-                    await FirebaseAuthentication?.signOut?.();
-                } catch (e) {
-                    log.debug('firebase::signout::error', e);
-                }
-            }
-
-            coordinatorLogout();
+            await adapter.signOut();
+            await coordinatorLogout();
             await queryClient.resetQueries();
 
             await clearDB();
@@ -109,7 +90,7 @@ const ExternalConsentFlowDoor: React.FC = () => {
                         color="grayscale-900"
                         className="scale-[2] mb-8 mt-6"
                     />
-                    <p className="font-notoSans text-grayscale-900">Loading...</p>
+                    <p className="font-notoSans text-grayscale-900">{m['common.loading']()}</p>
                 </div>
             </IonPage>
         );
@@ -192,16 +173,16 @@ const ExternalConsentFlowDoor: React.FC = () => {
                             }}
                             className="bg-sp-purple-base text-grayscale-50 text-[16px] font-semibold font-notoSans normal w-full py-[12px] px-[10px] rounded-[40px] shadow-bottom"
                         >
-                            Continue as {currentUser.name}
+                            {m['consentFlow.continueAs']({ name: currentUser.name })}
                         </button>
                         <div className="text-grayscale-900 text-[14px] font-notoSans">
-                            Not you?{' '}
+                            {m['consentFlow.notYou']()}{' '}
                             <button
                                 type="button"
                                 onClick={handleLogout}
                                 className="text-indigo-500 font-[600]"
                             >
-                                Logout
+                                {m['consentFlow.logout']()}
                             </button>
                         </div>
                     </div>
@@ -214,16 +195,16 @@ const ExternalConsentFlowDoor: React.FC = () => {
                             onClick={redirectToLogin}
                             className="bg-sp-purple-base text-grayscale-50 text-[16px] font-semibold font-notoSans normal w-full py-[12px] px-[10px] rounded-[40px] shadow-bottom"
                         >
-                            Sign up for LearnCard
+                            {m['consentFlow.signUpFor']()}
                         </button>
                         <div className="text-grayscale-900 text-[14px]">
-                            Have an account?{' '}
+                            {m['consentFlow.haveAccount']()}{' '}
                             <button
                                 type="button"
                                 onClick={redirectToLogin}
                                 className="text-indigo-500 font-[600]"
                             >
-                                Login
+                                {m['consentFlow.login']()}
                             </button>
                         </div>
                     </div>
@@ -234,7 +215,7 @@ const ExternalConsentFlowDoor: React.FC = () => {
                         LearnCard
                     </span>
                     <span className="text-grayscale-700 text-[14px] font-notoSans">
-                        Universal Learning & Work Portfolio
+                        {m['common.tagline']()}
                     </span>
                     <IonRow className="flex items-center justify-center">
                         <IonCol className="flex items-center justify-center font-notoSans">
@@ -242,16 +223,16 @@ const ExternalConsentFlowDoor: React.FC = () => {
                                 onClick={openPP}
                                 className="text-indigo-500 font-[600] text-[12px]"
                             >
-                                Privacy Policy
+                                {m['consentFlow.privacyPolicy']()}
                             </button>
                             <span className="text-grayscale-600 font-bold text-[12px]">
-                                &nbsp;•&nbsp;
+                                {m['consentFlow.separator']()}
                             </span>
                             <button
                                 onClick={openToS}
                                 className="text-indigo-500 font-[600] text-[12px]"
                             >
-                                Terms of Service
+                                {m['consentFlow.termsOfService']()}
                             </button>
                         </IonCol>
                     </IonRow>

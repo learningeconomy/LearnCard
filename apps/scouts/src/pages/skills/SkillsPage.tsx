@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import TotalSkillsCount from './TotalSkillsCount';
 import { IonContent, IonPage } from '@ionic/react';
-import SkillsInsightCard from './SkillsInsightCard';
 import SkillsCategoryList from './SkillsCategoryList';
 import MainHeader from '../../components/main-header/MainHeader';
 import SkillsPageEmptyPlaceholder from './SkillsEmptyPlaceholder';
@@ -26,11 +24,7 @@ import BrowseFrameworkPage from '../SkillFrameworks/BrowseFrameworkPage';
 import { SkillFramework } from '../../components/boost/boost';
 import { useIsCurrentUserLCNUser } from 'learn-card-base';
 import { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
-
-enum TabEnum {
-    MY_HUB = 'My Hub',
-    ADMIN_PANEL = 'Admin Panel',
-}
+import SkillsTabs, { SkillsTab } from './SkillsTabs';
 
 const SkillsPage: React.FC = () => {
     const { data: isNetworkUser } = useIsCurrentUserLCNUser();
@@ -42,11 +36,8 @@ const SkillsPage: React.FC = () => {
         refetch,
     } = useGetCredentialsForSkills();
 
-    const [selectedTab, setSelectedTab] = useState<TabEnum>(TabEnum.MY_HUB);
+    const [selectedTab, setSelectedTab] = useState<SkillsTab>(SkillsTab.MyHub);
     const [frameworkToBrowse, setFrameworkToBrowse] = useState<ApiFrameworkInfo | null>(null);
-
-    // const flags = useFlags();
-    // const showAiInsights = flags?.showAiInsights;
 
     const credentialsBackgroundFetching = credentialsFetching && !allResolvedBoostsLoading;
 
@@ -83,14 +74,11 @@ const SkillsPage: React.FC = () => {
 
     const total = (totalSkills || 0) + (totalSubskills || 0);
 
-    const isHub = selectedTab === TabEnum.MY_HUB;
     const canShowAdminPanel = isNetworkUser === true;
 
-    const visibleTabs = canShowAdminPanel ? Object.values(TabEnum) : [TabEnum.MY_HUB];
-
     useEffect(() => {
-        if (!canShowAdminPanel && selectedTab === TabEnum.ADMIN_PANEL) {
-            setSelectedTab(TabEnum.MY_HUB);
+        if (!canShowAdminPanel && selectedTab === SkillsTab.AdminPanel) {
+            setSelectedTab(SkillsTab.MyHub);
         }
     }, [canShowAdminPanel, selectedTab]);
 
@@ -115,33 +103,16 @@ const SkillsPage: React.FC = () => {
                 <IonContent fullscreen className="skills-page" color="violet-200">
                     <div className="flex relative justify-center items-center w-full pb-[30px]">
                         <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding mt-[30px] px-[20px]">
-                            {/* {showAiInsights && <SkillsInsightCard />} */}
                             {/* <TotalSkillsCount total={total} /> */}
 
-                            {visibleTabs.length > 1 && (
-                                <div
-                                    className={`flex items-center justify-start w-full ${
-                                        isHub ? 'mb-[10px]' : 'mb-[15px]'
-                                    }`}
-                                >
-                                    {visibleTabs.map(tab => (
-                                        <button
-                                            key={tab}
-                                            onClick={() => setSelectedTab(tab)}
-                                            className={`px-[14px] py-[7px] rounded-[5px] font-[500] font-poppins text-[14px] ${
-                                                tab === selectedTab
-                                                    ? 'bg-violet-100 text-grayscale-900'
-                                                    : 'text-grayscale-600'
-                                            }`}
-                                        >
-                                            {tab}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+                            <SkillsTabs
+                                selectedTab={selectedTab}
+                                onSelect={setSelectedTab}
+                                showAdminPanel={canShowAdminPanel}
+                            />
 
-                            {selectedTab === TabEnum.MY_HUB && <SkillsMyHub />}
-                            {selectedTab === TabEnum.ADMIN_PANEL && canShowAdminPanel && (
+                            {selectedTab === SkillsTab.MyHub && <SkillsMyHub />}
+                            {selectedTab === SkillsTab.AdminPanel && canShowAdminPanel && (
                                 <SkillsAdminPanel setFrameworkToBrowse={setFrameworkToBrowse} />
                             )}
                         </div>

@@ -251,11 +251,8 @@ DCQL implementation is split into focused modules under
 | `compose.ts` | Verifier-side: `requestW3cVc(spec)` builds spec-correct DCQL queries from domain-shaped intent.                                                 |
 
 The plugin's `dcql` library bind uses a namespace import
-(`import * as dcql from 'dcql'`) so live-binding works through the
-ESM ↔ CJS hop in Jest's transform pipeline. Jest config also maps
-the ESM-only `dcql` package to its `.mjs` and runs it through
-esbuild-jest's `js` loader — see
-`packages/plugins/openid4vc/jest.config.js` for the rationale.
+(`import * as dcql from 'dcql'`) so its live ESM bindings work in
+Vitest and in production bundles without a compatibility transform.
 
 ## Walt.id quirks discovered while building this suite
 

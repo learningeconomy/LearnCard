@@ -6,6 +6,8 @@ import { useModal, ModalTypes } from 'learn-card-base';
 import { openToS, openPP } from '../../helpers/externalLinkHelpers';
 import ModalLayout from '../../layout/ModalLayout';
 import { JoinNetworkModalWrapper } from './hooks/useJoinLCNetworkModal';
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 
 export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = ({
     handleCloseModal,
@@ -17,7 +19,10 @@ export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = (
 
     const openNetworkModal = () => {
         newModal(
-            <JoinNetworkModalWrapper handleCloseModal={closeModal} showNotificationsModal={false} />,
+            <JoinNetworkModalWrapper
+                handleCloseModal={closeModal}
+                showNotificationsModal={false}
+            />,
             {},
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
@@ -30,11 +35,13 @@ export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = (
                     <h6 className="tracking-[12px] text-base font-bold text-black">SCOUTPASS</h6>
                 </IonCol>
                 <IonCol className="w-full flex items-center justify-center mt-8">
-                    <h6 className="text-center text-black text-2xl">No Problem!</h6>
+                    <h6 className="text-center text-black text-2xl">
+                        {m['networkPrompts.reject.noProblem']()}
+                    </h6>
                 </IonCol>
                 <IonCol className="w-full flex items-center justify-center mt-8">
                     <h6 className="text-center text-black text-2xl">
-                        You can still use ScoutPass.
+                        {m['networkPrompts.reject.stillUse']()}
                     </h6>
                 </IonCol>
             </IonRow>
@@ -42,8 +49,12 @@ export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = (
             <IonRow className="flex items-center justify-center w-full">
                 <IonCol className="text-center">
                     <p className="text-center text-sm font-semibold px-[16px] text-grayscale-600">
-                        You can still receive and share credentials with “school connect” and your{' '}
-                        <span className="text-indigo-500 font-bold">ScoutPass number</span>.
+                        <TransP
+                            m={m['networkPrompts.reject.credAccess']}
+                            components={[
+                                <span key="scoutpass-num" className="text-indigo-500 font-bold" />,
+                            ]}
+                        />
                     </p>
                 </IonCol>
             </IonRow>
@@ -54,7 +65,7 @@ export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = (
                         type="submit"
                         className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-emerald-700 text-2xl w-full shadow-lg font-medium max-w-[320px]"
                     >
-                        Continue
+                        {m['common.continue']()}
                     </button>
 
                     <div className="w-full flex items-center justify-center m-4">
@@ -65,7 +76,7 @@ export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = (
                             }}
                             className="text-grayscale-900 text-center text-base w-full font-medium"
                         >
-                            Join ScoutPass Network
+                            {m['networkPrompts.reject.joinNet']()}
                         </button>
                     </div>
                 </IonCol>
@@ -73,21 +84,23 @@ export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = (
             <IonRow className="flex items-center justify-center mt-4 w-full">
                 <IonCol className="flex flex-col items-center justify-center text-center">
                     <p className="text-center text-sm font-normal px-16 text-grayscale-600">
-                        You own your own data.
+                        {m['networkPrompts.dataOwn']()}
                         <br />
-                        All connections are encrypted.
+                        {m['networkPrompts.encrypted']()}
                     </p>
-                    <button className="text-indigo-500 font-bold">Learn More</button>
+                    <button className="text-indigo-500 font-bold">{m['common.learnMore']()}</button>
                 </IonCol>
             </IonRow>
             <IonRow className="flex items-center justify-center w-full">
                 <IonCol className="flex items-center justify-center">
                     <button onClick={openPP} className="text-indigo-500 font-bold text-sm">
-                        Privacy Policy
+                        {m['login.privacyPolicy']()}
                     </button>
-                    <span className="text-indigo-500 font-bold text-sm">&nbsp;•&nbsp;</span>
+                    <span className="text-indigo-500 font-bold text-sm">
+                        &nbsp;{m['networkPrompts.separator']()}&nbsp;
+                    </span>
                     <button onClick={openToS} className="text-indigo-500 font-bold text-sm">
-                        Terms of Service
+                        {m['login.termsOfService']()}
                     </button>
                 </IonCol>
             </IonRow>

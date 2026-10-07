@@ -14,7 +14,8 @@ export const openApiDocument = generateOpenApiDocument(appRouter, {
 });
 
 export const app: Express = express();
-app.use('/', express.static('src/swagger-ui'));
+// Serve generated assets outside the bind-mounted source tree.
+app.use('/', express.static('generated/swagger-ui'));
 app.get('/openapi.json', (_req, res) => res.json(openApiDocument));
 
 export default app;

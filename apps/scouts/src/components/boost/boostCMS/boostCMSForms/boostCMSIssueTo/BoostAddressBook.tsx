@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import moment from 'moment';
+import {
+    formatLocaleCount,
+    formatLocaleDate,
+    formatLocaleTime,
+} from '../../../../../i18n/formatters';
 
 import useTroopMembers from '../../../../../hooks/useTroopMembers';
 import useNetworkMembers from '../../../../../hooks/useNetworkMembers';
@@ -25,10 +29,10 @@ import {
     useResolveBoost,
     useGetBoostParents,
     UserProfilePicture,
-    conditionalPluralize,
     BoostUserTypeEnum,
     useModal,
     ModalTypes,
+    useGetSearchProfiles,
 } from 'learn-card-base';
 
 import Plus from 'learn-card-base/svgs/Plus';
@@ -47,6 +51,7 @@ import { LCNProfile, BoostRecipientInfo } from '@learncard/types';
 import { ScoutsRoleEnum } from '../../../../../stores/troopPageStore';
 import { MemberTabsEnum } from '../../../../../pages/troop/TroopPageMembersBox';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../../../../paraglide/messages.js';
 const log = getLogger('boost-address-book');
 
 export enum BoostAddressBookEditMode {
@@ -93,10 +98,10 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     _issueTo,
     _setIssueTo,
 
-    search,
+    search: searchProp,
     setSearch,
-    searchResults,
-    isLoading,
+    searchResults: searchResultsProp,
+    isLoading: isLoadingProp,
 
     recipients,
     recipientsLoading,
@@ -105,17 +110,34 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
 
     showContactOptions = true,
     collectionPropName = 'issueTo',
-    title = 'Send To',
+    title = m['boostCMS.sendTo'](),
     hideBoostShareableCode = false,
 }) => {
     const { initWallet } = useWallet();
+    const contextCredential = boostSearchStore.use.contextCredential();
+    const searchBoostUri = boostSearchStore.use.boostUri();
+    const role = boostSearchStore.use.role();
+    const isTroopLeader = role === ScoutsRoleEnum.leader;
+    const isNetworkAdmin = role === ScoutsRoleEnum.national;
+    const isFullView = viewMode === BoostAddressBookViewMode.full;
 
     const [connections, setConnections] = useState<BoostCMSIssueTo[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [issueMode, setIssueMode] = useState<BoostUserTypeEnum>(BoostUserTypeEnum.someone);
     const [localIssueTo, setLocalIssueTo] = useState<BoostCMSIssueTo[]>(
-        ((state as any)?.[collectionPropName] as BoostCMSIssueTo[]) || []
+        _issueTo ?? ((state as any)?.[collectionPropName] as BoostCMSIssueTo[]) ?? []
     );
+    const [modalSearch, setModalSearch] = useState(searchProp ?? '');
+    const { data: modalSearchResults, isLoading: modalSearchLoading } = useGetSearchProfiles(
+        modalSearch,
+        {
+            enabled: isFullView && !isTroopLeader && !isNetworkAdmin && modalSearch.length > 0,
+        }
+    );
+
+    const search = isFullView ? modalSearch : searchProp;
+    const searchResults = isFullView ? modalSearchResults : searchResultsProp;
+    const isLoading = isFullView ? modalSearchLoading : isLoadingProp;
 
     // --- Limit Search Scope for Troop Leaders / Admins ---
     //   (should really refactor since so much of this code is from BoostSearch)
@@ -123,12 +145,6 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     const parentBoost = parentBoosts?.records?.[0]; // just default to the first one, guess we're just assuming there's only one
     const parentBoostUri = parentBoost?.uri;
     const { data: resolvedCredential } = useResolveBoost(parentBoostUri);
-
-    const contextCredential = boostSearchStore.use.contextCredential();
-    const searchBoostUri = boostSearchStore.use.boostUri();
-    const role = boostSearchStore.use.role();
-    const isTroopLeader = role === ScoutsRoleEnum.leader;
-    const isNetworkAdmin = role === ScoutsRoleEnum.national;
 
     const { scoutRecipients: rawScouts, isLoading: scoutsLoading } = useTroopMembers(
         contextCredential as any,
@@ -154,12 +170,12 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     // --- End Limit Search Scope ---
 
     useEffect(() => {
-        if ((state as any)?.[collectionPropName]?.length > 0) {
-            setLocalIssueTo(((state as any)?.[collectionPropName] as BoostCMSIssueTo[]) || []);
-        } else {
-            return;
-        }
-    }, [state]);
+        if (viewMode !== BoostAddressBookViewMode.list) return;
+
+        const stateIssueTo = (state as any)?.[collectionPropName] as BoostCMSIssueTo[] | undefined;
+
+        if (stateIssueTo) setLocalIssueTo(stateIssueTo);
+    }, [state, collectionPropName, viewMode]);
 
     const { newModal: newContactOptionsModal, closeModal: closeContactOptionsModal } = useModal({
         mobile: ModalTypes.Cancel,
@@ -181,7 +197,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                 showCloseButton={!isSheet}
                 title={
                     <p className="flex items-center justify-center text-2xl w-full h-full text-grayscale-900">
-                        Select Recipient
+                        {m['boostCMS.selectRecipient']()}
                     </p>
                 }
                 search={search}
@@ -249,9 +265,10 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
         setState(prevState => {
             return {
                 ...prevState,
-                [collectionPropName]: [...(_issueTo || [])],
+                [collectionPropName]: [...localIssueTo],
             };
         });
+        _setIssueTo?.([...localIssueTo]);
         handleCloseModal?.(true);
         setSearch?.('');
     };
@@ -260,7 +277,14 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
         loadConnections();
     }, [isTroopLeader, rawScouts]);
 
-    const handleSearch = async (profileId: string) => setSearch?.(profileId);
+    const handleSearch = (profileId: string) => {
+        if (isFullView) {
+            setModalSearch(profileId);
+            return;
+        }
+
+        setSearch?.(profileId);
+    };
 
     let contactCount =
         (search?.length ?? 0) > 0 && (searchResults?.length ?? 0) > 0
@@ -273,9 +297,12 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
         contactCount = networkMembers?.length ?? 0;
     }
 
-    let noConnectionsString = 'No connections yet';
-    let headerText = conditionalPluralize(contactCount ?? 0, 'Contact');
-    let searchPlaceholder = 'Search ScoutPass Network...';
+    let noConnectionsString = m['boostCMS.noConnections']();
+    let headerText = formatLocaleCount(contactCount ?? 0, {
+        one: m['boostCMS.contact'](),
+        other: m['boostCMS.contacts'](),
+    });
+    let searchPlaceholder = m['boostCMS.searchNetwork']();
     let connectionsToShow = connections;
 
     if (viewMode === BoostAddressBookViewMode.full) {
@@ -296,9 +323,14 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
             showSearchResults = false; // Again, doesn't use network profile search
             showNoSearchResults =
                 !scoutsLoading && scouts?.length === 0 && (search?.length ?? 0) > 0;
-            noConnectionsString = 'No troop members';
-            headerText = conditionalPluralize(scouts?.length ?? 0, 'Scout');
-            searchPlaceholder = `Search ${contextCredential?.name ?? 'Troop'}...`;
+            noConnectionsString = m['boostCMS.noTroopMembers']();
+            headerText = formatLocaleCount(scouts?.length ?? 0, {
+                one: m['boostCMS.scout'](),
+                other: m['boostCMS.scouts'](),
+            });
+            searchPlaceholder = m['boostCMS.searchTroop']({
+                name: contextCredential?.name ?? 'Troop',
+            });
             connectionsToShow = scouts ?? [];
         }
         if (isNetworkAdmin) {
@@ -309,9 +341,14 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
             showSearchResults = false; // Again, doesn't use network profile search
             showNoSearchResults =
                 !networkLoading && networkMembers?.length === 0 && (search?.length ?? 0) > 0;
-            noConnectionsString = 'No network members';
-            headerText = conditionalPluralize(networkMembers?.length ?? 0, 'Network Member');
-            searchPlaceholder = `Search ${contextCredential?.name ?? 'Network'}...`;
+            noConnectionsString = m['boostCMS.noNetworkMembers']();
+            headerText = formatLocaleCount(networkMembers?.length ?? 0, {
+                one: m['boostCMS.networkMember'](),
+                other: m['boostCMS.networkMembers'](),
+            });
+            searchPlaceholder = m['boostCMS.searchNetworkSpecific']({
+                name: contextCredential?.name ?? 'Network',
+            });
             connectionsToShow = networkMembers;
         }
         return (
@@ -332,7 +369,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                                 setSearch?.('');
                                             }}
                                         >
-                                            <CaretLeft className="h-auto w-3 text-grayscale-900" />
+                                            <CaretLeft className="rtl-mirror h-auto w-3 text-grayscale-900" />
                                         </button>
                                         <h3 className="text-grayscale-900 flex items-center justify-start text-2xl">
                                             {headerText}
@@ -358,7 +395,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                     {showLoadingSpinner && (
                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
                             <IonSpinner color="black" />
-                            <p className="mt-2 font-bold text-lg">Loading...</p>
+                            <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                         </section>
                     )}
                     {showConnectionsList && (
@@ -367,8 +404,8 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                             setState={setState}
                             contacts={connectionsToShow}
                             mode={mode}
-                            _issueTo={_issueTo || []}
-                            _setIssueTo={_setIssueTo as any}
+                            _issueTo={localIssueTo}
+                            _setIssueTo={setLocalIssueTo}
                             collectionPropName={collectionPropName}
                         />
                     )}
@@ -393,15 +430,15 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                             setState={setState}
                             contacts={(searchResults || []) as any}
                             mode={mode}
-                            _issueTo={_issueTo || []}
-                            _setIssueTo={_setIssueTo as any}
+                            _issueTo={localIssueTo}
+                            _setIssueTo={setLocalIssueTo}
                             collectionPropName={collectionPropName}
                         />
                     )}
                     {showNoSearchResults && (
                         <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center">
-                            <img src={MiniGhost} alt="ghost" className="max-w-[250px] m-auto" />
-                            <strong>No search results</strong>
+                            <img src={MiniGhost} alt="" className="max-w-[250px] m-auto" />
+                            <strong>{m['boostCMS.noSearchResults']()}</strong>
                         </section>
                     )}
                 </IonContent>
@@ -417,7 +454,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                         onClick={handleSaveContacts}
                                         className="relative flex flex-1 items-center justify-center bg-emerald-700 rounded-full px-[18px] py-[8px] text-white text-2xl w-full shadow-lg text-center"
                                     >
-                                        Save
+                                        {m['common.save']()}
                                     </button>
                                 </IonCol>
                             </div>
@@ -471,7 +508,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                         </div>
                         {collectionPropName === 'admins' && (
                             <p className="px-[16px] pb-6 text-black text-base font-notoSans">
-                                Admins are granted permission to send and edit this Boost.
+                                {m['boostCMS.adminsDesc']()}
                             </p>
                         )}
 
@@ -500,7 +537,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                         <IonCol size="12" className="w-full bg-white rounded-[20px]">
                             <div className="flex items-center justify-between w-full ion-padding">
                                 <h1 className="text-black text-2xl p-0 m-0 font-medium">
-                                    Issue Log
+                                    {m['boostCMS.issueLog']()}
                                 </h1>
                             </div>
 
@@ -530,13 +567,16 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                                             recipient?.to?.profileId}
                                                     </p>
                                                     <p className="text-grayscale-600 font-normal">
-                                                        {moment(recipient?.received).format(
-                                                            'DD MMMM YYYY'
-                                                        )}{' '}
+                                                        {formatLocaleDate(recipient?.received, {
+                                                            day: '2-digit',
+                                                            month: 'long',
+                                                            year: 'numeric',
+                                                        })}{' '}
                                                         &bull;{' '}
-                                                        {moment(recipient?.received).format(
-                                                            'h:mm A'
-                                                        )}
+                                                        {formatLocaleTime(recipient?.received, {
+                                                            hour: 'numeric',
+                                                            minute: '2-digit',
+                                                        })}
                                                     </p>
                                                 </div>
                                             </div>

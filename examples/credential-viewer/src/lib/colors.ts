@@ -10,6 +10,7 @@ export const SPEC_COLORS: Record<CredentialSpec, { bg: string; text: string; bor
     'obv3': { bg: 'bg-emerald-900/50', text: 'text-emerald-300', border: 'border-emerald-700' },
     'clr-v2': { bg: 'bg-purple-900/50', text: 'text-purple-300', border: 'border-purple-700' },
     'europass': { bg: 'bg-amber-900/50', text: 'text-amber-300', border: 'border-amber-700' },
+    'sd-jwt-vc': { bg: 'bg-cyan-900/50', text: 'text-cyan-300', border: 'border-cyan-700' },
     'custom': { bg: 'bg-gray-800/50', text: 'text-gray-300', border: 'border-gray-600' },
 };
 
@@ -19,6 +20,7 @@ export const SPEC_LABELS: Record<CredentialSpec, string> = {
     'obv3': 'OBv3',
     'clr-v2': 'CLR v2',
     'europass': 'Europass',
+    'sd-jwt-vc': 'SD-JWT VC',
     'custom': 'Custom',
 };
 

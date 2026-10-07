@@ -6,6 +6,8 @@
  * issued from the viewer land in the correct wallet category.
  */
 
+import { isSdJwtVcFixture, type LibraryFixture } from '@learncard/credential-library';
+
 export type CredentialCategory =
     | 'Achievement'
     | 'ID'
@@ -85,15 +87,17 @@ export const getCategoryForCredential = (
     // CLR credentials → Learning History
     if (types.includes('ClrCredential')) return 'Learning History';
 
+    // Administrative claims have no achievementType to classify.
+    if (types.includes('CourseEnrollmentCredential')) return 'Learning History';
+    if (types.includes('ExamAccommodationCredential')) return 'Accommodation';
+
     // Try to extract achievementType from credentialSubject
     const subject = credential.credentialSubject as Record<string, unknown> | undefined;
 
     if (!subject) return 'Achievement';
 
     const achievement = subject.achievement as
-        | Record<string, unknown>
-        | Record<string, unknown>[]
-        | undefined;
+        Record<string, unknown> | Record<string, unknown>[] | undefined;
 
     if (!achievement) return 'Achievement';
 
@@ -102,8 +106,7 @@ export const getCategoryForCredential = (
         if (achievement.length === 0) return 'Achievement';
 
         const firstType = (achievement[0] as Record<string, unknown>)?.achievementType as
-            | string
-            | undefined;
+            string | undefined;
 
         if (firstType && CATEGORY_MAP[firstType]) return CATEGORY_MAP[firstType];
 
@@ -115,4 +118,10 @@ export const getCategoryForCredential = (
     if (!achievementType) return 'Achievement';
 
     return CATEGORY_MAP[achievementType] ?? 'Achievement';
+};
+
+export const getCategoryForFixture = (fixture: LibraryFixture): CredentialCategory => {
+    if (isSdJwtVcFixture(fixture)) return 'Learning History';
+
+    return getCategoryForCredential(fixture.credential as Record<string, unknown>);
 };

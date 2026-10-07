@@ -24,18 +24,25 @@ export const BoostPreviewTabs: React.FC<{
     );
 
     return (
-        <div className={`${className} flex items-center gap-[10px]`}>
+        <div role="tablist" className={`${className} flex items-center gap-[10px]`}>
             {filteredTabs.map(tab => (
                 <button
+                    type="button"
+                    role="tab"
+                    aria-selected={isSelectedTab(tab.value)}
                     key={tab.value}
                     onClick={() => handleSetSelectedTab(tab.value)}
                     className={`text-sm flex items-center justify-center gap-[5px] px-[14px] py-[7px] rounded-[5px] shadow-md ${
                         isSelectedTab(tab.value)
                             ? 'bg-white text-grayscale-900'
-                            : 'bg-[#FFFFFFA6] text-grayscale-600'
+                            : 'bg-[#FFFFFFA6] text-grayscale-700'
                     }`}
                 >
-                    {tab.Icon && <tab.Icon />}
+                    {tab.Icon && (
+                        <span aria-hidden="true">
+                            <tab.Icon />
+                        </span>
+                    )}
                     {tabLabel(tab.value)}
                 </button>
             ))}

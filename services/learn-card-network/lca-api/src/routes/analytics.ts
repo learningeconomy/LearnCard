@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import jwt from 'jsonwebtoken';
@@ -15,15 +16,15 @@ export enum DASHBOARD_TYPE {
 
 /** IDs come from env with sensible fall-backs for local dev */
 const DASHBOARD_IDS = {
-    [DASHBOARD_TYPE.NSO]: Number(process.env.NSO_DASHBOARD_ID ?? 100),
-    [DASHBOARD_TYPE.GLOBAL]: Number(process.env.GLOBAL_DASHBOARD_ID ?? 67),
-    [DASHBOARD_TYPE.TROOP]: Number(process.env.TROOP_DASHBOARD_ID ?? 133),
+    [DASHBOARD_TYPE.NSO]: Number(environment.NSO_DASHBOARD_ID ?? 100),
+    [DASHBOARD_TYPE.GLOBAL]: Number(environment.GLOBAL_DASHBOARD_ID ?? 67),
+    [DASHBOARD_TYPE.TROOP]: Number(environment.TROOP_DASHBOARD_ID ?? 133),
 } as const satisfies Record<DASHBOARD_TYPE, number>;
 
 const METABASE_SECRET_KEY =
-    process.env.METABASE_SECRET_KEY ??
+    environment.METABASE_SECRET_KEY ??
     (() => {
-        if (process.env.CI || process.env.NODE_ENV === 'test') {
+        if (environment.CI || environment.NODE_ENV === 'test') {
             console.log('METABASE_SECRET_KEY not set in CI/test');
             return;
         }

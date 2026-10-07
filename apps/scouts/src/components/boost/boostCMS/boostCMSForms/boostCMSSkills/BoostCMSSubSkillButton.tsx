@@ -50,7 +50,7 @@ const BoostCMSSubSkillButton: React.FC<{
         >
             <div className="flex items-center justify-start w-[80%] px-[6px] py-[10px] overflow-hidden">
                 <div className="rounded-full h-[50px] w-[50px]">
-                    <img src={IconComponent} alt="skill icon" className="w-full h-full" />
+                    <img src={IconComponent} alt="" className="w-full h-full" />
                 </div>
                 <div className="flex flex-col items-start justify-center ml-2">
                     <p className="font-notoSans text-left text-violet-800 font-semibold text-xs">

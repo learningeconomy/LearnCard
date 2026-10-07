@@ -46,7 +46,7 @@ export const BoostPreviewBody: React.FC<BoostPreviewBodyProps> = ({
 
     const recipientsEl = (
         <section
-            className={`boost-small-card-body flex items-center justify-center text-center text-[14px] overflow-hidden text-grayscale-500 p-[10px] ${customRecipientContainerClass}`}
+            className={`boost-small-card-body flex items-center justify-center text-center text-[14px] overflow-hidden text-grayscale-600 p-[10px] ${customRecipientContainerClass}`}
         >
             {_recipients?.slice(0, 3)?.map((recipient, index) => {
                 const _recipient = recipient.hasOwnProperty('to') ? recipient?.to : recipient;
@@ -91,7 +91,7 @@ export const BoostPreviewBody: React.FC<BoostPreviewBodyProps> = ({
                         )}
                         <p className="text-grayscale-600 font-semibold text-center">
                             by{' '}
-                            <span className="font-bold text-gray-900 text-center">
+                            <span className="font-bold text-grayscale-900 text-center">
                                 {nameOverride || currentUser?.name}
                             </span>
                         </p>

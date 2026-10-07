@@ -1,5 +1,6 @@
 import { createRequire } from 'module';
 import express from 'express';
+import { resolveNetworkUrl } from './network-url.js';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -26,7 +27,7 @@ async function getWallet(key, networkUrl) {
     const cacheKey = `${key}:${networkUrl || 'default'}`;
     if (walletCache.has(cacheKey)) return walletCache.get(cacheKey);
 
-    const network = networkUrl || true;
+    const network = resolveNetworkUrl(networkUrl);
 
     let opts;
     if (isApiKey(key)) {
@@ -107,7 +108,7 @@ app.post('/api/send', async (req, res) => {
             // API key mode: no local signing keys, so wallet.invoke.send() fails
             // when it tries local credential issuance. Use direct HTTP to the
             // brain-service tRPC endpoint instead (server-side signing).
-            const networkBase = networkUrl || 'https://api.learncard.com/trpc';
+            const networkBase = resolveNetworkUrl(networkUrl, 'https://api.learncard.com/trpc');
             console.log('Using direct HTTP send (API key mode)...');
             // Use brain-client directly for API key mode to avoid SDK local signing.
             // The SDK's send() tries to sign credentials locally, but API key wallets
@@ -185,8 +186,8 @@ app.post('/api/init', async (req, res) => {
                         profile === undefined
                             ? 'undefined'
                             : profile === null
-                            ? 'null'
-                            : 'empty object',
+                              ? 'null'
+                              : 'empty object',
                 },
             });
         }

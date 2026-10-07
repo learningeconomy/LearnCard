@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import moment from 'moment';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { IonRow, IonCol, IonTextarea, IonToggle, IonDatetime, useIonModal } from '@ionic/react';
 import Calendar from '../../../../svgs/Calendar';
@@ -27,7 +26,6 @@ const BoostCMSAdvancedSettingsForm: React.FC<{
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
-    const flags = useFlags();
     const basicInfo = state?.basicInfo;
     const boostType = state?.basicInfo?.type;
 
@@ -121,7 +119,7 @@ const BoostCMSAdvancedSettingsForm: React.FC<{
                                 placeholder={m['boost.cms.advanced.issuerNamePlaceholder']()}
                                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium text-base"
                                 rows={2}
-                                disabled={disabled || flags?.disableCmsCustomization}
+                                disabled={disabled}
                             />
                         </div>
                     )}
@@ -133,7 +131,7 @@ const BoostCMSAdvancedSettingsForm: React.FC<{
                             placeholder={m['boost.cms.advanced.descriptionPlaceholder']({ title })}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium text-base"
                             rows={3}
-                            disabled={disabled || flags?.disableCmsCustomization}
+                            disabled={disabled}
                         />
                     </div>
                     <div className="flex flex-col items-start justify-center w-full mt-2 bg-grayscale-100 px-[16px] py-[8px] rounded-[15px]">
@@ -144,7 +142,7 @@ const BoostCMSAdvancedSettingsForm: React.FC<{
                             placeholder={m['boost.cms.advanced.narrativePlaceholder']({ title })}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium text-base"
                             rows={10}
-                            disabled={disabled || flags?.disableCmsCustomization}
+                            disabled={disabled}
                         />
                     </div>
 
@@ -185,51 +183,47 @@ const BoostCMSAdvancedSettingsForm: React.FC<{
                         </div>
                     )}
 
-                    {!flags?.disableCmsCustomization && (
-                        <>
-                            <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
-                                <p className="text-grayscale-900 font-medium w-10/12">
-                                    {m['boost.cms.advanced.credentialExpires']()}
-                                </p>
-                                <IonToggle
-                                    mode="ios"
-                                    color="indigo-700"
-                                    onIonChange={() => {
-                                        const expiresValue = !basicInfo?.credentialExpires;
-                                        handleStateChange('credentialExpires', expiresValue);
-                                        //if we are toggling the value to false (eg does not expire, clear expiration date if exists)
-                                        if (!expiresValue) {
-                                            handleStateChange('expirationDate', null);
-                                        }
-                                    }}
-                                    checked={basicInfo?.credentialExpires}
+                    <>
+                        <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
+                            <p className="text-grayscale-900 font-medium w-10/12">
+                                {m['boost.cms.advanced.credentialExpires']()}
+                            </p>
+                            <IonToggle
+                                mode="ios"
+                                color="indigo-700"
+                                onIonChange={() => {
+                                    const expiresValue = !basicInfo?.credentialExpires;
+                                    handleStateChange('credentialExpires', expiresValue);
+                                    //if we are toggling the value to false (eg does not expire, clear expiration date if exists)
+                                    if (!expiresValue) {
+                                        handleStateChange('expirationDate', null);
+                                    }
+                                }}
+                                checked={basicInfo?.credentialExpires}
+                                disabled={disabled}
+                            />
+                        </div>
+                        <div className="flex flex-col items-center justify-center w-full mb-2 mt-2">
+                            {basicInfo?.credentialExpires && (
+                                <button
                                     disabled={disabled}
-                                />
-                            </div>
-                            <div className="flex flex-col items-center justify-center w-full mb-2 mt-2">
-                                {basicInfo?.credentialExpires && (
-                                    <button
-                                        disabled={disabled}
-                                        className="w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] px-[16px] py-[12px] font-medium tracking-widest text-base"
-                                        onClick={() => {
-                                            presentDatePicker({
-                                                backdropDismiss: true,
-                                                showBackdrop: false,
-                                                cssClass: 'flex items-center justify-center',
-                                            });
-                                        }}
-                                    >
-                                        {basicInfo?.expirationDate
-                                            ? moment(basicInfo?.expirationDate).format(
-                                                  'MMMM Do, YYYY'
-                                              )
-                                            : m['boost.cms.advanced.expirationDate']()}
-                                        <Calendar className="w-[30px] text-grayscale-700" />
-                                    </button>
-                                )}
-                            </div>
-                        </>
-                    )}
+                                    className="w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] px-[16px] py-[12px] font-medium tracking-widest text-base"
+                                    onClick={() => {
+                                        presentDatePicker({
+                                            backdropDismiss: true,
+                                            showBackdrop: false,
+                                            cssClass: 'flex items-center justify-center',
+                                        });
+                                    }}
+                                >
+                                    {basicInfo?.expirationDate
+                                        ? moment(basicInfo?.expirationDate).format('MMMM Do, YYYY')
+                                        : m['boost.cms.advanced.expirationDate']()}
+                                    <Calendar className="w-[30px] text-grayscale-700" />
+                                </button>
+                            )}
+                        </div>
+                    </>
                 </IonCol>
             )}
         </IonRow>

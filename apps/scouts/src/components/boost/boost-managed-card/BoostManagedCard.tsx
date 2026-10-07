@@ -8,6 +8,7 @@ import CredentialBadge from 'learn-card-base/components/CredentialBadge/Credenti
 import BoostOutline2 from 'learn-card-base/svgs/BoostOutline2';
 import { ErrorBoundary } from 'react-error-boundary';
 import Plus from '../../svgs/Plus';
+import * as m from '../../../paraglide/messages.js';
 import {
     BrandingEnum,
     BoostPageViewModeType,
@@ -272,7 +273,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
                     {cardTitle}
                 </span>
                 <span className="text-sp-purple-base text-[12px] font-[600] uppercase font-notoSans">
-                    Merit Badge
+                    {m['boost.meritBadge']()}
                 </span>
                 <span className="px-[10px] text-[11px] line-clamp-1">{parentSourceTitle}</span>
             </div>
@@ -306,13 +307,13 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
             <div className="flex w-full flex-col items-center justify-center">
                 {isDraft && (
                     <button
-                        className="flex rounded-[40px] w-[140px] h-[32px] justify-center items-center text-grayscale-900 bg-grayscale-200 shadow-bottom text-base font-medium"
+                        className="flex rounded-[40px] w-fit min-w-[140px] max-w-full h-[32px] px-3 justify-center items-center whitespace-nowrap text-grayscale-900 bg-grayscale-200 shadow-bottom text-sm leading-none font-medium"
                         onClick={e => {
                             e.stopPropagation();
                             handleEditOnClick();
                         }}
                     >
-                        Edit Draft
+                        {m['boost.editDraft']()}
                     </button>
                 )}
             </div>
@@ -338,7 +339,9 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
                     )}
                     {isMeritBadge && (
                         <>
-                            <span className="font-notoSans text-[17px] font-[700]">Award</span>
+                            <span className="font-notoSans text-[17px] font-[700]">
+                                {m['boost.award']()}
+                            </span>
                             <PurpleMeritBadgesIcon className="w-[25px] h-[25px]" />
                         </>
                     )}
@@ -367,8 +370,13 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
                                 : 'text-white mt-[6px]'
                         }`}
                     >
-                        Issued to {recipientCount ?? 0}{' '}
-                        {(recipientCount ?? 0) === 1 ? 'person' : 'people'}
+                        {m['boost.issuedTo']({
+                            count: recipientCount ?? 0,
+                            person:
+                                (recipientCount ?? 0) === 1
+                                    ? m['boost.personOne']()
+                                    : m['boost.personOther'](),
+                        })}
                     </p>
                 }
             </div>
@@ -376,7 +384,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
     }
 
     return (
-        <ErrorBoundary fallback={<div>Something went wrong</div>}>
+        <ErrorBoundary fallback={<div>{m['boost.somethingWentWrong']()}</div>}>
             {isCardView && (
                 <IonCol
                     size="6"

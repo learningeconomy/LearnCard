@@ -41,6 +41,10 @@ vi.mock('learn-card-base', () => ({
 }));
 
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
+    // The preview renders a screen-reader-only heading from the credential
+    // name, so the mock resolves the same fields the real helper prefers.
+    getCredentialName: (credential: any): string =>
+        credential?.name ?? credential?.credentialSubject?.achievement?.name ?? '',
     getExistingAttachmentsOrEvidence: (
         attachments: unknown[],
         evidence: unknown[],
@@ -78,7 +82,9 @@ vi.mock('learn-card-base/components/boost/boostFooter/BoostFooter', () => ({
     default: () => null,
 }));
 // Surface footerProps so tests can assert on which footer controls are offered.
-vi.mock('learn-card-base/components/boost/boostFooter/BoostFooterLayout', () => ({
+// The preview renders the accessible footer wrapper rather than the shared
+// base layout, so the stub has to stand in for that module.
+vi.mock('../../../accessibility/AccessibleBoostFooterLayout', () => ({
     default: ({ children, footerProps }: any) => (
         <div
             data-testid="footer-layout"

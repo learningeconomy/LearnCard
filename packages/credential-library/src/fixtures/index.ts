@@ -1,4 +1,4 @@
-import type { CredentialFixture } from '../types';
+import type { LibraryFixture } from '../types';
 
 // VC v1
 import { vcV1Basic } from './vc-v1/basic';
@@ -20,13 +20,29 @@ import { obv3OneedtechFull } from './obv3/1edtech-full';
 import { obv3ProfessionalCert } from './obv3/professional-cert';
 import { obv3MicroCredential } from './obv3/micro-credential';
 import { obv3CourseCompletion } from './obv3/course-completion';
+import { obv3StandaloneFullCourse } from './obv3/standalone-full-course';
 import { obv3K12Diploma } from './obv3/k12-diploma';
 import { obv3EndorsementCredential } from './obv3/endorsement';
+import {
+    obv3StudentAfterschoolProgramMentor,
+    obv3StudentEnvironmentBadge,
+    obv3StudentRockClimbingMentor,
+    obv3StudentParkCleanupHelper,
+} from './obv3/student-sample-badges';
+import { obv3StudentAdditionalCredentials } from './obv3/student-additional-credentials';
+import { obv3RubricAlignedBadge } from './obv3/rubric-aligned-badge';
 
 // CLR v2
 import { clrMinimal } from './clr/minimal';
 import { clrMultiAchievement } from './clr/multi-achievement';
 import { clrUniversityTranscript } from './clr/university-transcript';
+import { clrStudentOfficialAcademicTranscript } from './clr/student-official-academic-transcript';
+import { clrEmploymentRecord } from './clr/employment-record';
+import { clrTrainingProviderRecord } from './clr/training-provider-record';
+import { clrMilitaryTrainingRecord } from './clr/military-training-record';
+import { clrProfessionalOrganizationRecord } from './clr/professional-organization-record';
+import { clrLicensingRegulatoryRecord } from './clr/licensing-regulatory-record';
+import { clrMixedCareerRecord } from './clr/mixed-career-record';
 
 // LearnCard Boosts
 import { boostBasic } from './boost/basic';
@@ -55,12 +71,31 @@ import { vcV2LicenseCredential } from './vc-v2/license-credential';
 import { clrGreatPlainsFull } from './clr/great-plains-full';
 import { clrWestbridgeFull } from './clr/westbridge-full';
 import { clrCompetencyAligned } from './clr/competency-aligned';
+import { clrAchievementIdAssociations } from './clr/achievement-id-associations';
+import {
+    clrProvisionalTranscript,
+    buildFinalTranscriptVariant,
+    REFRESH_SERVICE_INLINE_CONTEXT,
+} from './clr/provisional-transcript';
+import { clrDemoIsdDiplomaAssessments } from './clr/demo-isd-diploma-assessments';
+
+// Curated practice, role, language, and administrative examples
+import { obv3FoodAllergenPractice } from './obv3/food-allergen-practice';
+import { obv3FoodAllergenFacilitator } from './obv3/food-allergen-facilitator';
+import { obv3FoodAllergenPracticeFr } from './obv3/food-allergen-practice-fr';
+import { obv3PhishingTransfer } from './obv3/phishing-transfer';
+import { customCourseEnrollment } from './custom/course-enrollment';
+import { customExamAccommodation } from './custom/exam-accommodation';
+import { clrMixedRolePortfolio } from './clr/mixed-role-portfolio';
+
+// SD-JWT VC
+import { sdJwtVcCourseCompletion } from './sd-jwt-vc/course-completion';
 
 // ---------------------------------------------------------------------------
 // All fixtures — collected for auto-registration
 // ---------------------------------------------------------------------------
 
-export const ALL_FIXTURES: CredentialFixture[] = [
+export const ALL_FIXTURES: LibraryFixture[] = [
     // VC v1
     vcV1Basic,
     vcV1WithStatus,
@@ -81,13 +116,27 @@ export const ALL_FIXTURES: CredentialFixture[] = [
     obv3ProfessionalCert,
     obv3MicroCredential,
     obv3CourseCompletion,
+    obv3StandaloneFullCourse,
     obv3K12Diploma,
     obv3EndorsementCredential,
+    obv3StudentAfterschoolProgramMentor,
+    obv3StudentEnvironmentBadge,
+    obv3StudentRockClimbingMentor,
+    obv3StudentParkCleanupHelper,
+    ...obv3StudentAdditionalCredentials,
+    obv3RubricAlignedBadge,
 
     // CLR v2
     clrMinimal,
     clrMultiAchievement,
     clrUniversityTranscript,
+    clrStudentOfficialAcademicTranscript,
+    clrEmploymentRecord,
+    clrTrainingProviderRecord,
+    clrMilitaryTrainingRecord,
+    clrProfessionalOrganizationRecord,
+    clrLicensingRegulatoryRecord,
+    clrMixedCareerRecord,
 
     // Boosts
     boostBasic,
@@ -114,6 +163,21 @@ export const ALL_FIXTURES: CredentialFixture[] = [
     clrGreatPlainsFull,
     clrWestbridgeFull,
     clrCompetencyAligned,
+    clrAchievementIdAssociations,
+    clrProvisionalTranscript,
+    clrDemoIsdDiplomaAssessments,
+
+    // Curated examples
+    obv3FoodAllergenPractice,
+    obv3FoodAllergenFacilitator,
+    obv3FoodAllergenPracticeFr,
+    obv3PhishingTransfer,
+    customCourseEnrollment,
+    customExamAccommodation,
+    clrMixedRolePortfolio,
+
+    // SD-JWT VC
+    sdJwtVcCourseCompletion,
 ];
 
 // Re-export individual fixtures for direct import
@@ -142,9 +206,23 @@ export {
     obv3ProfessionalCert,
     obv3MicroCredential,
     obv3CourseCompletion,
+    obv3StandaloneFullCourse,
     obv3K12Diploma,
     obv3EndorsementCredential,
+    obv3StudentAfterschoolProgramMentor,
+    obv3StudentEnvironmentBadge,
+    obv3StudentRockClimbingMentor,
+    obv3StudentParkCleanupHelper,
+    obv3StudentAdditionalCredentials,
+    obv3RubricAlignedBadge,
     clrUniversityTranscript,
+    clrStudentOfficialAcademicTranscript,
+    clrEmploymentRecord,
+    clrTrainingProviderRecord,
+    clrMilitaryTrainingRecord,
+    clrProfessionalOrganizationRecord,
+    clrLicensingRegulatoryRecord,
+    clrMixedCareerRecord,
     boostCommunityAward,
     boostDelegate,
     vcV1AlumniCredential,
@@ -156,4 +234,17 @@ export {
     clrGreatPlainsFull,
     clrWestbridgeFull,
     clrCompetencyAligned,
+    clrAchievementIdAssociations,
+    clrProvisionalTranscript,
+    buildFinalTranscriptVariant,
+    REFRESH_SERVICE_INLINE_CONTEXT,
+    clrDemoIsdDiplomaAssessments,
+    obv3FoodAllergenPractice,
+    obv3FoodAllergenFacilitator,
+    obv3FoodAllergenPracticeFr,
+    obv3PhishingTransfer,
+    customCourseEnrollment,
+    customExamAccommodation,
+    clrMixedRolePortfolio,
+    sdJwtVcCourseCompletion,
 };

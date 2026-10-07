@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Countdown from 'react-countdown';
 import { ContactMethodType } from '@learncard/types';
+import { IonSpinner } from '@ionic/react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('user-email-contact-item');
 
@@ -26,8 +27,10 @@ export const UserEmailContactItem: React.FC<{
     const [isResendCodeLoading, setIsResendCodeLoading] = useState<boolean>(false);
 
     const { mutateAsync: addContactMethod } = useAddContactMethod();
-    const { mutateAsync: setPrimaryContactMethod } = useSetPrimaryContactMethod();
-    const { mutateAsync: removeContactMethod } = useRemoveContactMethod();
+    const { mutateAsync: setPrimaryContactMethod, isPending: isSetPrimaryLoading } =
+        useSetPrimaryContactMethod();
+    const { mutateAsync: removeContactMethod, isPending: isRemoveLoading } =
+        useRemoveContactMethod();
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -96,7 +99,10 @@ export const UserEmailContactItem: React.FC<{
             className="w-full flex flex-col items-center justify-start border-b-solid border-b-[1px] border-grayscale-200 pb-4"
         >
             <div className="w-full flex items-center justify-start gap-2">
-                {email.isVerified ? <VerifiedCheckmark /> : <UnverifiedIcon />}
+                <span aria-hidden="true">
+                    {email.isVerified ? <VerifiedCheckmark /> : <UnverifiedIcon />}
+                </span>
+                {email.isVerified && <span className="sr-only">{m['issueFlow.verified']()}</span>}
 
                 <p className="text-grayscale-800 font-medium text-lg flex-1 w-full">
                     {email.value}
@@ -105,16 +111,20 @@ export const UserEmailContactItem: React.FC<{
 
             {!email.isVerified && (
                 <div className="w-full flex items-center justify-start mt-2 mb-2">
-                    <p className="text-amber-500 rounded-[15px] text-sm font-semibold">
+                    <p className="text-amber-700 rounded-[15px] text-sm font-semibold">
                         {m['profile.email.unverified']()}{' '}
                         <span className="text-grayscale-900">•&nbsp;</span>
                     </p>
                     <button
+                        type="button"
                         onClick={e => {
                             e.preventDefault();
                             e.stopPropagation();
                             handleResendVerificationEmail(email.id, email.value);
                         }}
+                        disabled={isResendCodeLoading}
+                        aria-busy={isResendCodeLoading}
+                        aria-label={`${m['profile.email.resendVerification']()} ${email.value}`}
                         className={`text-${primaryColor} font-semibold text-sm cursor-pointer`}
                     >
                         {isResendCodeLoading
@@ -126,29 +136,42 @@ export const UserEmailContactItem: React.FC<{
 
             <div className="flex items-center justify-end w-full gap-2 mt-2">
                 {email?.isPrimary ? (
-                    <p
-                        onClick={() => handleSetPrimaryContactMethod(email.id)}
-                        className="bg-emerald-201 text-emerald-601 font-semibold rounded-full px-6 py-3"
-                    >
+                    <p className="bg-emerald-201 text-emerald-601 font-semibold rounded-full px-6 py-3">
                         {m['profile.email.primary']()}
                     </p>
                 ) : (
                     <button
+                        type="button"
                         onClick={() => handleSetPrimaryContactMethod(email.id)}
+                        disabled={isSetPrimaryLoading}
+                        aria-busy={isSetPrimaryLoading}
+                        aria-label={`${m['profile.email.setAsPrimary']()} ${email.value}`}
                         className="bg-grayscale-700 text-white font-semibold rounded-full px-4 py-3"
                     >
-                        {m['profile.email.setAsPrimary']()}
+                        {isSetPrimaryLoading
+                            ? m['common.loading']()
+                            : m['profile.email.setAsPrimary']()}
                     </button>
                 )}
                 <button
+                    type="button"
                     onClick={() => handleRemoveContactMethod(email.id)}
+                    disabled={isRemoveLoading}
+                    aria-busy={isRemoveLoading}
+                    aria-label={`${m['profile.email.remove']()} ${email.value}`}
                     className="bg-white border-solid border-[1px] border-grayscale-200 rounded-full h-[48px] w-[48px] flex items-center justify-center"
                 >
-                    <TrashBin
-                        version="2"
-                        strokeWidth="2"
-                        className="text-grayscale-900 w-[28px] h-[28px] min-w-[28px] min-h-[28px]"
-                    />
+                    {isRemoveLoading ? (
+                        <IonSpinner name="crescent" aria-hidden="true" />
+                    ) : (
+                        <span aria-hidden="true">
+                            <TrashBin
+                                version="2"
+                                strokeWidth="2"
+                                className="text-grayscale-900 w-[28px] h-[28px] min-w-[28px] min-h-[28px]"
+                            />
+                        </span>
+                    )}
                 </button>
             </div>
         </div>

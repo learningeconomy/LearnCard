@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import moment from 'moment';
 import { useHistory } from 'react-router';
 
 import { IonContent, IonPage, IonSpinner, useIonAlert, IonRow } from '@ionic/react';
 import { getVCDisplayCardVariant } from '@learncard/react';
 // import MainHeader from '../../components/main-header/MainHeader';
 import X from 'learn-card-base/svgs/X';
-// @ts-ignore
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import ViewTroopIdModal from '../troop/ViewTroopIdModal';
 import ClaimBoostLoading from './ClaimBoostLoading';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import ClaimBoostLoggedOutPrompt from '../../components/boost/logged-out-claim-boost/ClaimBoostLoggedOutPrompt';
+import { formatLocaleDate } from '../../i18n/formatters';
 
 import useFirebaseAnalytics from '../../hooks/useFirebaseAnalytics';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
@@ -29,11 +28,13 @@ import {
     ProfilePicture,
     BrandingEnum,
     ModalTypes,
-    SCOUTPASS_NETWORK_API_URL,
+    networkStore,
     useToast,
     ToastTypeEnum,
 } from 'learn-card-base';
 
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 import {
     isTroopCredential,
@@ -54,10 +55,16 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
 
-    const profileId = getUserHandleFromDid(boostVC?.issuer as any);
+    const issuerDid =
+        typeof boostVC.issuer === 'string' ? boostVC.issuer : (boostVC.issuer?.id ?? '');
+    const profileId = getUserHandleFromDid(issuerDid);
     const { data } = useGetProfile(profileId);
 
-    const issueDate = moment(boostVC?.issuanceDate).format('MMM DD, YYYY');
+    const issueDate = formatLocaleDate(boostVC?.issuanceDate, {
+        month: 'short',
+        day: '2-digit',
+        year: 'numeric',
+    });
 
     if (isLoggedIn) {
         return (
@@ -85,7 +92,11 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
                 <div className="vc-issue-details mt-[10px] flex flex-col items-center font-montserrat text-[14px] leading-[20px]">
                     <span className="created-at text-grayscale-700">{issueDate}</span>
                     <span className="issued-by text-grayscale-900 font-[500]">
-                        by <strong className="font-[700] capitalize">{data?.displayName}</strong>
+                        <TransP
+                            m={m['claimBoost.issuedBy']}
+                            values={{ name: data?.displayName }}
+                            components={[<strong key="b" className="font-[700] capitalize" />]}
+                        />
                     </span>
                 </div>
             </>
@@ -107,7 +118,11 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
             <div className="vc-issue-details mt-[10px] flex flex-col items-center font-montserrat text-[14px] leading-[20px]">
                 <span className="created-at text-grayscale-700">{issueDate}</span>
                 <span className="issued-by text-grayscale-900 font-[500]">
-                    by <strong className="font-[700] capitalize">{data?.displayName}</strong>
+                    <TransP
+                        m={m['claimBoost.issuedBy']}
+                        values={{ name: data?.displayName }}
+                        components={[<strong key="b" className="font-[700] capitalize" />]}
+                    />
                 </span>
             </div>
         </>
@@ -186,7 +201,7 @@ export const ClaimBoostModal: React.FC<{
             setLoading(true);
 
             const result = await fetch(
-                `${SCOUTPASS_NETWORK_API_URL}/storage/resolve?uri=${boostUri}${
+                `${networkStore.get.networkApiUrl()}/storage/resolve?uri=${boostUri}${
                     challenge ? `&challenge=${encodeURIComponent(challenge)}` : ''
                 }`
             );
@@ -196,7 +211,7 @@ export const ClaimBoostModal: React.FC<{
             const boostVC: VC = await result.json();
 
             setBoost(boostVC);
-        } catch (error: any) {
+        } catch (error) {
             log.error(error);
         } finally {
             setLoading(false);
@@ -227,13 +242,10 @@ export const ClaimBoostModal: React.FC<{
             );
             await addCredentialToWallet({ uri: claimedBoostUri });
 
-            const category = getDefaultCategoryForCredential((boost || {}) as any);
-            const achievementType = getAchievementType((boost || {}) as any);
-
             if (boost) {
                 logAnalyticsEvent('claim_boost', {
-                    boostType: category,
-                    achievementType,
+                    boostType: getDefaultCategoryForCredential(boost),
+                    achievementType: getAchievementType(boost),
                     method: 'Claim Modal',
                 });
             }
@@ -248,7 +260,7 @@ export const ClaimBoostModal: React.FC<{
 
             history?.push('/');
 
-            presentToast(`Successfully claimed Credential!`, {
+            presentToast(m['notifications.toasts.successfullyClaimed'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
@@ -260,7 +272,7 @@ export const ClaimBoostModal: React.FC<{
             const isExpired =
                 errorMsg.includes('Challenge not found') || errorMsg.includes('expired');
 
-            presentToast(`Unable to claim Credential`, {
+            presentToast(m['claimBoost.toast.claimFail'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -268,12 +280,10 @@ export const ClaimBoostModal: React.FC<{
             presentAlert({
                 backdropDismiss: false,
                 cssClass: 'boost-confirmation-alert',
-                header: isExpired
-                    ? 'The boost claim link has expired or has reached the maximum number of times it can be claimed.'
-                    : 'Something went wrong while claiming this credential. Please try again.',
+                header: isExpired ? m['claimBoost.expiredAlert']() : m['claimBoost.errorAlert'](),
                 buttons: [
                     {
-                        text: 'Okay',
+                        text: m['consentFlow.okay'](),
                         role: 'cancel',
                         handler: () => {
                             dismissAlert();
@@ -291,7 +301,9 @@ export const ClaimBoostModal: React.FC<{
         getBoost();
     }, []);
 
-    const credentialBodyOverride = <ClaimBoostBodyPreviewOverride boostVC={(boost || {}) as any} />;
+    const credentialBodyOverride = boost ? (
+        <ClaimBoostBodyPreviewOverride boostVC={boost} />
+    ) : undefined;
 
     const handleClaimBoostAction = async () => {
         if (isLoggedIn && !loading) {
@@ -301,15 +313,11 @@ export const ClaimBoostModal: React.FC<{
             openLoggedOutModal();
         }
     };
-    let actionButtonText = 'Accept';
-
-    if (isClaimLoading) {
-        actionButtonText = 'Loading...';
-    } else if (!isClaimLoading && isClaimed) {
-        actionButtonText = 'Accepted';
-    } else {
-        actionButtonText = 'Accept';
-    }
+    const actionButtonText = isClaimLoading
+        ? m['common.loading']()
+        : isClaimed
+          ? m['notifications.accepted']()
+          : m['common.accept']();
 
     const isTroopIdClaim = boost ? isTroopCredential(boost) : false;
 
@@ -334,21 +342,17 @@ export const ClaimBoostModal: React.FC<{
                     {!boostExists && (
                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-full w-full">
                             <IonSpinner color="black" />
-                            <p className="mt-2 font-bold text-lg">Loading...</p>
+                            <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                         </section>
                     )}
                     {!loading && !boost && (
                         <section className="flex flex-col pt-[10px] px-[20px] text-center justify-center">
-                            <img
-                                src={MiniGhost}
-                                alt="currencies"
-                                className="relative max-w-[250px] m-auto"
-                            />
+                            <img src={MiniGhost} alt="" className="relative max-w-[250px] m-auto" />
                             <h1 className="text-center text-3xl font-bold text-grayscale-800">
-                                Eeek!
+                                {m['scanner.eek']()}
                             </h1>
                             <strong className="text-center font-medium text-grayscale-600">
-                                Unable to find boost
+                                {m['claimBoost.unableToFind']()}
                             </strong>
                         </section>
                     )}
@@ -357,7 +361,7 @@ export const ClaimBoostModal: React.FC<{
                         <>
                             {!isTroopIdClaim ? (
                                 <VCDisplayCardWrapper2
-                                    credential={(boost || {}) as any}
+                                    credential={boost!}
                                     customBodyCardComponent={credentialBodyOverride}
                                     customFooterComponent={<div />}
                                     checkProof={false}
@@ -369,7 +373,7 @@ export const ClaimBoostModal: React.FC<{
                                 />
                             ) : (
                                 <ViewTroopIdModal
-                                    credential={(boost || {}) as any}
+                                    credential={boost!}
                                     boostUri={boostUri || ''}
                                     claimCredentialUri={boostUri || ''}
                                     useCurrentUserInfo

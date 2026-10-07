@@ -133,7 +133,7 @@ export const ExistingAiSessionChatBotContainer: React.FC<{
             className={`w-full flex flex-col overflow-y-auto pt-[80px] ${
                 isDesktop ? 'max-w-[800px]' : ''
             } scrollbar-hide relative`}
-            style={{ paddingTop: 'calc(80px + env(safe-area-inset-top))' }}
+            style={{ paddingTop: 'calc(80px + var(--ion-safe-area-top, 0px))' }}
         >
             <OnboardingHeader
                 title={headerTitle}

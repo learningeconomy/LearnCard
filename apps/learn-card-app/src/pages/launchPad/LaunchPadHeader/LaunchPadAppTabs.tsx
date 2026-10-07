@@ -54,17 +54,13 @@ const LaunchPadAppTabs: React.FC<LaunchPadAppTabsProps> = ({ tab, setTab }) => {
     const primaryColor = colorSet.primaryColor;
     const primaryColorShade = colorSet.primaryColorShade;
     const borderRadius = styleSet.tabs.borderRadius;
-
-    // Filter tabs based on pluginVisibility flag
-    const visibleTabs = useMemo(() => {
-        return Object.values(LaunchPadTabEnum).filter(tabOption => {
-            // Hide Plugins tab if pluginVisibility flag is not enabled
-            if (tabOption === LaunchPadTabEnum.plugins && !flags?.pluginVisibility) {
-                return false;
-            }
-            return true;
-        });
-    }, [flags?.pluginVisibility]);
+    const visibleTabs = useMemo(
+        () =>
+            Object.values(LaunchPadTabEnum).filter(
+                tabOption => tabOption !== LaunchPadTabEnum.plugins || flags?.pluginVisibility
+            ),
+        [flags?.pluginVisibility]
+    );
 
     const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
         if (event.pointerType !== 'mouse') return;

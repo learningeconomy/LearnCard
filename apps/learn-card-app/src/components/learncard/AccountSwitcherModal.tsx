@@ -26,6 +26,7 @@ import {
 import { FamilyChildAccount } from '../familyCMS/familyCMSState';
 import { ConsentFlowContractDetails, LCNProfile } from '@learncard/types';
 import { SwitcherStepEnum } from './switcher.helpers';
+import * as m from '../../paraglide/messages.js';
 
 type AccountSwitcherModalProps = {
     title?: string;
@@ -34,6 +35,8 @@ type AccountSwitcherModalProps = {
     contractDetails?: ConsentFlowContractDetails;
     showServiceProfiles?: boolean;
     showServiceProfilesOnly?: boolean;
+    /** Modal hosts close their own instance here; inline hosts use handlePlayerSwitchOverride. */
+    onSwitchComplete?: () => void;
     handlePlayerSwitchOverride?: (user: LCNProfile) => void;
     handleBackToGame?: () => void;
     onPlayerSwitch?: (user: LCNProfile) => void;
@@ -48,7 +51,7 @@ type AccountSwitcherModalProps = {
 };
 
 const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
-    title = 'Select Profile',
+    title = m['arabicFixes.selectProfile'](),
     showFooter = false,
     isFromGame,
     handlePlayerSwitchOverride = undefined,
@@ -57,6 +60,7 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
     onPlayerSwitch,
     showServiceProfiles = false,
     showServiceProfilesOnly = false,
+    onSwitchComplete,
     headerOverrideComponent,
     footerOverrideComponent,
 
@@ -78,6 +82,7 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
 
     const { familyCredential } = useGetFamilyCredential();
     const familyName = familyCredential?.boostCredential?.name ?? familyCredential?.name;
+    const canCreateChildAccount = Boolean(familyCredential) && !showServiceProfilesOnly;
 
     const { data: profiles, isLoading } = useGetAvailableProfiles();
 
@@ -89,18 +94,18 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
         showServiceProfiles || showServiceProfilesOnly
             ? profileRecords
             : profileRecords?.filter?.(
-                  ({ profile }: { profile: LCNProfile }) => !profile.isServiceProfile
+                  ({ profile }: { profile: LCNProfile }) =>
+                      profile.type === 'child' || !profile.isServiceProfile
               );
 
     if (showServiceProfilesOnly) {
         profileRecords = profileRecords?.filter?.(
-            ({ profile }: { profile: LCNProfile }) => profile.isServiceProfile
+            ({ profile }: { profile: LCNProfile }) =>
+                profile.type !== 'child' && profile.isServiceProfile
         );
     }
 
-    const { handleSwitchAccount, isSwitching } = useSwitchProfile({
-        onSwitch: closeModal,
-    });
+    const { handleSwitchAccount, isSwitching } = useSwitchProfile();
 
     const handleAddPlayer = () => {
         newModal(
@@ -123,7 +128,9 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
         return (
             <div className="w-full flex flex-col items-center justify-center min-h-[300px] bg-white">
                 <IonSpinner name="crescent" color="grayscale-900" className="scale-[2] mb-8 mt-6" />
-                <p className="font-poppins text-grayscale-900">Loading Accounts...</p>
+                <p className="font-poppins text-grayscale-900">
+                    {m['arabicFixes.loadingAccounts']()}
+                </p>
             </div>
         );
     }
@@ -165,7 +172,7 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
                             handlePlayerSwitchOverride={handlePlayerSwitchOverride}
                             onPlayerSwitch={onPlayerSwitch}
                             isSwitching={isSwitching}
-                            onSwitchComplete={closeModal}
+                            onSwitchComplete={onSwitchComplete}
                         />
                     )}
 
@@ -187,7 +194,8 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
                             const image = profile?.image || manager?.image;
                             const isSelected = currentLCNUser?.did === profile?.did;
 
-                            const isServiceProfile = profile?.isServiceProfile ?? false;
+                            const isServiceProfile =
+                                profile?.type !== 'child' && profile?.isServiceProfile === true;
 
                             return (
                                 <button
@@ -197,12 +205,16 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
                                             did: profile?.did,
                                             profileId: profile?.profileId,
                                             isServiceProfile: profile?.isServiceProfile,
+                                            type: profile?.type,
+                                            displayName,
+                                            image,
                                         };
 
                                         if (handlePlayerSwitchOverride) {
                                             handlePlayerSwitchOverride(switchedUser);
                                         } else {
                                             await handleSwitchAccount(switchedUser);
+                                            onSwitchComplete?.();
                                         }
                                         onPlayerSwitch?.(switchedUser);
                                     }}
@@ -232,7 +244,9 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
                                             {displayName}
                                         </p>
                                         <p className="text-xs text-grayscale-600 font-semibold capitalize">
-                                            {isServiceProfile ? 'Organization' : 'Child'}
+                                            {isServiceProfile
+                                                ? m['arabicFixes.organization']()
+                                                : m['arabicFixes.child']()}
                                         </p>
                                         <div className="h-[15px] w-[15px]">
                                             {isSelected && (
@@ -246,15 +260,18 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
 
                     {showServiceProfiles && profileIsParent && (
                         <NewProfileButton
-                            onClick={() => {
-                                // if the user hasnt created a family credential bypass the profile selector type
-                                // and go directly to the create organization account step
-                                if (!familyCredential || showServiceProfilesOnly) {
-                                    setActiveStep(SwitcherStepEnum.createOrganizationAccount);
-                                    return;
-                                }
-                                setActiveStep(SwitcherStepEnum.selectProfileType);
-                            }}
+                            label={
+                                canCreateChildAccount
+                                    ? m['arabicFixes.newChildOrOrganization']()
+                                    : m['arabicFixes.newOrganization']()
+                            }
+                            onClick={() =>
+                                setActiveStep(
+                                    canCreateChildAccount
+                                        ? SwitcherStepEnum.selectProfileType
+                                        : SwitcherStepEnum.createOrganizationAccount
+                                )
+                            }
                         />
                     )}
                 </div>
@@ -269,14 +286,14 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
                             className="shrink-0 w-full max-w-[400px] py-[10px] px-[15px] text-[20px] bg-grayscale-900 rounded-full font-notoSans text-white shadow-button-bottom disabled:opacity-60"
                             disabled={!familyCredential?.boostId || isSwitching}
                         >
-                            Add New Player
+                            {m['arabicFixes.addNewPlayer']()}
                         </button>
                         <button
                             onClick={isFromGame ? handleBackToGame : closeAllModals}
                             type="button"
                             className="text-[17px] text-grayscale-900 font-[600] leading-[24px] tracking-[0.25px]"
                         >
-                            {isFromGame ? 'Back to Game' : 'Cancel'}
+                            {isFromGame ? m['arabicFixes.backToGame']() : m['common.cancel']()}
                         </button>
                     </footer>
                 ))}
@@ -289,7 +306,7 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
                             className="shrink-0 w-full py-2 h-full flex items-center font-medium justify-center text-xl bg-white rounded-[20px] shadow-bottom text-grayscale-800"
                             onClick={closeModal}
                         >
-                            Close
+                            {m['common.close']()}
                         </button>
                     </div>
                 </>

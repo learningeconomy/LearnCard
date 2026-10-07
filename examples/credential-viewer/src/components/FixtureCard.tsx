@@ -1,12 +1,12 @@
 import React from 'react';
 
-import type { CredentialFixture } from '@learncard/credential-library';
+import type { LibraryFixture } from '@learncard/credential-library';
 
 import { Badge } from './Badge';
 import { SPEC_COLORS, SPEC_LABELS, PROFILE_LABELS, VALIDITY_COLORS } from '../lib/colors';
 
 interface FixtureCardProps {
-    fixture: CredentialFixture;
+    fixture: LibraryFixture;
     isSelected: boolean;
     isChecked: boolean;
     onToggleCheck: () => void;

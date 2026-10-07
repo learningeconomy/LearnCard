@@ -13,25 +13,16 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Capacitor } from '@capacitor/core';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
-import {
-    signInWithPopup,
-    signInWithCredential,
-    signOut as firebaseSignOut,
-    GoogleAuthProvider,
-    OAuthProvider,
-} from 'firebase/auth';
 import { IonIcon } from '@ionic/react';
 import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
 
-import { authStore, SocialLoginTypes, firebaseAuthStore, currentUserStore } from 'learn-card-base';
+import { authStore, SocialLoginTypes, useSignInAdapter, currentUserStore } from 'learn-card-base';
 
-import { auth } from '../../firebase/firebase';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 
 import AppleIcon from 'learn-card-base/assets/images/apple-logo.svg';
 import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
+import * as m from '../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('re-auth-overlay');
 
@@ -42,10 +33,10 @@ interface ReAuthOverlayProps {
     onCancel: () => void;
 }
 
-const UID_MISMATCH_ERROR =
-    'You signed in with a different account. Please try again with the correct account.';
+const getUidMismatchError = (): string => m['auth.uidMismatch']();
 
 const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) => {
+    const adapter = useSignInAdapter();
     const { refreshAuthSession } = useAppAuth();
 
     const [state, setState] = useState<ReAuthState>('refreshing');
@@ -87,47 +78,15 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
         setError(null);
 
         try {
-            const firebaseAuth = auth();
-
-            let newUid: string | undefined;
-
-            if (Capacitor.isNativePlatform()) {
-                const result = await FirebaseAuthentication.signInWithGoogle();
-                const { user } = await FirebaseAuthentication.getCurrentUser();
-
-                if (result.user && user) {
-                    newUid = user.uid;
-
-                    authStore.set.typeOfLogin(SocialLoginTypes.google);
-                    firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
-
-                    // Also sign in on the web layer
-                    try {
-                        const credential = GoogleAuthProvider.credential(
-                            result.credential?.idToken
-                        );
-
-                        await signInWithCredential(firebaseAuth, credential);
-                    } catch (e) {
-                        log.warn('ReAuth: web-layer credential sync failed', e);
-                    }
-                }
-            } else {
-                const provider = new GoogleAuthProvider();
-                const result = await signInWithPopup(firebaseAuth, provider);
-
-                if (result?.user) {
-                    newUid = result.user.uid;
-
-                    authStore.set.typeOfLogin(SocialLoginTypes.google);
-                }
-            }
+            const user = await adapter.signInWithGoogle({ intent: 'reauthenticate' });
+            const newUid = user.id;
+            authStore.set.typeOfLogin(SocialLoginTypes.google);
 
             // UID mismatch guard — reject if a different account was used
             if (expectedUidRef.current && newUid && newUid !== expectedUidRef.current) {
                 log.warn('ReAuth: UID mismatch', { expected: expectedUidRef.current, got: newUid });
-                await firebaseSignOut(firebaseAuth);
-                setError(UID_MISMATCH_ERROR);
+                await adapter.signOut();
+                setError(getUidMismatchError());
                 setState('error');
                 return;
             }
@@ -157,47 +116,15 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
         setError(null);
 
         try {
-            const firebaseAuth = auth();
-
-            let newUid: string | undefined;
-
-            if (Capacitor.isNativePlatform()) {
-                const result = await FirebaseAuthentication.signInWithApple({
-                    skipNativeAuth: true,
-                });
-
-                const provider = new OAuthProvider('apple.com');
-                const credential = provider.credential({
-                    idToken: result.credential?.idToken,
-                    rawNonce: result.credential?.nonce,
-                });
-
-                await signInWithCredential(firebaseAuth, credential);
-
-                const user = firebaseAuth.currentUser;
-
-                if (user) {
-                    newUid = user.uid;
-
-                    authStore.set.typeOfLogin(SocialLoginTypes.apple);
-                    firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
-                }
-            } else {
-                const provider = new OAuthProvider('apple.com');
-                const result = await signInWithPopup(firebaseAuth, provider);
-
-                if (result?.user) {
-                    newUid = result.user.uid;
-
-                    authStore.set.typeOfLogin(SocialLoginTypes.apple);
-                }
-            }
+            const user = await adapter.signInWithApple({ intent: 'reauthenticate' });
+            const newUid = user.id;
+            authStore.set.typeOfLogin(SocialLoginTypes.apple);
 
             // UID mismatch guard — reject if a different account was used
             if (expectedUidRef.current && newUid && newUid !== expectedUidRef.current) {
                 log.warn('ReAuth: UID mismatch', { expected: expectedUidRef.current, got: newUid });
-                await firebaseSignOut(firebaseAuth);
-                setError(UID_MISMATCH_ERROR);
+                await adapter.signOut();
+                setError(getUidMismatchError());
                 setState('error');
                 return;
             }
@@ -228,7 +155,7 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
                     <span className="w-8 h-8 border-2 border-grayscale-200 border-t-emerald-600 rounded-full animate-spin" />
                 </div>
 
-                <p className="text-sm text-grayscale-600">Restoring your session...</p>
+                <p className="text-sm text-grayscale-600">{m['auth.restoringSession']()}</p>
             </div>
         );
     }
@@ -241,16 +168,18 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
                     <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-4xl" />
                 </div>
 
-                <h2 className="text-xl font-semibold text-grayscale-900">Session Restored</h2>
+                <h2 className="text-xl font-semibold text-grayscale-900">
+                    {m['auth.sessionRestored']()}
+                </h2>
 
-                <p className="text-sm text-grayscale-600">You're all set.</p>
+                <p className="text-sm text-grayscale-600">{m['auth.youreAllSet']()}</p>
             </div>
         );
     }
 
     // --- Determine which re-auth buttons to show ---
-    const isGoogle = loginType === SocialLoginTypes.google;
-    const isApple = loginType === SocialLoginTypes.apple;
+    const isGoogle = adapter.capabilities.google && loginType === SocialLoginTypes.google;
+    const isApple = adapter.capabilities.apple && loginType === SocialLoginTypes.apple;
     const hasSocialReAuth = isGoogle || isApple;
 
     return (
@@ -259,12 +188,14 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
                 <IonIcon icon={alertCircleOutline} className="text-amber-500 text-4xl" />
             </div>
 
-            <h2 className="text-xl font-semibold text-grayscale-900">Session Expired</h2>
+            <h2 className="text-xl font-semibold text-grayscale-900">
+                {m['auth.sessionExpiredTitle']()}
+            </h2>
 
             <p className="text-sm text-grayscale-600 leading-relaxed">
                 {hasSocialReAuth
-                    ? 'Your sign-in session has expired. Please sign in again to continue.'
-                    : 'Your sign-in session has expired. Please sign out and sign back in to continue.'}
+                    ? m['auth.sessionExpiredDesc']()
+                    : m['auth.sessionExpiredSignOutDesc']()}
             </p>
 
             {error && (
@@ -287,12 +218,12 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
                         {state === 'reauthing' ? (
                             <span className="flex items-center gap-2">
                                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                Signing in...
+                                {m['auth.signingIn']()}
                             </span>
                         ) : (
                             <>
                                 <img src={GoogleIcon} alt="" className="w-5 h-5" />
-                                Continue with Google
+                                {m['auth.continueWithGoogle']()}
                             </>
                         )}
                     </button>
@@ -307,7 +238,7 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
                         {state === 'reauthing' ? (
                             <span className="flex items-center gap-2">
                                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                Signing in...
+                                {m['auth.signingIn']()}
                             </span>
                         ) : (
                             <>
@@ -316,7 +247,7 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
                                     alt=""
                                     className="w-5 h-5 brightness-0 invert"
                                 />
-                                Continue with Apple
+                                {m['auth.continueWithApple']()}
                             </>
                         )}
                     </button>
@@ -327,7 +258,7 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
                     disabled={state === 'reauthing'}
                     className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40"
                 >
-                    {hasSocialReAuth ? 'Cancel' : 'Dismiss'}
+                    {hasSocialReAuth ? m['common.cancel']() : m['auth.dismiss']()}
                 </button>
             </div>
         </div>

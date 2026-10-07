@@ -9,6 +9,18 @@ import { paraglideMissingKeyOnWarn } from '../paraglideOnWarn';
 import GlobalPolyfill from '@esbuild-plugins/node-globals-polyfill';
 import stdlibbrowser from 'node-stdlib-browser';
 import fs from 'fs';
+import type { LearnCardAppEnvironment } from '../src/config/buildEnvironment';
+
+const STORYBOOK_BUILD_ENVIRONMENT = {
+    MODE: 'development',
+    VITE_ENABLE_AUTH_DEBUG_WIDGET: false,
+    VITE_DOCKER_SOURCE: false,
+    ANALYZE: false,
+    CHOKIDAR_USEPOLLING: false,
+    CHOKIDAR_INTERVAL: 1000,
+    DEV: false,
+    PROD: true,
+} satisfies LearnCardAppEnvironment;
 
 /**
  * `@learncard/react`'s prebuilt `dist/**\/*.svg` files are JS modules that
@@ -68,6 +80,10 @@ const config: StorybookConfig = {
                 }),
             ],
             build: {
+                // Chromatic consumes the emitted files and dependency stats, not Vite's
+                // informational gzip report. Computing compressed sizes for this large
+                // Storybook creates an avoidable memory spike after bundling completes.
+                reportCompressedSize: false,
                 rollupOptions: {
                     // Fail the Storybook (Chromatic) build on missing Paraglide keys.
                     onwarn: paraglideMissingKeyOnWarn,
@@ -75,6 +91,8 @@ const config: StorybookConfig = {
             },
             define: {
                 __PACKAGE_VERSION__: JSON.stringify('storybook'),
+                __APP_BUILD_ENV__: JSON.stringify(STORYBOOK_BUILD_ENVIRONMENT),
+                __APP_VERSION__: JSON.stringify('storybook'),
                 __BUILD_SHA__: JSON.stringify('storybook'),
                 __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
                 IS_PRODUCTION: false,
@@ -93,6 +111,10 @@ const config: StorybookConfig = {
                     ),
                     'apps/learn-card-app': path.resolve(__dirname, '..'),
                     '@analytics': path.resolve(__dirname, '../src/analytics'),
+                    // The optional Streamdown code plugin imports Shiki's complete language
+                    // registry. Current stories do not render AI code blocks, so preserve the
+                    // production renderer while excluding those unused grammars from Storybook.
+                    '@streamdown/code': path.resolve(__dirname, './stubs/streamdownCodePlugin.ts'),
                 },
                 dedupe: ['react', 'react-dom', 'react-router', 'react-router-dom', 'history'],
             },
@@ -116,7 +138,7 @@ const config: StorybookConfig = {
                     define: { global: 'globalThis' },
                     // Injects the Buffer/process globals into pre-bundled deps, matching
                     // the main app's vite.config.ts optimizeDeps setup.
-                    plugins: [GlobalPolyfill({ process: true, buffer: true }) as any],
+                    plugins: [GlobalPolyfill({ process: true, buffer: true })],
                 },
             },
         }),

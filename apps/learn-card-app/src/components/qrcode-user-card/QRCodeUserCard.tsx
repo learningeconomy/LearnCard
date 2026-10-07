@@ -57,7 +57,7 @@ const QrCodeUserCard: React.FC<{
     const profileId = currentLCNUser?.profileId || getProfileIdFromLCNDidWeb(walletDid);
 
     return (
-        <div className="h-full w-full overflow-y-auto bg-white relative">
+        <div className="lc-content-owns-bottom h-full w-full overflow-y-auto bg-white relative pb-[var(--lc-overlay-inset-bottom,var(--ion-safe-area-bottom,0px))]">
             <QrCodeUserCardHeader
                 showCompact={showCompactHeader}
                 showBackButton={showBackButton}

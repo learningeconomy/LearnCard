@@ -1,10 +1,13 @@
+import { environment } from '@environment';
 import { RegistryService, IssuerLookupResult } from '../registry.service';
 
 export class WhitelistAdapter implements RegistryService {
     private trustedIssuers: string[];
 
     constructor() {
-        this.trustedIssuers = (process.env.TRUSTED_ISSUERS_WHITELIST || '').split(',').filter(Boolean);
+        this.trustedIssuers = (environment.TRUSTED_ISSUERS_WHITELIST || '')
+            .split(',')
+            .filter(Boolean);
     }
 
     async isTrusted(issuer: string): Promise<boolean> {

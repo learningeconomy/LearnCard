@@ -247,8 +247,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                             const childMeta = fullChild.meta as TemplateBoostMeta | undefined;
                             const childConfig = childMeta?.templateConfig;
                             const childCredential = fullChild.boost as
-                                | Record<string, unknown>
-                                | undefined;
+                                Record<string, unknown> | undefined;
 
                             let childObv3Template: OBv3CredentialTemplate | undefined;
                             if (childCredential) {
@@ -261,8 +260,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
                             const credentialName = childCredential?.name as string | undefined;
                             const credentialDesc = childCredential?.description as
-                                | string
-                                | undefined;
+                                string | undefined;
 
                             return {
                                 id: childUri,

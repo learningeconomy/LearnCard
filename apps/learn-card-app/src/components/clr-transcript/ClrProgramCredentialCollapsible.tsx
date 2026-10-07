@@ -51,10 +51,10 @@ const ClrProgramCredentialCollapsible: React.FC<{
                         </div>
                         <div className="min-w-0 flex-1">
                             <div className="">
-                                <p className="text-sm font-semibold text-grayscale-900 truncate">
+                                <p className="text-base font-semibold text-grayscale-900 truncate">
                                     {program.name?.value ?? 'Program'}
                                 </p>
-                                <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide truncate">
+                                <p className="text-base font-semibold text-grayscale-500 uppercase tracking-wide truncate">
                                     {formatAchievementType(program.achievementType.value)}
                                 </p>
                                 {issuerName && (

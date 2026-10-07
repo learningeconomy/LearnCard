@@ -11,14 +11,10 @@ import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 
 type BoostDisplayStyleSelectorProps = {
     credential: VC | UnsignedVC;
-    enableRenderMethod: boolean;
 };
 
-const BoostDisplayStyleSelector: React.FC<BoostDisplayStyleSelectorProps> = ({
-    credential,
-    enableRenderMethod,
-}) => {
-    const renderMethod = enableRenderMethod ? getSvgMustacheRenderMethod(credential as VC) : null;
+const BoostDisplayStyleSelector: React.FC<BoostDisplayStyleSelectorProps> = ({ credential }) => {
+    const renderMethod = getSvgMustacheRenderMethod(credential as VC);
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
 
     if (!renderMethod) return null;

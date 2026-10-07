@@ -70,14 +70,10 @@ const BoostCMSIDCard: React.FC<{
                         className={`absolute rounded-full bottom-[-25px] bg-white flex items-center justify-center overflow-hidden border-[3px] border-solid border-white id-card-issuer-thumb-container ${customIssuerThumbContainerClass}`}
                     >
                         {!state?.appearance?.idIssuerThumbnail ? (
-                            <img
-                                alt="issuer thumbnail"
-                                src={EmptyImage}
-                                className="w-[43px] h-[47px]"
-                            />
+                            <img alt="" src={EmptyImage} className="w-[43px] h-[47px]" />
                         ) : (
                             <img
-                                alt="issuer thumbnail"
+                                alt=""
                                 src={
                                     state?.appearance?.idIssuerThumbnail
                                         ? insertParamsToFilestackUrl(

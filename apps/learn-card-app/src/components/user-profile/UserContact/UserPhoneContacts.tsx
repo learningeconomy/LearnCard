@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 import Plus from '../../svgs/Plus';
-import { IonInput } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
 import VerifiedBadge from 'learn-card-base/svgs/VerifiedBadge';
 
@@ -46,8 +46,10 @@ export const UserPhoneContacts: React.FC = () => {
     const { mutateAsync: addContactMethod, isPending: addContactMethodLoading } =
         useAddContactMethod();
     const { mutateAsync: verifyContactMethod } = useVerifyContactMethod();
-    const { mutateAsync: setPrimaryContactMethod } = useSetPrimaryContactMethod();
-    const { mutateAsync: removeContactMethod } = useRemoveContactMethod();
+    const { mutateAsync: setPrimaryContactMethod, isPending: isSetPrimaryLoading } =
+        useSetPrimaryContactMethod();
+    const { mutateAsync: removeContactMethod, isPending: isRemoveLoading } =
+        useRemoveContactMethod();
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -102,54 +104,94 @@ export const UserPhoneContacts: React.FC = () => {
                 </h4>
 
                 <div className="w-full flex flex-1 items-center justify-between">
-                    <IonInput
-                        autocapitalize="on"
-                        className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
-                        onIonInput={e => setPhone(e.detail.value)}
-                        value={phone}
+                    <label htmlFor="contact-phone" className="sr-only">
+                        {m['profile.phoneNumber']()}
+                    </label>
+                    <input
+                        id="contact-phone"
+                        autoCapitalize="on"
+                        className="w-full bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-400 rounded-[15px] px-4 py-3 font-medium tracking-widest text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent"
+                        onChange={event => setPhone(event.target.value)}
+                        value={phone ?? ''}
                         placeholder={m['profile.phone.placeholder']()}
                         type="tel"
+                        autoComplete="tel"
                     />
                     <button
+                        type="button"
                         onClick={() => handleAddContactMethod('phone')}
+                        aria-label={`${m['common.add']()} ${m['profile.phoneNumber']()}`}
+                        aria-busy={addContactMethodLoading}
                         className={`bg-${primaryColor} rounded-full p-2 m-2`}
                         disabled={addContactMethodLoading}
                     >
-                        <Plus className="text-white w-[25px] h-[25px] min-w-[25px] min-h-[25px]" />
+                        {addContactMethodLoading ? (
+                            <IonSpinner name="crescent" color="light" aria-hidden="true" />
+                        ) : (
+                            <span aria-hidden="true">
+                                <Plus className="text-white w-[25px] h-[25px] min-w-[25px] min-h-[25px]" />
+                            </span>
+                        )}
                     </button>
                 </div>
 
-                {phones.map(phone => (
+                {phones.map(phoneItem => (
                     <div
-                        key={phone.id}
+                        key={phoneItem.id}
                         className="w-full flex flex-col items-center justify-start border-b-solid border-b-[1px] border-grayscale-200 pb-2"
                     >
                         <div className="w-full flex items-center justify-between">
                             <p className="text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base flex-1 w-full">
-                                {phone.value}
+                                {phoneItem.value}
                             </p>
 
                             <div className="flex items-center justify-end gap-2 rounded-full p-2">
-                                {phone.isVerified ? (
-                                    <VerifiedBadge size="20" />
+                                {phoneItem.isVerified ? (
+                                    <>
+                                        <span aria-hidden="true">
+                                            <VerifiedBadge size="20" />
+                                        </span>
+                                        <span className="sr-only">{m['issueFlow.verified']()}</span>
+                                    </>
                                 ) : (
-                                    <div className="w-[10px] h-[10px] bg-rose-500  font-bold rounded-full z-50" />
+                                    <div
+                                        aria-hidden="true"
+                                        className="w-[10px] h-[10px] bg-rose-500 font-bold rounded-full z-50"
+                                    />
                                 )}
                             </div>
                         </div>
 
                         <div className="flex items-center justify-end w-full gap-2">
                             <button
-                                onClick={() => handleSetPrimaryContactMethod(phone.id)}
-                                className={`bg-${primaryColor} rounded-full px-4 py-2`}
+                                type="button"
+                                onClick={() => handleSetPrimaryContactMethod(phoneItem.id)}
+                                disabled={isSetPrimaryLoading}
+                                aria-busy={isSetPrimaryLoading}
+                                aria-label={`${m['profile.phone.setAsPrimary']()} ${
+                                    phoneItem.value
+                                }`}
+                                className={`bg-${primaryColor} text-white rounded-full px-4 py-2`}
                             >
-                                {m['profile.phone.setAsPrimary']()}
+                                {isSetPrimaryLoading
+                                    ? m['common.loading']()
+                                    : m['profile.phone.setAsPrimary']()}
                             </button>
                             <button
-                                onClick={() => handleRemoveContactMethod(phone.id)}
+                                type="button"
+                                onClick={() => handleRemoveContactMethod(phoneItem.id)}
+                                disabled={isRemoveLoading}
+                                aria-busy={isRemoveLoading}
+                                aria-label={`${m['profile.email.remove']()} ${phoneItem.value}`}
                                 className="bg-rose-500 rounded-full p-2"
                             >
-                                <TrashBin className="text-white w-[25px] h-[25px] min-w-[25px] min-h-[25px]" />
+                                {isRemoveLoading ? (
+                                    <IonSpinner name="crescent" color="light" aria-hidden="true" />
+                                ) : (
+                                    <span aria-hidden="true">
+                                        <TrashBin className="text-white w-[25px] h-[25px] min-w-[25px] min-h-[25px]" />
+                                    </span>
+                                )}
                             </button>
                         </div>
                     </div>

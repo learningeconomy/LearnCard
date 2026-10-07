@@ -56,10 +56,6 @@ export const getClient = async (
         }
     };
 
-    // Pre-warm the pool while the caller continues client/plugin setup. Requests
-    // arriving before this settles await the same single-flight refill.
-    void refillChallenges().catch(() => undefined);
-
     const trpc = createTRPCClient<AppRouter>({
         links: [
             callbackLink(async () => {

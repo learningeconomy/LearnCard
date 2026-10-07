@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
 import {
     useModal,
     useGetSkillPath,
@@ -133,7 +134,7 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
                                             version="outlined"
                                         />
                                         <p className="text-[12px] text-grayscale-800 font-poppins font-[600] uppercase">
-                                            Framework Tier
+                                            {m['skillFrameworks.fwTier']()}
                                         </p>
                                     </>
                                 ) : (
@@ -143,7 +144,7 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
                                             version="filled"
                                         />
                                         <p className="text-[12px] text-grayscale-800 font-poppins font-[600] uppercase">
-                                            Competency
+                                            {m['skillFrameworks.compLabel']()}
                                         </p>
                                     </>
                                 )}
@@ -155,7 +156,7 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
                                 {!isTier && (
                                     <div className="flex flex-col gap-[5px] w-full">
                                         <span className="text-grayscale-600 font-poppins text-[12px] font-[600]">
-                                            Code
+                                            {m['skillFrameworks.codeLabel']()}
                                         </span>
                                         <p className="text-grayscale-900 font-poppins text-[16px] font-[600] tracking-[-0.25px]">
                                             {alignment?.targetCode}
@@ -166,7 +167,7 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
                                 {alignment?.targetDescription && (
                                     <div className="flex flex-col gap-[5px] w-full">
                                         <span className="text-grayscale-600 font-poppins text-[12px] font-[600]">
-                                            Description
+                                            {m['skillFrameworks.descLabel']()}
                                         </span>
                                         <p className="text-grayscale-700 font-poppins text-[16px] tracking-[-0.25px]">
                                             {alignment?.targetDescription}
@@ -187,7 +188,7 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
                                 onClick={closeModal}
                                 className="p-[11px] bg-white rounded-full text-grayscale-900 shadow-button-bottom flex-1 font-poppins text-[17px]"
                             >
-                                Close
+                                {m['common.close']()}
                             </button>
                         </div>
                     </IonFooter>

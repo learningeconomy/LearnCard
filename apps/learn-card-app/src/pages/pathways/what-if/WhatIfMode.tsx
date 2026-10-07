@@ -374,8 +374,8 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({
                 comparisonSelected
                     ? 'border-indigo-300 ring-2 ring-indigo-100'
                     : standoutLabel
-                    ? 'border-emerald-200'
-                    : 'border-grayscale-200'
+                      ? 'border-emerald-200'
+                      : 'border-grayscale-200'
             }`}
         >
             <header className="flex items-start justify-between gap-3">

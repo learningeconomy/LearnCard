@@ -13,7 +13,7 @@ export const AdminToolsModal: React.FC<{ shortCircuitDevTool?: AdminToolOptionsE
 }) => {
     return (
         <div className="h-full relative">
-            <section className="h-full bg-[rgba(53,62,100,0.3)] backdrop-blur-[2px] ion-padding overflow-y-scroll pb-[200px] safe-area-top-margin">
+            <section className="h-full bg-[rgba(53,62,100,0.3)] backdrop-blur-[2px] ion-padding overflow-y-scroll pb-[200px]">
                 <GenericErrorBoundary>
                     <AdminToolsModalHeader />
 

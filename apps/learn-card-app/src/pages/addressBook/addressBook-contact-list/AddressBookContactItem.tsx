@@ -28,7 +28,6 @@ import {
     useToast,
     ToastTypeEnum,
 } from 'learn-card-base';
-import BoostTemplateSelector from 'apps/learn-card-app/src/components/boost/boost-template/BoostTemplateSelector';
 import useLCNGatedAction from 'apps/learn-card-app/src/components/network-prompts/hooks/useLCNGatedAction';
 
 import useTheme from '../../../theme/hooks/useTheme';
@@ -85,7 +84,10 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
     const queryClient = useQueryClient();
     const history = useHistory();
     const { gate } = useLCNGatedAction();
-    const { newModal } = useModal({ desktop: ModalTypes.Cancel });
+    const { newModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.FullScreen,
+    });
 
     const { presentToast } = useToast();
     const [presentAlert, dismissAlert] = useIonAlert();
@@ -615,8 +617,15 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
         </>
     );
 
-    const shouldHideButton = !showDeleteButton && showBlockButton && !showRequestButton;
-    const shouldUsePortal = !showDeleteButton && showBlockButton;
+    const contactModalOptions = {
+        addShadow: true,
+        customCloseButton: true,
+        customCloseButtonClass: 'absolute right-4 top-4 z-10 hidden md:flex',
+        sectionClassName: isMobile =>
+            `${
+                !isMobile ? '!relative !flex !h-full' : ''
+            } !max-w-[480px] !flex-col !overflow-hidden ${!isMobile ? '!h-[750px]' : '!h-full'}`,
+    };
 
     const contactItemDetails = (
         <>
@@ -628,7 +637,6 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         <AddressBookContactDetailsView
                             showCloseButton
                             contact={contact}
-                            showBoostButton={showBoostButton}
                             showRequestButton={showRequestButton}
                             handleConnectionRequest={handleConnectionRequest}
                             handleAcceptConnectionRequest={handleAcceptConnectionRequest}
@@ -643,12 +651,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                             handleUnblockUser={handleUnblockUser}
                             history={history}
                         />,
-                        {
-                            sectionClassName: '!max-w-[400px]',
-                            hideButton: shouldHideButton,
-                            usePortal: shouldUsePortal,
-                            portalClassName: '!max-w-[400px]',
-                        }
+                        contactModalOptions
                     );
                 }}
             >
@@ -661,16 +664,16 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                             const { prompted } = await gate();
                             if (prompted) return;
 
-                            newModal(
-                                <BoostTemplateSelector otherUserProfileId={contact?.profileId} />,
-                                {
-                                    hideButton: true,
+                            history.push('/issue', {
+                                entryPoint: 'contact-list',
+                                recipient: {
+                                    kind: 'profile',
+                                    profileId: contact.profileId,
+                                    displayName: contact.displayName || contact.profileId,
+                                    image: contact.image,
+                                    did: contact.did,
                                 },
-                                {
-                                    desktop: ModalTypes.FullScreen,
-                                    mobile: ModalTypes.FullScreen,
-                                }
-                            );
+                            });
                         }}
                         className={`flex items-center justify-center text-white rounded-[45px] bg-${primaryColor}`}
                     >
@@ -700,7 +703,6 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                                 <AddressBookContactDetailsView
                                     showCloseButton
                                     contact={contact}
-                                    showBoostButton={showBoostButton}
                                     showRequestButton={showRequestButton}
                                     handleConnectionRequest={handleConnectionRequest}
                                     handleAcceptConnectionRequest={handleAcceptConnectionRequest}
@@ -715,7 +717,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                                     handleUnblockUser={handleUnblockUser}
                                     history={history}
                                 />,
-                                { sectionClassName: '!max-w-[400px]' }
+                                contactModalOptions
                             );
                         }}
                     >

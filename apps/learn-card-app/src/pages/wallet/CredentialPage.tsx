@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useHistory } from 'react-router-dom';
 import { IonContent, IonPage } from '@ionic/react';
 import * as m from '../../paraglide/messages.js';
 
-import useBoostModal from '../../components/boost/hooks/useBoostModal';
 import { useLoadingLine } from '../../stores/loadingStore';
 
 import {
@@ -127,8 +125,6 @@ const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {
     const { backgroundSecondaryColor } = colors;
 
     const query = usePathQuery();
-    const history = useHistory();
-
     const { data: currentLCNUser } = useIsCurrentUserLCNUser();
 
     const categoryToConfig = getCategoryToConfig();
@@ -152,8 +148,6 @@ const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {
 
     const viewMode = passportPageStore.use.credentialViewMode();
     const setViewMode = passportPageStore.set.credentialViewMode;
-
-    const { handlePresentBoostModal } = useBoostModal(history, config.boostCategory);
 
     const { data: credentialCount, isLoading: countLoading } = useGetCredentialCount(
         category as any

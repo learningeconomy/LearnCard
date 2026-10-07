@@ -1,12 +1,11 @@
 # BoostGenerateClaimLink200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**boost_uri** | **str** |  | 
-**challenge** | **str** |  | 
+| Name          | Type    | Description | Notes |
+| ------------- | ------- | ----------- | ----- |
+| **boost_uri** | **str** |             |
+| **challenge** | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ boost_generate_claim_link200_response_dict = boost_generate_claim_link200_respon
 # create an instance of BoostGenerateClaimLink200Response from a dict
 boost_generate_claim_link200_response_from_dict = BoostGenerateClaimLink200Response.from_dict(boost_generate_claim_link200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

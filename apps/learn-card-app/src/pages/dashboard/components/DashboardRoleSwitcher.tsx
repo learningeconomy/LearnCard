@@ -24,6 +24,7 @@ import {
     LearnCardRoles,
 } from '../../../components/onboarding/onboarding.helpers';
 import LaunchPadRoleSelector from '../../launchPad/LaunchPadHeader/LaunchPadRoleSelector';
+import { getRoleTitle } from '../../../components/onboarding/onboardingRoles/onboardingRolesI18n';
 
 import * as m from '../../../paraglide/messages.js';
 
@@ -60,12 +61,10 @@ const DashboardRoleSwitcher: React.FC = () => {
     }, [lcNetworkProfile?.role, optimisticRole]);
 
     const activeRole = (
-        isChildProfile ? LearnCardRolesEnum.learner : role ?? LearnCardRolesEnum.learner
+        isChildProfile ? LearnCardRolesEnum.learner : (role ?? LearnCardRolesEnum.learner)
     ) as LearnCardRolesEnum;
 
-    const roleLabel =
-        LearnCardRoles.find(r => r.type === activeRole)?.title ??
-        m['onboarding.role.learner.title']();
+    const roleLabel = getRoleTitle(activeRole);
 
     const handleRoleChange = async (newRole: LearnCardRolesEnum) => {
         if (newRole === activeRole) return;
@@ -99,9 +98,7 @@ const DashboardRoleSwitcher: React.FC = () => {
             log.error('Failed to refresh profile cache after role change', e);
         }
 
-        const newRoleTitle =
-            LearnCardRoles.find(r => r.type === newRole)?.title ??
-            m['onboarding.role.learner.title']();
+        const newRoleTitle = getRoleTitle(newRole);
         presentToast(m['toasts.launchpad.nowRole']({ role: newRoleTitle }), {
             title: m['launchpad.modal.roleUpdated'](),
             type: ToastTypeEnum.Success,
@@ -111,23 +108,20 @@ const DashboardRoleSwitcher: React.FC = () => {
         });
     };
 
-    const pillClassName = `inline-flex items-center gap-1 pl-0.5 pr-2 py-0.5 rounded-full bg-grayscale-100 text-grayscale-700 text-xs font-medium transition-colors ${
+    const pillClassName = `inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-grayscale-100 text-grayscale-800 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
         isChildProfile ? 'cursor-default' : 'cursor-pointer hover:bg-grayscale-200'
     }`;
 
     const pillContents = (
         <>
-            <span
-                className="flex items-center justify-center h-[16px] w-[16px] rounded-full shrink-0"
-                style={{ backgroundColor: iconBgColors[activeRole] }}
-            >
+            <span className="flex items-center justify-center h-[25px] w-[25px] rounded-full shrink-0">
                 <img
                     src={roleIcons[activeRole]}
                     alt={m['dashboard.roleSwitcher.iconAlt']({ role: roleLabel })}
-                    className="h-[12px] w-[12px] object-contain"
+                    className="h-[25px] w-[25px] object-contain"
                 />
             </span>
-            <span>{roleLabel}</span>
+            <span className="text-[13px] font-semibold">{roleLabel}</span>
             {!isChildProfile && <CaretDown className="ml-0.5 text-grayscale-400 w-[9px]" />}
         </>
     );
@@ -164,7 +158,7 @@ const DashboardRoleSwitcher: React.FC = () => {
                                     <button
                                         type="button"
                                         onClick={() => handleRoleChange(roleItem.type)}
-                                        className={`w-full flex items-center gap-2 p-[8px] rounded-[10px] font-poppins font-semibold text-[14px] text-grayscale-900 ${
+                                        className={`w-full flex items-center gap-2 p-[8px] rounded-[10px] font-poppins font-semibold text-[14px] text-grayscale-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                                             focus ? 'bg-grayscale-100' : ''
                                         }`}
                                     >
@@ -175,12 +169,14 @@ const DashboardRoleSwitcher: React.FC = () => {
                                             <img
                                                 src={roleIcons[roleItem.type]}
                                                 alt={m['dashboard.roleSwitcher.iconAlt']({
-                                                    role: roleItem.title,
+                                                    role: getRoleTitle(roleItem.type),
                                                 })}
                                                 className="h-[20px] w-[20px] object-contain"
                                             />
                                         </span>
-                                        <span className="flex-1 text-left">{roleItem.title}</span>
+                                        <span className="flex-1 text-left">
+                                            {getRoleTitle(roleItem.type)}
+                                        </span>
                                         {isSelected && (
                                             <Checkmark className="w-[15px] h-[15px] text-[#2A2F55]" />
                                         )}

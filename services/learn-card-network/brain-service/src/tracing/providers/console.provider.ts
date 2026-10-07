@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import type { TracingProvider, SpanContext, SpanResult } from '../types';
 
 export class ConsoleTracingProvider implements TracingProvider {
@@ -6,7 +7,7 @@ export class ConsoleTracingProvider implements TracingProvider {
     private depthMap = new Map<string, number>();
 
     isEnabled(): boolean {
-        return process.env.TRACE_CONSOLE !== 'false';
+        return environment.TRACE_CONSOLE;
     }
 
     onSpanStart(ctx: SpanContext): void {

@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { getBoostByUri } from '@accesslayer/boost/read';
 import { getContractByUri } from '@accesslayer/consentflowcontract/read';
 import { getContractTermsByUri } from '@accesslayer/consentflowcontract/relationships/read';
@@ -67,7 +68,7 @@ export const getUriParts = (_uri: string, allowOutsideUris = false): URIParts =>
         string,
         string,
         string,
-        ...string[]
+        ...string[],
     ];
     const id = rest.join(':');
 
@@ -121,7 +122,7 @@ export const getSkillCompoundFromUri = (uri: string): { frameworkId: string; id:
 export const resolveUri = async (uri: string, localDomain?: string): Promise<unknown> => {
     const { domain, type, method } = getUriParts(uri, true);
 
-    const _localDomain = localDomain || process.env.DOMAIN_NAME;
+    const _localDomain = localDomain || environment.DOMAIN_NAME;
     const normalizedDomain = domain.replace('/trpc', '').replace(/%3A/g, ':');
     const normalizedLocalDomain = (_localDomain || '').replace('/trpc', '').replace(/%3A/g, ':');
     const isLocalUri = !domain || normalizedDomain === normalizedLocalDomain;

@@ -48,7 +48,7 @@ import { Clipboard } from '@capacitor/clipboard';
 
 import { CodeBlock } from '../../components/CodeBlock';
 import { TemplateListManager } from '../../components/TemplateListManager';
-import { openExternalLink } from 'src/helpers/externalLinkHelpers';
+import { openExternalLink } from '../../../../helpers/externalLinkHelpers';
 
 interface ApiMethod {
     id: string;

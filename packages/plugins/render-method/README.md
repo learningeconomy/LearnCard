@@ -135,9 +135,7 @@ const renderMethod = lc.invoke.buildTemplateRenderMethod({
 
 ## Feature-flag interaction
 
-In `apps/learn-card-app`, the `useRenderMethodEnabled` hook gates the **display** path (the `RenderMethodDisplay` component, the `BoostDisplayStyleSelector`, the `getSvgMustacheRenderMethod` lookup). It does **not** gate the write path — whether to attach a render method to a credential is a per-callsite decision and follows the opt-in semantics above.
-
-In other words: enabling the LaunchDarkly flag turns on rendering for credentials that already have a `renderMethod`, but it does not retroactively change which credentials carry one.
+In `apps/learn-card-app`, credentials with a supported `renderMethod` are rendered across previews, claim surfaces, and the display-style selector. Attaching a render method remains a per-callsite decision and follows the opt-in semantics above.
 
 ## Draft context warning
 

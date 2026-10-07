@@ -14,6 +14,7 @@ import {
 import { clearGuardianVerification } from '../../hooks/useGuardianGate';
 
 import { LCNProfile } from '@learncard/types';
+import * as m from '../../paraglide/messages.js';
 
 type ParentSwitcherButtonProps = {
     isSwitching: boolean;
@@ -31,8 +32,8 @@ const ParentSwitcherButton: React.FC<ParentSwitcherButtonProps> = ({
     const { closeModal } = useModal();
     const { handleVerifyParentPin, isSwitching: _isParentSwitching } = usePin(user => {
         onPlayerSwitch?.(user);
-        closeModal();
-        onSwitchComplete?.();
+        if (onSwitchComplete) onSwitchComplete();
+        else closeModal();
     });
 
     let currentUser = currentUserStore.get.currentUser();
@@ -41,7 +42,8 @@ const ParentSwitcherButton: React.FC<ParentSwitcherButtonProps> = ({
     if (hasParentSwitchedProfiles) currentUser = currentUserStore.get.parentUser();
 
     const { currentLCNUser } = useGetCurrentLCNUser();
-    const isServiceProfile = currentLCNUser?.isServiceProfile;
+    const isServiceProfile =
+        currentLCNUser?.type === 'child' ? false : currentLCNUser?.isServiceProfile;
 
     const parentUserDid = currentUserStore.get.parentUserDid();
 
@@ -91,7 +93,9 @@ const ParentSwitcherButton: React.FC<ParentSwitcherButtonProps> = ({
                 >
                     {displayName}
                 </p>
-                <p className="text-xs capitalize text-grayscale-600 font-semibold">User</p>
+                <p className="text-xs capitalize text-grayscale-600 font-semibold">
+                    {m['arabicFixes.user']()}
+                </p>
                 <div className="h-[15px] w-[15px]">
                     {isSelected && <CircleCheckmark className="h-[15px] w-[15px]" />}
                     {!isSelected && !isServiceProfile && (

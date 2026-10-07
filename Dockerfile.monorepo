@@ -1,12 +1,39 @@
 # syntax=docker/dockerfile:1.7
-FROM oven/bun:1.3.14
+
+# Stage 1: collect only the files `bun install` reads (workspace manifests,
+# lockfile, patches). The *output* of this stage only changes when dependencies
+# change, so the expensive `bun install` layer below stays cached across
+# ordinary code commits instead of being invalidated by every `COPY . .`.
+# A read-only bind mount avoids caching a full-source intermediate image layer.
+FROM oven/bun:1.4.2 AS manifests
+
+WORKDIR /src
+RUN --mount=type=bind,target=/src \
+    mkdir -p /manifests \
+    && find . -name package.json -not -path '*/node_modules/*' -exec cp --parents {} /manifests \; \
+    && cp bun.lock bunfig.toml /manifests/ \
+    && cp -R patches /manifests/patches
+
+FROM oven/bun:1.4.2 AS dependencies
 
 ENV SKIP_DIDKIT_NAPI=1
 
 WORKDIR /app
 
-COPY . .
+COPY --from=manifests /manifests ./
 
-# Cache dependencies, making builds after the first faster
 RUN --mount=type=cache,target=/root/.bun/install/cache \
     bun install
+
+# Bun 1.4.2 installs lockfile v3, but bypasses the localhost host-gateway mapping
+# used for did:web resolution between the local services. Keep installation and
+# execution separate until that runtime regression is fixed upstream.
+FROM oven/bun:1.3.14 AS source
+
+ENV SKIP_DIDKIT_NAPI=1
+
+WORKDIR /app
+
+COPY --from=dependencies /app ./
+
+COPY . .

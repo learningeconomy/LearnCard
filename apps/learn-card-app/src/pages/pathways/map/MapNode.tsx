@@ -385,8 +385,8 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                         isFocusNode
                             ? 'ring-2 ring-emerald-400/70 ring-offset-2 ring-offset-grayscale-10 shadow-[0_0_24px_-4px_rgba(16,185,129,0.45)]'
                             : inFocus
-                            ? 'shadow-sm'
-                            : ''
+                              ? 'shadow-sm'
+                              : ''
                     }
                     ${data.isOnRoute === false ? 'opacity-80' : ''}
                 `}
@@ -443,8 +443,8 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                             childInfo.missing
                                 ? 'Linked pathway (not loaded)'
                                 : childInfo.renderStyle === 'link-out'
-                                ? `Links to ${childInfo.child.title}`
-                                : `${childInfo.progress.completed}/${childInfo.progress.total} · ${childInfo.child.title}`
+                                  ? `Links to ${childInfo.child.title}`
+                                  : `${childInfo.progress.completed}/${childInfo.progress.total} · ${childInfo.child.title}`
                         }
                         className={`absolute -top-1.5 -left-1.5 h-5 px-1.5
                                     inline-flex items-center gap-1
@@ -650,8 +650,8 @@ const MapNode: React.FC<{ data: MapNodeData }> = ({ data }) => {
                             const tailLabel = isGated
                                 ? `Locked · ${data.prereq.met}/${data.prereq.total}`
                                 : isFocusNode && status === 'not-started'
-                                ? 'Your next step'
-                                : STATUS_LABEL[status];
+                                  ? 'Your next step'
+                                  : STATUS_LABEL[status];
 
                             return (
                                 <div className="mt-1 flex items-center gap-1.5 min-w-0">

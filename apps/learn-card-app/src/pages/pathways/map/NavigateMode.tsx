@@ -182,8 +182,8 @@ const NavigateMode: React.FC<NavigateModeProps> = ({
                                 {allComplete
                                     ? 'Route complete'
                                     : yourIndex !== null
-                                    ? `Step ${yourIndex + 1} of ${route.nodeIds.length}`
-                                    : ''}
+                                      ? `Step ${yourIndex + 1} of ${route.nodeIds.length}`
+                                      : ''}
                             </span>
 
                             {!allComplete && (
@@ -224,8 +224,8 @@ const NavigateMode: React.FC<NavigateModeProps> = ({
                                                 isDone
                                                     ? 'bg-emerald-500'
                                                     : isYou
-                                                    ? 'bg-emerald-300'
-                                                    : 'bg-grayscale-200'
+                                                      ? 'bg-emerald-300'
+                                                      : 'bg-grayscale-200'
                                             } group-hover:opacity-80`}
                                         />
 
@@ -258,8 +258,8 @@ const NavigateMode: React.FC<NavigateModeProps> = ({
                                 node={currentNode}
                                 mcpLabel={
                                     currentNode.stage.policy.kind === 'external'
-                                        ? mcpServers[currentNode.stage.policy.mcp.serverId]
-                                              ?.label ?? null
+                                        ? (mcpServers[currentNode.stage.policy.mcp.serverId]
+                                              ?.label ?? null)
                                         : null
                                 }
                                 onOpen={onOpen}

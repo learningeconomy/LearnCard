@@ -186,7 +186,7 @@ export const ResumeBuilder: React.FC = () => {
 
             const includedCredentials = Object.entries(credentialEntries).flatMap(
                 ([category, entries]) =>
-                    (hiddenSections?.[category as ResumeSectionKey] ? [] : entries ?? []).map(
+                    (hiddenSections?.[category as ResumeSectionKey] ? [] : (entries ?? [])).map(
                         entry => ({
                             uri: entry.uri,
                             category: category || CredentialCategoryEnum.workHistory,

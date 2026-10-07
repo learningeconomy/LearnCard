@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
-import { getLogger } from 'learn-card-base';
-const log = getLogger('full-screen-consent-flow');
 
 import {
+    isAlreadyConsentedError,
+    isConsentConflict,
     useModal,
     useToast,
     useWallet,
@@ -27,6 +27,10 @@ import AiPassportAppProfileConnectedView from '../../components/ai-passport-apps
 
 import { ConsentFlowContractDetails, ConsentFlowTerms, LCNProfile } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
+import {
+    getConsentFlowContractRedirect,
+    getConsentFlowDidAuthRedirect,
+} from './issueConsentFlowDidAuth';
 
 enum ConsentFlowStep {
     getAnAdult = 'landing',
@@ -51,12 +55,16 @@ type FullScreenConsentFlowProps = {
         hideCloseButton?: boolean;
     };
     disableRedirect?: boolean;
+    beforeSubmit?: () => Promise<void>;
+    /** Revalidate an accepted invitation when finishing its saved publication. */
+    beforePublicationRetry?: () => Promise<void>;
+    expectedRequestId?: string;
     onCloseCallback?: () => void;
     onBackCallback?: () => void;
 };
 
 const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
-    contractDetails,
+    contractDetails: initialContractDetails,
     app,
     isPostConsent,
     isPreview,
@@ -67,12 +75,20 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
     aiInsightsRequestOptions,
     childInsightsProfile,
     disableRedirect = false,
+    beforeSubmit,
+    beforePublicationRetry,
+    expectedRequestId,
     onCloseCallback,
     onBackCallback,
 }) => {
     const history = useHistory();
     const location = useLocation();
     const { initWallet } = useWallet();
+    const [refreshedContract, setRefreshedContract] = useState<ConsentFlowContractDetails>();
+    const contractDetails =
+        refreshedContract?.uri === initialContractDetails?.uri
+            ? refreshedContract
+            : initialContractDetails;
     const { presentToast } = useToast();
     const { newModal, closeModal, closeAllModals } = useModal();
     const { handleSwitchAccount, handleSwitchBackToParentAccount } = useSwitchProfile();
@@ -89,13 +105,20 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
         !!childInsightsProfile
     );
 
-    const { returnTo: urlReturnTo, recipientToken } = queryString.parse(location.search);
+    const {
+        challenge,
+        domain,
+        returnTo: urlReturnTo,
+        recipientToken,
+    } = queryString.parse(location.search);
     const returnTo = urlReturnTo || contractDetails?.redirectUrl?.trim(); // prefer url param
     const shouldDisableRedirect =
         disableRedirect || Boolean(insightsProfile) || Boolean(childInsightsProfile);
 
     const isSwitchedProfile = switchedProfileStore.use.isSwitchedProfile();
-    const shouldGetAnAdult = isSwitchedProfile && !isPreview && !insightsProfile;
+    const profileType = switchedProfileStore.use.profileType();
+    const shouldGetAnAdult =
+        isSwitchedProfile && profileType === 'child' && !isPreview && !insightsProfile;
 
     const [step, setStep] = useState<ConsentFlowStep>(
         shouldGetAnAdult ? ConsentFlowStep.getAnAdult : ConsentFlowStep.confirmation
@@ -103,7 +126,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
     const [isPostConsentLocal, setIsPostConsentLocal] = useState(false);
 
     // Guardian gate for child profiles - replaces fragmented usePin logic
-    const { guardedAction, isChildProfile } = useGuardianGate({
+    const { guardedAction } = useGuardianGate({
         skip: isPreview || !!insightsProfile,
         onVerified: () => {
             // After guardian verification, proceed to confirmation
@@ -113,20 +136,21 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
         },
     });
 
-    const { mutateAsync: consentToContract, isPending: consentingToContract } =
-        useConsentToContract(
-            contractDetails?.uri ?? '',
-            contractDetails?.owner?.did ?? '',
-            recipientToken as string // For SmartResume only
-        );
+    const {
+        mutateAsync: consentToContract,
+        isPending: consentingToContract,
+        publicationRetryAvailable,
+        retrySmartResumePublication,
+    } = useConsentToContract(
+        contractDetails?.uri ?? '',
+        contractDetails?.owner?.did ?? '',
+        recipientToken as string // For SmartResume only
+    );
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
 
-    const handleAccept = async (
-        terms: ConsentFlowTerms,
-        shareDuration: {
-            oneTimeShare: boolean;
-            customDuration: string;
-        }
+    const handleSubmit = async (
+        submit: (beforeSubmit: () => Promise<void>) => ReturnType<typeof consentToContract>,
+        validateRequest = beforeSubmit
     ) => {
         const { prompted } = await gate();
         if (prompted) return;
@@ -136,97 +160,83 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
             await handleSwitchAccount(_childInsightsProfile as LCNProfile);
         }
 
-        setStep(ConsentFlowStep.connecting);
-
         try {
-            const { redirectUrl } = await consentToContract({
-                terms,
-                expiresAt: shareDuration.customDuration,
-                oneTime: shareDuration.oneTimeShare,
-            });
+            await guardedAction(async () => {
+                setStep(ConsentFlowStep.connecting);
 
-            // Sync any auto-boost credentials (if any). No need to wait.
-            fetchNewContractCredentials();
+                const { redirectUrl } = await submit(async () => {
+                    await guardedAction(() => {});
+                    await validateRequest?.();
+                });
 
-            successCallback?.();
+                // Sync any auto-boost credentials (if any). No need to wait.
+                fetchNewContractCredentials();
 
-            if (isInlineInsightsRequest) {
-                setIsPostConsentLocal(true);
-                setStep(ConsentFlowStep.confirmation);
-            } else if (!successCallback || shouldDisableRedirect) {
-                closeAllModals();
-            }
+                successCallback?.();
 
-            if (!shouldDisableRedirect) {
-                if (redirectUrl) {
-                    // If the consentToContract call returned a specific redirect url, use it over everything else
-                    window.location.href = redirectUrl;
-                    return;
+                if (isInlineInsightsRequest) {
+                    setIsPostConsentLocal(true);
+                    setStep(ConsentFlowStep.confirmation);
+                } else if (!successCallback || shouldDisableRedirect) {
+                    closeAllModals();
                 }
 
-                if (returnTo && !Array.isArray(returnTo)) {
-                    if (returnTo.startsWith('http://') || returnTo.startsWith('https://')) {
-                        const wallet = await initWallet();
+                if (!shouldDisableRedirect) {
+                    const contractRedirectUrl = getConsentFlowContractRedirect({
+                        challenge,
+                        contractRedirectUrl: redirectUrl,
+                        domain,
+                    });
 
-                        // add user's did to returnTo url
-                        const urlObj = new URL(returnTo);
-                        urlObj.searchParams.set('did', wallet.id.did());
+                    if (contractRedirectUrl) {
+                        window.location.href = contractRedirectUrl;
+                        return;
+                    }
 
-                        if (contractDetails?.owner?.did) {
-                            const unsignedDelegateCredential = wallet.invoke.newCredential({
-                                type: 'delegate',
-                                subject: contractDetails?.owner.did,
-                                access: ['read', 'write'],
-                            });
+                    if (returnTo && !Array.isArray(returnTo)) {
+                        if (returnTo.startsWith('http://') || returnTo.startsWith('https://')) {
+                            const wallet = await initWallet();
+                            const ownerDid = contractDetails?.owner?.did;
 
-                            const delegateCredential = await wallet.invoke.issueCredential(
-                                unsignedDelegateCredential
-                            );
-
-                            const unsignedDidAuthVp: any = await wallet.invoke.newPresentation(
-                                delegateCredential
-                            );
-
-                            // Add contractUri to VP before signing for xAPI tracking
-                            if (contractDetails?.uri) {
-                                unsignedDidAuthVp.contractUri = contractDetails.uri;
+                            if (!ownerDid || !contractDetails?.uri) {
+                                throw new Error('Invalid consent request');
                             }
 
-                            const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
-                                proofPurpose: 'authentication',
-                                proofFormat: 'jwt',
-                            })) as any as string;
-
-                            urlObj.searchParams.set('vp', vp);
-                        }
-
-                        window.location.href = urlObj.toString();
-                    } else history.push(returnTo);
+                            window.location.href = await getConsentFlowDidAuthRedirect({
+                                challenge,
+                                contractUri: contractDetails.uri,
+                                domain,
+                                ownerDid,
+                                returnTo,
+                                wallet,
+                            });
+                        } else history.push(returnTo);
+                    }
                 }
-            }
 
-            if (childInsightsProfile && isSwitchedProfile) {
-                // Switch back to parent profile after consenting on childs behalf
-                await handleSwitchBackToParentAccount();
-            }
+                if (childInsightsProfile && isSwitchedProfile) {
+                    // Switch back to parent profile after consenting on childs behalf
+                    await handleSwitchBackToParentAccount();
+                }
 
-            presentToast(`Successfully connected to ${app?.name ?? contractDetails?.name}`, {
-                type: ToastTypeEnum.Success,
+                presentToast(`Successfully connected to ${app?.name ?? contractDetails?.name}`, {
+                    type: ToastTypeEnum.Success,
+                });
+
+                if (app) {
+                    setTimeout(() => {
+                        newModal(
+                            <AiPassportAppProfileConnectedView app={app} />,
+                            {},
+                            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+                        );
+                    }, 301);
+                }
             });
-
-            if (app) {
-                setTimeout(() => {
-                    newModal(
-                        <AiPassportAppProfileConnectedView app={app} />,
-                        {},
-                        { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
-                    );
-                }, 301);
-            }
         } catch (e) {
-            const err = e as any;
-            const isAlreadyConsented =
-                err?.data?.code === 'CONFLICT' || err?.message?.includes('already consented');
+            const message = e instanceof Error ? e.message : String(e);
+            const data = e && typeof e === 'object' && 'data' in e ? e.data : undefined;
+            const isAlreadyConsented = isAlreadyConsentedError(e);
 
             if (isAlreadyConsented) {
                 successCallback?.();
@@ -245,21 +255,67 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 return;
             }
 
-            log.error(e);
-            presentToast(`Failed to accept contract: ${err.message}`, {
-                type: ToastTypeEnum.Error,
-            });
+            if (isConsentConflict(e)) {
+                try {
+                    const wallet = await initWallet();
+                    const updated = await wallet.invoke.getContract(contractDetails!.uri);
+                    setRefreshedContract(updated);
+                } catch {
+                    /* Keep the review open if refreshing fails. */
+                }
+                presentToast(m['consentFlow.reviewChanged'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+                setStep(ConsentFlowStep.confirmation);
+                return;
+            }
+
+            const isGuardianApprovalRequired =
+                data &&
+                typeof data === 'object' &&
+                'code' in data &&
+                data.code === 'FORBIDDEN' &&
+                /guardian|manager/i.test(message);
+            presentToast(
+                isGuardianApprovalRequired
+                    ? m['consentFlow.guardianApprovalRequired']()
+                    : m['error.generic'](),
+                {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                }
+            );
             setStep(ConsentFlowStep.confirmation);
         }
     };
 
+    const handleAccept = (
+        terms: ConsentFlowTerms,
+        shareDuration: { oneTimeShare: boolean; customDuration: string }
+    ) =>
+        handleSubmit(beforeSubmit =>
+            consentToContract({
+                terms,
+                expiresAt: shareDuration.customDuration,
+                oneTime: shareDuration.oneTimeShare,
+                expectedRequestId,
+                beforeSubmit,
+            })
+        );
+
     const handleNextStep = async () => {
         if (step === ConsentFlowStep.getAnAdult) {
-            // Use unified guardian gate for verification
-            // The onVerified callback will handle the step transition
-            await guardedAction(async () => {
-                // Action is empty because step transition is handled in onVerified
-            });
+            try {
+                await guardedAction(async () => {
+                    // The onVerified callback advances only after a signed approval.
+                });
+            } catch {
+                presentToast(m['error.generic'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+            }
         }
     };
 
@@ -274,6 +330,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
         ),
         [ConsentFlowStep.confirmation]: (
             <ConsentFlowConfirmation
+                key={`${contractDetails?.uri}:${contractDetails?.audienceVersion}`}
                 contractDetails={contractDetails}
                 app={app}
                 handleAccept={handleAccept}
@@ -304,6 +361,37 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
             />
         ),
     };
+
+    if (publicationRetryAvailable && step === ConsentFlowStep.confirmation) {
+        return (
+            <div
+                role="alert"
+                className="font-poppins p-6 bg-white rounded-[20px] space-y-4 text-grayscale-900"
+            >
+                <p className="text-sm text-grayscale-600 leading-relaxed">
+                    {m['consentFlow.retryPublication']()}
+                </p>
+                <button
+                    className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm disabled:opacity-40"
+                    disabled={consentingToContract}
+                    onClick={() =>
+                        void handleSubmit(
+                            retrySmartResumePublication,
+                            beforePublicationRetry ?? beforeSubmit
+                        )
+                    }
+                >
+                    {m['common.tryAgain']()}
+                </button>
+                <button
+                    className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm"
+                    onClick={closeModal}
+                >
+                    {m['common.cancel']()}
+                </button>
+            </div>
+        );
+    }
 
     // If this is an inline insights request, render the confirmation page
     // in a minimal view

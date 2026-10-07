@@ -56,7 +56,7 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal }) => {
     const analytics = useAnalytics();
     const learnerDid = useLearnerDid();
     const pathway = proposal.pathwayId
-        ? pathwayStore.use.pathways()[proposal.pathwayId] ?? null
+        ? (pathwayStore.use.pathways()[proposal.pathwayId] ?? null)
         : null;
 
     const [busy, setBusy] = useState(false);
@@ -293,8 +293,8 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal }) => {
                                         t.direction === 'better'
                                             ? 'bg-emerald-600'
                                             : t.direction === 'worse'
-                                            ? 'bg-amber-500'
-                                            : 'bg-grayscale-400'
+                                              ? 'bg-amber-500'
+                                              : 'bg-grayscale-400'
                                     }`}
                                 />
                                 <span>

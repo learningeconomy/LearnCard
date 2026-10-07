@@ -5,26 +5,59 @@ import {
     ProfileVisibilityEnum,
 } from '@learncard/types';
 import { getClient, getUser } from './helpers/getClient';
-import { Profile, SigningAuthority, Credential, Boost, ClaimHook, ContactMethod } from '@models';
+import {
+    Profile,
+    ProfileManager,
+    SigningAuthority,
+    Credential,
+    Boost,
+    ClaimHook,
+    ContactMethod,
+} from '@models';
 import cache from '@cache';
 import { testVc, sendBoost, testVp, testUnsignedBoost } from './helpers/send';
 
 // Mock verifyAuthToken for authToken integration tests
 const mockVerifyAuthToken = vi.fn();
 vi.mock('@helpers/oidc-jwt.helpers', () => ({
-    verifyAuthToken: (...args: any[]) => mockVerifyAuthToken(...args),
+    verifyAuthToken: (...args: unknown[]) => mockVerifyAuthToken(...args),
 }));
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
 let userC: Awaited<ReturnType<typeof getUser>>;
+type OtherProfile = Awaited<ReturnType<typeof noAuthClient.profile.getOtherProfile>>;
 
 describe('Profiles', () => {
     beforeAll(async () => {
         userA = await getUser();
         userB = await getUser('b'.repeat(64));
         userC = await getUser('c'.repeat(64));
+    });
+
+    describe('createManagedProfile', () => {
+        beforeEach(async () => {
+            await ProfileManager.delete({ detach: true, where: {} });
+            await Profile.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+        });
+
+        afterAll(async () => {
+            await ProfileManager.delete({ detach: true, where: {} });
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should reserve sample persona profileIds', async () => {
+            const managerDid = await userA.clients.fullAuth.profileManager.createProfileManager({});
+            const managerClient = getClient({ did: managerDid, isChallengeValid: true });
+
+            await expect(
+                managerClient.profileManager.createManagedProfile({
+                    profileId: 'Sample-college-board',
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        });
     });
 
     describe('createProfile', () => {
@@ -60,6 +93,14 @@ describe('Profiles', () => {
             await expect(
                 userB.clients.fullAuth.profile.createProfile({ profileId: 'usera' })
             ).rejects.toThrow();
+        });
+
+        it('should reserve sample persona profileIds', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.createProfile({
+                    profileId: 'Sample-college-board',
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
         });
 
         it('should not allow creating a profile with an email that has already been taken', async () => {
@@ -386,6 +427,14 @@ describe('Profiles', () => {
             ).rejects.toThrow();
         });
 
+        it('should reserve sample persona profileIds', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.createServiceProfile({
+                    profileId: 'sample-college-board',
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        });
+
         it('should not allow creating a profile with an email that has already been taken', async () => {
             await expect(
                 userA.clients.fullAuth.profile.createServiceProfile({
@@ -488,6 +537,16 @@ describe('Profiles', () => {
                     profileId: 'managed-usera',
                 })
             ).resolves.not.toThrow();
+        });
+
+        it('should reserve sample persona profileIds', async () => {
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+
+            await expect(
+                userA.clients.fullAuth.profile.createManagedServiceProfile({
+                    profileId: 'sample-college-board',
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
         });
     });
 
@@ -711,7 +770,7 @@ describe('Profiles', () => {
             await userA.clients.fullAuth.profile.acceptConnectionRequest({ profileId: 'userb' });
         };
 
-        const expectPublicTier = (profile: any) => {
+        const expectPublicTier = (profile: OtherProfile) => {
             expect(profile?.profileId).toEqual('usera');
             expect(profile?.displayName).toEqual('A');
             expect(profile?.shortBio).toEqual('Short A');
@@ -724,7 +783,7 @@ describe('Profiles', () => {
             expect(profile?.isPrivate).toBeUndefined();
         };
 
-        const expectAuthenticatedTier = (profile: any) => {
+        const expectAuthenticatedTier = (profile: OtherProfile) => {
             expect(profile?.profileId).toEqual('usera');
             expect(profile?.displayName).toEqual('A');
             expect(profile?.shortBio).toEqual('Short A');
@@ -738,13 +797,13 @@ describe('Profiles', () => {
             expect(profile?.isPrivate).toBeUndefined();
         };
 
-        const expectConnectionTier = (profile: any) => {
+        const expectConnectionTier = (profile: OtherProfile) => {
             expectAuthenticatedTier(profile);
             expect(profile?.email).toEqual('userA@test.com');
         };
 
         const expectSelfTier = (
-            profile: any,
+            profile: OtherProfile,
             visibility: (typeof ProfileVisibilityEnum.enum)[keyof typeof ProfileVisibilityEnum.enum]
         ) => {
             expect(profile?.profileId).toEqual('usera');
@@ -1254,6 +1313,14 @@ describe('Profiles', () => {
             ).rejects.toMatchObject({ code: 'CONFLICT' });
         });
 
+        it('should not allow changing a profileId to the sample persona namespace', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({
+                    profileId: 'sample-college-board',
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        });
+
         it('should allow you to update your email', async () => {
             await expect(
                 userA.clients.fullAuth.profile.updateProfile({ email: 'nice@test.com' })
@@ -1278,6 +1345,36 @@ describe('Profiles', () => {
             await expect(
                 userB.clients.fullAuth.profile.updateProfile({ displayName: 'nice' })
             ).resolves.not.toThrow();
+        });
+
+        it('does not allow a legacy service-flagged child to change its type', async () => {
+            await Profile.update(
+                { type: 'child', isServiceProfile: true },
+                { where: { profileId: 'usera' } }
+            );
+
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({
+                    type: 'adult',
+                    profileId: 'escaped-child',
+                    displayName: 'Escaped',
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+
+            await expect(userA.clients.fullAuth.profile.getProfile()).resolves.toMatchObject({
+                profileId: 'usera',
+                type: 'child',
+                isServiceProfile: true,
+            });
+            await userA.clients.fullAuth.profile.updateProfile({
+                type: 'child',
+                displayName: 'Updated child',
+            });
+            await expect(userA.clients.fullAuth.profile.getProfile()).resolves.toMatchObject({
+                type: 'child',
+                isServiceProfile: true,
+                displayName: 'Updated child',
+            });
         });
 
         it('should allow you to update your profile image', async () => {
@@ -2086,22 +2183,21 @@ describe('Profiles', () => {
         });
 
         it('should paginate correctly', async () => {
-            await Promise.all(
-                Array(10)
-                    .fill(0)
-                    .map(async (_zero, index) => {
-                        const client = getClient({
-                            did: `did:test:${index + 1}`,
-                            isChallengeValid: true,
-                            scope: '*:*',
-                        });
-                        await client.profile.createProfile({ profileId: `generated${index + 1}` });
-                        await userA.clients.fullAuth.profile.connectWith({
-                            profileId: `generated${index + 1}`,
-                        });
-                        await client.profile.acceptConnectionRequest({ profileId: 'usera' });
-                    })
-            );
+            // This test verifies cursor pagination, not concurrent connection writes. Sequence the
+            // shared-user setup so a transient Neo4j deadlock cannot reject Promise.all while
+            // sibling handshakes continue running into later tests.
+            for (const index of Array.from({ length: 10 }, (_, index) => index)) {
+                const client = getClient({
+                    did: `did:test:${index + 1}`,
+                    isChallengeValid: true,
+                    scope: '*:*',
+                });
+                await client.profile.createProfile({ profileId: `generated${index + 1}` });
+                await userA.clients.fullAuth.profile.connectWith({
+                    profileId: `generated${index + 1}`,
+                });
+                await client.profile.acceptConnectionRequest({ profileId: 'usera' });
+            }
 
             await expect(
                 userA.clients.fullAuth.profile.paginatedConnections()
@@ -2729,6 +2825,24 @@ describe('Profiles', () => {
                     name: 'mysa',
                     did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                 },
+            });
+        });
+
+        it('keeps a primary signing authority primary when it is re-registered', async () => {
+            const signingAuthority = {
+                endpoint: 'http://localhost:4000',
+                name: 'mysa',
+                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+            };
+
+            await userA.clients.fullAuth.profile.registerSigningAuthority(signingAuthority);
+            await userA.clients.fullAuth.profile.registerSigningAuthority(signingAuthority);
+
+            await expect(
+                userA.clients.fullAuth.profile.primarySigningAuthority()
+            ).resolves.toMatchObject({
+                signingAuthority: { endpoint: signingAuthority.endpoint },
+                relationship: { name: signingAuthority.name, did: signingAuthority.did },
             });
         });
 

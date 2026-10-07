@@ -55,15 +55,16 @@ type ChildInviteModalProps = {
 
 const COUNTRIES: Record<string, string> = countries as Record<string, string>;
 
-const StateValidator = z.object({
-    name: z.string().min(1, 'Name is required!'),
-    dob: z
-        .string()
-        .min(1, 'Date of birth is required!')
-        .refine(dob => !Number.isNaN(calculateAge(dob)), {
-            message: 'Invalid date of birth.',
-        }),
-});
+const getStateValidator = () =>
+    z.object({
+        name: z.string().min(1, m['arabicFixes.nameRequired']()),
+        dob: z
+            .string()
+            .min(1, 'Date of birth is required!')
+            .refine(dob => !Number.isNaN(calculateAge(dob)), {
+                message: 'Invalid date of birth.',
+            }),
+    });
 
 export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
     viewMode = ChildInviteModalViewModeEnum.create,
@@ -94,7 +95,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
             ? existingChild?.learnCardID
             : getLearnCardIDStyleDefaults(LearnCardIDCMSTabsEnum.dark)
     );
-    const [dob, setDob] = useState<string>(isInEditMode ? existingChild?.dob ?? '' : '');
+    const [dob, setDob] = useState<string>(isInEditMode ? (existingChild?.dob ?? '') : '');
     const [country, setCountry] = useState<string | undefined>(
         isInEditMode ? existingChild?.country : undefined
     );
@@ -114,7 +115,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
     });
 
     const validate = () => {
-        const parsedData = StateValidator.safeParse({
+        const parsedData = getStateValidator().safeParse({
             name: name,
             dob: dob,
         });
@@ -221,7 +222,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
     return (
         <IonPage>
             <IonContent fullscreen color="grayscale-200">
-                <div className="w-full flex flex-col items-center justify-center ion-padding mt-8 safe-area-top-margin">
+                <div className="w-full flex flex-col items-center justify-center ion-padding mt-[var(--ion-safe-area-top,0px)]">
                     <div className="flex flex-col items-center justify-center w-full max-w-[400px] shadow-sm rounded-[15px] bg-white px-4 pt-6 pb-10">
                         <div>
                             <p className="text-grayscale-900 font-poppins m-0 flex h-full w-full items-center justify-center text-center text-xl">

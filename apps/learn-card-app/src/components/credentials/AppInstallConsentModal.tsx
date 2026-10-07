@@ -7,6 +7,8 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('app-install-consent-modal');
 
 import {
+    isAlreadyConsentedError,
+    isConsentConflict,
     useModal,
     useWallet,
     useCurrentUser,
@@ -102,21 +104,25 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
     const validPermissions = permissions.filter((p): p is AppPermission => p in PERMISSION_KEY);
 
     // Fetch contract details if contractUri is provided
-    const { data: contractDetails, isLoading: isLoadingContract } =
-        useQuery<ConsentFlowContractDetails | null>({
-            queryKey: ['getContract', contractUri],
-            queryFn: async () => {
-                if (!contractUri) return null;
-                try {
-                    const wallet = await initWallet();
-                    return await wallet.invoke.getContract(contractUri);
-                } catch (error) {
-                    log.error('Failed to fetch contract:', error);
-                    return null;
-                }
-            },
-            enabled: !!contractUri,
-        });
+    const {
+        data: contractDetails,
+        isLoading: isLoadingContract,
+        isFetching: isRefreshingContract,
+        refetch: refetchContract,
+    } = useQuery<ConsentFlowContractDetails | null>({
+        queryKey: ['getContract', contractUri],
+        queryFn: async () => {
+            if (!contractUri) return null;
+            try {
+                const wallet = await initWallet();
+                return await wallet.invoke.getContract(contractUri);
+            } catch (error) {
+                log.error('Failed to fetch contract:', error);
+                return null;
+            }
+        },
+        enabled: !!contractUri,
+    });
 
     // Initialize terms when contract is loaded
     const [terms, setTerms] = useImmer<ConsentFlowTerms | null>(null);
@@ -192,9 +198,18 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
         );
     };
 
-    const doInstall = async () => {
+    const doInstall = async (beforeSubmit?: () => Promise<void>) => {
         const installStartedAt = Date.now();
 
+        // A linked contract must load successfully before installation can proceed.
+        if (contractUri && (!contractDetails || !terms)) {
+            presentToast(m['appInstall.installFailed'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+            await refetchContract();
+            return;
+        }
         // If there's a contract, consent to it first
         if (contractUri && contractDetails && terms) {
             setIsConsenting(true);
@@ -206,6 +221,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                     expiresAt: undefined,
                     oneTime: false,
                     skipSharedUriMaterialization: true,
+                    beforeSubmit,
                 });
 
                 try {
@@ -232,21 +248,26 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
 
                 // Sync any auto-boost credentials
                 fetchNewContractCredentials();
-            } catch (error: any) {
-                // If the user has already consented, ignore the error
-                const isAlreadyConsented =
-                    error?.data?.code === 'CONFLICT' ||
-                    error?.shape?.code === 'CONFLICT' ||
-                    error?.message?.includes('already consented');
-
-                if (
-                    error?.data?.code === 'FORBIDDEN' &&
-                    error?.message?.includes('guardian approval')
-                ) {
-                    // Not 100% sure why we're being intentionally vague about error messages,
-                    //   but we should definitely show this particular one
+            } catch (error) {
+                const data =
+                    error && typeof error === 'object' && 'data' in error ? error.data : undefined;
+                const dataCode =
+                    data && typeof data === 'object' && 'code' in data ? data.code : undefined;
+                const message = error instanceof Error ? error.message : '';
+                const isAlreadyConsented = isAlreadyConsentedError(error);
+                if (!isAlreadyConsented && isConsentConflict(error)) {
+                    await refetchContract();
                     setIsConsenting(false);
-                    presentToast(error?.message, {
+                    presentToast(m['consentFlow.reviewChanged'](), {
+                        type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
+                    });
+                    return;
+                }
+
+                if (dataCode === 'FORBIDDEN' && /guardian|manager/i.test(message)) {
+                    setIsConsenting(false);
+                    presentToast(m['consentFlow.guardianApprovalRequired'](), {
                         type: ToastTypeEnum.Error,
                         hasDismissButton: true,
                     });
@@ -283,7 +304,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
         onAccept();
     };
 
-    const handleInstall = () => {
+    const handleInstall = async () => {
         // If no age restriction data, proceed directly
         if (!ageRestriction) {
             doInstall();
@@ -318,10 +339,14 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                 return;
 
             case 'require_guardian_approval':
-                // Use guardedAction WITHOUT ignorePriorVerification
-                guardedAction(() => {
-                    doInstall();
-                });
+                try {
+                    await guardedAction(() => doInstall(() => guardedAction(() => {})));
+                } catch {
+                    presentToast(m['error.generic'](), {
+                        type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
+                    });
+                }
                 return;
 
             case 'proceed':
@@ -336,7 +361,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
             <div
                 className="border-b border-grayscale-200 p-6"
                 style={{
-                    paddingTop: 'max(1.5rem, env(safe-area-inset-top))',
+                    paddingTop: 'max(1.5rem, var(--ion-safe-area-top, 0px))',
                 }}
             >
                 <h2 className="text-2xl font-bold text-grayscale-900 text-center">Install App</h2>
@@ -381,7 +406,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                             <TransP
                                 m={m['appInstall.installApp']}
                                 values={{ name: appName }}
-                                components={[<span className="font-bold" />]}
+                                components={[<span key="app-name" className="font-bold" />]}
                             />
                         </p>
 
@@ -462,6 +487,22 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                                     <span className="text-sm text-grayscale-500">
                                         {m['appInstall.loadingDataPermissions']()}
                                     </span>
+                                </div>
+                            ) : !contractDetails ? (
+                                <div
+                                    role="alert"
+                                    className="p-3 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-700"
+                                >
+                                    {m['appInstall.installFailed']()}
+                                    <button
+                                        disabled={isConsenting || isRefreshingContract}
+                                        className="px-4 py-3 rounded-[20px] border border-grayscale-300 text-grayscale-700"
+                                        onClick={() => void refetchContract()}
+                                    >
+                                        {isRefreshingContract
+                                            ? m['appInstall.loadingDataPermissions']()
+                                            : m['common.tryAgain']()}
+                                    </button>
                                 </div>
                             ) : contractDetails ? (
                                 <div className="space-y-3">
@@ -577,9 +618,9 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
             <div
                 className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white"
                 style={{
-                    paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
-                    paddingLeft: 'max(1.5rem, env(safe-area-inset-left))',
-                    paddingRight: 'max(1.5rem, env(safe-area-inset-right))',
+                    paddingBottom: 'max(1.5rem, var(--ion-safe-area-bottom, 0px))',
+                    paddingLeft: 'max(1.5rem, var(--ion-safe-area-left, 0px))',
+                    paddingRight: 'max(1.5rem, var(--ion-safe-area-right, 0px))',
                 }}
             >
                 <button
@@ -604,8 +645,8 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                     {isPreview
                         ? m['appInstall.previewOnly']()
                         : isConsenting
-                        ? m['appInstall.connecting']()
-                        : m['appInstall.install']()}
+                          ? m['appInstall.connecting']()
+                          : m['appInstall.install']()}
                 </button>
             </div>
         </div>

@@ -1,6 +1,5 @@
 import React from 'react';
 import { useStore } from '@nanostores/react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import MarkdownRenderer from '../../ai-assessment/AiAssessment/helpers/LazyMarkdownRenderer';
 import { LaunchPadAppListItem, ProfilePicture } from 'learn-card-base';
@@ -53,16 +52,11 @@ const AssistantBubble: React.FC<{
     mode: AiSessionMode;
     aiApp?: LaunchPadAppListItem;
 }> = ({ content, bubbleStyles, mode, aiApp }) => {
-    const flags = useFlags();
-    const enableChatBubbles = flags.enableChatBubbles;
-
     return (
         <div className="w-full flex items-center justify-end">
-            {enableChatBubbles && (
-                <div className="mr-2 self-stretch flex items-end pb-5">
-                    <AiAvatar mode={mode} aiApp={aiApp} />
-                </div>
-            )}
+            <div className="mr-2 self-stretch flex items-end pb-5">
+                <AiAvatar mode={mode} aiApp={aiApp} />
+            </div>
             <div
                 className={`py-4 ${bubbleStyles} rounded-3xl mb-4 text-grayscale-900 flex-shrink min-w-0 prose prose-h1:mb-2 prose-p:mt-0 prose-li:my-0 prose-li:leading-6 prose-pre:p-0 prose-code:shadow prose-code:rounded prose-code:py-2!`}
             >
@@ -74,17 +68,12 @@ const AssistantBubble: React.FC<{
 
 export const MessageWithQuestions: React.FC<MessageProps> = React.memo(
     function MessageWithQuestions({ message, aiApp }) {
-        const flags = useFlags();
         const $isTyping = useStore(isTyping);
-
-        const enableChatBubbles = flags.enableChatBubbles;
 
         const mode = chatBotStore.useTracked.mode();
 
-        let assistantBubbleStyles = enableChatBubbles
-            ? 'bg-grayscale-100 mr-auto !max-w-full px-4'
-            : 'bg-white mr-auto !max-w-full';
-        const userBubbleStyles = enableChatBubbles ? 'bg-cyan-50 px-4' : 'bg-grayscale-100 px-4';
+        let assistantBubbleStyles = 'bg-grayscale-100 mr-auto !max-w-full px-4';
+        const userBubbleStyles = 'bg-cyan-50 px-4';
 
         if (!message.content && !message?.artifact) return null;
 
@@ -112,14 +101,12 @@ export const MessageWithQuestions: React.FC<MessageProps> = React.memo(
                 >
                     <MarkdownRenderer>{message.content}</MarkdownRenderer>
                 </div>
-                {enableChatBubbles && (
-                    <div className="ml-2 self-stretch flex items-end pb-5">
-                        <ProfilePicture
-                            customContainerClass="text-grayscale-900 h-[35px] w-[35px] min-h-[35px] min-w-[35px] max-h-[35px] max-w-[35px] mt-[0px] mb-0"
-                            customImageClass="w-full h-full object-cover"
-                        />
-                    </div>
-                )}
+                <div className="ml-2 self-stretch flex items-end pb-5">
+                    <ProfilePicture
+                        customContainerClass="text-grayscale-900 h-[35px] w-[35px] min-h-[35px] min-w-[35px] max-h-[35px] max-w-[35px] mt-[0px] mb-0"
+                        customImageClass="w-full h-full object-cover"
+                    />
+                </div>
             </div>
         );
     },
@@ -138,12 +125,7 @@ const TypingDots: React.FC<{ mode: AiSessionMode; aiApp?: LaunchPadAppListItem }
     mode,
     aiApp,
 }) => {
-    const flags = useFlags();
-    const enableChatBubbles = flags.enableChatBubbles;
-
-    const bubbleStyles = enableChatBubbles
-        ? 'bg-grayscale-100 mr-auto !max-w-fit px-4'
-        : 'bg-white mr-auto !max-w-fit';
+    const bubbleStyles = 'bg-grayscale-100 mr-auto !max-w-fit px-4';
 
     return (
         <AssistantBubble
@@ -180,9 +162,6 @@ export const StreamingMessage: React.FC<StreamingMessageProps> = ({ aiApp }) => 
     const typing = useStore(isTyping);
     const mode = chatBotStore.useTracked.mode();
 
-    const flags = useFlags();
-    const enableChatBubbles = flags.enableChatBubbles;
-
     if (!msg && !typing) return null;
 
     // Typing indicator with no content yet — show dots
@@ -191,9 +170,7 @@ export const StreamingMessage: React.FC<StreamingMessageProps> = ({ aiApp }) => 
     }
 
     // Streaming content — render as assistant bubble
-    const bubbleStyles = enableChatBubbles
-        ? 'bg-grayscale-100 mr-auto !max-w-full px-4'
-        : 'bg-white mr-auto !max-w-full';
+    const bubbleStyles = 'bg-grayscale-100 mr-auto !max-w-full px-4';
 
     return (
         <AssistantBubble

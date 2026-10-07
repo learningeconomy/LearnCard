@@ -22,6 +22,7 @@ import {
 import { getScoutsRole } from '../../helpers/troop.helpers';
 import { VC } from '@learncard/types';
 import { PermissionsByRole } from '../../components/troopsCMS/troops.helpers';
+import * as m from '../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('id-options-modal');
 
@@ -64,7 +65,9 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
 
     const role = getScoutsRole(credential);
     const troopOrNetwork =
-        role === ScoutsRoleEnum.scout || role === ScoutsRoleEnum.leader ? 'Troop' : 'Network';
+        role === ScoutsRoleEnum.scout || role === ScoutsRoleEnum.leader
+            ? m['troops.troop']()
+            : m['troops.network']();
     const isScoutMember = type === 'Scout' || type === 'Member';
 
     const { data: resolvedCredential } = useResolveBoost(boostUri);
@@ -94,20 +97,29 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
 
     const handleRevokeScout = async () => {
         await confirm({
-            text: `Are you sure you want to remove ${ownerName} from ${credential?.name}?`,
+            text: m['troops.options.removeConfirm']({
+                owner: ownerName,
+                credential: credential?.name ?? '',
+            }),
             onConfirm: async () => {
                 try {
                     await revokeBoostRecipient({
                         boostUri,
                         recipientProfileId: ownerProfileId,
                     });
-                    presentToast(`${ownerName} has been removed from ${credential?.name}`, {
-                        type: ToastTypeEnum.Success,
-                    });
+                    presentToast(
+                        m['troops.options.removedMsg']({
+                            owner: ownerName,
+                            credential: credential?.name ?? '',
+                        }),
+                        {
+                            type: ToastTypeEnum.Success,
+                        }
+                    );
                     closeAllModals();
                 } catch (error) {
                     log.error('Failed to revoke scout:', error);
-                    presentToast(`Failed to remove ${ownerName}. Please try again.`, {
+                    presentToast(m['troops.options.removeFailed']({ owner: ownerName }), {
                         type: ToastTypeEnum.Error,
                     });
                 }
@@ -124,7 +136,7 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
 
         if (isPersonalId) {
             await confirm({
-                text: `Are you sure you want to leave ${credential?.name}?`,
+                text: m['troops.options.leaveConfirm']({ credential: credential?.name ?? '' }),
                 onConfirm: () => {
                     log.debug('TODO revoke');
                     // closeAllModals();
@@ -136,7 +148,10 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
             });
         } else {
             await confirm({
-                text: `Are you sure you want to remove ${ownerName} from ${credential?.name}?`,
+                text: m['troops.options.removeConfirm']({
+                    owner: ownerName,
+                    credential: credential?.name ?? '',
+                }),
                 onConfirm: async () => {
                     const removedAdmin = await wallet?.invoke?.removeBoostAdmin(
                         boostUri,
@@ -165,7 +180,7 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
             {/* hidden for now because Profile has not been implemented */}
             {!isPersonalId && false && (
                 <IdOptionRow
-                    text="View Profile"
+                    text={m['troops.actions.viewProfile']()}
                     icon={
                         <ProfilePicture
                             customContainerClass="h-[35px] w-[35px] overflow-hidden"
@@ -177,11 +192,15 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
                 />
             )}
 
-            <IdOptionRow text="View Troop ID" icon={<GreenScoutsIdCard />} onClick={handleViewId} />
+            <IdOptionRow
+                text={m['troops.actions.viewTroopId']()}
+                icon={<GreenScoutsIdCard />}
+                onClick={handleViewId}
+            />
 
             {isPersonalId && (
                 <IdOptionRow
-                    text="Share ID"
+                    text={m['troops.actions.shareId']()}
                     icon={<ReplyIcon size="30" filled={false} />}
                     onClick={() => {
                         closeModal();
@@ -190,18 +209,22 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
                 />
             )}
 
-            <IdOptionRow text="View ID JSON" icon={<CodeIcon />} onClick={handleViewJson} />
+            <IdOptionRow
+                text={m['troops.actions.viewJson']()}
+                icon={<CodeIcon />}
+                onClick={handleViewJson}
+            />
 
             {isPersonalId && (
                 <IdOptionRow
-                    text={`Leave ${troopOrNetwork}`}
+                    text={m['troops.actions.leave']({ name: troopOrNetwork })}
                     icon={<PeaceIcon />}
                     onClick={handleRevoke}
                 />
             )}
             {!isPersonalId && (canManageId || hasGlobalAdminID) && type === 'Admin' && (
                 <IdOptionRow
-                    text={`Remove from ${troopOrNetwork}`}
+                    text={m['troops.actions.removeFrom']({ name: troopOrNetwork })}
                     icon={<PeaceIcon />}
                     onClick={handleRevoke}
                 />
@@ -211,7 +234,7 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
                 (isTroopLeader || canManageId || hasGlobalAdminID) &&
                 isScoutMember && (
                     <IdOptionRow
-                        text={`Remove from ${troopOrNetwork}`}
+                        text={m['troops.actions.removeFrom']({ name: troopOrNetwork })}
                         icon={<PeaceIcon />}
                         onClick={handleRevokeScout}
                     />

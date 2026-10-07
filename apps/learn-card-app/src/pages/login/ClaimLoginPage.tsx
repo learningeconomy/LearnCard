@@ -17,6 +17,7 @@ import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import { useTheme } from '../../theme/hooks/useTheme';
 
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
+import DesktopLoginBackground from './DesktopLoginBackground';
 import { LoginContent } from './LoginPage';
 import LoginWelcomePanel from './LoginWelcomePanel';
 
@@ -27,7 +28,7 @@ const ClaimLoginPage: React.FC<{
     const { desktopLoginBg } = useTenantBrandingAssets();
     const { theme } = useTheme();
     const loginBgColor =
-        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#059669';
+        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#058760';
     const showConfirmation = confirmationStore.use.showConfirmation();
     const { isDesktop } = useDeviceTypeByWidth();
     return (
@@ -53,15 +54,7 @@ const ClaimLoginPage: React.FC<{
                                 {alternateBgComponent ? (
                                     alternateBgComponent
                                 ) : desktopLoginBg ? (
-                                    <img
-                                        src={desktopLoginBg}
-                                        alt=""
-                                        aria-hidden="true"
-                                        className="w-full h-full object-cover"
-                                        onError={e => {
-                                            (e.target as HTMLImageElement).style.display = 'none';
-                                        }}
-                                    />
+                                    <DesktopLoginBackground src={desktopLoginBg} />
                                 ) : (
                                     <LoginWelcomePanel />
                                 )}

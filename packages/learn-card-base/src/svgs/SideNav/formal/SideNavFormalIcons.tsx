@@ -1,7 +1,9 @@
+import React from 'react';
 import LaunchPadFormalIcon from './LaunchPadFormalIcon';
 import ContactsFormalIcon from './ContactsFormalIcon';
-import AlertsFormalIcon from './AlertsFormalIcon';
+import NotificationIcon from 'learn-card-base/svgs/NotificationIcon';
 import PersonalizeFormalIcon from './PersonalizeFormalIcon';
+
 import WalletFormalIcon from './WalletFormalIcon';
 import AiSessionFormalIcon from './AiSessionFormalIcon';
 import SkillsFormalIcon from './SkillsFormalIcon';
@@ -13,6 +15,10 @@ import AssistanceFormalIcon from './AssistanceFormalIcon';
 import ExperiencesFormalIcon from './ExperiencesFormalIcon';
 import FamiliesFormalIcon from './FamiliesFormalIcon';
 import IdsFormalIcon from './IdsFormalIcon';
+
+const AlertsFormalIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <NotificationIcon className={className} version="2" />
+);
 
 export const SideNavFormalIcons = {
     launchPad: LaunchPadFormalIcon,

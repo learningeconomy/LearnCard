@@ -67,15 +67,7 @@ export type PollResult =
 // API helpers
 // ---------------------------------------------------------------------------
 
-const buildHeaders = (token?: string): Record<string, string> => {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-
-    if (token) {
-        headers.Authorization = `Bearer ${token}`;
-    }
-
-    return headers;
-};
+const buildHeaders = (): Record<string, string> => ({ 'Content-Type': 'application/json' });
 
 // ---------------------------------------------------------------------------
 // Requester (Device B — the new device)

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useT } from '../../i18n';
 
 type InfoBoxProps = {
     text: string;
@@ -7,6 +8,7 @@ type InfoBoxProps = {
 };
 
 const InfoBox: React.FC<InfoBoxProps> = ({ text, handleClose, backgroundColor = '#6366F1' }) => {
+    const t = useT();
     const bgColorWithOpacity = `${backgroundColor}1F`; // 12% opacity
     return (
         <div
@@ -21,7 +23,7 @@ const InfoBox: React.FC<InfoBoxProps> = ({ text, handleClose, backgroundColor = 
                 }}
                 className="text-indigo-500 font-[700] select-none"
             >
-                Close
+                {t('credential.close')}
             </button>
         </div>
     );

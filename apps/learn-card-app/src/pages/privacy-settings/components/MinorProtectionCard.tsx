@@ -45,7 +45,10 @@ const MinorProtectionCard: React.FC<MinorProtectionCardProps> = ({ brandName, de
                                 key={item}
                                 className="flex items-center gap-2 text-sm text-grayscale-700"
                             >
-                                <Check className="w-4 h-4 shrink-0 text-emerald-600" />
+                                <Check
+                                    aria-hidden="true"
+                                    className="w-4 h-4 shrink-0 text-emerald-600"
+                                />
                                 {item}
                             </li>
                         ))}

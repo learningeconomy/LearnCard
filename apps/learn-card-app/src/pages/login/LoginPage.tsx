@@ -22,6 +22,7 @@ import {
     QrLoginRequester,
     getAuthConfig,
     getSSSConfig,
+    useAuthStatus,
 } from 'learn-card-base';
 
 import { getLogger } from 'learn-card-base';
@@ -32,15 +33,11 @@ import { Capacitor } from '@capacitor/core';
 import { useFirebase } from '../../hooks/useFirebase';
 import useLogout from '../../hooks/useLogout';
 
-import { setPublicComputerMode, isPublicComputerMode } from '@learncard/sss-key-manager';
-import {
-    setPersistence,
-    browserSessionPersistence,
-    indexedDBLocalPersistence,
-} from 'firebase/auth';
+import { changeSignInPersistence, useSignInPersistence } from '../../auth/signInPersistence';
+import { SignInPersistenceError } from './SignInPersistenceError';
+import { useSignInAdapter } from 'learn-card-base';
+import { readKeycloakReauth } from '../../auth/keycloakReauth';
 import { getConfigCapabilities } from 'learn-card-base/config/authConfig';
-
-import { auth } from '../../firebase/firebase';
 
 import { IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import EmailForm from './forms/EmailForm';
@@ -52,6 +49,7 @@ import EUParentalConsentModalContent from '../../components/onboarding/onboardin
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import SocialLoginsButtons from './SocialLogins/SocialLoginsButtons';
 import LoginWelcomePanel from './LoginWelcomePanel';
+import DesktopLoginBackground from './DesktopLoginBackground';
 import AppleIcon from 'learn-card-base/assets/images/apple-logo.svg';
 import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
@@ -69,10 +67,12 @@ import {
 } from '@analytics';
 
 export const LoginContent: React.FC = () => {
+    const adapter = useSignInAdapter();
     const { textLogo, brandMarkLight, fullLogoDark, desktopLoginBg } = useTenantBrandingAssets();
     const { theme } = useTheme();
     const { newModal, closeModal } = useModal();
-    const { state: coordinatorState } = useAppAuth();
+    const { state: coordinatorState, beginIdentityRecovery } = useAppAuth();
+    const authStatus = useAuthStatus();
     const { track } = useAnalytics();
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
@@ -86,12 +86,20 @@ export const LoginContent: React.FC = () => {
     const [showSocialLogins, setShowSocialLogins] = useState<boolean>(true);
 
     const showConfirmation = confirmationStore.use.showConfirmation();
-    const [activeLoginType, setActiveLoginType] = useState<LoginTypesEnum>(LoginTypesEnum.email);
+    const [activeLoginType, setActiveLoginType] = useState<LoginTypesEnum>(
+        adapter.capabilities.emailOtp || adapter.capabilities.emailLink
+            ? LoginTypesEnum.email
+            : LoginTypesEnum.phone
+    );
     const [showQrLogin, setShowQrLogin] = useState(false);
     const [qrApproved, setQrApproved] = useState(false);
     const [showLinkedBanner, setShowLinkedBanner] = useState(false);
     const [accountHint, setAccountHint] = useState<string | null>(null);
-    const [isPublicMode, setIsPublicMode] = useState(() => isPublicComputerMode());
+    const {
+        isPublicMode,
+        isUpdating: isUpdatingPersistence,
+        error: persistenceError,
+    } = useSignInPersistence();
 
     const installIntent = redirectStore.use.installIntent();
     const authConfig = getAuthConfig();
@@ -188,25 +196,57 @@ export const LoginContent: React.FC = () => {
     }, [track]);
 
     useEffect(() => {
-        if (coordinatorState.status !== 'needs_setup') {
+        const profilePresent = authStatus.tag === 'ready' && authStatus.profile.tag === 'present';
+
+        // Reset the "already prompted" guards only once onboarding actually
+        // succeeded (profile present) or the user fully signed out. Resetting on
+        // every coordinator transition re-armed the prompt mid-onboarding,
+        // risking duplicate modals and lost claim redirects.
+        if (profilePresent || authStatus.tag === 'unauthenticated') {
             didOpenOnboardingRef.current = false;
             didTrackSignupStartedRef.current = false;
         }
-    }, [coordinatorState.status]);
+
+        if (authStatus.tag === 'unauthenticated') {
+            didRedirectRef.current = false;
+        }
+    }, [authStatus]);
 
     useEffect(() => {
         if (didRedirectRef.current) return;
+        // Reauth owns navigation until identity validation and recovery resumption finish.
+        if (adapter.providerType === 'keycloak' && readKeycloakReauth()) return;
         if (!currentUser && !isLoggedIn && coordinatorState.status !== 'needs_setup') return;
 
-        if (coordinatorState.status === 'needs_setup') {
+        // Onboarding owns navigation while it is open. Leave the pending
+        // redirect untouched so OnboardingFlow can resume it after the profile
+        // is created — clearing it here is what lost inbox claim links.
+        if (redirectStore.get.isOnboardingOpen()) return;
+
+        // Never route during key/wallet rebuild or recovery/migration; the
+        // coordinator's overlays own those states.
+        if (authStatus.tag === 'resolving' || authStatus.tag === 'recovering') return;
+        if (authStatus.tag === 'ready' && authStatus.profile.tag === 'loading') return;
+
+        const needsOnboarding =
+            coordinatorState.status === 'needs_setup' ||
+            (authStatus.tag === 'ready' && authStatus.profile.tag === 'absent');
+
+        if (needsOnboarding) {
             if (didOpenOnboardingRef.current) return;
 
             trackSignupStarted();
             didOpenOnboardingRef.current = true;
             didRedirectRef.current = false;
-            void handlePromptOnboarding();
+            // Profile is confirmed absent or the coordinator needs setup, so
+            // open the existing onboarding flow directly — no async profile
+            // re-check that could resolve after navigation.
+            openOnboardingModal();
             return;
         }
+
+        // A definitively signed-out visitor has nowhere to go.
+        if (authStatus.tag === 'unauthenticated') return;
 
         didRedirectRef.current = true;
 
@@ -230,26 +270,39 @@ export const LoginContent: React.FC = () => {
                     return;
                 }
             }
+
+            // Only re-prompt onboarding for an existing profile (EU parental
+            // consent). A still-resolving profile must never open a second
+            // onboarding modal over the destination page — that page's own gate
+            // handles a confirmed absence.
+            const canRepromptOnboarding =
+                authStatus.tag === 'ready' && authStatus.profile.tag === 'present';
+
             if (redirectTo) {
+                redirectStore.set.lcnRedirect(null);
                 redirectStore.set.authRedirect(null);
                 chapiStore.set.isChapiInteraction(null);
                 history.push(redirectTo);
                 void handleGeneratePinUpdateToken();
-                void handlePromptOnboarding();
+                if (canRepromptOnboarding) void handlePromptOnboarding();
             } else if (lcnRedirectTo) {
                 redirectStore.set.lcnRedirect(null);
                 history.push(lcnRedirectTo);
                 void handleGeneratePinUpdateToken();
-                void handlePromptOnboarding();
+                if (canRepromptOnboarding) void handlePromptOnboarding();
             } else {
-                history.push('/dashboard');
+                // Preserve the demo shortcut's existing landing page after the
+                // profile/onboarding gates above have completed.
+                history.push(currentUser?.uid === 'demo' ? '/wallet' : '/dashboard');
                 void handleGeneratePinUpdateToken();
-                void handlePromptOnboarding();
+                if (canRepromptOnboarding) void handlePromptOnboarding();
             }
         } catch (e) {
             log.error(e);
         }
     }, [
+        adapter.providerType,
+        authStatus,
         currentUser,
         isLoggedIn,
         coordinatorState.status,
@@ -258,6 +311,7 @@ export const LoginContent: React.FC = () => {
         handleGeneratePinUpdateToken,
         handlePromptOnboarding,
         handleLogout,
+        openOnboardingModal,
         trackSignupStarted,
     ]);
 
@@ -431,30 +485,18 @@ export const LoginContent: React.FC = () => {
             ) : (
                 <>
                     <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
-                        <div
-                            className={`w-full p-3 rounded-[20px] border ${
-                                isNewUserSetup
-                                    ? 'bg-emerald-50 border-emerald-100'
-                                    : 'bg-white/20 border-white/10 backdrop-blur-sm'
-                            }`}
-                        >
-                            <p
-                                className={`text-sm font-medium ${
-                                    isNewUserSetup ? 'text-emerald-800' : 'text-white'
-                                }`}
-                            >
-                                {isNewUserSetup
-                                    ? m['login.prompt.newUser']()
-                                    : isReturningUser
-                                    ? m['login.prompt.returning']()
-                                    : m['login.prompt.default']()}
-                            </p>
-                        </div>
+                        <p className="w-full text-center text-sm font-medium text-white">
+                            {isNewUserSetup
+                                ? m['login.prompt.newUser']()
+                                : isReturningUser
+                                  ? m['login.prompt.returning']()
+                                  : m['login.prompt.default']()}
+                        </p>
                     </IonRow>
 
                     {showLinkedBanner && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
-                            <div className="w-full p-3 bg-white/20 backdrop-blur-sm rounded-[20px] flex items-center justify-center gap-2.5">
+                            <div className="w-full p-3 bg-black/10 backdrop-blur-sm rounded-[20px] flex items-center justify-center gap-2.5">
                                 <svg
                                     width="16"
                                     height="16"
@@ -486,9 +528,22 @@ export const LoginContent: React.FC = () => {
                         </IonRow>
                     )}
 
+                    {coordinatorState.status === 'awaiting_rebind' && (
+                        <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
+                            <div className="w-full p-4 bg-white rounded-[20px] shadow-xl text-center">
+                                <p className="text-sm font-medium text-grayscale-900">
+                                    {m['recovery.identity.signInPrompt']()}
+                                </p>
+                                <p className="text-xs text-grayscale-600 mt-1 leading-relaxed">
+                                    {m['recovery.identity.signInPromptDescription']()}
+                                </p>
+                            </div>
+                        </IonRow>
+                    )}
+
                     {installIntent?.listingId && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
-                            <div className="w-full p-3 bg-white/20 backdrop-blur-sm rounded-[20px] flex items-center gap-3 justify-center">
+                            <div className="w-full p-3 bg-black/10 backdrop-blur-sm rounded-[20px] flex items-center gap-3 justify-center">
                                 {installIntent.appIcon && (
                                     <img
                                         src={installIntent.appIcon}
@@ -514,7 +569,7 @@ export const LoginContent: React.FC = () => {
                     {((query.get('redirectTo') ?? '').includes('createFamily=true') ||
                         Boolean(query.get('underageFamily'))) && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
-                            <div className="w-full p-3 bg-white/20 backdrop-blur-sm rounded-[20px] flex items-start gap-2.5">
+                            <div className="w-full p-3 bg-black/10 backdrop-blur-sm rounded-[20px] flex items-start gap-2.5">
                                 <svg
                                     viewBox="0 0 24 24"
                                     fill="none"
@@ -552,53 +607,41 @@ export const LoginContent: React.FC = () => {
                         </GenericErrorBoundary>
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center">
                             <GenericErrorBoundary hideGoHome>
-                                {activeLoginType === LoginTypesEnum.email && (
-                                    <EmailForm
-                                        setShowSocialLogins={setShowSocialLogins}
-                                        showSocialLogins={showSocialLogins}
-                                    />
-                                )}
-                                {activeLoginType === LoginTypesEnum.phone && (
-                                    <PhoneForm
-                                        setShowSocialLogins={setShowSocialLogins}
-                                        showSocialLogins={showSocialLogins}
-                                    />
-                                )}
+                                {activeLoginType === LoginTypesEnum.email &&
+                                    (adapter.capabilities.emailOtp ||
+                                        adapter.capabilities.emailLink) && (
+                                        <EmailForm
+                                            suppressRedirect
+                                            setShowSocialLogins={setShowSocialLogins}
+                                            showSocialLogins={showSocialLogins}
+                                        />
+                                    )}
+                                {activeLoginType === LoginTypesEnum.phone &&
+                                    adapter.capabilities.phoneOtp && (
+                                        <PhoneForm
+                                            setShowSocialLogins={setShowSocialLogins}
+                                            showSocialLogins={showSocialLogins}
+                                        />
+                                    )}
                             </GenericErrorBoundary>
                         </IonRow>
                     </IonRow>
 
+                    <div className="w-full max-w-[500px] px-4">
+                        {adapter.providerType === 'keycloak' && <SignInPersistenceError />}
+                    </div>
                     {isWeb && configCapabilities.localKeyPersistence && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center mt-3">
                             <button
-                                onClick={async () => {
-                                    const next = !isPublicMode;
-                                    setIsPublicMode(next);
-                                    setPublicComputerMode(next);
-
-                                    // Switch Firebase persistence: session-only in public
-                                    // mode so the auth session dies with the tab, or
-                                    // IndexedDB (default) when toggling back.
-                                    try {
-                                        await setPersistence(
-                                            auth(),
-                                            next
-                                                ? browserSessionPersistence
-                                                : indexedDBLocalPersistence
-                                        );
-                                    } catch (e) {
-                                        log.warn('Failed to set Firebase persistence', e);
-                                    }
-                                }}
-                                className={`
-                                    flex items-center gap-2.5 px-4 py-2 rounded-full
-                                    transition-all duration-200 select-none
-                                    ${
-                                        isPublicMode
-                                            ? 'bg-white/20 ring-1 ring-white/40'
-                                            : 'bg-white/10 hover:bg-white/15'
-                                    }
-                                `}
+                                role="switch"
+                                aria-checked={isPublicMode}
+                                disabled={
+                                    isUpdatingPersistence ||
+                                    (adapter.providerType === 'keycloak' &&
+                                        Boolean(persistenceError))
+                                }
+                                onClick={() => changeSignInPersistence(adapter, !isPublicMode)}
+                                className="flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-200 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
                                 <div
                                     className={`
@@ -622,10 +665,17 @@ export const LoginContent: React.FC = () => {
                                 <span
                                     className={`
                                     text-sm transition-colors duration-200
-                                    ${isPublicMode ? 'text-white font-medium' : 'text-white/60'}
+                                    ${isPublicMode ? 'text-white font-medium' : 'text-white'}
                                 `}
                                 >
-                                    {m['login.sharedComputer']()}
+                                    {isUpdatingPersistence ? (
+                                        <span className="flex items-center gap-2">
+                                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            Setting up...
+                                        </span>
+                                    ) : (
+                                        m['login.sharedComputer']()
+                                    )}
                                 </span>
                             </button>
                         </IonRow>
@@ -635,9 +685,20 @@ export const LoginContent: React.FC = () => {
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center mt-4">
                             <button
                                 onClick={() => setShowQrLogin(true)}
-                                className="text-sm text-white/80 hover:text-white underline transition-colors"
+                                className="text-sm text-white hover:text-white underline transition-colors"
                             >
                                 {m['login.signInFromAnotherDevice']()}
+                            </button>
+                        </IonRow>
+                    )}
+
+                    {configCapabilities.recovery && coordinatorState.status === 'idle' && (
+                        <IonRow className="w-full max-w-[500px] flex items-center justify-center mt-3">
+                            <button
+                                onClick={beginIdentityRecovery}
+                                className="text-sm text-white hover:text-white underline transition-colors"
+                            >
+                                {m['recovery.identity.lostSchoolLogin']()}
                             </button>
                         </IonRow>
                     )}
@@ -657,7 +718,7 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
     const { desktopLoginBg } = useTenantBrandingAssets();
     const { theme } = useTheme();
     const loginBgColor =
-        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#059669';
+        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#058760';
     const { newModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -710,16 +771,7 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
                                     {alternateBgComponent ? (
                                         alternateBgComponent
                                     ) : desktopLoginBg ? (
-                                        <img
-                                            src={desktopLoginBg}
-                                            alt=""
-                                            aria-hidden="true"
-                                            className="w-full h-full object-cover"
-                                            onError={e => {
-                                                (e.target as HTMLImageElement).style.display =
-                                                    'none';
-                                            }}
-                                        />
+                                        <DesktopLoginBackground src={desktopLoginBg} />
                                     ) : (
                                         <LoginWelcomePanel />
                                     )}

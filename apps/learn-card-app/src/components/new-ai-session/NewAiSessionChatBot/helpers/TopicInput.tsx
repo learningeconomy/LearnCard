@@ -42,7 +42,7 @@ export const TopicInput: React.FC<{
                 handleChatBotAnswer(ChatBotQuestionsEnum.TopicSelection, topic, index);
             }}
             style={styles}
-            className={`w-full flex items-end gap-[10px] fade-enter px-[15px] py-[12px] pb-[calc(12px+env(safe-area-inset-bottom))] ${
+            className={`w-full flex items-end gap-[10px] fade-enter px-[15px] py-[12px] pb-[calc(12px+var(--ion-safe-area-bottom,0px))] ${
                 isDesktop ? 'bg-white rounded-[20px] shadow-box-bottom mt-4' : 'bg-grayscale-50'
             }`}
         >

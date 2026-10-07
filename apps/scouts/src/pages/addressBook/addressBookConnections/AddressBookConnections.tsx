@@ -23,6 +23,7 @@ import PurpGhost from '../../../assets/lotties/purpghost.json';
 import Lottie from 'react-lottie-player';
 import { VC } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 const log = getLogger('address-book-connections');
 
 const AddressBookConnections: React.FC<{
@@ -152,7 +153,7 @@ const AddressBookConnections: React.FC<{
                     onError(error, variables, context) {
                         refetch();
                         presentToast(
-                            error?.message || 'An error occurred, unable to remove contact',
+                            error?.message || m['addressBook.toasts.unableToRemoveContact'](),
                             {
                                 // @ts-ignore
                                 type: ToastTypeEnum.Error,
@@ -163,7 +164,7 @@ const AddressBookConnections: React.FC<{
                 }
             );
         } catch (err) {
-            presentToast(err?.message || 'An error occurred, unable to remove contact', {
+            presentToast(err?.message || m['addressBook.toasts.unableToRemoveContact'](), {
                 // @ts-ignore
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -186,17 +187,20 @@ const AddressBookConnections: React.FC<{
                     },
                     onError(error, variables, context) {
                         refetch();
-                        presentToast(error?.message || 'An error occurred, unable to block user', {
-                            // @ts-ignore
-                            type: ToastTypeEnum.Error,
-                            hasDismissButton: true,
-                        });
+                        presentToast(
+                            error?.message || m['addressBook.toasts.unableToBlockUser'](),
+                            {
+                                // @ts-ignore
+                                type: ToastTypeEnum.Error,
+                                hasDismissButton: true,
+                            }
+                        );
                     },
                 }
             );
         } catch (err) {
             log.debug('blockProfile::error', err);
-            presentToast(err?.message || 'An error occurred, unable to block user', {
+            presentToast(err?.message || m['addressBook.toasts.unableToBlockUser'](), {
                 // @ts-ignore
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -209,7 +213,7 @@ const AddressBookConnections: React.FC<{
             {isLoading && (
                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full pt-[100px]">
                     <IonSpinner color="black" />
-                    <p className="mt-2 font-bold text-lg">Loading...</p>
+                    <p className="mt-2 font-bold text-lg">{m['addressBook.loading']()}</p>
                 </section>
             )}
             {!isLoading && (
@@ -230,7 +234,7 @@ const AddressBookConnections: React.FC<{
             )}
             {!isLoading && (data?.length === 0 || error) && (
                 <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center">
-                    <strong>No connections yet.</strong>
+                    <strong>{m['addressBook.noConnections']()}</strong>
                     <div className="w-[280px] h-[280px] mt-[-30px]">
                         <Lottie
                             loop

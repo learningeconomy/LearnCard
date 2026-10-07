@@ -252,8 +252,8 @@ const CollectionMapNode: React.FC<{ data: CollectionMapNodeData }> = ({ data }) 
     const cardTint = allDone
         ? 'bg-emerald-50/70 border-emerald-100'
         : progress.completed > 0
-        ? 'bg-amber-50/60 border-amber-100'
-        : 'bg-white border-grayscale-200';
+          ? 'bg-amber-50/60 border-amber-100'
+          : 'bg-white border-grayscale-200';
 
     return (
         <motion.div

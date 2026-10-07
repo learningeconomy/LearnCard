@@ -4,6 +4,11 @@ import { z } from 'zod/v4';
 import { PaginationResponseValidator } from './mongo';
 import { StringQuery } from './queries';
 import { UnsignedVCValidator, VCValidator, VPValidator } from './vc';
+import {
+    ManagedCredentialRefreshReceiptValidator,
+    InboxCredentialRefreshReceiptValidator,
+    ManagedCredentialRefreshServiceValidator,
+} from './credential-refresh';
 
 export const LCNProfileDisplayValidator = z.object({
     backgroundColor: z.string().optional(),
@@ -102,6 +107,47 @@ export const LCNPublicProfileValidator = LCNProfileValidator.pick({
 });
 export type LCNPublicProfile = z.infer<typeof LCNPublicProfileValidator>;
 
+export const LCNConnectionPromptStatusValidator = z.enum(['PENDING', 'SKIPPED', 'CONNECTED']);
+export type LCNConnectionPromptStatus = z.infer<typeof LCNConnectionPromptStatusValidator>;
+
+export const LCNConnectionPromptSurfaceValidator = z.enum(['POST_CLAIM', 'NOTIFICATION']);
+export type LCNConnectionPromptSurface = z.infer<typeof LCNConnectionPromptSurfaceValidator>;
+
+export const LCNConnectionPromptActionStatusValidator = z.enum([
+    'PENDING',
+    'SKIPPED',
+    'CONNECTED',
+    'STALE',
+]);
+export type LCNConnectionPromptActionStatus = z.infer<
+    typeof LCNConnectionPromptActionStatusValidator
+>;
+
+export const LCNConnectionPromptValidator = z.object({
+    promptId: z.string().uuid(),
+    status: LCNConnectionPromptStatusValidator,
+    surface: LCNConnectionPromptSurfaceValidator,
+    triggerId: z.string(),
+    triggeredAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+    counterpart: LCNPublicProfileValidator,
+});
+export type LCNConnectionPrompt = z.infer<typeof LCNConnectionPromptValidator>;
+
+export const LCNConnectionPromptActionResultValidator = z.object({
+    promptId: z.string().uuid(),
+    status: LCNConnectionPromptActionStatusValidator,
+});
+export type LCNConnectionPromptActionResult = z.infer<
+    typeof LCNConnectionPromptActionResultValidator
+>;
+
+export const LCNConnectionPromptMetadataValidator = z.object({
+    promptId: z.string().uuid(),
+    counterpartProfileId: z.string(),
+});
+export type LCNConnectionPromptMetadata = z.infer<typeof LCNConnectionPromptMetadataValidator>;
+
 export const LCNAuthedProfileValidator = LCNPublicProfileValidator.extend({
     bio: LCNProfileValidator.shape.bio,
     websiteLink: LCNProfileValidator.shape.websiteLink,
@@ -113,6 +159,10 @@ export type LCNAuthedProfile = z.infer<typeof LCNAuthedProfileValidator>;
 
 export const LCNConnectionProfileValidator = LCNAuthedProfileValidator.extend({
     email: LCNProfileValidator.shape.email,
+    connectedAt: z.iso
+        .datetime()
+        .optional()
+        .describe('When the viewer and this profile became connected.'),
 });
 export type LCNConnectionProfile = z.infer<typeof LCNConnectionProfileValidator>;
 
@@ -421,7 +471,7 @@ export const AutoBoostConfigValidator = z.object({
 });
 export type AutoBoostConfig = z.infer<typeof AutoBoostConfigValidator>;
 
-const SendBoostTemplateValidator = BoostValidator.partial()
+export const SendBoostTemplateValidator = BoostValidator.partial()
     .omit({ uri: true, claimPermissions: true })
     .extend({
         credential: VCValidator.or(UnsignedVCValidator),
@@ -467,6 +517,15 @@ export const SendOptionsValidator = z.object({
         .email()
         .optional()
         .describe('Guardian email that must approve before student can claim'),
+    expiresInDays: z
+        .number()
+        .int()
+        .min(1)
+        .max(720)
+        .optional()
+        .describe(
+            'How many days the credential stays claimable in the Universal Inbox (default 30). Does not change the credential validity period.'
+        ),
 });
 export type SendOptions = z.infer<typeof SendOptionsValidator>;
 
@@ -484,6 +543,20 @@ export const SendBoostInputValidator = z
         ),
         templateData: z.record(z.string(), z.unknown()).optional(),
         integrationId: z.string().optional().describe('Integration ID for activity tracking'),
+        refresh: z
+            .boolean()
+            .optional()
+            .describe(
+                'Request managed credential refresh for this send. Profile/DID recipients use immediate issuance; email/phone recipients use deferred Universal Inbox signing and bind the holder at claim.'
+            ),
+        idempotencyKey: z
+            .string()
+            .min(1)
+            .max(200)
+            .optional()
+            .describe(
+                'Caller-chosen key that makes a managed refresh send (refresh: true) safe to retry as a whole: retries with the same key reuse the same boost, refresh allocation and result. Reusing a key for a different request is rejected. With signedCredential, requires prior tRPC prepareRefreshableSend; direct REST callers omit the key and retry the exact signed credential and templateUri.'
+            ),
     })
     .refine(data => data.templateUri || data.template || data.signedCredential, {
         message: 'Either templateUri, template, or signedCredential must be provided.',
@@ -500,11 +573,16 @@ export const SendBoostInputValidator = z
             message: 'guardianEmail must differ from recipient (self-approval not allowed)',
             path: ['options', 'guardianEmail'],
         }
-    );
+    )
+    .refine(data => !data.idempotencyKey || data.refresh === true, {
+        message: 'idempotencyKey is only supported with refresh: true.',
+        path: ['idempotencyKey'],
+    });
 export type SendBoostInput = z.infer<typeof SendBoostInputValidator>;
 
 // Inbox-specific response fields (only present when sent via email/phone)
 export const SendInboxResponseValidator = z.object({
+    refresh: InboxCredentialRefreshReceiptValidator.optional(),
     issuanceId: z.string(),
     status: z.enum(['PENDING', 'ISSUED', 'EXPIRED', 'DELIVERED', 'CLAIMED']),
     claimUrl: z.string().url().optional().describe('Present when suppressDelivery=true'),
@@ -522,8 +600,40 @@ export const SendBoostResponseValidator = z.object({
     inbox: SendInboxResponseValidator.optional().describe(
         'Present when sent via email/phone (Universal Inbox)'
     ),
+    refresh: ManagedCredentialRefreshReceiptValidator.optional().describe(
+        'Present when managed refresh was requested: issuance metadata the issuer keeps to publish future updates'
+    ),
 });
 export type SendBoostResponse = z.infer<typeof SendBoostResponseValidator>;
+
+export const PrepareRefreshableSendInputValidator = z
+    .object({
+        recipient: z.string(),
+        templateUri: z.string().optional(),
+        template: SendBoostTemplateValidator.optional(),
+        contractUri: z.string().optional(),
+        templateData: z.record(z.string(), z.unknown()).optional(),
+        integrationId: z.string().optional(),
+        /** Credential ID to allocate for; generated server-side when omitted. */
+        credentialId: z.string().min(1).optional(),
+        idempotencyKey: z.string().min(1).max(200).optional(),
+    })
+    .refine(data => Boolean(data.templateUri) !== Boolean(data.template), {
+        message: 'Provide exactly one of templateUri or template.',
+    });
+export type PrepareRefreshableSendInput = z.infer<typeof PrepareRefreshableSendInputValidator>;
+
+export const PrepareRefreshableSendResultValidator = z.object({
+    boostUri: z.string(),
+    credentialId: z.string(),
+    refreshId: z.string(),
+    refreshService: ManagedCredentialRefreshServiceValidator,
+    /** The DID to use as credentialSubject.id (recipient DID, or the profile's did:web). */
+    holderDid: z.string(),
+    /** Present when this idempotencyKey already completed: return it without signing. */
+    completed: SendBoostResponseValidator.optional(),
+});
+export type PrepareRefreshableSendResult = z.infer<typeof PrepareRefreshableSendResultValidator>;
 
 // Plugin-level discriminated union (for extensibility)
 export const SendInputValidator = z.discriminatedUnion('type', [SendBoostInputValidator]);
@@ -604,12 +714,14 @@ export const ConsentFlowContractDetailsValidator = z.object({
     expiresAt: z.string().optional(),
     autoBoosts: z.string().array().optional(),
     writers: z.array(LCNProfileValidator).optional(),
+    recipients: z.array(LCNPublicProfileValidator.extend({ did: z.string() })).optional(),
+    audienceVersion: z.number().int().nonnegative().optional(),
 });
 export type ConsentFlowContractDetails = z.infer<typeof ConsentFlowContractDetailsValidator>;
 export type ConsentFlowContractDetailsInput = z.input<typeof ConsentFlowContractDetailsValidator>;
 
 export const ConsentFlowContractRequestStatusValidator = z
-    .enum(['pending', 'accepted', 'denied'])
+    .enum(['pending', 'accepted', 'denied', 'cancelled'])
     .nullable();
 export type ConsentFlowContractRequestStatus = z.infer<
     typeof ConsentFlowContractRequestStatusValidator
@@ -620,7 +732,51 @@ export type ConsentFlowContractRequestReadStatus = z.infer<
     typeof ConsentFlowContractRequestReadStatusValidator
 >;
 
-export const ConsentFlowContractRequestForProfileValidator = z.object({
+/** Durable referral identity captured on consent history and correlated events. */
+export const ConsentFlowReferralValidator = z.object({
+    requestId: z.string(),
+    requestedBy: z.string(),
+    externalReferenceId: z.string().max(256).optional(),
+});
+export type ConsentFlowReferral = z.infer<typeof ConsentFlowReferralValidator>;
+
+export const ContractRequestFieldsValidator = ConsentFlowReferralValidator.partial().extend({
+    requestedAt: z.string().optional(),
+    message: z.string().max(500).optional(),
+});
+export type ContractRequestFields = z.infer<typeof ContractRequestFieldsValidator>;
+
+export const SendContractRequestValidator = z.object({
+    contractUri: z.string(),
+    targetProfileId: z.string(),
+    externalReferenceId: z.string().trim().min(1).max(256).optional(),
+    message: z.string().trim().max(500).optional(),
+});
+export type SendContractRequest = z.infer<typeof SendContractRequestValidator>;
+
+export const ConsentFlowWebhookMetadataValidator = z.object({
+    eventId: z.string(),
+    deliveryKey: z.string(),
+    event: z.enum([
+        'request_sent',
+        'request_accepted',
+        'request_denied',
+        'request_cancelled',
+        'consent_created',
+        'consent_updated',
+        'consent_withdrawn',
+        'credentials_synced',
+    ]),
+    contractUri: z.string(),
+    termsUri: z.string().optional(),
+    requestId: z.string().optional(),
+    requestedBy: z.string().optional(),
+    externalReferenceId: z.string().optional(),
+    recipientRole: z.enum(['owner', 'recipient', 'requester', 'target']),
+});
+export type ConsentFlowWebhookMetadata = z.infer<typeof ConsentFlowWebhookMetadataValidator>;
+
+export const ConsentFlowContractRequestForProfileValidator = ContractRequestFieldsValidator.extend({
     profile: LCNProfileValidator,
     status: ConsentFlowContractRequestStatusValidator,
     readStatus: ConsentFlowContractRequestReadStatusValidator.optional(),
@@ -652,21 +808,6 @@ export const PaginatedConsentFlowDataValidator = PaginationResponseValidator.ext
     records: ConsentFlowContractDataValidator.array(),
 });
 export type PaginatedConsentFlowData = z.infer<typeof PaginatedConsentFlowDataValidator>;
-
-export const ConsentFlowContractDataForDidValidator = z.object({
-    credentials: z.object({ category: z.string(), uri: z.string() }).array(),
-    personal: z.record(z.string(), z.string()).default({}),
-    date: z.string(),
-    contractUri: z.string(),
-});
-export type ConsentFlowContractDataForDid = z.infer<typeof ConsentFlowContractDataForDidValidator>;
-
-export const PaginatedConsentFlowDataForDidValidator = PaginationResponseValidator.extend({
-    records: ConsentFlowContractDataForDidValidator.array(),
-});
-export type PaginatedConsentFlowDataForDid = z.infer<
-    typeof PaginatedConsentFlowDataForDidValidator
->;
 
 export const ConsentFlowTermValidator = z.object({
     sharing: z.boolean().optional(),
@@ -708,6 +849,7 @@ export const PaginatedConsentFlowTermsValidator = PaginationResponseValidator.ex
             expiresAt: z.string().optional(),
             oneTime: z.boolean().optional(),
             terms: ConsentFlowTermsValidator,
+            referral: ConsentFlowReferralValidator.optional(),
             contract: ConsentFlowContractDetailsValidator,
             uri: z.string(),
             consenter: LCNProfileValidator,
@@ -716,6 +858,42 @@ export const PaginatedConsentFlowTermsValidator = PaginationResponseValidator.ex
         .array(),
 });
 export type PaginatedConsentFlowTerms = z.infer<typeof PaginatedConsentFlowTermsValidator>;
+
+export const ConsentFlowGuardianApprovalValidator = z.object({
+    guardianProfileId: z.string(),
+    guardianDid: z.string(),
+    approvedAt: z.string().datetime(),
+    contractUpdatedAt: z.string(),
+});
+export type ConsentFlowGuardianApproval = z.infer<typeof ConsentFlowGuardianApprovalValidator>;
+
+export const ConsentFlowContractDataForDidValidator = z.object({
+    credentials: z.object({ category: z.string(), uri: z.string() }).array(),
+    personal: z.record(z.string(), z.string()).default({}),
+    date: z.string(),
+    createdAt: z.string().optional(),
+    contractUpdatedAt: z.string(),
+    contractExpiresAt: z.string().optional(),
+    reasonForAccessing: z.string().optional(),
+    guardian: z.object({
+        required: z.boolean(),
+        approved: z.boolean(),
+        approval: ConsentFlowGuardianApprovalValidator.optional(),
+    }),
+    contractUri: z.string(),
+    termsUri: z.string(),
+    status: ConsentFlowTermsStatusValidator,
+    expiresAt: z.string().optional(),
+    terms: ConsentFlowTermsValidator,
+});
+export type ConsentFlowContractDataForDid = z.infer<typeof ConsentFlowContractDataForDidValidator>;
+
+export const PaginatedConsentFlowDataForDidValidator = PaginationResponseValidator.extend({
+    records: ConsentFlowContractDataForDidValidator.array(),
+});
+export type PaginatedConsentFlowDataForDid = z.infer<
+    typeof PaginatedConsentFlowDataForDidValidator
+>;
 
 export const ConsentFlowContractQueryValidator = z.object({
     read: z
@@ -830,6 +1008,8 @@ export const ConsentFlowTransactionValidator = z.object({
     expiresAt: z.string().optional(),
     oneTime: z.boolean().optional(),
     terms: ConsentFlowTermsValidator.optional(),
+    guardianApproval: ConsentFlowGuardianApprovalValidator.optional(),
+    referral: ConsentFlowReferralValidator.optional(),
     id: z.string(),
     action: ConsentFlowTransactionActionValidator,
     date: z.string(),
@@ -842,6 +1022,7 @@ export const HolderExportConsentRecordValidator = z.object({
     status: ConsentFlowTermsStatusValidator,
     contract: ConsentFlowContractDetailsValidator,
     terms: ConsentFlowTermsValidator,
+    referral: ConsentFlowReferralValidator.optional(),
     transactions: ConsentFlowTransactionValidator.array(),
 });
 export type HolderExportConsentRecord = z.infer<typeof HolderExportConsentRecordValidator>;
@@ -927,6 +1108,7 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'CREDENTIAL_REVOKED',
     'CREDENTIAL_SUSPENDED',
     'CREDENTIAL_UNSUSPENDED',
+    'CREDENTIAL_REFRESHED',
 ]);
 
 export type LCNNotificationTypeEnum = z.infer<typeof LCNNotificationTypeEnumValidator>;
@@ -966,13 +1148,20 @@ export const LCNNotificationInboxValidator = z.object({
 
 export type LCNNotificationInbox = z.infer<typeof LCNNotificationInboxValidator>;
 
+export const LCNNotificationMetadataValidator = z
+    .object({
+        connectionPrompt: LCNConnectionPromptMetadataValidator.optional(),
+    })
+    .catchall(z.unknown());
+export type LCNNotificationMetadata = z.infer<typeof LCNNotificationMetadataValidator>;
+
 export const LCNNotificationDataValidator = z
     .object({
         vcUris: z.array(z.string()).optional(),
         vpUris: z.array(z.string()).optional(),
         transaction: ConsentFlowTransactionValidator.optional(),
         inbox: LCNNotificationInboxValidator.optional(),
-        metadata: z.record(z.string(), z.unknown()).optional(),
+        metadata: LCNNotificationMetadataValidator.optional(),
     })
     .loose();
 export type LCNNotificationData = z.infer<typeof LCNNotificationDataValidator>;
@@ -990,6 +1179,7 @@ export const LCNNotificationValidator = z.object({
 export type LCNNotification = z.infer<typeof LCNNotificationValidator>;
 
 export const AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX = 'auth-grant:';
+export const ACT_AS_HEADER = 'X-LearnCard-Act-As';
 
 export const AuthGrantValidator = z.object({
     id: z.string(),
@@ -1007,6 +1197,7 @@ export const AuthGrantValidator = z.object({
         },
     }),
     scope: z.string(),
+    actAs: z.string().optional(),
     createdAt: z.iso.datetime({ error: 'createdAt must be a valid ISO 8601 datetime string' }),
     expiresAt: z.iso
         .datetime({ error: 'expiresAt must be a valid ISO 8601 datetime string' })
@@ -1133,13 +1324,19 @@ export type CreateContactMethodSessionResponseType = z.infer<
 
 // Inbox Credentials
 export const InboxCredentialValidator = z.object({
+    refresh: InboxCredentialRefreshReceiptValidator.optional(),
+    refreshId: z.string().optional(),
     id: z.string(),
-    credential: z.string(),
+    credential: z.string().optional(),
     isSigned: z.boolean(),
     currentStatus: LCNInboxStatusEnumValidator,
     isAccepted: z.boolean().optional(),
     expiresAt: z.string(),
     createdAt: z.string(),
+    finalizedAt: z.string().optional(),
+    expiredAt: z.string().optional(),
+    credentialName: z.string().optional(),
+    achievementType: z.string().optional(),
     issuerDid: z.string(),
     webhookUrl: z.string().optional(),
     boostUri: z.string().optional(),
@@ -1208,6 +1405,13 @@ export const IssueInboxCredentialValidator = z
                 'URI of a boost template to use for issuance. The boost credential will be resolved and used. Mutually exclusive with credential field.'
             ),
 
+        refresh: z
+            .boolean()
+            .optional()
+            .describe(
+                'Allocate managed refresh before signing. Requires unsigned content and a registered signing authority; binds the holder on claim.'
+            ),
+        idempotencyKey: z.string().min(1).max(200).optional(),
         // === OPTIONAL FEATURES ===
         // Add major, distinct features at the top level.
         //consentRequest: ConsentRequestValidator.optional(),
@@ -1216,6 +1420,13 @@ export const IssueInboxCredentialValidator = z
         // HOW should this issuance be handled?
         configuration: z
             .object({
+                guardianEmail: z
+                    .string()
+                    .email()
+                    .optional()
+                    .describe(
+                        'Require approval from this guardian before the recipient can claim. Must differ from the recipient email.'
+                    ),
                 signingAuthority: IssueInboxSigningAuthorityValidator.optional().describe(
                     'The signing authority to use for the credential. If not provided, the users default signing authority will be used if the credential is not signed.'
                 ),
@@ -1226,10 +1437,13 @@ export const IssueInboxCredentialValidator = z
                     .describe('The webhook URL to receive credential issuance events.'),
                 expiresInDays: z
                     .number()
+                    .int()
                     .min(1)
-                    .max(365)
+                    .max(720)
                     .optional()
-                    .describe('The number of days the credential will be valid for.'),
+                    .describe(
+                        'How many days the encrypted inbox payload remains claimable. This does not change the credential validity period.'
+                    ),
                 templateData: z
                     .record(z.string(), z.unknown())
                     .optional()
@@ -1319,20 +1533,188 @@ export const IssueInboxCredentialValidator = z
                 'Configuration for the credential issuance. If not provided, the default configuration will be used.'
             ),
     })
+    .refine(data => !data.idempotencyKey || data.refresh === true, {
+        message: 'idempotencyKey requires refresh: true.',
+    })
     .refine(data => data.credential || data.templateUri, {
         message: 'Either credential or templateUri must be provided.',
         path: ['credential'],
-    });
+    })
+    .refine(
+        data =>
+            !data.configuration?.guardianEmail ||
+            data.recipient.type !== 'email' ||
+            data.configuration.guardianEmail.toLowerCase() !== data.recipient.value.toLowerCase(),
+        {
+            message: 'guardianEmail must differ from recipient (self-approval not allowed)',
+            path: ['configuration', 'guardianEmail'],
+        }
+    );
 
 export type IssueInboxCredentialType = z.infer<typeof IssueInboxCredentialValidator>;
 
 export const IssueInboxCredentialResponseValidator = z.object({
+    refresh: InboxCredentialRefreshReceiptValidator.optional(),
     issuanceId: z.string(),
     status: LCNInboxStatusEnumValidator,
     recipient: ContactMethodQueryValidator,
     claimUrl: z.string().url().optional(),
     recipientDid: z.string().optional(),
 });
+
+// Do not apply delivery defaults before merging: omitted per-item fields inherit batch defaults.
+const InboxBatchConfigurationValidator = IssueInboxCredentialValidator.shape.configuration
+    .unwrap()
+    .extend({
+        refresh: IssueInboxCredentialValidator.shape.refresh.describe(
+            'Enable managed refresh by default. An item configuration.refresh overrides this value, including false.'
+        ),
+        delivery: IssueInboxCredentialValidator.shape.configuration
+            .unwrap()
+            .shape.delivery.unwrap()
+            .extend({ suppress: z.boolean().optional() })
+            .optional(),
+    });
+
+const InboxBatchItemConfigurationValidator = InboxBatchConfigurationValidator.extend({
+    guardianEmail: InboxBatchConfigurationValidator.shape.guardianEmail
+        .nullable()
+        .describe(
+            'Require guardian approval, or set null to clear a batch-level guardianEmail for this item.'
+        ),
+});
+
+export const IssueInboxCredentialBatchItemValidator = z
+    .object({
+        ...IssueInboxCredentialValidator.shape,
+        configuration: InboxBatchItemConfigurationValidator.optional(),
+        idempotencyKey: z.string().max(256).optional(),
+    })
+    .refine(data => data.credential || data.templateUri, {
+        message: 'Either credential or templateUri must be provided.',
+        path: ['credential'],
+    })
+    .describe(
+        'One issuance: provide credential or templateUri. Invalid input is rejected at submission with its item index.'
+    );
+
+export const IssueInboxCredentialBatchValidator = z
+    .object({
+        requestId: z.string().min(1).max(256).optional(),
+        items: z.array(IssueInboxCredentialBatchItemValidator).min(1).max(100),
+        configuration: InboxBatchConfigurationValidator.optional(),
+    })
+    .superRefine((batch, ctx) => {
+        batch.items.forEach((item, index) => {
+            const itemGuardian = item.configuration?.guardianEmail;
+            const guardian =
+                itemGuardian === null
+                    ? undefined
+                    : (itemGuardian ?? batch.configuration?.guardianEmail);
+            if (
+                guardian &&
+                item.recipient.type === 'email' &&
+                guardian.toLowerCase() === item.recipient.value.toLowerCase()
+            ) {
+                ctx.addIssue({
+                    code: 'custom',
+                    path: ['items', index, 'configuration', 'guardianEmail'],
+                    message: 'guardianEmail must differ from recipient (self-approval not allowed)',
+                });
+            }
+        });
+    });
+export type IssueInboxCredentialBatch = z.infer<typeof IssueInboxCredentialBatchValidator>;
+
+export const InboxBatchErrorReasonValidator = z.enum([
+    'DUPLICATE_KEY',
+    'IDEMPOTENCY_MISMATCH',
+    'IN_PROGRESS',
+    'UNCONFIRMED',
+]);
+export type InboxBatchErrorReason = z.infer<typeof InboxBatchErrorReasonValidator>;
+
+export const IssueInboxCredentialBatchItemResultValidator = z.discriminatedUnion('success', [
+    IssueInboxCredentialResponseValidator.extend({
+        success: z.literal(true),
+        index: z.number().int().nonnegative(),
+        deduplicated: z.boolean().optional(),
+        guardianStatus: GuardianStatusValidator.optional(),
+        idempotencyKey: z.string().optional(),
+    }),
+    z.object({
+        success: z.literal(false),
+        index: z.number().int().nonnegative(),
+        idempotencyKey: z.string().optional(),
+        recipient: ContactMethodQueryValidator.optional(),
+        error: z.object({
+            code: z.string(),
+            message: z.string(),
+            reason: InboxBatchErrorReasonValidator.optional(),
+        }),
+        issuanceId: z
+            .string()
+            .optional()
+            .describe(
+                'Present when issuance completed but replay storage could not be confirmed. Reconcile this issuance; do not issue again with a new key.'
+            ),
+        claimUrl: z
+            .string()
+            .url()
+            .optional()
+            .describe(
+                'Claim URL of the completed issuance, if available, when replay storage could not be confirmed.'
+            ),
+    }),
+]);
+export type IssueInboxCredentialBatchItemResult = z.infer<
+    typeof IssueInboxCredentialBatchItemResultValidator
+>;
+
+export const IssueInboxCredentialBatchResponseValidator = z.object({
+    results: z.array(IssueInboxCredentialBatchItemResultValidator),
+    summary: z.object({
+        total: z.number(),
+        succeeded: z.number(),
+        failed: z.number(),
+        deduplicated: z.number(),
+    }),
+});
+export type IssueInboxCredentialBatchResponse = z.infer<
+    typeof IssueInboxCredentialBatchResponseValidator
+>;
+
+/** Submission acknowledges durable storage, not completed credential delivery. */
+export const InboxBatchReceiptValidator = z.object({
+    batchId: z.string(),
+    status: z.enum(['QUEUED', 'PROCESSING', 'COMPLETED', 'NEEDS_RECONCILIATION']),
+    createdAt: z.string(),
+});
+export type InboxBatchReceipt = z.infer<typeof InboxBatchReceiptValidator>;
+
+export const InboxBatchStatusValidator = z.object({
+    batchId: z.string(),
+    createdAt: z.string(),
+    done: z
+        .boolean()
+        .describe(
+            'True when no queued or processing items remain, including unconfirmed outcomes.'
+        ),
+    status: z.enum(['QUEUED', 'PROCESSING', 'COMPLETED', 'NEEDS_RECONCILIATION']),
+    items: z.array(
+        z.object({
+            index: z.number().int().nonnegative(),
+            state: z.enum(['QUEUED', 'PROCESSING', 'COMPLETED', 'NEEDS_RECONCILIATION']),
+            result: IssueInboxCredentialBatchItemResultValidator.optional(),
+        })
+    ),
+    summary: IssueInboxCredentialBatchResponseValidator.shape.summary.extend({
+        completed: z.number(),
+        pending: z.number(),
+        unconfirmed: z.number(),
+    }),
+});
+export type InboxBatchStatus = z.infer<typeof InboxBatchStatusValidator>;
 
 export type IssueInboxCredentialResponseType = z.infer<
     typeof IssueInboxCredentialResponseValidator
@@ -1349,6 +1731,15 @@ export const ClaimInboxCredentialValidator = z.object({
     configuration: z
         .object({
             publishableKey: z.string(),
+            expiresInDays: z
+                .number()
+                .int()
+                .min(1)
+                .max(720)
+                .optional()
+                .describe(
+                    'Inbox claim window in days. Defaults to 720; use a shorter window for sensitive records.'
+                ),
             signingAuthorityName: z.string().optional(),
             listingId: z.string().optional(),
             listingSlug: z.string().optional(),
@@ -2145,6 +2536,7 @@ export const CredentialActivityValidator = z.object({
     eventType: CredentialActivityEventTypeValidator,
     timestamp: z.string(),
     actorProfileId: z.string().optional(),
+    onBehalfOf: z.string().optional(),
     recipientType: CredentialActivityRecipientTypeValidator,
     recipientIdentifier: z.string(),
     boostUri: z.string().optional(),

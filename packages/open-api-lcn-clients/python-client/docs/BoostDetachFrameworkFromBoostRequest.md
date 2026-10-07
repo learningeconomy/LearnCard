@@ -1,12 +1,11 @@
 # BoostDetachFrameworkFromBoostRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**boost_uri** | **str** |  | 
-**framework_id** | **str** |  | 
+| Name             | Type    | Description | Notes |
+| ---------------- | ------- | ----------- | ----- |
+| **boost_uri**    | **str** |             |
+| **framework_id** | **str** |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ boost_detach_framework_from_boost_request_dict = boost_detach_framework_from_boo
 # create an instance of BoostDetachFrameworkFromBoostRequest from a dict
 boost_detach_framework_from_boost_request_from_dict = BoostDetachFrameworkFromBoostRequest.from_dict(boost_detach_framework_from_boost_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

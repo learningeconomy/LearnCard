@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc';
 import { generateKeyPair, exportJWK, importJWK, SignJWT } from 'jose';
 
@@ -55,7 +56,7 @@ const buildLearnCardMock = (publicJwk: Record<string, unknown>): LearnCardMock =
 
     const learnCard = {
         invoke: {
-            resolveDid: jest.fn(async (did: string) => {
+            resolveDid: vi.fn(async (did: string) => {
                 if (did !== ISSUER_DID) throw new Error(`Unexpected DID resolve: ${did}`);
                 return didDocument;
             }),
@@ -113,7 +114,7 @@ describe('verifySdJwtVc', () => {
         const { compact } = await issueTestCredential();
         const learnCard = {
             invoke: {
-                resolveDid: jest.fn(async () => {
+                resolveDid: vi.fn(async () => {
                     throw new Error('DNS lookup failed');
                 }),
             },
@@ -127,7 +128,7 @@ describe('verifySdJwtVc', () => {
         const { compact, publicJwk } = await issueTestCredential();
         const learnCard = {
             invoke: {
-                resolveDid: jest.fn(async () => ({
+                resolveDid: vi.fn(async () => ({
                     '@context': ['https://www.w3.org/ns/did/v1'],
                     id: ISSUER_DID,
                     verificationMethod: [
@@ -254,7 +255,7 @@ describe('verifySdJwtVc', () => {
         const { compact, publicJwk } = await issueTestCredential();
         const learnCard = {
             invoke: {
-                resolveDid: jest.fn(async () => ({
+                resolveDid: vi.fn(async () => ({
                     '@context': ['https://www.w3.org/ns/did/v1'],
                     id: ISSUER_DID,
                     verificationMethod: [
@@ -280,7 +281,7 @@ describe('verifySdJwtVc', () => {
         const { compact, publicJwk } = await issueTestCredential();
         const learnCard = {
             invoke: {
-                resolveDid: jest.fn(async () => ({
+                resolveDid: vi.fn(async () => ({
                     '@context': ['https://www.w3.org/ns/did/v1'],
                     id: ISSUER_DID,
                     verificationMethod: [
@@ -308,7 +309,7 @@ describe('verifySdJwtVc', () => {
         };
         const learnCard = {
             invoke: {
-                resolveDid: jest.fn(async (did: string) => {
+                resolveDid: vi.fn(async (did: string) => {
                     if (did !== ISSUER_DID) throw new Error(`Unexpected DID resolve: ${did}`);
                     return {
                         '@context': ['https://www.w3.org/ns/did/v1'],

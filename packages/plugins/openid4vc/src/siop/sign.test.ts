@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { exportJWK, generateKeyPair, importJWK, jwtVerify, SignJWT } from 'jose';
 import type { JWK } from 'jose';
 
@@ -23,7 +24,7 @@ const makeJwtSigner = (
         signCount: 0,
         lastHeader: undefined as Record<string, unknown> | undefined,
         lastPayload: undefined as Record<string, unknown> | undefined,
-        sign: jest.fn(
+        sign: vi.fn(
             async (
                 header: Record<string, unknown>,
                 payload: Record<string, unknown>
@@ -193,7 +194,7 @@ describe('signIdToken — input validation', () => {
 describe('signIdToken — error wrapping', () => {
     it('wraps signer exceptions as id_token_sign_failed', async () => {
         const signer = makeJwtSigner({
-            sign: jest.fn().mockRejectedValue(new Error('HSM unavailable')),
+            sign: vi.fn().mockRejectedValue(new Error('HSM unavailable')),
         });
 
         await expect(

@@ -1,12 +1,12 @@
 import React, { useState, useCallback } from 'react';
 import { ChevronDown, ChevronRight, Copy, Check, ScrollText, Trash2, Download } from 'lucide-react';
+import { environment } from '../../config/environment';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-export const WIDGET_ENABLED =
-    import.meta.env.VITE_ENABLE_AUTH_DEBUG_WIDGET === 'true' || import.meta.env.DEV;
+export const WIDGET_ENABLED = environment.VITE_ENABLE_AUTH_DEBUG_WIDGET || environment.DEV;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -63,8 +63,8 @@ export const KVRow: React.FC<{
                 ? 'true'
                 : 'false'
             : value === null || value === undefined
-            ? '—'
-            : String(value);
+              ? '—'
+              : String(value);
 
     const color =
         typeof value === 'boolean'
@@ -72,8 +72,8 @@ export const KVRow: React.FC<{
                 ? 'text-emerald-400'
                 : 'text-red-400'
             : display === '—'
-            ? 'text-gray-600'
-            : 'text-cyan-400';
+              ? 'text-gray-600'
+              : 'text-cyan-400';
 
     return (
         <div className="flex items-center justify-between text-[11px] py-[3px] border-t border-gray-700/40 group">
@@ -81,9 +81,7 @@ export const KVRow: React.FC<{
 
             <div className="flex items-center gap-1 min-w-0 ml-2">
                 <span
-                    className={`${color} ${
-                        mono ? 'font-mono' : ''
-                    } text-[10px] truncate max-w-[160px]`}
+                    className={`${color} ${mono ? 'font-mono' : ''} text-[10px] truncate max-w-[160px]`}
                 >
                     {display}
                 </span>
@@ -277,9 +275,7 @@ export const EventTimeline: React.FC<{
                                         className="w-full flex items-start gap-1.5 py-1 px-2 text-left"
                                     >
                                         <div
-                                            className={`w-1.5 h-1.5 rounded-full mt-[5px] shrink-0 ${
-                                                levelDot[event.level] ?? levelDot.info
-                                            }`}
+                                            className={`w-1.5 h-1.5 rounded-full mt-[5px] shrink-0 ${levelDot[event.level] ?? levelDot.info}`}
                                         />
 
                                         <div className="flex-1 min-w-0">
@@ -288,29 +284,21 @@ export const EventTimeline: React.FC<{
                                                     {formatTime(event.timestamp)}
                                                 </span>
                                                 <span
-                                                    className={`text-[8px] font-semibold ${
-                                                        levelText[event.level] ?? levelText.info
-                                                    }`}
+                                                    className={`text-[8px] font-semibold ${levelText[event.level] ?? levelText.info}`}
                                                 >
                                                     {event.type}
                                                 </span>
                                             </div>
 
                                             <p
-                                                className={`text-[9px] text-gray-400 ${
-                                                    isExpanded
-                                                        ? 'whitespace-pre-wrap break-words'
-                                                        : 'truncate'
-                                                }`}
+                                                className={`text-[9px] text-gray-400 ${isExpanded ? 'whitespace-pre-wrap break-words' : 'truncate'}`}
                                             >
                                                 {event.message}
                                             </p>
                                         </div>
 
                                         <ChevronRight
-                                            className={`w-2.5 h-2.5 text-gray-600 shrink-0 mt-1 transition-transform ${
-                                                isExpanded ? 'rotate-90' : ''
-                                            }`}
+                                            className={`w-2.5 h-2.5 text-gray-600 shrink-0 mt-1 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
                                         />
                                     </button>
 

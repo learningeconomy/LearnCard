@@ -26,6 +26,7 @@ import { IonCol, IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import ScoutsSSOLogin from './ScoutsSSO/ScoutSSOLogin';
 import SocialLogins from '../../components/social-logins/SocialLogins';
 import EmailForm from './forms/EmailForm';
+import { useSignInAdapter } from 'learn-card-base';
 import PhoneForm from './forms/PhoneForm';
 import LoginFooter from './LoginFooter';
 import WorldScoutsIcon from '../../assets/images/world-scouts-icon.svg';
@@ -38,10 +39,14 @@ import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
 
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 import { getLogger } from 'learn-card-base';
+import { LanguagePickerCompact } from '../../components/sidemenu/LanguagePicker';
 const log = getLogger('login-page');
 
 const LoginPage: React.FC = () => {
+    const adapter = useSignInAdapter();
     const flags = useFlags();
     const { initWallet } = useWallet();
     const currentUser = useCurrentUser();
@@ -81,7 +86,7 @@ const LoginPage: React.FC = () => {
                             ...currentUser,
                             profileImage:
                                 currentUserLCProfile?.image ?? currentUser?.profileImage ?? '',
-                        } as any);
+                        });
                     }
 
                     history.push(redirect);
@@ -126,9 +131,12 @@ const LoginPage: React.FC = () => {
 
     let LoginTypeForm: React.ReactNode | null = null;
 
-    if (activeLoginType === LoginTypesEnum.email) {
+    if (
+        activeLoginType === LoginTypesEnum.email &&
+        (adapter.capabilities.emailOtp || adapter.capabilities.emailLink)
+    ) {
         LoginTypeForm = <EmailForm />;
-    } else if (activeLoginType === LoginTypesEnum.phone) {
+    } else if (activeLoginType === LoginTypesEnum.phone && adapter.capabilities.phoneOtp) {
         LoginTypeForm = <PhoneForm />;
     } else if (activeLoginType === LoginTypesEnum.scoutsSSO) {
         LoginTypeForm = <ScoutsSSOLogin />;
@@ -141,14 +149,14 @@ const LoginPage: React.FC = () => {
         {
             id: 1,
             src: GoogleIcon,
-            alt: 'google',
+            alt: m['login.accessibility.googleLogin'](),
             onClick: googleLogin,
             type: SocialLoginTypes.google,
         },
         {
             id: 2,
             src: AppleIcon,
-            alt: 'apple',
+            alt: m['login.accessibility.appleLogin'](),
             onClick: appleLogin,
             type: SocialLoginTypes.apple,
         }
@@ -164,13 +172,10 @@ const LoginPage: React.FC = () => {
             <IonContent fullscreen>
                 <IonGrid className="p-0 m-0 w-full flex-col items-center justify-center">
                     <IonRow className="p-0 m-0 w-full flex items-center justify-center bg-sp-purple-base relative login-page-header !overflow-hidden">
+                        <LanguagePickerCompact className="absolute top-4 right-4 z-10" />
                         <IonCol size="12" className="flex flex-col items-center justify-center">
-                            <img src={ScoutPassLogo} alt="ScoutPass logo" className="w-[55px]" />
-                            <img
-                                src={ScoutPassTextLogo}
-                                alt="ScoutPass text logo"
-                                className="mt-4"
-                            />
+                            <img src={ScoutPassLogo} alt="" className="w-[55px]" />
+                            <img src={ScoutPassTextLogo} alt="" className="mt-4" />
                         </IonCol>
                         <div className="absolute bottom-[-150px] h-[75%] w-[106%] rounded-[100%] bg-white login-page-curve" />
                     </IonRow>
@@ -222,20 +227,23 @@ const LoginPage: React.FC = () => {
                                 </div>
 
                                 <h2 className="text-xl font-semibold text-grayscale-900 mb-2">
-                                    You're all set!
+                                    {m['login.youreAllSetTitle']()}
                                 </h2>
 
                                 <p className="text-sm text-grayscale-600 leading-relaxed mb-6">
                                     {accountHint ? (
-                                        <>
-                                            Sign in with{' '}
-                                            <span className="font-medium text-grayscale-900">
-                                                {accountHint}
-                                            </span>{' '}
-                                            to access your account.
-                                        </>
+                                        <TransP
+                                            m={m['login.signInWithAccess']}
+                                            values={{ name: accountHint }}
+                                            components={[
+                                                <span
+                                                    className="font-medium text-grayscale-900"
+                                                    key="name"
+                                                />,
+                                            ]}
+                                        />
                                     ) : (
-                                        'Now just sign in below to access your account.'
+                                        m['login.signInBelowAccess']()
                                     )}
                                 </p>
 
@@ -247,7 +255,7 @@ const LoginPage: React.FC = () => {
                                     }}
                                     className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                                 >
-                                    Continue to Sign In
+                                    {m['login.continueToSignIn']()}
                                 </button>
                             </div>
                         </IonRow>
@@ -272,15 +280,18 @@ const LoginPage: React.FC = () => {
 
                                         <span className="text-sm text-emerald-700 font-medium">
                                             {accountHint ? (
-                                                <>
-                                                    Sign in with{' '}
-                                                    <span className="font-semibold">
-                                                        {accountHint}
-                                                    </span>{' '}
-                                                    to finish
-                                                </>
+                                                <TransP
+                                                    m={m['login.signInWithFinish']}
+                                                    values={{ name: accountHint }}
+                                                    components={[
+                                                        <span
+                                                            className="font-semibold"
+                                                            key="name"
+                                                        />,
+                                                    ]}
+                                                />
                                             ) : (
-                                                'Device linked — sign in to finish'
+                                                m['login.deviceLinkedFinish']()
                                             )}
                                         </span>
                                     </div>
@@ -291,6 +302,7 @@ const LoginPage: React.FC = () => {
                                 <div className="w-full flex items-center justify-center">
                                     {enableWorldScoutsLogin && (
                                         <button
+                                            aria-label={m['login.accessibility.worldScoutsLogin']()}
                                             className={`flex items-center justify-center border-solid border-2 rounded-full mr-2 h-[50px] w-[50px] max-w-[50px] max-h-[50px] z-[9999] ${
                                                 activeLoginType === LoginTypesEnum.scoutsSSO
                                                     ? activeLoginTypeStyles
@@ -302,29 +314,34 @@ const LoginPage: React.FC = () => {
                                         >
                                             <img
                                                 src={WorldScoutsIcon}
-                                                alt="world scouts icon"
+                                                alt=""
                                                 className="w-[50px] h-auto rounded-full"
                                             />
                                         </button>
                                     )}
 
-                                    <button
-                                        className={`flex items-center justify-center border-solid border-2 p-2 bg-[#0094F6] rounded-full mr-2 h-[50px] w-[50px] max-w-[50px] max-h-[50px] z-[9999] ${
-                                            activeLoginType === LoginTypesEnum.email
-                                                ? activeLoginTypeStyles
-                                                : 'border-gray-100'
-                                        }`}
-                                        onClick={() => setActiveLoginType(LoginTypesEnum.email)}
-                                    >
-                                        <img
-                                            src={EmailIcon}
-                                            alt="email icon"
-                                            className="w-[30px] h-[30px]"
-                                        />
-                                    </button>
-
-                                    {enableSmsLogin && (
+                                    {(adapter.capabilities.emailOtp ||
+                                        adapter.capabilities.emailLink) && (
                                         <button
+                                            aria-label={m['login.accessibility.emailLogin']()}
+                                            className={`flex items-center justify-center border-solid border-2 p-2 bg-[#0094F6] rounded-full mr-2 h-[50px] w-[50px] max-w-[50px] max-h-[50px] z-[9999] ${
+                                                activeLoginType === LoginTypesEnum.email
+                                                    ? activeLoginTypeStyles
+                                                    : 'border-gray-100'
+                                            }`}
+                                            onClick={() => setActiveLoginType(LoginTypesEnum.email)}
+                                        >
+                                            <img
+                                                src={EmailIcon}
+                                                alt=""
+                                                className="w-[30px] h-[30px]"
+                                            />
+                                        </button>
+                                    )}
+
+                                    {enableSmsLogin && adapter.capabilities.phoneOtp && (
+                                        <button
+                                            aria-label={m['login.accessibility.phoneLogin']()}
                                             className={`flex items-center justify-center border-solid border-2 p-2 bg-[#0094F6] rounded-full mr-2 h-[50px] w-[50px] max-w-[50px] max-h-[50px] z-[9999] ${
                                                 activeLoginType === LoginTypesEnum.phone
                                                     ? activeLoginTypeStyles
@@ -334,7 +351,7 @@ const LoginPage: React.FC = () => {
                                         >
                                             <img
                                                 src={PhoneIcon}
-                                                alt="phone icon"
+                                                alt=""
                                                 className="w-[30px] h-[30px]"
                                             />
                                         </button>
@@ -357,7 +374,7 @@ const LoginPage: React.FC = () => {
                                         onClick={() => setShowQrLogin(true)}
                                         className="text-sm text-grayscale-500 hover:text-grayscale-700 underline transition-colors"
                                     >
-                                        Sign in from another device
+                                        {m['login.signInFromDevice']()}
                                     </button>
                                 </IonRow>
                             )}
