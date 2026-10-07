@@ -21,7 +21,7 @@ import { useLocale } from '../../../i18n';
 type Loaded = Awaited<ReturnType<typeof loadVerifierHistory>>;
 type State = { revision: number; context: HistoryContext; data: Loaded };
 const button =
-    'py-2 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed';
+    'min-h-[44px] py-3 px-4 rounded-[20px] border border-solid border-grayscale-300 bg-grayscale-100 text-grayscale-700 font-medium text-sm hover:bg-grayscale-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:bg-grayscale-100 disabled:border-grayscale-200 disabled:text-grayscale-500 disabled:cursor-not-allowed disabled:hover:bg-grayscale-100';
 const VerifierHistorySection: React.FC<{ eligible: boolean; isEligible?: () => boolean }> = ({
     eligible,
     isEligible,
