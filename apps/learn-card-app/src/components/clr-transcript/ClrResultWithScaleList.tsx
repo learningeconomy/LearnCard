@@ -1,4 +1,7 @@
-import { getResultDisplayValue } from 'learn-card-base/helpers/credentials/clr/presentation';
+import {
+    getClrResultLabel,
+    getResultDisplayValue,
+} from 'learn-card-base/helpers/credentials/clr/presentation';
 import React from 'react';
 
 import ClrSourceInfo from './ClrSourceInfo';
@@ -268,7 +271,7 @@ const ClrResultWithScaleList: React.FC<{
                     <div className="mb-3 flex items-start justify-between gap-3">
                         <div className="min-w-0">
                             <p className="text-sm font-medium text-grayscale-700">
-                                {result.label?.value ?? 'Result'}
+                                {getClrResultLabel(result)}
                                 {showResultType && result.resultType?.value && (
                                     <span className="ml-1 text-grayscale-400">
                                         [{result.resultType.value}]

@@ -24,7 +24,7 @@ describe('ClrCourseTable', () => {
             'grid-cols-[minmax(0,1fr)_64px_72px_24px]',
             'sm:grid-cols-[minmax(0,1fr)_80px_80px_64px_80px_24px]'
         );
-        expect(grade.parentElement).toHaveClass('min-w-0', 'pl-2');
+        expect(grade.parentElement?.parentElement).toHaveClass('min-w-0', 'pl-2');
         expect(grade).toHaveClass('max-w-full', 'truncate');
         expect(grade).toHaveAttribute('title', 'Advanced');
     });

@@ -1,4 +1,7 @@
-import { getResultDisplayValue } from 'learn-card-base/helpers/credentials/clr/presentation';
+import {
+    getClrResultLabel,
+    getResultDisplayValue,
+} from 'learn-card-base/helpers/credentials/clr/presentation';
 import React, { useState } from 'react';
 
 import { ChevronDown, ChevronRight, Paperclip } from 'lucide-react';
@@ -102,17 +105,17 @@ const ClrCourseTable: React.FC<{
                                         Credits
                                     </p>
                                     <p className="pl-2 text-xs font-semibold text-grayscale-500 uppercase tracking-wider text-right">
-                                        Grade
+                                        Results
                                     </p>
                                     <div />
                                 </div>
                                 {gc.map(course => {
-                                    const primaryResult = course.results.find(
-                                        r => r.value || r.status || r.achievedLevelId
+                                    const results = course.results.filter(
+                                        result =>
+                                            result.value !== undefined ||
+                                            result.status !== undefined ||
+                                            result.achievedLevelId !== undefined
                                     );
-                                    const grade = primaryResult
-                                        ? String(getResultDisplayValue(primaryResult))
-                                        : undefined;
                                     const credits =
                                         course.creditsEarned?.value ??
                                         course.creditsAvailable?.value ??
@@ -186,15 +189,35 @@ const ClrCourseTable: React.FC<{
                                             </p>
                                             {/* Grade */}
                                             <div className="min-w-0 pl-2 flex justify-end items-center">
-                                                {grade !== undefined ? (
-                                                    <span
-                                                        title={grade}
-                                                        className={`block max-w-full truncate text-xs font-bold ${gradeColor(
-                                                            grade
-                                                        )}`}
-                                                    >
-                                                        {grade}
-                                                    </span>
+                                                {results.length > 0 ? (
+                                                    <div className="min-w-0 space-y-2 pl-2">
+                                                        {results.map((result, index) => {
+                                                            const value = String(
+                                                                getResultDisplayValue(result)
+                                                            );
+                                                            const label = getClrResultLabel(result);
+                                                            const isGrade =
+                                                                result.resultType?.value ===
+                                                                    'LetterGrade' ||
+                                                                result.resultType?.value ===
+                                                                    'Grade';
+                                                            return (
+                                                                <div
+                                                                    key={`${result.resultDescriptionId?.value ?? 'result'}-${index}`}
+                                                                >
+                                                                    <p className="break-words text-right text-[10px] text-grayscale-500">
+                                                                        {label}
+                                                                    </p>
+                                                                    <span
+                                                                        title={value}
+                                                                        className={`block max-w-full truncate text-right text-xs font-bold ${isGrade ? gradeColor(value) : 'text-grayscale-900'}`}
+                                                                    >
+                                                                        {value}
+                                                                    </span>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
                                                 ) : (
                                                     <span className="text-xs text-grayscale-300">
                                                         —

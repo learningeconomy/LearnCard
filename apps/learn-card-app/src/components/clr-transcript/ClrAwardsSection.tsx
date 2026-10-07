@@ -1,5 +1,8 @@
 import React from 'react';
 import { ClrRecordDetails } from './ClrRecordDetails';
+import ClrResultWithScaleList from './ClrResultWithScaleList';
+import ClrAlignmentList from './ClrAlignmentList';
+import ClrTranscriptEvidenceList from './ClrTranscriptEvidenceList';
 import type { ClrNormalizedRecord } from 'learn-card-base/helpers/credentials/clr/types';
 
 import { ChevronRight, Award } from 'lucide-react';
@@ -86,8 +89,18 @@ const ClrAwardsSection: React.FC<{
                             ) : (
                                 <div className={rowClassName}>{rowContent}</div>
                             )}
-                            {record && (
+                            {(award.results.length > 0 ||
+                                award.alignments.length > 0 ||
+                                award.evidence.length > 0 ||
+                                record) && (
                                 <div className="px-3 pb-4 sm:px-5">
+                                    <ClrResultWithScaleList results={award.results} />
+                                    {award.alignments.length > 0 && (
+                                        <ClrAlignmentList alignments={award.alignments} />
+                                    )}
+                                    {award.evidence.length > 0 && (
+                                        <ClrTranscriptEvidenceList evidence={award.evidence} />
+                                    )}
                                     <ClrRecordDetails record={record} />
                                 </div>
                             )}

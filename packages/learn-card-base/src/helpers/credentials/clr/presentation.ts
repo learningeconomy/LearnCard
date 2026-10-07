@@ -152,6 +152,12 @@ export const getResultDisplayValue = (result: ResultDisplayModel): string | numb
     result.achievedLevelId?.value ??
     '—';
 
+/** Labels a result from its own description/type; never guesses a grade from its value. */
+export const getClrResultLabel = (result: ResultDisplayModel): string =>
+    result.label?.value ??
+    (result.resultType?.value ? formatAchievementType(result.resultType.value) : undefined) ??
+    (result.status ? 'Status' : result.achievedLevelId ? 'Proficiency' : 'Result');
+
 /** Formats a source date using the host application's active locale. */
 export const formatClrDate = (value: string, locale = getActiveLocale()): string => {
     if (!/^\d{4}-\d{2}-\d{2}(T[\d:.]+Z?)?$/.test(value)) return value;
