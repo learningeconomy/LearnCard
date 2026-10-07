@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 
 import X from '../svgs/X';
+import { ClrCreditValues } from './ClrCreditValues';
+import { getClrCreditQuantities } from 'learn-card-base/helpers/credentials/clr/credits';
 import { ClrRecordDetails } from './ClrRecordDetails';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { FlatIcon } from 'learn-card-base/components/FlatIcon';
@@ -50,10 +52,7 @@ const ClrCourseDetailPanel: React.FC<{
     const { closeModal } = useModal();
     const [competenciesOpen, setCompetenciesOpen] = useState(true);
 
-    const credits =
-        course.creditsEarned?.value ??
-        course.creditsAvailable?.value ??
-        course.creditsFromDescription?.value;
+    const credits = getClrCreditQuantities(course);
     const id = course.sourceCredentialId;
     const courseCompetencies = getLinkedCompetencies(
         id,
@@ -114,24 +113,14 @@ const ClrCourseDetailPanel: React.FC<{
             </div>
 
             <div className="px-5 space-y-5">
-                {(credits !== undefined ||
-                    course.description?.value ||
-                    relationships.length > 0) && (
+                {(credits.length > 0 || course.description?.value || relationships.length > 0) && (
                     <div className="bg-white shadow-box-bottom rounded-2xl overflow-hidden w-full p-4">
-                        {/* Credits summary */}
-                        {credits !== undefined && (
-                            <div className="mb-4 flex">
-                                <div className="flex w-full flex-col items-center rounded-2xl border border-grayscale-200 bg-grayscale-50 px-6 py-4">
-                                    <p className="text-2xl font-semibold leading-none text-grayscale-900">
-                                        {credits}
-                                    </p>
-                                    <p className="mt-1.5 text-sm font-semibold uppercase text-grayscale-600">
-                                        {course.creditsEarned !== undefined ||
-                                        course.creditsFromDescription !== undefined
-                                            ? 'Credits'
-                                            : 'Available'}
-                                    </p>
-                                </div>
+                        {credits.length > 0 && (
+                            <div className="mb-4 rounded-2xl border border-grayscale-200 bg-grayscale-50 p-4">
+                                <h3 className="mb-2 text-sm font-semibold text-grayscale-900">
+                                    Credits
+                                </h3>
+                                <ClrCreditValues course={course} />
                             </div>
                         )}
 

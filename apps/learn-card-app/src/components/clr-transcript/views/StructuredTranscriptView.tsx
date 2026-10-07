@@ -1,4 +1,5 @@
 import React from 'react';
+import { ClrCreditValues } from '../ClrCreditValues';
 
 import ClrResultWithScaleList from '../ClrResultWithScaleList';
 
@@ -78,16 +79,7 @@ const StructuredTranscriptView: React.FC<{
                                     )}
                                 </div>
                                 <div className="flex flex-col items-end gap-0.5 shrink-0">
-                                    {course.creditsEarned?.value !== undefined && (
-                                        <span className="text-xs font-medium text-grayscale-900 whitespace-nowrap">
-                                            {course.creditsEarned.value} cr earned
-                                        </span>
-                                    )}
-                                    {course.creditsAvailable?.value !== undefined && (
-                                        <span className="text-xs text-grayscale-500 whitespace-nowrap">
-                                            {course.creditsAvailable.value} cr available
-                                        </span>
-                                    )}
+                                    <ClrCreditValues course={course} />
                                 </div>
                             </div>
                             <ClrRecordDetails

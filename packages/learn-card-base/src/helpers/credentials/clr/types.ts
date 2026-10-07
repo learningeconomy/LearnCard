@@ -185,6 +185,9 @@ export type ClrNormalizedRecord = {
     tags: ClrMappedValue<string>[];
     creditsAvailable?: ClrMappedValue<number>;
     creditsEarned?: ClrMappedValue<number>;
+    /** Explicit creditUnit extensions on the subject and achievement, respectively. */
+    creditsEarnedUnit?: ClrMappedValue<string>;
+    creditsAvailableUnit?: ClrMappedValue<string>;
     term?: ClrMappedValue<string>;
     subjectId?: ClrMappedValue<string>;
     subjectIdentifiers: ClrIdentifierModel[];
@@ -239,6 +242,7 @@ export type ClrCollectionModel = {
     subjectIdentifiers: ClrIdentifierModel[];
     validFrom?: ClrMappedValue<string>;
     awarded?: ClrMappedValue<string>;
+    issued?: ClrMappedValue<string>;
     validUntil?: ClrMappedValue<string>;
     partial: boolean;
     evidence: ClrEvidenceModel[];

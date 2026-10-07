@@ -111,6 +111,9 @@ const ClrTranscriptSummaryHeader: React.FC<{
                         {model.header.issuedAt?.value && (
                             <> • Issued {formatClrDate(model.header.issuedAt.value)}</>
                         )}
+                        {model.header.validFrom?.value && (
+                            <> • Valid from {formatClrDate(model.header.validFrom.value)}</>
+                        )}
                     </p>
                     {adminMode && model.header.issuerId?.value && (
                         <p className="text-xs font-semibold text-grayscale-600 mt-1 truncate">

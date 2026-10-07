@@ -673,6 +673,17 @@ const buildRecord = ({
                       'embeddedCredential'
                   )
                 : undefined,
+        creditsEarnedUnit:
+            subject && subjectPath
+                ? stringValue(subject, 'creditUnit', subjectPath, 'embeddedCredential')
+                : undefined,
+        creditsAvailableUnit: definitionScalar(
+            definitions,
+            'creditUnit',
+            (value): value is string => typeof value === 'string',
+            id,
+            warnings
+        ),
         term:
             subject && subjectPath
                 ? stringValue(subject, 'term', subjectPath, 'embeddedCredential')
@@ -1028,6 +1039,7 @@ export const normalizeClrCredential = (
                 'collectionCredential'
             ),
             validFrom: stringValue(collection, 'validFrom', '', 'collectionCredential'),
+            issued: stringValue(collection, 'issuanceDate', '', 'collectionCredential'),
             awarded: stringValue(collection, 'awardedDate', '', 'collectionCredential'),
             validUntil: stringValue(collection, 'validUntil', '', 'collectionCredential'),
             partial: collection.partial === true,

@@ -18,6 +18,16 @@ const CredentialSummaryView: React.FC<{ model: ClrTranscriptDisplayModel }> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-xs">
+                {model.header.validFrom?.value && (
+                    <div>
+                        <p className="font-medium text-grayscale-500 uppercase tracking-wide text-[10px] mb-0.5">
+                            Valid from
+                        </p>
+                        <p className="text-grayscale-900">
+                            {formatClrDate(model.header.validFrom.value)}
+                        </p>
+                    </div>
+                )}
                 {model.header.issuerName?.value && (
                     <div>
                         <p className="font-medium text-grayscale-500 uppercase tracking-wide text-[10px] mb-0.5">

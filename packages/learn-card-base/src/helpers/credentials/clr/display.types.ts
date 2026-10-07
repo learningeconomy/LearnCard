@@ -113,6 +113,15 @@ export type AlignmentDisplayModel = {
 };
 
 /** Strictly classified course record (`achievementType: Course`). */
+export type ClrCreditKind = 'earned' | 'available' | 'inferred';
+export type ClrCreditQuantity = {
+    kind: ClrCreditKind;
+    amount: number;
+    unit?: string;
+    source: SourceMappedField<number>;
+};
+export type ClrCreditTotal = Omit<ClrCreditQuantity, 'source'> & { recordCount: number };
+
 export type CourseDisplayModel = {
     name?: SourceMappedField<string>;
     humanCode?: SourceMappedField<string>;
@@ -120,6 +129,8 @@ export type CourseDisplayModel = {
     creditsAvailable?: SourceMappedField<number>;
     creditsEarned?: SourceMappedField<number>;
     creditsFromDescription?: SourceMappedField<number>;
+    creditsEarnedUnit?: SourceMappedField<string>;
+    creditsAvailableUnit?: SourceMappedField<string>;
     term?: SourceMappedField<string>;
     description?: SourceMappedField<string>;
     earnedAt?: SourceMappedField<string>;
@@ -286,6 +297,7 @@ export type ClrTranscriptDisplayModel = {
         issuerId?: SourceMappedField<string>;
         issuerAddress?: IssuerAddressDisplayModel;
         issuedAt?: SourceMappedField<string>;
+        validFrom?: SourceMappedField<string>;
         awardedDate?: SourceMappedField<string>;
         validUntil?: SourceMappedField<string>;
         learnerName?: SourceMappedField<string>;
@@ -297,6 +309,9 @@ export type ClrTranscriptDisplayModel = {
         assessmentCount: number;
         awardCount: number;
         totalCreditsAvailable?: number;
+        totalCreditsEarned?: number;
+        totalCreditsInferred?: number;
+        creditTotals: ClrCreditTotal[];
         explicitCompetencyCount: number;
         evidenceCount: number;
     };

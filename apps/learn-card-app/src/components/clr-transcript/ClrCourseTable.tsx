@@ -3,6 +3,11 @@ import {
     getResultDisplayValue,
 } from 'learn-card-base/helpers/credentials/clr/presentation';
 import React, { useState } from 'react';
+import { ClrCreditValues } from './ClrCreditValues';
+import {
+    summarizeClrCredits,
+    formatClrCreditTotal,
+} from 'learn-card-base/helpers/credentials/clr/credits';
 
 import { ChevronDown, ChevronRight, Paperclip } from 'lucide-react';
 import { SkillsIcon } from 'learn-card-base/svgs/wallet/SkillsIcon';
@@ -52,15 +57,7 @@ const ClrCourseTable: React.FC<{
         <div className="space-y-4">
             {groups.map(({ label, courses: gc }) => {
                 const isCollapsed = collapsed.has(label);
-                const termCredits = gc.reduce<number>(
-                    (s, c) =>
-                        s +
-                        (c.creditsEarned?.value ??
-                            c.creditsAvailable?.value ??
-                            c.creditsFromDescription?.value ??
-                            0),
-                    0
-                );
+                const termCredits = summarizeClrCredits(gc);
 
                 return (
                     <div
@@ -76,9 +73,16 @@ const ClrCourseTable: React.FC<{
                                 {label}
                             </span>
                             <div className="flex items-center gap-2">
-                                <span className="text-xs text-grayscale-600">
+                                <span className="text-right text-xs text-grayscale-600">
                                     {gc.length} course{gc.length !== 1 ? 's' : ''}
-                                    {termCredits > 0 && `, ${termCredits} credits`}
+                                    {termCredits.map(total => (
+                                        <span
+                                            key={`${total.kind}-${total.unit ?? ''}`}
+                                            className="block"
+                                        >
+                                            {formatClrCreditTotal(total)}
+                                        </span>
+                                    ))}
                                 </span>
                                 {isCollapsed ? (
                                     <ChevronRight className="w-5 h-5 text-grayscale-600" />
@@ -116,10 +120,6 @@ const ClrCourseTable: React.FC<{
                                             result.status !== undefined ||
                                             result.achievedLevelId !== undefined
                                     );
-                                    const credits =
-                                        course.creditsEarned?.value ??
-                                        course.creditsAvailable?.value ??
-                                        course.creditsFromDescription?.value;
                                     const competencyCount = getLinkedCompetencies(
                                         course.sourceCredentialId,
                                         competencies,
@@ -184,9 +184,9 @@ const ClrCourseTable: React.FC<{
                                                 )}
                                             </div>
                                             {/* Credits */}
-                                            <p className="text-xs text-grayscale-700 text-right">
-                                                {credits ?? '—'}
-                                            </p>
+                                            <div className="min-w-0 text-right">
+                                                <ClrCreditValues course={course} />
+                                            </div>
                                             {/* Grade */}
                                             <div className="min-w-0 pl-2 flex justify-end items-center">
                                                 {results.length > 0 ? (

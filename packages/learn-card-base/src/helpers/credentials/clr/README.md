@@ -41,6 +41,15 @@ Activity, award, and validity dates remain independent in the canonical model.
 The legacy `earnedAt` display field prefers activity end, then award, then validity
 start. Parsed credit text is explicitly marked `directlyMapped: false`.
 
+Credit quantities and totals keep earned, available, and description-derived values
+separate. Explicit zero survives; missing earned credits remain unknown. The
+optional `creditUnit` extension on the subject applies to earned credits, and the
+same extension on the achievement applies to available credits. Totals group by
+quantity kind and exact declared unit; unspecified units form their own group.
+No unit conversion is inferred. Compatibility scalar totals are absent when a
+category has multiple unit groups. Collection issuance (`issuanceDate`) and validity
+start (`validFrom`) are also independent fields.
+
 Proof presence is metadata, not successful cryptographic verification.
 
 ## Regression coverage

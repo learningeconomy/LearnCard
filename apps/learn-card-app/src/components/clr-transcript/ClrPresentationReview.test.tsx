@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { normalizeClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 import ClrAwardsSection from './ClrAwardsSection';
 import ClrCourseTable from './ClrCourseTable';
+import ClrTranscriptHeader from './ClrTranscriptHeader';
 
 vi.mock('learn-card-base', () => ({
     SkillCompetencyCard: () => null,
@@ -61,6 +62,74 @@ const normalized = (achievementType: string) =>
     });
 
 describe('CLR presentation review', () => {
+    it('labels reported earned, available and zero credits without combining them', () => {
+        const model = normalizeClrTranscriptDisplayModel({
+            type: ['ClrCredential'],
+            credentialSubject: {
+                verifiableCredential: [
+                    {
+                        id: 'design',
+                        credentialSubject: {
+                            creditsEarned: 3,
+                            achievement: { name: 'Design', achievementType: 'Course' },
+                        },
+                    },
+                    {
+                        id: 'writing',
+                        credentialSubject: {
+                            achievement: {
+                                name: 'Writing',
+                                achievementType: 'Course',
+                                creditsAvailable: 4,
+                            },
+                        },
+                    },
+                    {
+                        id: 'zero',
+                        credentialSubject: {
+                            creditsEarned: 0,
+                            achievement: { name: 'Zero', achievementType: 'Course' },
+                        },
+                    },
+                ],
+            },
+        });
+        render(<ClrCourseTable courses={model.courses} />);
+        expect(screen.getByText('3 credits earned')).toBeInTheDocument();
+        expect(screen.getByText('4 credits available')).toBeInTheDocument();
+        expect(screen.queryByText(/7 credits/)).not.toBeInTheDocument();
+        expect(
+            within(screen.getByRole('button', { name: /Writing/ })).getByLabelText(
+                'Earned credits not supplied'
+            )
+        ).toBeInTheDocument();
+        expect(
+            within(screen.getByRole('button', { name: /Zero/ })).getByText('0 earned')
+        ).toBeInTheDocument();
+    });
+
+    it('shows collection validity and issuance with distinct labels', () => {
+        const raw = {
+            type: ['ClrCredential'],
+            validFrom: '2026-06-01T12:00:00Z',
+            credentialSubject: {},
+        };
+        const { rerender } = render(
+            <ClrTranscriptHeader model={normalizeClrTranscriptDisplayModel(raw)} />
+        );
+        expect(screen.getByText('Valid from').parentElement).toHaveTextContent('Jun 1, 2026');
+        expect(screen.queryByText('Issued')).not.toBeInTheDocument();
+        rerender(
+            <ClrTranscriptHeader
+                model={normalizeClrTranscriptDisplayModel({
+                    ...raw,
+                    issuanceDate: '2026-05-01T12:00:00Z',
+                })}
+            />
+        );
+        expect(screen.getByText('Issued').parentElement).toHaveTextContent('May 1, 2026');
+        expect(screen.getByText('Valid from').parentElement).toHaveTextContent('Jun 1, 2026');
+    });
     it('shows qualification results, achieved and required levels, and evidence in its section', () => {
         const model = normalized('CertificateOfCompletion');
         render(<ClrAwardsSection awards={model.awards} records={model.records} />);

@@ -490,11 +490,12 @@ describe('normalizeClrTranscriptDisplayModel', () => {
             );
         });
 
-        it('includes creditsFromDescription in totalCreditsAvailable', () => {
+        it('keeps description-derived credits separate from available credits', () => {
             const model = normalizeClrTranscriptDisplayModel(
                 makeClrWithCourse('Elective course, 4 credits.')
             );
-            expect(model.summary.totalCreditsAvailable).toBe(4);
+            expect(model.summary.totalCreditsAvailable).toBeUndefined();
+            expect(model.summary.totalCreditsInferred).toBe(4);
         });
 
         it('does NOT populate creditsFromDescription when creditsEarned exists', () => {

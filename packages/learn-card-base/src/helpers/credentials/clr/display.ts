@@ -1,4 +1,5 @@
 import { normalizeClrCredential } from './normalize';
+import { summarizeClrCredits, getClrCreditTotal } from './credits';
 import { getClrLearnerName, getClrProfileImage } from './selectors';
 import { getEvidenceMimeType } from './evidence';
 import { buildRelationshipGraph } from './relationships';
@@ -218,6 +219,8 @@ export const createClrTranscriptDisplayModel = (
                 fieldOfStudy: mapped(record.fieldOfStudy, id),
                 creditsAvailable: mapped(record.creditsAvailable, id),
                 creditsEarned: mapped(record.creditsEarned, id),
+                creditsEarnedUnit: mapped(record.creditsEarnedUnit, id),
+                creditsAvailableUnit: mapped(record.creditsAvailableUnit, id),
                 creditsFromDescription:
                     parsedCredits === undefined
                         ? undefined
@@ -337,13 +340,7 @@ export const createClrTranscriptDisplayModel = (
             message: 'One or more nested credentials are unsigned or missing proof.',
         });
 
-    const totalCreditsAvailable = courses.reduce<number | undefined>((sum, course) => {
-        const value =
-            course.creditsEarned?.value ??
-            course.creditsAvailable?.value ??
-            course.creditsFromDescription?.value;
-        return value === undefined ? sum : (sum ?? 0) + value;
-    }, undefined);
+    const creditTotals = summarizeClrCredits(courses);
     const qualityLevel = courses.length
         ? 'rich'
         : programs.length
@@ -373,7 +370,8 @@ export const createClrTranscriptDisplayModel = (
             issuerId: mapped(collection.publisher?.id, credentialId),
             issuerImage: mapped(getClrProfileImage(collection.publisher), credentialId),
             issuerAddress: addressDisplay(collection.publisher?.address),
-            issuedAt: mapped(collection.validFrom, credentialId),
+            issuedAt: mapped(collection.issued, credentialId),
+            validFrom: mapped(collection.validFrom, credentialId),
             awardedDate: mapped(collection.awarded, credentialId),
             validUntil: mapped(collection.validUntil, credentialId),
             learnerName: mapped(
@@ -393,7 +391,10 @@ export const createClrTranscriptDisplayModel = (
             courseCount: courses.length,
             assessmentCount: assessments.length,
             awardCount: awards.length,
-            totalCreditsAvailable,
+            creditTotals,
+            totalCreditsAvailable: getClrCreditTotal(creditTotals, 'available'),
+            totalCreditsEarned: getClrCreditTotal(creditTotals, 'earned'),
+            totalCreditsInferred: getClrCreditTotal(creditTotals, 'inferred'),
             explicitCompetencyCount: competencies.length,
             evidenceCount: evidence.length,
         },
