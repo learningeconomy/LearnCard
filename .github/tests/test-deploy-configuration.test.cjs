@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const { spawnSync } = require('node:child_process');
 const yaml = require('js-yaml');
 
 const root = path.resolve(__dirname, '../..');
@@ -313,6 +314,426 @@ assert.deepEqual(
     'the oidc role keeps the same VPC/logging/X-Ray baseline as the other custom role'
 );
 
+// Read the approved checked-in stages rather than maintaining a second key list.
+const stageKeysFor = service => [
+    ...new Set(
+        ['dev', 'production'].flatMap(stage => {
+            const config = JSON.parse(
+                fs.readFileSync(
+                    path.join(
+                        root,
+                        `services/learn-card-network/${service}/config/config.${stage}.json`
+                    ),
+                    'utf8'
+                )
+            );
+            assert.deepEqual(
+                Object.keys(config),
+                Object.keys(config).sort(),
+                `${service}/${stage} sorted`
+            );
+            return Object.keys(config);
+        })
+    ),
+];
+const brainStageKeys = stageKeysFor('brain-service');
+const cloudStageKeys = stageKeysFor('learn-cloud-service');
+
+const brain = workflows
+    .get('deploy.yml')
+    .jobs['deploy-brain-service'].steps.find(step => step.name === 'Deploy Brain Service Lambda');
+const cloud = workflows
+    .get('deploy.yml')
+    .jobs['deploy-learn-cloud'].steps.find(step => step.name === 'Deploy LearnCloud Lambda');
+
+// Both jobs gain the bundle pointer (passed through as a GitHub var, like lca-api).
+assert.equal(brain.env.RUNTIME_SECRETS_ID, '${{ vars.RUNTIME_SECRETS_ID }}');
+assert.equal(cloud.env.RUNTIME_SECRETS_ID, '${{ vars.RUNTIME_SECRETS_ID }}');
+assert.equal(brain.env.APP_STORE_ADMIN_PROFILE_IDS, '${{ vars.APP_STORE_ADMIN_PROFILE_IDS }}');
+const brainSteps = workflows.get('deploy.yml').jobs['deploy-brain-service'].steps;
+const refreshPreflight = brainSteps.find(
+    step => step.name === 'Validate credential refresh configuration'
+);
+const hashPreflight = brainSteps.find(
+    step => step.name === 'Validate share-link request hash secret'
+);
+assert.equal(refreshPreflight.env.CREDENTIAL_REFRESH_ENABLED, undefined);
+for (const stage of ['dev', 'production']) {
+    for (const [bundleId, digestSecret, expected] of [
+        ['', '', 1],
+        ['', 'fallback-secret', 0],
+        ['bundle', '', 0],
+    ]) {
+        const result = spawnSync('bash', ['-e', '-c', refreshPreflight.run], {
+            cwd: root,
+            env: {
+                ...process.env,
+                SERVERLESS_STAGE: stage,
+                RUNTIME_SECRETS_ID: bundleId,
+                CREDENTIAL_REFRESH_DIGEST_SECRET: digestSecret,
+            },
+        });
+        assert.equal(
+            result.status,
+            expected,
+            `refresh preflight ${stage}/${bundleId || 'fallback'}`
+        );
+    }
+}
+for (const [bundleId, secret, expected] of [
+    ['', '', 0],
+    ['', 'too-short', 1],
+    ['', 'x'.repeat(32), 0],
+    ['bundle', 'too-short', 0],
+]) {
+    const result = spawnSync('bash', ['-e', '-c', hashPreflight.run], {
+        cwd: root,
+        env: {
+            ...process.env,
+            RUNTIME_SECRETS_ID: bundleId,
+            SHARE_LINK_REQUEST_HASH_SECRET: secret,
+        },
+    });
+    assert.equal(result.status, expected, `hash preflight ${bundleId || 'fallback'}`);
+}
+
+// Checked-in per-stage config must NOT be plumbed through Lambda env any more.
+for (const key of brainStageKeys) assert.equal(brain.env[key], undefined, `brain ${key}`);
+for (const key of cloudStageKeys) assert.equal(cloud.env[key], undefined, `cloud ${key}`);
+
+// Credential fallbacks (used only when RUNTIME_SECRETS_ID is unset) stay as secrets.
+for (const key of [
+    'SEED',
+    'NEO4J_URI',
+    'NEO4J_USERNAME',
+    'NEO4J_PASSWORD',
+    'POSTMARK_API_KEY',
+    'MESSAGEBIRD_AUTH_TOKEN',
+    'NOTIFICATIONS_SERVICE_WEBHOOK_URL',
+    'CREDENTIAL_REFRESH_DIGEST_SECRET',
+    'SHARE_LINK_REQUEST_HASH_SECRET',
+    'SMART_RESUME_CLIENT_ID',
+    'SMART_RESUME_ACCESS_KEY',
+    'SMART_RESUME_CONTRACT_URI',
+    'LOGIN_PROVIDER_DID',
+    'SKILL_EMBEDDING_GOOGLE_API_KEY',
+    'SKILLS_PROVIDER_API_KEY',
+    'TWILIO_ACCOUNT_SID',
+    'TWILIO_AUTH_TOKEN',
+    'POSTHOG_API_KEY',
+    'SENTRY_DSN',
+]) {
+    assert.equal(brain.env[key], '${{ secrets.' + key + ' }}', `brain ${key}`);
+}
+for (const key of [
+    'LEARN_CLOUD_SEED',
+    'LEARN_CLOUD_MONGO_URI',
+    'LEARN_CLOUD_MONGO_DB_NAME',
+    'XAPI_ENDPOINT',
+    'XAPI_USERNAME',
+    'XAPI_PASSWORD',
+    'RSA_PRIVATE_KEY',
+    'RSA_PUBLIC_KEY',
+    'JWT_SIGNING_KEY',
+    'SENTRY_DSN',
+]) {
+    assert.equal(cloud.env[key], '${{ secrets.' + key + ' }}', `cloud ${key}`);
+}
+
+// Sentry build-time inputs (sourcemap upload) survive in both jobs; SENTRY_ENV does not.
+for (const key of ['SENTRY_AUTH_TOKEN', 'SENTRY_ORG', 'SENTRY_PROJECT']) {
+    assert.equal(brain.env[key], '${{ secrets.' + key + ' }}', `brain ${key}`);
+    assert.equal(cloud.env[key], '${{ secrets.' + key + ' }}', `cloud ${key}`);
+}
+
+// Both services use one generated role and a provider-level environment. Include lift's
+// generated queue workers: they inherit that environment just like explicit functions.
+const serviceConfigContract = ({
+    dir,
+    service,
+    stageKeys,
+    infraKeys,
+    fallback,
+    optionalFallback = [],
+    lengths,
+}) => {
+    const functionEnvPath = path.join(dir, 'serverless.function-env.cjs');
+    const serverlessPath = path.join(dir, 'serverless.yml');
+    const productionConfigPath = path.join(dir, 'config/config.production.json');
+    const serviceEnv = require(functionEnvPath);
+    const serverless = yaml.load(fs.readFileSync(serverlessPath, 'utf8'));
+    const productionConfig = JSON.parse(fs.readFileSync(productionConfigPath, 'utf8'));
+    assert.equal(
+        serverless.provider.environment,
+        '${file(./serverless.function-env.cjs):provider}'
+    );
+    const functions = [
+        ...Object.entries(serverless.functions),
+        ...Object.entries(serverless.constructs ?? {})
+            .filter(([, construct]) => construct.worker)
+            .map(([name, construct]) => [`${name}.worker`, construct.worker]),
+    ];
+    for (const [name, fn] of functions) {
+        assert.equal(fn.role, undefined, `${service}/${name} uses the default role`);
+        assert.equal(fn.environment, undefined, `${service}/${name} inherits provider env`);
+    }
+
+    // Every checked-in stage key must actually live in the production stage file and only
+    // there — the production stage never carries a credential, bundle pointer, or infra key.
+    for (const key of stageKeys)
+        assert(Object.hasOwn(productionConfig, key), `${service} config missing ${key}`);
+    for (const key of [...fallback, ...optionalFallback, ...infraKeys, 'RUNTIME_SECRETS_ID'])
+        assert.equal(Object.hasOwn(productionConfig, key), false, `${service} config leaks ${key}`);
+
+    const placeholderFor = key => 'x'.repeat(lengths[key] ?? 40);
+    // Stale deployment variables for checked-in keys must never leak into function env.
+    const stageLeak = Object.fromEntries(stageKeys.map(key => [key, placeholderFor(key)]));
+    const fallbackEnv = Object.fromEntries(fallback.map(key => [key, placeholderFor(key)]));
+    // These schema credentials were not in the production deployment's captured key set.
+    const absentOptionalEnv = Object.fromEntries(optionalFallback.map(key => [key, '']));
+    const staleBuildEnv = Object.fromEntries(
+        ['SENTRY_AUTH_TOKEN', 'SENTRY_ORG', 'SENTRY_PROJECT'].map(key => [key, 'build-only'])
+    );
+
+    for (const [mode, bundleId] of [
+        ['bundle', placeholderFor('RUNTIME_SECRETS_ID')],
+        ['fallback', undefined],
+    ]) {
+        withEnv(
+            {
+                ...stageLeak,
+                ...fallbackEnv,
+                ...absentOptionalEnv,
+                ...staleBuildEnv,
+                GIT_SHA: 'a'.repeat(40),
+                RUNTIME_SECRETS_ID: bundleId,
+            },
+            () => {
+                const provider = serviceEnv.provider({
+                    options: { stage: 'production', httpPort: '3000' },
+                });
+                assert.equal(provider.LAMBDA_STAGE, 'production');
+                assert.equal(provider.PORT, '3000');
+                assert.deepEqual(provider.REDIS_HOST, {
+                    'Fn::GetAtt': ['ElasticCacheCluster', 'RedisEndpoint.Address'],
+                });
+                assert.deepEqual(provider.REDIS_PORT, {
+                    'Fn::GetAtt': ['ElasticCacheCluster', 'RedisEndpoint.Port'],
+                });
+                if (service === 'brain-service') {
+                    assert.equal(
+                        provider.NOTIFICATIONS_QUEUE_URL,
+                        '${construct:notifications-queue.queueUrl}'
+                    );
+                    assert.equal(provider.INBOX_QUEUE_URL, '${construct:inbox-queue.queueUrl}');
+                }
+                // Resolve CF intrinsic infra references to realistic synthetic deployed lengths.
+                for (const key of infraKeys)
+                    if (provider[key] !== undefined) provider[key] = placeholderFor(key);
+                // Checked-in per-stage values are applied at cold start, never in the deployed env.
+                for (const key of stageKeys)
+                    assert.equal(provider[key], undefined, `${service} ${key}`);
+                for (const key of Object.keys(staleBuildEnv))
+                    assert.equal(provider[key], undefined, key);
+                if (mode === 'bundle') {
+                    // The bundle delivers every credential; only the pointer + infra remain.
+                    for (const key of fallback)
+                        assert.equal(provider[key], undefined, `${service} bundle ${key}`);
+                    assert(provider.RUNTIME_SECRETS_ID, `${service} keeps the bundle pointer`);
+                } else {
+                    for (const key of fallback)
+                        assert(provider[key] !== undefined, `${service} fallback ${key}`);
+                }
+                const expectedKeys =
+                    mode === 'bundle'
+                        ? [...infraKeys, 'RUNTIME_SECRETS_ID']
+                        : [...infraKeys, ...fallback];
+                assert.deepEqual(
+                    Object.keys(provider).sort(),
+                    expectedKeys.sort(),
+                    `${service}/${mode} key set`
+                );
+                for (const [name] of functions) {
+                    assert(
+                        size(provider) < 4096,
+                        `${service}/${name}/${mode}: ${size(provider)} bytes`
+                    );
+                    if (mode === 'bundle')
+                        assert(size(provider) < 1024, `${service}/${name} bundle headroom`);
+                    console.log(
+                        `${service} Lambda env ${name}/${mode}: ${size(provider)} bytes (includes conservative per-entry overhead)`
+                    );
+                }
+            }
+        );
+    }
+    const allCredentials = Object.fromEntries(
+        [...fallback, ...optionalFallback].map(key => [key, placeholderFor(key)])
+    );
+    for (const bundleId of [undefined, 'bundle']) {
+        withEnv({ ...allCredentials, RUNTIME_SECRETS_ID: bundleId }, () => {
+            const provider = serviceEnv.provider();
+            for (const [key, value] of Object.entries(allCredentials)) {
+                assert.equal(
+                    provider[key],
+                    bundleId ? undefined : value,
+                    `${service}/${key} fallback only`
+                );
+            }
+        });
+    }
+};
+
+// Brain Lambda provider fallback credentials (the deploy env secrets above), plus the
+// CF-intrinsic infra keys (Redis + serverless-lift queue URLs) that resolve at deploy time.
+// Brain shares one execution role, so RUNTIME_SECRETS_ID plus every credential fallback sit
+// on the provider. Infra includes Redis and the two serverless-lift queue URLs. The fallback
+// set is brain-service/serverless.function-env.cjs's PROVIDER_SECRETS — the only values that
+// drop out once the bundle is selected.
+serviceConfigContract({
+    dir: path.join(root, 'services/learn-card-network/brain-service'),
+    service: 'brain-service',
+    optionalFallback: ['SKILLS_PROVIDER_API_KEY', 'TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN'],
+    stageKeys: brainStageKeys,
+    infraKeys: [
+        'LAMBDA_STAGE',
+        'PORT',
+        'REDIS_HOST',
+        'REDIS_PORT',
+        'NOTIFICATIONS_QUEUE_URL',
+        'INBOX_QUEUE_URL',
+        'GIT_SHA',
+    ],
+    fallback: [
+        'SEED',
+        'NEO4J_URI',
+        'NEO4J_USERNAME',
+        'NEO4J_PASSWORD',
+        'POSTMARK_API_KEY',
+        'MESSAGEBIRD_AUTH_TOKEN',
+        'SENTRY_DSN',
+        'SKILL_EMBEDDING_GOOGLE_API_KEY',
+        'SMART_RESUME_CLIENT_ID',
+        'SMART_RESUME_ACCESS_KEY',
+        'SMART_RESUME_CONTRACT_URI',
+        'CREDENTIAL_REFRESH_DIGEST_SECRET',
+        'SHARE_LINK_REQUEST_HASH_SECRET',
+        'POSTHOG_API_KEY',
+        'NOTIFICATIONS_SERVICE_WEBHOOK_URL',
+        'LOGIN_PROVIDER_DID',
+        'APP_STORE_ADMIN_PROFILE_IDS',
+    ],
+    lengths: {
+        LAMBDA_STAGE: 10,
+        PORT: 4,
+        REDIS_HOST: 120,
+        REDIS_PORT: 4,
+        NOTIFICATIONS_QUEUE_URL: 120,
+        INBOX_QUEUE_URL: 120,
+        RUNTIME_SECRETS_ID: 90,
+        GIT_SHA: 40,
+        SEED: 64,
+        NEO4J_URI: 120,
+        NEO4J_USERNAME: 20,
+        NEO4J_PASSWORD: 48,
+        POSTMARK_API_KEY: 40,
+        MESSAGEBIRD_AUTH_TOKEN: 40,
+        NOTIFICATIONS_SERVICE_WEBHOOK_URL: 120,
+        CREDENTIAL_REFRESH_DIGEST_SECRET: 64,
+        SHARE_LINK_REQUEST_HASH_SECRET: 64,
+        SMART_RESUME_CLIENT_ID: 40,
+        SMART_RESUME_ACCESS_KEY: 64,
+        SMART_RESUME_CONTRACT_URI: 80,
+        LOGIN_PROVIDER_DID: 80,
+        APP_STORE_ADMIN_PROFILE_IDS: 200,
+        SKILL_EMBEDDING_GOOGLE_API_KEY: 48,
+        POSTHOG_API_KEY: 48,
+        SENTRY_DSN: 100,
+    },
+});
+
+// LearnCloud Lambda carries the large RSA keypair; the production fallback set must stay
+// under Lambda's 4KB per-function limit even with a realistic 1732-byte RSA_PRIVATE_KEY.
+serviceConfigContract({
+    dir: path.join(root, 'services/learn-card-network/learn-cloud-service'),
+    service: 'learn-cloud-service',
+    stageKeys: cloudStageKeys,
+    infraKeys: ['LAMBDA_STAGE', 'PORT', 'REDIS_HOST', 'REDIS_PORT'],
+    fallback: [
+        'LEARN_CLOUD_SEED',
+        'LEARN_CLOUD_MONGO_URI',
+        'LEARN_CLOUD_MONGO_DB_NAME',
+        'XAPI_ENDPOINT',
+        'XAPI_USERNAME',
+        'XAPI_PASSWORD',
+        'RSA_PRIVATE_KEY',
+        'RSA_PUBLIC_KEY',
+        'JWT_SIGNING_KEY',
+        'SENTRY_DSN',
+    ],
+    lengths: {
+        LAMBDA_STAGE: 10,
+        PORT: 4,
+        REDIS_HOST: 120,
+        REDIS_PORT: 4,
+        RUNTIME_SECRETS_ID: 90,
+        LEARN_CLOUD_SEED: 64,
+        LEARN_CLOUD_MONGO_URI: 160,
+        LEARN_CLOUD_MONGO_DB_NAME: 40,
+        XAPI_ENDPOINT: 80,
+        XAPI_USERNAME: 40,
+        XAPI_PASSWORD: 48,
+        RSA_PRIVATE_KEY: 1732,
+        RSA_PUBLIC_KEY: 460,
+        JWT_SIGNING_KEY: 64,
+        SENTRY_DSN: 100,
+    },
+});
+
+// Default-role runtime-bundle grant: the generated provider role may read only this
+// service's runtime-secrets namespace, and serverless-lift's queue IAM policies must
+// survive alongside it (removing them would break SQS send/consume at runtime).
+const assertDefaultRoleRuntimeGrant = ({ dir, secretPrefix, requireQueueConstructs }) => {
+    const serverlessPath = path.join(dir, 'serverless.yml');
+    const service = yaml.load(fs.readFileSync(serverlessPath, 'utf8'));
+    const statements = service.provider.iam?.role?.statements ?? [];
+    const grants = statements.filter(
+        statement => statement.Action === 'secretsmanager:GetSecretValue'
+    );
+    assert.equal(grants.length, 1, `${secretPrefix} has one scoped runtime grant`);
+    const [runtimeGrant] = grants;
+    assert(runtimeGrant, `${secretPrefix} default role must read the runtime bundle`);
+    assert.deepEqual(runtimeGrant, {
+        Effect: 'Allow',
+        Action: 'secretsmanager:GetSecretValue',
+        Resource: {
+            'Fn::Sub':
+                'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:' +
+                secretPrefix +
+                '/${sls:stage}/runtime-secrets-*',
+        },
+    });
+    if (requireQueueConstructs) {
+        // serverless-lift owns the SQS queues and their generated IAM; the inline provider
+        // grant above must not displace those constructs.
+        assert(service.constructs?.['inbox-queue']?.type === 'queue', 'inbox queue retained');
+        assert(
+            service.constructs?.['notifications-queue']?.type === 'queue',
+            'notifications queue retained'
+        );
+    }
+};
+assertDefaultRoleRuntimeGrant({
+    dir: path.join(root, 'services/learn-card-network/brain-service'),
+    secretPrefix: 'brain-service',
+    requireQueueConstructs: true,
+});
+assertDefaultRoleRuntimeGrant({
+    dir: path.join(root, 'services/learn-card-network/learn-cloud-service'),
+    secretPrefix: 'learn-cloud-service',
+    requireQueueConstructs: false,
+});
+
 const workflow = workflows.get('keycloak-infra.yml');
 const pluginInit = workflow.jobs.validate.steps.find(step => step.run === 'tflint --init');
 assert(pluginInit, 'TFLint plugin initialization must be a separate step');
@@ -361,5 +782,5 @@ assert(
     'offline discovery tests must run on Keycloak PRs'
 );
 console.log(
-    `${workflows.size} workflows parsed strictly; deploy env preservation and Keycloak preflight routing passed.`
+    `${workflows.size} workflows parsed strictly; deploy env preservation, lca-api/brain/learn-cloud stage-config removal, and Keycloak preflight routing passed.`
 );

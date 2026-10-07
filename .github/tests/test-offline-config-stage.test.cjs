@@ -4,8 +4,12 @@ const path = require('node:path');
 const yaml = require('js-yaml');
 
 const root = path.resolve(__dirname, '../..');
-const manifest = yaml.load(fs.readFileSync(path.join(root,
-    'services/learn-card-network/lca-api/serverless-local.yml'), 'utf8'));
+const manifest = yaml.load(
+    fs.readFileSync(
+        path.join(root, 'services/learn-card-network/lca-api/serverless-local.yml'),
+        'utf8'
+    )
+);
 
 // Offline supplies AWS_LAMBDA_FUNCTION_NAME, which intentionally uses the Lambda branch
 // of the shared bootstrap. The framework CLI stage must not silently opt in to dev config.
