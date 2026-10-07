@@ -2,25 +2,72 @@
 
 This monorepo uses [Infisical](https://infisical.com) to manage shared environment variables. A script generates `.env` files for each service/app from the Infisical "LearnCard" project.
 
+## Backend configuration model
+
+lca-api uses the shared `@learncard/service-config` package. Brain and LearnCloud
+adoption is a separate follow-up. Precedence, lowest to highest:
+
+| Priority | Source                             | Purpose                                   |
+| -------- | ---------------------------------- | ----------------------------------------- |
+| 1        | Zod schema defaults                | Safe defaults                             |
+| 2        | `config/config.json`               | Checked-in service defaults               |
+| 3        | `config/config.<stage>.json`       | Checked-in `dev` / `production` overrides |
+| 4        | AWS Secrets Manager runtime bundle | Private values; Lambda only               |
+| 5        | Real environment variables         | Explicit deployment or local overrides    |
+
+Stage files and bundles are flat JSON objects of `ENV_NAME` → string. JSON files
+are imported statically into the build; configuration is merged into `process.env`
+before the validating environment module or application is imported.
+
+Empty strings count as **unset** and do not override a lower layer; only
+non-empty values take effect.
+
+### Stage selection
+
+The active stage is chosen in order:
+
+1. On Lambda, `LAMBDA_STAGE`.
+2. Otherwise, `CONFIG_STAGE`.
+3. If neither is set, the stage is **unknown** and only the base
+   `config/config.json` plus schema defaults apply (no per-stage file is loaded).
+
+An unknown or unrecognized stage never falls back to another stage's file — it
+uses the base config only.
+
+### What belongs where
+
+| Kind                              | Lives in                                                  |
+| --------------------------------- | --------------------------------------------------------- |
+| Non-secret per-stage config       | `config/config.json` / `config.<stage>.json` (checked in) |
+| Credentials, tokens, signing keys | Runtime AWS secrets bundle (Lambda) or local env          |
+| Authorization allowlists          | Runtime AWS secrets bundle (not stage files)              |
+| Internal service endpoints        | Runtime AWS secrets bundle (not stage files)              |
+
+Stage files are committed and world-readable in the repo. Treat anything you
+would not publish as a secret and keep it out of them.
+
 ## Quick Start
 
 ### Lambda runtime bundles (lca-api only)
 
-Backend config step 1 adds an optional AWS Secrets Manager bundle named
+The optional AWS Secrets Manager bundle is named
 `lca-api/<stage>/runtime-secrets`. Set the deploy environment's GitHub variable
 `RUNTIME_SECRETS_ID` to its name or ARN after provisioning it. SecretString must
-be a flat JSON object of UPPER_SNAKE_CASE env names to strings, starting with
-`GOOGLE_APPLICATION_CREDENTIAL` (the Firebase JSON serialized as a string).
+be a flat JSON object of UPPER_SNAKE_CASE env names to strings, including all
+required credentials (`GOOGLE_APPLICATION_CREDENTIAL` is Firebase JSON serialized
+as a string, not a nested object).
 The API functions load it before configuration validation; non-empty explicit
 environment values win and empty strings count as unset. Failed loads stop startup
 without exposing values. Rotation requires recycling the functions.
 
-Without the id, Lambda uses the existing GitHub Firebase secret fallback; keep
-that secret until all stages opt in. Local, Docker, CI and self-hosters keep using
-plain env vars. This does not change the Infisical commands below or sync secrets
-to AWS yet. Next: step 2 checked-in per-stage non-secret config, step 3 Infisical →
-AWS sync, step 4 brain-service/learn-cloud adoption. See
-[lca-api guidance](services/learn-card-network/lca-api/AGENTS.md#runtime-secrets-backend-config-model-step-1).
+Without the id, Lambda uses the existing GitHub secret fallbacks; keep
+those secrets until all stages opt in. Local, Docker, CI and self-hosters keep using
+plain env vars. This layer sits above the checked-in
+[config stage files](#backend-configuration-model) and below real environment
+variables. For how the bundles are kept in sync and the per-stage cutover, see
+[Infisical → AWS secrets sync](#infisical--aws-secrets-sync). Remaining work:
+brain-service and learn-cloud adoption. See
+[lca-api guidance](services/learn-card-network/lca-api/AGENTS.md#backend-configuration-model).
 
 ```bash
 # 1. Install the Infisical CLI (one-time)
@@ -185,6 +232,103 @@ The "LearnCard" Infisical project has this folder layout:
 - **ScoutPass app** (`apps/scouts/`) uses a separate Infisical project ("ScoutPass") — not yet wired into this script.
 - **Example apps** (`examples/app-store-apps/`) are developer-specific and not pulled from Infisical.
 - `.env.example` files are contract-checked; update the schema and example together.
+
+## Infisical → AWS secrets sync
+
+Deployed Lambda stages read secrets from an AWS Secrets Manager runtime bundle
+instead of Lambda environment variables. Infisical's native **AWS Secrets
+Manager** integration keeps those bundles in sync with the source of truth in
+Infisical.
+
+### One-time AWS access setup
+
+Infisical authenticates to AWS with an **Assume Role** connection:
+
+1. Have an administrator apply [infra/aws/infisical-sync](infra/aws/infisical-sync/README.md)
+   in account `206533012615`, region `us-east-1`, supplying `infisical_project_id`.
+2. The role trusts the Infisical US principal `arn:aws:iam::381492033652:root`
+   with **External ID equal to the Infisical project ID**.
+3. In Infisical, create an AWS connection using **Assume Role**, the Terraform
+   role ARN output, and that same project ID as the External ID.
+
+The Terraform policy grants only the required list/batch-read actions and scoped
+read/create/update/tag actions for the three runtime-secret namespaces. It grants
+no `DeleteSecret`; do not replace it with `secretsmanager:*`.
+
+### Create the six sync integrations
+
+Create **six** Many-To-One auto-sync integrations — one per `(service, stage)`
+pair — each mapping an Infisical source folder to a single AWS secret. Use these
+settings on every integration:
+
+- **Sync behavior**: Many-To-One (all keys in the source folder → one JSON
+  SecretString).
+- **Auto-sync**: enabled (pushes on every Infisical change).
+- **Disable Secret Deletion**: enabled (the role cannot delete AWS secrets).
+
+Infisical environment → stage mapping:
+
+| Infisical environment | Stage        |
+| --------------------- | ------------ |
+| `staging`             | `dev`        |
+| `prod`                | `production` |
+
+Folder → AWS secret mapping:
+
+| Infisical source folder  | AWS Secrets Manager secret                    |
+| ------------------------ | --------------------------------------------- |
+| `/lca-api/runtime`       | `lca-api/<stage>/runtime-secrets`             |
+| `/brain-service/runtime` | `brain-service/<stage>/runtime-secrets`       |
+| `/cloud-service/runtime` | `learn-cloud-service/<stage>/runtime-secrets` |
+
+With `staging` and `prod` each covering all three services, that is the full set
+of six integrations.
+
+These `/runtime` folders are dedicated sync sources to create, not the existing
+CLI export folders. `scripts/pull-env.sh` currently exports
+`/LearnCard/lca-api`, `/LearnCard/brain-service`, and `/LearnCard/cloud-service`;
+it does not export `/runtime`. Populate the sync sources with private runtime
+keys without disrupting those existing `.env` exports. In particular, the
+Infisical service name is `cloud-service`, while the AWS name is
+`learn-cloud-service`.
+
+### Per-environment cutover
+
+Cut over lca-api one stage at a time (`dev`, then `production`). Prepare the other
+four syncs now, but do not enable their bundle IDs until Part B adds consumers:
+
+1. Provision the AWS runtime bundle and wire its Infisical sync integration.
+2. Confirm the synced SecretString includes every required private runtime key
+   as a string, and no `OIDC_CLIENT_SECRET`. A Firebase-only step-1 bundle is no
+   longer sufficient when all secret environment fallbacks are omitted.
+3. Set the deploy environment's `RUNTIME_SECRETS_ID` GitHub variable to the
+   bundle's name or ARN, then redeploy so the functions load it.
+4. Verify the stage boots and reads values from the bundle.
+5. Recycle functions after rotation; warm processes cache the bundle. To roll
+   back, unset `RUNTIME_SECRETS_ID` and redeploy with the retained GitHub secrets.
+   Retiring legacy GitHub secrets is a later operator action, not part of this change.
+
+Until a stage's `RUNTIME_SECRETS_ID` is configured, the existing GitHub secret
+**fallback is retained** — keep those secrets until every stage has opted in.
+
+**`OIDC_CLIENT_SECRET` is the exception.** It is the confidential broker client
+secret for the OIDC Lambda only. Keep it as a GitHub-environment secret on the
+OIDC function and **never** place it in the runtime bundle. The OIDC function
+makes no AWS Secrets Manager calls for it.
+
+Only functions using `SigningAuthorityExecutionRole` receive the bundle ID
+(`trpc`, `api`, `didWeb`, `swagger`, and `seedMigration`). OIDC uses a separate
+entrypoint and focused configuration so it needs no API seed or Mongo credentials
+in bundle mode. Its independent signing-key secret remains on `OidcExecutionRole`.
+
+## Self-hosting
+
+Self-hosters do not use Infisical or AWS secrets at all. Copy
+`config/config.example.json` to `config/config.<stage>.json` (or just provide a
+plain `.env`) and fill in the public values for your deployment. For a new stage
+name, register a static JSON import in `src/config/stageConfig.ts` and rebuild.
+Set `CONFIG_STAGE` to select that stage; keep credentials in `.env`. Real
+environment variables always win.
 
 ## Troubleshooting
 
