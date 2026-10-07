@@ -99,7 +99,7 @@ done
 mkdir -p infra/keycloak/terraform/service
 cat >infra/keycloak/scripts/terraform-plan.sh <<'MOCK'
 #!/usr/bin/env bash
-printf '%s\n' '{"resource_changes":[{"address":"aws_ecs_task_definition.keycloak","change":{"after":{"container_definitions":"[{\"name\":\"keycloak\",\"environment\":[{\"name\":\"KC_DB\",\"value\":\"postgres\"}]}]"}}},{"address":"aws_appautoscaling_target.keycloak","change":{"actions":["no-op"]}}]}' >infra/keycloak/terraform/service/plan.json
+printf '%s\n' '{"resource_changes":[{"address":"aws_ecs_task_definition.keycloak","change":{"after":{"container_definitions":"[{\"name\":\"keycloak\",\"environment\":[{\"name\":\"KC_DB\",\"value\":\"postgres\"},{\"name\":\"KC_BOOTSTRAP_ADMIN_USERNAME\",\"value\":\"bootstrap\"}]}]"}}},{"address":"aws_appautoscaling_target.keycloak","change":{"actions":["no-op"]}}]}' >infra/keycloak/terraform/service/plan.json
 MOCK
 cat >infra/keycloak/scripts/compat-gate.sh <<'MOCK'
 #!/usr/bin/env bash
@@ -107,6 +107,7 @@ printf 'strategy=%s\n' "$STRATEGY" >"$GITHUB_OUTPUT"
 MOCK
 cat >infra/keycloak/scripts/compat-metadata.sh <<'MOCK'
 #!/usr/bin/env bash
+cp "$KC_ENV_FILE" "$TEST_STATE/runtime.env"
 printf '{}\n' >"$2"
 MOCK
 for tool in docker terraform sleep; do
@@ -131,6 +132,9 @@ for scenario in success discovery-404 realm-failure recreate-poll-error recreate
     grep -q 'codebuild start-build.*--source-version image-sha' "$AWS_CALLS"
     if [[ "$scenario" == success ]]; then
         [[ "$result" == 0 ]] || { cat "$work/log"; exit 1; }
+        # Keycloak refuses a bootstrap username without its (secret) password.
+        grep -qx 'KC_DB=postgres' "$TEST_STATE/runtime.env"
+        if grep -q '^KC_BOOTSTRAP_ADMIN_' "$TEST_STATE/runtime.env"; then exit 1; fi
         grep -q '/complete.json ' "$AWS_CALLS"
     else
         [[ "$result" != 0 ]] || exit 1
