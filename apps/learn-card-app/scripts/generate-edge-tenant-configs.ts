@@ -35,8 +35,8 @@ const log = getLogger();
  *
  *   --stage pins that tenant's edge stage overlay to the one the build baked
  *   (prepare-native-config.ts --stage), instead of deriving it from the
- *   hostname. Without it, the stage comes from the hostname. --tenant defaults
- *   to "learncard".
+ *   hostname. Without it, the stage comes from the hostname. --tenant names the
+ *   tenant to pin (default "learncard") and is rejected without --stage.
  *
  * Run this before deploying or as part of the build command.
  */
@@ -134,9 +134,18 @@ function readFlag(name: string): string | undefined {
 
 function resolvePinnedStage(tenants: Record<string, TenantConfigBundle>): PinnedStage | null {
     const stage = readFlag('stage');
-    const tenantId = readFlag('tenant') ?? 'learncard';
+    const tenantFlag = readFlag('tenant');
 
-    if (!stage) return null;
+    if (!stage) {
+        if (tenantFlag) {
+            log.error('✗ --tenant only applies with --stage (it names the tenant to pin)');
+            process.exit(1);
+        }
+
+        return null;
+    }
+
+    const tenantId = tenantFlag ?? 'learncard';
 
     if (!tenants[tenantId]?.stages[stage]) {
         log.error(`✗ --stage ${stage}: environments/${tenantId}/config.${stage}.json not found`);

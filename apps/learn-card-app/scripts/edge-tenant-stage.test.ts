@@ -65,6 +65,10 @@ describe('generate-edge-tenant-configs', () => {
         expect(generate('--stage').status).toBe(1);
     });
 
+    test('rejects --tenant without --stage', () => {
+        expect(generate('--tenant', 'vetpass').status).toBe(1);
+    });
+
     test('pinned keycloak-staging makes staging.learncard.ai serve Keycloak', async () => {
         expect(generate('--tenant', 'learncard', '--stage', 'keycloak-staging').status).toBe(0);
         expect(readPinnedStage()).toEqual({ tenantId: 'learncard', stage: 'keycloak-staging' });
