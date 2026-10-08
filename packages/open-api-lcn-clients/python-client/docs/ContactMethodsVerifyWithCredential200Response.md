@@ -1,12 +1,11 @@
 # ContactMethodsVerifyWithCredential200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**message** | **str** |  | 
-**contact_method** | [**ContactMethodsVerifyWithCredential200ResponseContactMethod**](ContactMethodsVerifyWithCredential200ResponseContactMethod.md) |  | 
+| Name               | Type                                                                                                                            | Description | Notes |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **message**        | **str**                                                                                                                         |             |
+| **contact_method** | [**ContactMethodsVerifyWithCredential200ResponseContactMethod**](ContactMethodsVerifyWithCredential200ResponseContactMethod.md) |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ contact_methods_verify_with_credential200_response_dict = contact_methods_verify
 # create an instance of ContactMethodsVerifyWithCredential200Response from a dict
 contact_methods_verify_with_credential200_response_from_dict = ContactMethodsVerifyWithCredential200Response.from_dict(contact_methods_verify_with_credential200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

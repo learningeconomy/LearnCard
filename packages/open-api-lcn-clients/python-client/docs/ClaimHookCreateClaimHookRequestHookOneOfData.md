@@ -1,13 +1,12 @@
 # ClaimHookCreateClaimHookRequestHookOneOfData
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**claim_uri** | **str** |  | 
-**target_uri** | **str** |  | 
-**permissions** | [**BoostCreateBoostRequestClaimPermissions**](BoostCreateBoostRequestClaimPermissions.md) |  | 
+| Name            | Type                                                                                      | Description | Notes |
+| --------------- | ----------------------------------------------------------------------------------------- | ----------- | ----- |
+| **claim_uri**   | **str**                                                                                   |             |
+| **target_uri**  | **str**                                                                                   |             |
+| **permissions** | [**BoostCreateBoostRequestClaimPermissions**](BoostCreateBoostRequestClaimPermissions.md) |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ claim_hook_create_claim_hook_request_hook_one_of_data_dict = claim_hook_create_c
 # create an instance of ClaimHookCreateClaimHookRequestHookOneOfData from a dict
 claim_hook_create_claim_hook_request_hook_one_of_data_from_dict = ClaimHookCreateClaimHookRequestHookOneOfData.from_dict(claim_hook_create_claim_hook_request_hook_one_of_data_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -2,7 +2,8 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { ModalTypes, ProfilePicture, currentUserStore, useCurrentUser } from 'learn-card-base';
 import Backspace from '../../../svgs/Backspace';
-import { IonCol, IonRow } from '@ionic/react';
+import { IonCol, IonIcon, IonRow } from '@ionic/react';
+import { alertCircleOutline } from 'ionicons/icons';
 import { FamilyPinViewModeEnum } from './FamilyPinWrapper';
 import ForgotPinConfirmation from './ForgotPinConfirmation';
 import { m } from '../../../../paraglide/messages.js';
@@ -200,6 +201,21 @@ export const FamilyPinModal: React.FC<FamilyPinModalProps> = ({
                             <p className="p-0 m-0 text-center text-red-600 font-poppins">
                                 {errors?.confirmPin}
                             </p>
+                        </div>
+                    )}
+
+                    {errors?.submission && (
+                        <div
+                            role="alert"
+                            className="mx-5 mt-4 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
+                        >
+                            <IonIcon
+                                icon={alertCircleOutline}
+                                className="text-red-400 text-lg mt-0.5 shrink-0"
+                            />
+                            <span className="text-sm text-red-700 leading-relaxed">
+                                {errors.submission}
+                            </span>
                         </div>
                     )}
 

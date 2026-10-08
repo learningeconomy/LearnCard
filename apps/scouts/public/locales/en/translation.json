@@ -1589,6 +1589,7 @@
         "createBtn": "Create new merit badge"
     },
     "consentFlow": {
+        "reviewChanged": "The sharing details changed. Review them before connecting again.",
         "yes": "Yes",
         "no": "No",
         "useDataTo": "will use data to:",

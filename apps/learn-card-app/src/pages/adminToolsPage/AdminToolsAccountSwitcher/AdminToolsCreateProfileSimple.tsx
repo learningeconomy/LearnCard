@@ -38,6 +38,8 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
+import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
+import type { VC } from '@learncard/types';
 
 import {
     DEFAULT_COLOR_LIGHT,
@@ -131,11 +133,14 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
     }, [uniqueProfile, uniqueProfileFetching, profileId]);
 
     useEffect(() => {
-        if (families) {
+        if (families?.length) {
+            // The query does not request URI-wrapped results.
+            const firstFamily = families[0] as VC;
+            const displayFamily = unwrapBoostCredential(firstFamily);
             setSelectedFamily({
-                name: families[0]?.boostCredential?.name,
-                picture: families[0]?.boostCredential?.image,
-                uri: families[0]?.boostId,
+                name: displayFamily?.name ?? '',
+                picture: displayFamily?.image ?? '',
+                uri: firstFamily?.boostId,
             });
         }
     }, [families]);

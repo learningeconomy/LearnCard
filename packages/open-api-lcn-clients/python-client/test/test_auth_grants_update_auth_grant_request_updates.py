@@ -35,8 +35,15 @@ class TestAuthGrantsUpdateAuthGrantRequestUpdates(unittest.TestCase):
         model = AuthGrantsUpdateAuthGrantRequestUpdates()
         if include_optional:
             return AuthGrantsUpdateAuthGrantRequestUpdates(
+                id = '',
                 name = '',
-                description = ''
+                description = '',
+                challenge = 'auth-grant:jUR,rZ#UM/?R,Fp^l6$ARj0123456789',
+                status = 'revoked',
+                scope = '',
+                act_as = '',
+                created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
+                expires_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f')
             )
         else:
             return AuthGrantsUpdateAuthGrantRequestUpdates(

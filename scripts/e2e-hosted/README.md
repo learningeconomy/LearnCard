@@ -45,12 +45,36 @@ and its mocks belong to each browser context. Recording remains serial through
 manifests, patches, and installed dependencies. BuildKit reads the source through
 a temporary bind mount to collect manifests without creating a source image layer.
 
-The Bake groups export this stage through a cache-only target using `mode=min`.
-Browser and service base images import that shared dependency cache. Source and
-app image layers are loaded into Docker but never exported to the remote cache.
-This avoids uploading source layers that change on each commit. The new cache
-scope starts cold on its first CI run. Keep dependency versions aligned across
-stages when upgrading Bun.
+The browser job exports this stage through a cache-only target using `mode=min`
+and uses it to compile the SPA. This full source/build image is never loaded into
+Docker by hosted jobs. Source and app image layers are never exported to the remote
+cache, avoiding uploads of source layers that change on every commit.
+
+## Backend runtime
+
+Hosted browser and service jobs load the separate `backend` target, retaining the
+`learncard-monorepo-local` tag expected by Compose. It installs only production
+dependencies of Brain, LearnCloud, LCA API, and their transitive workspaces using
+Bun filters. All workspace manifests remain available for frozen-lockfile validation,
+but app source, NX, Serverless and test runners are excluded from the
+runtime image. Cloud explicitly owns its runtime Swagger assets and schema helper.
+
+`prepare-backend-source.mjs` follows dependencies, optional dependencies and peer
+workspace dependencies to copy required source and assets at their original paths.
+This preserves TypeScript entrypoints, `development` exports and service-test bind
+mounts without introducing a second bundling strategy. Required WASM and email
+assets are retained. Root TypeScript configuration files remain available for aliases.
+
+The backend dependency stage has its own `e2e-backend-dependencies` cache-only
+export with `mode=min`. Service shards never install the app's build dependencies
+inside Docker. The browser job uses both caches. The backend cache starts cold on
+its first CI run; compare a subsequent run before drawing conclusions about timings.
+
+Both dependency stages use Bun 1.4.2 for lockfile v3. Runtime stages inherit their
+installed dependency layers and copy only the Bun 1.3.14 executable to preserve
+`localhost:host-gateway` did:web resolution. Neither hosted Compose startup commands
+nor final runtime stages run `bun install`. The original full `source` target remains
+the default for existing local Docker build commands.
 
 ## Browser runtime
 
@@ -63,8 +87,7 @@ Both functional tests and accessibility/global setup run inside this image.
 
 The app Dockerfile builds with the monorepo image, then copies only the generated
 `build/` directory into Nginx. The runtime listens on port 3000, serves SPA routes
-through index.html, and returns 404 for missing assets. Backend containers continue
-to use the monorepo image.
+through index.html, and returns 404 for missing assets. Backend containers use the separate backend runtime described above.
 
 ## Cache writers and cleanup
 
@@ -101,6 +124,7 @@ should be considered only after measuring this version.
 ## Local checks
 
 ```sh
+bash .github/tests/test-hosted-e2e-backend-source.test.sh
 bash .github/tests/test-hosted-e2e-script-contract.test.sh
 bash .github/tests/test-hosted-e2e-playwright.test.sh
 bash .github/tests/test-hosted-e2e-concurrency.test.sh
@@ -112,3 +136,12 @@ bunx playwright test --config=playwright.mock.config.ts --repeat-each=2
 # With the real stack already running:
 E2E_EXTERNAL_STACK=true bunx playwright test --config=playwright.parallel.config.ts
 ```
+
+## Bun installer/runtime compatibility
+
+The dependency stage uses Bun 1.4.2 for lockfile v3. The source stage inherits
+those layers and copies only the Bun 1.3.14 executable from the compatible runtime
+image. Both `bun` and its `bunx` link are checked during the build. This retains
+the cross-service localhost/DID workaround without copying the installed `/app`
+tree into a fresh runtime base. The hosted DID-resolution preflight and full
+service/browser suites verify compatibility.

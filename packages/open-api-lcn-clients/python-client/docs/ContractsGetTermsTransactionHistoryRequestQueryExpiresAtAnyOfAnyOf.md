@@ -1,11 +1,10 @@
 # ContractsGetTermsTransactionHistoryRequestQueryExpiresAtAnyOfAnyOf
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**gt** | **str** |  | 
+| Name   | Type    | Description | Notes |
+| ------ | ------- | ----------- | ----- |
+| **gt** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ contracts_get_terms_transaction_history_request_query_expires_at_any_of_any_of_d
 # create an instance of ContractsGetTermsTransactionHistoryRequestQueryExpiresAtAnyOfAnyOf from a dict
 contracts_get_terms_transaction_history_request_query_expires_at_any_of_any_of_from_dict = ContractsGetTermsTransactionHistoryRequestQueryExpiresAtAnyOfAnyOf.from_dict(contracts_get_terms_transaction_history_request_query_expires_at_any_of_any_of_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-
