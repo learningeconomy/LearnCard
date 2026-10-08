@@ -53,6 +53,11 @@ variables, **not secret values or fabricated image digests in committed tfvars**
 Example Bash runbook from this directory (repeat in a separate directory for
 production by setting `ENVIRONMENT=production` and its account's values):
 
+This is **initial provisioning only**. Use the protected deployment workflow for
+existing-service image upgrades so compatibility, recovery and health gates run.
+Terraform itself no longer waits for readiness; verify both target groups and
+service stability before continuing to realm provisioning.
+
 ```bash
 export ENVIRONMENT=staging
 export AWS_PROFILE=learncard-staging-deploy
@@ -68,6 +73,8 @@ terraform init -reconfigure \
 umask 077
 terraform plan -var-file="environments/$ENVIRONMENT.tfvars" -out=service.tfplan
 terraform apply service.tfplan
+aws ecs wait services-stable --cluster "learncard-keycloak-$ENVIRONMENT" \
+  --services "learncard-keycloak-$ENVIRONMENT"
 rm service.tfplan
 ```
 
@@ -108,7 +115,10 @@ ignores its drift. Change min/max for durable sizing changes, not `desired_count
 Deployment min healthy 100% / max 200%, circuit-breaker rollback and AZ rebalancing
 are enabled. They are **not** a schema-upgrade safety guarantee. Per plan PD-7,
 `kc.sh update-compatibility check` must decide rolling versus snapshot/stop/recreate
-before upgrades; automatic gating is deferred to Phase 4. Restore the pre-upgrade
+before upgrades; `deploy-image.sh` owns stability/health gating after apply rather
+than Terraform waiting while recreate holds capacity at zero. See the
+[pre-start recovery and journal reconciliation runbook](../README.md#failure-recovery-and-rollback).
+Restore the pre-upgrade
 database if schema rollback is needed; rolling back only the image is unsafe.
 
 Container liveness uses explicit `/bin/bash` and `/dev/tcp` against

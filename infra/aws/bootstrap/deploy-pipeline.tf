@@ -3,6 +3,16 @@
 # CodeBuild start/batch and SSM discovery. The state bucket allowlists deploy.
 data "aws_iam_policy_document" "deploy_pipeline" {
   statement {
+    sid       = "WritePrivateDiagnostics"
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.state.arn}/keycloak/${var.environment}/diagnostics/*"]
+    condition {
+      test     = "StringEquals"
+      variable = "s3:x-amz-server-side-encryption"
+      values   = ["AES256"]
+    }
+  }
+  statement {
     sid       = "CompatibilityMetadataAndDeploymentJournal"
     actions   = ["s3:GetObject", "s3:PutObject"]
     resources = [for file in ["metadata.json", "deployment.json"] : "${aws_s3_bucket.state.arn}/keycloak/${var.environment}/compat/${file}"]

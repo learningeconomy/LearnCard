@@ -143,7 +143,13 @@ Every output is also a `String` parameter at
 
 - State: SSE-S3, versioning, noncurrent versions expire after 90 days, TLS-only,
   public access blocked, `prevent_destroy`. No DynamoDB. Plan may read downstream
-  states and write/delete only `.tflock`; deploy may also write state. Neither has
+  states and write/delete `.tflock`; deploy may also write state. Both can upload
+  AES256-encrypted failure logs with `s3:PutObject` only under their environment's
+  `keycloak/<env>/diagnostics/*` prefix, without diagnostic read access. This lets
+  nightly drift preserve plan failures. Operators read logs with an allowlisted
+  state-bucket administrator role. Current diagnostics expire after 30 days and
+  noncurrent versions 30 days after becoming noncurrent. These IAM/lifecycle changes
+  require a human bootstrap apply in each account. Neither CI role has
   permission to delete current state objects. State remains confidential: realm
   secrets may eventually be present in it. Only allowlisted human admin roles and
   the plan/deploy roles plus the `${name}-realm-runner` CodeBuild role can access
