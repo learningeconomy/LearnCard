@@ -1,9 +1,8 @@
 import React, { useId } from 'react';
 import {
-    findClrRecordByCanonicalId,
     formatClrDate,
-    groupClrRecords,
-    type ClrTranscriptDisplayModel,
+    type ClrRecordSection,
+    type ClrNavigableRecord,
     type ClrLayoutKind,
 } from 'learn-card-base/helpers/credentials/clr/renderer';
 import { formatAchievementType } from 'learn-card-base/helpers/credentials/clr/presentation';
@@ -13,16 +12,17 @@ import * as m from '../../paraglide/messages.js';
 
 /** Shared source-backed sections; only the section labels differ by collection layout. */
 export const ClrRecordSections = ({
-    model,
+    sections,
+    records,
     layout,
     onSelectRecord,
 }: {
-    model: ClrTranscriptDisplayModel;
+    sections: ClrRecordSection[];
+    records: ReadonlyMap<string, ClrNavigableRecord>;
     layout: ClrLayoutKind;
     onSelectRecord: (id: string) => void;
 }) => {
     const id = useId();
-    const sections = groupClrRecords(model.records, layout);
     const military = layout === 'military';
     if (!sections.length)
         return <p className="p-6 text-sm text-grayscale-600">{m['clrRenderer.empty']()}</p>;
@@ -68,7 +68,7 @@ export const ClrRecordSections = ({
                     </h3>
                     <ul className={military ? 'divide-y divide-grayscale-200' : 'space-y-3'}>
                         {section.records.map(record => {
-                            const display = findClrRecordByCanonicalId(model, record.id)?.record;
+                            const display = records.get(record.id)?.record;
                             const issuer = record.provenance.issuer;
                             const issuerName =
                                 issuer?.name?.value ?? issuer?.id?.value ?? issuer?.url?.value;

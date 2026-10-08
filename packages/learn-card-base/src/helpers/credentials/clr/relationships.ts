@@ -171,6 +171,24 @@ export const getLinkedCompetencies = (
     return competencies.filter(competency => linkedIds.has(competency.sourceCredentialId));
 };
 
+/** Index display records once per model, preserving the canonical lookup precedence. */
+export const createClrRecordMap = (
+    model: ClrTranscriptDisplayModel
+): ReadonlyMap<string, ClrNavigableRecord> => {
+    const records = new Map<string, ClrNavigableRecord>();
+    const add = (selected: ClrNavigableRecord): void => {
+        const id = selected.record.sourceCredentialId;
+        if (!records.has(id)) records.set(id, selected);
+    };
+    model.courses.forEach(record => add({ kind: 'course', record }));
+    model.programs.forEach(record => add({ kind: 'program', record }));
+    model.assessments.forEach(record => add({ kind: 'assessment', record }));
+    model.competencies.forEach(record => add({ kind: 'competency', record }));
+    model.awards.forEach(record => add({ kind: 'award', record }));
+    model.otherRecords.forEach(record => add({ kind: 'other', record }));
+    return records;
+};
+
 /** Looks up an internal canonical ID; source aliases still use conservative resolution. */
 export const findClrRecordByCanonicalId = (
     model: ClrTranscriptDisplayModel,
@@ -209,11 +227,17 @@ export const findClrRecordById = (
 
 export const createClrRecordSelection = (
     model: ClrTranscriptDisplayModel,
-    onOpenRecord: (selected: ClrNavigableRecord) => void
+    onOpenRecord: (selected: ClrNavigableRecord) => void,
+    records = createClrRecordMap(model)
 ): ClrRecordNavigator => {
     const selectRecord = (recordId: string): void => {
+        const canonical = records.get(recordId);
+        const resolved = canonical ? undefined : resolveClrRecord(model.canonical, recordId);
         const selected =
-            findClrRecordByCanonicalId(model, recordId) ?? findClrRecordById(model, recordId);
+            canonical ??
+            (resolved?.resolution === 'resolved' && resolved.record
+                ? records.get(resolved.record.id)
+                : undefined);
         if (selected) onOpenRecord(selected);
     };
 

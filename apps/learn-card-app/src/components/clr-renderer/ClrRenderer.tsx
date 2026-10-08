@@ -4,6 +4,8 @@ import { ModalTypes, useModal, CredentialCategoryEnum } from 'learn-card-base';
 import {
     ClrTranscriptSurface,
     inferClrLayout,
+    groupClrRecords,
+    createClrRecordMap,
 } from 'learn-card-base/helpers/credentials/clr/renderer';
 import AcademicClrFullPage from '../clr-transcript/views/AcademicClrFullPage';
 import AcademicClrCard from '../clr-transcript/views/AcademicClrCard';
@@ -16,14 +18,58 @@ import { ClrCollectionFrame } from './ClrCollectionFrame';
 import { ClrCollectionHeader } from './ClrCollectionHeader';
 import { ClrRecordSections } from './ClrRecordSections';
 import { createClrRecordNavigator } from './recordNavigation';
-import type { ClrRendererProps } from './types';
+import type { ClrPresentation, ClrRendererProps } from './types';
 import * as m from '../../paraglide/messages.js';
+
+const ACADEMIC_ONLY_WARNINGS = new Set([
+    'MISSING_GPA',
+    'MISSING_COURSES',
+    'MISSING_TERMS',
+    'MISSING_CREDITS',
+]);
 
 /** One collection-layout decision for every CLR surface; normalization remains upstream. */
 export const ClrRenderer = (props: ClrRendererProps) => {
-    const { model, options, boostUri, insetTop = true, onViewDetails } = props;
+    const { model, options } = props;
+    const presentation = useMemo<ClrPresentation>(() => {
+        const { kind } = inferClrLayout(model.canonical);
+        return {
+            kind,
+            sections: kind === 'academic' ? [] : groupClrRecords(model.records, kind),
+            records: createClrRecordMap(model),
+        };
+    }, [model]);
+    if (options.surface === ClrTranscriptSurface.Embed) {
+        if (presentation.kind === 'academic') return <AcademicClrEmbed model={model} />;
+        const adminMode = options.viewer === 'admin' || options.viewer === 'registrar';
+        const warnings = model.warnings.filter(
+            warning => !ACADEMIC_ONLY_WARNINGS.has(warning.code)
+        );
+        return (
+            <ClrCollectionFrame layout={presentation.kind} insetTop={false}>
+                <div className="mx-auto w-full space-y-5">
+                    {adminMode && warnings.length > 0 && (
+                        <ClrTranscriptWarningsPanel warnings={warnings} />
+                    )}
+                    <ClrCollectionHeader
+                        model={model}
+                        layout={presentation.kind}
+                        sections={presentation.sections}
+                        compact
+                    />
+                    <ClrTranscriptEvidenceList evidence={model.evidence} compact />
+                </div>
+            </ClrCollectionFrame>
+        );
+    }
+    return <InteractiveClrRenderer {...props} presentation={presentation} />;
+};
+
+/** Modal-dependent interactions are only mounted for card and full surfaces. */
+const InteractiveClrRenderer = (props: ClrRendererProps & { presentation: ClrPresentation }) => {
+    const { model, options, boostUri, insetTop = true, onViewDetails, presentation } = props;
     const boost = props.boost ?? (model.canonical.collection.sourceCredential as VC);
-    const { kind } = inferClrLayout(model.canonical);
+    const { kind, sections, records } = presentation;
     const adminMode = options.viewer === 'admin' || options.viewer === 'registrar';
     const full = options.surface === ClrTranscriptSurface.Full;
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
@@ -31,11 +77,13 @@ export const ClrRenderer = (props: ClrRendererProps) => {
         () =>
             createClrRecordNavigator({
                 model,
+                layout: kind,
+                records,
                 boost,
                 adminMode,
                 openPanel: panel => newModal(panel),
             }),
-        [model, boost, adminMode, newModal]
+        [model, kind, records, boost, adminMode, newModal]
     );
     const openDetails = (): void => {
         if (onViewDetails) {
@@ -53,17 +101,10 @@ export const ClrRenderer = (props: ClrRendererProps) => {
     };
     if (kind === 'academic') {
         if (options.surface === ClrTranscriptSurface.Card)
-            return <AcademicClrCard model={model} boost={boost} onViewDetails={openDetails} />;
-        if (options.surface === ClrTranscriptSurface.Embed)
-            return <AcademicClrEmbed model={model} />;
-        return <AcademicClrFullPage {...props} boost={boost} />;
+            return <AcademicClrCard model={model} onViewDetails={openDetails} />;
+        return <AcademicClrFullPage {...props} boost={boost} recordNavigator={navigator} />;
     }
-    const warnings = model.warnings.filter(
-        warning =>
-            !['MISSING_GPA', 'MISSING_COURSES', 'MISSING_TERMS', 'MISSING_CREDITS'].includes(
-                warning.code
-            )
-    );
+    const warnings = model.warnings.filter(warning => !ACADEMIC_ONLY_WARNINGS.has(warning.code));
     return (
         <ClrCollectionFrame layout={kind} insetTop={full && insetTop}>
             <div className={`mx-auto w-full space-y-5 ${full ? 'max-w-[800px] p-4 sm:p-8' : ''}`}>
@@ -73,6 +114,7 @@ export const ClrRenderer = (props: ClrRendererProps) => {
                 <ClrCollectionHeader
                     model={model}
                     layout={kind}
+                    sections={sections}
                     compact={!full}
                     actions={
                         full && props.boost ? (
@@ -87,13 +129,14 @@ export const ClrRenderer = (props: ClrRendererProps) => {
                 />
                 {full && (
                     <ClrRecordSections
-                        model={model}
+                        sections={sections}
+                        records={records}
                         layout={kind}
                         onSelectRecord={navigator.selectRecord}
                     />
                 )}
                 <ClrTranscriptEvidenceList evidence={model.evidence} compact={!full} />
-                {!full && (
+                {options.surface === ClrTranscriptSurface.Card && (
                     <button
                         type="button"
                         onClick={openDetails}

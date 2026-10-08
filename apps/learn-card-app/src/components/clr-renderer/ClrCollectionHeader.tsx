@@ -1,6 +1,9 @@
 import React from 'react';
 import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
-import { formatClrDate, groupClrRecords } from 'learn-card-base/helpers/credentials/clr/renderer';
+import {
+    formatClrDate,
+    type ClrRecordSection,
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 import type { ClrLayoutKind } from 'learn-card-base/helpers/credentials/clr/layout';
 import ClrTranscriptTrustBadge from '../clr-transcript/ClrTranscriptTrustBadge';
 import ClrIssuerAddress from '../clr-transcript/ClrIssuerAddress';
@@ -10,11 +13,13 @@ import * as m from '../../paraglide/messages.js';
 export const ClrCollectionHeader = ({
     model,
     layout,
+    sections,
     actions,
     compact = false,
 }: {
     model: ClrTranscriptDisplayModel;
     layout: Exclude<ClrLayoutKind, 'academic'>;
+    sections: ClrRecordSection[];
     actions?: React.ReactNode;
     compact?: boolean;
 }) => {
@@ -28,7 +33,6 @@ export const ClrCollectionHeader = ({
         [m['clrRenderer.validFrom'](), collection.validFrom],
         [m['clrRenderer.validUntil'](), collection.validUntil],
     ] as const;
-    const sections = groupClrRecords(model.records, layout);
 
     return (
         <header

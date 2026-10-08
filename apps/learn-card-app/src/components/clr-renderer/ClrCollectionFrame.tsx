@@ -1,4 +1,5 @@
 import React from 'react';
+import type { ClrLayoutKind } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 /** Shared dual-host frame. AppModal supplies zero insets; route hosts may opt out. */
 export const ClrCollectionFrame = ({
@@ -8,7 +9,7 @@ export const ClrCollectionFrame = ({
 }: {
     children: React.ReactNode;
     insetTop?: boolean;
-    layout: 'academic' | 'military' | 'general';
+    layout: ClrLayoutKind;
 }) => (
     <div
         data-clr-layout={layout}

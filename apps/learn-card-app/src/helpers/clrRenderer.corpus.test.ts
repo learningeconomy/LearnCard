@@ -5,6 +5,8 @@ import type { CredentialFixture } from '../../../../packages/credential-library/
 
 import {
     inferClrLayout,
+    createClrRecordMap,
+    findClrRecordByCanonicalId,
     normalizeClrTranscriptDisplayModel,
 } from 'learn-card-base/helpers/credentials/clr/renderer';
 
@@ -49,6 +51,8 @@ describe('CLR canonical normalization corpus', () => {
             const model = normalizeClrTranscriptDisplayModel(
                 fixture.credential as unknown as Record<string, unknown>
             );
+            const records = createClrRecordMap(model);
+            expect(records.size).toBe(model.records.length);
             const displayed = [
                 ...model.courses,
                 ...model.programs,
@@ -61,6 +65,9 @@ describe('CLR canonical normalization corpus', () => {
                 model.records.map(record => record.id).sort()
             );
             for (const record of model.records) {
+                expect(records.get(record.id)).toEqual(
+                    findClrRecordByCanonicalId(model, record.id)
+                );
                 const projected = displayed.find(item => item.sourceCredentialId === record.id)!;
                 expect(projected.results).toHaveLength(record.results.length);
                 expect(projected.evidence).toHaveLength(record.evidence.length);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { inferClrLayout, groupClrRecords } from 'learn-card-base/helpers/credentials/clr/layout';
 import { getClrLayoutLabel, getClrSectionLabel } from '../clr-renderer/labels';
 import { getResultDisplayValue } from 'learn-card-base/helpers/credentials/clr/presentation';
@@ -11,13 +11,9 @@ import PaperClip from '../svgs/PaperClip';
 import { FlatIcon } from 'learn-card-base/components/FlatIcon';
 import {
     normalizeClrTranscriptDisplayModel,
-    type ClrTranscriptDisplayModel,
     type CourseDisplayModel,
 } from 'learn-card-base/helpers/credentials/clr/renderer';
-import {
-    inferClrKindWithTitleFallback,
-    type InferredClrKind,
-} from 'learn-card-base/helpers/credentials/clr/kind';
+import { inferClrKindWithTitleFallback } from 'learn-card-base/helpers/credentials/clr/kind';
 
 const getClrGrade = (course?: CourseDisplayModel): string | undefined => {
     if (!course) return undefined;
@@ -52,17 +48,22 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
     credential,
     fallbackTitle,
 }) => {
-    let model: ClrTranscriptDisplayModel | undefined;
-
-    try {
-        model = normalizeClrTranscriptDisplayModel(
-            credential as unknown as Record<string, unknown>
-        );
-    } catch {
-        model = undefined;
-    }
-
-    if (!model) {
+    const presentation = useMemo(() => {
+        try {
+            const model = normalizeClrTranscriptDisplayModel(
+                credential as unknown as Record<string, unknown>
+            );
+            const layout = inferClrLayout(model.canonical).kind;
+            return {
+                model,
+                layout,
+                sections: layout === 'academic' ? [] : groupClrRecords(model.records, layout),
+            };
+        } catch {
+            return undefined;
+        }
+    }, [credential]);
+    if (!presentation) {
         return (
             <div className="flex w-full min-w-0 flex-col items-center justify-start mt-[0px]">
                 <span className="w-full px-[8px] text-center text-grayscale-900 text-[16px] font-notoSans font-semibold leading-[125%] line-clamp-2 break-words">
@@ -72,7 +73,7 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
         );
     }
 
-    const layout = inferClrLayout(model.canonical).kind;
+    const { model, layout, sections } = presentation;
     if (layout !== 'academic') {
         return (
             <div
@@ -86,7 +87,7 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
                         getClrLayoutLabel(layout)}
                 </p>
                 <div className="flex flex-wrap justify-center gap-2 text-xs text-grayscale-600">
-                    {groupClrRecords(model.records, layout).map(section => (
+                    {sections.map(section => (
                         <span key={section.kind}>
                             {getClrSectionLabel(section.kind, layout)}: {section.records.length}
                         </span>
@@ -98,7 +99,8 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
 
     const inferredKind = inferClrKindWithTitleFallback(
         model,
-        fallbackTitle || model.header.title?.value
+        fallbackTitle || model.header.title?.value,
+        layout
     );
 
     if (inferredKind === 'unknown') {

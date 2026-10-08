@@ -1,7 +1,6 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { ClrCollectionFrame } from '../../clr-renderer/ClrCollectionFrame';
 
-import { createClrRecordNavigator } from '../../clr-renderer/recordNavigation';
 import ClrCourseSection from '../ClrCourseSection';
 import ClrAssessmentSection from '../ClrAssessmentSection';
 import ClrProgramsSection from '../ClrProgramsSection';
@@ -12,10 +11,9 @@ import ClrTranscriptSummaryHeader from '../ClrTranscriptSummaryHeader';
 import ClrTranscriptWarningsPanel from '../ClrTranscriptWarningsPanel';
 import SparseAcademicRecordView from '../views/SparseAcademicRecordView';
 
-import { ModalTypes, useModal } from 'learn-card-base';
-
 import type {
     ViewOptions,
+    ClrRecordNavigator,
     AssessmentDisplayModel,
     CourseDisplayModel,
     ProgramDisplayModel,
@@ -27,28 +25,15 @@ import type { VC } from '@learncard/types';
 
 const AcademicClrFullPage: React.FC<{
     model: ClrTranscriptDisplayModel;
+    recordNavigator: ClrRecordNavigator;
     boost: VC;
     options: ViewOptions;
     boostUri?: string;
     /** Disable when the containing route already reserves the top device inset. */
     insetTop?: boolean;
-}> = ({ model, boost, options, boostUri, insetTop = true }) => {
+}> = ({ model, recordNavigator, boost, options, boostUri, insetTop = true }) => {
     const adminMode = options.viewer === 'admin' || options.viewer === 'registrar';
-    const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
-
     const selectedView = selectClrTranscriptView(model, options);
-    const recordNavigator = useMemo(
-        () =>
-            createClrRecordNavigator({
-                model,
-                boost,
-                adminMode,
-                openPanel: panel => {
-                    newModal(panel);
-                },
-            }),
-        [adminMode, boost, model, newModal]
-    );
     const handleSelectRecord = recordNavigator.selectRecord;
 
     const handleSelectProgram = (program: ProgramDisplayModel): void => {

@@ -97,9 +97,12 @@ to `ClrRenderer` for compatibility. Academic tables/terms/GPA stay in the academ
 views; result scales, evidence, alignments and source-backed record details remain
 shared. New hosts should pass the existing display model, `ViewOptions`, and their
 credential/sharing context to `ClrRenderer`. Optional `onViewDetails` delegates
-navigation to the host. No normalization occurs inside child components.
+navigation to the host. Only cards offer the detail action; embeds are summaries
+for every layout. The renderer memoizes layout, sections, and the canonical display
+record map per model, sharing these with its header, lists, and navigator. No
+normalization occurs inside child components.
 
-UI navigation uses `findClrRecordByCanonicalId` before alias lookup so duplicate
+UI navigation checks the canonical display-record map before alias lookup so duplicate
 source IDs do not make preserved occurrences inaccessible. `findClrRecordById`
 continues conservative alias resolution; ambiguous association endpoints stay
 non-navigable. Canonical IDs must not be persisted as global credential IDs.

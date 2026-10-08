@@ -6,6 +6,7 @@ import {
     findClrRecordById,
     findClrRecordByCanonicalId,
     createClrRecordSelection,
+    createClrRecordMap,
     getLinkedCompetencies,
 } from './relationships';
 import { resolveClrRecord } from './selectors';
@@ -162,11 +163,14 @@ describe('canonical CLR display adapter', () => {
         expect(findClrRecordById(model, 'duplicate')).toBeUndefined();
         const uniqueId = model.courses[1].sourceCredentialId;
         expect(findClrRecordById(model, uniqueId)?.record).toBe(model.courses[1]);
+        const records = createClrRecordMap(model);
+        expect(records.size).toBe(model.records.length);
         const opened: string[] = [];
         const navigator = createClrRecordSelection(model, selected =>
             opened.push(selected.record.sourceCredentialId)
         );
         for (const record of model.records) {
+            expect(records.get(record.id)).toEqual(findClrRecordByCanonicalId(model, record.id));
             expect(findClrRecordByCanonicalId(model, record.id)?.record.sourceCredentialId).toBe(
                 record.id
             );

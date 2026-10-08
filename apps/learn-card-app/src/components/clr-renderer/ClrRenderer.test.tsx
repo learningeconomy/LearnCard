@@ -16,9 +16,12 @@ import ClrTranscriptFullPage from '../clr-transcript/surfaces/ClrTranscriptFullP
 import ClrTranscriptCard from '../clr-transcript/surfaces/ClrTranscriptCard';
 import ClrTranscriptEmbedWidget from '../clr-transcript/surfaces/ClrTranscriptEmbedWidget';
 
-const mocks = vi.hoisted(() => ({ open: vi.fn(), close: vi.fn() }));
+const mocks = vi.hoisted(() => ({ open: vi.fn(), close: vi.fn(), modal: vi.fn() }));
 vi.mock('learn-card-base', () => ({
-    useModal: () => ({ newModal: mocks.open, closeModal: mocks.close }),
+    useModal: () => {
+        mocks.modal();
+        return { newModal: mocks.open, closeModal: mocks.close };
+    },
     ModalTypes: { Right: 'right' },
     CredentialCategoryEnum: { learningHistory: 'learningHistory' },
     isSkillCompetencyAlignment: () => false,
@@ -62,6 +65,7 @@ const options = { viewer: 'student', surface: ClrTranscriptSurface.Full } as con
 beforeEach(() => {
     mocks.open.mockClear();
     mocks.close.mockClear();
+    mocks.modal.mockReset();
     setLocale('en', { reload: false });
 });
 
@@ -152,11 +156,63 @@ describe('shared CLR renderer', () => {
             expect(
                 view.container.querySelector('[data-clr-layout="military"]')
             ).toBeInTheDocument();
-            if (surface !== 'full') {
+            if (surface === 'card') {
                 fireEvent.click(screen.getByRole('button', { name: 'View details' }));
                 expect(mocks.open.mock.lastCall![0].props.model).toBe(model);
                 expect(mocks.open.mock.lastCall![0].props.options.surface).toBe('full');
+            } else {
+                expect(
+                    screen.queryByRole('button', { name: 'View details' })
+                ).not.toBeInTheDocument();
             }
+        }
+    );
+    it.each(['Joint Services Transcript', 'Army Training Record', 'CCAF Transcript'])(
+        'selects military consistently across surfaces for %s',
+        title => {
+            const titledModel = normalizeClrTranscriptDisplayModel({ ...fixture, name: title });
+            for (const surface of [
+                ClrTranscriptSurface.Full,
+                ClrTranscriptSurface.Card,
+                ClrTranscriptSurface.Embed,
+            ]) {
+                const view = render(
+                    <ClrRenderer model={titledModel} options={{ ...options, surface }} />
+                );
+                expect(
+                    view.container.querySelector('[data-clr-layout="military"]')
+                ).toBeInTheDocument();
+                view.unmount();
+            }
+        }
+    );
+    it('keeps general embeds free of modal detail actions', () => {
+        const general = normalizeClrTranscriptDisplayModel(
+            clrMixedCareerRecord.credential as Record<string, unknown>
+        );
+        render(
+            <ClrRenderer
+                model={general}
+                options={{ ...options, surface: ClrTranscriptSurface.Embed }}
+            />
+        );
+        expect(screen.queryByRole('button', { name: 'View details' })).not.toBeInTheDocument();
+        expect(mocks.open).not.toHaveBeenCalled();
+    });
+    it.each(['Academic Transcript', 'Joint Services Transcript', 'My learning record'])(
+        'renders an embed without a modal provider for %s',
+        name => {
+            mocks.modal.mockImplementation(() => {
+                throw new Error('Missing modal provider');
+            });
+            const embedded = normalizeClrTranscriptDisplayModel({ type: ['ClrCredential'], name });
+            render(
+                <ClrRenderer
+                    model={embedded}
+                    options={{ ...options, surface: ClrTranscriptSurface.Embed }}
+                />
+            );
+            expect(mocks.modal).not.toHaveBeenCalled();
         }
     );
     it('honors caller-owned detail navigation', () => {
