@@ -12,33 +12,11 @@ export type {
     ClrSectionKind,
 } from './layout.types';
 
-const MILITARY_TITLE =
-    /\bmilitary\s+(?:(?:training|qualifications?|service)\s*(?:[&/—–-]|and)?\s*)*(?:training|records?|transcripts?|qualifications?)\b/i;
-const ACADEMIC_TITLE =
-    /\b(?:academic\s+(?:record|history|transcript)|student\s+record|grade\s+report)\b/i;
-const DEGREES = new Set([
-    'AssociateDegree',
-    'BachelorDegree',
-    'Degree',
-    'Diploma',
-    'DoctoralDegree',
-    'GeneralEducationDevelopment',
-    'MasterDegree',
-    'ProfessionalDoctorate',
-    'ResearchDoctorate',
-    'SecondarySchoolDiploma',
-]);
-const ACADEMIC_TYPES = new Set([
-    ...DEGREES,
-    'Course',
-    'Assessment',
-    'Assignment',
-    'Competency',
-    'LearningProgram',
-    'Award',
-    'Badge',
-    'CoCurricular',
-]);
+import {
+    inferClrTitleSignals,
+    isAcademicCompatibleType,
+    isAcademicDegreeType,
+} from './layout-heuristics';
 
 /** Selects presentation only. CLR use-case categories are not credential sector claims. */
 export const inferClrLayout = (model: ClrNormalizedModel): ClrLayoutInference => {
@@ -50,10 +28,7 @@ export const inferClrLayout = (model: ClrNormalizedModel): ClrLayoutInference =>
         return { kind: 'academic', reason: 'academic-structure' };
     }
     const title = model.collection.name?.value ?? '';
-    const military = MILITARY_TITLE.test(title);
-    // A military transcript is not itself a conflicting academic signal.
-    const academic =
-        ACADEMIC_TITLE.test(title) || /\btranscript\b/i.test(title.replace(MILITARY_TITLE, ''));
+    const { military, academic } = inferClrTitleSignals(title);
     if (military && academic) return { kind: 'general', reason: 'conflicting-title' };
     if (military) return { kind: 'military', reason: 'military-title' };
     if (academic) return { kind: 'academic', reason: 'academic-title' };
@@ -62,11 +37,11 @@ export const inferClrLayout = (model: ClrNormalizedModel): ClrLayoutInference =>
         model.records.every(
             record =>
                 record.achievementTypes.length > 0 &&
-                record.achievementTypes.every(type => ACADEMIC_TYPES.has(type.value))
+                record.achievementTypes.every(type => isAcademicCompatibleType(type.value))
         );
     const academicSignal = model.records.some(
         record =>
-            record.achievementTypes.some(type => DEGREES.has(type.value)) ||
+            record.achievementTypes.some(type => isAcademicDegreeType(type.value)) ||
             record.results.some(
                 result =>
                     result.resultDescription?.resultType?.value === 'GradePointAverage' &&

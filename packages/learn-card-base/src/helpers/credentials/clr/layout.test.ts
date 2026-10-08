@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeClrCredential } from './normalize';
 import { groupClrRecords, inferClrLayout } from './layout';
+import { inferClrTitleSignals } from './layout-heuristics';
 
 const collection = (name: string, types: string[] = ['Course']) => ({
     type: ['ClrCredential'],
@@ -35,6 +36,27 @@ describe('CLR collection layout', () => {
         'University Transcript',
     ])('recognizes %s', title => {
         expect(inferClrLayout(normalizeClrCredential(collection(title))).kind).toBe('academic');
+    });
+    it('handles long repetitive titles and whitespace without regex backtracking', () => {
+        const repeatedService = `Military ${'service '.repeat(4_000)}`;
+        expect(inferClrTitleSignals(`${repeatedService}record`)).toEqual({
+            military: true,
+            academic: false,
+        });
+        expect(inferClrTitleSignals(`${repeatedService}unrelated`)).toEqual({
+            military: false,
+            academic: false,
+        });
+        expect(inferClrTitleSignals(`Military${' '.repeat(50_000)}Transcript`)).toEqual({
+            military: true,
+            academic: false,
+        });
+        expect(
+            inferClrLayout(normalizeClrCredential(collection(`${repeatedService}record`)))
+        ).toEqual({
+            kind: 'military',
+            reason: 'military-title',
+        });
     });
     it('keeps conflicting collection titles general', () => {
         expect(
