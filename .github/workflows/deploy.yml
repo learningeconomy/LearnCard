@@ -871,10 +871,20 @@ jobs:
             # This previously ran inside Netlify's own build command; now that CI builds the
             # artifact and deploys it with `--no-build`, we must generate it here so the
             # edge function bundles the up-to-date data. LCA only — Scouts has no edge config.
+            # A non-empty STAGE pins the edge overlay to the stage baked above, so
+            # /__tenant-config can't override it with the hostname-derived stage
+            # (staging.learncard.ai would otherwise always serve config.staging.json).
             - name: Generate edge tenant configs
               if: steps.vars.outputs.project_name == 'learn-card-app'
               working-directory: apps/learn-card-app
-              run: bun scripts/generate-edge-tenant-configs.ts
+              run: |
+                  TENANT="${{ vars.TENANT || 'learncard' }}"
+                  STAGE="${{ vars.STAGE || '' }}"
+                  STAGE_FLAG=""
+                  if [[ -n "$STAGE" ]]; then
+                    STAGE_FLAG="--stage $STAGE"
+                  fi
+                  bun scripts/generate-edge-tenant-configs.ts --tenant "$TENANT" $STAGE_FLAG
 
             # Scouts backend URLs come from the checked-in stage configs
             # (environments/scoutpass/config[.<stage>].json) via the same resolution local
