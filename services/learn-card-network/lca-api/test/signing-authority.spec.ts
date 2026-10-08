@@ -151,6 +151,56 @@ describe('Signing Authority', () => {
         }
     });
 
+    describe('ensureManagedSigningAuthority', () => {
+        const ownerDid = 'did:web:localhost%3A4000:app:demo-app';
+
+        it('should only be callable by authorized service DIDs', async () => {
+            await expect(
+                noAuthClient.signingAuthority.ensureManagedSigningAuthority({
+                    ownerDid,
+                    name: 'app-demo',
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            await expect(
+                userA.clients.fullAuth.signingAuthority.ensureManagedSigningAuthority({
+                    ownerDid,
+                    name: 'app-demo',
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should create an encrypted signing authority for the given owner', async () => {
+            const signingAuthority =
+                await userA.clients.authorizedDidAuth.signingAuthority.ensureManagedSigningAuthority(
+                    { ownerDid, name: 'app-demo' }
+                );
+
+            expect(signingAuthority).toMatchObject({
+                name: 'app-demo',
+                ownerDid,
+                did: expect.stringMatching(/^did:/),
+                endpoint: expect.stringContaining('/api'),
+            });
+            const stored = await SigningAuthorities.findOne({ _id: signingAuthority._id });
+            expect(stored).not.toHaveProperty('seed');
+            expect(stored).toMatchObject({ encryptedSeed: expect.any(String) });
+        });
+
+        it('should return the existing signing authority instead of creating another', async () => {
+            const first =
+                await userA.clients.authorizedDidAuth.signingAuthority.ensureManagedSigningAuthority(
+                    { ownerDid, name: 'app-demo' }
+                );
+            const second =
+                await userA.clients.authorizedDidAuth.signingAuthority.ensureManagedSigningAuthority(
+                    { ownerDid, name: 'app-demo' }
+                );
+
+            expect(second).toEqual(first);
+            await expect(SigningAuthorities.countDocuments({ ownerDid })).resolves.toBe(1);
+        });
+    });
+
     it('should allow you to authorize your signing authority to issue a boost', async () => {
         await userA.clients.fullAuth.signingAuthority.createSigningAuthority({ name: 'mysa' });
         await expect(

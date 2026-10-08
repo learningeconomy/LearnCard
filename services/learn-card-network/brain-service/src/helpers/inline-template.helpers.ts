@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 
-import { MongoClient } from 'mongodb';
+import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import type { UnsignedVC } from '@learncard/types';
 import type { InlineCredentialTemplate, VariableManifest } from '@learncard/partner-connect-core';
@@ -13,7 +13,7 @@ import {
 
 import { getBoostUri } from '@helpers/boost.helpers';
 import { getAppDidWeb, getDidWeb } from '@helpers/did.helpers';
-import { getLearnCard } from '@helpers/learnCard.helpers';
+import { getDidWebLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { inflateObject } from '@helpers/objects.helpers';
 import { createBoostForListing } from '@accesslayer/boost/create';
 import { updateBoost } from '@accesslayer/boost/update';
@@ -63,8 +63,6 @@ type UpsertInlineTemplateBoostResult = {
 const INLINE_TEMPLATE_SOURCE = 'partner-connect-inline';
 const DEFAULT_SIGNING_AUTHORITY_ENDPOINT =
     environment.SIGNING_AUTHORITY_ENDPOINT ?? 'http://localhost:5100/api';
-const DEFAULT_MONGO_URI = environment.MONGO_URI ?? 'mongodb://localhost:27017/?replicaSet=rs0';
-const DEFAULT_MONGO_DB_NAME = environment.MONGO_DB_NAME ?? 'lca-api';
 const MAX_SIGNING_AUTHORITY_NAME_LENGTH = 15;
 const SIGNING_AUTHORITY_PREFIX = 'app-';
 
@@ -245,54 +243,47 @@ const buildManagedSigningAuthorityName = (listing: AppStoreListingType): string 
     );
 };
 
-const createManagedSigningAuthorityDocument = async (
+const ManagedSigningAuthorityResponseValidator = z.object({ did: z.string().min(1) });
+
+/**
+ * Gets or creates the app's signing authority through LCA API, which owns key generation
+ * and encrypts the seed at rest. Brain authenticates as a trusted service DID.
+ */
+const provisionManagedSigningAuthority = async (
+    endpoint: string,
     ownerDid: string,
     name: string
 ): Promise<string> => {
-    const seed =
-        environment.NODE_ENV === 'test' ? 'e'.repeat(64) : crypto.randomBytes(32).toString('hex');
-    const signingAuthorityLearnCard = await getLearnCard(seed);
-    const did = signingAuthorityLearnCard.id.did();
-
-    let client: MongoClient | undefined;
+    // Tests mock signing-authority issuance, so derive a stable DID without calling LCA API.
+    if (environment.NODE_ENV === 'test') {
+        return (await getLearnCard('e'.repeat(64))).id.did();
+    }
 
     try {
-        client = new MongoClient(DEFAULT_MONGO_URI);
-        await client.connect();
+        const learnCard = await getDidWebLearnCard();
+        const didJwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' });
 
-        const db = client.db(DEFAULT_MONGO_DB_NAME);
-        const collection = db.collection('signingauthorities');
-        const existing = await collection.findOne({ ownerDid, name });
+        const response = await fetch(`${endpoint}/signing-authority/managed`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${didJwt}`,
+            },
+            body: JSON.stringify({ ownerDid, name }),
+        });
 
-        if (existing?.did && typeof existing.did === 'string') {
-            return existing.did;
+        if (!response.ok) {
+            throw new Error(`LCA API responded with ${response.status}`);
         }
 
-        await collection.updateOne(
-            { ownerDid, name },
-            {
-                $setOnInsert: {
-                    _id: crypto.randomUUID(),
-                },
-                $set: {
-                    ownerDid,
-                    name,
-                    seed,
-                    did,
-                },
-            },
-            { upsert: true }
-        );
-
-        return did;
+        return ManagedSigningAuthorityResponseValidator.parse(await response.json()).did;
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
             message: `Unable to auto-provision app signing authority: ${message}`,
+            cause: error,
         });
-    } finally {
-        await client?.close();
     }
 };
 
@@ -323,7 +314,11 @@ export const ensureManagedSigningAuthorityForListing = async (
         ? getAppDidWeb(domain, listing.slug)
         : getDidWeb(domain, integrationOwner.profileId);
     const name = buildManagedSigningAuthorityName(listing);
-    const did = await createManagedSigningAuthorityDocument(ownerDid, name);
+    const did = await provisionManagedSigningAuthority(
+        DEFAULT_SIGNING_AUTHORITY_ENDPOINT,
+        ownerDid,
+        name
+    );
     const signingAuthority = await upsertSigningAuthority(DEFAULT_SIGNING_AUTHORITY_ENDPOINT);
 
     await createUseSigningAuthorityRelationship(
