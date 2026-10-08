@@ -102,8 +102,8 @@ export const DeveloperPortalProvider: React.FC<DeveloperPortalProviderProps> = (
             // Setup integrations without a guide type go to guide selection
             history.push(`/app-store/developer/integrations/${currentIntegrationId}/guides`);
         } else {
-            // No integration selected - pick a project
-            history.push('/app-store/developer/projects');
+            // No integration selected - start from the guides
+            history.push('/app-store/developer/build');
         }
     }, [history, currentIntegration, currentIntegrationId]);
 

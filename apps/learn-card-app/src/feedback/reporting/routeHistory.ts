@@ -21,12 +21,14 @@ const ROUTE_WORD = /^[a-zA-Z][a-zA-Z-]*$/;
  */
 const DYNAMIC_ROUTE_TEMPLATES = [
     '/app-store/developer/integrations/:integrationId/apps/new',
+    '/app-store/developer/integrations/:integrationId/apps/:listingId/listing',
     '/app-store/developer/integrations/:integrationId/apps/:listingId',
     '/app-store/developer/integrations/:integrationId/apps',
     '/app-store/developer/integrations/:integrationId/guides/:useCase',
     '/app-store/developer/integrations/:integrationId/guides',
     '/app-store/developer/integrations/:integrationId',
     '/app-store/developer/guides/:useCase',
+    '/app-store/developer/apps/:listingId',
     '/app-store/developer/edit/:listingId',
     '/interactions/guardian-credential-approval/:token',
     '/interactions/guardian-approval/:token',

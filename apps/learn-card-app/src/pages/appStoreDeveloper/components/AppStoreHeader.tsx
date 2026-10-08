@@ -34,7 +34,7 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title, rightCont
     // Build: projects and their dashboards, guides, and power-user listing tools
     const isOnBuildPage =
         !isOnAppsPage &&
-        (location.pathname.startsWith('/app-store/developer/projects') ||
+        (location.pathname.startsWith('/app-store/developer/build') ||
             location.pathname.includes('/integrations') ||
             location.pathname.includes('/guides'));
 

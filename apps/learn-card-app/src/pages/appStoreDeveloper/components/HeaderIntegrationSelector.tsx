@@ -34,9 +34,6 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
 
     const { createIntegration, isCreatingIntegration } = useDeveloperPortalContext();
 
-    // Detect if we're on Apps side (has /apps in path) vs Build side
-    const isOnAppsPage = location.pathname.includes('/apps');
-
     const selectedIntegration = integrations.find(i => i.id === selectedId);
 
     // Update dropdown position when opened
@@ -80,14 +77,7 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
     const handleSelectIntegration = (integration: LCNIntegration) => {
         setIsOpen(false);
 
-        // Navigate based on current context (Apps vs Build)
-        if (isOnAppsPage) {
-            // On Apps side - navigate to that integration's apps page
-            history.push(`/app-store/developer/integrations/${integration.id}/apps`);
-        } else {
-            // On Build side - use the existing onSelect which handles navigation
-            onSelect(integration.id);
-        }
+        onSelect(integration.id);
     };
 
     const handleCreate = async () => {

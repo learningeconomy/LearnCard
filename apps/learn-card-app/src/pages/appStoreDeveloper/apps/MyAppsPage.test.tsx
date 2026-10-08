@@ -31,7 +31,7 @@ const renderPage = () =>
                 path="/app-store/developer/apps/:listingId"
                 render={({ match }) => <div>Status for {match.params.listingId}</div>}
             />
-            <Route path="/app-store/developer/projects" render={() => <div>Projects</div>} />
+            <Route path="/app-store/developer/build" render={() => <div>Projects</div>} />
         </MemoryRouter>
     );
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, Plus } from 'lucide-react';
 
 import * as m from '../../../paraglide/messages.js';
 
@@ -22,7 +22,7 @@ const IntegrationDashboardPage: React.FC = () => {
     } = useDeveloperPortalContext();
 
     const handleBack = () => {
-        history.push('/app-store/developer/projects');
+        history.push('/app-store/developer/build');
     };
 
     const headerContent = (
@@ -101,16 +101,30 @@ const IntegrationDashboardPage: React.FC = () => {
 
             <IonContent className="ion-padding">
                 <div className="max-w-5xl mx-auto py-4">
-                    <button
-                        type="button"
-                        onClick={handleBack}
-                        className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6 transition-colors"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        <span className="text-sm font-medium">
-                            {m['developerPortal.shell.backToProjects']()}
-                        </span>
-                    </button>
+                    <div className="flex items-center justify-between gap-4 mb-6">
+                        <button
+                            type="button"
+                            onClick={handleBack}
+                            className="flex items-center gap-2 text-gray-500 hover:text-gray-700 transition-colors"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            <span className="text-sm font-medium">
+                                {m['developerPortal.shell.backToProjects']()}
+                            </span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() =>
+                                history.push(
+                                    `/app-store/developer/integrations/${currentIntegration.id}/apps/new`
+                                )
+                            }
+                            className="flex items-center gap-1.5 py-2 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Add Store Listing
+                        </button>
+                    </div>
 
                     <UnifiedIntegrationDashboard integration={currentIntegration} />
                 </div>

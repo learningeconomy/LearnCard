@@ -227,7 +227,7 @@ const SubmissionForm: React.FC = () => {
     };
     const handleBack = () => setCurrentStep(prev => Math.max(prev - 1, 1));
     const navigateToDashboard = () =>
-        history.push(`/app-store/developer/integrations/${integrationId}/apps`);
+        history.push(`/app-store/developer/integrations/${integrationId}`);
 
     // Check if form has any changes from initial state
     const hasUnsavedChanges = useCallback(() => {

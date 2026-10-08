@@ -145,7 +145,9 @@ const MyAppsPage: React.FC = () => {
                             </p>
                             <button
                                 type="button"
-                                onClick={() => history.push('/app-store/developer/guides')}
+                                onClick={() =>
+                                    history.push('/app-store/developer/guides/embed-app')
+                                }
                                 className="mt-6 py-3 px-5 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                             >
                                 See How It Works
@@ -168,7 +170,7 @@ const MyAppsPage: React.FC = () => {
                     <div className="mt-12 text-center">
                         <button
                             type="button"
-                            onClick={() => history.push('/app-store/developer/projects')}
+                            onClick={() => history.push('/app-store/developer/build')}
                             className="text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors inline-flex items-center gap-1"
                         >
                             Projects and developer tools
