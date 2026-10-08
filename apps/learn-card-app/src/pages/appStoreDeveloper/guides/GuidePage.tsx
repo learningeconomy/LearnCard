@@ -18,7 +18,7 @@ import { STATUS_LABELS, getAppStatusPath } from '../apps/myApps';
 
 import IssueCredentialsGuide from './useCases/IssueCredentialsGuide';
 import EmbedClaimGuide from './useCases/EmbedClaimGuide';
-import EmbedAppGuide from './useCases/EmbedAppGuide';
+import EmbedAppGuide from './embedApp/EmbedAppQuickGuide';
 import ConsentFlowGuide from './useCases/ConsentFlowGuide';
 import VerifyCredentialsGuide from './useCases/VerifyCredentialsGuide';
 import ServerWebhooksGuide from './useCases/ServerWebhooksGuide';
