@@ -15,6 +15,7 @@ import {
     LaunchType,
     PromotionLevel,
     AgeRating,
+    PendingListingUpdateStatus,
 } from 'types/app-store-listing';
 
 export type AppStoreListingRelationships = {
@@ -123,6 +124,13 @@ export const AppStoreListing = ModelFactory<FlatAppStoreListingType, AppStoreLis
             min_age: { type: 'number', required: false },
             age_rating: { type: 'string', enum: AgeRating.options, required: false },
             contact_email: { type: 'string', required: false },
+            pending_update_json: { type: 'string', required: false },
+            pending_update_status: {
+                type: 'string',
+                enum: PendingListingUpdateStatus.options,
+                required: false,
+            },
+            pending_update_submitted_at: { type: 'string', required: false },
         } as any,
         relationships: {
             publishedBy: { model: Integration, direction: 'in', name: 'PUBLISHES_LISTING' },

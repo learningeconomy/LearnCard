@@ -155,7 +155,9 @@ describe('app manifest routes', () => {
     });
 
     it('treats a capture missing earlier features as unchanged, not removed', async () => {
-        const { integration, listing } = await seedListedApp('owner-user');
+        const { integration, listing } = await seedListedApp('owner-user', {
+            app_listing_status: 'DRAFT',
+        });
         const fuller = makeManifest({
             permissions: ['send_credential', 'request_identity', 'launch_feature'],
         });
@@ -202,7 +204,9 @@ describe('app manifest routes', () => {
     });
 
     it('applies manifest reconciliation idempotently', async () => {
-        const { integration, listing } = await seedListedApp('owner-user');
+        const { integration, listing } = await seedListedApp('owner-user', {
+            app_listing_status: 'DRAFT',
+        });
         const signingAuthority = await createSigningAuthority('https://sa.example.com');
         const ownerProfile = await getProfileByProfileId('owner-user');
 

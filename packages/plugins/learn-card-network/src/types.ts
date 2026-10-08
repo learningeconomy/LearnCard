@@ -1004,6 +1004,10 @@ export type LearnCardNetworkPluginMethods = {
     deleteAppStoreListing: (listingId: string) => Promise<boolean>;
     submitAppStoreListingForReview: (listingId: string) => Promise<boolean>;
     unsubmitAppStoreListing: (listingId: string) => Promise<boolean>;
+    /** Sends held changes to a live app for review; the live listing is unchanged until approval. */
+    submitAppStoreListingUpdate: (listingId: string) => Promise<boolean>;
+    withdrawAppStoreListingUpdate: (listingId: string) => Promise<boolean>;
+    discardAppStoreListingUpdate: (listingId: string) => Promise<boolean>;
     getListingsForIntegration: (
         integrationId: string,
         options?: Partial<PaginationOptionsType>
@@ -1044,7 +1048,9 @@ export type LearnCardNetworkPluginMethods = {
         version: number,
         listingId?: string
     ) => Promise<{
-        applied: true;
+        applied: boolean;
+        /** True when the listing is live and the new version is waiting for review. */
+        pendingReview?: boolean;
         version: number;
         reconciled: {
             templatesUpserted: number;
@@ -1098,7 +1104,9 @@ export type LearnCardNetworkPluginMethods = {
         limit?: number;
         cursor?: string;
         status?: AppListingStatus;
+        pendingUpdatesOnly?: boolean;
     }) => Promise<PaginatedAppStoreListings>;
+    adminReviewListingUpdate: (listingId: string, approve: boolean) => Promise<boolean>;
 
     // App Store Boost Management
     addBoostToApp: (listingId: string, boostUri: string, templateAlias: string) => Promise<boolean>;

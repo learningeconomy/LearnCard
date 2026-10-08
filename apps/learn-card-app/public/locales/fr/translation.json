@@ -8205,7 +8205,8 @@
             "filterAll": "Toutes",
             "filterListed": "Publiées",
             "filterDraft": "Brouillon",
-            "filterArchived": "Archivées"
+            "filterArchived": "Archivées",
+            "filterUpdates": "Mises à jour"
         },
         "listing": {
             "submittedBy": "Soumis par :",
@@ -8272,6 +8273,23 @@
                 "standardDesc": "Visibilité normale dans la recherche et la navigation",
                 "demoted": "Rétrogradé",
                 "demotedDesc": "Visibilité réduite dans les annonces"
+            },
+            "update": {
+                "title": "Mise à jour en attente de vérification",
+                "description": "Ces modifications ne seront publiées que si vous les approuvez.",
+                "draftNote": "Le développeur modifie encore une mise à jour.",
+                "capabilities": "Modifie aussi ce que l'app peut faire (version {{version}}).",
+                "approve": "Approuver la mise à jour",
+                "reject": "Refuser la mise à jour",
+                "fieldName": "Nom",
+                "fieldTagline": "Slogan",
+                "fieldDescription": "Description",
+                "fieldIcon": "Icône",
+                "fieldScreenshots": "Captures d'écran",
+                "fieldHighlights": "Points forts",
+                "fieldLinks": "Liens et contact",
+                "fieldLaunch": "Où l'app s'exécute",
+                "fieldOther": "Autres détails"
             }
         }
     },

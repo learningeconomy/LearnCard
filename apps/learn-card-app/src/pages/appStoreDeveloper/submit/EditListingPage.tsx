@@ -15,6 +15,8 @@ import type { ListingData } from './listingForm';
 import { getFirstMissingField } from './listingValidation';
 import type { ListingField } from './listingValidation';
 import { DEFAULT_APP_ICON_URL } from './constants';
+import { ListingStatusBanner } from './ListingStatusBanner';
+import { getListingMode, isListingLocked, withPendingChanges } from './listingLifecycle';
 
 const log = getLogger('edit-listing');
 
@@ -45,7 +47,11 @@ export const EditListingPage: React.FC = () => {
     const { mutateAsync: submitListingForReview } = useSubmitForReview();
     const { isDesktop } = useDeviceTypeByWidth();
 
-    const { data: listing, isLoading } = useQuery({
+    const {
+        data: listing,
+        isLoading,
+        refetch,
+    } = useQuery({
         queryKey: ['developer', 'listing', 'owned', listingId],
         queryFn: async () => {
             const wallet = await initWallet();
@@ -59,6 +65,8 @@ export const EditListingPage: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
     const [showMissingHint, setShowMissingHint] = useState(false);
+    const [hasEdits, setHasEdits] = useState(false);
+    const [isChangingStatus, setIsChangingStatus] = useState(false);
     const hasEditedRef = useRef(false);
     const loadedListingIdRef = useRef<string | null>(null);
 
@@ -79,22 +87,27 @@ export const EditListingPage: React.FC = () => {
         heroColor: heroColorInputRef,
     };
 
-    const isDraft = listing?.app_listing_status === 'DRAFT';
+    const mode = getListingMode(listing);
+    const isDraft = mode === 'draft';
+    const isLocked = isListingLocked(mode);
+    const hasPendingChanges = Boolean(listing?.pending_update) || hasEdits;
+    const canSubmitUpdate = mode === 'live' && hasPendingChanges;
     const dashboardPath = `/app-store/developer/integrations/${integrationId}`;
 
     useEffect(() => {
         if (!listing || loadedListingIdRef.current === listing.listing_id) return;
         loadedListingIdRef.current = listing.listing_id;
-        setData(listingToData(listing));
+        setData(listingToData(withPendingChanges(listing)));
     }, [listing]);
 
     const updateData = (updates: Partial<ListingData>) => {
         hasEditedRef.current = true;
+        setHasEdits(true);
         setData(prev => ({ ...prev, ...updates }));
     };
 
     useEffect(() => {
-        if (!hasEditedRef.current) return;
+        if (!hasEditedRef.current || isLocked) return;
 
         const timer = setTimeout(async () => {
             setSaveState('saving');
@@ -108,7 +121,32 @@ export const EditListingPage: React.FC = () => {
         }, AUTOSAVE_DELAY_MS);
 
         return () => clearTimeout(timer);
-    }, [data, listingId, saveListing]);
+    }, [data, listingId, saveListing, isLocked]);
+
+    const changeStatus = async (action: 'withdraw' | 'discard') => {
+        setIsChangingStatus(true);
+        setFormError(null);
+        try {
+            const wallet = await initWallet();
+            if (action === 'discard') await wallet.invoke.discardAppStoreListingUpdate(listingId);
+            else if (mode === 'update-in-review') {
+                await wallet.invoke.withdrawAppStoreListingUpdate(listingId);
+            } else await wallet.invoke.unsubmitAppStoreListing(listingId);
+
+            const { data: refreshed } = await refetch();
+            if (refreshed && action === 'discard') {
+                hasEditedRef.current = false;
+                setHasEdits(false);
+                setSaveState('idle');
+                setData(listingToData(withPendingChanges(refreshed)));
+            }
+        } catch (e) {
+            log.error('listing.status-change.failed', e, { listingId, action });
+            setFormError('Something went wrong. Please try again.');
+        } finally {
+            setIsChangingStatus(false);
+        }
+    };
 
     const missingField = useMemo(
         () => getFirstMissingField({ ...data, needsProductionUrl: false, productionUrl: '' }),
@@ -129,7 +167,7 @@ export const EditListingPage: React.FC = () => {
     };
 
     const handlePrimaryAction = async () => {
-        if (!isDraft) {
+        if (!isDraft && !canSubmitUpdate) {
             history.push(dashboardPath);
             return;
         }
@@ -143,7 +181,12 @@ export const EditListingPage: React.FC = () => {
         setFormError(null);
         try {
             await saveListing({ listingId, integrationId, updates: toListingUpdates(data) });
-            await submitListingForReview(listingId);
+            if (isDraft) {
+                await submitListingForReview(listingId);
+            } else {
+                const wallet = await initWallet();
+                await wallet.invoke.submitAppStoreListingUpdate(listingId);
+            }
             history.push(dashboardPath);
         } catch (e) {
             log.error('listing.submit.failed', e, { listingId });
@@ -230,29 +273,50 @@ export const EditListingPage: React.FC = () => {
                                 </div>
                             )}
 
-                            <div className="bg-white rounded-[20px] border border-grayscale-200 p-6 mb-6 space-y-5">
-                                <h2 className="text-base font-semibold text-grayscale-900">
-                                    Your listing
-                                </h2>
-                                <ListingIdentityFields
-                                    data={data}
-                                    onChange={updateData}
-                                    iconRef={iconRef}
-                                    nameRef={nameRef}
-                                    taglineRef={taglineRef}
-                                />
-                                <ListingDetailsFields
+                            <ListingStatusBanner
+                                mode={mode}
+                                submittedAt={
+                                    mode === 'update-in-review'
+                                        ? listing.pending_update?.submitted_at
+                                        : listing.submitted_at
+                                }
+                                hasPendingChanges={hasPendingChanges}
+                                isWorking={isChangingStatus}
+                                onMakeChanges={() => changeStatus('withdraw')}
+                                onDiscardChanges={() => changeStatus('discard')}
+                            />
+
+                            <fieldset
+                                disabled={isLocked}
+                                aria-disabled={isLocked}
+                                className={
+                                    isLocked ? 'opacity-60 pointer-events-none select-none' : ''
+                                }
+                            >
+                                <div className="bg-white rounded-[20px] border border-grayscale-200 p-6 mb-6 space-y-5">
+                                    <h2 className="text-base font-semibold text-grayscale-900">
+                                        Your listing
+                                    </h2>
+                                    <ListingIdentityFields
+                                        data={data}
+                                        onChange={updateData}
+                                        iconRef={iconRef}
+                                        nameRef={nameRef}
+                                        taglineRef={taglineRef}
+                                    />
+                                    <ListingDetailsFields
+                                        details={data}
+                                        onChange={updateData}
+                                        descriptionRef={descriptionRef}
+                                    />
+                                </div>
+
+                                <StandOutSection
                                     details={data}
                                     onChange={updateData}
-                                    descriptionRef={descriptionRef}
+                                    fieldRefs={optionalFieldRefs}
                                 />
-                            </div>
-
-                            <StandOutSection
-                                details={data}
-                                onChange={updateData}
-                                fieldRefs={optionalFieldRefs}
-                            />
+                            </fieldset>
 
                             {!isDesktop && <div className="mt-6">{preview}</div>}
 
@@ -264,7 +328,9 @@ export const EditListingPage: React.FC = () => {
                             >
                                 <div className="flex items-center gap-4 p-4 bg-white rounded-[20px] border border-grayscale-200 shadow-lg">
                                     <div className="flex-1 min-w-0 text-sm">
-                                        {isDraft && showMissingHint && missingField ? (
+                                        {(isDraft || canSubmitUpdate) &&
+                                        showMissingHint &&
+                                        missingField ? (
                                             <button
                                                 type="button"
                                                 onClick={() => focusField(missingField.field)}
@@ -297,6 +363,8 @@ export const EditListingPage: React.FC = () => {
                                             </>
                                         ) : isDraft ? (
                                             'Submit for Review'
+                                        ) : canSubmitUpdate ? (
+                                            'Submit Update'
                                         ) : (
                                             'Done'
                                         )}

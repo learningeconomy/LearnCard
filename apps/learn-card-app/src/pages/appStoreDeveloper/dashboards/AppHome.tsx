@@ -23,6 +23,7 @@ export const AppHome: React.FC<AppHomeProps> = ({ integration, onBack, onToggleA
         useManifestDiff,
         useApplyManifestVersion,
         useSubmitForReview,
+        useSubmitListingUpdate,
     } = useDeveloperPortal();
 
     const {
@@ -38,6 +39,7 @@ export const AppHome: React.FC<AppHomeProps> = ({ integration, onBack, onToggleA
 
     const applyManifestMutation = useApplyManifestVersion();
     const submitForReviewMutation = useSubmitForReview();
+    const submitListingUpdateMutation = useSubmitListingUpdate();
 
     const [isDiffExpanded, setIsDiffExpanded] = useState(false);
     const [isShipping, setIsShipping] = useState(false);
@@ -119,15 +121,21 @@ export const AppHome: React.FC<AppHomeProps> = ({ integration, onBack, onToggleA
         if (!latestVersionRecord || !latestListing) return;
         setIsShipping(true);
         try {
-            if (hasDraft) {
-                await applyManifestMutation.mutateAsync({
-                    integrationId: integration.id,
-                    version: latestVersionRecord.version,
-                    listingId: latestListing.listing_id,
-                });
-            }
+            const applied = hasDraft
+                ? await applyManifestMutation.mutateAsync({
+                      integrationId: integration.id,
+                      version: latestVersionRecord.version,
+                      listingId: latestListing.listing_id,
+                  })
+                : undefined;
             if (latestListing.app_listing_status === 'DRAFT') {
                 await submitForReviewMutation.mutateAsync(latestListing.listing_id);
+            } else if (
+                latestListing.app_listing_status === 'LISTED' &&
+                (applied?.pendingReview || latestListing.pending_update?.status === 'DRAFT')
+            ) {
+                // Live apps change only after review: send the held update along.
+                await submitListingUpdateMutation.mutateAsync(latestListing.listing_id);
             }
         } catch (e) {
             console.error(e);
@@ -208,14 +216,19 @@ export const AppHome: React.FC<AppHomeProps> = ({ integration, onBack, onToggleA
                 id: 'shipped',
                 title: 'Shipped',
                 detail:
-                    latestListing?.app_listing_status === 'LISTED'
-                        ? 'Live in App Store'
-                        : latestListing?.app_listing_status === 'PENDING_REVIEW'
-                          ? 'In review'
-                          : 'Not submitted',
+                    latestListing?.pending_update?.status === 'PENDING_REVIEW'
+                        ? 'Live · update in review'
+                        : latestListing?.app_listing_status === 'LISTED'
+                          ? 'Live in App Store'
+                          : latestListing?.app_listing_status === 'PENDING_REVIEW'
+                            ? 'In review'
+                            : 'Not submitted',
                 isDone: latestListing?.app_listing_status === 'LISTED',
                 action:
-                    hasDraft || latestListing?.app_listing_status === 'DRAFT' ? (
+                    (hasDraft ||
+                        latestListing?.app_listing_status === 'DRAFT' ||
+                        latestListing?.pending_update?.status === 'DRAFT') &&
+                    latestListing?.pending_update?.status !== 'PENDING_REVIEW' ? (
                         <button
                             onClick={handleShip}
                             disabled={isShipping || !latestListing}
@@ -225,7 +238,9 @@ export const AppHome: React.FC<AppHomeProps> = ({ integration, onBack, onToggleA
                                 ? 'Shipping...'
                                 : hasDraft
                                   ? `Apply & Ship v${latestVersionRecord?.version}`
-                                  : 'Submit for review'}
+                                  : latestListing?.app_listing_status === 'LISTED'
+                                    ? 'Submit update'
+                                    : 'Submit for review'}
                         </button>
                     ) : null,
             },

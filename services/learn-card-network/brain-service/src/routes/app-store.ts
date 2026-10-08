@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
 import {
+    PendingListingUpdateValidator,
     AppManifestDiffValidator,
     AppManifestValidator,
     AppManifestVersionValidator,
@@ -71,7 +72,10 @@ import {
     countInstalledAppsForProfile,
     checkIfProfileInstalledApp,
 } from '@accesslayer/app-store-listing/read';
-import { updateAppStoreListing } from '@accesslayer/app-store-listing/update';
+import {
+    clearPendingListingUpdate,
+    updateAppStoreListing,
+} from '@accesslayer/app-store-listing/update';
 import { deleteAppStoreListing } from '@accesslayer/app-store-listing/delete';
 import {
     associateListingWithIntegration,
@@ -111,11 +115,13 @@ import {
     PromotionLevel,
     AppStoreListingValidator,
     AgeRating,
+    StoredPendingListingUpdateValidator,
 } from 'types/app-store-listing';
 import type {
     AppStoreListingCreateType,
     AppStoreListingType,
     AppStoreListingUpdateType,
+    StoredPendingListingUpdate,
 } from 'types/app-store-listing';
 import { getBoostByUri } from '@accesslayer/boost/read';
 import {
@@ -356,12 +362,16 @@ const iframeUrlRefinement = (
     }
 };
 
+type PendingStorageField =
+    'pending_update_json' | 'pending_update_status' | 'pending_update_submitted_at';
+
 type AppStoreListingResponse<T extends AppStoreListingType> = Omit<
     T,
-    'highlights_json' | 'screenshots_json'
+    'highlights_json' | 'screenshots_json' | PendingStorageField
 > & {
     highlights?: string[];
     screenshots?: string[];
+    pending_update?: z.infer<typeof PendingListingUpdateValidator>;
 };
 
 type ListingStorageInput<T extends Record<string, unknown>> = Omit<
@@ -375,17 +385,71 @@ type ListingStorageInput<T extends Record<string, unknown>> = Omit<
 // Helper to strip sensitive fields (contact_email) from listings for public responses
 const stripSensitiveFields = <T extends Record<string, unknown>>(
     listing: T
-): Omit<T, 'contact_email'> => {
-    const { contact_email, ...rest } = listing;
-    return rest as Omit<T, 'contact_email'>;
+): Omit<T, 'contact_email' | 'pending_update'> => {
+    const { contact_email, pending_update, ...rest } = listing;
+    return rest as Omit<T, 'contact_email' | 'pending_update'>;
+};
+
+const parseJsonArray = (value: unknown): string[] | undefined => {
+    if (typeof value !== 'string' || !value) return undefined;
+    try {
+        const parsed: unknown = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed.filter(item => typeof item === 'string') : [];
+    } catch {
+        return [];
+    }
+};
+
+const readPendingUpdate = (listing: AppStoreListingType): StoredPendingListingUpdate | null => {
+    if (!listing.pending_update_json) return null;
+    try {
+        const parsed = StoredPendingListingUpdateValidator.safeParse(
+            JSON.parse(listing.pending_update_json)
+        );
+        return parsed.success ? parsed.data : null;
+    } catch {
+        return null;
+    }
+};
+
+const toPendingUpdateResponse = (
+    listing: AppStoreListingType
+): z.infer<typeof PendingListingUpdateValidator> | undefined => {
+    const pending = readPendingUpdate(listing);
+    if (!pending || !listing.pending_update_status) return undefined;
+
+    const { highlights_json, screenshots_json, ...changes } = pending.changes;
+    const highlights = parseJsonArray(highlights_json);
+    const screenshots = parseJsonArray(screenshots_json);
+
+    return PendingListingUpdateValidator.parse({
+        status: listing.pending_update_status,
+        submitted_at: listing.pending_update_submitted_at,
+        changes: {
+            ...changes,
+            ...(highlights ? { highlights } : {}),
+            ...(screenshots ? { screenshots } : {}),
+        },
+        manifest_version: pending.manifestVersion,
+    });
 };
 
 // Helper to transform listing for API response (JSON strings -> arrays)
 const transformListingForResponse = <T extends AppStoreListingType & Record<string, unknown>>(
     listing: T
 ): AppStoreListingResponse<T> => {
-    const { highlights_json, screenshots_json, ...rest } = listing;
+    const {
+        highlights_json,
+        screenshots_json,
+        pending_update_json,
+        pending_update_status,
+        pending_update_submitted_at,
+        ...rest
+    } = listing;
     const result = { ...rest } as AppStoreListingResponse<T>;
+
+    const pendingUpdate = toPendingUpdateResponse(listing);
+    if (pendingUpdate) result.pending_update = pendingUpdate;
 
     if (highlights_json) {
         try {
@@ -496,9 +560,13 @@ const AppStoreListingResponseValidator = AppStoreListingValidator.extend({
     highlights: z.array(z.string()).optional(),
     screenshots: z.array(z.string()).optional(),
     submitter: AppStoreListingSubmitterValidator.optional(),
+    pending_update: PendingListingUpdateValidator.optional(),
 }).omit({
     highlights_json: true,
     screenshots_json: true,
+    pending_update_json: true,
+    pending_update_status: true,
+    pending_update_submitted_at: true,
 });
 
 const PaginatedAppStoreListingsValidator = z.object({
@@ -550,7 +618,8 @@ const SubmitAppManifestResponseValidator = z.object({
 });
 
 const ApplyManifestVersionResponseValidator = z.object({
-    applied: z.literal(true),
+    applied: z.boolean(),
+    pendingReview: z.boolean().optional(),
     version: z.number().int().min(1),
     reconciled: z.object({
         templatesUpserted: z.number().int().min(0),
@@ -1085,6 +1154,199 @@ const resolveManifestApplyListing = async ({
     }
 
     return listings[0]!;
+};
+
+type ManifestVersionRecord = NonNullable<
+    Awaited<ReturnType<typeof getManifestVersionForIntegration>>
+>;
+type IntegrationRecord = Awaited<ReturnType<typeof verifyIntegrationOwnership>>;
+type OwnerProfileRecord = NonNullable<Awaited<ReturnType<typeof getOwnerProfileForIntegration>>>;
+
+const reconcileManifestVersionForListing = async ({
+    ctx,
+    integration,
+    integrationOwner,
+    listing,
+    manifestVersion,
+}: {
+    ctx: { domain: string };
+    integration: IntegrationRecord;
+    integrationOwner: OwnerProfileRecord;
+    listing: AppStoreListingType;
+    manifestVersion: ManifestVersionRecord;
+}) => {
+    let templatesUpserted = 0;
+    let templatesSkipped = 0;
+    let contractsUpserted = 0;
+    let contractsSkipped = 0;
+
+    for (const templateRecord of manifestVersion.manifest.templates) {
+        const inlineTemplate = templateRecord.template as InlineCredentialTemplate;
+        const existingBoost = await getBoostForListingByTemplateAlias(
+            listing.listing_id,
+            templateRecord.alias,
+            ctx.domain
+        );
+        const desiredTemplateHash = computeInlineTemplateHash(inlineTemplate).contentHash;
+
+        const existingBoostMeta = existingBoost
+            ? await readInlineTemplateBoostMeta(existingBoost.boost)
+            : undefined;
+
+        if (
+            existingBoostMeta?.inlineTemplateHash === desiredTemplateHash &&
+            existingBoostMeta.inlineTemplateVersion === templateRecord.version
+        ) {
+            templatesSkipped += 1;
+            continue;
+        }
+
+        await upsertInlineTemplateBoostForListing({
+            listing,
+            integration,
+            templateAlias: templateRecord.alias,
+            template: inlineTemplate,
+            domain: ctx.domain,
+            desiredVersion: templateRecord.version,
+        });
+
+        templatesUpserted += 1;
+
+        invalidateBoostForListingCache(listing.listing_id, templateRecord.alias, ctx.domain);
+    }
+
+    for (const consentRecord of manifestVersion.manifest.consentRequests) {
+        const upsertedConsent = await upsertConsentContractForListingScopes({
+            ctx,
+            listing,
+            listingId: listing.listing_id,
+            normalizedScopes: consentRecord.scopes,
+            reason: consentRecord.reason,
+        });
+
+        if (upsertedConsent.created) {
+            contractsUpserted += 1;
+        } else {
+            contractsSkipped += 1;
+        }
+
+        invalidateConsentContractForListingByScopeHashCache(
+            listing.listing_id,
+            upsertedConsent.scopeHash
+        );
+    }
+
+    await markManifestVersionsSuperseded(integration.id, manifestVersion.id);
+
+    if (manifestVersion.status !== 'active' || !manifestVersion.activatedAt) {
+        await updateAppManifestVersion(manifestVersion.id, {
+            status: 'active',
+            activatedAt: manifestVersion.activatedAt ?? new Date().toISOString(),
+        });
+    }
+
+    await associateListingWithManifestVersion(listing.listing_id, manifestVersion.id);
+
+    await ensureManagedSigningAuthorityForListing(
+        listing,
+        integration,
+        integrationOwner,
+        ctx.domain
+    );
+
+    return {
+        templatesUpserted,
+        templatesSkipped,
+        contractsUpserted,
+        contractsSkipped,
+        signingAuthorityEnsured: true,
+    };
+};
+
+const PENDING_UPDATE_IN_REVIEW_MESSAGE =
+    'An update for this app is already in review. Withdraw it to make more changes.';
+
+/**
+ * Records changes to a LISTED app as a pending update instead of applying them, so
+ * nothing about a live app changes until an admin approves it.
+ */
+const holdChangesForReview = async (
+    listing: AppStoreListingType,
+    {
+        changes = {},
+        manifestVersion,
+    }: { changes?: Record<string, unknown>; manifestVersion?: number }
+): Promise<boolean> => {
+    if (listing.pending_update_status === 'PENDING_REVIEW') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: PENDING_UPDATE_IN_REVIEW_MESSAGE });
+    }
+
+    const existing = readPendingUpdate(listing);
+    const next: StoredPendingListingUpdate = {
+        changes: { ...existing?.changes, ...changes },
+        manifestVersion: manifestVersion ?? existing?.manifestVersion,
+    };
+
+    return updateAppStoreListing(listing, {
+        pending_update_json: JSON.stringify(next),
+        pending_update_status: 'DRAFT',
+    });
+};
+
+const assertLaunchConfigSubmittable = (launchType: string, launchConfigJson: string): void => {
+    if (launchType !== 'EMBEDDED_IFRAME' || !launchConfigJson) return;
+
+    try {
+        const config = JSON.parse(launchConfigJson);
+        const urlToCheck = config.url || config.iframeUrl;
+        if (!urlToCheck) return;
+
+        const parsed = new URL(urlToCheck);
+        const isLocalhost =
+            parsed.hostname === 'localhost' ||
+            parsed.hostname === '127.0.0.1' ||
+            parsed.hostname === '[::1]';
+        if (isLocalhost || parsed.protocol !== 'https:') {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message:
+                    'Cannot submit an app for review with a localhost or non-HTTPS URL. Please update the launch configuration with your production URL.',
+            });
+        }
+    } catch (e) {
+        if (e instanceof TRPCError) throw e;
+        // Unparseable config is rejected by input validation.
+    }
+};
+
+const notifyAppStoreAdmins = async (
+    from: Parameters<typeof addNotificationToQueue>[0]['from'],
+    type: 'APP_LISTING_SUBMITTED' | 'APP_LISTING_WITHDRAWN',
+    listing: AppStoreListingType,
+    metadata: Record<string, unknown> = {}
+): Promise<void> => {
+    if (APP_STORE_ADMIN_PROFILE_IDS.length === 0) return;
+
+    const adminProfiles = await getProfilesByProfileIds(APP_STORE_ADMIN_PROFILE_IDS);
+    for (const adminProfile of adminProfiles) {
+        await addNotificationToQueue({
+            type,
+            to: adminProfile,
+            from,
+            message: getNotificationMessage(
+                type === 'APP_LISTING_SUBMITTED' ? 'appListingSubmitted' : 'appListingWithdrawn',
+                resolveRecipientLocale(adminProfile),
+                { displayName: listing.display_name }
+            ),
+            data: {
+                metadata: {
+                    listingId: listing.listing_id,
+                    listingName: listing.display_name,
+                    ...metadata,
+                },
+            },
+        });
+    }
 };
 
 const handleCheckCredentialEvent = async (
@@ -2323,100 +2585,33 @@ export const appStoreRouter = t.router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration owner not found' });
             }
 
-            let templatesUpserted = 0;
-            let templatesSkipped = 0;
-            let contractsUpserted = 0;
-            let contractsSkipped = 0;
+            if (listing.app_listing_status === 'LISTED' && manifestVersion.status !== 'active') {
+                // A live app's new capabilities wait for review instead of taking effect.
+                await holdChangesForReview(listing, { manifestVersion: manifestVersion.version });
 
-            for (const templateRecord of manifestVersion.manifest.templates) {
-                const inlineTemplate = templateRecord.template as InlineCredentialTemplate;
-                const existingBoost = await getBoostForListingByTemplateAlias(
-                    listing.listing_id,
-                    templateRecord.alias,
-                    ctx.domain
-                );
-                const desiredTemplateHash = computeInlineTemplateHash(inlineTemplate).contentHash;
-
-                const existingBoostMeta = existingBoost
-                    ? await readInlineTemplateBoostMeta(existingBoost.boost)
-                    : undefined;
-
-                if (
-                    existingBoostMeta?.inlineTemplateHash === desiredTemplateHash &&
-                    existingBoostMeta.inlineTemplateVersion === templateRecord.version
-                ) {
-                    templatesSkipped += 1;
-                    continue;
-                }
-
-                await upsertInlineTemplateBoostForListing({
-                    listing,
-                    integration,
-                    templateAlias: templateRecord.alias,
-                    template: inlineTemplate,
-                    domain: ctx.domain,
-                    desiredVersion: templateRecord.version,
-                });
-
-                templatesUpserted += 1;
-
-                invalidateBoostForListingCache(
-                    listing.listing_id,
-                    templateRecord.alias,
-                    ctx.domain
-                );
+                return {
+                    applied: false,
+                    pendingReview: true,
+                    version: manifestVersion.version,
+                    reconciled: {
+                        templatesUpserted: 0,
+                        templatesSkipped: 0,
+                        contractsUpserted: 0,
+                        contractsSkipped: 0,
+                        signingAuthorityEnsured: false,
+                    },
+                };
             }
 
-            for (const consentRecord of manifestVersion.manifest.consentRequests) {
-                const upsertedConsent = await upsertConsentContractForListingScopes({
-                    ctx,
-                    listing,
-                    listingId: listing.listing_id,
-                    normalizedScopes: consentRecord.scopes,
-                    reason: consentRecord.reason,
-                });
-
-                if (upsertedConsent.created) {
-                    contractsUpserted += 1;
-                } else {
-                    contractsSkipped += 1;
-                }
-
-                invalidateConsentContractForListingByScopeHashCache(
-                    listing.listing_id,
-                    upsertedConsent.scopeHash
-                );
-            }
-
-            await markManifestVersionsSuperseded(input.integrationId, manifestVersion.id);
-
-            if (manifestVersion.status !== 'active' || !manifestVersion.activatedAt) {
-                await updateAppManifestVersion(manifestVersion.id, {
-                    status: 'active',
-                    activatedAt: manifestVersion.activatedAt ?? new Date().toISOString(),
-                });
-            }
-
-            await associateListingWithManifestVersion(listing.listing_id, manifestVersion.id);
-
-            await ensureManagedSigningAuthorityForListing(
-                listing,
+            const reconciled = await reconcileManifestVersionForListing({
+                ctx,
                 integration,
                 integrationOwner,
-                ctx.domain
-            );
+                listing,
+                manifestVersion,
+            });
 
-            return {
-                applied: true,
-                version: manifestVersion.version,
-                reconciled: {
-                    templatesUpserted,
-                    templatesSkipped,
-                    contractsUpserted,
-                    contractsSkipped,
-                    signingAuthorityEnsured: true,
-                },
-            };
+            return { applied: true, version: manifestVersion.version, reconciled };
         }),
 
     updateListing: profileRoute
@@ -2449,6 +2644,10 @@ export const appStoreRouter = t.router({
             >({
                 ...input.updates,
             });
+
+            if (listing.app_listing_status === 'LISTED') {
+                return holdChangesForReview(listing, { changes: storageUpdates });
+            }
 
             if (!listing.slug) {
                 const displayName = storageUpdates.display_name ?? listing.display_name;
@@ -2605,30 +2804,7 @@ export const appStoreRouter = t.router({
                 });
             }
 
-            // Prevent submitting localhost URLs for review
-            if (listing.launch_type === 'EMBEDDED_IFRAME' && listing.launch_config_json) {
-                try {
-                    const config = JSON.parse(listing.launch_config_json);
-                    const urlToCheck = config.url || config.iframeUrl;
-                    if (urlToCheck) {
-                        const parsed = new URL(urlToCheck);
-                        const isLocalhost =
-                            parsed.hostname === 'localhost' ||
-                            parsed.hostname === '127.0.0.1' ||
-                            parsed.hostname === '[::1]';
-                        if (isLocalhost || parsed.protocol !== 'https:') {
-                            throw new TRPCError({
-                                code: 'BAD_REQUEST',
-                                message:
-                                    'Cannot submit an app for review with a localhost or non-HTTPS URL. Please update the launch configuration with your production URL.',
-                            });
-                        }
-                    }
-                } catch (e) {
-                    if (e instanceof TRPCError) throw e;
-                    // Ignore JSON parse errors here, they should be caught by validation
-                }
-            }
+            assertLaunchConfigSubmittable(listing.launch_type, listing.launch_config_json);
 
             const submittedAt = new Date().toISOString();
 
@@ -2728,6 +2904,125 @@ export const appStoreRouter = t.router({
             }
 
             return result;
+        }),
+
+    submitListingUpdate: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/listing/{listingId}/update/submit',
+                tags: ['App Store'],
+                summary: 'Submit Listing Update for Review',
+                description:
+                    'Send pending changes to a LISTED app for admin review. The live listing is unchanged until approval.',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(z.object({ listingId: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            const { listing } = await verifyListingOwnership(
+                input.listingId,
+                ctx.user.profile.profileId
+            );
+            const pending = readPendingUpdate(listing);
+
+            if (listing.app_listing_status !== 'LISTED' || !pending) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'There are no changes to submit for this app.',
+                });
+            }
+            if (listing.pending_update_status === 'PENDING_REVIEW') {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: PENDING_UPDATE_IN_REVIEW_MESSAGE,
+                });
+            }
+
+            const nextLaunchType = pending.changes.launch_type ?? listing.launch_type;
+            const nextLaunchConfig =
+                pending.changes.launch_config_json ?? listing.launch_config_json;
+            assertLaunchConfigSubmittable(String(nextLaunchType), String(nextLaunchConfig));
+
+            const result = await updateAppStoreListing(listing, {
+                pending_update_status: 'PENDING_REVIEW',
+                pending_update_submitted_at: new Date().toISOString(),
+            });
+
+            await notifyAppStoreAdmins(ctx.user.profile, 'APP_LISTING_SUBMITTED', listing, {
+                isUpdate: true,
+            });
+
+            return result;
+        }),
+
+    withdrawListingUpdate: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/listing/{listingId}/update/withdraw',
+                tags: ['App Store'],
+                summary: 'Withdraw Listing Update from Review',
+                description: 'Return a submitted update to a LISTED app back to editable changes.',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(z.object({ listingId: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            const { listing } = await verifyListingOwnership(
+                input.listingId,
+                ctx.user.profile.profileId
+            );
+
+            if (listing.pending_update_status !== 'PENDING_REVIEW') {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'There is no update in review for this app.',
+                });
+            }
+
+            const result = await updateAppStoreListing(listing, { pending_update_status: 'DRAFT' });
+
+            await notifyAppStoreAdmins(ctx.user.profile, 'APP_LISTING_WITHDRAWN', listing, {
+                isUpdate: true,
+            });
+
+            return result;
+        }),
+
+    discardListingUpdate: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/listing/{listingId}/update/discard',
+                tags: ['App Store'],
+                summary: 'Discard Listing Update',
+                description: 'Throw away unsubmitted changes to a LISTED app.',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(z.object({ listingId: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            const { listing } = await verifyListingOwnership(
+                input.listingId,
+                ctx.user.profile.profileId
+            );
+
+            if (listing.pending_update_status === 'PENDING_REVIEW') {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: PENDING_UPDATE_IN_REVIEW_MESSAGE,
+                });
+            }
+
+            await clearPendingListingUpdate(listing.listing_id);
+            return true;
         }),
 
     deleteListing: profileRoute
@@ -3556,6 +3851,98 @@ export const appStoreRouter = t.router({
             return result;
         }),
 
+    adminReviewListingUpdate: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/admin/listing/{listingId}/update/review',
+                tags: ['App Store Admin'],
+                summary: 'Review Listing Update (Admin)',
+                description:
+                    'Approve (apply to the live listing) or reject a submitted update to a LISTED app.',
+            },
+            requiredScope: 'app-store:admin',
+        })
+        .input(z.object({ listingId: z.string(), approve: z.boolean() }))
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            verifyAppStoreAdmin(ctx.user.profile.profileId);
+
+            const listing = await getListingOrThrow(input.listingId);
+            const pending = readPendingUpdate(listing);
+
+            if (listing.pending_update_status !== 'PENDING_REVIEW' || !pending) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'This app has no update waiting for review.',
+                });
+            }
+
+            const integration = await getIntegrationForListing(input.listingId);
+            const ownerProfile = integration
+                ? await getOwnerProfileForIntegration(integration.id)
+                : null;
+
+            if (input.approve) {
+                if (pending.manifestVersion !== undefined) {
+                    if (!integration || !ownerProfile) {
+                        throw new TRPCError({
+                            code: 'NOT_FOUND',
+                            message: 'Integration for this listing was not found',
+                        });
+                    }
+                    const manifestVersion = await getManifestVersionForIntegration(
+                        integration.id,
+                        pending.manifestVersion
+                    );
+                    if (manifestVersion) {
+                        await reconcileManifestVersionForListing({
+                            ctx,
+                            integration,
+                            integrationOwner: ownerProfile,
+                            listing,
+                            manifestVersion,
+                        });
+                    }
+                }
+
+                await updateAppStoreListing(listing, pending.changes as AppStoreListingUpdateType);
+                await clearPendingListingUpdate(listing.listing_id);
+            } else {
+                await updateAppStoreListing(listing, { pending_update_status: 'DRAFT' });
+            }
+
+            if (ownerProfile) {
+                const approvedName =
+                    typeof pending.changes.display_name === 'string' && input.approve
+                        ? pending.changes.display_name
+                        : listing.display_name;
+
+                await addNotificationToQueue({
+                    type: input.approve
+                        ? LCNNotificationTypeEnumValidator.enum.APP_LISTING_APPROVED
+                        : LCNNotificationTypeEnumValidator.enum.APP_LISTING_REJECTED,
+                    to: ownerProfile,
+                    from: ctx.user.profile,
+                    message: getNotificationMessage(
+                        input.approve ? 'appListingApproved' : 'appListingRejected',
+                        resolveRecipientLocale(ownerProfile),
+                        { displayName: approvedName }
+                    ),
+                    data: {
+                        metadata: {
+                            listingId: listing.listing_id,
+                            listingName: approvedName,
+                            isUpdate: true,
+                        },
+                    },
+                });
+            }
+
+            return true;
+        }),
+
     adminUpdatePromotionLevel: profileRoute
         .meta({
             openapi: {
@@ -3601,6 +3988,7 @@ export const appStoreRouter = t.router({
                     limit: z.number().optional(),
                     cursor: z.string().optional(),
                     status: AppListingStatus.optional(),
+                    pendingUpdatesOnly: z.boolean().optional(),
                 })
                 .optional()
         )
@@ -3618,6 +4006,7 @@ export const appStoreRouter = t.router({
                 status: input?.status,
                 includeAllStatuses: !input?.status, // Include all if no specific status filter
                 excludeDemoted: false, // Admin can see demoted listings
+                pendingUpdatesOnly: input?.pendingUpdatesOnly,
             });
 
             const hasMore = results.length > limit;

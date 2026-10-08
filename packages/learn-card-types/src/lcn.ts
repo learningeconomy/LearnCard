@@ -2237,7 +2237,7 @@ export const AppStoreListingSubmitterValidator = z.object({
 
 export type AppStoreListingSubmitter = z.infer<typeof AppStoreListingSubmitterValidator>;
 
-export const AppStoreListingValidator = z.object({
+const AppStoreListingFieldsValidator = z.object({
     listing_id: z.string(),
     slug: z.string().optional(),
     display_name: z.string(),
@@ -2264,12 +2264,35 @@ export const AppStoreListingValidator = z.object({
     contact_email: z.string().email().optional(),
 });
 
+export const PendingListingUpdateStatusValidator = z.enum(['DRAFT', 'PENDING_REVIEW']);
+export type PendingListingUpdateStatus = z.infer<typeof PendingListingUpdateStatusValidator>;
+
+/** Changes to a live app that only take effect once an admin approves them. */
+export const PendingListingUpdateValidator = z.object({
+    status: PendingListingUpdateStatusValidator,
+    submitted_at: z.string().optional(),
+    changes: AppStoreListingFieldsValidator.omit({
+        listing_id: true,
+        app_listing_status: true,
+        promotion_level: true,
+        submitted_at: true,
+        submitter: true,
+    }).partial(),
+    manifest_version: z.number().int().min(1).optional(),
+});
+export type PendingListingUpdate = z.infer<typeof PendingListingUpdateValidator>;
+
+export const AppStoreListingValidator = AppStoreListingFieldsValidator.extend({
+    pending_update: PendingListingUpdateValidator.optional(),
+});
+
 export type AppStoreListing = z.infer<typeof AppStoreListingValidator>;
 
 export const AppStoreListingCreateValidator = AppStoreListingValidator.omit({
     listing_id: true,
     app_listing_status: true,
     promotion_level: true,
+    pending_update: true,
 });
 
 export type AppStoreListingCreateType = z.infer<typeof AppStoreListingCreateValidator>;
@@ -2278,6 +2301,7 @@ export const AppStoreListingUpdateValidator = AppStoreListingValidator.partial()
     listing_id: true,
     app_listing_status: true,
     promotion_level: true,
+    pending_update: true,
 });
 
 export type AppStoreListingUpdateType = z.infer<typeof AppStoreListingUpdateValidator>;

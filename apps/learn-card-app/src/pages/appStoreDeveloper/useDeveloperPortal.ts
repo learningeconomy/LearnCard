@@ -355,6 +355,29 @@ export const useDeveloperPortal = () => {
         });
     };
 
+    const useListingUpdateAction = (
+        action: (
+            wallet: Awaited<ReturnType<typeof initWallet>>,
+            listingId: string
+        ) => Promise<boolean>
+    ) =>
+        useMutation({
+            mutationFn: async (listingId: string): Promise<boolean> =>
+                action(await initWallet(), listingId),
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ['developer', 'listings'] });
+                queryClient.invalidateQueries({ queryKey: ['developer', 'listing'] });
+            },
+        });
+
+    // Changes to a live app are held for review; these move that held update along.
+    const useSubmitListingUpdate = () =>
+        useListingUpdateAction((wallet, id) => wallet.invoke.submitAppStoreListingUpdate(id));
+    const useWithdrawListingUpdate = () =>
+        useListingUpdateAction((wallet, id) => wallet.invoke.withdrawAppStoreListingUpdate(id));
+    const useDiscardListingUpdate = () =>
+        useListingUpdateAction((wallet, id) => wallet.invoke.discardAppStoreListingUpdate(id));
+
     // ========== Manifest Hooks ==========
 
     const useManifestVersions = (integrationId: string | null) => {
@@ -445,14 +468,15 @@ export const useDeveloperPortal = () => {
     };
 
     // Query for all listings (admin only)
-    const useAdminListings = (status?: AppListingStatus) => {
+    const useAdminListings = (status?: AppListingStatus, pendingUpdatesOnly = false) => {
         return useQuery({
-            queryKey: ['admin', 'listings', status],
+            queryKey: ['admin', 'listings', status, pendingUpdatesOnly],
             queryFn: async (): Promise<AppStoreListing[]> => {
                 const wallet = await initWallet();
                 const result = await wallet.invoke.adminGetAllListings({
                     limit: 100,
                     status,
+                    ...(pendingUpdatesOnly ? { pendingUpdatesOnly } : {}),
                 });
 
                 return result.records;
@@ -474,6 +498,25 @@ export const useDeveloperPortal = () => {
                 const wallet = await initWallet();
 
                 return wallet.invoke.adminUpdateListingStatus(listingId, status);
+            },
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ['admin', 'listings'] });
+            },
+        });
+    };
+
+    const useAdminReviewUpdate = () => {
+        return useMutation({
+            mutationFn: async ({
+                listingId,
+                approve,
+            }: {
+                listingId: string;
+                approve: boolean;
+            }): Promise<boolean> => {
+                const wallet = await initWallet();
+
+                return wallet.invoke.adminReviewListingUpdate(listingId, approve);
             },
             onSuccess: () => {
                 queryClient.invalidateQueries({ queryKey: ['admin', 'listings'] });
@@ -570,6 +613,9 @@ export const useDeveloperPortal = () => {
         useDeleteListing,
         useSubmitForReview,
         useUnsubmitForReview,
+        useSubmitListingUpdate,
+        useWithdrawListingUpdate,
+        useDiscardListingUpdate,
 
         // Manifest hooks
         useManifestVersions,
@@ -582,6 +628,7 @@ export const useDeveloperPortal = () => {
         useAdminListings,
         useAdminUpdateStatus,
         useAdminUpdatePromotion,
+        useAdminReviewUpdate,
 
         // App DID upgrade
         useUpgradeAppToAppDid,

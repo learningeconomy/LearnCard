@@ -42,6 +42,8 @@ import {
 import type { ConsentRequest } from '@learncard/partner-connect-core';
 import { ConsentDesignerCard } from './ConsentDesignerCard';
 import { findReusableListing } from './listingReuse';
+import { ListingStatusBanner } from './ListingStatusBanner';
+import { getListingMode, isListingLocked, withPendingChanges } from './listingLifecycle';
 import { ListingDetailsFields, StandOutSection } from './ListingEditor';
 import { StoreListingPreview } from './StoreListingPreview';
 import { AppCapabilitiesSummary } from './AppCapabilitiesSummary';
@@ -165,7 +167,7 @@ const PERSONAL_FIELD_LABELS: Record<string, string> = {
 };
 
 import { ManifestDiffPanel } from '../dashboards/components/ManifestDiffPanel';
-import type { AppListingStatus, AppManifestDiff } from '@learncard/types';
+import type { AppManifestDiff, AppStoreListing } from '@learncard/types';
 
 const AUTOSAVE_DELAY_MS = 800;
 
@@ -186,9 +188,13 @@ export const SubmitFromManifestPage: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showMissingHint, setShowMissingHint] = useState(false);
     const [submittedIntegrationId, setSubmittedIntegrationId] = useState<string | null>(null);
-    const [existingListingStatus, setExistingListingStatus] = useState<AppListingStatus | null>(
-        null
-    );
+    const [ownedListing, setOwnedListing] = useState<AppStoreListing | null>(null);
+    const [hasEdits, setHasEdits] = useState(false);
+    const [isChangingStatus, setIsChangingStatus] = useState(false);
+    const [submittedKind, setSubmittedKind] = useState<'listing' | 'update'>('listing');
+    const [diffHeldForReview, setDiffHeldForReview] = useState(false);
+    const listingMode = getListingMode(ownedListing);
+    const isLocked = isListingLocked(listingMode);
     const [rightPaneTab, setRightPaneTab] = useState<'store' | 'try'>('store');
     const hasEditedListingRef = useRef(false);
     const isSubmittingRef = useRef(false);
@@ -281,6 +287,7 @@ export const SubmitFromManifestPage: React.FC = () => {
             if (data?.url) {
                 if (data.url.startsWith('https://')) {
                     hasEditedListingRef.current = true;
+                    setHasEdits(true);
                     setUploadedIconUrl(data.url);
                     setDisplayIconUrl(data.url);
                 } else {
@@ -516,16 +523,14 @@ export const SubmitFromManifestPage: React.FC = () => {
             const existingListings = await wallet.invoke.getListingsForIntegration(integrationId, {
                 limit: 100,
             });
-            const existingDraft = findReusableListing(existingListings.records, {
+            const existingDraft = findReusableListing<AppStoreListing>(existingListings.records, {
                 storedListingId: storedProvision?.listingId,
                 previewKey,
                 previewUrl,
                 displayName,
             });
 
-            if (existingDraft && existingDraft.app_listing_status !== 'DRAFT') {
-                setExistingListingStatus(existingDraft.app_listing_status);
-            }
+            if (existingDraft) setOwnedListing(existingDraft);
 
             let listingId = existingDraft?.listing_id;
 
@@ -781,52 +786,79 @@ export const SubmitFromManifestPage: React.FC = () => {
 
     const updateDetails = (updates: Partial<ListingDetails>) => {
         hasEditedListingRef.current = true;
+        setHasEdits(true);
         setListingDetails(prev => ({ ...prev, ...updates }));
     };
 
-    // A previous visit may already have a listing for this app: bring back what was
-    // typed there, and point preview/apply at it instead of creating another listing.
+    const populateFromListing = (listing: AppStoreListing) => {
+        const working = withPendingChanges(listing);
+        const { name, tagline: savedTagline, iconUrl, ...details } = listingToData(working);
+        if (name) setAppName(name);
+        setTagline(savedTagline);
+        if (iconUrl !== DEFAULT_APP_ICON_URL && isAllowedIconUrl(iconUrl)) {
+            setUploadedIconUrl(iconUrl);
+            setDisplayIconUrl(iconUrl);
+        }
+        setListingDetails(details);
+
+        try {
+            const config = JSON.parse(working.launch_config_json ?? '') as PreviewLaunchConfig;
+            setCurrentLaunchConfig(config);
+            if (config.contractUri) setContractUri(config.contractUri);
+
+            // A submitted app already knows where it lives; don't ask again.
+            const savedUrl = new URL(config.url);
+            if (savedUrl.protocol === 'https:' && !isAppBuilderPreviewHost(savedUrl.hostname)) {
+                setProductionUrl(prev => prev || savedUrl.origin);
+            }
+        } catch {
+            // An unreadable launch config is rebuilt from the captured app on submit.
+        }
+    };
+
+    const loadOwnedListing = async (listingId: string): Promise<AppStoreListing | null> => {
+        const wallet = await initWallet();
+        const listing = (await wallet.invoke.getAppStoreListing(listingId)) ?? null;
+        setOwnedListing(listing);
+        return listing;
+    };
+
+    // A previous visit may already have a listing for this app: bring it back, and point
+    // preview/apply at it instead of creating another listing.
     useEffect(() => {
         if (!manifest || restoredAppUrlRef.current === manifest.appUrl) return;
         restoredAppUrlRef.current = manifest.appUrl;
 
-        const stored = readStoredProvision(manifest.appUrl);
-        if (!stored?.listingId) return;
-        const { integrationId, listingId } = stored;
-
         let cancelled = false;
         const restore = async () => {
             try {
+                const stored = readStoredProvision(manifest.appUrl);
+                const host = new URL(manifest.appUrl).host;
+                const integrationId =
+                    stored?.integrationId ?? integrations?.find(i => i.name === host)?.id;
+                if (!integrationId) return;
+
                 const wallet = await initWallet();
-                const listing = await wallet.invoke.getAppStoreListing(listingId);
+                const { records } = await wallet.invoke.getListingsForIntegration(integrationId, {
+                    limit: 100,
+                });
+                const displayName = manifest.suggestedName || 'Preview App';
+                const listing = findReusableListing<AppStoreListing>(records, {
+                    storedListingId: stored?.listingId,
+                    previewKey: getPreviewDraftKey(manifest),
+                    previewUrl: manifest.appUrl,
+                    displayName,
+                });
                 if (cancelled || !listing) return;
 
-                try {
-                    const config = JSON.parse(listing.launch_config_json) as PreviewLaunchConfig;
-                    setCurrentLaunchConfig(config);
-                    if (config.contractUri) setContractUri(config.contractUri);
-                } catch {
-                    // An unreadable launch config is rebuilt from the captured app on submit.
-                }
                 setPreviewIntegrationId(integrationId);
-                setPreviewListingId(listingId);
+                setPreviewListingId(listing.listing_id);
+                setOwnedListing(listing);
+                storeProvision(manifest.appUrl, { integrationId, listingId: listing.listing_id });
 
-                if (listing.app_listing_status !== 'DRAFT') {
-                    setExistingListingStatus(listing.app_listing_status);
-                    return;
-                }
-                if (hasEditedListingRef.current) return;
-
-                const { name, tagline: savedTagline, iconUrl, ...details } = listingToData(listing);
-                if (name) setAppName(name);
-                if (savedTagline) setTagline(savedTagline);
-                if (iconUrl !== DEFAULT_APP_ICON_URL && isAllowedIconUrl(iconUrl)) {
-                    setUploadedIconUrl(iconUrl);
-                    setDisplayIconUrl(iconUrl);
-                }
-                setListingDetails(details);
+                if (!hasEditedListingRef.current) populateFromListing(listing);
             } catch (e) {
-                log.debug('listing.restore.failed', e, { listingId });
+                log.debug('listing.restore.failed', e, { appUrl: manifest.appUrl });
             }
         };
 
@@ -838,8 +870,37 @@ export const SubmitFromManifestPage: React.FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [manifest?.appUrl]);
 
+    const changeListingStatus = async (action: 'withdraw' | 'discard') => {
+        if (!previewListingId) return;
+        setIsChangingStatus(true);
+        setFormError(null);
+        try {
+            const wallet = await initWallet();
+            if (action === 'discard') {
+                await wallet.invoke.discardAppStoreListingUpdate(previewListingId);
+            } else if (listingMode === 'update-in-review') {
+                await wallet.invoke.withdrawAppStoreListingUpdate(previewListingId);
+            } else {
+                await wallet.invoke.unsubmitAppStoreListing(previewListingId);
+            }
+
+            const listing = await loadOwnedListing(previewListingId);
+            if (listing && action === 'discard') {
+                hasEditedListingRef.current = false;
+                setHasEdits(false);
+                setSaveState('idle');
+                populateFromListing(listing);
+            }
+        } catch (err) {
+            log.error('listing.status-change.failed', err, { action });
+            setFormError(toFriendlyError(err, 'Something went wrong. Please try again.'));
+        } finally {
+            setIsChangingStatus(false);
+        }
+    };
+
     useEffect(() => {
-        if (!manifest || !hasEditedListingRef.current || existingListingStatus) return;
+        if (!manifest || !hasEditedListingRef.current || isLocked) return;
 
         const timer = setTimeout(async () => {
             if (isSubmittingRef.current) return;
@@ -907,7 +968,14 @@ export const SubmitFromManifestPage: React.FC = () => {
                     contractUri: contractUri ?? currentLaunchConfig?.contractUri,
                 }),
             });
-            await submitForReview.mutateAsync(listingId);
+            const isUpdate = listingMode === 'live';
+            if (isUpdate) {
+                const wallet = await initWallet();
+                await wallet.invoke.submitAppStoreListingUpdate(listingId);
+            } else {
+                await submitForReview.mutateAsync(listingId);
+            }
+            setSubmittedKind(isUpdate ? 'update' : 'listing');
 
             storeProvision(manifest.appUrl, { integrationId, listingId });
             [
@@ -1099,10 +1167,14 @@ export const SubmitFromManifestPage: React.FC = () => {
                                 className="w-20 h-20 rounded-2xl object-cover border border-grayscale-200 mx-auto mb-5"
                             />
                             <h1 className="text-xl font-semibold text-grayscale-900 mb-2">
-                                {appName} is in review
+                                {submittedKind === 'update'
+                                    ? `Your ${appName} update is in review`
+                                    : `${appName} is in review`}
                             </h1>
                             <p className="text-sm text-grayscale-600 leading-relaxed mb-6">
-                                We'll take a look and let you know when it's live in the store.
+                                {submittedKind === 'update'
+                                    ? "Your app stays live as it is. We'll let you know when the update is approved."
+                                    : "We'll take a look and let you know when it's live in the store."}
                             </p>
                             <button
                                 type="button"
@@ -1144,9 +1216,13 @@ export const SubmitFromManifestPage: React.FC = () => {
     const leftPaneContent = (
         <div className={`${isDesktop ? 'max-w-xl mx-auto' : 'max-w-2xl mx-auto'} pb-12 w-full`}>
             <div className="text-center mb-8 mt-4">
-                <h1 className="text-2xl font-semibold text-grayscale-900 mb-2">Publish your app</h1>
+                <h1 className="text-2xl font-semibold text-grayscale-900 mb-2">
+                    {listingMode === 'draft' ? 'Publish your app' : 'Your app'}
+                </h1>
                 <p className="text-sm text-grayscale-600">
-                    Add your store details, then submit. Changes save as you go.
+                    {listingMode === 'live'
+                        ? 'Update your app. Changes save as you go and go live once approved.'
+                        : 'Add your store details, then submit. Changes save as you go.'}
                 </p>
             </div>
 
@@ -1172,17 +1248,27 @@ export const SubmitFromManifestPage: React.FC = () => {
                 </div>
             )}
 
-            {existingListingStatus && (
-                <div className="mb-6 p-3 bg-grayscale-10 border border-grayscale-200 rounded-2xl flex items-start gap-2.5">
+            <ListingStatusBanner
+                mode={listingMode}
+                submittedAt={
+                    listingMode === 'update-in-review'
+                        ? ownedListing?.pending_update?.submitted_at
+                        : ownedListing?.submitted_at
+                }
+                hasPendingChanges={Boolean(ownedListing?.pending_update) || hasEdits}
+                isWorking={isChangingStatus}
+                onMakeChanges={() => changeListingStatus('withdraw')}
+                onDiscardChanges={() => changeListingStatus('discard')}
+            />
+
+            {diffHeldForReview && (
+                <div className="mb-6 p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5">
                     <IonIcon
                         icon={checkmarkCircleOutline}
                         className="text-emerald-500 text-lg mt-0.5 shrink-0"
                     />
-                    <span className="text-sm text-grayscale-700 leading-relaxed">
-                        {existingListingStatus === 'PENDING_REVIEW'
-                            ? 'This app is already in review.'
-                            : 'This app is already in the store.'}{' '}
-                        To change its listing, go to your app.
+                    <span className="text-sm text-emerald-700 leading-relaxed">
+                        Saved. These changes go to review when you submit your update.
                     </span>
                 </div>
             )}
@@ -1208,11 +1294,15 @@ export const SubmitFromManifestPage: React.FC = () => {
                                     // An app can have more than one listing, so always say
                                     // which one these changes belong to.
                                     const { listingId } = await ensureProvisioned();
-                                    await wallet.invoke.applyManifestVersion(
+                                    const result = await wallet.invoke.applyManifestVersion(
                                         previewIntegrationId,
                                         manifestVersion,
                                         listingId
                                     );
+                                    if (result.pendingReview) {
+                                        setDiffHeldForReview(true);
+                                        await loadOwnedListing(listingId);
+                                    }
                                     log.debug('manifest.diff.applied', {
                                         integrationId: previewIntegrationId,
                                         listingId,
@@ -1229,7 +1319,7 @@ export const SubmitFromManifestPage: React.FC = () => {
                                     setIsApplyingDiff(false);
                                 }
                             }}
-                            disabled={isApplyingDiff}
+                            disabled={isApplyingDiff || isLocked}
                             className="py-2 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                         >
                             {isApplyingDiff ? (
@@ -1282,151 +1372,164 @@ export const SubmitFromManifestPage: React.FC = () => {
                 </div>
             )}
 
-            <div className="bg-white rounded-[20px] border border-grayscale-200 p-6 mb-6">
-                <h2 className="text-base font-semibold text-grayscale-900 mb-5">Your listing</h2>
-                <div className="flex items-start gap-5 mb-5">
-                    <div
-                        ref={iconFieldRef}
-                        tabIndex={-1}
-                        className="flex flex-col items-center gap-1.5 w-20 shrink-0 outline-none"
-                    >
+            <fieldset
+                disabled={isLocked}
+                aria-disabled={isLocked}
+                className={isLocked ? 'opacity-60 pointer-events-none select-none' : ''}
+            >
+                <div className="bg-white rounded-[20px] border border-grayscale-200 p-6 mb-6">
+                    <h2 className="text-base font-semibold text-grayscale-900 mb-5">
+                        Your listing
+                    </h2>
+                    <div className="flex items-start gap-5 mb-5">
                         <div
-                            className="relative group cursor-pointer w-16 h-16"
-                            onClick={handleIconUpload}
+                            ref={iconFieldRef}
+                            tabIndex={-1}
+                            className="flex flex-col items-center gap-1.5 w-20 shrink-0 outline-none"
                         >
-                            {isIconUploading ? (
-                                <div className="w-16 h-16 rounded-2xl bg-grayscale-100 border border-grayscale-200 flex items-center justify-center">
-                                    <IonSpinner
-                                        name="crescent"
-                                        className="w-6 h-6 text-grayscale-500"
-                                    />
-                                </div>
-                            ) : displayIconUrl ? (
-                                <img
-                                    src={displayIconUrl}
-                                    alt="App Icon"
-                                    className="w-16 h-16 rounded-2xl object-cover border border-grayscale-200"
-                                />
-                            ) : (
-                                <div className="w-16 h-16 rounded-2xl bg-grayscale-100 border border-grayscale-200 flex items-center justify-center text-2xl font-semibold text-grayscale-700">
-                                    {appName.charAt(0).toUpperCase() || '?'}
-                                </div>
-                            )}
-                            <div className="absolute inset-0 bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
-                                <IonIcon icon={cameraOutline} className="w-5 h-5 mb-0.5" />
-                                <span className="text-[10px] font-medium">Change</span>
-                            </div>
-                            {isIconImported && (
-                                <div className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white rounded-full p-0.5 shadow-sm animate-fade-in-up">
-                                    <IonIcon icon={checkmarkOutline} className="w-3 h-3 block" />
-                                </div>
-                            )}
-                        </div>
-                        {!uploadedIconUrl && !isIconImported && (
-                            <span className="text-[10px] text-grayscale-500 text-center leading-tight">
-                                Tap to upload your icon
-                            </span>
-                        )}
-                        {isIconImported && (
-                            <span className="text-[10px] text-emerald-600 font-medium animate-fade-in-up text-center leading-tight">
-                                Icon imported
-                            </span>
-                        )}
-                    </div>
-                    <div className="flex-1">
-                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
-                            App Name
-                        </label>
-                        <input
-                            ref={nameInputRef}
-                            type="text"
-                            value={appName}
-                            maxLength={50}
-                            onChange={e => {
-                                hasEditedListingRef.current = true;
-                                setAppName(e.target.value);
-                            }}
-                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
-                            placeholder="My Awesome App"
-                        />
-                        {isLocalhost ? (
-                            <div className="mt-3 p-3 bg-amber-50 border border-amber-100 rounded-xl">
-                                <div className="flex items-center gap-1.5 text-amber-800 text-xs font-medium mb-2">
-                                    <IonIcon icon={globeOutline} className="w-4 h-4" />
-                                    You're testing from{' '}
-                                    <strong>{new URL(manifest.appUrl).host}</strong>
-                                </div>
-                                <label className="block text-xs font-medium text-amber-900 mb-1">
-                                    Where will your app live?
-                                </label>
-                                <input
-                                    ref={prodUrlInputRef}
-                                    type="text"
-                                    value={productionUrl}
-                                    onChange={e => {
-                                        setProductionUrl(e.target.value);
-                                        if (prodUrlError) setProdUrlError(null);
-                                    }}
-                                    className={`w-full py-2 px-3 border rounded-lg text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:border-transparent bg-white ${
-                                        prodUrlError
-                                            ? 'border-red-300 focus:ring-red-500'
-                                            : 'border-amber-200 focus:ring-amber-500'
-                                    }`}
-                                    placeholder="https://myapp.com"
-                                />
-                                {prodUrlError && (
-                                    <div className="mt-1.5 text-xs text-red-600 font-medium flex items-center gap-1">
-                                        <IonIcon
-                                            icon={alertCircleOutline}
-                                            className="w-3.5 h-3.5"
+                            <div
+                                className="relative group cursor-pointer w-16 h-16"
+                                onClick={handleIconUpload}
+                            >
+                                {isIconUploading ? (
+                                    <div className="w-16 h-16 rounded-2xl bg-grayscale-100 border border-grayscale-200 flex items-center justify-center">
+                                        <IonSpinner
+                                            name="crescent"
+                                            className="w-6 h-6 text-grayscale-500"
                                         />
-                                        {prodUrlError}
+                                    </div>
+                                ) : displayIconUrl ? (
+                                    <img
+                                        src={displayIconUrl}
+                                        alt="App Icon"
+                                        className="w-16 h-16 rounded-2xl object-cover border border-grayscale-200"
+                                    />
+                                ) : (
+                                    <div className="w-16 h-16 rounded-2xl bg-grayscale-100 border border-grayscale-200 flex items-center justify-center text-2xl font-semibold text-grayscale-700">
+                                        {appName.charAt(0).toUpperCase() || '?'}
+                                    </div>
+                                )}
+                                <div className="absolute inset-0 bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
+                                    <IonIcon icon={cameraOutline} className="w-5 h-5 mb-0.5" />
+                                    <span className="text-[10px] font-medium">Change</span>
+                                </div>
+                                {isIconImported && (
+                                    <div className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white rounded-full p-0.5 shadow-sm animate-fade-in-up">
+                                        <IonIcon
+                                            icon={checkmarkOutline}
+                                            className="w-3 h-3 block"
+                                        />
                                     </div>
                                 )}
                             </div>
-                        ) : (
-                            <div className="mt-2 text-xs text-grayscale-500 flex items-center gap-1">
-                                <IonIcon icon={globeOutline} className="w-3.5 h-3.5" />
-                                {manifest.appUrl}
-                            </div>
-                        )}
+                            {!uploadedIconUrl && !isIconImported && (
+                                <span className="text-[10px] text-grayscale-500 text-center leading-tight">
+                                    Tap to upload your icon
+                                </span>
+                            )}
+                            {isIconImported && (
+                                <span className="text-[10px] text-emerald-600 font-medium animate-fade-in-up text-center leading-tight">
+                                    Icon imported
+                                </span>
+                            )}
+                        </div>
+                        <div className="flex-1">
+                            <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                                App Name
+                            </label>
+                            <input
+                                ref={nameInputRef}
+                                type="text"
+                                value={appName}
+                                maxLength={50}
+                                onChange={e => {
+                                    hasEditedListingRef.current = true;
+                                    setHasEdits(true);
+                                    setAppName(e.target.value);
+                                }}
+                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                placeholder="My Awesome App"
+                            />
+                            {isLocalhost ? (
+                                <div className="mt-3 p-3 bg-amber-50 border border-amber-100 rounded-xl">
+                                    <div className="flex items-center gap-1.5 text-amber-800 text-xs font-medium mb-2">
+                                        <IonIcon icon={globeOutline} className="w-4 h-4" />
+                                        You're testing from{' '}
+                                        <strong>{new URL(manifest.appUrl).host}</strong>
+                                    </div>
+                                    <label className="block text-xs font-medium text-amber-900 mb-1">
+                                        Where will your app live?
+                                    </label>
+                                    <input
+                                        ref={prodUrlInputRef}
+                                        type="text"
+                                        value={productionUrl}
+                                        onChange={e => {
+                                            setProductionUrl(e.target.value);
+                                            if (prodUrlError) setProdUrlError(null);
+                                        }}
+                                        className={`w-full py-2 px-3 border rounded-lg text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:border-transparent bg-white ${
+                                            prodUrlError
+                                                ? 'border-red-300 focus:ring-red-500'
+                                                : 'border-amber-200 focus:ring-amber-500'
+                                        }`}
+                                        placeholder="https://myapp.com"
+                                    />
+                                    {prodUrlError && (
+                                        <div className="mt-1.5 text-xs text-red-600 font-medium flex items-center gap-1">
+                                            <IonIcon
+                                                icon={alertCircleOutline}
+                                                className="w-3.5 h-3.5"
+                                            />
+                                            {prodUrlError}
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="mt-2 text-xs text-grayscale-500 flex items-center gap-1">
+                                    <IonIcon icon={globeOutline} className="w-3.5 h-3.5" />
+                                    {manifest.appUrl}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                            Tagline
+                        </label>
+                        <input
+                            ref={taglineInputRef}
+                            type="text"
+                            value={tagline}
+                            maxLength={100}
+                            onChange={e => {
+                                hasEditedListingRef.current = true;
+                                setHasEdits(true);
+                                setTagline(e.target.value);
+                            }}
+                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                            placeholder="One sentence about your app"
+                        />
+                    </div>
+
+                    <div className="mt-5">
+                        <ListingDetailsFields
+                            details={listingDetails}
+                            onChange={updateDetails}
+                            descriptionRef={descriptionInputRef}
+                        />
                     </div>
                 </div>
 
-                <div>
-                    <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
-                        Tagline
-                    </label>
-                    <input
-                        ref={taglineInputRef}
-                        type="text"
-                        value={tagline}
-                        maxLength={100}
-                        onChange={e => {
-                            hasEditedListingRef.current = true;
-                            setTagline(e.target.value);
-                        }}
-                        className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
-                        placeholder="One sentence about your app"
-                    />
-                </div>
-
-                <div className="mt-5">
-                    <ListingDetailsFields
+                <div className="mb-6">
+                    <StandOutSection
                         details={listingDetails}
                         onChange={updateDetails}
-                        descriptionRef={descriptionInputRef}
+                        fieldRefs={optionalFieldRefs}
                     />
                 </div>
-            </div>
-
-            <div className="mb-6">
-                <StandOutSection
-                    details={listingDetails}
-                    onChange={updateDetails}
-                    fieldRefs={optionalFieldRefs}
-                />
-            </div>
+            </fieldset>
 
             {(integrationHints.length > 0 || showConsentSetup) && (
                 <div className="mb-6 space-y-3">
@@ -1696,10 +1799,14 @@ export const SubmitFromManifestPage: React.FC = () => {
             >
                 <div className="flex items-center gap-4 p-4 bg-white rounded-[20px] border border-grayscale-200 shadow-lg">
                     <div className="flex-1 min-w-0 text-sm">
-                        {existingListingStatus ? (
+                        {isLocked ? (
                             <span className="text-grayscale-600">
-                                Changes to the listing live on your app's page.
+                                {listingMode === 'removed'
+                                    ? 'Manage this app from its page.'
+                                    : "We'll let you know when the review is done."}
                             </span>
+                        ) : listingMode === 'live' && !ownedListing?.pending_update && !hasEdits ? (
+                            <span className="text-grayscale-500">No changes yet</span>
                         ) : showMissingHint && missingField ? (
                             <button
                                 type="button"
@@ -1718,7 +1825,7 @@ export const SubmitFromManifestPage: React.FC = () => {
                             </span>
                         )}
                     </div>
-                    {existingListingStatus ? (
+                    {isLocked ? (
                         <button
                             type="button"
                             onClick={() =>
@@ -1735,7 +1842,12 @@ export const SubmitFromManifestPage: React.FC = () => {
                         <button
                             type="button"
                             onClick={handleSubmit}
-                            disabled={isSubmitting}
+                            disabled={
+                                isSubmitting ||
+                                (listingMode === 'live' &&
+                                    !ownedListing?.pending_update &&
+                                    !hasEdits)
+                            }
                             className="py-3 px-5 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
                         >
                             {isSubmitting ? (
@@ -1743,6 +1855,8 @@ export const SubmitFromManifestPage: React.FC = () => {
                                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                     Submitting…
                                 </>
+                            ) : listingMode === 'live' ? (
+                                'Submit Update'
                             ) : (
                                 'Submit for Review'
                             )}
