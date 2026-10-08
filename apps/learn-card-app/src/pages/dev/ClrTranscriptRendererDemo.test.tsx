@@ -14,6 +14,11 @@ import { clrAcademicProvenanceDemo } from './clrAcademicProvenance.fixture';
 import { CLR_TRANSCRIPT_DEMO_FIXTURES } from './clrTranscriptDemo.fixtures';
 
 const fullPage = vi.hoisted(() => vi.fn());
+vi.mock('../../i18n', () => ({
+    useLocale: () => 'en',
+    useChangeLocale: () => vi.fn(),
+    SUPPORTED_LANGUAGES: ['en', 'es', 'fr', 'ar'],
+}));
 
 vi.mock('@ionic/react', () => ({
     IonPopover: ({ isOpen, children }: { isOpen: boolean; children: React.ReactNode }) =>
@@ -50,7 +55,9 @@ describe('academic CLR demo fixtures', () => {
             });
             fireEvent.click(selection);
             const picker = within(screen.getByRole('dialog'));
-            expect(picker.getAllByRole('button')).toHaveLength(12);
+            expect(picker.getAllByRole('button')).toHaveLength(
+                Object.keys(CLR_TRANSCRIPT_DEMO_FIXTURES).length
+            );
             fireEvent.click(picker.getByRole('button', { name: entry.label }));
             expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
             expect(screen.getByRole('button', { name: entry.label })).toBeInTheDocument();
