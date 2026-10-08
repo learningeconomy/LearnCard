@@ -1,4 +1,17 @@
 {
+    "clrTranscript": {
+        "credits": {
+            "earnedNotSuppliedAria": "No se han proporcionado los créditos obtenidos",
+            "earnedNotSupplied": "Obtenidos —",
+            "earnedQuantity": "{{value}} obtenidos",
+            "availableQuantity": "{{value}} disponibles",
+            "inferredQuantity": "{{value}} según la descripción"
+        },
+        "relationships": {
+            "targetAmbiguous": "Destino ambiguo",
+            "targetUnresolved": "Destino sin resolver"
+        }
+    },
     "inboxClaimSetup": {
         "setup": "Termina de configurar tu cuenta para reclamar tu credencial.",
         "continue": "Continuar configurando la cuenta",

@@ -1,4 +1,17 @@
 {
+    "clrTranscript": {
+        "credits": {
+            "earnedNotSuppliedAria": "Earned credits not supplied",
+            "earnedNotSupplied": "Earned —",
+            "earnedQuantity": "{{value}} earned",
+            "availableQuantity": "{{value}} available",
+            "inferredQuantity": "{{value}} from description"
+        },
+        "relationships": {
+            "targetAmbiguous": "Target ambiguous",
+            "targetUnresolved": "Target unresolved"
+        }
+    },
     "inboxClaimSetup": {
         "setup": "Finish setting up your account to claim your credential.",
         "continue": "Continue Account Setup",

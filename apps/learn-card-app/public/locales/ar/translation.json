@@ -1,4 +1,17 @@
 {
+    "clrTranscript": {
+        "credits": {
+            "earnedNotSuppliedAria": "لم تُقدَّم معلومات عن الأرصدة المكتسبة",
+            "earnedNotSupplied": "المكتسبة —",
+            "earnedQuantity": "{{value}} مكتسبة",
+            "availableQuantity": "{{value}} متاحة",
+            "inferredQuantity": "{{value}} حسب الوصف"
+        },
+        "relationships": {
+            "targetAmbiguous": "الهدف ملتبس",
+            "targetUnresolved": "الهدف غير محدد"
+        }
+    },
     "inboxClaimSetup": {
         "setup": "أكمل إعداد حسابك لاستلام بيانات اعتمادك.",
         "continue": "متابعة إعداد الحساب",

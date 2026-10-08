@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
 import { ChevronRight } from 'lucide-react';
 
 import ClrSourceInfo from './ClrSourceInfo';
@@ -41,8 +42,10 @@ const ClrRelationshipChips: React.FC<{
                                         <span className="ml-1 text-grayscale-500">
                                             (
                                             {relationship.resolution === 'ambiguous'
-                                                ? 'Target ambiguous'
-                                                : 'Target unresolved'}
+                                                ? m['clrTranscript.relationships.targetAmbiguous']()
+                                                : m[
+                                                      'clrTranscript.relationships.targetUnresolved'
+                                                  ]()}
                                             )
                                         </span>
                                     )}

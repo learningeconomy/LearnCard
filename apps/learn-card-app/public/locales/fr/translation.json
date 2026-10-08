@@ -1,4 +1,17 @@
 {
+    "clrTranscript": {
+        "credits": {
+            "earnedNotSuppliedAria": "Crédits obtenus non renseignés",
+            "earnedNotSupplied": "Obtenus —",
+            "earnedQuantity": "{{value}} obtenus",
+            "availableQuantity": "{{value}} disponibles",
+            "inferredQuantity": "{{value}} d’après la description"
+        },
+        "relationships": {
+            "targetAmbiguous": "Cible ambiguë",
+            "targetUnresolved": "Cible non résolue"
+        }
+    },
     "inboxClaimSetup": {
         "setup": "Terminez la configuration de votre compte pour récupérer votre attestation.",
         "continue": "Continuer la configuration du compte",
