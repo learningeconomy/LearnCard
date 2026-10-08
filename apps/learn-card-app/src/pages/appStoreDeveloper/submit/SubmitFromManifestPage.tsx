@@ -26,7 +26,7 @@ import { useModal, ModalTypes, useDeviceTypeByWidth, getLogger } from 'learn-car
 import { useImageUpload } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { EmbedIframeModal } from '../../launchPad/EmbedIframeModal';
-import { applyCapturedAction } from '@learncard/partner-connect-core';
+import { applyCapturedAction, isAppBuilderPreviewHost } from '@learncard/partner-connect-core';
 import type { CapturedAppManifest } from '@learncard/partner-connect-core';
 import type { IntegrationHint } from '../../hooks/post-message/useLearnCardPostMessage.handlers';
 import { useWallet } from 'learn-card-base';
@@ -326,19 +326,23 @@ export const SubmitFromManifestPage: React.FC = () => {
             if (!decoded.appUrl) {
                 throw new Error('Manifest is missing appUrl.');
             }
+            let appHostname: string;
             try {
-                new URL(decoded.appUrl);
+                appHostname = new URL(decoded.appUrl).hostname;
             } catch {
                 throw new Error('Invalid appUrl in manifest.');
             }
-            const isLocal =
+            // Local and app-builder preview addresses are not where the app will live,
+            // so the developer must confirm the real address before continuing.
+            const needsProductionUrl =
                 decoded.appUrl.includes('localhost') ||
                 decoded.appUrl.includes('127.0.0.1') ||
                 decoded.appUrl.includes('[::1]') ||
                 decoded.appUrl.includes('.localhost') ||
                 decoded.appUrl.includes('.local') ||
-                decoded.appUrl.startsWith('http://');
-            setIsLocalhost(isLocal);
+                decoded.appUrl.startsWith('http://') ||
+                isAppBuilderPreviewHost(appHostname);
+            setIsLocalhost(needsProductionUrl);
 
             const applyDecodedManifest = () => {
                 setManifest(decoded);

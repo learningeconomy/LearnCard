@@ -20,6 +20,8 @@
 
 import {
     compileInlineTemplate,
+    isAppBuilderEditorOrigin,
+    isAppBuilderPreviewHost,
     decodeManifestFromUrl,
     encodeManifestForUrl,
     normalizeConsentRequest,
@@ -450,11 +452,12 @@ export class PartnerConnect {
         }
 
         // Whether this origin may fall back to mocking when no host answers:
-        // 'standalone' anywhere, 'auto' only on local dev hosts (a standalone
-        // production page must never fabricate identity or consent), false
-        // nowhere.
+        // 'standalone' anywhere, 'auto' only in local dev or an app builder's
+        // editor preview (a standalone production page must never fabricate
+        // identity or consent), false nowhere.
         const canAutoMock =
-            mockSetting === 'standalone' || (mockSetting === 'auto' && this.isLocalDevContext());
+            mockSetting === 'standalone' ||
+            (mockSetting === 'auto' && (this.isLocalDevContext() || this.isAppBuilderContext()));
 
         if (!this.embedded) {
             // Standalone page: no host can answer. hostReachable stays false,
@@ -499,6 +502,31 @@ export class PartnerConnect {
     private isLocalDevContext(): boolean {
         if (typeof window === 'undefined') return false;
         return isLocalDevHost(window.location.hostname);
+    }
+
+    /**
+     * Whether the app is running inside an AI app builder's preview (Lovable,
+     * Bolt, v0, Replit): either on a preview-only host, or framed by the
+     * builder's editor. Firefox hides ancestor origins, so the referrer of an
+     * embedded document stands in for the parent origin there.
+     */
+    private isAppBuilderContext(): boolean {
+        if (typeof window === 'undefined') return false;
+        if (isAppBuilderPreviewHost(window.location.hostname)) return true;
+        if (!this.embedded) return false;
+
+        const parentOrigin = this.readAncestorOrigin() ?? this.readReferrerOrigin();
+        return parentOrigin !== null && isAppBuilderEditorOrigin(parentOrigin);
+    }
+
+    private readReferrerOrigin(): string | null {
+        if (typeof document === 'undefined' || !document.referrer) return null;
+
+        try {
+            return new URL(document.referrer).origin;
+        } catch {
+            return null;
+        }
     }
 
     private classifyParent(): ParentKind {

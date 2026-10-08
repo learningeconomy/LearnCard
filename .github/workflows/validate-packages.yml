@@ -53,6 +53,7 @@ jobs:
                   helpers
                   init
                   partner-connect-sdk
+                  partner-connect-core
                   types
                   sss-key-manager
                   claimable-boosts-plugin

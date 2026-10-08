@@ -152,6 +152,34 @@ describe('mock mode activation', () => {
             }
         }
     });
+
+    it('auto-mocks on app-builder preview hosts but never on their published hosts', () => {
+        const original = Object.getOwnPropertyDescriptor(window, 'location');
+        const cases: Array<[string, boolean]> = [
+            ['abc123.lovableproject.com', true],
+            ['id-preview--0f3c.lovable.app', true],
+            ['8f2c.picard.replit.dev', true],
+            ['my-app.lovable.app', false],
+            ['my-app.replit.app', false],
+            ['my-app.vercel.app', false],
+        ];
+
+        for (const [hostname, mocked] of cases) {
+            Object.defineProperty(window, 'location', {
+                configurable: true,
+                value: { hostname, search: '', href: `https://${hostname}/` },
+            });
+
+            try {
+                expect({ hostname, mocked: createPartnerConnect().isMocked() }).toEqual({
+                    hostname,
+                    mocked,
+                });
+            } finally {
+                if (original) Object.defineProperty(window, 'location', original);
+            }
+        }
+    });
 });
 
 describe('embedded parent classification', () => {
@@ -227,6 +255,41 @@ describe('embedded parent classification', () => {
         const identity = await lc.requestIdentity();
         expect(lc.isMocked()).toBe(true);
         expect(identity.user.did).toBeDefined();
+    });
+
+    it('auto-mocks inside an app-builder editor frame on a non-local host', () => {
+        embedIn('https://lovable.dev', 'my-app.lovable.app');
+        expect(createPartnerConnect().isMocked()).toBe(true);
+    });
+
+    it('auto-mocks inside an app-builder editor when the browser hides ancestor origins', async () => {
+        embedIn(null, 'my-app.lovable.app');
+        const originalReferrer = Object.getOwnPropertyDescriptor(document, 'referrer');
+        Object.defineProperty(document, 'referrer', {
+            configurable: true,
+            get: () => 'https://lovable.dev/projects/abc',
+        });
+
+        try {
+            const lc = createPartnerConnect({ hostProbeTimeout: 40 });
+            await lc.requestIdentity();
+            expect(lc.isMocked()).toBe(true);
+        } finally {
+            if (originalReferrer) Object.defineProperty(document, 'referrer', originalReferrer);
+            else delete (document as { referrer?: string }).referrer;
+        }
+    });
+
+    it('does not auto-mock a published app inside an unrelated frame', async () => {
+        embedIn('https://preview-shell.example.com', 'my-app.lovable.app');
+        const lc = createPartnerConnect();
+        expect(lc.isMocked()).toBe(false);
+        await expect(lc.requestIdentity()).rejects.toMatchObject({ code: 'LC_NOT_EMBEDDED' });
+    });
+
+    it('uses the real host when a preview-host app is embedded in LearnCard', () => {
+        embedIn('https://learncard.app', 'abc123.lovableproject.com');
+        expect(createPartnerConnect().isMocked()).toBe(false);
     });
 
     it('stays in real-host mode when the probe is answered', async () => {

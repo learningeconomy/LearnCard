@@ -71,7 +71,8 @@ interface PartnerConnectOptions {
     /**
      * Automatic standalone mock mode.
      * 'auto' (default) mocks only when no LearnCard host is present AND the
-     * page runs on a local dev host; 'standalone' mocks whenever no host is
+     * page runs in local dev or an AI app builder's editor preview
+     * (Lovable, Bolt, v0, Replit); 'standalone' mocks whenever no host is
      * present, on any origin; true always mocks; false never mocks.
      * @default 'auto'
      */

@@ -141,15 +141,17 @@ export interface PartnerConnectOptions {
      * identically (real host) once embedded, with no code changes.
      *
      * - `'auto'` **(default)**: mock only when **no LearnCard host is present
-     *    AND the app is running on a local dev host** (`localhost`,
-     *    `127.0.0.1`, `[::1]`, `*.localhost`, `*.local`). This covers local
-     *    dev and local Storybook, but deliberately never fabricates identity
-     *    or consent on a production or preview origin. Each mocked call
+     *    AND the app is running in local dev** (`localhost`, `127.0.0.1`,
+     *    `[::1]`, `*.localhost`, `*.local`) **or an AI app builder's editor
+     *    preview** (Lovable, Bolt, v0, Replit). This covers local dev, local
+     *    Storybook, and building in those tools, but deliberately never
+     *    fabricates identity or consent on a published or deploy-preview
+     *    origin. Each mocked call
      *    surfaces a labeled toast plus a console log so it's clear the host
      *    is simulated.
      * - `'standalone'`: mock whenever **no LearnCard host is present**, on
-     *    any origin — including remote deploy previews (Netlify, Lovable,
-     *    Vercel, …) — and use the real host when embedded in LearnCard. The
+     *    any origin — including remote deploy previews (Netlify, Vercel, …)
+     *    — and use the real host when embedded in LearnCard. The
      *    one-flag setting for apps that must demo standalone anywhere. Only
      *    choose it when a user opening your app's URL directly should see
      *    simulated data.
