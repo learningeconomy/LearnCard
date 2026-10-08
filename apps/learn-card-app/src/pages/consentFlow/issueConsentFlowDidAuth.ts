@@ -51,7 +51,7 @@ const validateDestination = (
     domain?: QueryParam
 ): void => {
     if (typeof destination !== 'string' || !destination) return;
-    if (isLocalNavigation(destination) && !challenged) return;
+    if (isLocalNavigation(destination)) return;
     // Contract identity still protects external AI Passport callbacks even when
     // tenant configuration is missing or malformed.
     if (!challenged && isLearnCardAiPassportContractUri(contractUri)) {
@@ -127,7 +127,7 @@ export const getConsentFlowDidAuthRedirect = async ({
     const challenged = validateConsentFlowDidAuthParams(challenge, domain);
     validateDestination(returnTo, challenged, contractUri, domain);
     // Callers normally navigate local paths themselves; never generate a proof for one.
-    if (isLocalNavigation(returnTo) && !challenged) return returnTo;
+    if (isLocalNavigation(returnTo)) return returnTo;
     const redirect = new URL(returnTo);
     if (redirect.protocol !== 'http:' && redirect.protocol !== 'https:') {
         throw new Error('Invalid consent redirect URL');

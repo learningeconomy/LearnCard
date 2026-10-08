@@ -322,4 +322,18 @@ describe('getConsentFlowDidAuthRedirect', () => {
             })
         ).toBe('game/menu');
     });
+    it('keeps a complete challenge pair from turning local navigation into authentication transport', async () => {
+        const input = {
+            challenge: 'backend-challenge',
+            domain: 'https://api.example.test',
+            contractUri: LEARNCARD_AI_PASSPORT_CONTRACT_URI,
+            returnTo: '/ai/sessions',
+        };
+        expect(getConsentFlowContractRedirect(input)).toBeUndefined();
+        const wallet = { invoke: { issuePresentation: vi.fn() } } as unknown as BespokeLearnCard;
+        expect(await getConsentFlowDidAuthRedirect({ ...input, ownerDid, wallet })).toBe(
+            '/ai/sessions'
+        );
+        expect(wallet.invoke.issuePresentation).not.toHaveBeenCalled();
+    });
 });
