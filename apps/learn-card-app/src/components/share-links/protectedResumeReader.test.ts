@@ -21,7 +21,7 @@ vi.mock('../../helpers/resume-publishing/protectedPdf', () => ({
 }));
 import { isProtectedResumeCurrent, readProtectedResumeChunk } from './protectedResumeReader';
 beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     mocks.resolve.mockResolvedValue({ state: 'active', contentVersion: 4, expiresAt: null });
     mocks.content.mockResolvedValue({ id: 'share-id', contentVersion: 4 });
     mocks.chunk.mockResolvedValue({
@@ -33,6 +33,53 @@ beforeEach(() => {
     });
 });
 describe('version-bound resume reader', () => {
+    const grantedRequest = {
+        id: 'share-id',
+        contentVersion: 4,
+        attachmentId: 'attachment-id',
+        chunkIndex: 1,
+        accessToken: 'expired-or-old-ip-grant',
+    };
+    it.each([{ data: { code: 'UNAUTHORIZED' } }, { code: 'UNAUTHORIZED' }])(
+        'reauthenticates exactly the same chunk once after an authorization rejection',
+        async rejection => {
+            mocks.chunk.mockRejectedValueOnce(rejection);
+            await readProtectedResumeChunk(grantedRequest, '1234');
+            expect(mocks.chunk).toHaveBeenCalledTimes(2);
+            expect(mocks.chunk).toHaveBeenNthCalledWith(1, grantedRequest);
+            expect(mocks.chunk).toHaveBeenNthCalledWith(2, {
+                id: 'share-id',
+                contentVersion: 4,
+                attachmentId: 'attachment-id',
+                chunkIndex: 1,
+                passcode: '1234',
+            });
+        }
+    );
+    it('does not loop if the passcode changed or reauthentication is rejected', async () => {
+        mocks.chunk.mockRejectedValue({ data: { code: 'UNAUTHORIZED' } });
+        await expect(readProtectedResumeChunk(grantedRequest, '1234')).rejects.toMatchObject({
+            data: { code: 'UNAUTHORIZED' },
+        });
+        expect(mocks.chunk).toHaveBeenCalledTimes(2);
+    });
+    it.each(['NOT_FOUND', 'TOO_MANY_REQUESTS', 'SERVICE_UNAVAILABLE'])(
+        'does not reauthenticate a %s response',
+        async code => {
+            mocks.chunk.mockRejectedValue({ data: { code } });
+            await expect(readProtectedResumeChunk(grantedRequest, '1234')).rejects.toMatchObject({
+                data: { code },
+            });
+            expect(mocks.chunk).toHaveBeenCalledOnce();
+        }
+    );
+    it('cannot retry without an entered passcode', async () => {
+        mocks.chunk.mockRejectedValue({ data: { code: 'UNAUTHORIZED' } });
+        await expect(readProtectedResumeChunk(grantedRequest)).rejects.toMatchObject({
+            data: { code: 'UNAUTHORIZED' },
+        });
+        expect(mocks.chunk).toHaveBeenCalledOnce();
+    });
     it('checks active metadata for the exact signed attachment version', async () => {
         expect(await isProtectedResumeCurrent({} as VC)).toBe(true);
         expect(mocks.resolve).toHaveBeenCalledWith('share-id', undefined);

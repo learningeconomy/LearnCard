@@ -69,6 +69,15 @@ export const beginShareAttachmentChunk = async (
     binding: ShareAttachmentBinding,
     chunkIndex: number
 ): Promise<void> => {
+    if (
+        !Number.isInteger(binding.chunkCount) ||
+        binding.chunkCount < 1 ||
+        binding.chunkCount > 16 ||
+        !Number.isInteger(chunkIndex) ||
+        chunkIndex < 0 ||
+        chunkIndex >= binding.chunkCount
+    )
+        failShareLink('INVALID_INPUT', 'invalid attachment chunk');
     await ensureShareLinkConstraints();
     await withShareLinkTransaction(async tx => {
         const shareProps = await lockShare(tx, binding.shareId);
@@ -162,12 +171,14 @@ export const beginShareAttachmentChunk = async (
         ) {
             failShareLink('CONFLICT', 'attachment staging expired');
         }
-        if (chunkIndex < 0 || chunkIndex >= binding.chunkCount)
-            failShareLink('INVALID_INPUT', 'invalid attachment chunk');
     });
 };
 
-/** A successful immutable put is the only event that marks a chunk staged. */
+/**
+ * Record successful immutable puts even if staging expired during remote I/O.
+ * This is bookkeeping, not publication authority: pin/finalize enforce expiry,
+ * and maintenance cleans up an expired, uncommitted stage.
+ */
 export const completeShareAttachmentChunk = async (
     binding: ShareAttachmentBinding,
     chunkIndex: number

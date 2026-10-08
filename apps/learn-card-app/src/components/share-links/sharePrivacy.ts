@@ -9,6 +9,7 @@ export const isShareViewerPath = (pathname: string): boolean => /^\/s(?:\/|$)/.t
 const isShareRoute = () =>
     typeof window !== 'undefined' && isShareViewerPath(window.location.pathname);
 let privateSession = isShareRoute();
+let privacyConfigured = false;
 const listeners = new Set<() => void>();
 const subscribe = (listener: () => void) => {
     listeners.add(listener);
@@ -22,13 +23,16 @@ export const useSharePrivateSession = (): boolean =>
 /** Sticky for this document: do not resume a recorder with private content in its buffers. */
 export const isSharePrivateSession = (): boolean => privateSession || isShareRoute();
 export const enterSharePrivacy = (): void => {
+    if (privacyConfigured) return;
+    privacyConfigured = true;
     privateSession = true;
     configureLoggerContext({
         bugReportsEnabled: false,
         diagnosticLogCollectionEnabled: false,
         diagnosticIdentity: null,
     });
-    listeners.forEach(listener => listener());
+    // Callers suppress capture during render; notify other mounted consumers afterward.
+    queueMicrotask(() => listeners.forEach(listener => listener()));
     userflow.setPageTrackingDisabled(true);
     userflow.reset();
     void FirebaseAnalytics.setEnabled({ enabled: false }).catch(() => {});

@@ -15,10 +15,26 @@ export const readProtectedResumeChunk = async (
         'accessToken' in request &&
         typeof request.accessToken === 'string' &&
         request.accessToken.length > 0;
-    return wallet.invoke.getShareLinkAttachmentChunk({
-        ...request,
-        ...(passcode && !hasGrant ? { passcode } : {}),
-    });
+    try {
+        return await wallet.invoke.getShareLinkAttachmentChunk({
+            ...request,
+            ...(passcode && !hasGrant ? { passcode } : {}),
+        });
+    } catch (error) {
+        // A grant can expire during a slow request or stop matching after an IP change.
+        // Reauthenticate this exact chunk once; all current-share guards still apply.
+        const rejection = error as { data?: { code?: string }; code?: string } | null;
+        const code = rejection?.data?.code ?? rejection?.code;
+        if (!hasGrant || !passcode || code !== 'UNAUTHORIZED') throw error;
+        const { id, contentVersion, attachmentId, chunkIndex } = request;
+        return wallet.invoke.getShareLinkAttachmentChunk({
+            id,
+            contentVersion,
+            attachmentId,
+            chunkIndex,
+            passcode,
+        });
+    }
 };
 
 /** Recheck the exact committed version immediately before a local PDF export. */
@@ -36,5 +52,5 @@ export const isProtectedResumeCurrent = async (
         (metadata.expiresAt !== null && Date.parse(metadata.expiresAt) <= Date.now())
     )
         return false;
-    return metadata.expiresAt === null || Date.parse(metadata.expiresAt) > Date.now();
+    return true;
 };

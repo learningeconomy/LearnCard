@@ -84,6 +84,27 @@ const finish = async (record: ShareLinkReservationRecord, verified = true) =>
     });
 
 describe('managed attachment graph fences', () => {
+    it.each([
+        [0, 0],
+        [17, 0],
+        [2.5, 0],
+        [2, -1],
+        [2, 2],
+        [2, 0.5],
+        [2, NaN],
+    ])(
+        'rejects invalid chunk bounds before persisting staging/quota nodes: %#',
+        async (count, index) => {
+            await expect(beginShareAttachmentChunk(binding(count), index)).rejects.toMatchObject({
+                code: 'INVALID_INPUT',
+            });
+            const result = await neogma.queryRunner.run(
+                'MATCH (n) WHERE n.namespace = $namespace RETURN count(n) AS count',
+                { namespace }
+            );
+            expect(result.records[0].get('count').toNumber()).toBe(0);
+        }
+    );
     it('refuses incomplete staged PDFs and rolls back the pending share', async () => {
         const value = binding();
         await stage(value, [0]);

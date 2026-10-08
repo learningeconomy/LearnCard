@@ -105,7 +105,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
     const [copyState, setCopyState] = useState<'idle' | 'copying' | 'copied'>('idle');
     const [downloading, setDownloading] = useState(false);
     const [pdfDownloading, setPdfDownloading] = useState(false);
-    const [actionError, setActionError] = useState<'copy' | 'download'>();
+    const [actionError, setActionError] = useState<'copy' | 'download' | 'try_later'>();
     const [passcode, setPasscode] = useState('');
     const [submittedPasscode, setSubmittedPasscode] = useState<string>();
     const [passcodeError, setPasscodeError] = useState(false);
@@ -451,8 +451,8 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
         try {
             if (!(await ensureCurrent())) return;
             downloadSharePresentation(ready.payload, ready.metadata.title);
-        } catch {
-            setActionError('download');
+        } catch (error) {
+            setActionError(isRateLimited(error) ? 'try_later' : 'download');
         } finally {
             setDownloading(false);
         }
@@ -473,8 +473,8 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
             } else {
                 await downloadSharePdf(visible.current, ready.metadata.title);
             }
-        } catch {
-            setActionError('download');
+        } catch (error) {
+            setActionError(isRateLimited(error) ? 'try_later' : 'download');
         } finally {
             setPdfDownloading(false);
         }
@@ -932,9 +932,11 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                             role="alert"
                                                             className="text-sm text-red-700"
                                                         >
-                                                            {actionError === 'copy'
-                                                                ? m['shareLinks.copyError']()
-                                                                : m['shareLinks.downloadError']()}
+                                                            {actionError === 'try_later'
+                                                                ? m['shareLinks.tryLaterHint']()
+                                                                : actionError === 'copy'
+                                                                  ? m['shareLinks.copyError']()
+                                                                  : m['shareLinks.downloadError']()}
                                                         </p>
                                                     )}
                                                 </section>

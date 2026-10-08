@@ -168,6 +168,15 @@ describe('protected resume recipient lifecycle', () => {
         expect(mocks.content).toHaveBeenCalledOnce();
         expect(mocks.collectionPdf).not.toHaveBeenCalled();
     });
+    it('shows retry guidance for a rate-limited PDF download without exporting bytes', async () => {
+        await open();
+        mocks.decode.mockRejectedValueOnce({ data: { code: 'TOO_MANY_REQUESTS' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Download resume PDF' }));
+        const alert = await screen.findByRole('alert');
+        expect(alert).toHaveTextContent(/try|wait/i);
+        expect(mocks.downloaded).not.toHaveBeenCalled();
+        expect(screen.getByRole('button', { name: 'Download resume PDF' })).toBeEnabled();
+    });
     it('denies a cached download after stop and clears the PDF card', async () => {
         await open();
         mocks.resolve.mockResolvedValue({ state: 'stopped' });

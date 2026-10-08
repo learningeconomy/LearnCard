@@ -284,6 +284,14 @@ describe('managed resume publication', () => {
         });
         expect(w.mocks.store.LearnCloud.delete).toHaveBeenCalledWith('lc:encrypted');
         expect(w.mocks.invoke.createShareLink).not.toHaveBeenCalled();
+        const nextDraft = {
+            ...snapshot,
+            personalDetails: { name: 'new draft' },
+        } as unknown as ResumeBuilderSnapshot;
+        const nextBuild = vi.fn(async () => ({ lerVc: vc, pdfUrl: 'new-draft-pdf' }));
+        await publishManagedResume({ ...options(w.value), snapshot: nextDraft, build: nextBuild });
+        expect(nextBuild).toHaveBeenCalledOnce();
+        expect(w.mocks.invoke.createShareLink).toHaveBeenCalledOnce();
     });
     it('never discards uncertain commit attempts without authoritative abandonment', async () => {
         const w = wallet();

@@ -1,7 +1,20 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-vi.mock('@sentry/react', () => ({ getReplay: () => ({ stop: vi.fn() }) }));
-vi.mock('userflow.js', () => ({ default: { setPageTrackingDisabled: vi.fn(), reset: vi.fn() } }));
+const capture = vi.hoisted(() => ({
+    stop: vi.fn(),
+    reset: vi.fn(),
+    disable: vi.fn(),
+    analytics: vi.fn(async () => undefined),
+    logger: vi.fn(),
+}));
+vi.mock('@sentry/react', () => ({ getReplay: () => ({ stop: capture.stop }) }));
+vi.mock('userflow.js', () => ({
+    default: { setPageTrackingDisabled: capture.disable, reset: capture.reset },
+}));
+vi.mock('@capacitor-firebase/analytics', () => ({
+    FirebaseAnalytics: { setEnabled: capture.analytics },
+}));
+vi.mock('learn-card-base/logging/logger', () => ({ configureLoggerContext: capture.logger }));
 import {
     scrubShareTelemetry,
     isShareViewerPath,
@@ -32,15 +45,39 @@ describe('share privacy', () => {
         expect(event.request.url).toContain('#secret');
         expect(window.location.href).toBe(before);
     });
-    it('updates mounted privacy consumers immediately', () => {
+    it('updates mounted privacy consumers after render without repeating capture resets', async () => {
         const { result, unmount } = renderHook(() => useSharePrivateSession());
         expect(result.current).toBe(false);
-        act(() => enterSharePrivacy());
+        await act(async () => {
+            enterSharePrivacy();
+            enterSharePrivacy();
+        });
+        expect(capture.reset).toHaveBeenCalledOnce();
+        expect(capture.stop).toHaveBeenCalledOnce();
+        expect(capture.analytics).toHaveBeenCalledOnce();
         expect(result.current).toBe(true);
         unmount();
     });
     it('keeps capture disabled for the rest of the document', () => {
         enterSharePrivacy();
         expect(isSharePrivateSession()).toBe(true);
+    });
+    it('configures capture on initial viewer routes even when privacy starts enabled', async () => {
+        const previous = window.location.href;
+        try {
+            window.history.replaceState(null, '', '/s/example');
+            vi.resetModules();
+            vi.clearAllMocks();
+            const privacy = await import('./sharePrivacy');
+            expect(privacy.isSharePrivateSession()).toBe(true);
+            privacy.enterSharePrivacy();
+            privacy.enterSharePrivacy();
+            expect(capture.disable).toHaveBeenCalledOnce();
+            expect(capture.reset).toHaveBeenCalledOnce();
+            expect(capture.analytics).toHaveBeenCalledWith({ enabled: false });
+            expect(capture.stop).toHaveBeenCalledOnce();
+        } finally {
+            window.history.replaceState(null, '', previous);
+        }
     });
 });

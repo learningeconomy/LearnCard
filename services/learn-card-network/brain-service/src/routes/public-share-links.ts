@@ -247,12 +247,17 @@ export const createPublicShareLinksRouter = (
                 if (!dependencies.repository.fetchAttachmentChunk) notFound();
                 try {
                     await dependencies.enforceRateLimit({
-                        key: rateLimitKey('content', dependencies.namespace, ctx.sourceIp),
-                        limit: 60,
+                        key: rateLimitKey('attachment', dependencies.namespace, ctx.sourceIp),
+                        limit: 240,
                         windowSeconds: 60,
-                        description: 'public share-link content',
+                        description: 'public share-link attachment',
                     });
-                } catch {
+                } catch (error) {
+                    if (error instanceof TRPCError && error.code === 'TOO_MANY_REQUESTS')
+                        throw new TRPCError({
+                            code: 'TOO_MANY_REQUESTS',
+                            message: 'try again later',
+                        });
                     throw new TRPCError({
                         code: 'SERVICE_UNAVAILABLE',
                         message: 'share-link content is unavailable',
@@ -371,14 +376,13 @@ export const createPublicShareLinksRouter = (
                     envelope: envelope.data,
                     ...(final.passcodeHash
                         ? {
-                              accessToken: grantAccepted
-                                  ? input.accessToken
-                                  : mintShareAttachmentAccessToken(
-                                        final,
-                                        dependencies.namespace,
-                                        ctx.sourceIp,
-                                        dependencies.now()
-                                    ),
+                              // Renew only after the chunk and its current policy pass every check.
+                              accessToken: mintShareAttachmentAccessToken(
+                                  final,
+                                  dependencies.namespace,
+                                  ctx.sourceIp,
+                                  dependencies.now()
+                              ),
                           }
                         : {}),
                 };

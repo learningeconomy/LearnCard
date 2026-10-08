@@ -174,20 +174,19 @@ const marked = (attachment: unknown): boolean => {
     const descriptions = record(attachment)?.descriptions;
     return Array.isArray(descriptions) && descriptions.includes(PROTECTED_RESUME_PDF_MARKER);
 };
-/** Malformed marked credentials must never fall back to an external-URL handler. */
-export const hasProtectedResumePdf = (vc: VC): boolean => {
+const protectedAttachments = (vc: VC): unknown[] => {
     const subjects = Array.isArray(vc.credentialSubject)
         ? vc.credentialSubject
         : [vc.credentialSubject];
-    return subjects.some(subject => {
+    return subjects.flatMap(subject => {
         const attachments = record(subject)?.attachments;
-        return Array.isArray(attachments) && attachments.some(marked);
+        return Array.isArray(attachments) ? attachments.filter(marked) : [];
     });
 };
+/** Malformed marked credentials must never fall back to an external-URL handler. */
+export const hasProtectedResumePdf = (vc: VC): boolean => protectedAttachments(vc).length > 0;
 export const getProtectedResumePdf = (vc: VC): ProtectedResumePdf | undefined => {
-    const attachments = record(vc.credentialSubject)?.attachments;
-    if (!Array.isArray(attachments)) return undefined;
-    const matches = attachments.filter(marked);
+    const matches = protectedAttachments(vc);
     if (matches.length !== 1) return undefined;
     const attachment = record(matches[0]);
     if (
@@ -312,6 +311,7 @@ export const downloadProtectedResumePdf = async (
     if (canDownload && !(await canDownload())) invalid();
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
+    let handedToBrowser = false;
     try {
         const safeTitle = Array.from(title)
             .filter(c => c.charCodeAt(0) > 31 && c.charCodeAt(0) !== 127 && !/[/\\:<>"|?*]/.test(c))
@@ -322,9 +322,11 @@ export const downloadProtectedResumePdf = async (
         anchor.href = url;
         document.body.appendChild(anchor);
         anchor.click();
+        handedToBrowser = true;
     } finally {
         anchor.remove();
-        await new Promise<void>(resolve => setTimeout(resolve, 0));
-        URL.revokeObjectURL(url);
+        // Let the browser consume the download before releasing its backing bytes.
+        if (handedToBrowser) setTimeout(() => URL.revokeObjectURL(url), 30_000);
+        else URL.revokeObjectURL(url);
     }
 };

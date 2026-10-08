@@ -12,6 +12,7 @@ import {
     downloadProtectedResumePdf,
     type PreparedProtectedPdf,
     type ProtectedResumeChunkReader,
+    type ProtectedResumeChunkRequest,
 } from './protectedPdf';
 const shareId = 'AAAAAAAAAAAAAAAAAAAAAA';
 const bytes = new TextEncoder().encode('%PDF-1.7\nPDF_CONTENT_CANARY\n%%EOF');
@@ -37,6 +38,7 @@ beforeEach(() => {
     vi.stubGlobal('crypto', webcrypto);
 });
 afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
     document.body.innerHTML = '';
@@ -136,7 +138,7 @@ describe('managed encrypted PDF chunks', () => {
             })
         ).rejects.toThrow();
     });
-    it('fails closed on external, ambiguous and array descriptors without URL fetch', async () => {
+    it('fails closed on external and ambiguous descriptors without URL fetch', async () => {
         const { prepared, vc } = await fixture();
         const fetch = vi.fn();
         vi.stubGlobal('fetch', fetch);
@@ -155,10 +157,35 @@ describe('managed encrypted PDF chunks', () => {
                 credentialSubject: { attachments: [prepared.descriptor, prepared.descriptor] },
             } as VC)
         ).toBeUndefined();
-        const array = { ...vc, credentialSubject: [vc.credentialSubject] } as VC;
-        expect(hasProtectedResumePdf(array)).toBe(true);
-        expect(getProtectedResumePdf(array)).toBeUndefined();
+        const ambiguous = {
+            ...vc,
+            credentialSubject: [vc.credentialSubject, vc.credentialSubject],
+        } as VC;
+        expect(hasProtectedResumePdf(ambiguous)).toBe(true);
+        expect(getProtectedResumePdf(ambiguous)).toBeUndefined();
+        await expect(loadProtectedResumePdf(ambiguous, reader(prepared))).rejects.toThrow();
         expect(fetch).not.toHaveBeenCalled();
+    });
+    it('roundtrips a descriptor on a later subject and forwards each renewed grant', async () => {
+        const large = new Uint8Array(2 * RESUME_PDF_CHUNK_BYTES + bytes.length);
+        large.set(bytes);
+        const { prepared, vc } = await fixture(large);
+        const array = {
+            ...vc,
+            credentialSubject: [{ id: 'unrelated' }, vc.credentialSubject],
+        } as VC;
+        expect(hasProtectedResumePdf(array)).toBe(true);
+        expect(getProtectedResumePdf(array)).toBeDefined();
+        const fetchChunk = vi.fn(async (request: ProtectedResumeChunkRequest) => ({
+            ...request,
+            envelope: prepared.chunks[request.chunkIndex],
+            accessToken: `renewed-${request.chunkIndex}`,
+        }));
+        const blob = await loadProtectedResumePdf(array, fetchChunk);
+        expect(new Uint8Array(await blob.arrayBuffer())).toEqual(large);
+        expect(fetchChunk.mock.calls[0][0].accessToken).toBeUndefined();
+        expect(fetchChunk.mock.calls[1][0].accessToken).toBe('renewed-0');
+        expect(fetchChunk.mock.calls[2][0].accessToken).toBe('renewed-1');
     });
     it('checks hash after authenticated decryption', async () => {
         const { prepared, vc } = await fixture();
@@ -182,8 +209,13 @@ describe('managed encrypted PDF chunks', () => {
             downloadProtectedResumePdf(vc, 'Resume', async () => false, reader(prepared))
         ).rejects.toThrow();
         expect(create).not.toHaveBeenCalled();
+        vi.useFakeTimers();
         await downloadProtectedResumePdf(vc, 'Resume', async () => true, reader(prepared));
         expect(click).toHaveBeenCalledOnce();
+        expect(revoke).not.toHaveBeenCalled();
+        await vi.advanceTimersByTimeAsync(29_999);
+        expect(revoke).not.toHaveBeenCalled();
+        await vi.advanceTimersByTimeAsync(1);
         expect(revoke).toHaveBeenCalledWith('blob:local');
         expect(document.querySelector('a')).toBeNull();
         click.mockImplementation(() => {

@@ -290,6 +290,8 @@ const prepareEncryptedRevision = async (
         wallet,
         options.refs
     );
+    // This UI guard prevents accidental reuse of a version-bound resume. Server
+    // committed attachment bindings and authenticated encryption enforce access.
     for (const credential of credentials) {
         if (!hasProtectedResumePdf(credential)) continue;
         const attachment = getProtectedResumePdf(credential);
