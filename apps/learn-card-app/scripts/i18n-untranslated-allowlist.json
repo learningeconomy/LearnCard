@@ -242,6 +242,8 @@
     "fr:passport.resumeBuilder.pdfPreview.page",
     "fr:passport.resumeBuilder.pdfPreview.pages",
     "fr:pathways.excellent",
+    "fr:clrRenderer.qualifications",
+    "fr:clrRenderer.version",
     "fr:profile.notifications",
     "fr:profile.notifs",
     "fr:recovery.tab.phrase",
