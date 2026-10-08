@@ -1756,6 +1756,7 @@
         "previewCredentials": "Vista previa de {{count}} credenciales"
     },
     "consentFlow": {
+        "aiPassportReauthenticationRequired": "El inicio de sesión de AI Passport necesita una nueva solicitud de autenticación. Actualiza la página e inicia sesión de nuevo.",
         "reviewChanged": "Los detalles de acceso cambiaron. Revísalos antes de volver a conectar.",
         "guardianApprovalRequired": "Pide a un administrador actual de la cuenta que apruebe esta conexión y vuelve a intentarlo.",
         "title": "Consentimiento",

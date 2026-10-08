@@ -1756,6 +1756,7 @@
         "previewCredentials": "Aperçu de {{count}} justificatifs"
     },
     "consentFlow": {
+        "aiPassportReauthenticationRequired": "La connexion à AI Passport nécessite une nouvelle demande d’authentification. Actualisez la page et reconnectez-vous.",
         "reviewChanged": "Les modalités de partage ont changé. Vérifiez-les avant de vous reconnecter.",
         "guardianApprovalRequired": "Demandez à un gestionnaire actuel du compte d’approuver cette connexion, puis réessayez.",
         "title": "Consentement",
