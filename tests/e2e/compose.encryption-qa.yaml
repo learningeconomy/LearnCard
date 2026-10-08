@@ -1,0 +1,25 @@
+# Pair with compose.yaml. Keeps test data in a dedicated LC2201_QA_DIR;
+# source/dependency mounts prevent stale local images from changing the tested code.
+services:
+    neo4j:
+        volumes:
+            - ${LC2201_QA_DIR:?Set LC2201_QA_DIR first}/data/neo4j:/data
+            - ${LC2201_QA_DIR:?Set LC2201_QA_DIR first}/data/neo4j-logs:/logs
+    mongodb:
+        volumes:
+            - ${LC2201_QA_DIR:?Set LC2201_QA_DIR first}/data/mongo:/data/db
+            - ${LC2201_QA_DIR:?Set LC2201_QA_DIR first}/data/mongo-config:/data/configdb
+    postgres:
+        volumes:
+            - ${LC2201_QA_DIR:?Set LC2201_QA_DIR first}/data/postgres:/var/lib/postgresql
+    lca-api:
+        image: learncard-monorepo-local
+        volumes:
+            - ../../services/learn-card-network/lca-api/src:/app/services/learn-card-network/lca-api/src:ro
+            - ../../packages/learn-card-types/src:/app/packages/learn-card-types/src:ro
+            - ../../packages/learn-card-helpers/src:/app/packages/learn-card-helpers/src:ro
+            - ../../packages/email-templates/src:/app/packages/email-templates/src:ro
+            - ../../packages/sss-key-manager/src:/app/packages/sss-key-manager/src:ro
+            - ../../node_modules:/app/node_modules:ro
+        environment:
+            SKIP_DIDKIT_NAPI: '1'
