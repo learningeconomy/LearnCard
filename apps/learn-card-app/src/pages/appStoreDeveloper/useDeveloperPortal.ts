@@ -112,7 +112,8 @@ export const useDeveloperPortal = () => {
             log.error('Failed to register app signing authority', error);
             // Registration/association failures are critical - they prevent credential issuance
             throw new Error(
-                'Failed to register app signing authority - credential issuance will not work'
+                'Failed to register app signing authority - credential issuance will not work',
+                { cause: error }
             );
         }
     };

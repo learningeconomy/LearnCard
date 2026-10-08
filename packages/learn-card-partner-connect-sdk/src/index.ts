@@ -139,18 +139,18 @@ export const previewCompiledTemplate = (
 const isTemplateAliasInput = (input: unknown): input is TemplateCredentialInput =>
     Boolean(
         input &&
-            typeof input === 'object' &&
-            'templateAlias' in input &&
-            typeof (input as TemplateCredentialInput).templateAlias === 'string'
+        typeof input === 'object' &&
+        'templateAlias' in input &&
+        typeof (input as TemplateCredentialInput).templateAlias === 'string'
     );
 
 const isInlineTemplateInput = (input: unknown): input is InlineTemplateCredentialInput =>
     Boolean(
         input &&
-            typeof input === 'object' &&
-            'alias' in input &&
-            typeof (input as InlineTemplateCredentialInput).alias === 'string' &&
-            'template' in input
+        typeof input === 'object' &&
+        'alias' in input &&
+        typeof (input as InlineTemplateCredentialInput).alias === 'string' &&
+        'template' in input
     );
 
 const isConsentRequestInput = (input: unknown): input is ConsentRequest => {
@@ -418,8 +418,8 @@ export class PartnerConnect {
         const configuredOrigins = Array.isArray(hostOrigin)
             ? hostOrigin
             : hostOrigin
-            ? [hostOrigin]
-            : [];
+              ? [hostOrigin]
+              : [];
 
         for (const origin of configuredOrigins) {
             if (origin.includes('*')) continue;

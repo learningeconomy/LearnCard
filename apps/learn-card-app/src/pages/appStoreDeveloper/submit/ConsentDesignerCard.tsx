@@ -120,7 +120,11 @@ export const ConsentDesignerCard: React.FC<ConsentDesignerCardProps> = ({
     };
 
     const generatedCode = useMemo(() => {
-        const request: any = {};
+        const request: {
+            read?: { credentialCategories?: string[]; personalFields?: string[] };
+            write?: { credentialCategories: string[] };
+            reason?: string;
+        } = {};
         if (readCategories.size > 0 || readFields.size > 0) {
             request.read = {};
             if (readCategories.size > 0)

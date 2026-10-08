@@ -3,6 +3,7 @@ import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { X } from 'lucide-react';
 import { getLogger } from 'learn-card-base';
+import type { VC, VP } from '@learncard/types';
 const log = getLogger('embed-iframe-modal');
 
 import {
@@ -89,11 +90,11 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
     const [pendingCredential, setPendingCredential] = useState<{
         credentialUri: string;
         boostUri?: string;
-        credential?: any;
+        credential?: VC | VP;
     } | null>(null);
 
     const handleCredentialIssued = useCallback(
-        (credentialUri: string, boostUri?: string, credential?: any) => {
+        (credentialUri: string, boostUri?: string, credential?: VC | VP) => {
             setPendingCredential({ credentialUri, boostUri, credential });
         },
         []

@@ -89,12 +89,7 @@ export const environmentContracts: readonly EnvironmentContract[] = [
         examplePath: EXAMPLE_PATHS[2],
         schema: brainService.brainServiceEnvironmentSchema,
         shape: brainService.brainServiceEnvironmentShape,
-        unmanagedKeys: [
-            'MONGO_URI',
-            'MONGO_DB_NAME',
-            'DEMO_PERSONA_SIGNING_AUTHORITY_ENDPOINT',
-            'DEMO_PERSONA_SA_SEED',
-        ],
+        unmanagedKeys: ['DEMO_PERSONA_SIGNING_AUTHORITY_ENDPOINT', 'DEMO_PERSONA_SA_SEED'],
     },
     {
         project: 'lca-api',

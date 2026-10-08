@@ -110,8 +110,8 @@ export const createRequestIdentityHandler = (dependencies: {
                 error instanceof Error
                     ? error.message
                     : typeof error === 'string' && error.length > 0
-                    ? `Failed to mint token: ${error}`
-                    : 'Failed to mint token';
+                      ? `Failed to mint token: ${error}`
+                      : 'Failed to mint token';
 
             return {
                 success: false,

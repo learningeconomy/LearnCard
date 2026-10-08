@@ -59,7 +59,7 @@ describe('isEmbedded', () => {
         const originalTop = Object.getOwnPropertyDescriptor(window, 'top');
         Object.defineProperty(window, 'top', {
             configurable: true,
-            get: () => ({} as Window),
+            get: () => ({}) as Window,
         });
 
         try {
@@ -161,7 +161,7 @@ describe('embedded parent classification', () => {
     const embedIn = (ancestorOrigin: string | null, hostname = 'localhost'): void => {
         Object.defineProperty(window, 'top', {
             configurable: true,
-            get: () => ({} as Window),
+            get: () => ({}) as Window,
         });
         Object.defineProperty(window, 'location', {
             configurable: true,
@@ -401,7 +401,7 @@ describe('mock responses', () => {
 
         Object.defineProperty(window, 'top', {
             configurable: true,
-            get: () => ({} as Window),
+            get: () => ({}) as Window,
         });
         Object.defineProperty(window, 'location', {
             configurable: true,
@@ -441,7 +441,7 @@ describe('mock responses', () => {
 
         Object.defineProperty(window, 'top', {
             configurable: true,
-            get: () => ({} as Window),
+            get: () => ({}) as Window,
         });
         Object.defineProperty(window, 'location', {
             configurable: true,
@@ -478,7 +478,7 @@ describe('mock responses', () => {
 
         Object.defineProperty(window, 'top', {
             configurable: true,
-            get: () => ({} as Window),
+            get: () => ({}) as Window,
         });
         Object.defineProperty(window, 'location', {
             configurable: true,

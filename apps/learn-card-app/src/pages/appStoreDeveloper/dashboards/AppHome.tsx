@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { IonIcon } from '@ionic/react';
 import { alertCircleOutline, checkmarkCircleOutline, chevronForwardOutline } from 'ionicons/icons';
-import type { LCNIntegration, AppStoreListing } from '@learncard/types';
+import type { LCNIntegration, AppStoreListing, CapturedTemplateRecord } from '@learncard/types';
 import { useDeveloperPortal } from '../useDeveloperPortal';
 import { ManifestDiffPanel } from './components/ManifestDiffPanel';
 import { AppPreviewModal } from '../components/AppPreviewModal';
@@ -211,8 +211,8 @@ export const AppHome: React.FC<AppHomeProps> = ({ integration, onBack, onToggleA
                     latestListing?.app_listing_status === 'LISTED'
                         ? 'Live in App Store'
                         : latestListing?.app_listing_status === 'PENDING_REVIEW'
-                        ? 'In review'
-                        : 'Not submitted',
+                          ? 'In review'
+                          : 'Not submitted',
                 isDone: latestListing?.app_listing_status === 'LISTED',
                 action:
                     hasDraft || latestListing?.app_listing_status === 'DRAFT' ? (
@@ -224,8 +224,8 @@ export const AppHome: React.FC<AppHomeProps> = ({ integration, onBack, onToggleA
                             {isShipping
                                 ? 'Shipping...'
                                 : hasDraft
-                                ? `Apply & Ship v${latestVersionRecord?.version}`
-                                : 'Submit for review'}
+                                  ? `Apply & Ship v${latestVersionRecord?.version}`
+                                  : 'Submit for review'}
                         </button>
                     ) : null,
             },
@@ -337,19 +337,21 @@ export const AppHome: React.FC<AppHomeProps> = ({ integration, onBack, onToggleA
                     {latestManifestData?.manifest?.templates &&
                     latestManifestData.manifest.templates.length > 0 ? (
                         <div className="space-y-2">
-                            {latestManifestData.manifest.templates.map((t: any, i: number) => (
-                                <div
-                                    key={i}
-                                    className="flex items-center justify-between p-2.5 bg-grayscale-10 rounded-xl"
-                                >
-                                    <span className="text-sm text-grayscale-700 font-medium">
-                                        {t.alias}
-                                    </span>
-                                    <span className="bg-grayscale-100 text-grayscale-700 text-xs rounded-full px-2 py-0.5">
-                                        v{t.version}
-                                    </span>
-                                </div>
-                            ))}
+                            {latestManifestData.manifest.templates.map(
+                                (t: CapturedTemplateRecord, i: number) => (
+                                    <div
+                                        key={i}
+                                        className="flex items-center justify-between p-2.5 bg-grayscale-10 rounded-xl"
+                                    >
+                                        <span className="text-sm text-grayscale-700 font-medium">
+                                            {t.alias}
+                                        </span>
+                                        <span className="bg-grayscale-100 text-grayscale-700 text-xs rounded-full px-2 py-0.5">
+                                            v{t.version}
+                                        </span>
+                                    </div>
+                                )
+                            )}
                         </div>
                     ) : (
                         <div className="text-sm text-grayscale-500 italic">

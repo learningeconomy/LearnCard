@@ -36,6 +36,7 @@ import {
 } from '@cache/app-store.caches';
 import { deleteDidDocForProfile } from '@cache/did-docs';
 import { neogma } from '@instance';
+import { environment } from '@environment';
 import { Boost, type BoostInstance } from '@models';
 import type { AppStoreListingType } from 'types/app-store-listing';
 import type { IntegrationType } from 'types/integration';
@@ -61,9 +62,9 @@ type UpsertInlineTemplateBoostResult = {
 
 const INLINE_TEMPLATE_SOURCE = 'partner-connect-inline';
 const DEFAULT_SIGNING_AUTHORITY_ENDPOINT =
-    process.env.SIGNING_AUTHORITY_ENDPOINT ?? 'http://localhost:5100/api';
-const DEFAULT_MONGO_URI = process.env.MONGO_URI ?? 'mongodb://localhost:27017/?replicaSet=rs0';
-const DEFAULT_MONGO_DB_NAME = process.env.MONGO_DB_NAME ?? 'lca-api';
+    environment.SIGNING_AUTHORITY_ENDPOINT ?? 'http://localhost:5100/api';
+const DEFAULT_MONGO_URI = environment.MONGO_URI ?? 'mongodb://localhost:27017/?replicaSet=rs0';
+const DEFAULT_MONGO_DB_NAME = environment.MONGO_DB_NAME ?? 'lca-api';
 const MAX_SIGNING_AUTHORITY_NAME_LENGTH = 15;
 const SIGNING_AUTHORITY_PREFIX = 'app-';
 
@@ -249,7 +250,7 @@ const createManagedSigningAuthorityDocument = async (
     name: string
 ): Promise<string> => {
     const seed =
-        process.env.NODE_ENV === 'test' ? 'e'.repeat(64) : crypto.randomBytes(32).toString('hex');
+        environment.NODE_ENV === 'test' ? 'e'.repeat(64) : crypto.randomBytes(32).toString('hex');
     const signingAuthorityLearnCard = await getLearnCard(seed);
     const did = signingAuthorityLearnCard.id.did();
 

@@ -28,7 +28,8 @@ export const renderCompiledTemplate = (
                     .replace(/\r/g, '\\r')
                     .replace(/\t/g, '\\t')
                     .replace(/\f/g, '\\f')
-                    .replace(/\u0008/g, '\\b');
+                    .split(String.fromCharCode(8))
+                    .join('\\b');
             }
 
             if (typeof value === 'number' || typeof value === 'boolean') {
@@ -43,6 +44,8 @@ export const renderCompiledTemplate = (
         return JSON.parse(renderedJson) as Record<string, unknown>;
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown JSON parse error';
-        throw new Error(`Failed to render compiled template into valid JSON: ${message}`);
+        throw new Error(`Failed to render compiled template into valid JSON: ${message}`, {
+            cause: error,
+        });
     }
 };

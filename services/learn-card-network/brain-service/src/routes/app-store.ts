@@ -652,8 +652,7 @@ export const handleSendCredentialEvent = async (
     const templateAlias =
         (event.templateAlias as string | undefined) ?? (event.alias as string | undefined);
     const inlineTemplate = event.template as
-        | import('@learncard/partner-connect-core').InlineCredentialTemplate
-        | undefined;
+        import('@learncard/partner-connect-core').InlineCredentialTemplate | undefined;
     const templateData = event.templateData as Record<string, unknown> | undefined;
     const preventDuplicateClaim = Boolean(event.preventDuplicateClaim);
     const isInlineTemplateEvent = Boolean(inlineTemplate);

@@ -132,7 +132,7 @@ const toFriendlyError = (err: unknown, fallback: string): string => {
             const details = issues
                 .map((issue: { path?: unknown[]; message?: string }) => {
                     const path = Array.isArray(issue.path) ? issue.path.join('.') : '';
-                    return path ? `${path}: ${issue.message ?? ''}` : issue.message ?? '';
+                    return path ? `${path}: ${issue.message ?? ''}` : (issue.message ?? '');
                 })
                 .filter(Boolean)
                 .join(' · ');
@@ -385,7 +385,9 @@ export const SubmitFromManifestPage: React.FC = () => {
             if (sessionDesignerScopes) {
                 try {
                     setDesignerConsentScopes(JSON.parse(sessionDesignerScopes));
-                } catch {}
+                } catch {
+                    // Ignore malformed session state; the designer starts from defaults.
+                }
             }
             setAppName(decoded.suggestedName || '');
         } catch (err) {
@@ -600,68 +602,64 @@ export const SubmitFromManifestPage: React.FC = () => {
 
     const handleEnableConsent = async (scopes: ConsentRequest) => {
         if (!manifest) return;
-        try {
-            const { listingId } = await ensureProvisioned();
-            const wallet = await initWallet();
-            if (!wallet) throw new Error('Wallet not initialized');
+        const { listingId } = await ensureProvisioned();
+        const wallet = await initWallet();
+        if (!wallet) throw new Error('Wallet not initialized');
 
-            const response = await wallet.invoke.sendAppEvent(listingId, {
-                type: 'upsert-consent-contract',
-                scopes,
-            });
+        const response = await wallet.invoke.sendAppEvent(listingId, {
+            type: 'upsert-consent-contract',
+            scopes,
+        });
 
-            const newContractUri = response.contractUri;
-            setContractUri(newContractUri);
+        const newContractUri = response.contractUri;
+        setContractUri(newContractUri);
 
-            setCurrentLaunchConfig({
-                url: manifest.appUrl,
-                permissions: manifest.permissions,
-                contractUri: newContractUri,
-            });
+        setCurrentLaunchConfig({
+            url: manifest.appUrl,
+            permissions: manifest.permissions,
+            contractUri: newContractUri,
+        });
 
-            const normalizedScopes = normalizeConsentRequest(scopes);
-            const newKey = canonicalConsentScopeString(normalizedScopes);
+        const normalizedScopes = normalizeConsentRequest(scopes);
+        const newKey = canonicalConsentScopeString(normalizedScopes);
 
-            setManifest(prev => {
-                if (!prev) return prev;
+        setManifest(prev => {
+            if (!prev) return prev;
 
-                let nextRequests = prev.consentRequests.filter(
-                    req => canonicalConsentScopeString(req.scopes) !== designerConsentKey
-                );
+            const nextRequests = prev.consentRequests.filter(
+                req => canonicalConsentScopeString(req.scopes) !== designerConsentKey
+            );
 
-                const existingIndex = nextRequests.findIndex(
-                    req => canonicalConsentScopeString(req.scopes) === newKey
-                );
+            const existingIndex = nextRequests.findIndex(
+                req => canonicalConsentScopeString(req.scopes) === newKey
+            );
 
-                if (existingIndex >= 0) {
-                    nextRequests[existingIndex] = {
-                        ...nextRequests[existingIndex],
-                        lastUsedAt: new Date().toISOString(),
-                        reason: scopes.reason || nextRequests[existingIndex].reason,
-                    };
-                } else {
-                    nextRequests.push({
-                        scopes: normalizedScopes,
-                        reason: scopes.reason,
-                        lastUsedAt: new Date().toISOString(),
-                    });
-                }
-
-                const next = {
-                    ...prev,
-                    consentRequests: nextRequests,
+            if (existingIndex >= 0) {
+                nextRequests[existingIndex] = {
+                    ...nextRequests[existingIndex],
+                    lastUsedAt: new Date().toISOString(),
+                    reason: scopes.reason || nextRequests[existingIndex].reason,
                 };
-                sessionStorage.setItem(SESSION_MANIFEST_KEY, JSON.stringify(next));
-                return next;
-            });
+            } else {
+                nextRequests.push({
+                    scopes: normalizedScopes,
+                    reason: scopes.reason,
+                    lastUsedAt: new Date().toISOString(),
+                });
+            }
 
-            setDesignerConsentKey(newKey);
-            setDesignerConsentScopes(scopes);
-            sessionStorage.setItem('lc-submit-designer-key', newKey);
-            sessionStorage.setItem('lc-submit-designer-scopes', JSON.stringify(scopes));
-        } catch (err) {
-            throw err;
-        }
+            const next = {
+                ...prev,
+                consentRequests: nextRequests,
+            };
+            sessionStorage.setItem(SESSION_MANIFEST_KEY, JSON.stringify(next));
+            return next;
+        });
+
+        setDesignerConsentKey(newKey);
+        setDesignerConsentScopes(scopes);
+        sessionStorage.setItem('lc-submit-designer-key', newKey);
+        sessionStorage.setItem('lc-submit-designer-scopes', JSON.stringify(scopes));
     };
 
     useEffect(() => {

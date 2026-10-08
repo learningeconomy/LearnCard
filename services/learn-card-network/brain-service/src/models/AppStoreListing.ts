@@ -8,6 +8,7 @@ import { Boost, BoostInstance } from './Boost';
 import { Credential, CredentialInstance } from './Credential';
 import { ConsentFlowContract, ConsentFlowInstance } from './ConsentFlowContract';
 import { SigningAuthority, SigningAuthorityInstance } from './SigningAuthority';
+import type { AppManifestVersion, AppManifestVersionInstance } from './AppManifestVersion';
 import {
     FlatAppStoreListingType,
     AppListingStatus,
@@ -80,7 +81,7 @@ export type AppStoreListingRelationships = {
         { scopeHash: string; createdAt: string },
         { scopeHash: string; createdAt: string }
     >;
-    usesManifestVersion: ModelRelatedNodesI<any, any>;
+    usesManifestVersion: ModelRelatedNodesI<typeof AppManifestVersion, AppManifestVersionInstance>;
 };
 
 export type AppStoreListingInstance = NeogmaInstance<

@@ -185,7 +185,9 @@ const SubmissionForm: React.FC = () => {
             let config: Record<string, unknown> = {};
             try {
                 config = formData.launch_config_json ? JSON.parse(formData.launch_config_json) : {};
-            } catch {}
+            } catch {
+                // Invalid JSON is reported by the launch config field's own validation.
+            }
             if (
                 ['EMBEDDED_IFRAME', 'SECOND_SCREEN', 'DIRECT_LINK'].includes(
                     formData.launch_type || ''
@@ -403,12 +405,14 @@ const SubmissionForm: React.FC = () => {
             );
         }
 
-        let parsedConfig: any = {};
+        let parsedConfig: { url?: string; [key: string]: unknown } = {};
         try {
             parsedConfig = formData.launch_config_json
                 ? JSON.parse(formData.launch_config_json)
                 : {};
-        } catch (e) {}
+        } catch {
+            // Fall through to the non-embedded preview when the config is not valid JSON.
+        }
 
         if (formData.launch_type === 'EMBEDDED_IFRAME' && parsedConfig.url) {
             // ModalTypes.Right + hideButton, matching useAppListingLaunch: the default

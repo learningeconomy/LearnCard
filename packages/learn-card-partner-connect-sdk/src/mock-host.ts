@@ -450,8 +450,7 @@ export class MockHost {
 
                 case 'INITIATE_TEMPLATE_ISSUE': {
                     const input = payload as
-                        | { templateId?: string; draftRecipients?: string[] }
-                        | undefined;
+                        { templateId?: string; draftRecipients?: string[] } | undefined;
                     const templateId = input?.templateId ?? '';
                     const recipients = Array.isArray(input?.draftRecipients)
                         ? (input?.draftRecipients as string[])
@@ -490,18 +489,18 @@ export class MockHost {
                         segments: !includeCredentials
                             ? ['Learner profile requested with credentials excluded.']
                             : held.length
-                            ? ['Learner profile: ', { b: String(held.length) }, ' credential(s).']
-                            : [
-                                  "In LearnCard, the user's learner profile would load. Empty in mock.",
-                              ],
+                              ? ['Learner profile: ', { b: String(held.length) }, ' credential(s).']
+                              : [
+                                    "In LearnCard, the user's learner profile would load. Empty in mock.",
+                                ],
                     });
                     const prompt = !includeCredentials
                         ? 'Mock learner context: credentials were not requested.'
                         : held.length
-                        ? `Mock learner context. Credentials held: ${held
-                              .map(c => c.name)
-                              .join(', ')}.`
-                        : 'Mock learner context: this user has no credentials in standalone mode.';
+                          ? `Mock learner context. Credentials held: ${held
+                                .map(c => c.name)
+                                .join(', ')}.`
+                          : 'Mock learner context: this user has no credentials in standalone mode.';
                     return Promise.resolve({
                         status: 'ready',
                         prompt,

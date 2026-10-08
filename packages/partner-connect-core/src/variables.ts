@@ -135,13 +135,13 @@ export const buildVariableManifest = (credentialTemplateJson: string): VariableM
         }
     });
 
-    let parsed: unknown = undefined;
-
     try {
-        parsed = JSON.parse(replaceUnquotedVariablesForParsing(credentialTemplateJson));
+        const parsed: unknown = JSON.parse(
+            replaceUnquotedVariablesForParsing(credentialTemplateJson)
+        );
         getStringVariablePaths(parsed, '$', stringPaths);
     } catch {
-        parsed = undefined;
+        // Unparseable templates still yield variables; they just lack JSON paths.
     }
 
     const manifestVariables: VariableManifest['variables'] = {};
