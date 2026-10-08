@@ -99,6 +99,10 @@ export * from './auth-status/useAuthGateState';
 export * from './stores/connectivityStore';
 export * from './stores/walletModeStore';
 export * from './hooks/useConnectivity';
+export * from './connectivity/connectionQuality';
+export * from './connectivity/probeConnectivity';
+export * from './connectivity/connectivityMonitor';
+export * from './connectivity/observeConnectionQuality';
 export * from './helpers/withDeadline';
 export * from './helpers/networkFault';
 export * from './key-derivation';
@@ -313,3 +317,5 @@ export * from './svgs/ScoutLogoAndText';
 export * from './svgs/Compass';
 export * from './logging/logger';
 export * from './logging/diagnosticLogBuffer';
+
+export { isAlreadyConsentedError, isConsentConflict } from './helpers/consentErrors';

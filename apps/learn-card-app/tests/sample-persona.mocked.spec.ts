@@ -1,11 +1,11 @@
 import { initLearnCard } from '@learncard/init';
 import { getBundle, getFixture, prepareFixture } from '@learncard/credential-library';
-import type { VC } from '@learncard/types';
 
 import { expect, test } from './fixtures/mocked-test';
 
 import { TEST_USER_PROFILE_ID, TEST_USER_SEED } from './constants';
 import { installNetwork } from './mocks/network';
+import type { BrainOutputs } from './mocks/trpc';
 import { mockLaunchDarkly } from './route.helpers';
 import { waitForAuthenticatedState } from './test.helpers';
 
@@ -106,7 +106,7 @@ test.describe('Sample persona @mocked', () => {
         const trpc = await installNetwork(page);
         let hasSample = false;
 
-        trpc.on('profile.getProfile', () => ({
+        const userProfile = {
             profileId: TEST_USER_PROFILE_ID,
             did: testUserDid,
             displayName: 'Mocked User',
@@ -114,8 +114,56 @@ test.describe('Sample persona @mocked', () => {
             bio: '',
             dob: '1990-01-01',
             country: 'US',
-        }));
+        } satisfies BrainOutputs['profile']['getProfile'];
+        trpc.on('profile.getProfile', () => userProfile);
         trpc.on('profile.updateProfile', () => true);
+        // Reload batches consent reads with these dashboard queries. The tRPC mock
+        // falls back for the whole batch if any procedure is missing, and the HAR
+        // cannot replay the new batch with this test's persisted sample state.
+        trpc.on(
+            'profile.getOtherProfile',
+            () => userProfile satisfies BrainOutputs['profile']['getOtherProfile']
+        );
+        trpc.on(
+            'profile.pendingConnectionPrompts',
+            () => [] satisfies BrainOutputs['profile']['pendingConnectionPrompts']
+        );
+        trpc.on(
+            'boost.getPaginatedBoosts',
+            () =>
+                ({
+                    records: [],
+                    hasMore: false,
+                }) satisfies BrainOutputs['boost']['getPaginatedBoosts']
+        );
+        trpc.on(
+            'activity.getMyActivities',
+            () =>
+                ({
+                    records: [],
+                    hasMore: false,
+                }) satisfies BrainOutputs['activity']['getMyActivities']
+        );
+        trpc.on(
+            'inbox.getMyInboxDeliveries',
+            () =>
+                ({
+                    records: [],
+                    hasMore: false,
+                }) satisfies BrainOutputs['inbox']['getMyInboxDeliveries']
+        );
+        trpc.on(
+            'skillFrameworks.getAllAvailableFrameworks',
+            () =>
+                ({
+                    records: [],
+                    hasMore: false,
+                }) satisfies BrainOutputs['skillFrameworks']['getAllAvailableFrameworks']
+        );
+        trpc.on(
+            'activity.getMyCredentialLifecycleStatuses',
+            () => ({}) satisfies BrainOutputs['activity']['getMyCredentialLifecycleStatuses']
+        );
         trpc.on('contracts.getConsentFlowContract', () => contract);
         trpc.on('contracts.getConsentedContracts', () => ({
             hasMore: false,
@@ -145,14 +193,16 @@ test.describe('Sample persona @mocked', () => {
         }));
         trpc.on('contracts.getCredentialsForContract', () => ({
             hasMore: false,
-            records: autoBoostUris.map((boostUri, index) => ({
-                credentialUri: `lc:cloud:localhost%3A4100/trpc:credential:sample-persona-${index}`,
-                termsUri,
-                contractUri,
-                boostUri,
-                category: 'Achievement',
-                date: '2026-09-17T00:00:00.000Z',
-            })),
+            records: hasSample
+                ? autoBoostUris.map((boostUri, index) => ({
+                      credentialUri: `lc:cloud:localhost%3A4100/trpc:credential:sample-persona-${index}`,
+                      termsUri,
+                      contractUri,
+                      boostUri,
+                      category: 'Achievement',
+                      date: '2026-09-17T00:00:00.000Z',
+                  }))
+                : [],
         }));
         trpc.on('contracts.withdrawConsent', () => {
             hasSample = false;

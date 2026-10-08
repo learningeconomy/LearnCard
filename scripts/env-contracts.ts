@@ -28,6 +28,10 @@ export const parseEnvironmentExample = (path: string): Record<string, string> =>
 for (const path of EXAMPLE_PATHS.slice(2)) {
     Object.assign(process.env, parseEnvironmentExample(path));
 }
+// The shared verifier process must use the offline provider while importing service schemas.
+// Individual contracts below are still validated using their own example values.
+const verifierOfflineSetting = process.env.IS_OFFLINE;
+process.env.IS_OFFLINE = 'true';
 
 const [learnCardApp, scouts, brainService, lcaApi, learnCloudService] = await Promise.all([
     import('../apps/learn-card-app/src/config/buildEnvironment'),
@@ -36,6 +40,8 @@ const [learnCardApp, scouts, brainService, lcaApi, learnCloudService] = await Pr
     import('../services/learn-card-network/lca-api/src/config/environment'),
     import('../services/learn-card-network/learn-cloud-service/src/config/environment'),
 ]);
+if (verifierOfflineSetting === undefined) delete process.env.IS_OFFLINE;
+else process.env.IS_OFFLINE = verifierOfflineSetting;
 
 export type EnvironmentContract = {
     project: string;
@@ -117,6 +123,8 @@ const ENVIRONMENT_ENTRYPOINTS = [
     'services/learn-card-network/brain-service/lambda.ts',
     'services/learn-card-network/brain-service/didWebLambda.ts',
     'services/learn-card-network/lca-api/lambda.ts',
+    'services/learn-card-network/lca-api/lambdaApp.ts',
+    'services/learn-card-network/lca-api/seedMigrationLambda.ts',
     'services/learn-card-network/learn-cloud-service/lambda.ts',
     'services/learn-card-network/learn-cloud-service/didWebLambda.ts',
     'services/learn-card-network/learn-cloud-service/oidcLambda.ts',
@@ -126,6 +134,8 @@ const ENVIRONMENT_ENTRYPOINTS = [
 const ALLOWED_ENVIRONMENT_MODULES: Record<string, true> = {
     'services/learn-card-network/brain-service/src/config/environment.ts': true,
     'services/learn-card-network/lca-api/src/config/environment.ts': true,
+    // Bootstrap must read/write env before importing the validating environment module.
+    'services/learn-card-network/lca-api/src/config/runtimeSecrets.ts': true,
     'services/learn-card-network/learn-cloud-service/src/config/environment.ts': true,
 };
 

@@ -25,6 +25,7 @@
 - [Go to Production](how-to-guides/go-to-production.md)
     - [Generate API Tokens](how-to-guides/deploy-infrastructure/generate-api-tokens.md)
     - [Test Safely: Staging & Mock Recipients](how-to-guides/deploy-infrastructure/test-safely.md)
+    - [Encrypt Hosted Signing-Authority Seeds](how-to-guides/deploy-infrastructure/signing-authority-seed-encryption.md)
     - [Get Listed as a Trusted Issuer](how-to-guides/verify-my-issuer.md)
 
 ## 🧠 Understand
@@ -45,6 +46,8 @@
     - [Trust Registries](core-concepts/identities-and-keys/trust-registries.md)
     - [Auth Grants and API Tokens](core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md)
 - [Consent & Permissions](core-concepts/consent-and-permissions/consentflow-overview.md)
+    - [Brokered Referrals](how-to-guides/consent-flow/brokered-referrals.md)
+    - [Brokered Referral Lifecycle](core-concepts/consent-and-permissions/brokered-referral-lifecycle.md)
     - [Reading & Writing Consented Data](core-concepts/consent-and-permissions/writing-consented-data.md)
     - [Issue on Consent](core-concepts/consent-and-permissions/auto-boosts.md)
     - [GameFlow](core-concepts/consent-and-permissions/gameflow-overview.md)
@@ -70,6 +73,7 @@
     - [Authentication](sdks/learncard-network/authentication.md)
     - [Usage Examples](sdks/learncard-network/usage-examples.md)
     - [Universal Inbox API](sdks/learncard-network/universal-inbox-api.md)
+    - [Contract Requests and Events](sdks/learncard-network/contract-requests-and-events.md)
     - [Notifications & Webhooks](sdks/learncard-network/notifications.md)
     - [Credential Activity](sdks/learncard-network/credential-activity.md)
     - [Status Lists](sdks/learncard-network/bitstring-status-lists.md)
@@ -120,6 +124,7 @@
 ## 📱 Products
 
 - [LearnCard App](apps/learn-card-app/README.md)
+    - [Referral Invitations](apps/learn-card-app/consent-flow/referral-invitations.md)
     - [Use LearnCard with Claude or ChatGPT](how-to-guides/connect-systems/connect-ai-agent.md)
     - [Export & Import Your Data](how-to-guides/export-and-import-your-data.md)
 - [ScoutPass](apps/scouts/README.md)

@@ -6,7 +6,9 @@ import {
     classifySharePublication,
     createVerificationBudget,
     mapWithConcurrency,
+    parseSavedShareLinkMetadata,
     prepareShare,
+    prepareShareUpdate,
     proofState,
     readShareAddress,
     resolveExpiryIso,
@@ -129,6 +131,70 @@ describe('share publication boundary', () => {
         await prepareShare(wallet, ['source'], 'Title', '');
         expect(wallet.read.get).toHaveBeenCalledTimes(1);
     });
+    it('replaces content at the same link id and key with the next content version', async () => {
+        const wallet = mockWallet();
+        const key = 'A'.repeat(43);
+        const updated = await prepareShareUpdate(
+            wallet,
+            {
+                id: 'A'.repeat(22),
+                title: 'Old title',
+                selectedCount: 1,
+                version: 4,
+                contentVersion: 2,
+                status: 'active',
+                contentState: 'finalized',
+                createdAt: '2026-09-20T00:00:00.000Z',
+                updatedAt: '2026-09-21T00:00:00.000Z',
+                expiresAt: null,
+                stoppedAt: null,
+                lastViewedAt: null,
+                passcodeProtected: true,
+                notifyOnView: true,
+                minorPolicy: {
+                    isMinor: false,
+                    policyResolved: true,
+                    defaultExpiryDays: 365,
+                    viewCountingEnabled: true,
+                },
+            },
+            {
+                protocol: 'lc-share-recovery/v1',
+                shareId: 'A'.repeat(22),
+                ownerProfileId: 'owner',
+                createdAt: '2026-09-20T00:00:00.000Z',
+                latest: { contentVersion: 2, key },
+                selection: [{ ref: 'private:credential', order: 0 }],
+                endorsements: [],
+            },
+            ['private:credential'],
+            'Updated title',
+            '',
+            { passcode: '86428642', notifyOnView: false }
+        );
+
+        expect(updated.key).toBe(key);
+        expect(updated.input).toMatchObject({
+            id: 'A'.repeat(22),
+            expectedVersion: 4,
+            contentVersion: 3,
+            title: 'Updated title',
+            note: null,
+            passcode: '86428642',
+            notifyOnView: false,
+        });
+        const payload = (await decryptSharePayload({
+            shareId: updated.input.id,
+            contentVersion: 3,
+            key,
+            envelope: updated.input.envelope!,
+        })) as { contentVersion: number };
+        expect(payload.contentVersion).toBe(3);
+        expect(wallet.invoke.createDagJwe).toHaveBeenCalledWith(
+            expect.objectContaining({ latest: { contentVersion: 3, key } }),
+            ['did:example:owner']
+        );
+    });
 });
 it('rejects an oversized selection before it can be sent', async () => {
     const wallet = mockWallet();
@@ -142,6 +208,24 @@ it('rejects an oversized selection before it can be sent', async () => {
 });
 
 describe('recipient validation', () => {
+    it('accepts only bounded saved-share display metadata', () => {
+        const metadata = {
+            type: 'learncard.share-link.v1',
+            shareId: 'A'.repeat(22),
+            title: 'Career highlights',
+            note: 'Selected credentials for applications',
+            sharer: { profileId: 'alex', displayName: 'Alex' },
+        };
+
+        expect(parseSavedShareLinkMetadata(metadata)).toEqual(metadata);
+        expect(
+            parseSavedShareLinkMetadata({ ...metadata, shareId: 'not-a-share-id' })
+        ).toBeUndefined();
+        expect(
+            parseSavedShareLinkMetadata({ ...metadata, title: 'x'.repeat(121) })
+        ).toBeUndefined();
+    });
+
     it('requires a canonical complete fragment before any request', () => {
         expect(readShareAddress('A'.repeat(22), '')).toBeUndefined();
         expect(readShareAddress('A'.repeat(22), '#' + 'A'.repeat(42) + 'B')).toBeUndefined();

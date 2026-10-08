@@ -1182,6 +1182,11 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.shareLinks.getRecovery.query({ id });
             },
+            getShareLinkOwnerContent: async (_learnCard, id) => {
+                await ensureUser();
+
+                return client.shareLinks.getContent.query({ id });
+            },
             listShareLinks: async (_learnCard, input) => {
                 await ensureUser();
 
@@ -1190,10 +1195,12 @@ export async function getLearnCardNetworkPlugin(
 
             // Anonymous public methods: deliberately NO `ensureUser()`. A viewer
             // has no account and must not need one.
-            resolveShareLink: async (_learnCard, id) =>
-                client.publicShareLinks.resolve.query({ id }),
-            getShareLinkContent: async (_learnCard, id) =>
-                client.publicShareLinks.content.query({ id }),
+            // POST keeps an optional passcode in the request body and out of URLs,
+            // access logs, browser history and referrers.
+            resolveShareLink: async (_learnCard, id, passcode) =>
+                client.publicShareLinks.resolve.mutate({ id, passcode }),
+            getShareLinkContent: async (_learnCard, id, passcode) =>
+                client.publicShareLinks.content.mutate({ id, passcode }),
             acknowledgeShareLinkView: async (_learnCard, receipt) =>
                 client.publicShareLinks.acknowledgeView.mutate({ receipt }),
 
@@ -1341,13 +1348,19 @@ export async function getLearnCardNetworkPlugin(
                 return client.credential.deleteCredential.mutate({ uri });
             },
 
-            sendPresentation: async (_learnCard, profileId, vp, encrypt = true) => {
+            sendPresentation: async (_learnCard, profileId, vp, metadataOrEncrypt, encrypt) => {
                 await ensureUser();
 
-                if (!encrypt) {
+                const metadata =
+                    typeof metadataOrEncrypt === 'object' ? metadataOrEncrypt : undefined;
+                const shouldEncrypt =
+                    typeof metadataOrEncrypt === 'boolean' ? metadataOrEncrypt : (encrypt ?? true);
+
+                if (!shouldEncrypt) {
                     return client.presentation.sendPresentation.mutate({
                         profileId,
                         presentation: vp,
+                        metadata,
                     });
                 }
 
@@ -1361,7 +1374,11 @@ export async function getLearnCardNetworkPlugin(
                     target.did,
                 ]);
 
-                return client.presentation.sendPresentation.mutate({ profileId, presentation });
+                return client.presentation.sendPresentation.mutate({
+                    profileId,
+                    presentation,
+                    metadata,
+                });
             },
             acceptPresentation: async (_learnCard, uri) => {
                 await ensureUser();
@@ -2336,6 +2353,14 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
+            addContractRecipient: async (_learnCard, contractUri, recipient) => {
+                await ensureUser();
+                return client.contracts.addContractRecipient.mutate({ contractUri, recipient });
+            },
+            removeContractRecipient: async (_learnCard, contractUri, recipient) => {
+                await ensureUser();
+                return client.contracts.removeContractRecipient.mutate({ contractUri, recipient });
+            },
             getContract: async (_learnCard, uri) => {
                 return client.contracts.getConsentFlowContract.query({ uri });
             },
@@ -2390,7 +2415,7 @@ export async function getLearnCardNetworkPlugin(
             consentToContract: async (
                 _learnCard,
                 contractUri,
-                { terms, expiresAt, oneTime },
+                { terms, expiresAt, oneTime, audienceVersion, expectedRequestId },
                 recipientToken
             ) => {
                 await ensureUser();
@@ -2400,6 +2425,8 @@ export async function getLearnCardNetworkPlugin(
                     terms,
                     expiresAt,
                     oneTime,
+                    audienceVersion,
+                    expectedRequestId,
                     recipientToken, // for SmartResume
                 });
             },
@@ -2410,7 +2437,11 @@ export async function getLearnCardNetworkPlugin(
                 return client.contracts.getConsentedContracts.query(options);
             },
 
-            updateContractTerms: async (_learnCard, uri, { terms, expiresAt, oneTime }) => {
+            updateContractTerms: async (
+                _learnCard,
+                uri,
+                { terms, expiresAt, oneTime, audienceVersion }
+            ) => {
                 await ensureUser();
 
                 return client.contracts.updateConsentedContractTerms.mutate({
@@ -2418,6 +2449,7 @@ export async function getLearnCardNetworkPlugin(
                     terms,
                     expiresAt,
                     oneTime,
+                    audienceVersion,
                 });
             },
 
@@ -2457,12 +2489,18 @@ export async function getLearnCardNetworkPlugin(
                 return client.contracts.verifyConsent.query({ uri, profileId });
             },
 
-            syncCredentialsToContract: async (_learnCard, termsUri, categories) => {
+            syncCredentialsToContract: async (
+                _learnCard,
+                termsUri,
+                categories,
+                audienceVersion
+            ) => {
                 await ensureUser();
 
                 return client.contracts.syncCredentialsToContract.mutate({
                     termsUri,
                     categories,
+                    audienceVersion,
                 });
             },
 
@@ -2474,6 +2512,14 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
+            sendContractRequest: async (_learnCard, request) => {
+                await ensureUser();
+                return client.contracts.sendContractRequest.mutate(request);
+            },
+            denyContractRequest: async (_learnCard, contractUri) => {
+                await ensureUser();
+                return client.contracts.denyContractRequest.mutate({ contractUri });
+            },
             sendAiInsightsContractRequest: async (
                 _learnCard,
                 contractUri,

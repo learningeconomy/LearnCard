@@ -60,6 +60,41 @@ describe('Credential issuance', () => {
         );
     });
 
+    describe('curated examples issue without remote contexts', () => {
+        // A deterministic, in-memory test identity; no account or persistent key writes.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let offlineWallet: any;
+
+        beforeAll(async () => {
+            offlineWallet = await initLearnCard({
+                seed: 'd'.repeat(64),
+                didkit,
+                allowRemoteContexts: false,
+            });
+        }, 30_000);
+
+        it.each([
+            'obv3/food-allergen-practice',
+            'obv3/food-allergen-facilitator',
+            'obv3/food-allergen-practice-fr',
+            'obv3/phishing-transfer',
+            'custom/course-enrollment',
+            'custom/exam-accommodation',
+            'clr/mixed-role-portfolio',
+        ])(
+            '%s',
+            async id => {
+                const prepared = prepareFixture(getFixture(id), {
+                    issuerDid: offlineWallet.id.did(),
+                    subjectDid: 'did:example:curated-test-subject',
+                });
+                const signed = await offlineWallet.invoke.issueCredential(prepared);
+                expect(signed.proof).toBeDefined();
+            },
+            15_000
+        );
+    });
+
     it('issues the full CLR fixture without remote contexts', async () => {
         const offlineWallet = await initLearnCard({
             seed: 'b'.repeat(64),

@@ -132,6 +132,11 @@ provider:
     environment:
         LAMBDA_STAGE: ${opt:stage, "dev"}
         SEED: ${env:SEED, ''}
+        SA_SEED_KMS_KEY_ARN:
+            Fn::GetAtt: [SigningAuthoritySeedKey, Arn]
+        # First deployment upgrades readers only. Enable writes after every reader is compatible.
+        SA_SEED_ENCRYPT_WRITES: ${param:saSeedEncryptWrites, env:SA_SEED_ENCRYPT_WRITES, 'false'}
+        SA_SEED_ALLOW_LEGACY_READ: ${param:saSeedAllowLegacyRead, env:SA_SEED_ALLOW_LEGACY_READ, 'true'}
         DOMAIN_NAME: ${env:DOMAIN_NAME, ''}
         OPENAI_API_KEY: ${env:OPENAI_API_KEY, ''}
         METABASE_SECRET_KEY: ${env:METABASE_SECRET_KEY, ''}
@@ -146,7 +151,6 @@ provider:
         MONGO_URI: ${env:MONGO_URI, ''}
         MONGO_DB_NAME: ${env:MONGO_DB_NAME, ''}
         AUTHORIZED_DIDS: ${env:AUTHORIZED_DIDS, ''}
-        GOOGLE_APPLICATION_CREDENTIAL: ${env:GOOGLE_APPLICATION_CREDENTIAL, ''}
         SCOUTS_SSO_CLIENT_SECRET: ${env:SCOUTS_SSO_CLIENT_SECRET, ''}
         LEARN_CLOUD_URL: ${env:LEARN_CLOUD_URL, ''}
         SENTRY_DSN: ${env:SENTRY_DSN, ''}
@@ -167,6 +171,9 @@ provider:
 functions:
     trpc:
         handler: lambda.trpcHandler
+        role: SigningAuthorityExecutionRole
+        dependsOn: [SigningAuthoritySeedKeyPolicy]
+        environment: ${file(./serverless.function-env.cjs):api}
         vpc:
             securityGroupIds:
                 - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
@@ -177,6 +184,9 @@ functions:
 
     api:
         handler: lambda.openApiHandler
+        role: SigningAuthorityExecutionRole
+        dependsOn: [SigningAuthoritySeedKeyPolicy]
+        environment: ${file(./serverless.function-env.cjs):api}
         vpc:
             securityGroupIds:
                 - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
@@ -198,6 +208,33 @@ functions:
         url:
             cors: true
 
+    oidc:
+        handler: lambda.oidcHandler
+        # Only this function may read the private signing key (see OidcExecutionRole).
+        role: OidcExecutionRole
+        environment: ${file(./serverless.function-env.cjs):oidc}
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - httpApi: GET /.well-known/openid-configuration
+            - httpApi: ANY /oidc/{proxy+}
+
+    seedMigration:
+        handler: seedMigrationLambda.handler
+        role: SigningAuthorityExecutionRole
+        timeout: 900
+        reservedConcurrency: 1
+        dependsOn: [SigningAuthoritySeedKeyPolicy]
+        # IAM invoke only: intentionally no events, schedule, or function URL.
+        vpc:
+            securityGroupIds:
+                - Fn::GetAtt: [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+
     swagger:
         handler: lambda.swaggerUiHandler
         package:
@@ -208,7 +245,145 @@ functions:
             - httpApi: GET /docs/{trpc+}
 
 resources:
+    Outputs:
+        SigningAuthoritySeedKeyArn:
+            Value:
+                Fn::GetAtt: [SigningAuthoritySeedKey, Arn]
+        SigningAuthoritySeedMigrationFunctionName:
+            Value:
+                Ref: SeedMigrationLambdaFunction
     Resources:
+        # Only the two signing entry points and the migration worker assume this role.
+        # Keep KMS references out of the role itself to avoid a Role -> Key -> Role cycle.
+        SigningAuthorityExecutionRole:
+            Type: AWS::IAM::Role
+            Properties:
+                AssumeRolePolicyDocument:
+                    Version: '2012-10-17'
+                    Statement:
+                        - Effect: Allow
+                          Principal:
+                              Service: lambda.amazonaws.com
+                          Action: sts:AssumeRole
+                ManagedPolicyArns:
+                    - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+                    - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess
+                Policies:
+                    - PolicyName: runtime-secrets
+                      PolicyDocument:
+                          Version: '2012-10-17'
+                          Statement:
+                              # seedMigration shares this role; bundle access is acceptable for now.
+                              - Effect: Allow
+                                Action: secretsmanager:GetSecretValue
+                                Resource:
+                                    Fn::Sub: arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:lca-api/${sls:stage}/runtime-secrets-*
+        OidcExecutionRole:
+            Type: AWS::IAM::Role
+            Properties:
+                AssumeRolePolicyDocument:
+                    Version: '2012-10-17'
+                    Statement:
+                        - Effect: Allow
+                          Principal:
+                              Service: lambda.amazonaws.com
+                          Action: sts:AssumeRole
+                ManagedPolicyArns:
+                    - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+                    - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess
+                Policies:
+                    - PolicyName: oidc-signing-key
+                      PolicyDocument:
+                          Version: '2012-10-17'
+                          Statement:
+                              # SecretString is the private JWK JSON; only its id belongs in Lambda env.
+                              - Effect: Allow
+                                Action: secretsmanager:GetSecretValue
+                                Resource:
+                                    Fn::Sub: arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:lca-api/${sls:stage}/oidc-signing-jwk-*
+        SigningAuthoritySeedKey:
+            Type: AWS::KMS::Key
+            DeletionPolicy: Retain
+            UpdateReplacePolicy: Retain
+            Properties:
+                Description: Envelope encryption for hosted signing-authority seeds
+                KeySpec: SYMMETRIC_DEFAULT
+                KeyUsage: ENCRYPT_DECRYPT
+                EnableKeyRotation: true
+                PendingWindowInDays: 30
+                KeyPolicy:
+                    Version: '2012-10-17'
+                    Statement:
+                        - Sid: AccountKeyAdministration
+                          Effect: Allow
+                          Principal:
+                              AWS:
+                                  Fn::Sub: arn:${AWS::Partition}:iam::${AWS::AccountId}:root
+                          Action:
+                              - kms:DescribeKey
+                              - kms:GetKeyPolicy
+                              - kms:PutKeyPolicy
+                              - kms:ListResourceTags
+                              - kms:TagResource
+                              - kms:UntagResource
+                              - kms:GetKeyRotationStatus
+                              - kms:EnableKeyRotation
+                              - kms:DisableKeyRotation
+                              - kms:UpdateKeyDescription
+                              - kms:EnableKey
+                              - kms:DisableKey
+                              - kms:ScheduleKeyDeletion
+                              - kms:CancelKeyDeletion
+                              - kms:CreateAlias
+                              - kms:UpdateAlias
+                              - kms:DeleteAlias
+                          Resource: '*'
+                        - Sid: LcaApiSeedEncryption
+                          Effect: Allow
+                          Principal:
+                              AWS:
+                                  Fn::GetAtt: [SigningAuthorityExecutionRole, Arn]
+                          Action: [kms:GenerateDataKey, kms:Decrypt]
+                          Resource: '*'
+                          Condition:
+                              StringEquals:
+                                  kms:EncryptionContext:purpose: lca-signing-authority-seed
+                        - Sid: DenyOtherCryptographicPrincipals
+                          Effect: Deny
+                          Principal: '*'
+                          Action:
+                              [kms:Decrypt, 'kms:ReEncrypt*', 'kms:GenerateDataKey*', kms:Encrypt]
+                          Resource: '*'
+                          Condition:
+                              ArnNotEquals:
+                                  aws:PrincipalArn:
+                                      Fn::GetAtt: [SigningAuthorityExecutionRole, Arn]
+        SigningAuthoritySeedKeyAlias:
+            Type: AWS::KMS::Alias
+            Properties:
+                AliasName: alias/${self:service}-${self:provider.stage}-sa-seeds
+                TargetKeyId:
+                    Ref: SigningAuthoritySeedKey
+        # The direct execution-role grant in the KEY policy authorizes cryptographic use.
+        # This matching IAM allow is not required by that grant; it documents the scope and
+        # provides a dependsOn deployment barrier. Keeping it separate avoids a Role -> Key
+        # -> Role CloudFormation dependency cycle. Swagger/didWeb use the generated role.
+        SigningAuthoritySeedKeyPolicy:
+            Type: AWS::IAM::Policy
+            Properties:
+                PolicyName: ${self:service}-${self:provider.stage}-sa-seeds
+                Roles:
+                    - Ref: SigningAuthorityExecutionRole
+                PolicyDocument:
+                    Version: '2012-10-17'
+                    Statement:
+                        - Effect: Allow
+                          Action: [kms:GenerateDataKey, kms:Decrypt]
+                          Resource:
+                              Fn::GetAtt: [SigningAuthoritySeedKey, Arn]
+                          Condition:
+                              StringEquals:
+                                  kms:EncryptionContext:purpose: lca-signing-authority-seed
         VPC:
             Type: AWS::EC2::VPC
             Properties:
@@ -323,6 +498,10 @@ resources:
             Properties:
                 AutoMinorVersionUpgrade: true
                 Engine: redis
+                # GETDEL (login codes/tickets/auth codes) needs Redis >= 6.2. The
+                # version is deliberately NOT pinned here: existing clusters are
+                # already on 7.x, and a pin below the running version is rejected
+                # by CloudFormation as a downgrade (failing the whole deploy).
                 CacheNodeType: ${self:custom.config.CACHE_INSTANCE_SIZE}
                 NumCacheNodes: 1
                 VpcSecurityGroupIds:

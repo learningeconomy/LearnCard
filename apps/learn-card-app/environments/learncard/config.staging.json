@@ -6,6 +6,7 @@
         "brainServiceApi": "https://staging.network.learncard.com/api",
         "cloudService": "https://staging.cloud.learncard.com/trpc",
         "lcaApi": "https://staging.api.learncard.app/trpc",
+        "notificationsEndpoint": "https://staging.api.learncard.app/api/notifications/send",
         "xapi": "https://staging.network.learncard.com/xapi",
         "aiAgentService": "https://agent-staging.learncard.ai"
     },
@@ -28,7 +29,11 @@
     "auth": {
         "keyDerivation": "sss",
         "sss": {
-            "serverUrl": "https://staging.api.learncard.app/api"
+            "serverUrl": "https://staging.api.learncard.app/api",
+            "escrowEnclaveMode": "off",
+            "escrowEnclavePublicKeys": [
+                "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEdi2P3bj3ZuaVMRl3CKa78AgtRoIB8NcWX5DX+PmIx7SU6ZJGenmhHiLWzNxgvfAIucQtE4y//dS6W1sgkrJ2Tw=="
+            ]
         }
     }
 }

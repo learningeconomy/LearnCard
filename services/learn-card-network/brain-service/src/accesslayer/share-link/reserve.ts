@@ -7,6 +7,7 @@ import {
     DEFAULT_SHARE_LINK_POLICY,
     type ShareLinkPolicySnapshot,
 } from '@helpers/share-link-policy/types';
+import { mergeShareLinkPolicyConservatively } from '@helpers/share-link-policy/resolver';
 
 import { ensureShareLinkConstraints } from '../../models/share-link-constraints';
 import type { ShareLinkRecord } from '../../models/ShareLink';
@@ -21,6 +22,7 @@ import {
     readOperation,
     readReservation,
     readShareById,
+    toShareLinkOperationPolicy,
     toShareLinkOperationRecord,
     toShareLinkRecord,
     toShareLinkReservationRecord,
@@ -79,6 +81,8 @@ type ReservationProps = {
     note: string | null;
     expiresAt: string | null;
     selectedCount: number;
+    passcodeHash: string | null;
+    notifyOnView: boolean;
     policyIsMinor: boolean | null;
     policyResolved: boolean;
     policyDefaultExpiryDays: number;
@@ -212,6 +216,7 @@ export const reserveCreate = async (input: ReserveCreateInput): Promise<ReserveS
                 };
             }
 
+            let retryPolicy = toShareLinkOperationPolicy(existingOperation);
             const existingReservationProps = await readReservation(tx, input.shareId);
 
             if (existingReservationProps) {
@@ -227,6 +232,10 @@ export const reserveCreate = async (input: ReserveCreateInput): Promise<ReserveS
                         'another create/update reservation is already in flight for this share'
                     );
                 }
+
+                retryPolicy = retryPolicy
+                    ? mergeShareLinkPolicyConservatively(retryPolicy, existingReservation.policy)
+                    : existingReservation.policy;
 
                 if (isLeaseActive(existingReservation.leaseExpiresAt, now)) {
                     if (!share) {
@@ -253,6 +262,10 @@ export const reserveCreate = async (input: ReserveCreateInput): Promise<ReserveS
                 failShareLink('CONFLICT', 'cannot re-drive create for a stopped share');
             }
 
+            const policy = mergeShareLinkPolicyConservatively(
+                retryPolicy ?? DEFAULT_SHARE_LINK_POLICY,
+                input.policy ?? retryPolicy ?? DEFAULT_SHARE_LINK_POLICY
+            );
             return createReservationForShare(tx, {
                 share,
                 opKey,
@@ -267,7 +280,11 @@ export const reserveCreate = async (input: ReserveCreateInput): Promise<ReserveS
                 note: input.note ?? null,
                 expiresAt:
                     supersededExpiresAt !== null ? supersededExpiresAt.value : share.expiresAt,
-                policy: input.policy ?? DEFAULT_SHARE_LINK_POLICY,
+                passcodeHash: share.passcodeHash ?? input.passcodeHash ?? null,
+                notifyOnView:
+                    (share.notifyOnView ?? input.notifyOnView ?? false) &&
+                    policy.viewCountingEnabled,
+                policy,
                 leaseOwner: input.leaseOwner,
                 leaseExpiresAt,
                 nowIso,
@@ -315,6 +332,8 @@ export const reserveCreate = async (input: ReserveCreateInput): Promise<ReserveS
             stoppedAt: null,
             viewCount: 0,
             lastViewedAt: null,
+            passcodeHash: input.passcodeHash ?? null,
+            notifyOnView: input.notifyOnView ?? false,
             minorPolicyIsMinor: policy.isMinor,
             minorPolicyResolved: policy.policyResolved,
             minorPolicyDefaultExpiryDays: policy.defaultExpiryDays,
@@ -329,6 +348,7 @@ export const reserveCreate = async (input: ReserveCreateInput): Promise<ReserveS
             operationId,
             shareId: input.shareId,
             requestHash: input.requestHash,
+            policy,
             now: nowIso,
             pruneAfter,
         });
@@ -352,6 +372,8 @@ export const reserveCreate = async (input: ReserveCreateInput): Promise<ReserveS
             note: input.note ?? null,
             expiresAt: input.expiresAt ?? null,
             selectedCount: input.selectedCount,
+            passcodeHash: input.passcodeHash ?? null,
+            notifyOnView: input.notifyOnView ?? false,
             policyIsMinor: policy.isMinor,
             policyResolved: policy.policyResolved,
             policyDefaultExpiryDays: policy.defaultExpiryDays,
@@ -392,6 +414,8 @@ type CreateReservationForShareInput = {
     title: string;
     note: string | null;
     expiresAt: string | null;
+    passcodeHash: string | null;
+    notifyOnView: boolean;
     policy: ShareLinkPolicySnapshot;
     leaseOwner: string;
     leaseExpiresAt: string;
@@ -410,6 +434,7 @@ const createReservationForShare = async (
         operationId: input.operationId,
         shareId: input.share.id,
         requestHash: input.requestHash,
+        policy: input.policy,
         now: input.nowIso,
         pruneAfter: input.pruneAfter,
     });
@@ -434,6 +459,8 @@ const createReservationForShare = async (
         note: input.note,
         expiresAt: input.expiresAt,
         selectedCount: input.selectedCount,
+        passcodeHash: input.passcodeHash,
+        notifyOnView: input.notifyOnView,
         policyIsMinor: input.policy.isMinor,
         policyResolved: input.policy.policyResolved,
         policyDefaultExpiryDays: input.policy.defaultExpiryDays,
@@ -527,6 +554,7 @@ export const reserveReplacement = async (
                 };
             }
 
+            let retryPolicy = toShareLinkOperationPolicy(existingOperation);
             const existingReservationProps = await readReservation(tx, input.shareId);
 
             if (existingReservationProps) {
@@ -543,6 +571,10 @@ export const reserveReplacement = async (
                     );
                 }
 
+                retryPolicy = retryPolicy
+                    ? mergeShareLinkPolicyConservatively(retryPolicy, existingReservation.policy)
+                    : existingReservation.policy;
+
                 if (isLeaseActive(existingReservation.leaseExpiresAt, now)) {
                     return {
                         outcome: 'reserved',
@@ -557,7 +589,15 @@ export const reserveReplacement = async (
 
             return reserveReplacementForLockedShare(tx, {
                 share,
-                input,
+                input: {
+                    ...input,
+                    // The ceiling belongs to the logical request, not its lease.
+                    // Missing legacy state fails closed after reservation cleanup.
+                    policy: mergeShareLinkPolicyConservatively(
+                        retryPolicy ?? DEFAULT_SHARE_LINK_POLICY,
+                        input.policy ?? retryPolicy ?? DEFAULT_SHARE_LINK_POLICY
+                    ),
+                },
                 opKey,
                 leaseExpiresAt,
                 nowIso,
@@ -651,6 +691,11 @@ const reserveReplacementForLockedShare = async (
         title: input.title ?? share.title,
         note: input.note !== undefined ? input.note : share.note,
         expiresAt: input.expiresAt !== undefined ? input.expiresAt : share.expiresAt,
+        passcodeHash:
+            input.passcodeHash !== undefined ? input.passcodeHash : (share.passcodeHash ?? null),
+        notifyOnView:
+            (input.notifyOnView !== undefined ? input.notifyOnView : share.notifyOnView === true) &&
+            (input.policy?.viewCountingEnabled ?? share.minorPolicyViewCountingEnabled),
         policy:
             input.policy ??
             ({

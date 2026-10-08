@@ -9,23 +9,31 @@ import type {
 /**
  * Pure policy decision table.
  *
- * - known minor, managed or unknown age => no views, 30 days
+ * - personal known minor, managed or unknown age => no views, 30 days
  * - known unmanaged adult => views enabled, 365 days
- *
+ * - service profile => views enabled without changing the age-derived expiry
  */
 export const composeShareLinkPolicy = (
     age: ShareLinkOwnerAge,
-    isManaged: boolean
+    isManaged: boolean,
+    isServiceProfile = false
 ): ShareLinkPolicySnapshot => {
-    const isMinor = age === 'minor' ? true : age === 'adult' ? false : null;
-    const policyResolved = age !== 'unknown';
+    // Service age exemption does not establish that the owner is an adult.
+    const isMinor = isServiceProfile
+        ? false
+        : age === 'minor'
+          ? true
+          : age === 'adult'
+            ? false
+            : null;
+    const policyResolved = isServiceProfile || age !== 'unknown';
     const isUnmanagedAdult = age === 'adult' && !isManaged;
 
     return {
         isMinor,
         policyResolved,
         defaultExpiryDays: isUnmanagedAdult ? 365 : 30,
-        viewCountingEnabled: isUnmanagedAdult,
+        viewCountingEnabled: isServiceProfile || isUnmanagedAdult,
     };
 };
 
@@ -38,12 +46,9 @@ export const createShareLinkPolicyResolver = (
 ): ShareLinkPolicyResolver => ({
     resolve: async (profileId: string): Promise<ShareLinkPolicySnapshot> => {
         try {
-            const [age, isManaged] = await Promise.all([
-                source.resolveOwnerAge(profileId),
-                source.isManaged(profileId),
-            ]);
+            const { age, isManaged, isServiceProfile } = await source.resolveOwner(profileId);
 
-            return composeShareLinkPolicy(age, isManaged);
+            return composeShareLinkPolicy(age, isManaged, isServiceProfile);
         } catch {
             return DEFAULT_SHARE_LINK_POLICY;
         }
@@ -82,9 +87,8 @@ export const resolveShareLinkExpiry = (
  *   unknown (never inferred adult);
  * - the default expiry is the shorter of the two.
  *
- * The production age source currently reports `unknown`, so in that deployment
- * the merge is a no-op for ordinary mutations; it exists to keep any future
- * restricted transition monotonic across replay/recovery.
+ * Production finalization also rechecks current graph policy under the share
+ * lock before an explicit update can replace an old unknown snapshot.
  */
 export const mergeShareLinkPolicyConservatively = (
     current: ShareLinkPolicySnapshot,

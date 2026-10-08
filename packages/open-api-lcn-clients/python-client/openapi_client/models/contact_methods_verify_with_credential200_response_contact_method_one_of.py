@@ -22,6 +22,7 @@ from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContactMethodsVerifyWithCredential200ResponseContactMethodOneOf(BaseModel):
     """
@@ -43,15 +44,16 @@ class ContactMethodsVerifyWithCredential200ResponseContactMethodOneOf(BaseModel)
             raise ValueError("must be one of enum values ('email')")
         return value
 
-    @field_validator('value')
+    @field_validator('value', mode="before")
     def value_validate_regular_expression(cls, value):
         """Validates the regular expression"""
-        if not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+        if isinstance(value, str) and not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
             raise ValueError(r"must validate the regular expression /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -63,8 +65,7 @@ class ContactMethodsVerifyWithCredential200ResponseContactMethodOneOf(BaseModel)
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -100,7 +101,7 @@ class ContactMethodsVerifyWithCredential200ResponseContactMethodOneOf(BaseModel)
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "type": obj.get("type"),
             "value": obj.get("value"),
             "id": obj.get("id"),
@@ -108,7 +109,9 @@ class ContactMethodsVerifyWithCredential200ResponseContactMethodOneOf(BaseModel)
             "verifiedAt": obj.get("verifiedAt"),
             "isPrimary": obj.get("isPrimary"),
             "createdAt": obj.get("createdAt")
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

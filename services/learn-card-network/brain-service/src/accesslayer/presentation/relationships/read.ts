@@ -2,15 +2,26 @@ import { inflateObject } from '@helpers/objects.helpers';
 import { Presentation, PresentationInstance, Profile, ProfileRelationships } from '@models';
 import { ProfileType } from 'types/profile';
 
+const relationshipProperties = (value: unknown): Record<string, unknown> => {
+    if (value && typeof value === 'object' && 'dataValues' in value) {
+        const { dataValues } = value as { dataValues?: unknown };
+        if (dataValues && typeof dataValues === 'object') {
+            return dataValues as Record<string, unknown>;
+        }
+    }
+
+    return value as Record<string, unknown>;
+};
+
 export const getPresentationSentToProfile = async (
     id: string,
     to: ProfileType
 ): Promise<
     | {
-        source: ProfileType;
-        relationship: ProfileRelationships['presentationSent']['RelationshipProperties'];
-        target: PresentationInstance;
-    }
+          source: ProfileType;
+          relationship: ProfileRelationships['presentationSent']['RelationshipProperties'];
+          target: PresentationInstance;
+      }
     | undefined
 > => {
     const data = (
@@ -22,7 +33,11 @@ export const getPresentationSentToProfile = async (
 
     if (!data) return undefined;
 
-    return { ...data, source: inflateObject(data.source.dataValues as any) };
+    return {
+        ...data,
+        source: inflateObject(data.source.dataValues as unknown as Record<string, unknown>),
+        relationship: inflateObject(relationshipProperties(data.relationship)),
+    };
 };
 
 export const getPresentationOwner = async (
@@ -39,7 +54,7 @@ export const getPresentationOwner = async (
 
     if (!owner) return undefined;
 
-    return inflateObject<ProfileType>(owner.dataValues as any);
+    return inflateObject(owner.dataValues as unknown as Record<string, unknown>) as ProfileType;
 };
 
 export const getPresentationReceivedByProfile = async (

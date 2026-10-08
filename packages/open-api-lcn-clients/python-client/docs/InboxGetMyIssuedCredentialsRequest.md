@@ -1,15 +1,14 @@
 # InboxGetMyIssuedCredentialsRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**limit** | **float** |  | [optional] [default to 25]
-**cursor** | **str** |  | [optional] 
-**sort** | **str** |  | [optional] 
-**query** | [**InboxGetMyIssuedCredentialsRequestQuery**](InboxGetMyIssuedCredentialsRequestQuery.md) |  | [optional] 
-**recipient** | [**InboxGetMyIssuedCredentialsRequestRecipient**](InboxGetMyIssuedCredentialsRequestRecipient.md) |  | [optional] 
+| Name          | Type                                                                                              | Description | Notes                      |
+| ------------- | ------------------------------------------------------------------------------------------------- | ----------- | -------------------------- |
+| **limit**     | **float**                                                                                         |             | [optional] [default to 25] |
+| **cursor**    | **str**                                                                                           |             | [optional]                 |
+| **sort**      | **str**                                                                                           |             | [optional]                 |
+| **query**     | [**InboxGetMyIssuedCredentialsRequestQuery**](InboxGetMyIssuedCredentialsRequestQuery.md)         |             | [optional]                 |
+| **recipient** | [**InboxGetMyIssuedCredentialsRequestRecipient**](InboxGetMyIssuedCredentialsRequestRecipient.md) |             | [optional]                 |
 
 ## Example
 
@@ -28,6 +27,5 @@ inbox_get_my_issued_credentials_request_dict = inbox_get_my_issued_credentials_r
 # create an instance of InboxGetMyIssuedCredentialsRequest from a dict
 inbox_get_my_issued_credentials_request_from_dict = InboxGetMyIssuedCredentialsRequest.from_dict(inbox_get_my_issued_credentials_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

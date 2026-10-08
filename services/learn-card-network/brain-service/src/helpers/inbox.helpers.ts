@@ -325,9 +325,11 @@ export const issueToInbox = async (
 
     // Check if the recipient is a managed child (has a guardian via MANAGES relationship).
     // Managed children need guardian approval for all inbox credentials, even without explicit guardianEmail.
-    const recipientManagers = existingProfile
-        ? await getProfilesThatManageAProfile(existingProfile.profileId)
-        : [];
+    // Service profiles (orgs) are managed for admin purposes, not guardianship.
+    const recipientManagers =
+        existingProfile && !existingProfile.isServiceProfile
+            ? await getProfilesThatManageAProfile(existingProfile.profileId)
+            : [];
     const recipientIsManaged = recipientManagers.length > 0;
 
     if (existingProfile && !guardianEmail && !recipientIsManaged && !configuration.refresh) {
@@ -877,8 +879,9 @@ export const issueToInbox = async (
 
                 await deliveryService.send({
                     contactMethod: recipient,
-                    templateId: delivery?.template?.id ?? 'universal-inbox',
+                    templateId: delivery?.template?.id || 'universal-inbox-claim',
                     templateModel: {
+                        claimUrl: emailClaimUrl,
                         emailClaimUrl,
                         claimToken: emailClaimToken,
                         ...injectedTemplateFields,

@@ -36,6 +36,7 @@ class TestClaimHookGetClaimHooksForBoostRequestQueryDataPermissions(unittest.Tes
         if include_optional:
             return ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions(
                 role = None,
+                can_view = True,
                 can_edit = True,
                 can_issue = True,
                 can_revoke = True,

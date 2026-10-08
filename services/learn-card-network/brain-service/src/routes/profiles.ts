@@ -581,6 +581,18 @@ export const profilesRouter = t.router({
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
+            if (
+                profile.isServiceProfile === true &&
+                profile.type === 'child' &&
+                typeof input.type === 'string' &&
+                input.type !== 'child'
+            ) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message:
+                        'A service profile explicitly typed as a child cannot change profile type.',
+                });
+            }
 
             const {
                 profileId,

@@ -62,6 +62,7 @@
         "membersCount": "{{count}} miembros",
         "socialBoosts": "Reconocimientos sociales",
         "newChildOrOrganization": "Nuevo menor u organización",
+        "newOrganization": "Nueva organización",
         "selectProfileType": "Selecciona un tipo de perfil",
         "organizationProfile": "Perfil de organización",
         "organization": "Organización",
@@ -1417,7 +1418,18 @@
             "guardianEmailed": "Enviamos un correo a tu tutor para que apruebe tu cuenta. Ya puedes empezar a explorar — algunas funciones se desbloquean cuando lo confirme.",
             "ready": "Tu {{brand}} está listo.",
             "whoAreYou": "¿Quién eres? (Opcional)",
-            "explore": "Explorar {{brand}}"
+            "explore": "Explorar {{brand}}",
+            "pin": {
+                "title": "Añadir un PIN de recuperación",
+                "body": "Si alguna vez pierdes este dispositivo, un PIN de 6 dígitos te permitirá volver a entrar en segundos.",
+                "confirmTitle": "Confirma tu PIN",
+                "confirmBody": "Introduce los mismos 6 dígitos de nuevo.",
+                "saving": "Guardando tu PIN…",
+                "success": "Estás protegido",
+                "skip": "Omitir por ahora",
+                "startOver": "Empezar de nuevo",
+                "hint": "Puedes cambiarlo o eliminarlo en cualquier momento en Configuración."
+            }
         }
     },
     "profile": {
@@ -1744,6 +1756,7 @@
         "previewCredentials": "Vista previa de {{count}} credenciales"
     },
     "consentFlow": {
+        "reviewChanged": "Los detalles de acceso cambiaron. Revísalos antes de volver a conectar.",
         "guardianApprovalRequired": "Pide a un administrador actual de la cuenta que apruebe esta conexión y vuelve a intentarlo.",
         "title": "Consentimiento",
         "acceptAndSync": "Aceptar y sincronizar",
@@ -1863,9 +1876,28 @@
             "name": "nombre",
             "email": "correo electrónico",
             "profilePicture": "foto de perfil"
-        }
+        },
+        "retryPublication": "Tus opciones para compartir están guardadas. Inténtalo de nuevo para terminar de enviarlas."
     },
     "recovery": {
+        "pin": {
+            "throttled": "Demasiados intentos. Por favor, inténtalo de nuevo más tarde.",
+            "title": "PIN de recuperación",
+            "instantRecoveryOn": "Recuperación instantánea: activada",
+            "notSet": "Sin configurar",
+            "change": "Cambiar",
+            "afterRecovery": {
+                "title": "Configura un nuevo PIN de recuperación",
+                "body": "El PIN que acabas de usar ha sido retirado: cada PIN funciona una sola vez para mantener tu cuenta protegida. Elige uno nuevo para tener lista la recuperación instantánea.",
+                "hint": "Las mismas reglas: 6 dígitos, nada obvio."
+            },
+            "useInstead": "Usar mi PIN de recuperación"
+        },
+        "error.invalidPhrase": "Esas palabras no coinciden con tu frase de recuperación. Revísalas e inténtalo de nuevo.",
+        "error.invalidPassword": "Contraseña incorrecta o no se pudo leer el archivo. Por favor, inténtalo de nuevo.",
+        "error.invalidCode": "Ese código es incorrecto o ha expirado. Solicita uno nuevo e inténtalo de nuevo.",
+        "error.network": "Problema de conexión. Por favor, comprueba tu internet e inténtalo de nuevo.",
+        "error.default": "Algo salió mal. Por favor, inténtalo de nuevo.",
         "prompt": {
             "openAria": "Configurar una forma de volver a iniciar sesión",
             "snoozeAria": "Recordármelo en 7 días",
@@ -1877,13 +1909,30 @@
                 "title": "Esta sesión termina cuando cierres la pestaña",
                 "body": "Configura una forma de volver a iniciar sesión o perderás el acceso a tu cuenta."
             },
+            "activation": {
+                "title": "Termina de proteger tu cuenta",
+                "body": "Tu cuenta no estará completamente protegida hasta que agregues una forma de volver a iniciar sesión."
+            },
             "success": {
                 "title": "Tu cuenta está protegida",
                 "body": "Puedes volver a iniciar sesión desde cualquier dispositivo."
             },
             "action": {
-                "passkey": "Usa Face ID o Touch ID",
-                "phrase": "Obtén una frase de recuperación"
+                "passkeyApple": "Usa Face ID o Touch ID",
+                "passkeyWindows": "Usa Windows Hello",
+                "passkeyAndroid": "Usa tu huella digital o desbloqueo facial",
+                "passkeyGeneric": "Usa una llave de acceso",
+                "phrase": "Guarda una frase de recuperación"
+            },
+            "pinFirst": {
+                "title": "Termina de proteger tu cuenta",
+                "body": "Añade un PIN de recuperación: te permite volver a entrar en segundos si pierdes este dispositivo.",
+                "action": "Configurar un PIN de 6 dígitos",
+                "secondary": "O añade una llave de acceso o frase de recuperación"
+            },
+            "backup": {
+                "title": "Añade una forma de respaldo para entrar",
+                "body": "Tu PIN funciona en cualquier dispositivo. Una llave de acceso o frase de recuperación te protege si lo olvidas."
             }
         },
         "protectAccount": "Protege tu cuenta",
@@ -1977,7 +2026,9 @@
             "tapToChoose": "Toca para elegir el archivo de respaldo",
             "fileSelected": "Archivo seleccionado",
             "enter": "Ingresar",
-            "change": "Cambiar"
+            "change": "Cambiar",
+            "nextCheckIt": "Siguiente: compruébalo",
+            "nextCheckFile": "Siguiente: comprueba tu archivo"
         },
         "tab": {
             "email": "Correo electrónico",
@@ -2002,6 +2053,11 @@
         "yourRecoveryPhrase": "Tu frase de recuperación",
         "copied": "¡Copiado!",
         "savedSomewhereSafe": "La he guardado en un lugar seguro",
+        "verifyPhraseTitle": "Confirma tu frase de recuperación",
+        "verifyPhraseDescription": "Introduce las palabras solicitadas para confirmar que guardaste tu frase.",
+        "wordNumber": "Palabra {{number}}",
+        "confirmPhrase": "Confirmar frase de recuperación",
+        "phraseWordsMismatch": "Esas palabras no coinciden. Revisa tu frase e inténtalo de nuevo.",
         "backupDescription": "Genera un archivo de copia de seguridad cifrado protegido por una contraseña. Guárdalo en un lugar seguro — necesitarás tanto el archivo como la contraseña para recuperar.",
         "backupPassword": "Contraseña de copia de seguridad",
         "confirmPassword": "Confirmar contraseña",
@@ -2013,6 +2069,9 @@
         },
         "backupReady": "Archivo de copia de seguridad listo",
         "backupReadyDesc": "Descarga este archivo y guárdalo en un lugar seguro. Lo necesitarás junto con tu contraseña de copia de seguridad para recuperar.",
+        "reenterPassword": "Vuelve a introducir la contraseña de copia de seguridad",
+        "verifyBackupDescription": "Comprobaremos el archivo descargado antes de confirmar este método de recuperación.",
+        "verifyBackup": "Verificar archivo de copia de seguridad",
         "passwordsDontMatch": "Las contraseñas no coinciden.",
         "recommended": "Recomendado",
         "emailDescription": "Agrega un correo personal (diferente al de inicio de sesión) como destino de recuperación. Se enviará una clave de recuperación allí.",
@@ -2025,6 +2084,8 @@
         "emailKeyDescription": "Enviaremos una clave de recuperación a este correo. Si alguna vez pierdes acceso, solo revisa tu bandeja de entrada y pega la clave para recuperar.",
         "recoveryKeySentTitle": "Clave de recuperación enviada",
         "recoveryKeySentDesc": "Revisa tu bandeja de entrada en {{email}}. Guarda ese correo — necesitarás la clave de recuperación si alguna vez pierdes acceso.",
+        "recoveryConfirmationCodeSent": "Introduce el código de confirmación enviado con tu clave de recuperación a {{email}}.",
+        "confirmRecoveryKey": "Confirmar clave de recuperación",
         "accountUpgradeNeeded": "Actualización de cuenta necesaria",
         "accountUpgradeDesc": "Estamos actualizando la seguridad de tu cuenta pero no pudimos terminar automáticamente. Intenta de nuevo.",
         "logOut": "Cerrar sesión",
@@ -2046,7 +2107,10 @@
         "step": {
             "searchInbox": "Busca en tu bandeja de entrada un correo con el asunto \"Tu Clave de Recuperación de LearnCard\"",
             "findKey": "Encuentra la cadena larga de caracteres entre \"RECOVERY KEY\" y \"END RECOVERY KEY\"",
-            "copyKey": "Copia esa cadena completa y pégala abajo"
+            "copyKey": "Copia esa cadena completa y pégala abajo",
+            "save": "Guardar",
+            "check": "Comprobar",
+            "send": "Enviar"
         },
         "newDeviceDesc": "Este dispositivo aún no ha sido configurado para tu cuenta. Elige un método para iniciar sesión.",
         "restoreAccessDesc": "Elige cómo quieres restaurar el acceso a tu cuenta.",
@@ -2054,7 +2118,82 @@
         "anotherDeviceDesc": "Escanea un código desde un dispositivo con sesión iniciada",
         "emailRecoveryLabel": "Clave de recuperación por correo",
         "phraseEnter25": "Ingresa tu frase de 25 palabras",
-        "wordsCount": "{{count}} / 25 palabras"
+        "wordsCount": "{{count}} / 25 palabras",
+        "identity": {
+            "lostSchoolLogin": "Perdí el acceso a mi correo escolar o inicio de sesión",
+            "title": "Restaura tu cuenta",
+            "emailDescription": "Ingresa el correo personal de recuperación que verificaste anteriormente.",
+            "recoveryEmailLabel": "Correo de recuperación",
+            "recoveryEmailPlaceholder": "tu@ejemplo.com",
+            "sendCode": "Enviar código de recuperación",
+            "sendingCode": "Enviando código...",
+            "checkEmail": "Revisa tu correo",
+            "codeDescription": "Ingresa el código de 6 dígitos enviado a tu correo de recuperación.",
+            "codeLabel": "Código de recuperación",
+            "verifyCode": "Verificar código",
+            "chooseMethod": "Verifica tu cuenta",
+            "chooseMethodDescription": "Elige un método de recuperación para confirmar que la cuenta es tuya.",
+            "keyVerified": "Cuenta verificada",
+            "newLoginDescription": "Ahora inicia sesión con un correo o acceso nuevo para reconectar tu cuenta.",
+            "continueToLogin": "Continuar para iniciar sesión",
+            "signInPrompt": "Inicia sesión con tu nuevo acceso",
+            "signInPromptDescription": "Reconectaremos tu cuenta existente después de iniciar sesión.",
+            "successTitle": "Acceso restaurado",
+            "successDescription": "Tu cuenta está conectada a tu nuevo acceso. Configura de nuevo la recuperación para mantenerla protegida.",
+            "tooManyAttempts": "Demasiados intentos incorrectos. Inténtalo más tarde.",
+            "invalidCode": "El código es incorrecto o venció. Solicita uno nuevo e inténtalo otra vez.",
+            "invalidRecoveryMethod": "Ese método no pudo verificar tu cuenta. Prueba otro método."
+        },
+        "automatic": {
+            "restoreWait": "Restaurar tras una espera de 7 días"
+        },
+        "addWayBackIn": "Añade una forma de volver a entrar",
+        "addAnotherMethod": "Añadir otro método",
+        "fullyProtected": "Tu cuenta está totalmente protegida.",
+        "added": "Añadido",
+        "whichWordIs": "¿Cuál es la palabra n.º {{number}}?",
+        "tapTheWord": "Toca la palabra de tu frase de recuperación.",
+        "wrongWord": "Esa no es la palabra n.º {{number}}. Revisa tu frase guardada e inténtalo de nuevo.",
+        "showPhraseAgain": "Mostrar mi frase de nuevo",
+        "challengeProgress": "{{current}} de {{total}}",
+        "signInOnThisDevice": "Iniciar sesión en este dispositivo",
+        "signInOnThisDeviceDesc": "Usa un método que ya hayas configurado para terminar de iniciar sesión.",
+        "signInAgainOnThisDevice": "Vuelve a iniciar sesión en este dispositivo",
+        "signInAgainOnThisDeviceDesc": "Usa un método que ya hayas configurado para continuar.",
+        "hero": {
+            "device": "Aprobar desde otro dispositivo",
+            "deviceDesc": "Escanea un código con un teléfono o computadora donde hayas iniciado sesión",
+            "passkey": "Usa tu llave de acceso",
+            "passkeyDesc": "Inicia sesión con Face ID, Touch ID o el PIN de tu dispositivo"
+        },
+        "notSetUp": "No configurado",
+        "cantUseAny": "¿No puedes usar ninguno de estos?",
+        "cantUseAnotherDevice": "¿No puedes usar otro dispositivo?",
+        "getBackIntoAccount": "Recupera el acceso a tu cuenta",
+        "getBackIntoAccountDesc": "Confirmaremos que eres tú y luego configuraremos este dispositivo desde cero.",
+        "thisWill": "Esto hará lo siguiente:",
+        "consequence": {
+            "signOut": "Cerrará tu sesión en tus otros dispositivos",
+            "turnOff": "Desactivará tus otros métodos de inicio de sesión hasta que los vuelvas a configurar"
+        },
+        "showNotSetUp": "Mostrar {{count}} sin configurar",
+        "hideNotSetUp": "Ocultar métodos sin configurar",
+        "stepOf": "Paso {{current}} de {{total}}",
+        "hint": {
+            "oneMoreStep": "Un paso más: comprueba tu archivo."
+        },
+        "guard": {
+            "phraseTitle": "¿Terminar de configurar tu frase de recuperación?",
+            "backupTitle": "¿Terminar de configurar tu archivo de copia de seguridad?",
+            "emailTitle": "¿Terminar de configurar tu correo de recuperación?",
+            "body": "No funcionará hasta que lo compruebes. Esto solo toma unos segundos.",
+            "finish": "Terminar configuración",
+            "discardPhrase": "Descartar frase",
+            "discardBackup": "Descartar copia de seguridad",
+            "discardEmail": "Descartar",
+            "discardNote": "El que guardaste no funcionará. Puedes crear uno nuevo en cualquier momento."
+        },
+        "notFinished": "Sin terminar"
     },
     "alerts": {
         "title": "Alertas",
@@ -2897,7 +3036,9 @@
             "verifying": "Verificando...",
             "forUser": "para {{name}}",
             "requiresFiveDigits": "El PIN debe tener 5 dígitos",
-            "invalidPin": "PIN no válido. Inténtalo de nuevo"
+            "invalidPin": "PIN no válido. Inténtalo de nuevo",
+            "approvalRequiresPin": "Necesitas el PIN de un padre o tutor para esta acción. Cambia a su cuenta para configurarlo.",
+            "parentIdentityUnavailable": "Falta la información de tu cuenta. Vuelve a iniciar sesión."
         },
         "guardianInvite": {
             "shareTitle": "Invitación de tutor",
@@ -3399,6 +3540,12 @@
         "skillsHub": "Centro de habilidades"
     },
     "base": {
+        "consentAudience": {
+            "title": "Revisa quién recibe tus datos",
+            "description": "La información que elijas estará disponible para todas las personas que aparecen a continuación.",
+            "confirm": "Confirmar uso compartido",
+            "cancel": "Cancelar"
+        },
         "verification": {
             "selfIssued": "Autoemitido",
             "trustedIssuer": "Emisor de confianza",
@@ -8405,6 +8552,92 @@
             "noMatches": "Sin coincidencias",
             "noMatchesFor": "No hay nada que coincida con “{{query}}”."
         },
+        "shared": {
+            "refresh": "Actualizar",
+            "savedCollectionTitle": "Colección de credenciales guardada",
+            "savedOn": "Guardada el {{date}}",
+            "savedLoadError": "No pudimos cargar tus colecciones guardadas. Inténtalo de nuevo.",
+            "savedPreviewEyebrow": "Colección guardada",
+            "savedPreviewTitle": "Credenciales guardadas",
+            "shareAgain": "Compartir de nuevo",
+            "active": "Activos",
+            "expired": "Caducados",
+            "stopped": "Detenidos",
+            "credentialCount": "{{count}} credenciales",
+            "credentialCountOne": "{{count}} credencial",
+            "viewCredentials": "Ver {{count}} credenciales",
+            "previewEyebrow": "Enlace privado",
+            "previewTitle": "Vista previa de credenciales compartidas",
+            "previewLoading": "Cargando credenciales compartidas…",
+            "previewError": "No pudimos cargar estas credenciales. Inténtalo de nuevo.",
+            "expires": "Caduca el {{date}}",
+            "expiredOn": "Caducó el {{date}}",
+            "copy": "Copiar enlace",
+            "changeExpiry": "Cambiar caducidad",
+            "updateWarning": "El mismo enlace privado mostrará el nuevo conjunto de credenciales en cuanto termines.",
+            "continueUpdate": "Elegir credenciales",
+            "stop": "Dejar de compartir",
+            "qrLabel": "Código QR del enlace privado",
+            "loadingLink": "Preparando el enlace privado…",
+            "expiryDate": "Fecha de caducidad",
+            "noExpiry": "Sin caducidad",
+            "saving": "Guardando…",
+            "saveExpiry": "Guardar caducidad",
+            "stopWarning": "Este enlace dejará de funcionar de inmediato y no se puede reactivar. Las copias ya descargadas no se pueden recuperar.",
+            "stoppedExplanation": "Este enlace no se puede reactivar porque se eliminó su contenido. Vuelve a compartir para crear un nuevo enlace privado.",
+            "confirmStop": "Dejar de compartir",
+            "stopping": "Deteniendo…",
+            "loading": "Cargando tus enlaces…",
+            "loadError": "No pudimos cargar tus enlaces. Inténtalo de nuevo.",
+            "emptyTitle": "Aún no has compartido nada",
+            "emptyFilter": "Ningún enlace coincide con este filtro.",
+            "emptyFilterMore": "Ningún enlace cargado coincide. Carga más para seguir buscando.",
+            "loadMore": "Cargar más",
+            "copied": "Enlace copiado",
+            "expirySaved": "Caducidad actualizada",
+            "stoppedToast": "Se dejó de compartir",
+            "changePending": "Este cambio aún se está procesando. Vuelve a comprobarlo en un momento.",
+            "checkAgain": "Comprobar de nuevo",
+            "checking": "Comprobando…",
+            "actionError": "Algo salió mal. Inténtalo de nuevo.",
+            "yourLinks": "Tus enlaces compartidos",
+            "activeCount": "{{count}} activos",
+            "newLink": "Nuevo enlace",
+            "sharedWithYou": "Compartido contigo",
+            "viewAll": "Ver los {{count}}",
+            "viewAllMore": "Ver los {{count}}+",
+            "noActive": "Todo tranquilo: no estás compartiendo nada ahora mismo.",
+            "activeCountMore": "{{count}}+ activos",
+            "noActiveLoaded": "Ninguno de tus enlaces más recientes está activo. Usa Ver todo para ver el resto.",
+            "expiredHint": "Este enlace ha caducado. Cambia la fecha de caducidad para volver a compartirlo.",
+            "emptyLinksBody": "Comparte algunas credenciales con un enlace privado.",
+            "receivedEmpty": "Cuando alguien comparta credenciales contigo, aparecerán aquí.",
+            "receivedFrom": "De {{name}}",
+            "updateInProgress": "Actualización en curso",
+            "expiresToday": "Caduca hoy",
+            "expiresTomorrow": "Caduca mañana",
+            "expiresInDays": "Caduca en {{count}} días",
+            "openedOnce": "Abierto una vez",
+            "openedCount": "Abierto {{count}} veces",
+            "notOpened": "Aún no se ha abierto",
+            "justOpened": "Abierto en el último día",
+            "passcodeOnIcon": "Protegido con código",
+            "copyLinkFor": "Copiar enlace de {{title}}",
+            "showQrLabel": "Mostrar código QR",
+            "credentialsLabel": "Credenciales",
+            "passcodeLabel": "Código de acceso",
+            "passcodeOn": "Activado",
+            "passcodeOffValue": "Desactivado",
+            "createdLabel": "Creado",
+            "expiresLabel": "Caduca",
+            "neverExpires": "Nunca",
+            "viewsLabel": "Vistas",
+            "change": "Cambiar",
+            "updateContents": "Actualizar contenido",
+            "filterLabel": "Filtrar enlaces",
+            "stoppedOn": "Detenido el {{date}}",
+            "activeCountOne": "{{count}} activo"
+        },
         "minor": {
             "eyebrow": "Cuenta protegida",
             "title": "Las protecciones de privacidad adicionales están activadas",
@@ -8950,6 +9183,17 @@
             "generic": "Algo salió mal al emitir tu credencial. Inténtalo de nuevo."
         }
     },
+    "connectivity": {
+        "offlineTitle": "Estás sin conexión",
+        "offlineBody": "Podrás iniciar sesión cuando vuelvas a tener conexión.",
+        "limitedTitle": "Algunas funciones no están disponibles",
+        "reconnect": "Reconectar",
+        "reconnecting": "Reconectando…",
+        "backOnline": "Conexión restablecida",
+        "slowUnstable": "La conexión parece lenta o inestable. Algunas acciones pueden tardar más.",
+        "tryAgain": "Intentar de nuevo",
+        "checking": "Verificando..."
+    },
     "shareLinks": {
         "qrLabel": "Código QR del enlace privado",
         "qrHint": "Escanea para abrir estas credenciales.",
@@ -9032,7 +9276,7 @@
         "opening": "Abriendo credenciales",
         "openingHint": "Preparando esta colección para ti.",
         "incomplete": "Este enlace está incompleto",
-        "incompleteHint": "Pide al remitente que copie y envíe el enlace completo de nuevo.",
+        "incompleteHint": "Abre de nuevo el enlace privado original o pide al remitente que lo reenvíe.",
         "expired": "Este enlace ha caducado",
         "askNew": "Pide al remitente un enlace nuevo.",
         "stopped": "Este enlace ya no está disponible",
@@ -9048,7 +9292,68 @@
         "original": "Ver credencial original",
         "recipientHint": "Mantén este enlace privado. Da acceso a las credenciales que se muestran aquí.",
         "share": "Compartir credenciales",
+        "sharing": "Compartir",
+        "sharingHint": "Elige qué quieres hacer.",
+        "shareActionHint": "Crear un enlace privado",
+        "viewShared": "Ver credenciales compartidas",
+        "viewSharedHint": "Gestionar enlaces activos y anteriores",
         "tooLarge": "Esta selección es demasiado grande. Elige menos credenciales e inténtalo de nuevo.",
-        "retryUnavailable": "Reintentar credenciales no disponibles"
+        "retryUnavailable": "Reintentar credenciales no disponibles",
+        "updateChoose": "Elige el contenido actualizado",
+        "updateChooseHint": "Selecciona lo que debe mostrar este enlace.",
+        "updateDetails": "Revisa los cambios",
+        "updated": "Tu enlace está actualizado",
+        "updating": "Actualizando tu enlace…",
+        "update": "Actualizar enlace privado",
+        "manage": "Gestionar enlaces compartidos",
+        "passcodeTitle": "Solicitar un código de acceso",
+        "passcodeHint": "Los destinatarios lo introducen antes de abrir las credenciales. Nunca se incluye en el enlace.",
+        "passcodeLabel": "Código de acceso",
+        "passcodePlaceholder": "Al menos 8 caracteres",
+        "passcodeShareHint": "Envíalo por separado a las personas de confianza.",
+        "passcodeKeepPlaceholder": "Déjalo vacío para conservar el código actual",
+        "passcodeKeepHint": "Por tu privacidad, el código actual no se puede mostrar. Introduce uno nuevo para reemplazarlo o déjalo vacío para conservarlo.",
+        "showPasscode": "Mostrar código",
+        "hidePasscode": "Ocultar código",
+        "passcodeRequired": "Introduce el código de acceso",
+        "passcodeRequiredHint": "El remitente protegió estas credenciales con un código de acceso.",
+        "tryLater": "Espera un momento",
+        "tryLaterHint": "No pudimos comprobar el código de acceso ahora. Inténtalo de nuevo en breve.",
+        "passcodeIncorrect": "Ese código no funcionó. Compruébalo e inténtalo de nuevo.",
+        "unlock": "Abrir credenciales",
+        "unlocking": "Abriendo…",
+        "viewNotificationsTitle": "Avisarme cuando se vea",
+        "viewNotificationsHint": "Recibe una notificación privada con el recuento y la hora. Desactivado por defecto.",
+        "saveToLearnCard": "Guardar en LearnCard",
+        "savingToLearnCard": "Guardando…",
+        "savedToLearnCard": "Guardado en LearnCard",
+        "saveError": "No se pudieron guardar estas credenciales. Inténtalo de nuevo.",
+        "signInToSave": "Inicia sesión para guardar",
+        "saveHint": "Guarda esta colección firmada con tus elementos recibidos."
+    },
+    "contractRequests": {
+        "label": "Conectar",
+        "referred": "{{referrer}} te ha referido a {{owner}}.",
+        "invitation": "{{owner}} quiere conectar contigo.",
+        "accept": "Aceptar y conectar",
+        "details": "Ver detalles",
+        "decline": "Rechazar",
+        "declineConfirm": "¿Rechazar esta invitación?",
+        "declined": "Rechazada",
+        "connected": "Conectado",
+        "cancelled": "Cancelada",
+        "notNow": "Ahora no",
+        "dismiss": "Ocultar invitación",
+        "loading": "Cargando invitación...",
+        "working": "Procesando...",
+        "unavailable": "Esta invitación ya no está disponible.",
+        "error": "Algo salió mal. Inténtalo de nuevo.",
+        "sharedWith": "Compartido con",
+        "dataRequested": "Datos solicitados",
+        "outcomes": "Credenciales que puedes recibir",
+        "none": "Ninguno",
+        "reviewFirst": "Revisa y elige tus datos antes de conectar.",
+        "pending": "Invitaciones pendientes",
+        "empty": "No hay invitaciones pendientes."
     }
 }

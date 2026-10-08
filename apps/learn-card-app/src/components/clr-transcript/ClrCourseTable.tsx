@@ -84,7 +84,7 @@ const ClrCourseTable: React.FC<{
                         {/* Rows */}
                         {!isCollapsed && (
                             <div className="border-t border-grayscale-100">
-                                <div className="grid grid-cols-[1fr_64px_56px_24px] sm:grid-cols-[1fr_80px_80px_64px_56px_24px] px-3 sm:px-5 py-2 bg-white border-b border-grayscale-100">
+                                <div className="grid grid-cols-[minmax(0,1fr)_64px_72px_24px] sm:grid-cols-[minmax(0,1fr)_80px_80px_64px_80px_24px] px-3 sm:px-5 py-2 bg-white border-b border-grayscale-100">
                                     <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wider">
                                         Course
                                     </p>
@@ -97,7 +97,7 @@ const ClrCourseTable: React.FC<{
                                     <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wider text-right">
                                         Credits
                                     </p>
-                                    <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wider text-right">
+                                    <p className="pl-2 text-xs font-semibold text-grayscale-500 uppercase tracking-wider text-right">
                                         Grade
                                     </p>
                                     <div />
@@ -123,7 +123,7 @@ const ClrCourseTable: React.FC<{
                                     return (
                                         <button
                                             key={course.sourceCredentialId}
-                                            className={`w-full grid grid-cols-[1fr_64px_56px_24px] sm:grid-cols-[1fr_80px_80px_64px_56px_24px] px-3 sm:px-5 py-3.5 border-b border-grayscale-100 last:border-0 transition-colors text-left items-center odd:bg-white even:bg-grayscale-50`}
+                                            className={`w-full grid grid-cols-[minmax(0,1fr)_64px_72px_24px] sm:grid-cols-[minmax(0,1fr)_80px_80px_64px_80px_24px] px-3 sm:px-5 py-3.5 border-b border-grayscale-100 last:border-0 transition-colors text-left items-center odd:bg-white even:bg-grayscale-50`}
                                             onClick={() => onSelectCourse?.(course)}
                                         >
                                             {/* Course name + code */}
@@ -179,10 +179,11 @@ const ClrCourseTable: React.FC<{
                                                 {credits ?? '—'}
                                             </p>
                                             {/* Grade */}
-                                            <div className="flex justify-end items-center">
+                                            <div className="min-w-0 pl-2 flex justify-end items-center">
                                                 {grade !== undefined ? (
                                                     <span
-                                                        className={`text-xs font-bold ${gradeColor(
+                                                        title={grade}
+                                                        className={`block max-w-full truncate text-xs font-bold ${gradeColor(
                                                             grade
                                                         )}`}
                                                     >

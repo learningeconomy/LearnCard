@@ -41,6 +41,8 @@ import {
     getEmailVerificationSubject,
     CredentialUpdated,
     getCredentialUpdatedSubject,
+    AccountSignInChanged,
+    getAccountSignInChangedSubject,
 } from './templates';
 
 import type {
@@ -56,6 +58,7 @@ import type {
     GuardianRejectedCredentialProps,
     EmailVerificationProps,
     CredentialUpdatedProps,
+    AccountSignInChangedProps,
 } from './templates';
 
 // ---------------------------------------------------------------------------
@@ -152,6 +155,8 @@ export interface TemplateDataMap {
 
     /** brain-service: managed credential refresh update notice (LC-2198) */
     'credential-updated': CredentialUpdatedData;
+    /** lca-api: lost-login identity rebind security notification */
+    'account-sign-in-changed': AccountSignInChangedData;
 }
 
 export type TemplateId = keyof TemplateDataMap;
@@ -190,6 +195,7 @@ export interface AccountApprovedData {
 
 export interface RecoveryKeyData {
     recoveryKey: string;
+    confirmationCode: string;
 }
 
 export interface EndorsementRequestData {
@@ -234,6 +240,8 @@ export interface CredentialUpdatedData {
     /** Bounded credential display title. Omitted when unavailable. */
     credential?: { name?: string };
 }
+
+export type AccountSignInChangedData = Record<string, never>;
 
 // ---------------------------------------------------------------------------
 // renderEmail()
@@ -439,6 +447,15 @@ function buildElement(
             return {
                 element: React.createElement(CredentialUpdated, props),
                 subject: getCredentialUpdatedSubject(branding, locale),
+            };
+        }
+
+        case 'account-sign-in-changed': {
+            const props: AccountSignInChangedProps = { branding, locale };
+
+            return {
+                element: React.createElement(AccountSignInChanged, props),
+                subject: getAccountSignInChangedSubject(branding, locale),
             };
         }
 

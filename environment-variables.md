@@ -4,6 +4,24 @@ This monorepo uses [Infisical](https://infisical.com) to manage shared environme
 
 ## Quick Start
 
+### Lambda runtime bundles (lca-api only)
+
+Backend config step 1 adds an optional AWS Secrets Manager bundle named
+`lca-api/<stage>/runtime-secrets`. Set the deploy environment's GitHub variable
+`RUNTIME_SECRETS_ID` to its name or ARN after provisioning it. SecretString must
+be a flat JSON object of UPPER_SNAKE_CASE env names to strings, starting with
+`GOOGLE_APPLICATION_CREDENTIAL` (the Firebase JSON serialized as a string).
+The API functions load it before configuration validation; non-empty explicit
+environment values win and empty strings count as unset. Failed loads stop startup
+without exposing values. Rotation requires recycling the functions.
+
+Without the id, Lambda uses the existing GitHub Firebase secret fallback; keep
+that secret until all stages opt in. Local, Docker, CI and self-hosters keep using
+plain env vars. This does not change the Infisical commands below or sync secrets
+to AWS yet. Next: step 2 checked-in per-stage non-secret config, step 3 Infisical →
+AWS sync, step 4 brain-service/learn-cloud adoption. See
+[lca-api guidance](services/learn-card-network/lca-api/AGENTS.md#runtime-secrets-backend-config-model-step-1).
+
 ```bash
 # 1. Install the Infisical CLI (one-time)
 #    macOS:
@@ -200,6 +218,11 @@ SHARE_LINK_MAINTENANCE_ALLOW_INSECURE_LOOPBACK=true
 SHARE_LINK_OWNER_API_NAMESPACE=learncard-local
 ```
 
+LC-2189 also requires host-run Brain to set `SHARE_LINK_REQUEST_HASH_SECRET` to a
+stable value of at least 32 bytes (generate one with `openssl rand -hex 32`).
+The tracked local Compose stack supplies a clearly labeled development-only
+fallback instead; never use that fallback in a deployed environment.
+
 **LearnCloud** (local port 4100):
 
 ```dotenv
@@ -229,6 +252,11 @@ The `.github/workflows/deploy.yml` deployment steps pass the following GitHub
 environment variables. They are public configuration, not new secrets. Existing
 `SEED` / `LEARN_CLOUD_SEED` secrets remain unchanged; LearnCloud's Serverless stack
 already supplies its Redis endpoint.
+
+LC-2189 separately requires a private, stable 32+ byte GitHub Actions secret named
+`SHARE_LINK_REQUEST_HASH_SECRET` for Brain. Generate it once with
+`openssl rand -hex 32`; the Brain deployment workflow forwards it to Lambda.
+Do not put it in the public variables below or use the local Compose fallback.
 
 Configure each matching pair of GitHub environments independently:
 

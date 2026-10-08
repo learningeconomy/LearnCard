@@ -17,6 +17,7 @@ export default createVitestConfig(brainServicePreset, {
             'test/uri-helpers.spec.ts',
             'test/oidc-jwt.spec.ts',
             'test/notificationMessages.spec.ts',
+            'test/openapi.spec.ts',
             'src/helpers/posthog.helpers.test.ts',
             'src/helpers/rateLimit.helpers.test.ts',
             'src/helpers/credentialSubject.helpers.test.ts',

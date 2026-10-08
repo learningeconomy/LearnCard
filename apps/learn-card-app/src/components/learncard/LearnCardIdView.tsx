@@ -45,7 +45,12 @@ const LearnCardIdView: React.FC<LearnCardIdViewProps> = ({ user }) => {
                     customContainerClass="h-[80px] w-[80px] shrink-0 text-[40px]"
                     customImageClass="h-[80px] w-[80px] shrink-0 text-[40px] object-cover"
                     customSize={120}
-                    user={user ?? currentLCNUser}
+                    user={
+                        user ?? {
+                            displayName: idName,
+                            image: currentLCNUser?.image || currentUser?.profileImage,
+                        }
+                    }
                 />
 
                 <div className="flex flex-col items-start pr-[10px] overflow-hidden text-white">

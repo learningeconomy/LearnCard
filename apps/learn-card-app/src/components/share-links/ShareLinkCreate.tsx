@@ -14,8 +14,12 @@ import {
     closeOutline,
     copyOutline,
     downloadOutline,
+    eyeOffOutline,
+    eyeOutline,
+    lockClosedOutline,
+    notificationsOutline,
 } from 'ionicons/icons';
-import type { VC } from '@learncard/types';
+import type { ShareLink, ShareRecoveryPlaintext, VC } from '@learncard/types';
 import { QRCodeSVG } from 'qrcode.react';
 import { Clipboard } from '@capacitor/clipboard';
 import { useWallet, type CredentialCategoryEnum } from 'learn-card-base';
@@ -33,6 +37,8 @@ import {
     EXPIRY_CHOICES,
     mapWithConcurrency,
     prepareShare,
+    prepareShareUpdate,
+    readShareRecovery,
     resolveExpiryIso,
     shareLinkOrigin,
     buildAppShareLinkUrl,
@@ -40,6 +46,7 @@ import {
     type CredentialChoice,
     type ExpiryChoice,
     type PreparedShare,
+    type PreparedShareUpdate,
     type ShareWallet,
 } from './shareLinkFlow';
 import { ShareLinkPreview } from './ShareLinkPreview';
@@ -47,7 +54,7 @@ import { ShareLinkPreview } from './ShareLinkPreview';
 export const primary =
     'px-5 py-3 rounded-[20px] bg-grayscale-900 text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-emerald-500';
 export const secondary =
-    'px-5 py-3 rounded-[20px] border border-grayscale-300 text-grayscale-700 text-sm font-medium hover:bg-grayscale-10 transition-colors disabled:opacity-40';
+    'px-5 py-3 rounded-[20px] ring-1 ring-inset ring-grayscale-300 text-grayscale-700 text-sm font-medium hover:bg-grayscale-10 transition-colors disabled:opacity-40';
 const inputClass =
     'w-full px-4 py-3 rounded-xl border border-grayscale-300 text-sm text-grayscale-900 bg-white placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent';
 export const Busy = ({ children }: { children: React.ReactNode }) => (
@@ -63,6 +70,14 @@ export const Busy = ({ children }: { children: React.ReactNode }) => (
 /** Bounded read fan-out: never more than four LearnCloud reads at once. */
 const READ_CONCURRENCY = 4;
 
+type ShareLinkCreateProps = {
+    onDismiss: () => void;
+    onManage?: () => void;
+    onComplete?: () => Promise<unknown> | void;
+    editShare?: ShareLink;
+    initialSelectedUri?: string;
+};
+
 const categoryOf = (choice: CredentialChoice) =>
     choice.category ||
     (choice.credential && getDefaultCategoryForCredential(choice.credential)) ||
@@ -70,11 +85,11 @@ const categoryOf = (choice: CredentialChoice) =>
 
 export const ShareLinkCreate = ({
     onDismiss,
+    onManage,
+    onComplete,
+    editShare,
     initialSelectedUri,
-}: {
-    onDismiss: () => void;
-    initialSelectedUri?: string;
-}) => {
+}: ShareLinkCreateProps) => {
     const { initWallet } = useWallet();
     const qrExport = useRef<HTMLDivElement>(null);
     const [savingQr, setSavingQr] = useState(false);
@@ -118,8 +133,8 @@ export const ShareLinkCreate = ({
         const timer = window.setTimeout(() => setSettledSearch(search.trim()), 300);
         return () => window.clearTimeout(timer);
     }, [search]);
-    const [title, setTitle] = useState('');
-    const [note, setNote] = useState('');
+    const [title, setTitle] = useState(editShare?.title ?? '');
+    const [note, setNote] = useState(editShare?.note ?? '');
     const [error, setError] = useState(false);
     const [tooLarge, setTooLarge] = useState(false);
     const [unsupportedBase, setUnsupportedBase] = useState(false);
@@ -127,12 +142,21 @@ export const ShareLinkCreate = ({
     const [link, setLink] = useState('');
     const [expiresAt, setExpiresAt] = useState<string | null>(null);
     const [expiryChoice, setExpiryChoice] = useState<ExpiryChoice>(DEFAULT_EXPIRY_CHOICE);
+    const [passcodeEnabled, setPasscodeEnabled] = useState(editShare?.passcodeProtected ?? false);
+    const [passcode, setPasscode] = useState('');
+    const [showPasscode, setShowPasscode] = useState(false);
+    const [notifyOnView, setNotifyOnView] = useState(editShare?.notifyOnView ?? false);
     const [copied, setCopied] = useState(false);
     const [publicationStarted, setPublicationStarted] = useState(false);
-    const prepared = useRef<PreparedShare>();
+    const prepared = useRef<PreparedShare | PreparedShareUpdate>();
+    const editRecovery = useRef<ShareRecoveryPlaintext>();
     const operation = useRef<{ id: string; operationId: string }>();
     const busy = useRef(false);
     const alive = useRef(true);
+    const passcodeIsInvalid =
+        passcodeEnabled &&
+        passcode.length < 8 &&
+        (!editShare?.passcodeProtected || passcode.length > 0);
 
     const load = async () => {
         if (busy.current) return;
@@ -141,6 +165,35 @@ export const ShareLinkCreate = ({
         setError(false);
         try {
             const wallet = shareWallet(await walletRef.current());
+            const editRows: CredentialChoice[] = [];
+            if (editShare) {
+                const recovery = await readShareRecovery(wallet, editShare);
+                editRecovery.current = recovery;
+                const refs = [...recovery.selection]
+                    .sort((a, b) => a.order - b.order)
+                    .map(item => item.ref);
+                const hydratedRows = await mapWithConcurrency(refs, READ_CONCURRENCY, async uri => {
+                    try {
+                        return {
+                            uri,
+                            credential: (await wallet.read.get(uri)) as VC | undefined,
+                        };
+                    } catch {
+                        return { uri };
+                    }
+                });
+                editRows.push(...hydratedRows);
+                if (alive.current) {
+                    const availableRefs = hydratedRows
+                        .filter(row => row.credential)
+                        .map(row => row.uri);
+                    const missingRefs = hydratedRows
+                        .filter(row => !row.credential)
+                        .map(row => row.uri);
+                    setSelected(availableRefs);
+                    setFailedReads(new Set(missingRefs));
+                }
+            }
             const records: CredentialChoice[] = [];
             let pageCursor: string | undefined;
             const seenCursors = new Set<string>();
@@ -171,16 +224,18 @@ export const ShareLinkCreate = ({
                 }
             });
             if (!alive.current) return;
-            // Keep the detail entry point visible and hydrate it in the first batch.
-            indexed.sort(
-                (a, b) =>
-                    Number(b.uri === initialSelectedUri) - Number(a.uri === initialSelectedUri)
-            );
+            // Keep detail/update entry points visible and hydrate them in the first batch.
+            const pinned = new Set([
+                ...editRows.map(row => row.uri),
+                ...(initialSelectedUri ? [initialSelectedUri] : []),
+            ]);
+            const merged = [...editRows, ...indexed];
+            merged.sort((a, b) => Number(pinned.has(b.uri)) - Number(pinned.has(a.uri)));
             setChoices(previous => {
                 const cached = new Map(previous.map(row => [row.uri, row.credential]));
                 return [
                     ...new Map(
-                        indexed.map(row => [
+                        merged.map(row => [
                             row.uri,
                             { ...row, credential: row.credential ?? cached.get(row.uri) },
                         ])
@@ -233,7 +288,7 @@ export const ShareLinkCreate = ({
         return () => {
             alive.current = false;
         };
-    }, []);
+    }, [editShare?.id, initialSelectedUri]);
 
     /** A draft is only valid until any input that feeds it changes. */
     const invalidateDraft = () => {
@@ -256,8 +311,34 @@ export const ShareLinkCreate = ({
         try {
             if (!guardBase()) return;
             const wallet = shareWallet(await walletRef.current());
-            const pinnedExpiry = resolveExpiryIso(expiryChoice);
-            prepared.current = await prepareShare(wallet, selected, title, note, pinnedExpiry);
+            prepared.current = editShare
+                ? await prepareShareUpdate(
+                      wallet,
+                      editShare,
+                      editRecovery.current ?? (await readShareRecovery(wallet, editShare)),
+                      selected,
+                      title,
+                      note,
+                      {
+                          ...(passcodeEnabled
+                              ? passcode
+                                  ? { passcode }
+                                  : {}
+                              : { passcode: null }),
+                          notifyOnView,
+                      }
+                  )
+                : await prepareShare(
+                      wallet,
+                      selected,
+                      title,
+                      note,
+                      resolveExpiryIso(expiryChoice),
+                      {
+                          ...(passcodeEnabled ? { passcode } : {}),
+                          notifyOnView,
+                      }
+                  );
             if (!alive.current) return;
             setStep('preview');
         } catch (cause) {
@@ -279,13 +360,21 @@ export const ShareLinkCreate = ({
         setLink(buildAppShareLinkUrl(host, value.input.id, value.key, environment.DEV));
         setExpiresAt(expiresAt);
         setStep('done');
+        void Promise.resolve()
+            .then(() => onComplete?.())
+            .catch(() => undefined);
     };
+
+    const publishPrepared = (wallet: ShareWallet) =>
+        editShare
+            ? wallet.invoke.updateShareLink((prepared.current as PreparedShareUpdate).input)
+            : wallet.invoke.createShareLink((prepared.current as PreparedShare).input);
 
     /**
      * One publication attempt. `abandoned` (a pending operation whose reservation
-     * no longer exists) replays the original prepared input through create, which
-     * `reserveCreate` resumes by the same clientRequestId. A pending result is
-     * retried by operation key and is never sent as a fresh create.
+     * no longer exists) replays the original prepared input through the matching
+     * create/update operation. A pending result is retried by operation key and is
+     * never sent as a fresh mutation.
      */
     const commit = async (
         wallet: ShareWallet,
@@ -294,7 +383,7 @@ export const ShareLinkCreate = ({
     ): Promise<void> => {
         const result = operation.current
             ? await wallet.invoke.retryShareLinkOperation(operation.current)
-            : await wallet.invoke.createShareLink(prepared.current!.input);
+            : await publishPrepared(wallet);
         const outcome = classifySharePublication(result);
         if (outcome.status === 'pending') {
             operation.current = outcome.operation;
@@ -305,7 +394,7 @@ export const ShareLinkCreate = ({
             if (!alive.current) return;
             operation.current = undefined;
             if (!allowReplay) throw new Error('abandoned');
-            const replay = await wallet.invoke.createShareLink(prepared.current!.input);
+            const replay = await publishPrepared(wallet);
             const replayed = classifySharePublication(replay);
             if (replayed.status === 'pending') {
                 operation.current = replayed.operation;
@@ -462,16 +551,24 @@ export const ShareLinkCreate = ({
                         </p>
                         <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
                             {step === 'choose'
-                                ? m['shareLinks.choose']()
+                                ? editShare
+                                    ? m['shareLinks.updateChoose']()
+                                    : m['shareLinks.choose']()
                                 : step === 'details'
-                                  ? m['shareLinks.details']()
+                                  ? editShare
+                                      ? m['shareLinks.updateDetails']()
+                                      : m['shareLinks.details']()
                                   : step === 'preview'
                                     ? m['shareLinks.previewTitle']()
-                                    : m['shareLinks.done']()}
+                                    : editShare
+                                      ? m['shareLinks.updated']()
+                                      : m['shareLinks.done']()}
                         </h1>
                         <p className="text-sm text-grayscale-600 leading-relaxed mt-3">
                             {step === 'choose'
-                                ? m['shareLinks.chooseHint']()
+                                ? editShare
+                                    ? m['shareLinks.updateChooseHint']()
+                                    : m['shareLinks.chooseHint']()
                                 : step === 'details'
                                   ? m['shareLinks.detailsHint']()
                                   : step === 'preview'
@@ -717,6 +814,123 @@ export const ShareLinkCreate = ({
                                     </p>
                                 )}
                             </div>
+                            <section className="rounded-[20px] border border-grayscale-200 p-5 space-y-4">
+                                <div className="flex gap-3">
+                                    <IonIcon
+                                        icon={lockClosedOutline}
+                                        className="mt-0.5 text-grayscale-600 shrink-0"
+                                    />
+                                    <div className="flex-1">
+                                        <span className="flex items-center justify-between gap-4">
+                                            <span className="text-sm font-medium text-grayscale-900">
+                                                {m['shareLinks.passcodeTitle']()}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                role="switch"
+                                                aria-label={m['shareLinks.passcodeTitle']()}
+                                                aria-checked={passcodeEnabled}
+                                                disabled={fieldsLocked}
+                                                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${passcodeEnabled ? 'bg-emerald-600' : 'bg-grayscale-300'}`}
+                                                onClick={() => {
+                                                    invalidateDraft();
+                                                    setPasscodeEnabled(enabled => !enabled);
+                                                }}
+                                            >
+                                                <span
+                                                    aria-hidden="true"
+                                                    className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${passcodeEnabled ? 'translate-x-5' : 'translate-x-0'}`}
+                                                />
+                                            </button>
+                                        </span>
+                                        <span className="block mt-1 text-xs text-grayscale-600 leading-relaxed">
+                                            {m['shareLinks.passcodeHint']()}
+                                        </span>
+                                    </div>
+                                </div>
+                                {passcodeEnabled && (
+                                    <label className="block text-xs font-medium text-grayscale-700">
+                                        {m['shareLinks.passcodeLabel']()}
+                                        <span className="relative mt-2 block">
+                                            <input
+                                                type={showPasscode ? 'text' : 'password'}
+                                                minLength={8}
+                                                maxLength={64}
+                                                autoComplete="new-password"
+                                                disabled={fieldsLocked}
+                                                className={`${inputClass} pe-12`}
+                                                value={passcode}
+                                                onChange={event => {
+                                                    invalidateDraft();
+                                                    setPasscode(event.target.value);
+                                                }}
+                                                placeholder={
+                                                    editShare?.passcodeProtected
+                                                        ? m['shareLinks.passcodeKeepPlaceholder']()
+                                                        : m['shareLinks.passcodePlaceholder']()
+                                                }
+                                            />
+                                            <button
+                                                type="button"
+                                                aria-label={
+                                                    showPasscode
+                                                        ? m['shareLinks.hidePasscode']()
+                                                        : m['shareLinks.showPasscode']()
+                                                }
+                                                aria-pressed={showPasscode}
+                                                disabled={fieldsLocked}
+                                                onClick={() => setShowPasscode(shown => !shown)}
+                                                className="absolute inset-y-0 end-1 my-auto inline-flex h-10 w-10 items-center justify-center rounded-full text-lg text-grayscale-600 transition-colors hover:bg-grayscale-100 hover:text-grayscale-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40"
+                                            >
+                                                <IonIcon
+                                                    aria-hidden="true"
+                                                    icon={showPasscode ? eyeOffOutline : eyeOutline}
+                                                />
+                                            </button>
+                                        </span>
+                                        <span className="block mt-1.5 text-xs font-normal text-grayscale-500">
+                                            {editShare?.passcodeProtected
+                                                ? m['shareLinks.passcodeKeepHint']()
+                                                : m['shareLinks.passcodeShareHint']()}
+                                        </span>
+                                    </label>
+                                )}
+                                <div className="border-t border-grayscale-100 pt-4 flex gap-3">
+                                    <IonIcon
+                                        icon={notificationsOutline}
+                                        className="mt-0.5 text-grayscale-600 shrink-0"
+                                    />
+                                    <div className="flex-1">
+                                        <span className="flex items-center justify-between gap-4">
+                                            <span className="text-sm font-medium text-grayscale-900">
+                                                {m['shareLinks.viewNotificationsTitle']()}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                role="switch"
+                                                aria-label={m[
+                                                    'shareLinks.viewNotificationsTitle'
+                                                ]()}
+                                                aria-checked={notifyOnView}
+                                                disabled={fieldsLocked}
+                                                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${notifyOnView ? 'bg-emerald-600' : 'bg-grayscale-300'}`}
+                                                onClick={() => {
+                                                    invalidateDraft();
+                                                    setNotifyOnView(enabled => !enabled);
+                                                }}
+                                            >
+                                                <span
+                                                    aria-hidden="true"
+                                                    className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${notifyOnView ? 'translate-x-5' : 'translate-x-0'}`}
+                                                />
+                                            </button>
+                                        </span>
+                                        <span className="block mt-1 text-xs text-grayscale-600 leading-relaxed">
+                                            {m['shareLinks.viewNotificationsHint']()}
+                                        </span>
+                                    </div>
+                                </div>
+                            </section>
                             <label className="block text-xs font-medium text-grayscale-700">
                                 {m['shareLinks.title']()}
                                 <input
@@ -747,45 +961,59 @@ export const ShareLinkCreate = ({
                                     }}
                                 />
                             </label>
-                            <fieldset className="space-y-2">
-                                <legend className="text-xs font-medium text-grayscale-700">
-                                    {m['shareLinks.expiry']()}
-                                </legend>
-                                <div className="flex flex-wrap gap-2">
-                                    {EXPIRY_CHOICES.map(choice => (
-                                        <label
-                                            key={choice}
-                                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-[20px] border text-sm cursor-pointer ${expiryChoice === choice ? 'border-emerald-600 bg-emerald-50 text-emerald-800' : 'border-grayscale-300 text-grayscale-700'}`}
-                                        >
-                                            <input
-                                                type="radio"
-                                                name="share-link-expiry"
-                                                className="accent-emerald-600"
-                                                disabled={fieldsLocked}
-                                                checked={expiryChoice === choice}
-                                                onChange={() => {
-                                                    invalidateDraft();
-                                                    setExpiryChoice(choice);
-                                                }}
-                                            />
-                                            {choice === '7'
-                                                ? m['shareLinks.expiry7']()
-                                                : choice === '30'
-                                                  ? m['shareLinks.expiry30']()
-                                                  : choice === '365'
-                                                    ? m['shareLinks.expiry365']()
-                                                    : m['shareLinks.expiryNever']()}
-                                        </label>
-                                    ))}
-                                </div>
-                                <p className="text-xs text-grayscale-600">
-                                    {effectiveExpiry
+                            {editShare ? (
+                                <p className="rounded-2xl bg-grayscale-100 p-4 text-sm text-grayscale-700">
+                                    {editShare.expiresAt
                                         ? m['shareLinks.expires']({
-                                              date: new Date(effectiveExpiry).toLocaleDateString(),
+                                              date: new Date(
+                                                  editShare.expiresAt
+                                              ).toLocaleDateString(),
                                           })
                                         : m['shareLinks.neverExpires']()}
                                 </p>
-                            </fieldset>
+                            ) : (
+                                <fieldset className="space-y-2">
+                                    <legend className="text-xs font-medium text-grayscale-700">
+                                        {m['shareLinks.expiry']()}
+                                    </legend>
+                                    <div className="flex flex-wrap gap-2">
+                                        {EXPIRY_CHOICES.map(choice => (
+                                            <label
+                                                key={choice}
+                                                className={`inline-flex items-center gap-2 px-4 py-2 rounded-[20px] border text-sm cursor-pointer ${expiryChoice === choice ? 'border-emerald-600 bg-emerald-50 text-emerald-800' : 'border-grayscale-300 text-grayscale-700'}`}
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="share-link-expiry"
+                                                    className="accent-emerald-600"
+                                                    disabled={fieldsLocked}
+                                                    checked={expiryChoice === choice}
+                                                    onChange={() => {
+                                                        invalidateDraft();
+                                                        setExpiryChoice(choice);
+                                                    }}
+                                                />
+                                                {choice === '7'
+                                                    ? m['shareLinks.expiry7']()
+                                                    : choice === '30'
+                                                      ? m['shareLinks.expiry30']()
+                                                      : choice === '365'
+                                                        ? m['shareLinks.expiry365']()
+                                                        : m['shareLinks.expiryNever']()}
+                                            </label>
+                                        ))}
+                                    </div>
+                                    <p className="text-xs text-grayscale-600">
+                                        {effectiveExpiry
+                                            ? m['shareLinks.expires']({
+                                                  date: new Date(
+                                                      effectiveExpiry
+                                                  ).toLocaleDateString(),
+                                              })
+                                            : m['shareLinks.neverExpires']()}
+                                    </p>
+                                </fieldset>
+                            )}
                             <p className="text-xs text-grayscale-600 leading-relaxed">
                                 {m['shareLinks.privacyHint']()}
                             </p>
@@ -798,7 +1026,9 @@ export const ShareLinkCreate = ({
                                 title={prepared.current.input.title}
                                 note={prepared.current.input.note}
                                 sharerName={prepared.current.payload.sharer.displayName}
-                                expiresAt={prepared.current.input.expiresAt ?? null}
+                                expiresAt={
+                                    editShare?.expiresAt ?? prepared.current.input.expiresAt ?? null
+                                }
                                 payload={prepared.current.payload}
                             />
                             <p className="text-xs text-grayscale-600 leading-relaxed">
@@ -961,7 +1191,7 @@ export const ShareLinkCreate = ({
                     {step === 'details' && (
                         <button
                             className={`${primary} inline-flex items-center justify-center gap-2`}
-                            disabled={loading || !title.trim()}
+                            disabled={loading || !title.trim() || passcodeIsInvalid}
                             onClick={() => void prepareDraft()}
                         >
                             {loading ? (
@@ -981,22 +1211,35 @@ export const ShareLinkCreate = ({
                     {step === 'preview' && (
                         <button
                             className={primary}
-                            disabled={loading || !prepared.current}
+                            disabled={loading || !prepared.current || passcodeIsInvalid}
                             onClick={() => void publish()}
                         >
                             {loading ? (
-                                <Busy>{m['shareLinks.creating']()}</Busy>
+                                <Busy>
+                                    {editShare
+                                        ? m['shareLinks.updating']()
+                                        : m['shareLinks.creating']()}
+                                </Busy>
                             ) : pending ? (
                                 m['shareLinks.checkAgain']()
+                            ) : editShare ? (
+                                m['shareLinks.update']()
                             ) : (
                                 m['shareLinks.create']()
                             )}
                         </button>
                     )}
                     {step === 'done' && (
-                        <button className={secondary} onClick={onDismiss}>
-                            {m['shareLinks.finish']()}
-                        </button>
+                        <div className="flex flex-wrap justify-end gap-3">
+                            {onManage && (
+                                <button className={secondary} onClick={onManage}>
+                                    {m['shareLinks.manage']()}
+                                </button>
+                            )}
+                            <button className={primary} onClick={onDismiss}>
+                                {m['shareLinks.finish']()}
+                            </button>
+                        </div>
                     )}
                 </div>
             </footer>

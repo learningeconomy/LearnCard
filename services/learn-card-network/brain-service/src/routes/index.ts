@@ -28,6 +28,7 @@ import {
 } from '@accesslayer/profile/relationships/read';
 import { getDidWeb } from '@helpers/did.helpers';
 import { getEmptyLearnCard, isServersDidWebDID } from '@helpers/learnCard.helpers';
+import { isServiceProfileExemptFromGuardianship } from '@helpers/profile.helpers';
 import { invalidateChallengeForDid, isChallengeValidForDid } from '@cache/challenges';
 import { ProfileType } from 'types/profile';
 import { getProfileManagerById } from '@accesslayer/profile-manager/read';
@@ -581,7 +582,10 @@ const GUARDIAN_APPROVAL_CLOCK_SKEW_SECONDS = 60;
 export const guardianGatedRoute = profileRoute.use(async ({ ctx, next }) => {
     const { profile } = ctx.user;
     const guardianApprovalToken = ctx._guardianApprovalToken;
-    const isChildAccount = await isProfileManaged(profile.profileId);
+    // Service profiles (orgs) are managed for admin purposes, not guardianship.
+    const isChildAccount =
+        !isServiceProfileExemptFromGuardianship(profile.isServiceProfile, profile.type) &&
+        (await isProfileManaged(profile.profileId));
     let guardianIdentity: { profileId: string; did: string } | undefined;
 
     if (isChildAccount && guardianApprovalToken) {

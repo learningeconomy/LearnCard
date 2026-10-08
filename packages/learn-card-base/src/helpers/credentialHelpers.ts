@@ -1,3 +1,4 @@
+import moment from 'moment';
 import {
     UnsignedVC,
     VC,
@@ -8,6 +9,11 @@ import {
     Boost,
     Profile,
 } from '@learncard/types';
+import {
+    LER_RS_TYPE_URI_V45,
+    LEGACY_LER_RS_TYPE_URI_V44,
+    LEGACY_LER_RS_TYPE_TOKEN,
+} from '@learncard/ler-rs-plugin';
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
 import { SortedCredentials } from 'learn-card-base/stores/selectedCredsStore';
 import { SyncCredentialsVCs } from 'learn-card-base/stores/syncSchoolStore';
@@ -856,6 +862,34 @@ export const getImageUrlFromCredential = (
     return imgUrl;
 };
 
+/**
+ * Checks if a credential is a LER-RS (Resume Builder) credential by inspecting
+ * the credential's type array and credentialSubject type fields.
+ */
+export const isResumeBuilderCredential = (credential: VC): boolean => {
+    const LER_RS_TYPES = [
+        LEGACY_LER_RS_TYPE_TOKEN,
+        LEGACY_LER_RS_TYPE_URI_V44,
+        LER_RS_TYPE_URI_V45,
+    ];
+
+    const typeList = Array.isArray(credential?.type) ? credential.type : [credential?.type];
+    if (typeList.some(type => typeof type === 'string' && LER_RS_TYPES.includes(type))) {
+        return true;
+    }
+
+    const credentialSubject = getCredentialSubject(credential);
+    if (!credentialSubject) return false;
+
+    const inlineType = credentialSubject.type;
+    if (typeof inlineType === 'string' && LER_RS_TYPES.includes(inlineType)) {
+        return true;
+    }
+
+    const nestedType = (credentialSubject.lerrsType as Record<string, unknown> | undefined)?.type;
+    return typeof nestedType === 'string' && LER_RS_TYPES.includes(nestedType);
+};
+
 export const getCredentialName = (credential: VC): string => {
     const credentialTypes = getCredentialType(credential);
     const name = getPotentialNameFieldsFromType(credentialTypes, credential);
@@ -869,7 +903,12 @@ export const getCredentialName = (credential: VC): string => {
     // achievement payload (e.g. the walt.id sandbox `UniversityDegree`).
     const humanizedType = humanizeCredentialType(getMostSpecificCredentialType(credentialTypes));
 
-    return credential?.name || name || credentialSubjectAchievementName || humanizedType;
+    return (
+        credential?.name ||
+        name ||
+        credentialSubjectAchievementName ||
+        (isResumeBuilderCredential(credential) ? 'Resume Builder' : humanizedType)
+    );
 };
 
 export const getCredentialType = (credential: VC) => {
@@ -1200,11 +1239,24 @@ export const getAchievementsForCourse = (entries: EntryVC[]): EntryVC[] => {
     );
 };
 
+/**
+ * Returns the issuance date of a credential, checking both VC 1.1 (`issuanceDate`)
+ * and VC 2.0 (`validFrom`) fields. Uses `||` so empty strings fall through.
+ */
 export const getIssuanceDate = (credential?: VC): string | undefined => {
     if (credential?.boostCredential) {
-        return credential?.boostCredential?.issuanceDate;
+        return credential?.boostCredential?.issuanceDate || credential?.boostCredential?.validFrom;
     }
-    return credential?.issuanceDate;
+    return credential?.issuanceDate || credential?.validFrom;
+};
+
+/**
+ * Formats a credential's issuance date using the provided format string.
+ * Returns empty string if no valid date is found.
+ */
+export const formatCredentialDate = (credential?: VC, format: string = 'MMMM DD, YYYY'): string => {
+    const dateValue = getIssuanceDate(credential);
+    return dateValue ? moment(dateValue).format(format) : '';
 };
 
 export const getAchievementTypeDisplayText = (

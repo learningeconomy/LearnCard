@@ -62,6 +62,7 @@
         "membersCount": "{{count}} membres",
         "socialBoosts": "Reconnaissances sociales",
         "newChildOrOrganization": "Nouvel enfant ou nouvelle organisation",
+        "newOrganization": "Nouvelle organisation",
         "selectProfileType": "Sélectionnez un type de profil",
         "organizationProfile": "Profil d’organisation",
         "organization": "Organisation",
@@ -1417,7 +1418,18 @@
             "guardianEmailed": "Nous avons envoyé un e-mail à votre tuteur pour approuver votre compte. Vous pouvez commencer à explorer dès maintenant — certaines fonctionnalités se débloquent une fois qu'il confirme.",
             "ready": "Votre {{brand}} est prêt.",
             "whoAreYou": "Qui êtes-vous ? (Facultatif)",
-            "explore": "Explorer {{brand}}"
+            "explore": "Explorer {{brand}}",
+            "pin": {
+                "title": "Ajouter un code PIN de récupération",
+                "body": "Si vous perdez cet appareil, un code PIN à 6 chiffres vous permettra de vous reconnecter en quelques secondes.",
+                "confirmTitle": "Confirmez votre code PIN",
+                "confirmBody": "Entrez à nouveau les 6 mêmes chiffres.",
+                "saving": "Enregistrement de votre code PIN…",
+                "success": "Vous êtes protégé",
+                "skip": "Ignorer pour le moment",
+                "startOver": "Recommencer",
+                "hint": "Vous pouvez le modifier ou le supprimer à tout moment dans les Paramètres."
+            }
         }
     },
     "profile": {
@@ -1744,6 +1756,7 @@
         "previewCredentials": "Aperçu de {{count}} justificatifs"
     },
     "consentFlow": {
+        "reviewChanged": "Les modalités de partage ont changé. Vérifiez-les avant de vous reconnecter.",
         "guardianApprovalRequired": "Demandez à un gestionnaire actuel du compte d’approuver cette connexion, puis réessayez.",
         "title": "Consentement",
         "acceptAndSync": "Accepter et synchroniser",
@@ -1863,9 +1876,28 @@
             "name": "nom",
             "email": "e-mail",
             "profilePicture": "photo de profil"
-        }
+        },
+        "retryPublication": "Vos choix de partage sont enregistrés. Réessayez pour terminer leur envoi."
     },
     "recovery": {
+        "pin": {
+            "throttled": "Trop de tentatives. Veuillez réessayer plus tard.",
+            "title": "PIN de récupération",
+            "instantRecoveryOn": "Récupération instantanée : activée",
+            "notSet": "Non défini",
+            "change": "Modifier",
+            "afterRecovery": {
+                "title": "Définissez un nouveau PIN de récupération",
+                "body": "Le PIN que vous venez d’utiliser a été retiré : chaque PIN ne sert qu’une fois pour garder votre compte protégé. Choisissez-en un nouveau pour conserver la récupération instantanée.",
+                "hint": "Mêmes règles : 6 chiffres, rien d’évident."
+            },
+            "useInstead": "Utiliser mon code PIN de récupération"
+        },
+        "error.invalidPhrase": "Ces mots ne correspondent pas à votre phrase de récupération. Vérifiez-les et réessayez.",
+        "error.invalidPassword": "Mot de passe incorrect ou le fichier n'a pas pu être lu. Veuillez réessayer.",
+        "error.invalidCode": "Ce code est incorrect ou a expiré. Demandez-en un nouveau et réessayez.",
+        "error.network": "Problème de connexion. Veuillez vérifier votre internet et réessayer.",
+        "error.default": "Quelque chose s'est mal passé. Veuillez réessayer.",
         "prompt": {
             "openAria": "Configurer un moyen de se reconnecter",
             "snoozeAria": "Me le rappeler dans 7 jours",
@@ -1877,13 +1909,30 @@
                 "title": "Cette session se termine lorsque vous fermez l’onglet",
                 "body": "Configurez un moyen de vous reconnecter, sinon vous perdrez l’accès à votre compte."
             },
+            "activation": {
+                "title": "Terminez la sécurisation de votre compte",
+                "body": "Votre compte n'est pas entièrement protégé tant que vous n'avez pas ajouté un moyen de vous reconnecter."
+            },
             "success": {
                 "title": "Votre compte est protégé",
                 "body": "Vous pouvez vous reconnecter depuis n’importe quel appareil."
             },
             "action": {
-                "passkey": "Utiliser Face ID ou Touch ID",
-                "phrase": "Obtenir une phrase de récupération"
+                "passkeyApple": "Utiliser Face ID ou Touch ID",
+                "passkeyWindows": "Utiliser Windows Hello",
+                "passkeyAndroid": "Utiliser l'empreinte digitale ou la reconnaissance faciale",
+                "passkeyGeneric": "Utiliser une clé d'accès",
+                "phrase": "Enregistrer une phrase de récupération"
+            },
+            "pinFirst": {
+                "title": "Terminez la sécurisation de votre compte",
+                "body": "Ajoutez un code PIN de récupération — il vous permet de vous reconnecter en quelques secondes si vous perdez cet appareil.",
+                "action": "Définir un code PIN à 6 chiffres",
+                "secondary": "Ou ajoutez une clé d'accès ou une phrase de récupération"
+            },
+            "backup": {
+                "title": "Ajoutez un moyen de secours pour vous connecter",
+                "body": "Votre code PIN fonctionne sur n'importe quel appareil. Une clé d'accès ou une phrase de récupération vous protège si vous l'oubliez."
             }
         },
         "protectAccount": "Protégez votre compte",
@@ -1977,7 +2026,9 @@
             "tapToChoose": "Appuyez pour choisir le fichier de sauvegarde",
             "fileSelected": "Fichier sélectionné",
             "enter": "Saisir",
-            "change": "Modifier"
+            "change": "Modifier",
+            "nextCheckIt": "Suivant : vérifiez-le",
+            "nextCheckFile": "Suivant : vérifiez votre fichier"
         },
         "tab": {
             "email": "E-mail",
@@ -2002,6 +2053,11 @@
         "yourRecoveryPhrase": "Votre phrase de récupération",
         "copied": "Copié !",
         "savedSomewhereSafe": "Je l'ai enregistrée en lieu sûr",
+        "verifyPhraseTitle": "Confirmez votre phrase de récupération",
+        "verifyPhraseDescription": "Saisissez les mots demandés pour confirmer que vous avez enregistré votre phrase.",
+        "wordNumber": "Mot {{number}}",
+        "confirmPhrase": "Confirmer la phrase de récupération",
+        "phraseWordsMismatch": "Ces mots ne correspondent pas. Vérifiez votre phrase et réessayez.",
         "backupDescription": "Générez un fichier de sauvegarde chiffré protégé par un mot de passe. Stockez-le en lieu sûr — vous aurez besoin du fichier et du mot de passe pour récupérer.",
         "backupPassword": "Mot de passe de sauvegarde",
         "confirmPassword": "Confirmer le mot de passe",
@@ -2013,6 +2069,9 @@
         },
         "backupReady": "Fichier de sauvegarde prêt",
         "backupReadyDesc": "Téléchargez ce fichier et stockez-le en lieu sûr. Vous en aurez besoin avec votre mot de passe de sauvegarde pour récupérer.",
+        "reenterPassword": "Saisissez à nouveau le mot de passe de sauvegarde",
+        "verifyBackupDescription": "Nous vérifierons le fichier téléchargé avant de confirmer cette méthode de récupération.",
+        "verifyBackup": "Vérifier le fichier de sauvegarde",
         "passwordsDontMatch": "Les mots de passe ne correspondent pas.",
         "recommended": "Recommandé",
         "emailDescription": "Ajoutez un e-mail personnel (différent de votre identifiant) comme destination de récupération. Une clé de récupération y sera envoyée.",
@@ -2025,6 +2084,8 @@
         "emailKeyDescription": "Nous enverrons une clé de récupération à cet e-mail. Si vous perdez l'accès, vérifiez votre boîte de réception et collez la clé pour récupérer.",
         "recoveryKeySentTitle": "Clé de récupération envoyée",
         "recoveryKeySentDesc": "Vérifiez votre boîte de réception à {{email}}. Gardez cet e-mail en sécurité — vous aurez besoin de la clé de récupération si vous perdez l'accès.",
+        "recoveryConfirmationCodeSent": "Saisissez le code de confirmation envoyé avec votre clé de récupération à {{email}}.",
+        "confirmRecoveryKey": "Confirmer la clé de récupération",
         "accountUpgradeNeeded": "Mise à niveau du compte nécessaire",
         "accountUpgradeDesc": "Nous mettons à niveau la sécurité de votre compte mais n'avons pas pu terminer automatiquement. Veuillez réessayer.",
         "logOut": "Se déconnecter",
@@ -2046,7 +2107,10 @@
         "step": {
             "searchInbox": "Recherchez dans votre boîte de réception un e-mail avec l’objet \"Votre clé de récupération LearnCard\"",
             "findKey": "Trouvez la longue chaîne de caractères entre \"RECOVERY KEY\" et \"END RECOVERY KEY\"",
-            "copyKey": "Copiez toute cette chaîne et collez-la ci-dessous"
+            "copyKey": "Copiez toute cette chaîne et collez-la ci-dessous",
+            "save": "Sauvegarder",
+            "check": "Vérifier",
+            "send": "Envoyer"
         },
         "newDeviceDesc": "Cet appareil n’a pas encore été configuré pour votre compte. Choisissez une méthode pour vous connecter.",
         "restoreAccessDesc": "Choisissez comment vous souhaitez restaurer l’accès à votre compte.",
@@ -2054,7 +2118,82 @@
         "anotherDeviceDesc": "Scannez un code depuis un appareil connecté",
         "emailRecoveryLabel": "Clé de récupération par e-mail",
         "phraseEnter25": "Entrez votre phrase de 25 mots",
-        "wordsCount": "{{count}} / 25 mots"
+        "wordsCount": "{{count}} / 25 mots",
+        "identity": {
+            "lostSchoolLogin": "Je n’ai plus accès à mon adresse scolaire ou à ma connexion",
+            "title": "Restaurer votre compte",
+            "emailDescription": "Saisissez l’adresse personnelle de récupération vérifiée auparavant.",
+            "recoveryEmailLabel": "Adresse de récupération",
+            "recoveryEmailPlaceholder": "vous@exemple.com",
+            "sendCode": "Envoyer le code de récupération",
+            "sendingCode": "Envoi du code...",
+            "checkEmail": "Consultez vos e-mails",
+            "codeDescription": "Saisissez le code à 6 chiffres envoyé à votre adresse de récupération.",
+            "codeLabel": "Code de récupération",
+            "verifyCode": "Vérifier le code",
+            "chooseMethod": "Vérifier votre compte",
+            "chooseMethodDescription": "Choisissez une méthode de récupération pour confirmer que ce compte est le vôtre.",
+            "keyVerified": "Compte vérifié",
+            "newLoginDescription": "Connectez-vous maintenant avec une nouvelle adresse ou un nouvel identifiant pour reconnecter votre compte.",
+            "continueToLogin": "Continuer vers la connexion",
+            "signInPrompt": "Connectez-vous avec votre nouvel identifiant",
+            "signInPromptDescription": "Nous reconnecterons votre compte existant après votre connexion.",
+            "successTitle": "Accès restauré",
+            "successDescription": "Votre compte est connecté à votre nouvel identifiant. Configurez à nouveau la récupération pour le protéger.",
+            "tooManyAttempts": "Trop de tentatives incorrectes. Réessayez plus tard.",
+            "invalidCode": "Ce code est incorrect ou a expiré. Demandez un nouveau code et réessayez.",
+            "invalidRecoveryMethod": "Cette méthode n’a pas permis de vérifier votre compte. Essayez-en une autre."
+        },
+        "automatic": {
+            "restoreWait": "Restaurer après un délai de 7 jours"
+        },
+        "addWayBackIn": "Ajoutez un moyen de vous reconnecter",
+        "addAnotherMethod": "Ajouter une autre méthode",
+        "fullyProtected": "Votre compte est entièrement protégé.",
+        "added": "Ajouté",
+        "whichWordIs": "Quel est le mot nº {{number}} ?",
+        "tapTheWord": "Touchez le mot de votre phrase de récupération.",
+        "wrongWord": "Ce n'est pas le mot nº {{number}}. Vérifiez votre phrase enregistrée et réessayez.",
+        "showPhraseAgain": "Afficher à nouveau ma phrase",
+        "challengeProgress": "{{current}} sur {{total}}",
+        "signInOnThisDevice": "Se connecter sur cet appareil",
+        "signInOnThisDeviceDesc": "Utilisez une méthode que vous avez déjà configurée pour terminer la connexion.",
+        "signInAgainOnThisDevice": "Se reconnecter sur cet appareil",
+        "signInAgainOnThisDeviceDesc": "Utilisez une méthode que vous avez déjà configurée pour continuer.",
+        "hero": {
+            "device": "Approuver depuis un autre appareil",
+            "deviceDesc": "Scannez un code avec un téléphone ou un ordinateur où vous êtes connecté",
+            "passkey": "Utiliser votre clé d'accès",
+            "passkeyDesc": "Connectez-vous avec Face ID, Touch ID ou le code PIN de votre appareil"
+        },
+        "notSetUp": "Non configuré",
+        "cantUseAny": "Vous ne pouvez utiliser aucune de ces options ?",
+        "cantUseAnotherDevice": "Vous ne pouvez pas utiliser un autre appareil ?",
+        "getBackIntoAccount": "Récupérer l'accès à votre compte",
+        "getBackIntoAccountDesc": "Nous confirmerons que c'est bien vous, puis nous configurerons cet appareil à partir de zéro.",
+        "thisWill": "Ceci va :",
+        "consequence": {
+            "signOut": "Vous déconnecter de vos autres appareils",
+            "turnOff": "Désactiver vos autres méthodes de connexion jusqu'à ce que vous les reconfiguriez"
+        },
+        "showNotSetUp": "Afficher {{count}} non configurés",
+        "hideNotSetUp": "Masquer les méthodes non configurées",
+        "stepOf": "Étape {{current}} sur {{total}}",
+        "hint": {
+            "oneMoreStep": "Encore une étape : vérifiez votre fichier."
+        },
+        "guard": {
+            "phraseTitle": "Terminer la configuration de votre phrase de récupération ?",
+            "backupTitle": "Terminer la configuration de votre fichier de sauvegarde ?",
+            "emailTitle": "Terminer la configuration de votre e-mail de récupération ?",
+            "body": "Cela ne fonctionnera pas tant que vous ne l'aurez pas vérifié. Cela ne prend que quelques secondes.",
+            "finish": "Terminer la configuration",
+            "discardPhrase": "Ignorer la phrase",
+            "discardBackup": "Ignorer la sauvegarde",
+            "discardEmail": "Ignorer",
+            "discardNote": "Celui que vous avez sauvegardé ne fonctionnera pas. Vous pouvez en créer un nouveau à tout moment."
+        },
+        "notFinished": "Non terminé"
     },
     "alerts": {
         "title": "Alertes",
@@ -2897,7 +3036,9 @@
             "verifying": "Vérification...",
             "forUser": "pour {{name}}",
             "requiresFiveDigits": "Le code PIN doit comporter 5 chiffres",
-            "invalidPin": "Code PIN incorrect. Veuillez réessayer"
+            "invalidPin": "Code PIN incorrect. Veuillez réessayer",
+            "approvalRequiresPin": "Un code PIN parental est nécessaire pour cette action. Passez au compte du parent pour en créer un.",
+            "parentIdentityUnavailable": "Les informations de votre compte sont manquantes. Veuillez vous reconnecter."
         },
         "guardianInvite": {
             "shareTitle": "Invitation de tuteur",
@@ -3399,6 +3540,12 @@
         "skillsHub": "Pôle de compétences"
     },
     "base": {
+        "consentAudience": {
+            "title": "Vérifiez qui reçoit vos données",
+            "description": "Les informations que vous choisissez seront accessibles à toutes les personnes ci-dessous.",
+            "confirm": "Confirmer le partage",
+            "cancel": "Annuler"
+        },
         "verification": {
             "selfIssued": "Auto-émis",
             "trustedIssuer": "Émetteur de confiance",
@@ -8405,6 +8552,92 @@
             "noMatches": "Aucun résultat",
             "noMatchesFor": "Rien ne correspond à “{{query}}”."
         },
+        "shared": {
+            "refresh": "Actualiser",
+            "savedCollectionTitle": "Collection de justificatifs enregistrée",
+            "savedOn": "Enregistrée le {{date}}",
+            "savedLoadError": "Impossible de charger vos collections enregistrées. Réessayez.",
+            "savedPreviewEyebrow": "Collection enregistrée",
+            "savedPreviewTitle": "Justificatifs enregistrés",
+            "shareAgain": "Partager à nouveau",
+            "active": "Actifs",
+            "expired": "Expirés",
+            "stopped": "Arrêtés",
+            "credentialCount": "{{count}} justificatifs",
+            "credentialCountOne": "{{count}} justificatif",
+            "viewCredentials": "Voir {{count}} justificatifs",
+            "previewEyebrow": "Lien privé",
+            "previewTitle": "Aperçu des justificatifs partagés",
+            "previewLoading": "Chargement des justificatifs partagés…",
+            "previewError": "Impossible de charger ces justificatifs. Réessayez.",
+            "expires": "Expire le {{date}}",
+            "expiredOn": "Expiré le {{date}}",
+            "copy": "Copier le lien",
+            "changeExpiry": "Modifier l’expiration",
+            "updateWarning": "Le même lien privé affichera le nouveau jeu de justificatifs dès que vous aurez terminé.",
+            "continueUpdate": "Choisir les justificatifs",
+            "stop": "Arrêter le partage",
+            "qrLabel": "Code QR du lien privé",
+            "loadingLink": "Préparation du lien privé…",
+            "expiryDate": "Date d’expiration",
+            "noExpiry": "Sans expiration",
+            "saving": "Enregistrement…",
+            "saveExpiry": "Enregistrer l’expiration",
+            "stopWarning": "Ce lien cessera de fonctionner immédiatement et ne pourra pas être réactivé. Les copies déjà téléchargées ne peuvent pas être rappelées.",
+            "stoppedExplanation": "Ce lien ne peut pas être réactivé, car son contenu a été supprimé. Partagez à nouveau pour créer un nouveau lien privé.",
+            "confirmStop": "Arrêter le partage",
+            "stopping": "Arrêt en cours…",
+            "loading": "Chargement de vos liens…",
+            "loadError": "Impossible de charger vos liens. Réessayez.",
+            "emptyTitle": "Rien n’est encore partagé",
+            "emptyFilter": "Aucun lien ne correspond à ce filtre.",
+            "emptyFilterMore": "Aucun lien chargé ne correspond. Affichez-en plus pour poursuivre.",
+            "loadMore": "Afficher plus",
+            "copied": "Lien copié",
+            "expirySaved": "Expiration mise à jour",
+            "stoppedToast": "Partage arrêté",
+            "changePending": "Cette modification est toujours en cours. Vérifiez à nouveau dans un instant.",
+            "checkAgain": "Vérifier à nouveau",
+            "checking": "Vérification…",
+            "actionError": "Un problème est survenu. Réessayez.",
+            "yourLinks": "Vos liens partagés",
+            "activeCount": "{{count}} actifs",
+            "newLink": "Nouveau lien",
+            "sharedWithYou": "Partagés avec vous",
+            "viewAll": "Tout voir ({{count}})",
+            "viewAllMore": "Tout voir ({{count}}+)",
+            "noActive": "Tout est calme : rien n'est partagé pour le moment.",
+            "activeCountMore": "{{count}}+ actifs",
+            "noActiveLoaded": "Aucun de vos liens récents n'est actif. Tout voir pour afficher les autres.",
+            "expiredHint": "Ce lien a expiré. Modifiez sa date d'expiration pour le partager à nouveau.",
+            "emptyLinksBody": "Partagez quelques justificatifs avec un lien privé.",
+            "receivedEmpty": "Quand quelqu'un partagera des justificatifs avec vous, ils apparaîtront ici.",
+            "receivedFrom": "De {{name}}",
+            "updateInProgress": "Mise à jour en cours",
+            "expiresToday": "Expire aujourd'hui",
+            "expiresTomorrow": "Expire demain",
+            "expiresInDays": "Expire dans {{count}} jours",
+            "openedOnce": "Ouvert une fois",
+            "openedCount": "Ouvert {{count}} fois",
+            "notOpened": "Pas encore ouvert",
+            "justOpened": "Ouvert dans les dernières 24 heures",
+            "passcodeOnIcon": "Protégé par code",
+            "copyLinkFor": "Copier le lien de {{title}}",
+            "showQrLabel": "Afficher le code QR",
+            "credentialsLabel": "Justificatifs",
+            "passcodeLabel": "Code d'accès",
+            "passcodeOn": "Activé",
+            "passcodeOffValue": "Désactivé",
+            "createdLabel": "Créé",
+            "expiresLabel": "Expire",
+            "neverExpires": "Jamais",
+            "viewsLabel": "Vues",
+            "change": "Modifier",
+            "updateContents": "Mettre à jour le contenu",
+            "filterLabel": "Filtrer les liens",
+            "stoppedOn": "Arrêté le {{date}}",
+            "activeCountOne": "{{count}} actif"
+        },
         "minor": {
             "eyebrow": "Compte protégé",
             "title": "Des protections de confidentialité supplémentaires sont activées",
@@ -8950,6 +9183,17 @@
             "generic": "Une erreur s'est produite lors de l'émission de votre justificatif. Veuillez réessayer."
         }
     },
+    "connectivity": {
+        "offlineTitle": "Vous êtes hors ligne",
+        "offlineBody": "La connexion sera possible dès votre retour en ligne.",
+        "limitedTitle": "Certaines fonctionnalités sont indisponibles",
+        "reconnect": "Reconnecter",
+        "reconnecting": "Reconnexion…",
+        "backOnline": "De nouveau en ligne",
+        "slowUnstable": "La connexion semble lente ou instable. Certaines actions peuvent prendre plus de temps.",
+        "tryAgain": "Réessayer",
+        "checking": "Vérification..."
+    },
     "shareLinks": {
         "qrLabel": "Code QR du lien privé",
         "qrHint": "Scannez pour ouvrir ces justificatifs.",
@@ -9032,7 +9276,7 @@
         "opening": "Ouverture des justificatifs",
         "openingHint": "Préparation de cette sélection.",
         "incomplete": "Ce lien est incomplet",
-        "incompleteHint": "Demandez à l’expéditeur de copier et renvoyer le lien complet.",
+        "incompleteHint": "Rouvrez le lien privé d’origine ou demandez à l’expéditeur de le renvoyer.",
         "expired": "Ce lien a expiré",
         "askNew": "Demandez un nouveau lien à l’expéditeur.",
         "stopped": "Ce lien n’est plus disponible",
@@ -9048,7 +9292,68 @@
         "original": "Voir le justificatif original",
         "recipientHint": "Gardez ce lien privé. Il donne accès aux justificatifs affichés ici.",
         "share": "Partager des justificatifs",
+        "sharing": "Partage",
+        "sharingHint": "Choisissez ce que vous souhaitez faire.",
+        "shareActionHint": "Créer un lien privé",
+        "viewShared": "Voir les justificatifs partagés",
+        "viewSharedHint": "Gérer les liens actifs et passés",
         "tooLarge": "Cette sélection est trop volumineuse. Choisissez moins de justificatifs et réessayez.",
-        "retryUnavailable": "Réessayer les justificatifs indisponibles"
+        "retryUnavailable": "Réessayer les justificatifs indisponibles",
+        "updateChoose": "Choisissez le contenu mis à jour",
+        "updateChooseHint": "Sélectionnez ce que ce lien existant doit afficher.",
+        "updateDetails": "Vérifiez les modifications",
+        "updated": "Votre lien est à jour",
+        "updating": "Mise à jour de votre lien…",
+        "update": "Mettre à jour le lien privé",
+        "manage": "Gérer les liens partagés",
+        "passcodeTitle": "Exiger un code d’accès",
+        "passcodeHint": "Les destinataires le saisissent avant d’ouvrir les justificatifs. Il n’est jamais inclus dans le lien.",
+        "passcodeLabel": "Code d’accès",
+        "passcodePlaceholder": "Au moins 8 caractères",
+        "passcodeShareHint": "Envoyez-le séparément aux personnes de confiance.",
+        "passcodeKeepPlaceholder": "Laissez vide pour conserver le code actuel",
+        "passcodeKeepHint": "Pour votre confidentialité, le code actuel ne peut pas être affiché. Saisissez-en un nouveau pour le remplacer, ou laissez ce champ vide pour le conserver.",
+        "showPasscode": "Afficher le code",
+        "hidePasscode": "Masquer le code",
+        "passcodeRequired": "Saisissez le code d’accès",
+        "passcodeRequiredHint": "L’expéditeur a protégé ces justificatifs avec un code d’accès.",
+        "tryLater": "Veuillez patienter un instant",
+        "tryLaterHint": "Nous ne pouvons pas vérifier le code pour le moment. Réessayez bientôt.",
+        "passcodeIncorrect": "Ce code ne fonctionne pas. Vérifiez-le et réessayez.",
+        "unlock": "Ouvrir les justificatifs",
+        "unlocking": "Ouverture…",
+        "viewNotificationsTitle": "M’avertir lors de la consultation",
+        "viewNotificationsHint": "Recevez une notification privée avec le nombre et l’heure. Désactivé par défaut.",
+        "saveToLearnCard": "Enregistrer dans LearnCard",
+        "savingToLearnCard": "Enregistrement…",
+        "savedToLearnCard": "Enregistré dans LearnCard",
+        "saveError": "Impossible d’enregistrer ces justificatifs. Réessayez.",
+        "signInToSave": "Se connecter pour enregistrer",
+        "saveHint": "Conservez cette collection signée dans vos éléments reçus."
+    },
+    "contractRequests": {
+        "label": "Connexion",
+        "referred": "{{referrer}} vous a recommandé à {{owner}}.",
+        "invitation": "{{owner}} souhaite vous contacter.",
+        "accept": "Accepter et se connecter",
+        "details": "Voir les détails",
+        "decline": "Refuser",
+        "declineConfirm": "Refuser cette invitation ?",
+        "declined": "Refusée",
+        "connected": "Connecté",
+        "cancelled": "Annulée",
+        "notNow": "Plus tard",
+        "dismiss": "Masquer l’invitation",
+        "loading": "Chargement de l’invitation...",
+        "working": "Traitement...",
+        "unavailable": "Cette invitation n’est plus disponible.",
+        "error": "Une erreur est survenue. Veuillez réessayer.",
+        "sharedWith": "Partagé avec",
+        "dataRequested": "Données demandées",
+        "outcomes": "Attestations que vous pouvez recevoir",
+        "none": "Aucune",
+        "reviewFirst": "Vérifiez et choisissez vos données avant de vous connecter.",
+        "pending": "Invitations en attente",
+        "empty": "Aucune invitation en attente."
     }
 }

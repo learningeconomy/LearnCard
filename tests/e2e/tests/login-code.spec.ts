@@ -51,11 +51,11 @@ const seedLoginCode = async (email: string, code: string): Promise<void> => {
  * Seed a recovery email verification code directly into Redis.
  */
 const seedRecoveryEmailCode = async (
-    contactEmail: string,
+    userId: string,
     code: string,
     recoveryEmail: string
 ): Promise<void> => {
-    const cacheKey = `${RECOVERY_EMAIL_CODE_PREFIX}email:${contactEmail}`;
+    const cacheKey = `${RECOVERY_EMAIL_CODE_PREFIX}firebase:${userId}`;
     await redis.set(cacheKey, JSON.stringify({ code, email: recoveryEmail }), 'EX', 900);
 };
 
@@ -245,26 +245,31 @@ describe('Login Code Verification Rate Limiting', () => {
         const recoveryEmail = `recovery-target-${recoveryUniqueId}@personal.com`;
 
         let authToken: string;
-        let didAuthHeaders: Record<string, string>;
+        let getDidAuthHeaders: () => Promise<Record<string, string>>;
 
         beforeAll(async () => {
             authToken = createMockAuthToken(userId, loginEmail);
 
             // Use a valid 32-byte hex seed (64 hex chars) - same pattern as other E2E tests
             const learnCard = await getLearnCard('c'.repeat(64));
-            const vpJwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' });
-
-            if (typeof vpJwt !== 'string') throw new Error('Failed to create DID-Auth VP');
-
-            didAuthHeaders = {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${vpJwt}`,
+            getDidAuthHeaders = async () => {
+                const challenge = crypto.randomUUID();
+                await redis.set(`challenge|${learnCard.id.did()}|${challenge}`, 'valid', 'EX', 300);
+                const vpJwt = await learnCard.invoke.getDidAuthVp({
+                    proofFormat: 'jwt',
+                    challenge,
+                });
+                if (typeof vpJwt !== 'string') throw new Error('Failed to create DID-Auth VP');
+                return {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${vpJwt}`,
+                };
             };
 
             // Create a UserKey for this user
             const storeRes = await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
                 method: 'PUT',
-                headers: didAuthHeaders,
+                headers: await getDidAuthHeaders(),
                 body: JSON.stringify({
                     authToken,
                     providerType: 'firebase',
@@ -273,7 +278,7 @@ describe('Login Code Verification Rate Limiting', () => {
                         encryptedDek: 'rate-limit-test-dek',
                         iv: 'rate-limit-test-iv',
                     },
-                    primaryDid: `did:key:z6MkRateLimit${recoveryUniqueId}`,
+                    primaryDid: learnCard.id.did(),
                 }),
             });
 
@@ -284,13 +289,13 @@ describe('Login Code Verification Rate Limiting', () => {
             const correctCode = '543210';
 
             // Seed a recovery email code
-            await seedRecoveryEmailCode(loginEmail, correctCode, recoveryEmail);
+            await seedRecoveryEmailCode(userId, correctCode, recoveryEmail);
 
             // Make 5 failed attempts with wrong codes
             for (let i = 0; i < 5; i++) {
                 const response = await fetch(`${LCA_API_URL}/api/keys/recovery-email/verify`, {
                     method: 'POST',
-                    headers: didAuthHeaders,
+                    headers: await getDidAuthHeaders(),
                     body: JSON.stringify({
                         authToken,
                         providerType: 'firebase',
@@ -306,7 +311,7 @@ describe('Login Code Verification Rate Limiting', () => {
             // 6th attempt should be rate limited
             const sixthResponse = await fetch(`${LCA_API_URL}/api/keys/recovery-email/verify`, {
                 method: 'POST',
-                headers: didAuthHeaders,
+                headers: await getDidAuthHeaders(),
                 body: JSON.stringify({
                     authToken,
                     providerType: 'firebase',
@@ -320,11 +325,11 @@ describe('Login Code Verification Rate Limiting', () => {
 
             // Now try with correct code — should fail because code was invalidated
             // First clear the rate limit to allow the request through
-            await clearRateLimits(`rate-limit:recovery-verify-attempts:email:${loginEmail}`);
+            await clearRateLimits(`rate-limit:recovery-verify-attempts:firebase:${userId}`);
 
             const correctResponse = await fetch(`${LCA_API_URL}/api/keys/recovery-email/verify`, {
                 method: 'POST',
-                headers: didAuthHeaders,
+                headers: await getDidAuthHeaders(),
                 body: JSON.stringify({
                     authToken,
                     providerType: 'firebase',

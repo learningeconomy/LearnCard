@@ -3,10 +3,10 @@ import type {
     ShareContentCleanupStatus,
     ShareLinkOperationKind,
 } from '@helpers/share-link-lifecycle';
-import type { ShareLinkPolicySnapshot } from '@helpers/share-link-policy';
+import type { CurrentShareLinkPolicy, ShareLinkPolicySnapshot } from '@helpers/share-link-policy';
 
 import type { ShareContentState, ShareLinkRecord, ShareLinkStatus } from '../../models/ShareLink';
-import type { ShareLinkTransactionOptions } from './transaction';
+import type { ShareLinkTransaction, ShareLinkTransactionOptions } from './transaction';
 
 /** Namespace + owner + share id binding used by every lifecycle operation. */
 export type ShareLinkKey = {
@@ -76,6 +76,8 @@ export type ShareLinkReservationRecord = {
     note: string | null;
     expiresAt: string | null;
     selectedCount: number;
+    passcodeHash: string | null;
+    notifyOnView: boolean;
     /**
      * Coherent policy snapshot derived server-side at reservation time and
      * applied to the share at finalize under the same lock. Re-derived on every
@@ -128,6 +130,8 @@ export type ReserveCreateInput = {
     note?: string | null;
     expiresAt?: string | null;
     selectedCount: number;
+    passcodeHash?: string | null;
+    notifyOnView?: boolean;
     content: ShareContentBinding;
     /** Canonical hash of the full validated create request. */
     requestHash: string;
@@ -163,6 +167,9 @@ export type ReserveReplacementInput = {
     title?: string;
     note?: string | null;
     expiresAt?: string | null;
+    /** Omitted preserves the current hash; null removes passcode protection. */
+    passcodeHash?: string | null;
+    notifyOnView?: boolean;
     /**
      * Re-derived policy on every mutation so a profile that becomes managed (or
      * whose age source changes) stops accumulating views going forward.
@@ -201,6 +208,12 @@ export type FinalizeReservationInput = {
      * reservation as defense in depth; this repository never performs network I/O.
      */
     verifiedContentHash?: string;
+    /** Production-only graph-local policy recheck under the share write lock. */
+    resolveCurrentPolicy?: (
+        tx: ShareLinkTransaction,
+        ownerProfileId: string,
+        now: Date
+    ) => Promise<CurrentShareLinkPolicy>;
     now?: Date;
     /** Maintenance-only: bounded transaction timeout for this unit. */
     transactionTimeoutMs?: number;

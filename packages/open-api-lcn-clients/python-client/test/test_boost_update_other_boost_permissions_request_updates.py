@@ -35,6 +35,7 @@ class TestBoostUpdateOtherBoostPermissionsRequestUpdates(unittest.TestCase):
         model = BoostUpdateOtherBoostPermissionsRequestUpdates()
         if include_optional:
             return BoostUpdateOtherBoostPermissionsRequestUpdates(
+                can_view = True,
                 can_edit = True,
                 can_issue = True,
                 can_revoke = True,

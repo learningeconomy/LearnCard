@@ -27,9 +27,18 @@
         "analyticsProvider": "noop"
     },
     "auth": {
+        "keycloak": {
+            "serverUrl": "http://localhost:8081",
+            "realm": "learncard",
+            "clientId": "learncard-app"
+        },
         "keyDerivation": "sss",
         "sss": {
-            "serverUrl": "http://localhost:5100/api"
+            "serverUrl": "http://localhost:5100/api",
+            "escrowEnclaveMode": "software",
+            "escrowEnclavePublicKeys": [
+                "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAENPKxocNq3k04Rf3nH2ny846YY5qr8khyWcKin6kp/GDyv9RjFjgz1qLp5SdjGW/4kvw+vStJPXbqxrBo2km9CA=="
+            ]
         }
     }
 }

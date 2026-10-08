@@ -1,12 +1,11 @@
 # SkillFrameworksGetById200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**framework** | [**BoostGetBoostFrameworks200ResponseRecordsInner**](BoostGetBoostFrameworks200ResponseRecordsInner.md) |  | 
-**skills** | [**SkillFrameworksGetById200ResponseSkills**](SkillFrameworksGetById200ResponseSkills.md) |  | 
+| Name          | Type                                                                                                    | Description | Notes |
+| ------------- | ------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **framework** | [**BoostGetBoostFrameworks200ResponseRecordsInner**](BoostGetBoostFrameworks200ResponseRecordsInner.md) |             |
+| **skills**    | [**SkillFrameworksGetById200ResponseSkills**](SkillFrameworksGetById200ResponseSkills.md)               |             |
 
 ## Example
 
@@ -25,6 +24,5 @@ skill_frameworks_get_by_id200_response_dict = skill_frameworks_get_by_id200_resp
 # create an instance of SkillFrameworksGetById200Response from a dict
 skill_frameworks_get_by_id200_response_from_dict = SkillFrameworksGetById200Response.from_dict(skill_frameworks_get_by_id200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

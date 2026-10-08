@@ -193,6 +193,8 @@ provider:
         CREDENTIAL_REFRESH_ENABLED: ${env:CREDENTIAL_REFRESH_ENABLED, "false"}
         CREDENTIAL_REFRESH_DIGEST_SECRET: ${env:CREDENTIAL_REFRESH_DIGEST_SECRET, ""}
         CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS: ${env:CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS, "24"}
+        # Stable HMAC key for passcode-bearing share-link request fingerprints.
+        SHARE_LINK_REQUEST_HASH_SECRET: ${env:SHARE_LINK_REQUEST_HASH_SECRET, ""}
         # LC-2187 share-link service wiring and automatic maintenance. Every value is
         # bounded and re-validated fail-closed at runtime. Never read from the
         # scheduled event payload.
@@ -260,6 +262,19 @@ functions:
             - schedule:
                   rate: rate(1 day)
                   enabled: true
+
+    # Retry durable consent notification intents once per minute.
+    contractEvents:
+        handler: contractEventsLambda.contractEventsHandler
+        timeout: 60
+        reservedConcurrency: 1
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - schedule: rate(1 minute)
 
     # LC-2187 share-link recovery + cleanup. Dedicated entrypoint (no lambda.ts
     # import-time work). Runs automatically with valid service configuration;

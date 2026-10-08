@@ -71,12 +71,22 @@ import { vcV2LicenseCredential } from './vc-v2/license-credential';
 import { clrGreatPlainsFull } from './clr/great-plains-full';
 import { clrWestbridgeFull } from './clr/westbridge-full';
 import { clrCompetencyAligned } from './clr/competency-aligned';
+import { clrAchievementIdAssociations } from './clr/achievement-id-associations';
 import {
     clrProvisionalTranscript,
     buildFinalTranscriptVariant,
     REFRESH_SERVICE_INLINE_CONTEXT,
 } from './clr/provisional-transcript';
 import { clrDemoIsdDiplomaAssessments } from './clr/demo-isd-diploma-assessments';
+
+// Curated practice, role, language, and administrative examples
+import { obv3FoodAllergenPractice } from './obv3/food-allergen-practice';
+import { obv3FoodAllergenFacilitator } from './obv3/food-allergen-facilitator';
+import { obv3FoodAllergenPracticeFr } from './obv3/food-allergen-practice-fr';
+import { obv3PhishingTransfer } from './obv3/phishing-transfer';
+import { customCourseEnrollment } from './custom/course-enrollment';
+import { customExamAccommodation } from './custom/exam-accommodation';
+import { clrMixedRolePortfolio } from './clr/mixed-role-portfolio';
 
 // SD-JWT VC
 import { sdJwtVcCourseCompletion } from './sd-jwt-vc/course-completion';
@@ -153,8 +163,18 @@ export const ALL_FIXTURES: LibraryFixture[] = [
     clrGreatPlainsFull,
     clrWestbridgeFull,
     clrCompetencyAligned,
+    clrAchievementIdAssociations,
     clrProvisionalTranscript,
     clrDemoIsdDiplomaAssessments,
+
+    // Curated examples
+    obv3FoodAllergenPractice,
+    obv3FoodAllergenFacilitator,
+    obv3FoodAllergenPracticeFr,
+    obv3PhishingTransfer,
+    customCourseEnrollment,
+    customExamAccommodation,
+    clrMixedRolePortfolio,
 
     // SD-JWT VC
     sdJwtVcCourseCompletion,
@@ -214,9 +234,17 @@ export {
     clrGreatPlainsFull,
     clrWestbridgeFull,
     clrCompetencyAligned,
+    clrAchievementIdAssociations,
     clrProvisionalTranscript,
     buildFinalTranscriptVariant,
     REFRESH_SERVICE_INLINE_CONTEXT,
     clrDemoIsdDiplomaAssessments,
+    obv3FoodAllergenPractice,
+    obv3FoodAllergenFacilitator,
+    obv3FoodAllergenPracticeFr,
+    obv3PhishingTransfer,
+    customCourseEnrollment,
+    customExamAccommodation,
+    clrMixedRolePortfolio,
     sdJwtVcCourseCompletion,
 };

@@ -1,14 +1,13 @@
 # ContractsWriteCredentialToContractViaSigningAuthorityRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**did** | **str** |  | 
-**contract_uri** | **str** |  | 
-**boost_uri** | **str** |  | 
-**signing_authority** | [**ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority**](ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority.md) |  | 
+| Name                  | Type                                                                                                                                                        | Description | Notes |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **did**               | **str**                                                                                                                                                     |             |
+| **contract_uri**      | **str**                                                                                                                                                     |             |
+| **boost_uri**         | **str**                                                                                                                                                     |             |
+| **signing_authority** | [**ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority**](ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority.md) |             |
 
 ## Example
 
@@ -27,6 +26,5 @@ contracts_write_credential_to_contract_via_signing_authority_request_dict = cont
 # create an instance of ContractsWriteCredentialToContractViaSigningAuthorityRequest from a dict
 contracts_write_credential_to_contract_via_signing_authority_request_from_dict = ContractsWriteCredentialToContractViaSigningAuthorityRequest.from_dict(contracts_write_credential_to_contract_via_signing_authority_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

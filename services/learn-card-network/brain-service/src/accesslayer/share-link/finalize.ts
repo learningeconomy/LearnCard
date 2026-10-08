@@ -1,5 +1,6 @@
 import { SHARE_LINK_OPERATION_RETENTION_MS, isLeaseActive } from '@helpers/share-link-lifecycle';
 import { mergeShareLinkPolicyConservatively } from '@helpers/share-link-policy/resolver';
+import { DEFAULT_SHARE_LINK_POLICY } from '@helpers/share-link-policy/types';
 import type { ShareLinkPolicySnapshot } from '@helpers/share-link-policy/types';
 
 import { ensureShareLinkConstraints } from '../../models/share-link-constraints';
@@ -159,19 +160,35 @@ export const finalizeReservation = async (
             const nextObjectRef = reservation.objectRef ?? share.activeObjectRef;
             const nextContentVersion = reservation.contentVersion ?? share.contentVersion;
 
-            // Never let a replay/recovery of an older reservation loosen a
-            // currently restrictive policy. The merged snapshot is what gets
-            // persisted and later projected to the owner.
+            // Unknown snapshots and old service restrictions may be refreshed on
+            // explicit edits, but only after a fresh graph-local check. The
+            // reservation still caps eligibility for stale replays and recovery.
             const currentPolicy: ShareLinkPolicySnapshot = {
                 isMinor: share.minorPolicyIsMinor,
                 policyResolved: share.minorPolicyResolved,
                 defaultExpiryDays: share.minorPolicyDefaultExpiryDays === 365 ? 365 : 30,
                 viewCountingEnabled: share.minorPolicyViewCountingEnabled,
             };
-            const effectivePolicy = mergeShareLinkPolicyConservatively(
-                currentPolicy,
-                reservation.policy
-            );
+            const checkedPolicy = input.resolveCurrentPolicy
+                ? await input
+                      .resolveCurrentPolicy(tx, share.ownerProfileId, now)
+                      .catch(() => ({ ...DEFAULT_SHARE_LINK_POLICY, isServiceProfile: false }))
+                : null;
+            const reservationPolicy = checkedPolicy
+                ? mergeShareLinkPolicyConservatively(reservation.policy, checkedPolicy)
+                : mergeShareLinkPolicyConservatively(reservation.policy, currentPolicy);
+            const mayRefreshExplicitService =
+                checkedPolicy?.isServiceProfile === true &&
+                checkedPolicy.isMinor === false &&
+                reservation.opKind === 'update';
+            const mayReplaceUnknown =
+                checkedPolicy !== null &&
+                !currentPolicy.policyResolved &&
+                (reservation.opKind === 'create' || reservation.opKind === 'update');
+            const effectivePolicy =
+                mayRefreshExplicitService || mayReplaceUnknown
+                    ? reservationPolicy
+                    : mergeShareLinkPolicyConservatively(currentPolicy, reservationPolicy);
 
             await tx.run(
                 `MATCH (s:ShareLink {id: $shareId})
@@ -195,6 +212,9 @@ export const finalizeReservation = async (
                         note: reservation.note,
                         expiresAt: reservation.expiresAt,
                         selectedCount: reservation.selectedCount,
+                        passcodeHash: reservation.passcodeHash,
+                        notifyOnView:
+                            reservation.notifyOnView && effectivePolicy.viewCountingEnabled,
                         minorPolicyIsMinor: effectivePolicy.isMinor,
                         minorPolicyResolved: effectivePolicy.policyResolved,
                         minorPolicyDefaultExpiryDays: effectivePolicy.defaultExpiryDays,

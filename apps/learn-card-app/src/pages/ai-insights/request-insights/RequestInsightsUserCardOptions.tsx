@@ -1,3 +1,4 @@
+import type { ConsentFlowContractRequestStatus } from '@learncard/types';
 import React from 'react';
 
 import AiInsightsUserCard from '../AiInsightsUserCard';
@@ -16,7 +17,7 @@ import { AiInsightsUserCardMode } from '../ai-insights.helpers';
 export const RequestInsightsUserCardOptions: React.FC<{
     profile: LCNProfile;
     readStatus?: 'unseen' | 'seen' | null | undefined;
-    status?: 'pending' | 'accepted' | 'denied' | null | undefined;
+    status?: ConsentFlowContractRequestStatus | undefined;
     handleRequestInsights: (mode: AiInsightsUserCardMode) => void;
 }> = ({ profile, readStatus, status, handleRequestInsights }) => {
     const { closeModal } = useModal();
