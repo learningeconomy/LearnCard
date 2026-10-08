@@ -16,6 +16,15 @@ vi.mock('@ionic/react', () => ({
     IonSpinner: () => <div>Loading</div>,
 }));
 vi.mock('../components/AppStoreHeader', () => ({ AppStoreHeader: () => null }));
+vi.mock('../../../helpers/externalLinkHelpers', () => ({ openExternalLink: vi.fn() }));
+vi.mock('./NewAppSheet', () => ({
+    DEVELOPER_DOCS_URL: 'https://docs.example.com',
+    NewAppSheet: ({ onListExisting }: { onListExisting: (type: string) => void }) => (
+        <button type="button" onClick={() => onListExisting('DIRECT_LINK')}>
+            Sheet: list a website
+        </button>
+    ),
+}));
 vi.mock('../DeveloperPortalContext', () => ({
     useDeveloperPortalContext: () => ({ integrations: [], isLoadingIntegrations: false }),
 }));
@@ -32,6 +41,10 @@ const renderPage = () =>
                 render={({ match }) => <div>Status for {match.params.listingId}</div>}
             />
             <Route path="/app-store/developer/build" render={() => <div>Projects</div>} />
+            <Route
+                path="/app-store/developer/apps/new"
+                render={({ location }) => <div>New listing {location.search}</div>}
+            />
         </MemoryRouter>
     );
 
@@ -62,6 +75,7 @@ describe('MyAppsPage', () => {
         renderPage();
 
         expect(screen.getByText('In review')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /New App/ })).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: /Quiz Quest/ }));
         expect(screen.getByText('Status for l1')).toBeInTheDocument();
     });
@@ -78,7 +92,7 @@ describe('MyAppsPage', () => {
         expect(screen.getByText('Build your first app')).toBeInTheDocument();
     });
 
-    it('keeps projects one quiet link away', () => {
+    it('opens the new app choices from the empty state', () => {
         mocks.useMyApps.mockReturnValue({
             data: [],
             isLoading: false,
@@ -87,7 +101,8 @@ describe('MyAppsPage', () => {
         });
         renderPage();
 
-        fireEvent.click(screen.getByRole('button', { name: /Projects and developer tools/ }));
-        expect(screen.getByText('Projects')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Get Started' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Sheet: list a website' }));
+        expect(screen.getByText('New listing ?type=DIRECT_LINK')).toBeInTheDocument();
     });
 });

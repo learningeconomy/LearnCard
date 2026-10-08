@@ -18,6 +18,7 @@ import { SubmitFromManifestPage, EditListingPage } from './submit';
  *
  * Route structure:
  * - /app-store/developer                                    -> MyAppsPage (every app, any project)
+ * - /app-store/developer/apps/new?type=…                    -> SubmissionForm (list an existing app)
  * - /app-store/developer/apps/:listingId                   -> AppStatusPage (one app's status)
  * - /app-store/developer/build                              -> BuildHomePage (guides + projects)
  * - /app-store/developer/submit                             -> SubmitFromManifestPage (create from manifest)
@@ -33,6 +34,7 @@ const DeveloperPortalRoutes: React.FC = () => {
         <DeveloperPortalProvider>
             <Switch>
                 <Route exact path="/app-store/developer" component={MyAppsPage} />
+                <Route exact path="/app-store/developer/apps/new" component={SubmissionForm} />
                 <Route
                     exact
                     path="/app-store/developer/apps/:listingId"

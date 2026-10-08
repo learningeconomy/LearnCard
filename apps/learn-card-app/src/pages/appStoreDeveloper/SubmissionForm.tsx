@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useHistory, useLocation, useParams } from 'react-router-dom';
 import { IonPage, IonContent, IonSpinner } from '@ionic/react';
 import { ArrowLeft, ArrowRight, Send, Loader2, AlertCircle, Save, FileEdit } from 'lucide-react';
@@ -18,7 +18,9 @@ import { AppStoreHeader } from './components/AppStoreHeader';
 import { ExitConfirmDialog } from './components/ExitConfirmDialog';
 import { PreviewConfirmDialog } from './components/PreviewConfirmDialog';
 import { AppPreviewModal } from './components/AppPreviewModal';
-import type { AppStoreListingCreate, ExtendedAppStoreListing } from './types';
+import type { AppStoreListingCreate, ExtendedAppStoreListing, LaunchType } from './types';
+import { LaunchTypeValidator } from '@learncard/types';
+import { getAppStatusPath } from './apps/myApps';
 import type { CapturedAppManifest } from '@learncard/partner-connect-core';
 import { EmbedIframeModal } from '../launchPad/EmbedIframeModal';
 
@@ -54,12 +56,25 @@ interface LocationState {
  * SubmissionForm - Create or edit an app listing
  * Routes:
  *   - /app-store/developer/integrations/:integrationId/apps/new (create)
+ *   - /app-store/developer/apps/new?type=DIRECT_LINK (create; project made on first save)
  *   - /app-store/developer/integrations/:integrationId/apps/:listingId (edit)
  */
 const SubmissionForm: React.FC = () => {
     const history = useHistory();
     const location = useLocation<LocationState>();
-    const { integrationId, listingId } = useParams<{ integrationId: string; listingId?: string }>();
+    const { integrationId: routeIntegrationId, listingId } = useParams<{
+        integrationId?: string;
+        listingId?: string;
+    }>();
+    const [createdIntegrationId, setCreatedIntegrationId] = useState<string | null>(null);
+    const creatingIntegrationRef = useRef<Promise<string> | null>(null);
+    const integrationId = routeIntegrationId ?? createdIntegrationId ?? undefined;
+    const presetLaunchType = useMemo((): LaunchType | undefined => {
+        const parsed = LaunchTypeValidator.safeParse(
+            new URLSearchParams(location.search).get('type')
+        );
+        return parsed.success ? parsed.data : undefined;
+    }, [location.search]);
 
     const isEditMode = !!listingId;
 
@@ -75,8 +90,14 @@ const SubmissionForm: React.FC = () => {
         description: mDynamic(s.descriptionKey),
     }));
 
-    const { useListing, useCreateListing, useUpdateListing, useSubmitForReview } =
-        useDeveloperPortal();
+    const {
+        useListing,
+        useCreateListing,
+        useUpdateListing,
+        useSubmitForReview,
+        useCreateIntegration,
+    } = useDeveloperPortal();
+    const createIntegrationMutation = useCreateIntegration();
     const { data: fetchedListing, isLoading: isLoadingListing } = useListing(
         listingFromState ? null : listingId || null // Only fetch if not passed via state
     );
@@ -91,7 +112,7 @@ const SubmissionForm: React.FC = () => {
     const isPendingReview = existingListing?.app_listing_status === 'PENDING_REVIEW';
 
     const initialFormData = useMemo<Partial<AppStoreListingCreate>>(() => {
-        if (!existingListing) return {};
+        if (!existingListing) return presetLaunchType ? { launch_type: presetLaunchType } : {};
         const listing = existingListing as ExtendedAppStoreListing;
         return {
             display_name: listing.display_name,
@@ -113,7 +134,7 @@ const SubmissionForm: React.FC = () => {
             age_rating: listing.age_rating,
             contact_email: listing.contact_email,
         };
-    }, [existingListing]);
+    }, [existingListing, presetLaunchType]);
 
     const { newModal } = useModal();
     const [currentStep, setCurrentStep] = useState(1);
@@ -227,7 +248,30 @@ const SubmissionForm: React.FC = () => {
     };
     const handleBack = () => setCurrentStep(prev => Math.max(prev - 1, 1));
     const navigateToDashboard = () =>
-        history.push(`/app-store/developer/integrations/${integrationId}`);
+        history.push(
+            routeIntegrationId
+                ? `/app-store/developer/integrations/${routeIntegrationId}`
+                : '/app-store/developer'
+        );
+
+    // Listings started from Your Apps have no project yet; make one, named after
+    // the app, the first time something is saved (never just by opening the form).
+    const ensureIntegrationId = async (): Promise<string> => {
+        if (integrationId) return integrationId;
+        if (!creatingIntegrationRef.current) {
+            creatingIntegrationRef.current = createIntegrationMutation
+                .mutateAsync(formData.display_name?.trim() || 'My App')
+                .then(id => {
+                    setCreatedIntegrationId(id);
+                    return id;
+                })
+                .catch(error => {
+                    creatingIntegrationRef.current = null;
+                    throw error;
+                });
+        }
+        return creatingIntegrationRef.current;
+    };
 
     // Check if form has any changes from initial state
     const hasUnsavedChanges = useCallback(() => {
@@ -323,10 +367,6 @@ const SubmissionForm: React.FC = () => {
     };
 
     const saveDraft = async (showSuccessScreen = true): Promise<string | null> => {
-        if (!integrationId && !isEditMode) {
-            setSubmitError(m['arabicFixes.selectIntegrationFirst']());
-            return null;
-        }
         if (!hasMinimumDataForDraft()) {
             setSubmitError(m['arabicFixes.enterDisplayName']());
             return null;
@@ -363,13 +403,11 @@ const SubmissionForm: React.FC = () => {
                     updates: listingData,
                 });
                 savedListingId = listingId;
-            } else if (integrationId) {
+            } else {
                 savedListingId = await createMutation.mutateAsync({
-                    integrationId,
+                    integrationId: await ensureIntegrationId(),
                     listing: listingData,
                 });
-            } else {
-                throw new Error('No integration selected');
             }
 
             setIsSavingDraft(false);
@@ -400,7 +438,7 @@ const SubmissionForm: React.FC = () => {
             if (!savedId) return;
             currentListingId = savedId;
             history.replace(
-                `/app-store/developer/integrations/${integrationId}/apps/${savedId}`,
+                `/app-store/developer/integrations/${await ensureIntegrationId()}/apps/${savedId}`,
                 location.state
             );
         }
@@ -436,10 +474,6 @@ const SubmissionForm: React.FC = () => {
     };
 
     const handleSubmit = async () => {
-        if (!integrationId && !isEditMode) {
-            setSubmitError(m['arabicFixes.selectIntegrationFirst']());
-            return;
-        }
         setIsSubmitting(true);
         setSubmitError(null);
         try {
@@ -471,15 +505,22 @@ const SubmissionForm: React.FC = () => {
                     updates: listingData,
                 });
                 newListingId = listingId;
-            } else if (integrationId) {
+            } else {
                 newListingId = await createMutation.mutateAsync({
-                    integrationId,
+                    integrationId: await ensureIntegrationId(),
                     listing: listingData,
                 });
-            } else throw new Error('No integration selected');
+            }
 
             await submitMutation.mutateAsync(newListingId);
             setIsSubmitting(false);
+            if (!routeIntegrationId) {
+                history.push({
+                    pathname: getAppStatusPath(newListingId),
+                    state: { celebrate: true },
+                });
+                return;
+            }
             setIsSubmitted(true);
         } catch (error) {
             setSubmitError(

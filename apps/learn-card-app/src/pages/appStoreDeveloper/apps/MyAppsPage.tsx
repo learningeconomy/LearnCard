@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { IonContent, IonIcon, IonPage, IonSpinner } from '@ionic/react';
 import {
+    addOutline,
     alertCircleOutline,
     arrowForwardOutline,
     chevronForwardOutline,
@@ -15,6 +16,8 @@ import { DEFAULT_APP_ICON_URL } from '../submit/constants';
 import type { ListingMode } from '../submit/listingLifecycle';
 import { STATUS_LABELS, getAppStatusPath, toMyApps } from './myApps';
 import type { MyApp } from './myApps';
+import { DEVELOPER_DOCS_URL, NewAppSheet } from './NewAppSheet';
+import { openExternalLink } from '../../../helpers/externalLinkHelpers';
 
 const PILL_CLASS: Record<ListingMode, string> = {
     'draft': 'bg-grayscale-100 text-grayscale-700',
@@ -93,6 +96,8 @@ const MyAppsPage: React.FC = () => {
     );
 
     const apps = toMyApps(data ?? []);
+    const [isNewAppOpen, setIsNewAppOpen] = useState(false);
+    const openNewApp = () => setIsNewAppOpen(true);
     const loading = isLoadingIntegrations || isLoading;
 
     return (
@@ -100,11 +105,23 @@ const MyAppsPage: React.FC = () => {
             <AppStoreHeader title="Your Apps" />
             <IonContent>
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 font-poppins">
-                    <div className="mb-8">
-                        <h1 className="text-2xl font-semibold text-grayscale-900">Your apps</h1>
-                        <p className="text-sm text-grayscale-600 mt-1">
-                            Everything you've built for LearnCard, in one place.
-                        </p>
+                    <div className="mb-8 flex items-start justify-between gap-4">
+                        <div>
+                            <h1 className="text-2xl font-semibold text-grayscale-900">Your apps</h1>
+                            <p className="text-sm text-grayscale-600 mt-1">
+                                Everything you've built for LearnCard, in one place.
+                            </p>
+                        </div>
+                        {apps.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={openNewApp}
+                                className="shrink-0 flex items-center gap-1.5 py-2.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                            >
+                                <IonIcon icon={addOutline} className="text-base" />
+                                New App
+                            </button>
+                        )}
                     </div>
 
                     {loading ? (
@@ -145,12 +162,10 @@ const MyAppsPage: React.FC = () => {
                             </p>
                             <button
                                 type="button"
-                                onClick={() =>
-                                    history.push('/app-store/developer/guides/embed-app')
-                                }
+                                onClick={openNewApp}
                                 className="mt-6 py-3 px-5 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                             >
-                                See How It Works
+                                Get Started
                             </button>
                         </div>
                     ) : (
@@ -167,16 +182,16 @@ const MyAppsPage: React.FC = () => {
                         </div>
                     )}
 
-                    <div className="mt-12 text-center">
-                        <button
-                            type="button"
-                            onClick={() => history.push('/app-store/developer/build')}
-                            className="text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors inline-flex items-center gap-1"
-                        >
-                            Projects and developer tools
-                            <IonIcon icon={arrowForwardOutline} />
-                        </button>
-                    </div>
+                    {isNewAppOpen && (
+                        <NewAppSheet
+                            onClose={() => setIsNewAppOpen(false)}
+                            onBuildApp={() => history.push('/app-store/developer/guides/embed-app')}
+                            onListExisting={type =>
+                                history.push(`/app-store/developer/apps/new?type=${type}`)
+                            }
+                            onOpenDocs={() => openExternalLink(DEVELOPER_DOCS_URL)}
+                        />
+                    )}
                 </div>
             </IonContent>
         </IonPage>
