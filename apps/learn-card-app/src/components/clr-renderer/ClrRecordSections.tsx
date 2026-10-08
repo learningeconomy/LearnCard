@@ -23,23 +23,50 @@ export const ClrRecordSections = ({
 }) => {
     const id = useId();
     const sections = groupClrRecords(model.records, layout);
+    const military = layout === 'military';
     if (!sections.length)
         return <p className="p-6 text-sm text-grayscale-600">{m['clrRenderer.empty']()}</p>;
     return (
         <>
-            {sections.map(section => (
+            {sections.map((section, sectionIndex) => (
                 <section
                     key={section.kind}
                     aria-labelledby={`${id}-${section.kind}`}
-                    className="space-y-3"
+                    className={
+                        military
+                            ? 'overflow-hidden rounded-[20px] border border-grayscale-300 bg-white shadow-sm'
+                            : 'space-y-3'
+                    }
                 >
                     <h3
                         id={`${id}-${section.kind}`}
-                        className="text-lg font-semibold text-grayscale-900"
+                        className={
+                            military
+                                ? 'flex items-center gap-3 border-b border-grayscale-200 bg-grayscale-100 px-5 py-4 text-base font-semibold text-grayscale-900'
+                                : 'text-lg font-semibold text-grayscale-900'
+                        }
                     >
-                        {getClrSectionLabel(section.kind, layout)}
+                        {military && (
+                            <span
+                                aria-hidden="true"
+                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-grayscale-900 text-xs text-white"
+                            >
+                                {String(sectionIndex + 1).padStart(2, '0')}
+                            </span>
+                        )}
+                        <span className="min-w-0 flex-1">
+                            {getClrSectionLabel(section.kind, layout)}
+                        </span>
+                        {military && (
+                            <span
+                                aria-hidden="true"
+                                className="text-xs font-medium text-grayscale-600"
+                            >
+                                {section.records.length}
+                            </span>
+                        )}
                     </h3>
-                    <ul className="space-y-3">
+                    <ul className={military ? 'divide-y divide-grayscale-200' : 'space-y-3'}>
                         {section.records.map(record => {
                             const display = findClrRecordByCanonicalId(model, record.id)?.record;
                             const issuer = record.provenance.issuer;
@@ -48,7 +75,11 @@ export const ClrRecordSections = ({
                             return (
                                 <li
                                     key={record.id}
-                                    className="space-y-3 rounded-[20px] border border-grayscale-200 bg-white p-5"
+                                    className={
+                                        military
+                                            ? 'space-y-3 border-s-4 border-grayscale-900 p-5 sm:p-6'
+                                            : 'space-y-3 rounded-[20px] border border-grayscale-200 bg-white p-5'
+                                    }
                                     data-clr-record-id={record.id}
                                 >
                                     <button
