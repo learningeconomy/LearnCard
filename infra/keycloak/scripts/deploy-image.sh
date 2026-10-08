@@ -99,8 +99,9 @@ if [[ "$strategy" == recreate ]]; then
     # A saved plan changing the scalable target can reintroduce a positive min
     # during apply, before our controlled restart. Require sizing as a separate
     # compatible deployment rather than racing Terraform's target registration.
-    jq -e '[.resource_changes[] | select(.address == "aws_appautoscaling_target.keycloak") |
-        .change.actions] == [["no-op"]]' "$root/plan.json" >/dev/null || {
+    # Tag-only updates (default KeycloakVersion tag on every version bump) are
+    # applied via TagResource and never re-register capacity, so they are allowed.
+    jq -e -f "$scripts/autoscaling-unchanged.jq" "$root/plan.json" >/dev/null || {
         printf 'Recreate requires unchanged autoscaling target; apply sizing separately first.\n' >&2; exit 1;
     }
 fi
