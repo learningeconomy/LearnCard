@@ -18,9 +18,26 @@ const DEGREE_TYPES = [
 
 export const CLR_LAYOUT_HEURISTICS = {
     military: {
-        leadWord: 'military',
+        leadPhrases: [
+            ['military'],
+            ['army'],
+            ['navy'],
+            ['air', 'force'],
+            ['marine', 'corps'],
+            ['coast', 'guard'],
+            ['space', 'force'],
+        ],
+        // Record names only: a provider name or an isolated branch name is insufficient.
+        titlePhrases: [
+            ['joint', 'services', 'transcript'],
+            ['aarts', 'transcript'],
+            ['aarts'],
+            ['army', 'american', 'council', 'on', 'education', 'registry', 'transcript'],
+            ['ccaf', 'transcript'],
+        ],
         middleWords: ['training', 'qualification', 'qualifications', 'service'],
         finalWords: [
+            'service',
             'training',
             'record',
             'records',
@@ -87,6 +104,9 @@ const titleWords = (title: string): string[] => {
     return words;
 };
 
+const matchesPhrase = (words: string[], index: number, phrase: readonly string[]): boolean =>
+    phrase.every((word, offset) => word === words[index + offset]);
+
 /** Inspect collection-title signals without deriving a sector from child claims. */
 export const inferClrTitleSignals = (title: string): ClrTitleSignals => {
     const words = titleWords(title);
@@ -95,8 +115,20 @@ export const inferClrTitleSignals = (title: string): ClrTitleSignals => {
     let militaryTitle = false;
 
     for (let index = 0; index < words.length; index += 1) {
-        if (words[index] !== military.leadWord) continue;
-        let cursor = index + 1;
+        const titlePhrase = military.titlePhrases.find(phrase =>
+            matchesPhrase(words, index, phrase)
+        );
+        if (titlePhrase) {
+            militaryTitle = true;
+            for (let offset = 0; offset < titlePhrase.length; offset += 1) {
+                consumedByMilitary.add(index + offset);
+            }
+            index += titlePhrase.length - 1;
+            continue;
+        }
+        const lead = military.leadPhrases.find(phrase => matchesPhrase(words, index, phrase));
+        if (!lead) continue;
+        let cursor = index + lead.length;
         let lastFinal = -1;
         while (cursor < words.length) {
             const word = words[cursor];
@@ -121,9 +153,7 @@ export const inferClrTitleSignals = (title: string): ClrTitleSignals => {
         if (contains(academic.titleWords, word) && !consumedByMilitary.has(index)) {
             return true;
         }
-        return academic.titlePhrases.some(
-            phrase => phrase[0] === word && phrase[1] === words[index + 1]
-        );
+        return academic.titlePhrases.some(phrase => matchesPhrase(words, index, phrase));
     });
     return { military: militaryTitle, academic: academicTitle };
 };

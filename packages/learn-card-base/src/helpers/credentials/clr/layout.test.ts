@@ -22,6 +22,20 @@ describe('CLR collection layout', () => {
         'Military Record',
         'Military Transcript',
         'Military Service Record',
+        'Military Service',
+        'Joint Services Transcript',
+        'Official Joint Services Transcript (JST)',
+        'AARTS',
+        'AARTS Transcript',
+        'Army/American Council on Education Registry Transcript System',
+        'Army Training Record',
+        'Navy Transcript',
+        'Air Force Training Record',
+        'Marine Corps Qualifications',
+        'Coast Guard Transcript',
+        'Space Force Service Record',
+        'CCAF Transcript',
+        'Community College of the Air Force Transcript',
     ])('recognizes %s without treating a military transcript as academic', title => {
         expect(inferClrLayout(normalizeClrCredential(collection(title)))).toEqual({
             kind: 'military',
@@ -44,7 +58,7 @@ describe('CLR collection layout', () => {
             academic: false,
         });
         expect(inferClrTitleSignals(`${repeatedService}unrelated`)).toEqual({
-            military: false,
+            military: true,
             academic: false,
         });
         expect(inferClrTitleSignals(`Military${' '.repeat(50_000)}Transcript`)).toEqual({
@@ -58,12 +72,48 @@ describe('CLR collection layout', () => {
             reason: 'military-title',
         });
     });
-    it('keeps conflicting collection titles general', () => {
+    it.each([
+        'Military Training and Academic Transcript',
+        'Military Service and Academic Transcript',
+        'Joint Services Transcript and University Transcript',
+        'Academic Record / AARTS',
+        'Army Training Record and Student Record',
+    ])('keeps conflicting collection title %s general', title => {
+        expect(inferClrLayout(normalizeClrCredential(collection(title)))).toEqual({
+            kind: 'general',
+            reason: 'conflicting-title',
+        });
+    });
+    it.each(['Army', 'Navy Academy', 'Community College of the Air Force', 'NotAARTS'])(
+        'does not classify provider or partial names in %s',
+        title => {
+            expect(inferClrLayout(normalizeClrCredential(collection(title))).kind).toBe('general');
+        }
+    );
+    it('handles repeated military prefixes and connectors without backtracking', () => {
+        expect(inferClrTitleSignals('military and '.repeat(4_000))).toEqual({
+            military: false,
+            academic: false,
+        });
+        expect(inferClrTitleSignals('joint services '.repeat(4_000))).toEqual({
+            military: false,
+            academic: false,
+        });
+    });
+    it.each([
+        ['Course', 'Course'],
+        ['Course', 'BachelorDegree', ''],
+        ['Course', 'BachelorDegree', 'Certificate'],
+        ['Course', 'BachelorDegree', 'License'],
+    ])('keeps inconclusive academic collections neutral (%j)', (...types) => {
         expect(
             inferClrLayout(
-                normalizeClrCredential(collection('Military Training and Academic Transcript'))
+                normalizeClrCredential(collection('Westbridge University – Fall 2025', types))
             )
-        ).toEqual({ kind: 'general', reason: 'conflicting-title' });
+        ).toEqual({ kind: 'general', reason: 'inconclusive' });
+        expect(
+            inferClrLayout(normalizeClrCredential(collection('Academic Transcript', types))).kind
+        ).toBe('academic');
     });
     it('does not infer a sector from course counts, issuer names, tags, or child text', () => {
         const raw = {

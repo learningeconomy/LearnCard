@@ -66,11 +66,24 @@ and display parity against every registered CLR fixture.
 configured in `layout-heuristics.ts`; its linear scanner avoids backtracking on
 untrusted collection titles. This is a presentation hint, never a new
 credential claim. CLR 2.0's use-case categories are not machine-readable sectors.
-Military titles explicitly naming training, qualifications, records or transcripts
-select the military layout. Academic titles or explicit GPA/degree evidence in an
-otherwise academic collection select academic. Conflicting titles or insufficient
+Military or service-branch titles explicitly naming training, service, qualifications,
+records or transcripts select the military layout. Known record titles include
+Joint Services Transcript, AARTS (including its expanded name), and CCAF Transcript.
+These phrases consume their own transcript word; a separate academic title still
+conflicts (for example, "Military Service and Academic Transcript" selects general).
+Provider names alone, including Community College of the Air Force, are insufficient.
+Academic titles or explicit GPA/degree evidence in an otherwise academic collection
+select academic. Conflicting titles or insufficient
 evidence select general. Publisher names, child text, tenants and fixture tags do
 not establish the collection's sector. Standalone course presentation is retained.
+
+This intentionally narrows the previous academic default: a course-only collection
+named "Westbridge University – Fall 2025" selects general, even with credits or
+terms. Without a decisive title, explicit GPA or a degree is required and **every**
+child must have only configured academic-compatible types. An untyped child,
+Certificate, License, or Membership prevents that structural fallback. An explicit
+academic collection title still selects academic for those records. Source data and
+record access are preserved; the general view simply avoids assuming academic context.
 
 `groupClrRecords(records, layout)` partitions canonical occurrences exactly once,
 keeping source order within each section. Specific type hints take precedence over
