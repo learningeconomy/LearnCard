@@ -143,6 +143,23 @@ data "aws_iam_policy_document" "deploy_services" {
     }
   }
   statement {
+    # Tag/Untag don't carry application-autoscaling:service-namespace, so the
+    # statement above never allows them; KeycloakVersion retags on every bump.
+    sid       = "EcsAutoscalingTags"
+    actions   = ["application-autoscaling:TagResource", "application-autoscaling:UntagResource"]
+    resources = ["arn:${local.partition}:application-autoscaling:${local.regional_arn}:scalable-target/*"]
+    condition {
+      test     = "StringEquals"
+      variable = "aws:ResourceTag/Project"
+      values   = ["learncard-keycloak"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "aws:ResourceTag/Environment"
+      values   = [var.environment]
+    }
+  }
+  statement {
     sid       = "AlbAccessLogBuckets"
     actions   = ["s3:*"]
     resources = ["arn:${local.partition}:s3:::${local.name}-alb-logs-*", "arn:${local.partition}:s3:::${local.name}-alb-logs-*/*"]
