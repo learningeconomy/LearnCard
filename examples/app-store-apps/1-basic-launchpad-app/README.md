@@ -2,16 +2,16 @@
 
 This is a demonstration application showing how to build an embeddable web page for the LearnCard app store. It showcases the newest zero-config Partner Connect SDK flows including:
 
--   **SSO/Identity**: Authenticating users via `requestIdentity()`
--   **Inline Credential Templates**: Sending credentials with `sendCredential({ alias, template, templateData })`
--   **Offline Template Validation**: Validating inline templates locally with `validateCredentialTemplate()`
--   **Scoped Consent**: Requesting permissions with `requestConsent({ read, reason })`
--   **Launching Features**: Opening LearnCard features (e.g., AI Tutor) via `launchFeature()`
--   **Requesting Credentials**: Asking users to share credentials via `askCredentialSearch()`
--   **Learner Context**: Reading learner context via `requestLearnerContext()`
--   **App Notifications**: Sending in-app notifications via `sendNotification()`
--   **App Counters**: Incrementing and reading per-user counters via `incrementCounter()`, `getCounter()`, `getCounters()`
--   **Publish Flow**: Inspecting `getCapturedManifest()` and `getPublishUrl()` in mock mode
+- **SSO/Identity**: Authenticating users via `requestIdentity()`
+- **Inline Credential Templates**: Sending credentials with `sendCredential({ alias, template, templateData })`
+- **Offline Template Validation**: Validating inline templates locally with `validateCredentialTemplate()`
+- **Scoped Consent**: Requesting permissions with `requestConsent({ read, reason })`
+- **Launching Features**: Opening LearnCard features (e.g., AI Tutor) via `launchFeature()`
+- **Requesting Credentials**: Asking users to share credentials via `askCredentialSearch()`
+- **Learner Context**: Reading learner context via `requestLearnerContext()`
+- **App Notifications**: Sending in-app notifications via `sendNotification()`
+- **App Counters**: Incrementing and reading per-user counters via `incrementCounter()`, `getCounter()`, `getCounters()`
+- **Publish Flow**: Inspecting `getCapturedManifest()` and `getPublishUrl()` in mock mode
 
 ## Quick Start (Full Local Testing)
 
@@ -80,12 +80,12 @@ bun run preview
 
 ## Integration Notes
 
--   No pre-created contract URI or boost URI is required for the happy path
--   Standalone local development auto-uses SDK mock mode, so the demo works without embedding
--   When embedded or previewed inside LearnCard, the same calls use the real host automatically
--   The optional boost URI field is only for inspecting an existing host boost/template
--   All postMessage communication is origin-verified for security
--   SSO tokens should be validated on your backend before creating sessions
+- No pre-created contract URI or boost URI is required for the happy path
+- Standalone local development auto-uses SDK mock mode, so the demo works without embedding
+- When embedded or previewed inside LearnCard, the same calls use the real host automatically
+- The optional boost URI field is only for inspecting an existing host boost/template
+- All postMessage communication is origin-verified for security
+- SSO tokens should be validated on your backend before creating sessions
 
 ## Features Demonstrated
 
@@ -101,7 +101,7 @@ bun run preview
 
 ## Architecture
 
--   Built with Astro for fast, static site generation
--   Uses Tailwind CSS via CDN for styling
--   Client-side Partner Connect SDK for LearnCard communication
--   Promise-based API for async request/response flows
+- Built with Astro for fast, static site generation
+- Uses Tailwind CSS via CDN for styling
+- Client-side Partner Connect SDK for LearnCard communication
+- Promise-based API for async request/response flows

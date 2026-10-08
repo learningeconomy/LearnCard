@@ -6,12 +6,12 @@ The LearnCard Partner Connect SDK transforms complex `postMessage` communication
 
 ## Features
 
--   🔒 **Secure**: Origin validation for all messages
--   🎯 **Type-safe**: Full TypeScript support with comprehensive types
--   ⚡ **Promise-based**: Modern async/await API
--   🧹 **Clean**: Abstracts away all postMessage complexity
--   📦 **Lightweight**: Zero runtime dependencies
--   🛡️ **Robust**: Built-in timeout handling and error management
+- 🔒 **Secure**: Origin validation for all messages
+- 🎯 **Type-safe**: Full TypeScript support with comprehensive types
+- ⚡ **Promise-based**: Modern async/await API
+- 🧹 **Clean**: Abstracts away all postMessage complexity
+- 📦 **Lightweight**: Zero runtime dependencies
+- 🛡️ **Robust**: Built-in timeout handling and error management
 
 ## Installation
 
@@ -104,10 +104,10 @@ interface PartnerConnectOptions {
 While mock mode is active, the SDK silently captures an app manifest in local storage
 (`{namespace}:manifests`) with the LearnCard surface your app actually uses:
 
--   inline credential templates
--   consent scopes
--   permissions inferred from SDK calls
--   launched feature paths, counter keys, learner-context usage, notifications
+- inline credential templates
+- consent scopes
+- permissions inferred from SDK calls
+- launched feature paths, counter keys, learner-context usage, notifications
 
 When `mockOptions.ui !== false`, mock mode also shows a small **Live Manifest HUD** in the
 bottom-left corner. It starts collapsed as a pill (`LC · N capabilities`) and expands into a
@@ -294,9 +294,9 @@ const learnCard = createPartnerConnect({
 
 **How the LearnCard Host Uses This:**
 
--   Production: Iframe URL has no `lc_host_override` parameter
--   Staging: Iframe URL includes `?lc_host_override=https://staging.learncard.app`
--   This allows testing against non-production environments without recompiling partner code
+- Production: Iframe URL has no `lc_host_override` parameter
+- Staging: Iframe URL includes `?lc_host_override=https://staging.learncard.app`
+- This allows testing against non-production environments without recompiling partner code
 
 #### 3. **Configured Origin** (Fallback)
 
@@ -343,9 +343,9 @@ Incoming Message Origin ≡ Configured Host Origin
 
 The SDK enforces an exact match between incoming message origins and the active host origin:
 
--   ✅ **Secure**: Even if a malicious actor adds `?lc_host_override=https://evil.com`, messages from `evil.com` will be rejected
--   ✅ **Cannot be spoofed**: Browser security prevents malicious sites from faking their `event.origin`
--   ✅ **No wildcards**: Only exact matches are accepted
+- ✅ **Secure**: Even if a malicious actor adds `?lc_host_override=https://evil.com`, messages from `evil.com` will be rejected
+- ✅ **Cannot be spoofed**: Browser security prevents malicious sites from faking their `event.origin`
+- ✅ **No wildcards**: Only exact matches are accepted
 
 ```typescript
 // Active origin: https://staging.learncard.app
@@ -368,11 +368,11 @@ LearnCard host is present and your app runs on a local dev host (`localhost`,
 `127.0.0.1`, `[::1]`, `*.localhost`, `*.local`) — plain local dev or a local
 Storybook — the SDK simulates the host locally:
 
--   **Every method shows a branded toast** describing what would happen once embedded — e.g. `sendCredential` → _"✅ In LearnCard, the user would receive **[name]** here."_, `incrementCounter` → _"Counter **coins** → **10**."_, `launchFeature` → _"Would open **/wallet**."_ So you get strong, visible feedback for every call, not just console logs.
--   `requestConsent(...)` auto-grants and shows a "mock consent" toast; `incrementCounter` / `getCounter` / `getCounters` persist to `localStorage` so values survive reloads.
--   Identical or polled calls **coalesce** into a single toast with a ×N counter, so nothing spams the screen.
--   `requestIdentity`, notifications, learner context, sync status, etc. all resolve with sensible fake data.
--   Every simulated interaction is also logged to the console with a `[LearnCard SDK · MOCK]` prefix.
+- **Every method shows a branded toast** describing what would happen once embedded — e.g. `sendCredential` → _"✅ In LearnCard, the user would receive **[name]** here."_, `incrementCounter` → _"Counter **coins** → **10**."_, `launchFeature` → _"Would open **/wallet**."_ So you get strong, visible feedback for every call, not just console logs.
+- `requestConsent(...)` auto-grants and shows a "mock consent" toast; `incrementCounter` / `getCounter` / `getCounters` persist to `localStorage` so values survive reloads.
+- Identical or polled calls **coalesce** into a single toast with a ×N counter, so nothing spams the screen.
+- `requestIdentity`, notifications, learner context, sync status, etc. all resolve with sensible fake data.
+- Every simulated interaction is also logged to the console with a `[LearnCard SDK · MOCK]` prefix.
 
 **No code changes, no environment flags in local dev.** Your app is fully
 buildable and demo-able locally, and behaves identically against the real host
@@ -538,9 +538,9 @@ const identity = await learnCard.requestIdentity();
 
 **Error Codes:**
 
--   `LC_UNAUTHENTICATED`: User is not logged in to LearnCard
--   `LC_TIMEOUT`: Request timed out
--   `LC_NOT_EMBEDDED`: The app is not embedded in a LearnCard host (standalone, not mocking)
+- `LC_UNAUTHENTICATED`: User is not logged in to LearnCard
+- `LC_TIMEOUT`: Request timed out
+- `LC_NOT_EMBEDDED`: The app is not embedded in a LearnCard host (standalone, not mocking)
 
 ---
 
@@ -553,8 +553,8 @@ const hostOrigin = learnCard.getActiveHostOrigin();
 const publishOrigin = learnCard.getPublishOrigin();
 ```
 
--   `getActiveHostOrigin()` returns the active real-host origin, or `null` while mock mode is active.
--   `getPublishOrigin()` returns the LearnCard origin used to build App Store publish URLs.
+- `getActiveHostOrigin()` returns the active real-host origin, or `null` while mock mode is active.
+- `getPublishOrigin()` returns the LearnCard origin used to build App Store publish URLs.
 
 ---
 
@@ -567,9 +567,9 @@ const manifest = learnCard.getCapturedManifest();
 const publishUrl = learnCard.getPublishUrl();
 ```
 
--   `getCapturedManifest()` returns `undefined` when you're not in mock mode or nothing has been captured yet.
--   `getPublishUrl()` returns `undefined` until the first manifest exists, then always returns a URL.
--   The auto-shown publish prompt still waits for at least 1 inline template or 2 distinct permissions.
+- `getCapturedManifest()` returns `undefined` when you're not in mock mode or nothing has been captured yet.
+- `getPublishUrl()` returns `undefined` until the first manifest exists, then always returns a URL.
+- The auto-shown publish prompt still waits for at least 1 inline template or 2 distinct permissions.
 
 ---
 
@@ -795,11 +795,11 @@ await learnCard.sendNotification({
 
 **Parameters:**
 
--   `title` _(optional)_: Notification title
--   `body` _(optional)_: Notification body text
--   `actionPath` _(optional)_: Deep link path within the app (e.g. `'/prizes'`). Must be an absolute pathname starting with `/`. This path is appended to the app's configured embed URL when the user taps the notification. For example, if your embed URL is `https://myapp.com` and `actionPath` is `'/challenges/42'`, the app will open at `https://myapp.com/challenges/42`. Hash routes (e.g. `'/#/page'`) are **not** supported — use pathname-based routing.
--   `category` _(optional)_: Grouping category (e.g. `'reward'`, `'announcement'`, `'status'`)
--   `priority` _(optional)_: `'normal'` (default) or `'high'`. Affects visual styling of the notification card and toast. Does not change delivery priority or ordering.
+- `title` _(optional)_: Notification title
+- `body` _(optional)_: Notification body text
+- `actionPath` _(optional)_: Deep link path within the app (e.g. `'/prizes'`). Must be an absolute pathname starting with `/`. This path is appended to the app's configured embed URL when the user taps the notification. For example, if your embed URL is `https://myapp.com` and `actionPath` is `'/challenges/42'`, the app will open at `https://myapp.com/challenges/42`. Hash routes (e.g. `'/#/page'`) are **not** supported — use pathname-based routing.
+- `category` _(optional)_: Grouping category (e.g. `'reward'`, `'announcement'`, `'status'`)
+- `priority` _(optional)_: `'normal'` (default) or `'high'`. Affects visual styling of the notification card and toast. Does not change delivery priority or ordering.
 
 At least one of `title` or `body` is required.
 
@@ -825,16 +825,16 @@ console.log(spent.newValue); // 5
 
 **Parameters:**
 
--   `key` _(required)_: Counter name. Must match `[a-zA-Z0-9_-]+`, max 64 characters.
--   `amount` _(required)_: Integer value to add. Use a negative integer to decrement.
+- `key` _(required)_: Counter name. Must match `[a-zA-Z0-9_-]+`, max 64 characters.
+- `amount` _(required)_: Integer value to add. Use a negative integer to decrement.
 
 **Returns:** `{ key: string, previousValue: number, newValue: number }`
 
 **Limits:**
 
--   Max 50 distinct counter keys per user per app
--   Max 100 writes per user per app per minute
--   Amount must be a finite integer
+- Max 50 distinct counter keys per user per app
+- Max 100 writes per user per app per minute
+- Amount must be a finite integer
 
 ---
 
@@ -849,7 +849,7 @@ console.log('Balance:', value);
 
 **Parameters:**
 
--   `key` _(required)_: Counter name (same format as `incrementCounter`)
+- `key` _(required)_: Counter name (same format as `incrementCounter`)
 
 **Returns:** `{ key: string, value: number, updatedAt: string | null }`
 
@@ -870,7 +870,7 @@ const all = await learnCard.getCounters();
 
 **Parameters:**
 
--   `keys` _(optional)_: Array of counter names to fetch (max 50). Omit to return all.
+- `keys` _(optional)_: Array of counter names to fetch (max 50). Omit to return all.
 
 **Returns:** `{ counters: Array<{ key: string, value: number, updatedAt: string | null }> }`
 
@@ -889,8 +889,8 @@ await learnCard.launchFeature(
 
 **Parameters:**
 
--   `featurePath`: Path to the feature
--   `initialPrompt`: Optional initial data or prompt
+- `featurePath`: Path to the feature
+- `initialPrompt`: Optional initial data or prompt
 
 ---
 
@@ -937,8 +937,8 @@ if (response.credential) {
 
 **Error Codes:**
 
--   `CREDENTIAL_NOT_FOUND`: Credential doesn't exist
--   `USER_REJECTED`: User declined to share
+- `CREDENTIAL_NOT_FOUND`: Credential doesn't exist
+- `USER_REJECTED`: User declined to share
 
 ---
 
@@ -991,8 +991,8 @@ if (response.issued) {
 
 **Error Codes:**
 
--   `UNAUTHORIZED`: Not an admin of this template
--   `TEMPLATE_NOT_FOUND`: Template doesn't exist
+- `UNAUTHORIZED`: Not an admin of this template
+- `TEMPLATE_NOT_FOUND`: Template doesn't exist
 
 ---
 
@@ -1087,15 +1087,15 @@ interface LearnCardError {
 
 **Common Error Codes:**
 
--   `LC_TIMEOUT`: Request timed out
--   `LC_NOT_EMBEDDED`: Not embedded in a LearnCard host (standalone, not mocking)
--   `LC_UNAUTHENTICATED`: User not logged in
--   `USER_REJECTED`: User declined the request
--   `CREDENTIAL_NOT_FOUND`: Credential doesn't exist
--   `UNAUTHORIZED`: User lacks permission
--   `TEMPLATE_NOT_FOUND`: Template doesn't exist
--   `SDK_NOT_INITIALIZED`: SDK initialization failed
--   `SDK_DESTROYED`: SDK was destroyed before completion
+- `LC_TIMEOUT`: Request timed out
+- `LC_NOT_EMBEDDED`: Not embedded in a LearnCard host (standalone, not mocking)
+- `LC_UNAUTHENTICATED`: User not logged in
+- `USER_REJECTED`: User declined the request
+- `CREDENTIAL_NOT_FOUND`: Credential doesn't exist
+- `UNAUTHORIZED`: User lacks permission
+- `TEMPLATE_NOT_FOUND`: Template doesn't exist
+- `SDK_NOT_INITIALIZED`: SDK initialization failed
+- `SDK_DESTROYED`: SDK was destroyed before completion
 
 **Example:**
 
@@ -1150,9 +1150,9 @@ const config = {
 
 ## Browser Support
 
--   Chrome/Edge 90+
--   Firefox 88+
--   Safari 14+
+- Chrome/Edge 90+
+- Firefox 88+
+- Safari 14+
 
 Requires `postMessage` API and `Promise` support.
 
@@ -1162,31 +1162,31 @@ The SDK implements multiple security layers:
 
 ### 1. **Strict Origin Validation**
 
--   Messages must come from the **exact** active host origin
--   No wildcards, no pattern matching, no exceptions
--   Mathematical equivalence: `event.origin === activeHostOrigin`
+- Messages must come from the **exact** active host origin
+- No wildcards, no pattern matching, no exceptions
+- Mathematical equivalence: `event.origin === activeHostOrigin`
 
 ### 2. **Query Parameter Whitelist**
 
--   `lc_host_override` values are validated against configured `hostOrigin` array
--   Invalid overrides are rejected and logged
--   Falls back to first configured origin on validation failure
+- `lc_host_override` values are validated against configured `hostOrigin` array
+- Invalid overrides are rejected and logged
+- Falls back to first configured origin on validation failure
 
 ### 3. **Anti-Spoofing Protection**
 
 Even if a malicious actor injects `?lc_host_override=https://evil.com`:
 
--   The SDK may adopt `evil.com` as the active origin (if not whitelisted)
--   **BUT** messages from `evil.com` will only be accepted if `event.origin === 'evil.com'`
--   Browser security prevents `evil.com` from spoofing another domain's origin
--   Malicious messages are silently rejected
+- The SDK may adopt `evil.com` as the active origin (if not whitelisted)
+- **BUT** messages from `evil.com` will only be accepted if `event.origin === 'evil.com'`
+- Browser security prevents `evil.com` from spoofing another domain's origin
+- Malicious messages are silently rejected
 
 ### 4. **Additional Security Layers**
 
--   **Protocol Validation**: Messages must match the expected protocol identifier
--   **Request ID Tracking**: Only tracked requests with valid IDs are processed
--   **Timeout Protection**: Requests automatically timeout to prevent hanging
--   **Explicit targetOrigin**: Never uses `'*'` in postMessage calls
+- **Protocol Validation**: Messages must match the expected protocol identifier
+- **Request ID Tracking**: Only tracked requests with valid IDs are processed
+- **Timeout Protection**: Requests automatically timeout to prevent hanging
+- **Explicit targetOrigin**: Never uses `'*'` in postMessage calls
 
 ### Example Attack Scenario (Prevented)
 
@@ -1268,5 +1268,5 @@ Contributions are welcome! Please see the [main LearnCard repository](https://gi
 
 For issues and questions:
 
--   GitHub Issues: https://github.com/learningeconomy/LearnCard/issues
--   Documentation: https://docs.learncard.com
+- GitHub Issues: https://github.com/learningeconomy/LearnCard/issues
+- Documentation: https://docs.learncard.com
