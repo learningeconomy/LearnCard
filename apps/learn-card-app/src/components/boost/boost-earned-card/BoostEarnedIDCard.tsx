@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import moment from 'moment';
 import { ErrorBoundary } from 'react-error-boundary';
+import { getLocale } from '../../../paraglide/runtime.js';
 import { VC } from '@learncard/types';
 
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
@@ -38,6 +39,7 @@ import {
     unwrapBoostCredential,
     isBoostCredential,
     getAchievementTypeDisplayText,
+    getIssuanceDate,
 } from 'learn-card-base/helpers/credentialHelpers';
 
 import {
@@ -49,14 +51,13 @@ import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { useLoadingLine } from 'apps/learn-card-app/src/stores/loadingStore';
 import useBoostMenu, { BoostMenuType } from '../hooks/useBoostMenu';
 import { LCR } from 'learn-card-base/types/credential-records';
-import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 
 type BoostEarnedIDCardProps = {
     credential?: VC;
     record?: LCR;
     defaultImg: string;
     onCheckMarkClick?: () => void;
-    selectAll?: any;
+    selectAll?: boolean | null;
     initialCheckmarkState?: boolean;
     categoryType: CredentialCategory;
     useWrapper?: boolean;
@@ -156,17 +157,18 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
     const thumbImage = (cred && getImageUrlFromCredential(cred)) || defaultImg;
     const badgeThumbnail = credImg && credImg?.trim() !== '' ? credImg : thumbImage;
 
-    let issuerThumbnailSrc = cred?.boostID?.issuerThumbnail;
-    let showIssuerThumbnail = cred?.boostID?.showIssuerThumbnail;
     let subjectDID;
 
+    const vcInfo = useGetVCInfo(cred);
     let {
         issuerName,
         issuerProfileImageElement,
         issueeName,
         subjectProfileImageElement,
-        loading: vcInfoLoading,
-    } = useGetVCInfo(cred);
+        idIssuerThumbnailSrc: issuerThumbnailSrc,
+        showIdIssuerThumbnail: showIssuerThumbnail,
+    } = vcInfo;
+    const { loading: vcInfoLoading, idBackgroundImage, idDimBackgroundImage } = vcInfo;
 
     const showSkeleton = loading || resolvedBoostLoading || vcInfoLoading;
 
@@ -183,7 +185,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
                 />
             );
             issuerThumbnailSrc = issuerThumbnail;
-            if (!!issuerThumbnail) showIssuerThumbnail = true;
+            showIssuerThumbnail = true;
         }
         if (issueeThumbnail) {
             subjectProfileImageElement = (
@@ -220,6 +222,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
 
     const earnedBoostIdCardProps = {
         credential,
+        boostUri: record?.uri,
         categoryType: categoryType,
         issuerOverride: issuerName,
         issueeOverride: issueeName,
@@ -239,8 +242,8 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
                     location={cred?.address?.streetAddress}
                     issuerThumbnail={issuerThumbnailSrc}
                     showIssuerImage={showIssuerThumbnail}
-                    backgroundImage={cred?.boostID?.backgroundImage}
-                    dimBackgroundImage={cred?.boostID?.dimBackgroundImage}
+                    backgroundImage={idBackgroundImage}
+                    dimBackgroundImage={idDimBackgroundImage}
                     fontColor={cred?.boostID?.fontColor}
                     accentColor={cred?.boostID?.accentColor}
                     idIssuerName={cred?.boostID?.IDIssuerName ?? issuerName}
@@ -269,10 +272,17 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
         newModal(<BoostPreview {...earnedBoostIdCardProps} />);
     };
 
-    const { createdAt } = getInfoFromCredential(cred, 'MMMM DD, YYYY', {
-        uppercaseDate: false,
-    });
-    const issueDate = moment(createdAt).format('MMMM DD YYYY');
+    const rawDateValue = getIssuanceDate(cred) || '';
+    const createdAtDate = new Date(rawDateValue);
+    const issueDate = Number.isNaN(createdAtDate.getTime())
+        ? rawDateValue
+            ? moment(rawDateValue).locale(getLocale()).format('MMMM DD YYYY')
+            : ''
+        : new Intl.DateTimeFormat(getLocale(), {
+              month: 'long',
+              day: '2-digit',
+              year: 'numeric',
+          }).format(createdAtDate);
 
     const handlePresentOptionsModal = async () => {
         handlePresentBoostMenuModal();
@@ -362,8 +372,8 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
                 issuerName={issuerName}
                 issuerThumbnail={issuerThumbnailSrc}
                 showIssuerThumbnail={showIssuerThumbnail}
-                backgroundImage={cred?.boostID?.backgroundImage}
-                dimBackgroundImage={cred?.boostID?.dimBackgroundImage}
+                backgroundImage={idBackgroundImage}
+                dimBackgroundImage={idDimBackgroundImage}
                 fontColor={cred?.boostID?.fontColor}
                 accentColor={cred?.boostID?.accentColor}
                 handleOptionsModal={handlePresentOptionsModal}

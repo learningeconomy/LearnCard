@@ -15,12 +15,12 @@ interface BufferLike {
     ): { toString(encoding: 'base64' | 'utf8'): string };
 }
 
-const getTextEncoder = (): TextEncoder | undefined => {
+const getTextEncoder = (): InstanceType<typeof TextEncoder> | undefined => {
     if (typeof TextEncoder !== 'undefined') return new TextEncoder();
     return undefined;
 };
 
-const getTextDecoder = (): TextDecoder | undefined => {
+const getTextDecoder = (): InstanceType<typeof TextDecoder> | undefined => {
     if (typeof TextDecoder !== 'undefined') return new TextDecoder();
     return undefined;
 };

@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { ServerClient } from 'postmark';
 
 import { renderEmail, resolveBranding } from '@learncard/email-templates';
@@ -40,6 +41,7 @@ const LOCAL_TEMPLATE_MAP: Record<string, TemplateId> = {
     'guardian-credential-approval': 'guardian-credential-approval',
     'guardian-email-otp': 'guardian-email-otp',
     'guardian-rejected-credential': 'guardian-rejected-credential',
+    'credential-updated': 'credential-updated',
 };
 
 export class PostmarkAdapter implements DeliveryService {
@@ -50,8 +52,8 @@ export class PostmarkAdapter implements DeliveryService {
     }
 
     public async send(notification: Notification): Promise<void> {
-        const defaultFrom = process.env.POSTMARK_FROM_EMAIL || 'support@learningeconomy.io';
-        const defaultBrandName = process.env.POSTMARK_BRAND_NAME || 'LearnCard';
+        const defaultFrom = environment.POSTMARK_FROM_EMAIL || 'support@learningeconomy.io';
+        const defaultBrandName = environment.POSTMARK_BRAND_NAME || 'LearnCard';
 
         // Use tenant branding for the "From" name and domain when available
         const brandName = notification.branding?.brandName || defaultBrandName;
@@ -84,6 +86,8 @@ export class PostmarkAdapter implements DeliveryService {
                     `[PostmarkAdapter] Local render failed for "${notification.templateId}":`,
                     renderError
                 );
+                // This template is owned locally; there is no legacy provider alias.
+                if (notification.templateId === 'credential-updated') throw renderError;
             }
 
             if (rendered) {
@@ -103,6 +107,9 @@ export class PostmarkAdapter implements DeliveryService {
                         `[PostmarkAdapter] sendEmail API failed for "${notification.templateId}":`,
                         sendError
                     );
+                    // A lost provider acknowledgement may already have sent the email.
+                    // Do not bypass the refresh delivery claim with a second attempt.
+                    if (notification.templateId === 'credential-updated') throw sendError;
                 }
             }
         }
@@ -171,7 +178,10 @@ export class PostmarkAdapter implements DeliveryService {
                 };
 
             case 'recovery-key':
-                return { recoveryKey: model.recoveryKey };
+                return {
+                    recoveryKey: model.recoveryKey,
+                    confirmationCode: model.confirmationCode,
+                };
 
             case 'endorsement-request':
                 return {
@@ -214,6 +224,12 @@ export class PostmarkAdapter implements DeliveryService {
                     issuer: model.issuer,
                     credential: model.credential,
                     recipient: model.recipient,
+                };
+
+            case 'credential-updated':
+                return {
+                    issuer: model.issuer,
+                    credential: model.credential,
                 };
 
             default:

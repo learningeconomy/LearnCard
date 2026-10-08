@@ -9,7 +9,6 @@ import GuidePage from './guides/GuidePage';
 import IntegrationsList from './integrations/IntegrationsList';
 import IntegrationDashboardPage from './integrations/IntegrationDashboardPage';
 import SubmissionForm from './SubmissionForm';
-import { BetaGate } from './components/BetaGate';
 
 import { SubmitFromManifestPage } from './submit';
 
@@ -71,53 +70,29 @@ const DeveloperPortalRoutes: React.FC = () => {
                     to="/app-store/developer/guides"
                 />
 
-                {/*
-                 * BUILD SECTION - Beta gated
-                 * To remove beta gate: just remove the <BetaGate> wrapper below
-                 */}
-                <Route path="/app-store/developer/guides">
-                    <BetaGate>
-                        <Switch>
-                            <Route
-                                exact
-                                path="/app-store/developer/guides"
-                                component={IntegrationHub}
-                            />
-                            <Route
-                                exact
-                                path="/app-store/developer/guides/:useCase"
-                                component={GuidePage}
-                            />
-                        </Switch>
-                    </BetaGate>
-                </Route>
+                <Route exact path="/app-store/developer/guides" component={IntegrationHub} />
+                <Route exact path="/app-store/developer/guides/:useCase" component={GuidePage} />
 
-                <Route path="/app-store/developer/integrations">
-                    <BetaGate>
-                        <Switch>
-                            <Route
-                                exact
-                                path="/app-store/developer/integrations"
-                                component={IntegrationsList}
-                            />
-                            <Route
-                                exact
-                                path="/app-store/developer/integrations/:integrationId"
-                                component={IntegrationDashboardPage}
-                            />
-                            <Route
-                                exact
-                                path="/app-store/developer/integrations/:integrationId/guides"
-                                component={IntegrationHub}
-                            />
-                            <Route
-                                exact
-                                path="/app-store/developer/integrations/:integrationId/guides/:useCase"
-                                component={GuidePage}
-                            />
-                        </Switch>
-                    </BetaGate>
-                </Route>
+                <Route
+                    exact
+                    path="/app-store/developer/integrations"
+                    component={IntegrationsList}
+                />
+                <Route
+                    exact
+                    path="/app-store/developer/integrations/:integrationId"
+                    component={IntegrationDashboardPage}
+                />
+                <Route
+                    exact
+                    path="/app-store/developer/integrations/:integrationId/guides"
+                    component={IntegrationHub}
+                />
+                <Route
+                    exact
+                    path="/app-store/developer/integrations/:integrationId/guides/:useCase"
+                    component={GuidePage}
+                />
             </Switch>
         </DeveloperPortalProvider>
     );

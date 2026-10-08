@@ -110,13 +110,8 @@ export const useGetBoost = (uri: string) => {
     return useQuery({
         queryKey: ['useGetBoost', uri],
         queryFn: async () => {
-            try {
-                const wallet = await initWallet();
-                const boost = await wallet.invoke.getBoost(uri);
-                return boost;
-            } catch (error: any) {
-                throw error;
-            }
+            const wallet = await initWallet();
+            return wallet.invoke.getBoost(uri);
         },
         enabled: !!uri,
     });
@@ -612,16 +607,16 @@ export const useGetPaginatedConnections = (
  * Query: Get a specific connection by profileId.
  */
 export const useGetConnection = (profileId: string) => {
-    profileId = profileId?.toLowerCase();
+    const normalizedProfileId = profileId?.toLowerCase();
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
     return useQuery<LCNVisibleProfile | undefined>({
-        queryKey: ['connection', switchedDid ?? '', profileId],
+        queryKey: ['connection', switchedDid ?? '', normalizedProfileId],
         queryFn: async () => {
             const wallet = await initWallet();
             const connections = await wallet.invoke.getPaginatedConnections({ limit: 1000 });
             return connections?.records.find(
-                connection => connection?.profileId?.toLowerCase() === profileId
+                connection => connection?.profileId?.toLowerCase() === normalizedProfileId
             );
         },
     });
@@ -673,8 +668,24 @@ export const useGetConnectionsRequests = () => {
         queryKey: ['getConnectionRequests', switchedDid ?? ''],
         queryFn: async () => {
             const wallet = await initWallet();
-            const data = await wallet.invoke.getConnectionRequests();
-            return Array.isArray(data) ? data : [];
+            const allRecords: LCNVisibleProfile[] = [];
+            let cursor: string | undefined;
+            const MAX_PAGES = 50; // Safety limit: 50 pages × 100 = 5000 max records
+
+            for (let page = 0; page < MAX_PAGES; page++) {
+                const result = await wallet.invoke.getPaginatedConnectionRequests({
+                    limit: 100,
+                    cursor,
+                });
+                const records = result?.records;
+                if (Array.isArray(records)) {
+                    allRecords.push(...records);
+                }
+                cursor = result?.cursor;
+                if (!result?.hasMore || !cursor || !records?.length) break;
+            }
+
+            return allRecords;
         },
     });
 };

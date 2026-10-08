@@ -39,8 +39,8 @@ const ProgressSegments: React.FC<{ total: number; completed: number }> = ({ tota
                             isComplete
                                 ? 'bg-grayscale-900'
                                 : isCurrent
-                                ? 'bg-grayscale-300'
-                                : 'bg-grayscale-100'
+                                  ? 'bg-grayscale-300'
+                                  : 'bg-grayscale-100'
                         }`}
                     />
                 );
@@ -205,8 +205,8 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
                                                 isComplete
                                                     ? 'bg-white'
                                                     : isCurrent
-                                                    ? 'bg-white/40'
-                                                    : 'bg-white/15'
+                                                      ? 'bg-white/40'
+                                                      : 'bg-white/15'
                                             }`}
                                         />
                                     );

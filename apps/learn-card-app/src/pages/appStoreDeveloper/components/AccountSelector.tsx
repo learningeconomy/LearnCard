@@ -42,14 +42,15 @@ import useLCNGatedAction from '../../../components/network-prompts/hooks/useLCNG
 
 import { LCNProfile } from '@learncard/types';
 
-const NameValidator = z.object({
-    name: z
-        .string()
-        .nonempty('Name is required.')
-        .min(3, 'Must contain at least 3 characters.')
-        .max(30, 'Must contain at most 30 characters.')
-        .regex(/^[A-Za-z0-9 ]+$/, 'Alpha numeric characters only'),
-});
+const getNameValidator = () =>
+    z.object({
+        name: z
+            .string()
+            .nonempty(m['arabicFixes.nameRequired']())
+            .min(3, 'Must contain at least 3 characters.')
+            .max(30, 'Must contain at most 30 characters.')
+            .regex(/^[A-Za-z0-9 ]+$/, 'Alpha numeric characters only'),
+    });
 
 const ProfileIDValidator = z.object({
     profileId: z
@@ -135,7 +136,8 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
     const isSwitchedProfile = switchedProfileStore?.use?.isSwitchedProfile();
     const parentUser = currentUserStore.get.parentUser();
     const parentUserDid = currentUserStore.get.parentUserDid();
-    const isCurrentUserServiceProfile = currentLCNUser?.isServiceProfile;
+    const isCurrentUserServiceProfile =
+        currentLCNUser?.type !== 'child' && currentLCNUser?.isServiceProfile === true;
 
     const { mutateAsync: createBoost } = useCreateBoost();
     const { mutateAsync: addCredentialToWallet } = useAddCredentialToWallet();
@@ -171,9 +173,10 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
     });
 
     // Filter to only show service profiles (organizations)
-    const profileRecords = (profiles as any)?.records ?? [];
+    const profileRecords = Array.isArray(profiles?.records) ? profiles.records : [];
     const serviceProfiles = profileRecords.filter(
-        ({ profile }: { profile: LCNProfile }) => profile.isServiceProfile
+        ({ profile }: { profile: LCNProfile }) =>
+            profile.type !== 'child' && profile.isServiceProfile
     );
 
     // Sync with external selection
@@ -213,7 +216,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
     };
 
     const validateName = () => {
-        const result = NameValidator.safeParse({ name: orgName });
+        const result = getNameValidator().safeParse({ name: orgName });
         if (!result.success) {
             setNameError(result.error.issues[0]?.message || 'Invalid name');
             return false;
@@ -241,7 +244,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
         onSelect?.(account);
     };
 
-    const handleSelectExistingProfile = async (profile: LCNProfile, manager: LCNProfile) => {
+    const handleSelectExistingProfile = async (profile: LCNProfile) => {
         const accountProfile: AccountProfile = {
             did: profile.did!,
             profileId: profile.profileId!,
@@ -252,15 +255,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
 
         handleSelectProfile(accountProfile);
 
-        // Switch to this profile
-        const switchedUser = {
-            ...manager,
-            did: profile.did,
-            profileId: profile.profileId,
-            isServiceProfile: profile.isServiceProfile,
-        };
-
-        await handleSwitchAccount(switchedUser as LCNProfile);
+        await handleSwitchAccount(profile);
 
         // Invalidate developer portal queries so they refetch for the new account
         queryClient.invalidateQueries({ queryKey: ['developer'] });
@@ -276,7 +271,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
             profileId: currentLCNUser.profileId!,
             displayName: currentLCNUser.displayName!,
             image: currentLCNUser.image,
-            isServiceProfile: currentLCNUser.isServiceProfile ?? false,
+            isServiceProfile: isCurrentUserServiceProfile,
         };
 
         handleSelectProfile(accountProfile);
@@ -284,10 +279,14 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
 
     const handleUseParentAccount = async () => {
         if (!parentUser || !parentUserDid) return;
+        const parentProfileId =
+            'profileId' in parentUser && typeof parentUser.profileId === 'string'
+                ? parentUser.profileId
+                : (parentUser.name ?? '');
 
         const parentProfile: AccountProfile = {
             did: parentUserDid,
-            profileId: (parentUser as any).profileId ?? parentUser.name ?? '',
+            profileId: parentProfileId,
             displayName: parentUser.name ?? 'Personal Account',
             image: parentUser.profileImage,
             isServiceProfile: false,
@@ -427,9 +426,8 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                 );
 
                 if (sentBoost) {
-                    const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
-                        sentBoost
-                    );
+                    const issuedVcUri =
+                        await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
                     if (issuedVcUri) {
                         await addCredentialToWallet({ uri: issuedVcUri });
                     }
@@ -474,10 +472,10 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
             setProfileId('');
             setImage(undefined);
             setShowAdvanced(false);
-        } catch (e: any) {
+        } catch (e) {
             presentToast(
                 m['developerPortal.components.accountSelector.failedToCreateOrganization']({
-                    message: e?.message,
+                    message: e instanceof Error ? e.message : String(e),
                 }),
                 {
                     type: ToastTypeEnum.Error,
@@ -630,18 +628,10 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
 
                             <div className="space-y-2">
                                 {serviceProfiles.map(
-                                    (
-                                        {
-                                            profile,
-                                            manager,
-                                        }: { profile: LCNProfile; manager: LCNProfile },
-                                        index: number
-                                    ) => (
+                                    ({ profile }: { profile: LCNProfile }, index: number) => (
                                         <button
                                             key={index}
-                                            onClick={() =>
-                                                handleSelectExistingProfile(profile, manager)
-                                            }
+                                            onClick={() => handleSelectExistingProfile(profile)}
                                             disabled={isSwitching}
                                             className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
                                                 selectedProfile?.did === profile.did
@@ -842,15 +832,15 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                                         isUniqueValid
                                             ? 'bg-emerald-100 text-emerald-700'
                                             : uniqueProfileFetching
-                                            ? 'bg-amber-100 text-amber-700'
-                                            : 'bg-gray-100 text-gray-500'
+                                              ? 'bg-amber-100 text-amber-700'
+                                              : 'bg-gray-100 text-gray-500'
                                     }`}
                                 >
                                     {uniqueProfileFetching
                                         ? 'Checking...'
                                         : isUniqueValid
-                                        ? 'Available'
-                                        : 'Must be unique'}
+                                          ? 'Available'
+                                          : 'Must be unique'}
                                 </span>
                             </div>
 

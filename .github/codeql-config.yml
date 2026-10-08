@@ -1,0 +1,12 @@
+name: 'LearnCard CodeQL Configuration'
+
+# Exclude vendored/minified code from CodeQL analysis
+paths-ignore:
+    # Generated Swagger UI assets from swagger-ui-dist
+    - 'services/learn-card-network/learn-cloud-service/generated/swagger-ui/**'
+    # Exclude build outputs (specific paths to avoid excluding source dirs named "build")
+    - '**/dist/**'
+    - 'apps/learn-card-app/build/**'
+    - 'apps/scouts/build/**'
+    # Exclude node_modules (usually already excluded)
+    - '**/node_modules/**'

@@ -646,6 +646,79 @@ mod tests {
 
         assert_eq!(issued["proof"]["cryptosuite"], "eddsa-rdfc-2022");
     }
+
+    #[test]
+    fn issues_and_verifies_clr_presentation_without_changing_embedded_credential() {
+        let mut credential: Value = serde_json::from_str(include_str!(
+            "../../../../../lib/ssi/examples/vc-clr.jsonld"
+        ))
+        .unwrap();
+        credential.as_object_mut().unwrap().remove("proof");
+        credential["issuer"]["id"] = json!(DID);
+        let options = json!({
+            "type": "Ed25519Signature2020",
+            "verificationMethod": VM,
+            "proofPurpose": "assertionMethod"
+        })
+        .to_string();
+        let signed_credential: Value = serde_json::from_str(
+            &block_on(issue_credential(
+                credential.to_string(),
+                options.clone(),
+                KEY.to_string(),
+                "{}".to_string(),
+            ))
+            .unwrap(),
+        )
+        .unwrap();
+        let presentation = json!({
+            "@context": [
+                "https://www.w3.org/2018/credentials/v1",
+                "https://ctx.learncard.com/boosts/1.0.1.json"
+            ],
+            "type": ["VerifiablePresentation"],
+            "holder": DID,
+            "verifiableCredential": [signed_credential]
+        });
+        let signed: Value = serde_json::from_str(
+            &block_on(issue_presentation(
+                presentation.to_string(),
+                options.clone(),
+                KEY.to_string(),
+                "{}".to_string(),
+            ))
+            .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            signed["verifiableCredential"],
+            presentation["verifiableCredential"]
+        );
+        let verification: Value = serde_json::from_str(
+            &block_on(verify_presentation(
+                signed.to_string(),
+                options.clone(),
+                "{}".to_string(),
+            ))
+            .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(verification["errors"], json!([]));
+        assert_eq!(verification["checks"], json!(["proof"]));
+
+        let mut changed = signed;
+        changed["verifiableCredential"][0]["name"] = json!("Changed transcript");
+        let verification: Value = serde_json::from_str(
+            &block_on(verify_presentation(
+                changed.to_string(),
+                options,
+                "{}".to_string(),
+            ))
+            .unwrap(),
+        )
+        .unwrap();
+        assert!(!verification["errors"].as_array().unwrap().is_empty());
+    }
     #[test]
     fn verifies_w3c_previous_proof_chain() {
         let credential: Value = serde_json::from_str(W3C_PROOF_CHAIN).unwrap();

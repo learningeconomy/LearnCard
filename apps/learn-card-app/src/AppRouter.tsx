@@ -1,3 +1,4 @@
+import { enterSharePrivacy, isShareViewerPath } from './components/share-links/sharePrivacy';
 import React, { useEffect, useRef } from 'react';
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
@@ -48,6 +49,9 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import endorsementsRequestStore from './stores/endorsementsRequestStore';
 import { useFirebase } from './hooks/useFirebase';
+import { useKeycloakRedirect } from './auth/useKeycloakRedirect';
+import { assertCurrentKeycloakReauth } from './auth/keycloakReauth';
+import MyLearnCardModal from './components/learncard/MyLearnCardModal';
 import { useSentryIdentify } from './constants/sentry';
 
 import { Modals, getLogger } from 'learn-card-base';
@@ -61,12 +65,13 @@ import { AI_ROUTES } from './constants/aiRoutes';
 import { useAutoVerifyContactMethodWithProofOfLogin } from './hooks/useAutoVerifyContactMethodWithProofOfLogin';
 import { useFinalizeInboxCredentials } from './hooks/useFinalizeInboxCredentials';
 import useConsentFlow from './pages/consentFlow/useConsentFlow';
-import ModalAccessibilityManager from './components/accessibility/ModalAccessibilityManager';
 import ReducedMotionManager from './components/accessibility/ReducedMotionManager';
 
 const log = getLogger('app-router');
 
 const AppRouter: React.FC = () => {
+    const location = useLocation();
+    const isShareViewer = isShareViewerPath(location.pathname);
     const { state: coordinatorState, walletReady } = useAppAuth();
 
     // Initial-load gate: when true, render the loader instead of <Routes>.
@@ -98,13 +103,15 @@ const AppRouter: React.FC = () => {
         !walletReady &&
         (authStatus.tag === 'unauthenticated' || authStatus.tag === 'resolving');
 
-    const initLoading = !(
-        walletReady ||
-        coordinatorState.status === 'idle' ||
-        coordinatorState.status === 'needs_setup' ||
-        coordinatorState.status === 'needs_recovery' ||
-        coordinatorState.status === 'error'
-    );
+    const initLoading =
+        !isShareViewer &&
+        !(
+            walletReady ||
+            coordinatorState.status === 'idle' ||
+            coordinatorState.status === 'needs_setup' ||
+            coordinatorState.status === 'needs_recovery' ||
+            coordinatorState.status === 'error'
+        );
 
     // Native splash bridge. The Capacitor splash is configured with
     // launchAutoHide=false so it stays visible during the entire JS bootstrap
@@ -136,7 +143,7 @@ const AppRouter: React.FC = () => {
     }, []);
     const { verifySignInLinkAndLogin, verifyAppleLogin } = useFirebase();
     const history = useHistory();
-    const location = useLocation();
+
     const isLoggedIn = useIsLoggedIn();
     const isOnboardingOpen = redirectStore.use.isOnboardingOpen();
     const collapsed = useIsCollapsed();
@@ -188,6 +195,7 @@ const AppRouter: React.FC = () => {
     const seed = params.seed;
     const pin = params.pin;
     const endorsementRequest = params.endorsementRequest;
+    const endorsementCredentialId = params.credentialId;
     const draftEndorsementRequest = endorsementsRequestStore.useTracked.endorsementRequest();
 
     // Insights Consent
@@ -207,6 +215,7 @@ const AppRouter: React.FC = () => {
     const { openConsentFlowModal } = useConsentFlow(contract, undefined, contractUri);
 
     const hideSideMenu =
+        isShareViewer ||
         [
             '/consent-flow',
             '/consent-flow-login',
@@ -220,6 +229,18 @@ const AppRouter: React.FC = () => {
         location.pathname.includes('/app-store');
 
     const { newModal } = useModal();
+    const { refreshAuthSession, openRecoverySetup, authProvider } = useAppAuth();
+    const isKeycloak = useKeycloakRedirect(async intent => {
+        assertCurrentKeycloakReauth(intent, (await authProvider?.getCurrentUser())?.id);
+        if (!(await refreshAuthSession())) throw new Error('Session could not be restored');
+        assertCurrentKeycloakReauth(intent, (await authProvider?.getCurrentUser())?.id);
+        history.replace(intent.returnTo);
+        if (intent.action === 'account-recovery') {
+            newModal(<MyLearnCardModal branding={BrandingEnum.learncard} resumeRecovery />);
+        } else {
+            openRecoverySetup({ initialMethod: intent.initialMethod });
+        }
+    }, walletReady);
 
     useEffect(() => {
         if (isInsightsConsent && contract) {
@@ -298,6 +319,10 @@ const AppRouter: React.FC = () => {
                 uri: boostUri as string,
                 seed: seed as string,
                 pin: pin as string,
+                credentialId:
+                    typeof endorsementCredentialId === 'string'
+                        ? endorsementCredentialId
+                        : undefined,
             });
             newModal(
                 <ViewSharedBoost
@@ -308,7 +333,7 @@ const AppRouter: React.FC = () => {
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
         }
-    }, [boostUri, seed, pin, endorsementRequest, newModal]);
+    }, [boostUri, seed, pin, endorsementRequest, endorsementCredentialId, newModal]);
 
     useEffect(() => {
         // Skip entirely if this is a fresh endorsement link click - the first useEffect handles it
@@ -400,6 +425,11 @@ const AppRouter: React.FC = () => {
             // Create a URL object
             const parsedUrl = new URL(data?.url);
 
+            if (isShareViewerPath(parsedUrl.pathname)) {
+                enterSharePrivacy();
+                return;
+            }
+
             // Get the query parameters
             const params = new URLSearchParams(parsedUrl.search);
 
@@ -425,13 +455,17 @@ const AppRouter: React.FC = () => {
         });
 
         // verify passwordless, email login link on web
-        if (!Capacitor.isNativePlatform() && saved_email) {
+        if (
+            !Capacitor.isNativePlatform() &&
+            saved_email &&
+            !isShareViewerPath(window.location.pathname)
+        ) {
             verifySignInLinkAndLogin(saved_email, window.location.href);
         }
     }, [saved_email]);
 
     useEffect(() => {
-        if (!saved_email) {
+        if (!saved_email && !isKeycloak) {
             verifyAppleLogin();
         }
     }, []);
@@ -461,14 +495,18 @@ const AppRouter: React.FC = () => {
         handleBackfillConsent();
     }, [currentLCNUser, currentLCNUserLoading, currentUser, isAiEnabled, isOnboardingOpen]);
 
-    // NOTE: <Modals /> must stay mounted across the `initLoading` splash. During
-    // new-user key setup the coordinator transitions needs_setup → deriving_key →
-    // ready, flipping `initLoading` true for a moment. If <Modals /> were torn down
-    // (e.g. behind an early `return <LoginLoadingPage />`), any open modal — like the
-    // onboarding flow — would have its component instance destroyed and recreated,
-    // resetting its internal step state (bouncing the user back to the age gate).
-    // Keeping it as a persistent sibling of the loader/app content preserves the
-    // live modal instance across the transition.
+    // NOTE: <Modals /> must stay mounted across the `initLoading` splash AND
+    // outside the root <GenericErrorBoundary>. During new-user key setup the
+    // coordinator transitions needs_setup → deriving_key → ready, flipping
+    // `initLoading` true for a moment. If <Modals /> were torn down (e.g.
+    // behind an early `return <LoginLoadingPage />`), any open modal — like the
+    // onboarding flow — would have its component instance destroyed and
+    // recreated, resetting its internal step state (bouncing the user back to
+    // the age gate). Keeping it as a persistent sibling of the loader/app
+    // content preserves the live modal instance across the transition. It
+    // must also survive error fallbacks: the LC-2086 feedback flow lets an
+    // error boundary open a feedback composer through the modal host, so the
+    // host cannot unmount when the guarded surface swaps to its fallback.
     return (
         <SharedI18nProvider>
             {/* Best-effort mirror of the active locale to the LCN profile
@@ -514,10 +552,9 @@ const AppRouter: React.FC = () => {
                         </>
                     )}
                 </div>
-                <Modals />
-                <ModalAccessibilityManager />
-                <ReducedMotionManager />
             </GenericErrorBoundary>
+            <Modals />
+            <ReducedMotionManager />
         </SharedI18nProvider>
     );
 };

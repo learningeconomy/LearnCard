@@ -8,10 +8,19 @@ const LCA_API_URL = 'http://localhost:5200';
 // redis3 is used by lca-api — exposed on host port 6381
 const redis = new Redis({ port: 6381 });
 
-const createMockAuthToken = (
-    userId: string,
-    opts: { email?: string; phone?: string }
-) => {
+const createChallengeHeaders = async (learnCard: Awaited<ReturnType<typeof getLearnCard>>) => {
+    const challenge = crypto.randomUUID();
+    await redis.set(`challenge|${learnCard.id.did()}|${challenge}`, 'valid', 'EX', 300);
+    const vpJwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
+    if (typeof vpJwt !== 'string') throw new Error('Failed to create DID-Auth VP');
+    return { 'Content-Type': 'application/json', Authorization: `Bearer ${vpJwt}` };
+};
+
+afterAll(async () => {
+    await redis.quit();
+});
+
+const createMockAuthToken = (userId: string, opts: { email?: string; phone?: string }) => {
     const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
 
     const payload = Buffer.from(
@@ -45,26 +54,17 @@ describe('Upgrade Contact Method (phone → email)', () => {
     const otpCode = '123456';
 
     let phoneToken: string;
-    let didAuthHeaders: Record<string, string>;
 
     beforeAll(async () => {
         phoneToken = createMockAuthToken(phoneUserId, { phone: phoneNumber });
 
-        // Create a LearnCard for DID-Auth on didRoute endpoints
+        // Only the setup write requires challenge-bound DID auth; upgrade is openRoute.
         const learnCard = await getLearnCard('b'.repeat(64));
-        const vpJwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' });
-
-        if (typeof vpJwt !== 'string') throw new Error('Failed to create DID-Auth VP');
-
-        didAuthHeaders = {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${vpJwt}`,
-        };
 
         // Create a phone-based UserKey so upgradeContactMethod has something to upgrade
         const storeRes = await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
             method: 'PUT',
-            headers: didAuthHeaders,
+            headers: await createChallengeHeaders(learnCard),
             body: JSON.stringify({
                 authToken: phoneToken,
                 providerType: 'firebase',
@@ -73,15 +73,11 @@ describe('Upgrade Contact Method (phone → email)', () => {
                     encryptedDek: 'phone-user-dek',
                     iv: 'phone-user-iv',
                 },
-                primaryDid: `did:key:z6MkPhone${uniqueId}`,
+                primaryDid: learnCard.id.did(),
             }),
         });
 
         expect(storeRes.status).toEqual(200);
-    });
-
-    afterAll(async () => {
-        await redis.quit();
     });
 
     // ── Validation errors (before any DB or OTP checks) ─────────────
@@ -204,15 +200,15 @@ describe('Upgrade Contact Method (phone → email)', () => {
             }),
         });
 
-        expect(response.status).toEqual(403);
+        expect(response.status).toEqual(404);
 
         const data = await response.json();
-        expect(data.message).toContain('do not have permission');
+        expect(data.message).toContain('No account found');
     });
 
-    // ── Email conflict (another UserKey already uses this email) ────
+    // Contact metadata is non-unique; the immutable provider ID identifies the account.
 
-    test('rejects when target email is already used by another UserKey', async () => {
+    test('allows shared contact email without merging provider identities', async () => {
         // First, create another user whose contact method is the target email
         const conflictUserId = `conflict-user-${uniqueId}`;
         const conflictEmail = `conflict-${uniqueId}@example.com`;
@@ -220,16 +216,9 @@ describe('Upgrade Contact Method (phone → email)', () => {
 
         // Create a UserKey with that email as contact method
         const conflictLearnCard = await getLearnCard('c'.repeat(64));
-        const conflictVpJwt = await conflictLearnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' });
-
-        if (typeof conflictVpJwt !== 'string') throw new Error('Failed to create DID-Auth VP');
-
-        await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
+        const storeResponse = await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${conflictVpJwt}`,
-            },
+            headers: await createChallengeHeaders(conflictLearnCard),
             body: JSON.stringify({
                 authToken: conflictToken,
                 providerType: 'firebase',
@@ -238,30 +227,63 @@ describe('Upgrade Contact Method (phone → email)', () => {
                     encryptedDek: 'conflict-dek',
                     iv: 'conflict-iv',
                 },
-                primaryDid: `did:key:z6MkConflict${uniqueId}`,
+                primaryDid: conflictLearnCard.id.did(),
             }),
         });
 
-        // Now try to upgrade our phone user to the same email
+        expect(storeResponse.status).toEqual(200);
+
+        // Use a separate phone account so the main happy-path fixture remains unchanged.
+        const sharedPhone = '+15558888888';
+        const sharedToken = createMockAuthToken(`shared-contact-${uniqueId}`, {
+            phone: sharedPhone,
+        });
+        const sharedLearnCard = await getLearnCard('8'.repeat(64));
+        const sharedStore = await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
+            method: 'PUT',
+            headers: await createChallengeHeaders(sharedLearnCard),
+            body: JSON.stringify({
+                authToken: sharedToken,
+                providerType: 'firebase',
+                primaryDid: sharedLearnCard.id.did(),
+                authShare: { encryptedData: 'shared-contact-share', encryptedDek: 'dek', iv: 'iv' },
+            }),
+        });
+        expect(sharedStore.status).toEqual(200);
+
         await seedOtpCode(conflictEmail, otpCode);
 
         const response = await fetch(`${LCA_API_URL}/api/keys/upgrade-contact-method`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                authToken: phoneToken,
+                authToken: sharedToken,
                 providerType: 'firebase',
-                previousPhone: phoneNumber,
+                previousPhone: sharedPhone,
                 email: conflictEmail,
                 code: otpCode,
             }),
         });
 
-        // upgradeContactMethod model returns false → CONFLICT
-        expect(response.status).toEqual(409);
+        expect(response.status).toEqual(200);
 
         const data = await response.json();
-        expect(data.message).toContain('already associated');
+        expect(data.success).toBe(true);
+        for (const [authToken, expectedData, expectedDid] of [
+            [sharedToken, 'shared-contact-share', sharedLearnCard.id.did()],
+            [conflictToken, 'conflict-auth-share', conflictLearnCard.id.did()],
+        ]) {
+            const readResponse = await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ authToken, providerType: 'firebase' }),
+            });
+            expect(readResponse.status).toEqual(200);
+            expect(await readResponse.json()).toMatchObject({
+                authShare: { encryptedData: expectedData },
+                primaryDid: expectedDid,
+            });
+        }
     });
 
     // ── Happy path ──────────────────────────────────────────────────
@@ -309,7 +331,7 @@ describe('Upgrade Contact Method (phone → email)', () => {
         expect(data.authShare?.encryptedData).toBe('phone-user-auth-share');
     });
 
-    test('UserKey is no longer accessible via the old phone contact method', async () => {
+    test('the same provider ID still resolves the UserKey with an old phone claim', async () => {
         const response = await fetch(`${LCA_API_URL}/api/keys/auth-share`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -321,9 +343,10 @@ describe('Upgrade Contact Method (phone → email)', () => {
 
         expect(response.status).toEqual(200);
 
-        // Should return null — no UserKey exists for this phone anymore
+        // Contact claims do not control lookup; the immutable provider ID does.
         const data = await response.json();
-        expect(data).toBeNull();
+        expect(data).not.toBeNull();
+        expect(data.authShare?.encryptedData).toBe('phone-user-auth-share');
     });
 
     test('OTP code is consumed and cannot be reused', async () => {
@@ -344,5 +367,24 @@ describe('Upgrade Contact Method (phone → email)', () => {
 
         const data = await response.json();
         expect(data.message).toContain('Invalid or expired code');
+    });
+
+    test('a fresh OTP cannot upgrade the old phone again after contact metadata changed', async () => {
+        await seedOtpCode(targetEmail, otpCode);
+        const response = await fetch(`${LCA_API_URL}/api/keys/upgrade-contact-method`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                authToken: phoneToken,
+                providerType: 'firebase',
+                previousPhone: phoneNumber,
+                email: targetEmail,
+                code: otpCode,
+            }),
+        });
+        expect(response.status).toBe(404);
+        expect(await response.json()).toMatchObject({
+            message: 'No account found for the provided phone number.',
+        });
     });
 });

@@ -36,11 +36,7 @@ import type { Capability, Proposal } from '../types';
 import ProposalDiff from './ProposalDiff';
 import RouteDiffSummary from './RouteDiffSummary';
 import { computePathwayDiffRouteImpact } from './pathwayDiffImpact';
-import {
-    ProposalActionError,
-    acceptProposal,
-    rejectProposal,
-} from './proposalActions';
+import { ProposalActionError, acceptProposal, rejectProposal } from './proposalActions';
 import { PROPOSAL_KIND_FRAMING, proposalKind } from './proposalKind';
 
 interface ProposalCardProps {
@@ -60,7 +56,7 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal }) => {
     const analytics = useAnalytics();
     const learnerDid = useLearnerDid();
     const pathway = proposal.pathwayId
-        ? pathwayStore.use.pathways()[proposal.pathwayId] ?? null
+        ? (pathwayStore.use.pathways()[proposal.pathwayId] ?? null)
         : null;
 
     const [busy, setBusy] = useState(false);
@@ -95,7 +91,7 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal }) => {
             setError(
                 err instanceof ProposalActionError
                     ? err.message
-                    : 'Something went wrong. Please try again.',
+                    : 'Something went wrong. Please try again.'
             );
         }
     };
@@ -126,7 +122,7 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal }) => {
             setError(
                 err instanceof ProposalActionError
                     ? err.message
-                    : 'Something went wrong. Please try again.',
+                    : 'Something went wrong. Please try again.'
             );
         }
     };
@@ -142,8 +138,7 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal }) => {
             ? computePathwayDiffRouteImpact(proposal.diff, pathway)
             : null;
 
-    const showRouteImpact =
-        routeImpact !== null && routeImpact.hasImpact;
+    const showRouteImpact = routeImpact !== null && routeImpact.hasImpact;
 
     // Whether the diff's route swap should also show the underlying
     // structural diff. Pure route-swap proposals keep the card tight
@@ -168,10 +163,7 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal }) => {
     // because the action space is structural. new-pathway uses
     // emerald too — the act of *adding* a pathway is a positive
     // affirmation, so green reads right.
-    const eyebrowColor =
-        kind === 'route-swap'
-            ? 'text-indigo-700'
-            : 'text-emerald-700';
+    const eyebrowColor = kind === 'route-swap' ? 'text-indigo-700' : 'text-emerald-700';
 
     return (
         <article className="p-5 rounded-[24px] border border-grayscale-200 bg-white shadow-sm space-y-4 font-poppins">
@@ -183,9 +175,7 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal }) => {
                         {framing.eyebrow} · {CAPABILITY_LABELS[proposal.capability]}
                     </p>
 
-                    <p className="text-sm text-grayscale-800 leading-relaxed">
-                        {proposal.reason}
-                    </p>
+                    <p className="text-sm text-grayscale-800 leading-relaxed">{proposal.reason}</p>
                 </div>
 
                 {proposal.expiresAt && (
@@ -228,9 +218,7 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal }) => {
                 >
                     <p
                         className={`text-[10px] font-semibold uppercase tracking-wide mb-1.5 ${
-                            routeImpact.destinationRemoved
-                                ? 'text-amber-700'
-                                : 'text-indigo-700'
+                            routeImpact.destinationRemoved ? 'text-amber-700' : 'text-indigo-700'
                         }`}
                     >
                         Route impact
@@ -238,9 +226,8 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal }) => {
 
                     {routeImpact.destinationRemoved ? (
                         <p className="text-xs text-amber-800 leading-relaxed">
-                            Your destination would be removed. The Map
-                            will drop to Explore until a new walk is
-                            seeded.
+                            Your destination would be removed. The Map will drop to Explore until a
+                            new walk is seeded.
                         </p>
                     ) : (
                         <p className="text-xs text-indigo-800 leading-relaxed">
@@ -261,9 +248,8 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal }) => {
                                 </>
                             ) : (
                                 <>
-                                    This revision updates your walk. See the
-                                    route preview above for the before/after
-                                    shape.
+                                    This revision updates your walk. See the route preview above for
+                                    the before/after shape.
                                 </>
                             )}
                         </p>
@@ -278,10 +264,7 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal }) => {
                                         key={id}
                                         className="text-[11px] text-indigo-700 leading-relaxed"
                                     >
-                                        <span
-                                            aria-hidden
-                                            className="text-indigo-400 mr-1"
-                                        >
+                                        <span aria-hidden className="text-indigo-400 mr-1">
                                             −
                                         </span>
                                         {n?.title ?? id}
@@ -310,8 +293,8 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal }) => {
                                         t.direction === 'better'
                                             ? 'bg-emerald-600'
                                             : t.direction === 'worse'
-                                                ? 'bg-amber-500'
-                                                : 'bg-grayscale-400'
+                                              ? 'bg-amber-500'
+                                              : 'bg-grayscale-400'
                                     }`}
                                 />
                                 <span>

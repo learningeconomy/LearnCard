@@ -4,14 +4,7 @@ import * as Sentry from '@sentry/react';
 import { Capacitor } from '@capacitor/core';
 import { IonApp, setupIonicReact } from '@ionic/react';
 
-import {
-    SCOUTPASS_NETWORK_URL,
-    networkStore,
-    SCOUTPASS_API_ENDPOINT,
-    useIsLoggedIn,
-    SCOUTCLOUD_URL,
-    lazyWithRetry,
-} from 'learn-card-base';
+import { useIsLoggedIn, lazyWithRetry } from 'learn-card-base';
 
 import firstStartupStore, {
     useIntroSlidesCompleted,
@@ -52,10 +45,6 @@ import '@ionic/react/css/ionic-swiper.css';
 const FullApp = lazyWithRetry(() => import('./FullApp'));
 
 setupIonicReact({ swipeBackEnabled: false });
-
-networkStore.set.networkUrl(SCOUTPASS_NETWORK_URL);
-networkStore.set.cloudUrl(SCOUTCLOUD_URL);
-networkStore.set.apiEndpoint(SCOUTPASS_API_ENDPOINT);
 
 const App: React.FC = () => {
     // Subscribe at the application boundary so catalog-backed data getters

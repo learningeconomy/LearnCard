@@ -17,27 +17,40 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional, Union
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
+from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
 from openapi_client.models.inbox_issue_request_configuration_delivery import InboxIssueRequestConfigurationDelivery
 from openapi_client.models.inbox_issue_request_configuration_signing_authority import InboxIssueRequestConfigurationSigningAuthority
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class InboxIssueRequestConfiguration(BaseModel):
     """
     Configuration for the credential issuance. If not provided, the default configuration will be used.
     """ # noqa: E501
+    guardian_email: Optional[Annotated[str, Field(strict=True)]] = Field(default=None, description="Require approval from this guardian before the recipient can claim. Must differ from the recipient email.", alias="guardianEmail")
     signing_authority: Optional[InboxIssueRequestConfigurationSigningAuthority] = Field(default=None, alias="signingAuthority")
     webhook_url: Optional[StrictStr] = Field(default=None, description="The webhook URL to receive credential issuance events.", alias="webhookUrl")
-    expires_in_days: Optional[Union[Annotated[float, Field(le=365, strict=True, ge=1)], Annotated[int, Field(le=365, strict=True, ge=1)]]] = Field(default=None, description="The number of days the credential will be valid for.", alias="expiresInDays")
+    expires_in_days: Optional[Annotated[int, Field(le=720, strict=True, ge=1)]] = Field(default=None, description="How many days the encrypted inbox payload remains claimable. This does not change the credential validity period.", alias="expiresInDays")
     template_data: Optional[Dict[str, Any]] = Field(default=None, description="Template data to render into the boost credential template using Mustache syntax. Only used when boostUri is provided.", alias="templateData")
     delivery: Optional[InboxIssueRequestConfigurationDelivery] = None
-    __properties: ClassVar[List[str]] = ["signingAuthority", "webhookUrl", "expiresInDays", "templateData", "delivery"]
+    __properties: ClassVar[List[str]] = ["guardianEmail", "signingAuthority", "webhookUrl", "expiresInDays", "templateData", "delivery"]
+
+    @field_validator('guardian_email', mode="before")
+    def guardian_email_validate_regular_expression(cls, value):
+        """Validates the regular expression"""
+        if value is None:
+            return value
+
+        if isinstance(value, str) and not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
+        return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -49,8 +62,7 @@ class InboxIssueRequestConfiguration(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -92,13 +104,16 @@ class InboxIssueRequestConfiguration(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
+            "guardianEmail": obj.get("guardianEmail"),
             "signingAuthority": InboxIssueRequestConfigurationSigningAuthority.from_dict(obj["signingAuthority"]) if obj.get("signingAuthority") is not None else None,
             "webhookUrl": obj.get("webhookUrl"),
             "expiresInDays": obj.get("expiresInDays"),
             "templateData": obj.get("templateData"),
             "delivery": InboxIssueRequestConfigurationDelivery.from_dict(obj["delivery"]) if obj.get("delivery") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

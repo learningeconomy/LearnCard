@@ -1,13 +1,12 @@
 # BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressGeo
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**type** | [**BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType**](BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType.md) |  | 
-**latitude** | **float** |  | 
-**longitude** | **float** |  | 
+| Name          | Type                                                                                                                            | Description | Notes |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **type**      | [**BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType**](BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType.md) |             |
+| **latitude**  | **float**                                                                                                                       |             |
+| **longitude** | **float**                                                                                                                       |             |
 
 ## Example
 
@@ -26,6 +25,5 @@ boost_send_boost_request_credential_any_of_issuer_any_of_address_geo_dict = boos
 # create an instance of BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressGeo from a dict
 boost_send_boost_request_credential_any_of_issuer_any_of_address_geo_from_dict = BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressGeo.from_dict(boost_send_boost_request_credential_any_of_issuer_any_of_address_geo_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

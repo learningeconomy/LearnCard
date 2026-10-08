@@ -28,10 +28,9 @@
             }
         },
         "test:watch": {
-            "executor": "./tools/executors/workspace:run-command",
+            "executor": "nx:run-script",
             "options": {
-                "command": "bun run test:watch",
-                "cwd": "{root}/packages/learn-card-core"
+                "script": "test:watch"
             }
         }
     }

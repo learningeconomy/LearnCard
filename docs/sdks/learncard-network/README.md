@@ -1,4 +1,8 @@
-# LearnCloud Network API
+# Network API
+
+{% hint style="info" %}
+**Looking for endpoints?** The full OpenAPI spec is rendered in the sidebar below this section's pages — one page per resource (Profiles, Credentials, Boosts, …) with request and response models. Prefer to try calls live? Use the [interactive docs](https://network.learncard.com/docs#/). Base URL: `https://network.learncard.com/api`.
+{% endhint %}
 
 The **LearnCloud Network** provides backend infrastructure for managing verifiable credentials, digital identities, user profiles, and consent flows in the LearnCard ecosystem.&#x20;
 

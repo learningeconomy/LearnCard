@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -7,19 +8,24 @@ import type { EmptyLearnCard, LearnCardFromSeed, DidWebLearnCardFromSeed } from 
 
 import { getSigningAuthorityForDid } from '@accesslayer/signing-authority/read';
 import { getLRUCache } from '@cache/in-memory-lru';
+import {
+    decryptSigningAuthoritySeed,
+    getSeedCacheFingerprint,
+    logSeedEncryptionFailure,
+} from '@helpers/seedEncryption.helpers';
 
-const cloud = process.env.LEARN_CLOUD_URL
-    ? { url: process.env.LEARN_CLOUD_URL }
+const cloud = environment.LEARN_CLOUD_URL
+    ? { url: environment.LEARN_CLOUD_URL }
     : { url: 'https://cloud.learncard.com/trpc' };
 
 let emptyLearnCard: EmptyLearnCard['returnValue'];
 let learnCard: LearnCardFromSeed['returnValue'];
 
-const saCardsCache = getLRUCache<
-    LearnCardFromSeed['returnValue'] | DidWebLearnCardFromSeed['returnValue']
->();
+const saCardsCache = getLRUCache<{
+    fingerprint: string;
+    card: LearnCardFromSeed['returnValue'] | DidWebLearnCardFromSeed['returnValue'];
+}>();
 const didWebCardsCache = getLRUCache<DidWebLearnCardFromSeed['returnValue']>();
-const ephemeralCardsCache = getLRUCache<LearnCardFromSeed['returnValue']>();
 
 // The DIDKit WASM is copied next to the compiled handler at build time (see
 // esbuildPlugins.cjs). The Lambda bundle's node_modules layout doesn't match what
@@ -58,7 +64,7 @@ const getDidKitInit = async (): Promise<'node' | Buffer> => {
     if (didKitInitPromise) return didKitInitPromise;
 
     didKitInitPromise = (async () => {
-        if (process.env.SKIP_DIDKIT_NAPI) {
+        if (environment.SKIP_DIDKIT_NAPI) {
             const wasmBuffer = await readFile(resolveDidkitWasmPath());
             didKitEngine = 'wasm';
             return wasmBuffer;
@@ -93,7 +99,7 @@ export const getEmptyLearnCard = async (): Promise<EmptyLearnCard['returnValue']
 };
 
 export const getLearnCard = async (): Promise<LearnCardFromSeed['returnValue']> => {
-    const seed = process.env.SEED;
+    const seed = environment.SEED;
 
     if (!seed) throw new Error('No seed set!');
 
@@ -115,22 +121,20 @@ export const getSigningAuthorityLearnCard = async (
 
     const sa = await getSigningAuthorityForDid(ownerDID, name);
 
-    if (!sa?.seed) {
-        console.error('[LCA getSigningAuthorityLearnCard] SA not found or has no seed:', {
-            ownerDID,
-            name,
-            saFound: !!sa,
-            hasSeed: !!sa?.seed,
-        });
+    if (!sa) {
         throw new Error(`No signing authority found for ownerDID="${ownerDID}" name="${name}"`);
     }
-    const cacheKey = `${sa.seed}|${ownerDID}`;
-
-    const cachedValue = saCardsCache.get(cacheKey);
-
-    if (cachedValue) {
-        console.log('[LCA getSigningAuthorityLearnCard] Using cached SA LearnCard');
-        return cachedValue;
+    const cacheKey = `${ownerDID}|${name}`;
+    let fingerprint: string;
+    try {
+        // Validate the envelope before accepting a cache hit. The database lookup remains
+        // on the warm path so deletion/recreation or modification cannot reuse an old key.
+        fingerprint = getSeedCacheFingerprint(sa);
+        const cachedValue = saCardsCache.get(cacheKey);
+        if (cachedValue?.fingerprint === fingerprint) return cachedValue.card;
+    } catch (error) {
+        logSeedEncryptionFailure(error, 'decrypt', sa);
+        throw error;
     }
 
     console.log('[LCA getSigningAuthorityLearnCard] Initializing SA LearnCard:', {
@@ -138,31 +142,47 @@ export const getSigningAuthorityLearnCard = async (
         ownerDID,
     });
 
-    const saLearnCard = ownerDID.startsWith('did:web:')
-        ? await initLearnCard({
-              didkit: await getDidKitInit(),
-              seed: sa.seed,
-              didWeb: ownerDID,
-              cloud,
-              allowRemoteContexts: true,
-          })
-        : await initLearnCard({
-              didkit: await getDidKitInit(),
-              seed: sa.seed,
-              cloud,
-              allowRemoteContexts: true,
-          });
+    // Finish engine setup before decrypting so the seed is only materialized when
+    // the signer is ready to initialize.
+    const options: LearnCardFromSeed['args'] | DidWebLearnCardFromSeed['args'] = {
+        didkit: await getDidKitInit(),
+        seed: '',
+        cloud,
+        allowRemoteContexts: true,
+        ...(ownerDID.startsWith('did:web:') ? { didWeb: ownerDID } : {}),
+    };
 
-    saCardsCache.add(cacheKey, saLearnCard);
+    try {
+        try {
+            options.seed = await decryptSigningAuthoritySeed(sa);
+        } catch (error) {
+            logSeedEncryptionFailure(error, 'decrypt', sa);
+            throw error;
+        }
 
-    return saLearnCard;
+        // Select the seed initializer overload without copying the seed-bearing options.
+        const initialize: (
+            config: LearnCardFromSeed['args'] | DidWebLearnCardFromSeed['args']
+        ) => Promise<LearnCardFromSeed['returnValue'] | DidWebLearnCardFromSeed['returnValue']> =
+            initLearnCard;
+        const saLearnCard = await initialize(options);
+        saCardsCache.add(cacheKey, { fingerprint, card: saLearnCard });
+
+        return saLearnCard;
+    } finally {
+        // Release this transient reference on both success and failure. This is
+        // not zeroization: initLearnCard requires an immutable string, and its
+        // DID Key plugin retains the seed/private keys for the cached signer's
+        // lifetime. Envelope encryption protects storage, not process memory.
+        options.seed = '';
+    }
 };
 
 export const getServerDidWebDID = (): string => {
-    const domainName = process.env.DOMAIN_NAME;
+    const domainName = environment.DOMAIN_NAME;
     const domain =
-        !domainName || process.env.IS_OFFLINE
-            ? `localhost%3A${process.env.PORT || 3000}`
+        !domainName || environment.IS_OFFLINE
+            ? `localhost%3A${environment.PORT || 3000}`
             : domainName;
     return `did:web:${domain}`;
 };
@@ -171,7 +191,7 @@ export const getDidWebLearnCard = async (
     seed?: string,
     didWeb?: string
 ): Promise<DidWebLearnCardFromSeed['returnValue']> => {
-    const _seed = seed || process.env.SEED;
+    const _seed = seed || environment.SEED;
     const _didWeb = didWeb || getServerDidWebDID();
     if (!_seed) throw new Error('No seed set!');
     if (!_didWeb) throw new Error('No didWeb set!');
@@ -195,17 +215,10 @@ export const getDidWebLearnCard = async (
 export const getEphemeralLearnCard = async (
     seed: string
 ): Promise<LearnCardFromSeed['returnValue']> => {
-    const cachedValue = ephemeralCardsCache.get(seed);
-
-    if (cachedValue) return cachedValue;
-
-    const ephemeralLearnCard = await initLearnCard({
+    // Creation is a one-shot operation; do not retain its seed in a cache key.
+    return initLearnCard({
         didkit: await getDidKitInit(),
         seed,
         cloud,
     });
-
-    ephemeralCardsCache.add(seed, ephemeralLearnCard);
-
-    return ephemeralLearnCard;
 };

@@ -3,13 +3,7 @@ import React from 'react';
 import GenericErrorBoundary from '../../generic/GenericErrorBoundary';
 
 export type AppModalVariant =
-    | 'fullscreen'
-    | 'right'
-    | 'center'
-    | 'cancel'
-    | 'select'
-    | 'bottom-sheet'
-    | 'freeform';
+    'fullscreen' | 'right' | 'center' | 'cancel' | 'select' | 'bottom-sheet' | 'freeform';
 
 /** Variants whose centering CONTAINER (the aside) owns the inset instead of the surface. */
 const CONTAINER_INSET_VARIANTS: AppModalVariant[] = ['center', 'cancel', 'select'];

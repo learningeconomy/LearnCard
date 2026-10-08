@@ -28,6 +28,11 @@ const I18nContext = createContext<I18nContextValue | null>(null);
  * inside its own catalog/resolver.
  */
 export const EN_DEFAULTS: Record<string, string> = {
+    'consentAudience.title': 'Review who receives your data',
+    'consentAudience.description':
+        'Your selected information will be available to everyone listed below.',
+    'consentAudience.confirm': 'Confirm Sharing',
+    'consentAudience.cancel': 'Cancel',
     'common.close': 'Close',
     'common.select': 'Select',
     'verification.selfIssued': 'Self Issued',
@@ -37,6 +42,16 @@ export const EN_DEFAULTS: Record<string, string> = {
     'verification.untrustedIssuer': 'Untrusted Issuer',
     'credential.lifecycle.revoked': 'Revoked',
     'credential.lifecycle.suspended': 'Suspended',
+    'credential.category.badge': 'Badge',
+    'credential.category.family': 'Family',
+    'credential.category.achievement': 'Achievement',
+    'credential.category.course': 'Course',
+    'credential.category.membership': 'Membership',
+    'credential.category.skill': 'Skill',
+    'credential.category.id': 'ID',
+    'credential.category.experience': 'Experience',
+    'credential.category.portfolio': 'Portfolio',
+    'credential.category.assistance': 'Assistance',
     'boostFooter.close': 'Close',
     'boostFooter.back': 'Back',
     'boostFooter.details': 'Details',
@@ -142,3 +157,6 @@ export const useT = (): ((key: string, params?: Record<string, unknown>) => stri
         [ctx]
     );
 };
+
+/** Active locale supplied by the host app, with the DOM/storage fallback for standalone use. */
+export const useI18nLocale = (): string => useContext(I18nContext)?.locale ?? getActiveLocale();

@@ -19,12 +19,21 @@ export const injectContractUriIntoStatement = (
     },
 });
 
+const getAccountName = (actor: unknown): string => {
+    if (!actor || typeof actor !== 'object' || !('account' in actor)) return '';
+
+    const { account } = actor;
+    if (!account || typeof account !== 'object' || !('name' in account)) return '';
+
+    return typeof account.name === 'string' ? account.name : '';
+};
+
 export const verifyVoidStatement = async (
     targetDid: string,
     did: string,
     statementId: string,
     auth: string
-) => {
+): Promise<boolean> => {
     const response = await fetch(
         new URL(`${XAPI_ENDPOINT}/statements?statementId=${statementId}`),
         { headers: { Authorization: auth, 'X-Experience-API-Version': '1.0.3' } }
@@ -32,12 +41,21 @@ export const verifyVoidStatement = async (
 
     if (response.status !== 200) return false;
 
-    const statement = await response.json();
+    const statement: unknown = await response.json();
+    if (!statement || typeof statement !== 'object') return false;
+
+    const actorAccountName = getAccountName('actor' in statement ? statement.actor : undefined);
+    const authority = 'authority' in statement ? statement.authority : undefined;
+    const authorityMembers =
+        authority &&
+        typeof authority === 'object' &&
+        'member' in authority &&
+        Array.isArray(authority.member)
+            ? authority.member
+            : [];
 
     return (
-        (await areDidsEqual(targetDid, statement?.actor?.account?.name ?? '')) &&
-        (await some(statement?.authority?.member ?? [], async member =>
-            areDidsEqual(did, (member as any)?.account?.name ?? '')
-        ))
+        (await areDidsEqual(targetDid, actorAccountName)) &&
+        (await some(authorityMembers, async member => areDidsEqual(did, getAccountName(member))))
     );
 };

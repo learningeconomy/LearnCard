@@ -1,6 +1,6 @@
-# Credential Status & Bitstring Status Lists
+# Credential Status & Revocation
 
-Credential status lets an issuer say whether a signed credential is still usable without changing the credential itself. LearnCard Network uses [W3C Bitstring Status List](https://www.w3.org/TR/vc-bitstring-status-list/) for VC 2.0 credentials issued through the network.
+A signed credential can't be edited, so how do you take one back? With a **status list**: the issuer flips a bit in a public list, and verifiers check that bit. The credential itself never changes. LearnCard Network implements the [W3C Bitstring Status List](https://www.w3.org/TR/vc-bitstring-status-list/) for VC 2.0 credentials issued through the network.
 
 The credential keeps a `credentialStatus` entry. That entry points to a public, signed status list credential. Verifiers fetch the list, decode the compressed bitstring, and check the credential's assigned `statusListIndex`.
 
@@ -25,9 +25,9 @@ sequenceDiagram
 
 For each credential, the network allocates a status list index from an issuer-owned list. The list is scoped by:
 
--   The issuer profile
--   The status purpose
--   The configured list size
+- The issuer profile
+- The status purpose
+- The configured list size
 
 The default list size is `131,072` bits. When a list fills up, the network closes it and creates a new list automatically. New credentials receive entries that point at the new list URL.
 
@@ -87,10 +87,10 @@ Verification checks each `credentialStatus` entry and returns status results alo
 
 For user-facing output, LearnCard formats status results with friendly labels, such as:
 
--   `Status: Active`
--   `Status: Not Revoked`
--   `Status: Revoked`
--   `Status: Suspended`
--   `Status: Not Suspended`
+- `Status: Active`
+- `Status: Not Revoked`
+- `Status: Revoked`
+- `Status: Suspended`
+- `Status: Not Suspended`
 
-For API usage, see [Bitstring Status Lists](../../sdks/learncard-network/bitstring-status-lists.md).
+To revoke or suspend a credential you issued: [Revoke or Update a Credential](../../how-to-guides/revoke-or-update-a-credential.md). API detail: [Bitstring Status Lists](../../sdks/learncard-network/bitstring-status-lists.md).

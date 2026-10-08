@@ -1,8 +1,10 @@
+import { isProductionEnvironment } from '../config/isProduction';
+
 // Dev-only: simulate device safe-area insets in any desktop browser so band
 // bugs are visible without a device. Activate with ?insets (47/34 defaults)
 // or ?insets=20,10. Persists for the tab session. No-op in production builds.
 export const installInsetSimulator = (): void => {
-    if (!import.meta.env.DEV) return;
+    if (isProductionEnvironment()) return;
 
     const params = new URLSearchParams(window.location.search);
     const raw = params.get('insets') ?? sessionStorage.getItem('lc-sim-insets');

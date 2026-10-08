@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import http from 'node:http';
 
 import { initTRPC, TRPCError } from '@trpc/server';
@@ -38,11 +39,11 @@ export const createContext = async (
     const domainName = 'requestContext' in event ? event.requestContext.domainName : '';
 
     const _domain =
-        !domainName || process.env.IS_OFFLINE
-            ? `localhost%3A${process.env.PORT || 3000}`
+        !domainName || environment.IS_OFFLINE
+            ? `localhost%3A${environment.PORT || 3000}`
             : domainName;
 
-    const domain = process.env.DOMAIN_NAME || _domain;
+    const domain = environment.DOMAIN_NAME || _domain;
 
     if (authHeader && authHeader.split(' ').length === 2) {
         const [scheme, jwt] = authHeader.split(' ');

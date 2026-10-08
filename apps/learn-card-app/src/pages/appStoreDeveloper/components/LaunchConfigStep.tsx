@@ -491,7 +491,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                 {m['developerPortal.components.launchConfigStep.aiTutorUrlDesc']()}{' '}
                                 <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">
                                     {config.aiTutorUrl || 'https://yourtutor.com'}
-                                    /chats?did=...&topic=...
+                                    /chats?topic=...
                                 </code>
                             </p>
                         </div>

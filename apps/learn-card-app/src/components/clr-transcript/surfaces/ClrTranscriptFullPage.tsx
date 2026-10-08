@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 import ClrCourseSection from '../ClrCourseSection';
+import ClrAssessmentSection from '../ClrAssessmentSection';
+import ClrAssessmentDetailPanel from '../ClrAssessmentDetailPanel';
 import ClrProgramsSection from '../ClrProgramsSection';
+import ClrAwardsSection from '../ClrAwardsSection';
 import ClrCourseDetailPanel from '../ClrCourseDetailPanel';
 import ClrProgramDetailPanel from '../ClrProgramDetailPanel';
+import ClrCompetencyDetailPanel from '../ClrCompetencyDetailPanel';
 import CredentialSummaryView from '../views/CredentialSummaryView';
 import ClrTranscriptEvidenceList from '../ClrTranscriptEvidenceList';
 import ClrTranscriptSummaryHeader from '../ClrTranscriptSummaryHeader';
@@ -14,59 +18,136 @@ import { ModalTypes, useModal } from 'learn-card-base';
 
 import type {
     ViewOptions,
+    AssessmentDisplayModel,
     CourseDisplayModel,
     ProgramDisplayModel,
+    ClrRecordNavigator,
     ClrTranscriptDisplayModel,
 } from '../../../helpers/clrRenderer.helpers';
-import { selectClrTranscriptView } from '../../../helpers/clrRenderer.helpers';
+import {
+    createClrRecordSelection,
+    selectClrTranscriptView,
+} from '../../../helpers/clrRenderer.helpers';
 
 import type { VC } from '@learncard/types';
 import { getClrIssuerLogo } from '../clrKind.helpers';
+
+type ClrRecordNavigatorOptions = {
+    model: ClrTranscriptDisplayModel;
+    boost: VC;
+    adminMode: boolean;
+    openPanel: (panel: React.ReactElement) => void;
+};
+
+export const createClrRecordNavigator = ({
+    model,
+    boost,
+    adminMode,
+    openPanel,
+}: ClrRecordNavigatorOptions): ClrRecordNavigator => {
+    const issuerLogo = getClrIssuerLogo(model);
+    const navigator = createClrRecordSelection(model, selected => {
+        switch (selected.kind) {
+            case 'course':
+                openPanel(
+                    <ClrCourseDetailPanel
+                        course={selected.record}
+                        boost={boost}
+                        model={model}
+                        onSelectRecord={navigator.selectRecord}
+                        adminMode={adminMode}
+                        issuerName={model.header.issuerName?.value}
+                        issuerLogo={issuerLogo}
+                    />
+                );
+                break;
+            case 'program':
+                openPanel(
+                    <ClrProgramDetailPanel
+                        program={selected.record}
+                        boost={boost}
+                        model={model}
+                        onSelectRecord={navigator.selectRecord}
+                        adminMode={adminMode}
+                        issuerName={model.header.issuerName?.value}
+                        issuerLogo={issuerLogo}
+                    />
+                );
+                break;
+            case 'assessment':
+                openPanel(
+                    <ClrAssessmentDetailPanel
+                        assessment={selected.record}
+                        boost={boost}
+                        model={model}
+                        onSelectRecord={navigator.selectRecord}
+                        adminMode={adminMode}
+                        issuerName={model.header.issuerName?.value}
+                        issuerLogo={issuerLogo}
+                    />
+                );
+                break;
+            case 'competency':
+                openPanel(
+                    <ClrCompetencyDetailPanel
+                        model={model}
+                        initialCompetencyId={selected.record.sourceCredentialId}
+                        onSelectRecord={navigator.selectRecord}
+                        adminMode={adminMode}
+                    />
+                );
+                break;
+        }
+    });
+
+    return navigator;
+};
 
 const ClrTranscriptFullPage: React.FC<{
     model: ClrTranscriptDisplayModel;
     boost: VC;
     options: ViewOptions;
     boostUri?: string;
-}> = ({ model, boost, options, boostUri }) => {
+    /** Disable when the containing route already reserves the top device inset. */
+    insetTop?: boolean;
+}> = ({ model, boost, options, boostUri, insetTop = true }) => {
     const adminMode = options.viewer === 'admin' || options.viewer === 'registrar';
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
 
     const selectedView = selectClrTranscriptView(model, options);
     const issuerLogo = getClrIssuerLogo(model);
+    const recordNavigator = useMemo(
+        () =>
+            createClrRecordNavigator({
+                model,
+                boost,
+                adminMode,
+                openPanel: panel => {
+                    newModal(panel);
+                },
+            }),
+        [adminMode, boost, model, newModal]
+    );
+    const handleSelectRecord = recordNavigator.selectRecord;
 
-    const handleSelectProgram = (program: ProgramDisplayModel) => {
-        newModal(
-            <ClrProgramDetailPanel
-                program={program}
-                boost={boost}
-                adminMode={adminMode}
-                associations={model.associations}
-                competencies={model.competencies}
-                issuerName={model.header.issuerName?.value}
-                issuerLogo={issuerLogo}
-            />
-        );
+    const handleSelectProgram = (program: ProgramDisplayModel): void => {
+        recordNavigator.openRecord({ kind: 'program', record: program });
     };
 
-    const handleSelectCourse = (course: CourseDisplayModel) => {
-        newModal(
-            <ClrCourseDetailPanel
-                course={course}
-                boost={boost}
-                adminMode={adminMode}
-                associations={model.associations}
-                competencies={model.competencies}
-                issuerName={model.header.issuerName?.value}
-                issuerLogo={issuerLogo}
-            />
-        );
+    const handleSelectAssessment = (assessment: AssessmentDisplayModel): void => {
+        recordNavigator.openRecord({ kind: 'assessment', record: assessment });
+    };
+
+    const handleSelectCourse = (course: CourseDisplayModel): void => {
+        recordNavigator.openRecord({ kind: 'course', record: course });
     };
 
     return (
-        <div className="flex flex-col w-full min-h-full pt-[var(--ion-safe-area-top,0px)]">
+        <div
+            className={`flex flex-col w-full min-h-full ${insetTop ? 'pt-[var(--ion-safe-area-top,0px)]' : ''}`}
+        >
             <div className="py-0 sm:pb-10 px-0 sm:px-4 flex justify-center sm:rounded-xl">
-                <div className="max-w-[800px] w-full bg-white shadow-[0_4px_24px_rgba(0,0,0,0.10)] rounded-xl sm:rounded-xl p-2 sm:p-10 space-y-4">
+                <div className="max-w-[800px] w-full bg-white shadow-[0_4px_24px_rgba(0,0,0,0.10)] rounded-xl sm:rounded-xl p-2 sm:p-10 space-y-3">
                     {/* Warnings — admin only */}
                     {adminMode && model.warnings.length > 0 && (
                         <ClrTranscriptWarningsPanel warnings={model.warnings} />
@@ -78,6 +159,7 @@ const ClrTranscriptFullPage: React.FC<{
                         boost={boost}
                         boostUri={boostUri}
                         adminMode={adminMode}
+                        onSelectRecord={handleSelectRecord}
                     />
 
                     {/* Programs section */}
@@ -98,6 +180,22 @@ const ClrTranscriptFullPage: React.FC<{
                                 adminMode={adminMode}
                             />
                         )}
+
+                    {/* Assessments (ACT, rubric-based skills assessments, ...) */}
+                    {(selectedView === 'StructuredTranscriptView' ||
+                        selectedView === 'VerifierInspectionView') &&
+                        model.assessments.length > 0 && (
+                            <ClrAssessmentSection
+                                assessments={model.assessments}
+                                onSelectAssessment={handleSelectAssessment}
+                                adminMode={adminMode}
+                            />
+                        )}
+
+                    {/* Awards & Recognitions */}
+                    {(selectedView === 'StructuredTranscriptView' ||
+                        selectedView === 'VerifierInspectionView') &&
+                        model.awards.length > 0 && <ClrAwardsSection awards={model.awards} />}
 
                     {/* Sparse / summary views */}
                     {selectedView === 'SparseAcademicRecordView' && (
@@ -128,7 +226,7 @@ const ClrTranscriptFullPage: React.FC<{
                                 <span
                                     className={
                                         model.verification.credentialSigned
-                                            ? 'text-blue-700'
+                                            ? 'text-emerald-700'
                                             : 'text-grayscale-400'
                                     }
                                 >

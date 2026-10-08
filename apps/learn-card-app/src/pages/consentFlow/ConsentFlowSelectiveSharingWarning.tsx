@@ -15,13 +15,11 @@ const ConsentFlowSelectiveSharingWarning: React.FC<ConsentFlowSelectiveSharingWa
             <section className="w-full flex flex-col gap-[20px] items-center px-[20px] py-[30px] bg-white shadow-bottom rounded-[24px] max-w-[350px]">
                 <header className="flex flex-col gap-[10px] items-center">
                     <h3 className="text-grayscale-900 text-xl font-poppins font-[400] ">
-                        Switch to Selective Sharing?
+                        {m['arabicFixes.switchSelectiveTitle']()}
                     </h3>
 
                     <p className="text-grayscale-600 text-sm font-poppins text-center">
-                        Deselecting data switches off Live Syncing and activates Selective Sharing,
-                        giving you full control over which credentials you share. You can easily
-                        revert to Live Syncing at any time.
+                        {m['arabicFixes.switchSelectiveHelp']()}
                     </p>
                 </header>
             </section>

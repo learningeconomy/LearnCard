@@ -1,14 +1,29 @@
+import type { SendContractRequest, ConsentFlowContractRequestForProfile } from '@learncard/types';
 import type { LCNClient } from '@learncard/network-brain-client';
 import {
     LCNProfile,
     LCNVisibleProfile,
     LCNProfileConnectionStatusEnum,
+    LCNConnectionPrompt,
+    LCNConnectionPromptActionResult,
     LCNProfileManager,
     UnsignedVC,
     VC,
     VP,
     SentCredentialInfo,
     JWE,
+    CreateShareLinkInput,
+    UpdateShareLinkInput,
+    ListShareLinksInput,
+    PaginatedShareLinks,
+    ShareLinkOperationKeyInput,
+    ShareLinkOwnerCommitOutput,
+    ShareLinkOwnerContentOutput,
+    ShareLinkOwnerStatusOutput,
+    ShareLinkOwnerRecoveryOutput,
+    ShareLinkPublicState,
+    ShareLinkPublicContentView,
+    AcknowledgeViewOutput,
     Boost,
     BoostQuery,
     LCNSigningAuthorityForUserType,
@@ -51,6 +66,9 @@ import {
     AuthGrantType,
     AuthGrantQuery,
     IssueInboxCredentialType,
+    IssueInboxCredentialBatch,
+    InboxBatchReceipt,
+    InboxBatchStatus,
     InboxCredentialType,
     PaginatedInboxCredentialsType,
     PaginatedSkillFrameworksType,
@@ -112,12 +130,69 @@ import {
     CredentialActivityStats,
     BitstringCredentialStatusPurpose,
     BitstringCredentialStatusEntry,
+    AllocateCredentialRefreshInput,
+    AllocateCredentialRefreshResult,
+    ManagedCredentialRefreshReceipt,
+    PublishCredentialRefreshInput,
+    PublishCredentialRefreshResult,
+    GetCredentialRefreshHistoryInput,
+    GetCredentialRefreshHistoryResult,
 } from '@learncard/types';
-import { Plugin } from '@learncard/core';
+import { LearnCard, Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
 import { VerifyExtension } from '@learncard/vc-plugin';
 
 export type { BitstringCredentialStatusPurpose, BitstringCredentialStatusEntry };
+
+/** Object-form options for the network plugin's `sendBoost` */
+export type SendBoostNetworkOptions = {
+    encrypt?: boolean;
+    overideFn?: (boost: UnsignedVC) => UnsignedVC;
+    skipNotification?: boolean;
+    templateData?: Record<string, unknown>;
+    statusPurposes?: BitstringCredentialStatusPurpose[];
+    /**
+     * Opt into a managed refresh service. When true, a stable UUID credential ID is
+     * generated if the boost template has none, a refresh service is allocated BEFORE
+     * signing and injected into the signed credential, and the credential is sent via
+     * the dedicated managed-send procedure (holder-encrypted storage only) instead of
+     * legacy credential storage. The `encrypt` option is ignored in this mode —
+     * managed storage is always holder-only.
+     */
+    enableRefresh?: boolean;
+};
+
+/** Result of a refresh-enabled `sendBoost` call (opt-in via `enableRefresh: true`) */
+export type SendBoostRefreshResult = {
+    /** URI of the issued (managed, holder-encrypted) credential */
+    credentialUri: string;
+    /** Issuance metadata the issuer keeps in order to publish future updates */
+    refresh: ManagedCredentialRefreshReceipt;
+};
+
+/** The `enableRefresh` type carried by `sendBoost` options (`undefined` when absent). */
+type EnableRefreshOf<Options> = Options extends object
+    ? 'enableRefresh' extends keyof Options
+        ? Options extends { enableRefresh?: infer Enabled }
+            ? Enabled
+            : undefined
+        : undefined
+    : undefined;
+
+/**
+ * Resolves the `sendBoost` return type from the (const-inferred) options type.
+ *
+ * - legacy `boolean` options, omitted options, and object options without
+ *   `enableRefresh` keep the historical `string` result.
+ * - literal `enableRefresh: true` returns the refreshable-issuance result.
+ * - anything that may be `true` at runtime (a `boolean`, an optional property, or a
+ *   union of option shapes) degrades to the union of both shapes.
+ */
+export type SendBoostResultFor<Options> = [EnableRefreshOf<Options>] extends [true]
+    ? SendBoostRefreshResult
+    : true extends EnableRefreshOf<Options>
+      ? string | SendBoostRefreshResult
+      : string;
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginDependentMethods = {
@@ -155,6 +230,14 @@ export type LearnCardNetworkPluginMethods = {
     getManagedProfiles: (
         options?: Partial<PaginationOptionsType> & { query?: LCNProfileQuery }
     ) => Promise<PaginatedLCNProfiles>;
+    /**
+     * Returns a new LearnCard instance whose network plugin sends every request with the
+     * `X-LearnCard-Act-As` header set to `profileId`, asking the server to swap the acting
+     * profile for the duration of each request. Token scope is unchanged; the server responds
+     * `403` if the caller doesn't manage `profileId`, or if an API token's grant doesn't cover
+     * it. The original instance (and its headers) is left untouched.
+     */
+    actAs: (profileId: string) => Promise<ActingLearnCard>;
     claimPendingGuardianLinks: () => Promise<
         Array<{ childProfileId: string; childDisplayName: string; managerId: string | null }>
     >;
@@ -188,6 +271,10 @@ export type LearnCardNetworkPluginMethods = {
     cancelConnectionRequest: (profileId: string) => Promise<boolean>;
     disconnectWith: (profileId: string) => Promise<boolean>;
     acceptConnectionRequest: (id: string) => Promise<boolean>;
+    getPendingConnectionPrompts: () => Promise<LCNConnectionPrompt[]>;
+    getConnectionPromptStatus: (promptId: string) => Promise<LCNConnectionPromptActionResult>;
+    skipConnectionPrompt: (promptId: string) => Promise<LCNConnectionPromptActionResult>;
+    connectWithConnectionPrompt: (promptId: string) => Promise<LCNConnectionPromptActionResult>;
     /** @deprecated Use getPaginatedConnections */
     getConnections: () => Promise<LCNVisibleProfile[]>;
     getPaginatedConnections: (
@@ -220,6 +307,48 @@ export type LearnCardNetworkPluginMethods = {
 
     invalidateInvite: (challenge: string) => Promise<boolean>;
 
+    /**
+     * LC-2187 authenticated owner share-link methods. All owner identity and
+     * namespace binding is derived server-side from the authenticated session;
+     * no caller-supplied owner/namespace/object authority is accepted.
+     */
+    createShareLink: (input: CreateShareLinkInput) => Promise<ShareLinkOwnerCommitOutput>;
+    updateShareLink: (input: UpdateShareLinkInput) => Promise<ShareLinkOwnerCommitOutput>;
+    revokeShareLink: (input: {
+        id: string;
+        expectedVersion?: number;
+        clientRequestId?: string;
+    }) => Promise<ShareLinkOwnerCommitOutput>;
+    getShareLink: (id: string) => Promise<ShareLinkOwnerStatusOutput>;
+    getShareLinkOperationStatus: (
+        input: ShareLinkOperationKeyInput
+    ) => Promise<ShareLinkOwnerStatusOutput>;
+    retryShareLinkOperation: (
+        input: ShareLinkOperationKeyInput
+    ) => Promise<ShareLinkOwnerStatusOutput>;
+    getShareLinkRecovery: (id: string) => Promise<ShareLinkOwnerRecoveryOutput>;
+    getShareLinkOwnerContent: (id: string) => Promise<ShareLinkOwnerContentOutput>;
+
+    /**
+     * Bounded, newest-first owner share list. Scope (namespace/owner) is derived
+     * server-side from the authenticated session; the input carries only a
+     * bounded `limit` and an opaque ordering cursor. Ineligible/unknown owners
+     * never receive `viewCount`/`lastViewedAt`.
+     */
+    listShareLinks: (input: ListShareLinksInput) => Promise<PaginatedShareLinks>;
+
+    /**
+     * LC-2187 PUBLIC (anonymous) share-link methods. These require no
+     * authentication and no profile: namespace/owner are derived server-side
+     * from trusted configuration and the committed share. `resolveShareLink`
+     * returns metadata only and never counts; `getShareLinkContent` returns the
+     * guarded ciphertext envelope plus a uniformly shaped opaque receipt;
+     * `acknowledgeShareLinkView` always resolves to `{ ok: true }`.
+     */
+    resolveShareLink: (id: string, passcode?: string) => Promise<ShareLinkPublicState>;
+    getShareLinkContent: (id: string, passcode?: string) => Promise<ShareLinkPublicContentView>;
+    acknowledgeShareLinkView: (receipt: string) => Promise<AcknowledgeViewOutput>;
+
     blockProfile: (profileId: string) => Promise<boolean>;
     unblockProfile: (profileId: string) => Promise<boolean>;
     getBlockedProfiles: () => Promise<LCNVisibleProfile[]>;
@@ -243,7 +372,12 @@ export type LearnCardNetworkPluginMethods = {
     getIncomingCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
     deleteCredential: (uri: string) => Promise<boolean>;
 
-    sendPresentation: (profileId: string, vp: VP, encrypt?: boolean) => Promise<string>;
+    sendPresentation: (
+        profileId: string,
+        vp: VP,
+        metadataOrEncrypt?: Record<string, unknown> | boolean,
+        encrypt?: boolean
+    ) => Promise<string>;
     acceptPresentation: (uri: string) => Promise<boolean>;
     getReceivedPresentations: (from?: string) => Promise<SentCredentialInfo[]>;
     getSentPresentations: (to?: string) => Promise<SentCredentialInfo[]>;
@@ -408,6 +542,47 @@ export type LearnCardNetworkPluginMethods = {
         statusPurposes?: BitstringCredentialStatusPurpose[];
         listSize?: number;
     }) => Promise<BitstringCredentialStatusEntry[]>;
+
+    // Managed Credential Refresh (LC-2117 / LC-2135 / LC-2136)
+
+    /**
+     * Allocates an unguessable managed refresh service for a credential BEFORE it is
+     * signed. The returned `refreshService` descriptor must be injected into the
+     * unsigned credential so it becomes part of the signed payload; `credentialId`
+     * binds the allocation to the credential's stable ID.
+     */
+    allocateCredentialRefresh: (
+        input: AllocateCredentialRefreshInput
+    ) => Promise<AllocateCredentialRefreshResult>;
+    /**
+     * Binds a signed credential to its allocated refresh aggregate. The plaintext VC is
+     * verified server-side and persisted only as a holder-encrypted JWE — the issuer
+     * and the service never retain a readable copy. When the credential was issued from
+     * a boost, pass `boostUri` so the stored instance stays linked INSTANCE_OF the
+     * boost for canonical recipient management (including revocation).
+     */
+    sendRefreshableCredential: (
+        refreshId: string,
+        credential: VC,
+        boostUri?: string,
+        skipNotification?: boolean
+    ) => Promise<string>;
+    /**
+     * Publishes a new immutable version of a refreshable credential and atomically
+     * advances the refresh head. Issuer-signed mode takes a fully signed VC;
+     * signing-authority mode takes updated unsigned claims plus an authorized signing
+     * authority.
+     */
+    publishCredentialRefresh: (
+        input: PublishCredentialRefreshInput
+    ) => Promise<PublishCredentialRefreshResult>;
+    /**
+     * Cursor-paginated, metadata-only issuer audit history for a managed refresh.
+     * Never includes credential bodies or encrypted payloads.
+     */
+    getCredentialRefreshHistory: (
+        input: GetCredentialRefreshHistoryInput
+    ) => Promise<GetCredentialRefreshHistoryResult>;
     revokeBoostRecipient: (
         boostUri: string,
         recipientProfileId: string,
@@ -423,19 +598,23 @@ export type LearnCardNetworkPluginMethods = {
         recipientProfileId: string,
         credentialUri?: string
     ) => Promise<boolean>;
-    sendBoost: (
+    /**
+     * Sends a boost credential to a recipient profile.
+     *
+     * **Return shape (opt-in):** legacy callers (boolean options, omitted options, or
+     * object options without `enableRefresh`) receive the issued credential URI as a
+     * `string`, exactly as before. Passing literal `{ enableRefresh: true }` opts into
+     * managed refresh and returns `{ credentialUri, refresh }` instead, where `refresh`
+     * is the issuance receipt needed to publish future versions (see
+     * `publishCredentialRefresh`). Options whose `enableRefresh` may be `true` at runtime
+     * (a `boolean`, or a variable typed `SendBoostNetworkOptions`) degrade the result to
+     * `string | { credentialUri, refresh }`.
+     */
+    sendBoost: <const Options extends boolean | SendBoostNetworkOptions | undefined = undefined>(
         profileId: string,
         boostUri: string,
-        options?:
-            | boolean
-            | {
-                  encrypt?: boolean;
-                  overideFn?: (boost: UnsignedVC) => UnsignedVC;
-                  skipNotification?: boolean;
-                  templateData?: Record<string, unknown>;
-                  statusPurposes?: BitstringCredentialStatusPurpose[];
-              }
-    ) => Promise<string>;
+        options?: Options
+    ) => Promise<SendBoostResultFor<Options>>;
 
     registerSigningAuthority: (endpoint: string, name: string, did: string) => Promise<boolean>;
     getRegisteredSigningAuthorities: () => Promise<LCNSigningAuthorityForUserType[]>;
@@ -464,6 +643,7 @@ export type LearnCardNetworkPluginMethods = {
         image?: string;
         expiresAt?: string;
         writers?: string[];
+        recipients?: string[];
         autoboosts?: AutoBoostConfig[];
     }) => Promise<string>;
     addAutoBoostsToContract: (
@@ -471,6 +651,8 @@ export type LearnCardNetworkPluginMethods = {
         autoboosts: AutoBoostConfig[]
     ) => Promise<boolean>;
     removeAutoBoostsFromContract: (contractUri: string, boostUris: string[]) => Promise<boolean>;
+    addContractRecipient: (contractUri: string, recipient: string) => Promise<boolean>;
+    removeContractRecipient: (contractUri: string, recipient: string) => Promise<boolean>;
     getContract: (uri: string) => Promise<ConsentFlowContractDetails>;
     getContracts: (
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowContractQuery }
@@ -501,6 +683,9 @@ export type LearnCardNetworkPluginMethods = {
             terms: ConsentFlowTerms;
             expiresAt?: string;
             oneTime?: boolean;
+            audienceVersion?: number;
+            /** Bind acceptance to the pending referral the learner reviewed. */
+            expectedRequestId?: string;
         },
         recipientToken?: string
     ) => Promise<{ termsUri: string; redirectUrl?: string }>;
@@ -513,6 +698,7 @@ export type LearnCardNetworkPluginMethods = {
             terms: ConsentFlowTerms;
             expiresAt?: string;
             oneTime?: boolean;
+            audienceVersion?: number;
         }
     ) => Promise<boolean>;
     withdrawConsent: (uri: string) => Promise<boolean>;
@@ -533,13 +719,19 @@ export type LearnCardNetworkPluginMethods = {
 
     syncCredentialsToContract: (
         termsUri: string,
-        categories: Record<string, string[]>
+        categories: Record<string, string[]>,
+        audienceVersion?: number
     ) => Promise<boolean>;
 
     deleteCredentialFromAllContracts: (deletedUris: string[]) => Promise<{
         contractsUpdated: number;
         removedSharedUris: number;
     }>;
+
+    /** Sends one attributed request; identical pending retries are idempotent. */
+    sendContractRequest: (request: SendContractRequest) => Promise<boolean>;
+    /** Target-only denial preserves the request and its referral reference. */
+    denyContractRequest: (contractUri: string) => Promise<boolean>;
 
     sendAiInsightsContractRequest: (
         contractUri: string,
@@ -553,31 +745,25 @@ export type LearnCardNetworkPluginMethods = {
         childProfileId?: string
     ) => Promise<boolean>;
 
-    getContractSentRequests: (contractUri: string) => Promise<
-        {
-            profile: LCNProfile;
-            status: 'pending' | 'accepted' | 'denied' | null;
-            readStatus?: 'unseen' | 'seen' | null;
-        }[]
-    >;
+    getContractSentRequests: (
+        contractUri: string
+    ) => Promise<ConsentFlowContractRequestForProfile[]>;
 
     getRequestStatusForProfile: (
         targetProfileId: string,
-        contractId?: string | undefined,
-        contractUri?: string | undefined
-    ) => Promise<{
-        profile: LCNProfile;
-        status: 'pending' | 'accepted' | 'denied' | null;
-        readStatus?: 'unseen' | 'seen' | null;
-    } | null>;
+        contractId?: string,
+        contractUri?: string
+    ) => Promise<ConsentFlowContractRequestForProfile | null>;
 
     getAllContractRequestsForProfile: (targetProfileId: string) => Promise<
-        {
-            contract: ConsentFlowContract & { uri: string };
-            profile: LCNProfile;
-            status: 'pending' | 'accepted' | 'denied' | null;
-            readStatus?: 'unseen' | 'seen' | null;
-        }[]
+        (ConsentFlowContractRequestForProfile & {
+            contract: ConsentFlowContract & {
+                uri: string;
+                name?: string;
+                image?: string;
+                description?: string;
+            };
+        })[]
     >;
 
     getSharedInsightsRequestsForProfile: (targetProfileId: string) => Promise<
@@ -619,6 +805,27 @@ export type LearnCardNetworkPluginMethods = {
     revokeAuthGrant: (id: string) => Promise<boolean>;
     getAPITokenForAuthGrant: (id: string) => Promise<string>;
 
+    /** Queue 1–100 credentials; workers may start up to a minute later. Use sendCredentialViaInbox for immediate single issuance. */
+    sendCredentialsViaInbox: (batch: IssueInboxCredentialBatch) => Promise<InboxBatchReceipt>;
+    /** Explicit batch alias for sendCredentialsViaInbox. Returns a durable receipt. */
+    sendCredentialBatchViaInbox: (batch: IssueInboxCredentialBatch) => Promise<InboxBatchReceipt>;
+    /** Ordered results and disjoint success/failure/unconfirmed counts. `done` includes unconfirmed outcomes.
+     * @see https://docs.learncard.com/sdks/learncard-network/universal-inbox-api
+     */
+    getInboxCredentialBatch: (batchId: string) => Promise<InboxBatchStatus>;
+    /** Poll until done with bounded backoff. Abort/timeout stops waiting, not processing. */
+    waitForInboxCredentialBatch: (
+        batchId: string,
+        options?: WaitForInboxCredentialBatchOptions
+    ) => Promise<InboxBatchStatus>;
+    /** Submit once and wait; persist the receipt with onSubmitted for recovery after timeout. */
+    sendCredentialsViaInboxAndWait: (
+        batch: IssueInboxCredentialBatch,
+        options?: WaitForInboxCredentialBatchOptions & {
+            onSubmitted?: (receipt: InboxBatchReceipt) => void | Promise<void>;
+        }
+    ) => Promise<InboxBatchStatus>;
+    /** Issue one credential synchronously, without waiting for the batch dispatcher. */
     sendCredentialViaInbox: (
         issueInboxCredential: IssueInboxCredentialType
     ) => Promise<IssueInboxCredentialResponseType>;
@@ -627,12 +834,21 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<PaginatedInboxCredentialsType>;
 
     getInboxCredential: (id: string) => Promise<InboxCredentialType | null>;
+    /** Recover and locally decrypt claims for seven days; deduplicate by the stable inbox id. */
+    recoverInboxCredentials: (options?: { limit?: number; cursor?: string }) => Promise<{
+        records: { id: string; credential: VC; expiresAt: string }[];
+        /** Deliveries that could not be decrypted or validated on this page. */
+        failed: number;
+        hasMore: boolean;
+        cursor?: string;
+    }>;
     finalizeInboxCredentials: () => Promise<{
         processed: number;
         claimed: number;
         errors: number;
         guardianPending: number;
         verifiableCredentials: VC[];
+        deliveries: { id: string; credential: VC }[];
     }>;
 
     // Guardian Approval
@@ -947,6 +1163,16 @@ export type LearnCardNetworkPluginMethods = {
 };
 
 /** @group LearnCardNetwork Plugin */
+/**
+ * The wallet returned by `invoke.actAs`: the caller's existing plugins with a network
+ * plugin bound to the target profile appended. The caller's plugin list cannot be named
+ * from inside the plugin's own method map, hence the open tuple.
+ */
+export type ActingLearnCard = LearnCard<
+    [...Plugin[], LearnCardNetworkPlugin],
+    'id' | 'read' | 'store'
+>;
+
 export type LearnCardNetworkPlugin = Plugin<
     'LearnCard Network',
     'id' | 'read' | 'store',
@@ -964,3 +1190,12 @@ export type TrustedBoostRegistryEntry = {
     url: string;
     did: string;
 };
+
+export interface WaitForInboxCredentialBatchOptions {
+    /** Overall polling deadline; defaults to ten minutes. */
+    timeoutMs?: number;
+    /** Initial interval; increases by 1.5x up to ten seconds (or this interval if larger). */
+    intervalMs?: number;
+    signal?: AbortSignal;
+    onProgress?: (status: InboxBatchStatus) => void;
+}

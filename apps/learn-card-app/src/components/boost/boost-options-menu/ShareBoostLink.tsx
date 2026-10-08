@@ -4,7 +4,8 @@ import { QRCodeSVG } from 'qrcode.react';
 import moment from 'moment';
 
 import X from 'learn-card-base/svgs/X';
-import { IonGrid, IonSpinner } from '@ionic/react';
+import { IonGrid, IonIcon, IonSpinner } from '@ionic/react';
+import { alertCircleOutline } from 'ionicons/icons';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import IDSleeve from '../../../assets/images/id-sleeve.png';
 import FamilyCrest from '../../familyCMS/FamilyCrest/FamilyCrest';
@@ -21,6 +22,7 @@ import {
     useShareBoostMutation,
     ToastTypeEnum,
     useToast,
+    useTenantBaseUrl,
 } from 'learn-card-base';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 
@@ -37,22 +39,29 @@ import {
 import { UnsignedVC, VC } from '@learncard/types';
 import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
 import * as m from '../../../paraglide/messages.js';
+import {
+    createEndorsementShareLinkInfo,
+    getEndorsementRequestBaseUrl,
+} from '../../boost-endorsements/EndorsementRequestForm/endorsement-request.helpers';
 
 type ShareBoostLinkProps = {
     handleClose?: () => void;
     boost: VC | UnsignedVC;
     boostUri?: string;
+    credentialId?: string;
     customClassName?: string;
     categoryType: BoostCategoryOptionsEnum | CredentialCategoryEnum;
     onBackButtonClick?: () => void;
     hideLinkedIn?: boolean;
     isEndorsementRequest?: boolean;
     compact?: boolean;
+    onShareWithOtherCredentials?: () => void;
 };
 
 const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     boost,
     boostUri,
+    credentialId,
     customClassName,
     handleClose,
     categoryType,
@@ -60,14 +69,23 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     hideLinkedIn = false,
     isEndorsementRequest = false,
     compact = false,
+    onShareWithOtherCredentials,
 }) => {
+    const sharedCredentialId = credentialId ?? boost.id;
     const { presentToast } = useToast();
+    const endorsementRequestBaseUrl = getEndorsementRequestBaseUrl(useTenantBaseUrl());
     const [shareLink, setShareLink] = useState<string | undefined>('');
+    const [hasLinkGenerationError, setHasLinkGenerationError] = useState(false);
 
     const { track } = useAnalytics();
     const qrTrackedRef = React.useRef(false);
 
-    const { mutate: shareEarnedBoost, isPending: isLinkLoading } = useShareBoostMutation();
+    const {
+        mutate: shareEarnedBoost,
+        isPending: isLinkLoading,
+        isError: mutationHasShareError,
+    } = useShareBoostMutation();
+    const isShareError = mutationHasShareError || hasLinkGenerationError;
 
     const boostMetadata = getBoostMetadata(categoryType);
     const { IconComponent, CategoryImage, title: categoryTitle } = boostMetadata ?? {};
@@ -118,8 +136,8 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
         issuerName = profile
             ? profile?.displayName
             : isLoading
-            ? m['common.loading']()
-            : m['common.unknown']();
+              ? m['common.loading']()
+              : m['common.unknown']();
     } else {
         issuerName = getIssuerNameNonBoost(cred);
     }
@@ -128,8 +146,8 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
         issueeName = myProfile
             ? myProfile?.displayName
             : myProfileLoading
-            ? m['common.loading']()
-            : m['common.unknown']();
+              ? m['common.loading']()
+              : m['common.unknown']();
     } else {
         issueeName = cred?.credentialSubject?.id;
     }
@@ -145,28 +163,60 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
         </div>
     );
 
-    const generateShareLink = async () => {
+    const generateShareLink = () => {
+        const credentialUri = boostUri ?? sharedCredentialId;
+
+        setHasLinkGenerationError(false);
+        setShareLink(undefined);
+
+        if (!credentialUri) {
+            setHasLinkGenerationError(true);
+            return;
+        }
+
         shareEarnedBoost(
-            { credential: boost, credentialUri: boostUri as string },
             {
-                async onSuccess(data) {
-                    if (isEndorsementRequest) {
-                        const url = new URL(data?.link);
-                        const params = new URLSearchParams(url.search);
+                credential: boost,
+                credentialUri,
+                credentialId: sharedCredentialId,
+            },
+            {
+                onSuccess(data) {
+                    let generatedLink: string;
 
-                        const host = url.host;
-                        const uri = params.get('uri');
-                        const seed = params.get('seed');
-                        const pin = params.get('pin');
+                    try {
+                        if (isEndorsementRequest) {
+                            const url = new URL(data.link);
+                            const uri = url.searchParams.get('uri');
+                            const seed = url.searchParams.get('seed');
+                            const pin = url.searchParams.get('pin');
 
-                        // generate endorsement request share link
-                        setShareLink(
-                            `https://${host}/?uri=${uri}&seed=${seed}&pin=${pin}&endorsementRequest=true`
-                        );
-                    } else {
-                        setShareLink(data?.link);
+                            if (!uri || !seed || !pin) {
+                                throw new Error('Generated share link is incomplete');
+                            }
+
+                            const endorsementUrl = new URL('/', endorsementRequestBaseUrl);
+                            const endorsementParams = new URLSearchParams(
+                                createEndorsementShareLinkInfo({
+                                    uri,
+                                    seed,
+                                    pin,
+                                    credentialId: sharedCredentialId,
+                                })
+                            );
+                            endorsementParams.set('endorsementRequest', 'true');
+                            endorsementUrl.search = endorsementParams.toString();
+                            generatedLink = endorsementUrl.toString();
+                        } else {
+                            generatedLink = data.link;
+                        }
+                    } catch {
+                        setShareLink(undefined);
+                        setHasLinkGenerationError(true);
+                        return;
                     }
 
+                    setShareLink(generatedLink);
                     track(AnalyticsEvents.GENERATE_SHARE_LINK, {
                         category: categoryType,
                         boostType: achievementType,
@@ -245,12 +295,29 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
 
     if (compact) {
         return (
-            <div className="relative shrink-0 rounded-[16px] border border-grayscale-200 bg-white p-3 pb-8">
+            <div className="relative shrink-0 rounded-[16px] border border-grayscale-200 bg-white p-3 pb-8 font-poppins">
                 <div className="flex h-[50px] w-[50px] items-center justify-center">
-                    {isLinkLoading || !shareLink ? (
+                    {isShareError ? (
+                        <div role="alert">
+                            <span className="sr-only">
+                                {m['toasts.boost.shareLinkGenerationFailed']()}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={generateShareLink}
+                                title={m['toasts.boost.shareLinkGenerationFailed']()}
+                                className="flex h-[50px] w-[50px] flex-col items-center justify-center rounded-[20px] text-red-700 hover:bg-red-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                            >
+                                <IonIcon icon={alertCircleOutline} aria-hidden="true" />
+                                <span className="text-[10px] font-medium leading-tight text-center">
+                                    {m['common.tryAgain']()}
+                                </span>
+                            </button>
+                        </div>
+                    ) : isLinkLoading || !shareLink ? (
                         <IonSpinner
                             role="status"
-                            aria-label={m['common.loading']()}
+                            aria-label={m['passport.resumeBuilder.shareLink.generatingLink']()}
                             name="crescent"
                             className="h-5 w-5 text-grayscale-600"
                         />
@@ -318,6 +385,40 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                     </div>
                     <div className="w-[85%] flex flex-col justify-center items-center relative mb-5 mt-5 bg-white rounded-[15px] py-4 px-2">
                         <div className="flex flex-col justify-center items-center w-full relative">
+                            {isShareError && (
+                                <div className="w-full p-4 font-poppins">
+                                    <div
+                                        role="alert"
+                                        className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
+                                    >
+                                        <IonIcon
+                                            icon={alertCircleOutline}
+                                            aria-hidden="true"
+                                            className="text-red-400 text-lg mt-0.5 shrink-0"
+                                        />
+                                        <span className="text-sm text-red-700 leading-relaxed">
+                                            {m['toasts.boost.shareLinkGenerationFailed']()}
+                                        </span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={generateShareLink}
+                                        className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                    >
+                                        {m['common.tryAgain']()}
+                                    </button>
+                                </div>
+                            )}
+                            {onShareWithOtherCredentials && !isEndorsementRequest && (
+                                <button
+                                    type="button"
+                                    onClick={onShareWithOtherCredentials}
+                                    className="w-full rounded-[20px] !bg-grayscale-900 !text-white px-5 py-3 text-sm font-medium hover:opacity-90 transition-opacity"
+                                >
+                                    {m['shareLinks.shareWithOthers']()}
+                                </button>
+                            )}
+
                             {!isLinkLoading && shareLink && shareLink?.length > 0 && (
                                 <div className="w-full h-full relative py-4 px-4">
                                     <QRCodeSVG
@@ -330,15 +431,20 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                 </div>
                             )}
 
-                            {(isLinkLoading || shareLink?.length === 0) && (
-                                <div className="min-w-[300px] min-h-[300px] h-full w-full relative flex items-center justify-center">
+                            {!isShareError && (isLinkLoading || !shareLink) && (
+                                <div className="min-h-[300px] h-full w-full relative flex flex-col gap-3 items-center justify-center">
                                     <IonSpinner
                                         role="status"
-                                        aria-label={m['common.loading']()}
+                                        aria-label={m[
+                                            'passport.resumeBuilder.shareLink.generatingLink'
+                                        ]()}
                                         name="crescent"
                                         color="dark"
                                         className="scale-[1]"
                                     />
+                                    <span className="font-poppins text-sm text-grayscale-600">
+                                        {m['passport.resumeBuilder.shareLink.generatingLink']()}
+                                    </span>
                                 </div>
                             )}
                         </div>

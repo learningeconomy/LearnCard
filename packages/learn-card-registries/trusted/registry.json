@@ -238,6 +238,11 @@
             "name": "LEF @ ASU-GSV",
             "location": "Washington, DC, USA",
             "url": "https://learningeconomy.io/"
+        },
+        "did:web:network.learncard.com:users:demo-isd": {
+            "name": "South Carolina CLR",
+            "location": "South Carolina, USA",
+            "url": "https://www.ed.sc.gov/"
         }
     }
 }

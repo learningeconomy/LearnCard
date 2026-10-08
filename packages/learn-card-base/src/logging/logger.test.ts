@@ -6,6 +6,7 @@ import {
     getLogger,
     type SentryTransport,
 } from './logger';
+import { clearDiagnosticLogs, getDiagnosticLogs } from './diagnosticLogBuffer';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -17,7 +18,10 @@ function makeMockTransport(): SentryTransport & {
     const calls: { method: string; args: unknown[] }[] = [];
     return {
         calls,
-        captureException: (...args) => calls.push({ method: 'captureException', args }),
+        captureException: (...args) => {
+            calls.push({ method: 'captureException', args });
+            return undefined;
+        },
         captureMessage: (...args) => calls.push({ method: 'captureMessage', args }),
         addBreadcrumb: (...args) => calls.push({ method: 'addBreadcrumb', args }),
         withScope: (...args) => calls.push({ method: 'withScope', args }),
@@ -31,13 +35,23 @@ function makeMockTransport(): SentryTransport & {
 beforeEach(() => {
     configureSentryTransport(null);
     // Pass null (not undefined) to actually clear tenantId between tests
-    configureLoggerContext({ bugReportsEnabled: true, tenantId: null });
+    configureLoggerContext({
+        bugReportsEnabled: true,
+        diagnosticLogCollectionEnabled: true,
+        tenantId: null,
+    });
+    clearDiagnosticLogs();
     vi.restoreAllMocks();
 });
 
 afterAll(() => {
     configureSentryTransport(null);
-    configureLoggerContext({ bugReportsEnabled: true, tenantId: null });
+    configureLoggerContext({
+        bugReportsEnabled: true,
+        diagnosticLogCollectionEnabled: true,
+        tenantId: null,
+    });
+    clearDiagnosticLogs();
 });
 
 // ---------------------------------------------------------------------------
@@ -75,6 +89,36 @@ describe('PII scrubbing', () => {
         expect(extra.safeField).toBe('visible');
     });
 
+    it('scrubs share/token/recoveryKey fields (P0-4: SSS key material)', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+
+        logger.error('x', new Error('boom'), {
+            authShare: 'SENTINEL_SHARE_XYZ',
+            emailShare: 'SENTINEL_SHARE_XYZ',
+            encryptedShare: 'SENTINEL_SHARE_XYZ',
+            authToken: 'SENTINEL_TOKEN_XYZ',
+            recoveryKey: 'SENTINEL_RECOVERYKEY_XYZ',
+            credentialId: 'not-a-secret',
+        });
+
+        const call = transport.calls.find(c => c.method === 'captureException');
+        expect(call).toBeDefined();
+        const extra = call!.args[2] as Record<string, unknown>;
+        expect(extra.authShare).toBe('[scrubbed]');
+        expect(extra.emailShare).toBe('[scrubbed]');
+        expect(extra.encryptedShare).toBe('[scrubbed]');
+        expect(extra.authToken).toBe('[scrubbed]');
+        expect(extra.recoveryKey).toBe('[scrubbed]');
+        // Non-matching keys must survive untouched
+        expect(extra.credentialId).toBe('not-a-secret');
+
+        const serialized = JSON.stringify(extra);
+        expect(serialized).not.toContain('SENTINEL_SHARE_XYZ');
+        expect(serialized).not.toContain('SENTINEL_TOKEN_XYZ');
+        expect(serialized).not.toContain('SENTINEL_RECOVERYKEY_XYZ');
+    });
+
     it('scrubs bearer token strings in values', () => {
         const transport = makeMockTransport();
         configureSentryTransport(transport);
@@ -96,6 +140,98 @@ describe('PII scrubbing', () => {
         const extra = call!.args[3] as Record<string, unknown>;
         expect(extra.email).toBe('user@example.com');
         expect('allowPii' in extra).toBe(false);
+    });
+
+    it('never exposes secret fields when allowPii is true', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+
+        logger.warn('pii allowed but secrets protected', {
+            email: 'user@example.com',
+            seed: 'seed-value',
+            password: 'password-value',
+            privateKey: 'private-key-value',
+            authToken: 'token-value',
+            deviceShare: 'share-value',
+            mnemonicPhrase: 'phrase-value',
+            allowPii: true,
+        });
+
+        const call = transport.calls.find(c => c.method === 'captureMessage');
+        const extra = call!.args[3] as Record<string, unknown>;
+        expect(extra.email).toBe('user@example.com');
+        expect(extra.seed).toBe('[scrubbed]');
+        expect(extra.password).toBe('[scrubbed]');
+        expect(extra.privateKey).toBe('[scrubbed]');
+        expect(extra.authToken).toBe('[scrubbed]');
+        expect(extra.deviceShare).toBe('[scrubbed]');
+        expect(extra.mnemonicPhrase).toBe('[scrubbed]');
+    });
+
+    it('redacts JWTs from positional string values', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+        const jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMifQ.signature_value';
+
+        logger.warn('request failed', jwt);
+
+        const call = transport.calls.find(c => c.method === 'captureMessage');
+        expect((call!.args[3] as Record<string, unknown>).value).toBe('[REDACTED]');
+    });
+
+    it('redacts Bearer credentials from positional string values', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+
+        logger.warn('request failed', 'Bearer secret-token-value');
+
+        const call = transport.calls.find(c => c.method === 'captureMessage');
+        expect((call!.args[3] as Record<string, unknown>).value).toBe('[REDACTED]');
+    });
+
+    it('redacts long hex blobs from positional string values', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+
+        logger.warn('request failed', 'ab'.repeat(32));
+
+        const call = transport.calls.find(c => c.method === 'captureMessage');
+        expect((call!.args[3] as Record<string, unknown>).value).toBe('[REDACTED]');
+    });
+
+    it('redacts long base64url blobs from positional string values', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+
+        logger.warn('request failed', 'GHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstu');
+
+        const call = transport.calls.find(c => c.method === 'captureMessage');
+        expect((call!.args[3] as Record<string, unknown>).value).toBe('[REDACTED]');
+    });
+
+    it('redacts secret shapes in the first positional message without hiding normal messages', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+
+        logger.warn('normal message');
+        logger.warn('eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMifQ.signature_value');
+
+        const calls = transport.calls.filter(c => c.method === 'captureMessage');
+        expect(calls[0]!.args[0]).toBe('normal message');
+        expect(calls[1]!.args[0]).toBe('[REDACTED]');
+    });
+
+    it('redacts secret shapes from Error messages before capture', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+        const jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMifQ.signature_value';
+
+        logger.error(new Error(`Request failed with ${jwt}`));
+
+        const call = transport.calls.find(c => c.method === 'captureException');
+        const capturedError = call!.args[0] as Error;
+        expect(capturedError.message).toBe('Request failed with [REDACTED]');
+        expect(capturedError.stack).not.toContain(jwt);
     });
 
     it('scrubs PII nested inside an object', () => {
@@ -152,6 +288,62 @@ describe('PII scrubbing', () => {
 // ---------------------------------------------------------------------------
 
 describe('privacy gate', () => {
+    it('forwards remote logs but drops diagnostics before feedback eligibility is configured', async () => {
+        // Loading fresh modules models an app that has authenticated already but whose
+        // first useSentryIdentify effect has not configured the logger yet. If the
+        // defaults ever become permissive again, the first log below becomes an
+        // attachable diagnostic and a Sentry breadcrumb.
+        vi.resetModules();
+        const {
+            configureLoggerContext: configureIsolatedLoggerContext,
+            configureSentryTransport: configureIsolatedSentryTransport,
+            logger: isolatedLogger,
+        } = await import('./logger');
+        const { getDiagnosticLogs: getIsolatedDiagnosticLogs } =
+            await import('./diagnosticLogBuffer');
+        const sentryCalls: string[] = [];
+        configureIsolatedSentryTransport({
+            captureException: () => undefined,
+            captureMessage: () => {},
+            addBreadcrumb: () => sentryCalls.push('breadcrumb'),
+            withScope: () => {},
+        });
+        vi.spyOn(console, 'info').mockImplementation(() => {});
+
+        isolatedLogger.info('before eligibility configuration');
+
+        expect(getIsolatedDiagnosticLogs()).toEqual([]);
+        expect(sentryCalls).toEqual(['breadcrumb']);
+
+        configureIsolatedLoggerContext({
+            bugReportsEnabled: true,
+            diagnosticLogCollectionEnabled: true,
+            diagnosticIdentity: 'adult-a',
+        });
+        isolatedLogger.info('after eligibility configuration');
+
+        expect(getIsolatedDiagnosticLogs()).toHaveLength(1);
+        expect(sentryCalls).toEqual(['breadcrumb', 'breadcrumb']);
+    });
+
+    it('clears process-global diagnostics when the opaque reporting identity changes', () => {
+        configureLoggerContext({
+            bugReportsEnabled: true,
+            diagnosticLogCollectionEnabled: true,
+            diagnosticIdentity: 'adult-a',
+        });
+        logger.info('first profile event');
+        expect(getDiagnosticLogs()).toHaveLength(1);
+
+        configureLoggerContext({
+            bugReportsEnabled: true,
+            diagnosticLogCollectionEnabled: true,
+            diagnosticIdentity: 'adult-b',
+        });
+
+        expect(getDiagnosticLogs()).toEqual([]);
+    });
+
     it('suppresses Sentry transport when bugReportsEnabled is false', () => {
         const transport = makeMockTransport();
         configureSentryTransport(transport);
@@ -608,5 +800,114 @@ describe('rest-args contract', () => {
         const extra = call!.args[3] as Record<string, unknown>;
         expect(extra.value).toBe('lc:boost:abc');
         expect(extra.error).toBe('Error: fetch failed');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Diagnostic buffer integration (LC-2086)
+// ---------------------------------------------------------------------------
+
+describe('diagnostic buffer integration', () => {
+    it('records default-private info entries when bug reports are enabled', () => {
+        configureLoggerContext({ diagnosticLogCollectionEnabled: true });
+        getLogger('feedback-test').info('opened', { email: 'alice@example.com', route: '/wallet' });
+        expect(getDiagnosticLogs()).toEqual([
+            expect.objectContaining({
+                level: 'info',
+                scope: 'feedback-test',
+                message: '[scrubbed]',
+            }),
+        ]);
+    });
+
+    it('maps info, warn, and error to their buffer levels without retaining error bodies', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        const log = getLogger('feedback');
+        log.info('step one');
+        log.warn('retrying', { attempt: 2 });
+        log.error('failed', new Error('boom for alice@example.com'));
+
+        const entries = getDiagnosticLogs();
+        expect(entries.map(entry => entry.level)).toEqual(['info', 'warning', 'error']);
+        expect(entries[0]).toMatchObject({ scope: 'feedback', message: '[scrubbed]' });
+        expect(entries[1].data).toMatchObject({ attempt: 2 });
+        expect('data' in entries[2]).toBe(false);
+    });
+
+    it('omits leftover primitive values from the attachment data', () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        logger.error('failed to fetch boost', 'lc:boost:abc');
+
+        expect(getDiagnosticLogs()[0]).toMatchObject({ message: '[scrubbed]' });
+        expect('data' in getDiagnosticLogs()[0]).toBe(false);
+    });
+
+    it('keeps diagnostic collection independent from remote reporting', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+        configureLoggerContext({
+            bugReportsEnabled: false,
+            diagnosticLogCollectionEnabled: true,
+        });
+        vi.spyOn(console, 'info').mockImplementation(() => {});
+
+        logger.info('diagnostic only');
+
+        expect(getDiagnosticLogs()).toHaveLength(1);
+        expect(transport.calls).toEqual([]);
+    });
+
+    it('clears and stops the diagnostic buffer when diagnostic collection is disabled', () => {
+        vi.spyOn(console, 'info').mockImplementation(() => {});
+        logger.info('before');
+        configureLoggerContext({ diagnosticLogCollectionEnabled: false });
+        logger.info('after');
+        expect(getDiagnosticLogs()).toEqual([]);
+    });
+
+    it('does not record production-dropped debug calls', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+        vi.stubGlobal('IS_PRODUCTION', true);
+
+        try {
+            logger.debug('verbose detail');
+            expect(getDiagnosticLogs()).toEqual([]);
+        } finally {
+            vi.unstubAllGlobals();
+        }
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Captured event IDs (LC-2086)
+// ---------------------------------------------------------------------------
+
+describe('captured event ids', () => {
+    it('returns the captured Sentry event id from error()', () => {
+        const transport = makeMockTransport();
+        transport.captureException = () => 'event-123';
+        configureSentryTransport(transport);
+
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        expect(logger.error('boom', new Error('boom'))).toBe('event-123');
+    });
+
+    it('returns undefined from error() when only a message is captured', () => {
+        const transport = makeMockTransport();
+        transport.captureMessage = () => 'event-456';
+        configureSentryTransport(transport);
+
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        expect(logger.error('string error only')).toBeUndefined();
+    });
+
+    it('returns undefined from error() when no transport is registered', () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        expect(logger.error('console only', new Error('boom'))).toBeUndefined();
     });
 });

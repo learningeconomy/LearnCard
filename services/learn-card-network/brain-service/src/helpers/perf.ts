@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 /**
  * Lightweight timing helper for LC-1644 perf instrumentation.
  * Records phase durations always; only emits structured JSON to console
@@ -11,7 +12,7 @@ export class PerfTracker {
     private label: string;
 
     constructor(label: string) {
-        this.logToConsole = !!process.env.LC_PERF_LOG;
+        this.logToConsole = !!environment.LC_PERF_LOG;
         this.label = label;
         this.t0 = performance.now();
         this.last = this.t0;

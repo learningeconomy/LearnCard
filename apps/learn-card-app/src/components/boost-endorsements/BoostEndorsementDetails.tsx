@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 import EndorsementCard from './EndorsementCard';
 import EndorsementFullView from './EndorsementsList/EndorsementFullView';
 
 import { VC } from '@learncard/types';
-import { CredentialCategoryEnum, useGetVCInfo } from 'learn-card-base';
-
-import { useWallet } from 'learn-card-base';
+import { CredentialCategoryEnum, useGetVCInfo, useWallet } from 'learn-card-base';
+const EMPTY_DELETED_IDS = new Set<string>();
 
 const BoostEndorsementDetails: React.FC<{
     credential: VC;
@@ -16,33 +15,40 @@ const BoostEndorsementDetails: React.FC<{
     const { initWallet } = useWallet();
     const { endorsements } = useGetVCInfo(credential, categoryType);
 
-    const [_endorsements, _setEndorsements] = useState(endorsements || []);
-
-    useEffect(() => {
-        if (endorsements) {
-            _setEndorsements(endorsements);
-        }
-    }, [endorsements]);
+    const credentialId = credential.id ?? '';
+    const [deletedState, setDeletedState] = useState<{
+        credentialId: string;
+        ids: Set<string>;
+    }>({ credentialId, ids: EMPTY_DELETED_IDS });
+    const deletedIds =
+        deletedState.credentialId === credentialId ? deletedState.ids : EMPTY_DELETED_IDS;
+    const visibleEndorsements = (endorsements ?? []).filter(
+        endorsement => !deletedIds.has(endorsement?.metadata?.id)
+    );
 
     const handleDeleteEndorsement = async (id: string) => {
         const wallet = await initWallet();
         const deleted = await wallet?.index?.LearnCloud?.remove(id);
+        if (!deleted) return;
 
-        if (deleted) {
-            _setEndorsements(_endorsements.filter(endorsement => endorsement?.metadata?.id !== id));
-        }
+        setDeletedState(previous => {
+            const ids =
+                previous.credentialId === credentialId ? new Set(previous.ids) : new Set<string>();
+            ids.add(id);
+            return { credentialId, ids };
+        });
     };
 
     // owners POV
-    if (_endorsements?.length > 0) {
+    if (visibleEndorsements.length > 0) {
         return (
             <>
                 <EndorsementCard credential={credential} categoryType={categoryType} />
-                {_endorsements?.map(({ endorsement, metadata }) => (
+                {visibleEndorsements.map(({ endorsement, metadata }) => (
                     <EndorsementFullView
                         credential={credential}
                         categoryType={categoryType}
-                        key={endorsement?.metadata?.id}
+                        key={metadata?.id}
                         endorsement={endorsement}
                         metadata={metadata}
                         showDeleteButton

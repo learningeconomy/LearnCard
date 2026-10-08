@@ -1,9 +1,21 @@
+import { environment } from '@environment';
 import type { UnsignedVC, VC } from '@learncard/types';
 import type { BoostInstance } from '@models';
 import { getSkillsProviderForFramework } from './index';
 import { getAlignedSkillsForBoost } from '@accesslayer/boost/relationships/read';
 import { getSkillFrameworkById } from '@accesslayer/skill-framework/read';
 import type { Obv3Alignment } from './types';
+
+const getSkillProperties = (skill: unknown): Record<string, unknown> | undefined => {
+    if (typeof skill !== 'object' || skill === null) return undefined;
+
+    const record = skill as Record<string, unknown>;
+    const properties = record.dataValues ?? record;
+
+    return typeof properties === 'object' && properties !== null
+        ? (properties as Record<string, unknown>)
+        : undefined;
+};
 
 // Mutates the given credential in-place to add OBv3 alignments, if any exist on the boost.
 export async function injectObv3AlignmentsIntoCredentialForBoost(
@@ -18,16 +30,14 @@ export async function injectObv3AlignmentsIntoCredentialForBoost(
         // Group aligned skills by their frameworkId (excluding containers)
         const byFramework = new Map<string, string[]>();
         for (const skill of skills) {
-            const props = ((skill as any)?.dataValues ?? (skill as any)) as
-                | Record<string, any>
-                | undefined;
+            const props = getSkillProperties(skill);
             if (!props) continue;
 
             const type = typeof props.type === 'string' ? props.type.toLowerCase() : undefined;
             if (type === 'container') continue;
 
-            const sid = props.id as string | undefined;
-            const fid = props.frameworkId as string | undefined;
+            const sid = typeof props.id === 'string' ? props.id : undefined;
+            const fid = typeof props.frameworkId === 'string' ? props.frameworkId : undefined;
             if (!sid || !fid) continue;
 
             const arr = byFramework.get(fid) ?? [];
@@ -101,7 +111,7 @@ export async function injectObv3AlignmentsIntoCredentialForBoost(
         }
     } catch (e) {
         // Non-fatal: alignment injection should never break issuance
-        if (process.env.NODE_ENV !== 'test') {
+        if (environment.NODE_ENV !== 'test') {
             console.warn('[skills-provider] Failed to inject OBv3 alignments:', e);
         }
     }
@@ -119,16 +129,14 @@ export async function buildObv3AlignmentsForBoost(
         // Group aligned skills by their frameworkId (excluding containers)
         const byFramework = new Map<string, string[]>();
         for (const skill of skills) {
-            const props = ((skill as any)?.dataValues ?? (skill as any)) as
-                | Record<string, any>
-                | undefined;
+            const props = getSkillProperties(skill);
             if (!props) continue;
 
             const type = typeof props.type === 'string' ? props.type.toLowerCase() : undefined;
             if (type === 'container') continue;
 
-            const sid = props.id as string | undefined;
-            const fid = props.frameworkId as string | undefined;
+            const sid = typeof props.id === 'string' ? props.id : undefined;
+            const fid = typeof props.frameworkId === 'string' ? props.frameworkId : undefined;
             if (!sid || !fid) continue;
 
             const arr = byFramework.get(fid) ?? [];
@@ -160,7 +168,7 @@ export async function buildObv3AlignmentsForBoost(
 
         return cleaned;
     } catch (e) {
-        if (process.env.NODE_ENV !== 'test') {
+        if (environment.NODE_ENV !== 'test') {
             console.warn('[skills-provider] Failed to build OBv3 alignments:', e);
         }
         return [];
@@ -217,7 +225,7 @@ export function normalizeCredentialAlignments(credential: UnsignedVC | VC, domai
         }
     } catch (e) {
         // Non-fatal: normalization should never break updates
-        if (process.env.NODE_ENV !== 'test') {
+        if (environment.NODE_ENV !== 'test') {
             console.warn('[skills-provider] Failed to normalize credential alignments:', e);
         }
     }

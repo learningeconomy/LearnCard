@@ -3,7 +3,13 @@ import queryString from 'query-string';
 import { useHistory, useLocation } from 'react-router-dom';
 import useGetFamilyCredential from 'apps/learn-card-app/src/hooks/useGetFamilyCredential';
 
-import { useModal, useIsLoggedIn, switchedProfileStore } from 'learn-card-base';
+import {
+    useModal,
+    useIsLoggedIn,
+    switchedProfileStore,
+    useToast,
+    ToastTypeEnum,
+} from 'learn-card-base';
 import { useGuardianGate } from '../../../hooks/useGuardianGate';
 
 import GameLogin from './GameLogin';
@@ -39,6 +45,7 @@ const FullScreenGameFlow: React.FC<FullScreenGameFlowProps> = ({ contractDetails
     const isFromGame = pathName === 'consent-flow'; // assume they came here directly from the game for consent-flow route
 
     const { closeModal } = useModal();
+    const { presentToast } = useToast();
 
     const isLoggedIn = useIsLoggedIn();
 
@@ -70,18 +77,25 @@ const FullScreenGameFlow: React.FC<FullScreenGameFlowProps> = ({ contractDetails
 
     const handleImAnAdult = async () => {
         // Use unified guardian gate for verification when on a child profile
-        await guardedAction(async () => {
-            if (!isLoggedIn) {
-                // if NOT logged in, prompt the user to log in
-                setStep(GameFlowStep.login);
-            } else if (!hasFamily) {
-                // if the user is not part of a family, prompt the user to "Create a family"
-                setStep(GameFlowStep.createFamily);
-            } else {
-                // if the current user is logged in and part of a family prompt the user to select "Who's Playing?"
-                setStep(GameFlowStep.whosPlaying);
-            }
-        });
+        try {
+            await guardedAction(async () => {
+                if (!isLoggedIn) {
+                    // if NOT logged in, prompt the user to log in
+                    setStep(GameFlowStep.login);
+                } else if (!hasFamily) {
+                    // if the user is not part of a family, prompt the user to "Create a family"
+                    setStep(GameFlowStep.createFamily);
+                } else {
+                    // if the current user is logged in and part of a family prompt the user to select "Who's Playing?"
+                    setStep(GameFlowStep.whosPlaying);
+                }
+            });
+        } catch {
+            presentToast(m['error.generic'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        }
     };
 
     const handleBackToGame = () => {

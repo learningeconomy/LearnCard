@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { getVCDisplayCardVariant } from '@learncard/react';
+import { useQueryClient } from '@tanstack/react-query';
 import moment from 'moment';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('claim-boost');
@@ -36,6 +37,7 @@ import {
     useToast,
     ToastTypeEnum,
     boostPreviewStore,
+    connectionPromptKeys,
 } from 'learn-card-base';
 
 import {
@@ -150,6 +152,7 @@ const ClaimBoost: React.FC<{
     vc?: VC | null;
 }> = ({ uri, claimChallenge, dismissClaimModal = () => {}, vc }) => {
     const history = useHistory();
+    const queryClient = useQueryClient();
     const query = usePathQuery();
     const isLoggedIn = useIsLoggedIn();
     const { initWallet, addVCtoWallet } = useWallet();
@@ -392,6 +395,8 @@ const ClaimBoost: React.FC<{
                 boostUri,
             });
             if (!addedToWallet) throw new Error('Credential was not added to LearnCard');
+
+            await queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all });
 
             const category = getDefaultCategoryForCredential(boost);
             const achievementType = getAchievementType(boost);

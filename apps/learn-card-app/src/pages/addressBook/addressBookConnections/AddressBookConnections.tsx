@@ -9,6 +9,7 @@ const log = getLogger('address-book-connections');
 import { IonSpinner } from '@ionic/react';
 
 import AddressBookContactList from '../addressBook-contact-list/AddressBookContactList';
+import ContactsInviteEmptyState from '../addressBookInvite/ContactsInviteEmptyState';
 
 import { AddressBookTabsEnum } from '../addressBookHelpers';
 
@@ -239,7 +240,12 @@ const AddressBookConnections: React.FC<{
         }
     };
 
-    const isLoading = connectionsLoading && paginatedDataLoading;
+    /*
+      `||`, not `&&`: a false negative here now mounts ContactsInviteEmptyState,
+      whose prefetch runs the listInvites Redis scan and can mint an invite. It
+      used to cost only a flash of "no connections yet".
+    */
+    const isLoading = connectionsLoading || paginatedDataLoading;
     const contactsExist =
         (paginatedData?.pages?.[0]?.records?.length ?? 0) > 0 || (data?.length ?? 0) > 0;
 
@@ -270,13 +276,23 @@ const AddressBookConnections: React.FC<{
                     isFetching={isFetching}
                 />
             )}
-            {!isLoading && (!contactsExist || error) && (
+            {/*
+              A failed fetch and a genuinely empty address book used to render
+              identically, which meant a network error showed a cheerful invite
+              card. Keep them apart.
+            */}
+            {!isLoading && error && (
                 <section className="flex flex-col items-center justify-center my-[30px]">
                     <FloatingBottleIcon />
                     <p className="font-poppins text-[17px] font-normal text-grayscale-900 mt-[10px]">
-                        {m['contacts.noConnections']()}
+                        {m['contacts.loadError']()}
                     </p>
                 </section>
+            )}
+            {!isLoading && !error && !contactsExist && (
+                <div className="w-full py-[10px]">
+                    <ContactsInviteEmptyState />
+                </div>
             )}
         </>
     );

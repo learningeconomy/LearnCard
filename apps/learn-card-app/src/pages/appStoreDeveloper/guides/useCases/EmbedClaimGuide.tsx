@@ -454,11 +454,11 @@ const ConfigureStep: React.FC<{
     const brandingCode = `{
         primaryColor: '${branding.primaryColor}',
         accentColor: '${branding.accentColor}',${
-        branding.partnerLogoUrl
-            ? `
+            branding.partnerLogoUrl
+                ? `
         partnerLogoUrl: '${branding.partnerLogoUrl}'`
-            : ''
-    }
+                : ''
+        }
     }`;
 
     const getCode = () => {

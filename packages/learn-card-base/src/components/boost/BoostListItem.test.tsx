@@ -57,9 +57,12 @@ vi.mock('learn-card-base/stores/newCredsStore', () => ({
     newCredsStore: { use: { newCreds: () => ({}) } },
 }));
 vi.mock('../../svgs/DotIcon', () => ({ default: () => null }));
-vi.mock('learn-card-base/i18n', () => ({ useT: () => (key: string) => key }));
+vi.mock('learn-card-base/i18n', () => ({
+    useI18nLocale: () => 'en',
+    useT: () => (key: string) => key,
+}));
 
-import BoostListItem from './BoostListItem';
+import BoostListItem, { formatRelativeDate } from './BoostListItem';
 
 const credential = {
     '@context': ['https://www.w3.org/2018/credentials/v1'],
@@ -71,6 +74,13 @@ const credential = {
 } as unknown as VC;
 
 describe('BoostListItem', () => {
+    it('formats relative dates in the active locale without changing global date state', () => {
+        const now = Date.parse('2026-09-15T12:00:05.000Z');
+
+        expect(formatRelativeDate('2026-09-15T12:00:00.000Z', 'ar', now)).toContain('ثوان');
+        expect(formatRelativeDate('not-a-date', 'ar', now)).toBe('');
+    });
+
     it('exposes clickable rows to pointer and keyboard users', () => {
         const onClick = vi.fn();
         const { rerender } = render(

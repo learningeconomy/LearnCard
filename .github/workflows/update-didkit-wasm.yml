@@ -9,6 +9,7 @@ on:
             - '.gitmodules'
             - '.github/actions/setup/**'
             - 'packages/plugins/didkit/**'
+            - 'packages/learn-card-bridge-http/scripts/sync-didkit.ts'
             - 'lib/didkit'
             - 'lib/ssi'
     repository_dispatch:
@@ -54,6 +55,12 @@ jobs:
               with:
                   submodules: recursive
 
+            - name: Setup Bun and install dependencies
+              uses: ./.github/actions/setup
+
+            - name: Verify committed bridge DIDKit integrity
+              run: bun packages/learn-card-bridge-http/scripts/sync-didkit.ts
+
             - name: Setup Rust
               uses: dtolnay/rust-toolchain@stable
               with:
@@ -68,7 +75,7 @@ jobs:
                       ~/.cargo/registry/cache/
                       ~/.cargo/git/db/
                       lib/didkit/target/
-                  key: ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-${{ hashFiles('packages/plugins/didkit/wasm/didkit-wasm.Cargo.lock', 'lib/didkit/**/*.toml', 'lib/ssi/**/*.toml') }}
+                  key: ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-${{ hashFiles('lib/didkit/Cargo.lock', 'lib/didkit/**/*.toml', 'lib/ssi/**/*.toml') }}
                   restore-keys: |
                       ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-
 
@@ -111,8 +118,8 @@ jobs:
             - name: Build DIDKit WASM
               run: packages/plugins/didkit/scripts/build-wasm-from-submodules.sh
 
-            - name: Setup Bun and install dependencies
-              uses: ./.github/actions/setup
+            - name: Verify generated bridge DIDKit integrity
+              run: bun packages/learn-card-bridge-http/scripts/sync-didkit.ts
 
             - name: Build DIDKit plugin
               run: bunx nx build didkit-plugin
@@ -226,6 +233,10 @@ jobs:
               if: steps.submodules.outputs.has_updates == 'false'
               run: echo 'DIDKit and SSI are already current; no WASM update is needed.' >> "${GITHUB_STEP_SUMMARY}"
 
+            - name: Setup Bun and install dependencies
+              if: steps.submodules.outputs.has_updates == 'true'
+              uses: ./.github/actions/setup
+
             - name: Setup Rust
               if: steps.submodules.outputs.has_updates == 'true'
               uses: dtolnay/rust-toolchain@stable
@@ -242,7 +253,7 @@ jobs:
                       ~/.cargo/registry/cache/
                       ~/.cargo/git/db/
                       lib/didkit/target/
-                  key: ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-${{ hashFiles('packages/plugins/didkit/wasm/didkit-wasm.Cargo.lock', 'lib/didkit/**/*.toml', 'lib/ssi/**/*.toml') }}
+                  key: ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-${{ hashFiles('lib/didkit/Cargo.lock', 'lib/didkit/**/*.toml', 'lib/ssi/**/*.toml') }}
                   restore-keys: |
                       ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-
 
@@ -287,9 +298,11 @@ jobs:
 
             - name: Build DIDKit WASM
               if: steps.submodules.outputs.has_updates == 'true'
-              env:
-                  UPDATE_DIDKIT_WASM_LOCKFILE: '1'
               run: packages/plugins/didkit/scripts/build-wasm-from-submodules.sh
+
+            - name: Verify generated bridge DIDKit integrity
+              if: steps.submodules.outputs.has_updates == 'true'
+              run: bun packages/learn-card-bridge-http/scripts/sync-didkit.ts
 
             - name: Prepare WASM upload metadata
               if: steps.submodules.outputs.has_updates == 'true'
@@ -324,10 +337,6 @@ jobs:
                       exit 1
                   fi
 
-            - name: Setup Bun and install dependencies
-              if: steps.submodules.outputs.has_updates == 'true'
-              uses: ./.github/actions/setup
-
             - name: Build DIDKit plugin
               if: steps.submodules.outputs.has_updates == 'true'
               run: bunx nx build didkit-plugin
@@ -352,7 +361,8 @@ jobs:
                   if git diff --quiet -- \
                       lib/didkit \
                       lib/ssi \
-                      packages/plugins/didkit/wasm/didkit-wasm.Cargo.lock \
+                      packages/learn-card-bridge-http/scripts/sync-didkit.ts \
+                      packages/learn-card-bridge-http/src/didkit_wasm_bg.wasm \
                       packages/plugins/didkit/src/didkit; then
                       echo "has_changes=false" >> "${GITHUB_OUTPUT}"
                       exit 0
@@ -361,9 +371,10 @@ jobs:
                   cat > .changeset/update-didkit-wasm.md <<EOF
                   ---
                   '@learncard/didkit-plugin': patch
+                  '@learncard/create-http-bridge': patch
                   ---
 
-                  Update DIDKit WASM from didkit ${DIDKIT_SHORT_SHA} and ssi ${SSI_SHORT_SHA}.
+                  Update DIDKit WASM from didkit ${DIDKIT_SHORT_SHA} and ssi ${SSI_SHORT_SHA}, including the HTTP bridge artifact and integrity pin.
                   EOF
 
                   echo "has_changes=true" >> "${GITHUB_OUTPUT}"
@@ -398,6 +409,7 @@ jobs:
               if: steps.changes.outputs.has_changes == 'true'
               env:
                   WASM_URL: ${{ steps.wasm.outputs.url }}
+                  WASM_SHA256: ${{ steps.wasm.outputs.sha256 }}
               run: |
                   set -euo pipefail
 
@@ -408,6 +420,7 @@ jobs:
                   downloaded_bytes="$(
                       curl --fail --location --retry 20 --retry-all-errors --retry-delay 3 \
                           --retry-max-time 300 \
+                          --compressed \
                           --header 'Accept-Encoding: br' \
                           --dump-header "${headers}" \
                           --output "${body}" \
@@ -418,6 +431,10 @@ jobs:
 
                   grep -Eiq '^content-type:[[:space:]]*application/wasm([[:space:]]*;|[[:space:]]*$)' "${headers}"
                   grep -Eiq '^content-encoding:[[:space:]]*br[[:space:]]*$' "${headers}"
+
+                  # curl decodes Brotli before writing the body; verify the bytes
+                  # clients execute, not just the response's compression headers.
+                  printf '%s  %s\n' "${WASM_SHA256}" "${body}" | sha256sum --check
 
                   {
                       echo 'CloudFront served the generated WASM with Brotli compression.'
@@ -455,6 +472,7 @@ jobs:
                       .changeset/update-didkit-wasm.md
                       lib/didkit
                       lib/ssi
-                      packages/plugins/didkit/wasm/didkit-wasm.Cargo.lock
+                      packages/learn-card-bridge-http/scripts/sync-didkit.ts
+                      packages/learn-card-bridge-http/src/didkit_wasm_bg.wasm
                       packages/plugins/didkit/src/didkit/index.ts
                       packages/plugins/didkit/src/didkit/pkg

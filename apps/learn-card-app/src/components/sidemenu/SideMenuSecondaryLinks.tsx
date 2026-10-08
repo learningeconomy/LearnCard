@@ -30,7 +30,10 @@ const SideMenuSecondaryLinks: React.FC<{
     setActiveTab: React.Dispatch<React.SetStateAction<string>>;
 }> = ({ activeTab, setActiveTab }) => {
     const { theme, getIconSet, getColorSet } = useTheme();
-    const iconSet = getIconSet(IconSetEnum.sideMenu) as Record<string, React.FC<any>>;
+    const iconSet = getIconSet(IconSetEnum.sideMenu) as Record<
+        string,
+        React.FC<Record<string, unknown>>
+    >;
     const colors = getColorSet(ColorSetEnum.sideMenu);
 
     const flags = useFlags();
@@ -42,7 +45,7 @@ const SideMenuSecondaryLinks: React.FC<{
     const isAiRoute = (path: string) => AI_ROUTES.includes(path);
 
     const { data: records } = useGetCredentialList(CredentialCategoryEnum.family);
-    const hasFamilyID = records?.pages?.[0]?.records?.length > 0 ?? false;
+    const hasFamilyID = (records?.pages?.[0]?.records?.length ?? 0) > 0;
 
     const canCreateFamilies = hasFamilyID || flags?.canCreateFamilies;
     // Pathways v2 ("Journey") visibility \u2014 see `usePathwaysEnabled`
@@ -63,14 +66,13 @@ const SideMenuSecondaryLinks: React.FC<{
     const shadeColor = '#E2E3E9'; // default shade color
 
     const isPathActive = (tab: string) => {
-        const isAdminToolsActive = tab === '/admin-tools' && activeTab.startsWith(tab);
         const isPassportActive =
             tab === '/passport' &&
             ['/passport', '/wallet', '/home'].some(
                 prefix => activeTab === prefix || activeTab.startsWith(prefix + '/')
             );
 
-        if (tab === activeTab || isAdminToolsActive || isPassportActive) return true;
+        if (tab === activeTab || isPassportActive) return true;
         return false;
     };
 

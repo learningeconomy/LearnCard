@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { VC, VerificationCheck, VerificationStatusEnum } from '@learncard/types';
 
 import { verifyCredential } from '../verify';
@@ -7,7 +8,7 @@ const credential = {} as VC;
 const prettify = async (verificationCheck: VerificationCheck) => {
     const learnCard = {
         invoke: {
-            verifyCredential: jest.fn().mockResolvedValue(verificationCheck),
+            verifyCredential: vi.fn().mockResolvedValue(verificationCheck),
         },
     };
 

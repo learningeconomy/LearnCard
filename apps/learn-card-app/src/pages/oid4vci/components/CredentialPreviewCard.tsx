@@ -1,11 +1,7 @@
 import React from 'react';
 import { Award, ShieldCheck } from 'lucide-react';
 
-import {
-    avatarGradient,
-    extractDomain,
-    preferredFaviconUrl,
-} from '../displayHelpers';
+import { avatarGradient, extractDomain, preferredFaviconUrl } from '../displayHelpers';
 
 export interface CredentialPreviewClaim {
     /** Human label for the claim (e.g. "Full Name"). */
@@ -78,10 +74,7 @@ const CredentialPreviewCard: React.FC<CredentialPreviewCardProps> = ({
     const gradient = avatarGradient(seed);
     const fallbackFavicon = preferredFaviconUrl(domain, 64);
 
-    const displayedIssuerName =
-        issuerName?.trim()
-        || domain
-        || issuerUrl;
+    const displayedIssuerName = issuerName?.trim() || domain || issuerUrl;
 
     return (
         <div className="rounded-2xl overflow-hidden border border-grayscale-200 shadow-sm bg-white">
@@ -115,10 +108,7 @@ const CredentialPreviewCard: React.FC<CredentialPreviewCardProps> = ({
                         Saved
                     </span>
                 ) : (
-                    <Award
-                        className="ml-2 w-5 h-5 text-white/80"
-                        aria-hidden="true"
-                    />
+                    <Award className="ml-2 w-5 h-5 text-white/80" aria-hidden="true" />
                 )}
             </div>
 
@@ -135,9 +125,7 @@ const CredentialPreviewCard: React.FC<CredentialPreviewCardProps> = ({
                     )}
                 </div>
 
-                {claims && claims.length > 0 && (
-                    <ClaimList claims={claims} />
-                )}
+                {claims && claims.length > 0 && <ClaimList claims={claims} />}
             </div>
         </div>
     );
@@ -188,9 +176,7 @@ const IssuerAvatar: React.FC<IssuerAvatarProps> = ({
     if (tier === 2) {
         return (
             <div className="shrink-0 w-10 h-10 rounded-xl bg-white/90 backdrop-blur flex items-center justify-center">
-                <span className="text-sm font-bold text-grayscale-900">
-                    {initials}
-                </span>
+                <span className="text-sm font-bold text-grayscale-900">{initials}</span>
             </div>
         );
     }
@@ -199,9 +185,7 @@ const IssuerAvatar: React.FC<IssuerAvatarProps> = ({
     if (!src) {
         return (
             <div className="shrink-0 w-10 h-10 rounded-xl bg-white/90 backdrop-blur flex items-center justify-center">
-                <span className="text-sm font-bold text-grayscale-900">
-                    {initials}
-                </span>
+                <span className="text-sm font-bold text-grayscale-900">{initials}</span>
             </div>
         );
     }
@@ -225,10 +209,7 @@ const IssuerAvatar: React.FC<IssuerAvatarProps> = ({
 const ClaimList: React.FC<{ claims: CredentialPreviewClaim[] }> = ({ claims }) => (
     <dl className="grid grid-cols-1 gap-y-1.5">
         {claims.slice(0, 4).map((claim, i) => (
-            <div
-                key={`${claim.label}-${i}`}
-                className="flex items-baseline gap-3"
-            >
+            <div key={`${claim.label}-${i}`} className="flex items-baseline gap-3">
                 <dt className="text-[11px] font-medium uppercase tracking-wide text-grayscale-500 shrink-0 min-w-[88px]">
                     {claim.label}
                 </dt>
@@ -247,9 +228,7 @@ const ClaimList: React.FC<{ claims: CredentialPreviewClaim[] }> = ({ claims }) =
         ))}
 
         {claims.length > 4 && (
-            <p className="text-[11px] text-grayscale-400 italic">
-                +{claims.length - 4} more
-            </p>
+            <p className="text-[11px] text-grayscale-400 italic">+{claims.length - 4} more</p>
         )}
     </dl>
 );

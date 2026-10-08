@@ -1,11 +1,10 @@
 # IntegrationsUpdateIntegrationRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**updates** | [**IntegrationsUpdateIntegrationRequestUpdates**](IntegrationsUpdateIntegrationRequestUpdates.md) |  | 
+| Name        | Type                                                                                              | Description | Notes |
+| ----------- | ------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **updates** | [**IntegrationsUpdateIntegrationRequestUpdates**](IntegrationsUpdateIntegrationRequestUpdates.md) |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ integrations_update_integration_request_dict = integrations_update_integration_r
 # create an instance of IntegrationsUpdateIntegrationRequest from a dict
 integrations_update_integration_request_from_dict = IntegrationsUpdateIntegrationRequest.from_dict(integrations_update_integration_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

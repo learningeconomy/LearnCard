@@ -27,8 +27,8 @@
         "build": "rollup -c",
         "dev": "rollup -c -w",
         "typecheck": "tsc --noEmit",
-        "test": "jest -c jest.config.js",
-        "test:watch": "jest -c jest.config.js --watch"
+        "test": "vitest run",
+        "test:watch": "vitest"
     },
     "keywords": [
         "learncard",

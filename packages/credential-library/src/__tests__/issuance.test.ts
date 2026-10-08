@@ -4,7 +4,13 @@ import { describe, it, expect, beforeAll } from 'vitest';
 
 import { initLearnCard } from '@learncard/init';
 
-import { getAllFixtures, getFixture, prepareFixture } from '../index';
+import {
+    getAllFixtures,
+    getFixture,
+    isCredentialFixture,
+    prepareFixture,
+    buildFinalTranscriptVariant,
+} from '../index';
 
 import type { CredentialFixture } from '../types';
 
@@ -31,7 +37,10 @@ beforeAll(async () => {
 
 describe('Credential issuance', () => {
     const validFixtures = (): CredentialFixture[] =>
-        getAllFixtures().filter(f => f.validity === 'valid');
+        getAllFixtures().filter(
+            (fixture): fixture is CredentialFixture =>
+                fixture.validity === 'valid' && isCredentialFixture(fixture)
+        );
 
     describe('issueCredential succeeds for all valid fixtures', () => {
         it.each(validFixtures().map(f => [f.id, f] as const))(
@@ -51,6 +60,41 @@ describe('Credential issuance', () => {
         );
     });
 
+    describe('curated examples issue without remote contexts', () => {
+        // A deterministic, in-memory test identity; no account or persistent key writes.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let offlineWallet: any;
+
+        beforeAll(async () => {
+            offlineWallet = await initLearnCard({
+                seed: 'd'.repeat(64),
+                didkit,
+                allowRemoteContexts: false,
+            });
+        }, 30_000);
+
+        it.each([
+            'obv3/food-allergen-practice',
+            'obv3/food-allergen-facilitator',
+            'obv3/food-allergen-practice-fr',
+            'obv3/phishing-transfer',
+            'custom/course-enrollment',
+            'custom/exam-accommodation',
+            'clr/mixed-role-portfolio',
+        ])(
+            '%s',
+            async id => {
+                const prepared = prepareFixture(getFixture(id), {
+                    issuerDid: offlineWallet.id.did(),
+                    subjectDid: 'did:example:curated-test-subject',
+                });
+                const signed = await offlineWallet.invoke.issueCredential(prepared);
+                expect(signed.proof).toBeDefined();
+            },
+            15_000
+        );
+    });
+
     it('issues the full CLR fixture without remote contexts', async () => {
         const offlineWallet = await initLearnCard({
             seed: 'b'.repeat(64),
@@ -65,5 +109,29 @@ describe('Credential issuance', () => {
         const signed = await offlineWallet.invoke.issueCredential(prepared);
 
         expect(signed.proof).toBeDefined();
+    }, 30_000);
+
+    it('issues the provisional transcript fixture and its final variant without remote contexts', async () => {
+        const offlineWallet = await initLearnCard({
+            seed: 'c'.repeat(64),
+            didkit,
+            allowRemoteContexts: false,
+        });
+
+        const provisional = prepareFixture(getFixture('clr/provisional-transcript'), {
+            issuerDid: offlineWallet.id.did(),
+            subjectDid: 'did:example:test-subject-123',
+        });
+        const signedProvisional = await offlineWallet.invoke.issueCredential(provisional);
+
+        expect(signedProvisional.proof).toBeDefined();
+
+        const final = buildFinalTranscriptVariant(provisional, {
+            validFrom: new Date().toISOString(),
+        });
+        const signedFinal = await offlineWallet.invoke.issueCredential(final);
+
+        expect(signedFinal.proof).toBeDefined();
+        expect(signedFinal.id).toBe(signedProvisional.id);
     }, 30_000);
 });

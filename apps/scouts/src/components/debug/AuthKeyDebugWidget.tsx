@@ -24,10 +24,12 @@ import {
 import {
     authStore,
     authUserStore,
+    useSignInAdapter,
     currentUserStore,
     getAuthConfig,
     getSSSConfig,
 } from 'learn-card-base';
+import { environment } from '../../config/environment';
 
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 import { getSigningLearnCard, getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
@@ -167,8 +169,7 @@ const getMeta = (status: string): StatusMeta => STATUS_META[status] ?? STATUS_ME
 // Helpers
 // ---------------------------------------------------------------------------
 
-const WIDGET_ENABLED =
-    import.meta.env.VITE_ENABLE_AUTH_DEBUG_WIDGET === 'true' || import.meta.env.DEV;
+const WIDGET_ENABLED = environment.VITE_ENABLE_AUTH_DEBUG_WIDGET || environment.DEV;
 
 const truncate = (s: string, len: number): string => (s.length > len ? s.slice(0, len) + '...' : s);
 
@@ -229,8 +230,8 @@ const KVRow: React.FC<{
                 ? 'true'
                 : 'false'
             : value === null || value === undefined
-            ? '—'
-            : String(value);
+              ? '—'
+              : String(value);
 
     const color =
         typeof value === 'boolean'
@@ -238,8 +239,8 @@ const KVRow: React.FC<{
                 ? 'text-emerald-400'
                 : 'text-red-400'
             : display === '—'
-            ? 'text-gray-600'
-            : 'text-cyan-400';
+              ? 'text-gray-600'
+              : 'text-cyan-400';
 
     return (
         <div className="flex items-center justify-between text-[11px] py-[3px] border-t border-gray-700/40 group">
@@ -324,6 +325,7 @@ const Section: React.FC<{
 // ---------------------------------------------------------------------------
 
 export const AuthKeyDebugWidget: React.FC = () => {
+    const adapter = useSignInAdapter();
     const [isOpen, setIsOpen] = useState(false);
     const [copied, setCopied] = useState<string | null>(null);
     const [refreshKey, setRefreshKey] = useState(0);
@@ -346,6 +348,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
         isReady,
         did,
         authSessionValid,
+        authProvider,
         wallet,
         walletReady,
         isLoggedIn,
@@ -387,7 +390,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
             const authUser = 'authUser' in state ? state.authUser : null;
 
             if (authUser) {
-                rows.push({ label: 'Auth UID', value: authUser.uid });
+                rows.push({ label: 'Auth UID', value: authUser.id });
                 rows.push({ label: 'Auth Email', value: authUser.email ?? '—' });
             }
         }
@@ -566,20 +569,21 @@ export const AuthKeyDebugWidget: React.FC = () => {
         setServerError(null);
 
         try {
-            // Use the live Firebase SDK user (not the zustand store's plain object)
-            const { auth } = await import('../../firebase/firebase');
-            const liveUser = auth().currentUser;
+            const liveUser = await authProvider?.getCurrentUser();
 
             if (!liveUser) {
                 throw new Error('Firebase SDK has no current user (session may be expired)');
             }
 
-            const token = await liveUser.getIdToken();
+            const token = await authProvider?.getIdToken();
 
             const response = await fetch(`${sssServerUrl}/keys/auth-share`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ authToken: token, providerType: 'firebase' }),
+                body: JSON.stringify({
+                    authToken: token,
+                    providerType: authProvider?.getProviderType(),
+                }),
             });
 
             if (!response.ok) {
@@ -624,7 +628,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
         } finally {
             setServerLoading(false);
         }
-    }, [authUser]);
+    }, [authUser, authProvider]);
 
     // --- Derive both DID formats for comparison ---
     useEffect(() => {
@@ -663,9 +667,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
             // This does NOT clear local storage/coordinator state — it only
             // kills the Firebase auth session so getIdToken() will fail,
             // simulating a session expiration.
-            const { signOut } = await import('firebase/auth');
-            const firebaseAuth = (await import('../../firebase/firebase')).auth();
-            await signOut(firebaseAuth);
+            await adapter.signOut();
 
             // Clear the auth user store so the coordinator detects sign-out
             authUserStore.set.setUser(null);
@@ -677,7 +679,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
             log.error('invalidate session error', e);
             alert(`Failed: ${e instanceof Error ? e.message : String(e)}`);
         }
-    }, [authUser]);
+    }, [authUser, adapter]);
 
     const handleExportEvents = useCallback(async () => {
         const exportData = {
@@ -719,10 +721,10 @@ export const AuthKeyDebugWidget: React.FC = () => {
     const fabBg = isOpen
         ? 'bg-gray-700 hover:bg-gray-600'
         : isReady
-        ? 'bg-emerald-600 hover:bg-emerald-500'
-        : state.status === 'error'
-        ? 'bg-red-600 hover:bg-red-500'
-        : 'bg-sky-600 hover:bg-sky-500';
+          ? 'bg-emerald-600 hover:bg-emerald-500'
+          : state.status === 'error'
+            ? 'bg-red-600 hover:bg-red-500'
+            : 'bg-sky-600 hover:bg-sky-500';
 
     return (
         <React.Fragment>
@@ -763,8 +765,8 @@ export const AuthKeyDebugWidget: React.FC = () => {
                                             keyIntegrityResult === true
                                                 ? 'text-emerald-400'
                                                 : keyIntegrityResult === false
-                                                ? 'text-red-400'
-                                                : 'text-gray-500'
+                                                  ? 'text-red-400'
+                                                  : 'text-gray-500'
                                         }`}
                                     />
                                 </button>
@@ -1268,10 +1270,10 @@ export const AuthKeyDebugWidget: React.FC = () => {
                                                         rm.type === 'password'
                                                             ? 'bg-sky-500/20 text-sky-400'
                                                             : rm.type === 'passkey'
-                                                            ? 'bg-purple-500/20 text-purple-400'
-                                                            : rm.type === 'phrase'
-                                                            ? 'bg-amber-500/20 text-amber-400'
-                                                            : 'bg-gray-700 text-gray-400'
+                                                              ? 'bg-purple-500/20 text-purple-400'
+                                                              : rm.type === 'phrase'
+                                                                ? 'bg-amber-500/20 text-amber-400'
+                                                                : 'bg-gray-700 text-gray-400'
                                                     }`}
                                                 >
                                                     {rm.type}
@@ -1421,11 +1423,11 @@ export const AuthKeyDebugWidget: React.FC = () => {
                                                             {isLegacy
                                                                 ? '(legacy default)'
                                                                 : userSuffix
-                                                                ? `user: ${truncate(
-                                                                      userSuffix,
-                                                                      16
-                                                                  )}`
-                                                                : entry.id}
+                                                                  ? `user: ${truncate(
+                                                                        userSuffix,
+                                                                        16
+                                                                    )}`
+                                                                  : entry.id}
                                                         </span>
 
                                                         {isActive && (
@@ -1660,7 +1662,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
                     {/* ── Footer ── */}
                     <div className="px-3 py-1.5 border-t border-gray-800 bg-gray-900/50 flex items-center justify-between">
                         <p className="text-[9px] text-gray-600">
-                            {import.meta.env.DEV ? 'dev mode' : 'debug widget'}
+                            {environment.DEV ? 'dev mode' : 'debug widget'}
                         </p>
 
                         <p className="text-[9px] text-gray-600 font-mono">{state.status}</p>

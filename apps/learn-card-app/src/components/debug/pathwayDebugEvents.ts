@@ -37,6 +37,7 @@ import {
     pathwayProgressReactor,
     type ProgressDispatchRecord,
 } from '../../pages/pathways/events/pathwayProgressReactor';
+import { isDebugEnvironmentEnabled } from '../../config/environment';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -77,15 +78,7 @@ let eventIdCounter = 0;
 let recorderInstalled = false;
 let recorderUnsubscribe: (() => void) | null = null;
 
-const isDebugEnabled = (): boolean => {
-    if (typeof window === 'undefined') return false;
-
-    try {
-        return import.meta.env.VITE_ENABLE_AUTH_DEBUG_WIDGET === 'true' || import.meta.env.DEV;
-    } catch {
-        return false;
-    }
-};
+const isDebugEnabled = isDebugEnvironmentEnabled;
 
 // ---------------------------------------------------------------------------
 // Public emission API

@@ -1,3 +1,4 @@
+import type { ModalInstanceToken } from 'learn-card-base/components/modals/types/Modals';
 import React, { useEffect } from 'react';
 
 import { IonSkeletonText, useIonModal } from '@ionic/react';
@@ -31,6 +32,7 @@ import { useHistory } from 'react-router-dom';
 import { closeAll } from '../../../../helpers/uiHelpers';
 import { BoostSkeleton } from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
 import { MemberActionMenuEnum } from './FamilyMemberActionMenu.types';
+import * as m from '../../../../paraglide/messages.js';
 
 export const FamilyMemberActionMenu: React.FC<{
     credential: VC;
@@ -38,7 +40,7 @@ export const FamilyMemberActionMenu: React.FC<{
     closeModal: () => void;
 }> = ({ credential, user, closeModal }) => {
     const history = useHistory();
-    const { newModal, closeAllModals } = useModal({
+    const { newModal, newModalWithToken, forceCloseModalByToken, closeAllModals } = useModal({
         mobile: ModalTypes.Cancel,
         desktop: ModalTypes.Cancel,
     });
@@ -66,8 +68,13 @@ export const FamilyMemberActionMenu: React.FC<{
     });
 
     const handleSwitchAccount = () => {
-        newModal(
-            <AccountSwitcherModal />,
+        const modalRef: { token?: ModalInstanceToken } = {};
+        modalRef.token = newModalWithToken(
+            <AccountSwitcherModal
+                onSwitchComplete={() => {
+                    if (modalRef.token) forceCloseModalByToken(modalRef.token);
+                }}
+            />,
             { sectionClassName: '!max-w-[400px]' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
@@ -96,7 +103,7 @@ export const FamilyMemberActionMenu: React.FC<{
     }[] = [
         {
             id: 1,
-            title: 'View Profile',
+            title: m['family.actionMenu.viewProfile'](),
             icon: <ProfileIcon className="text-grayscale-900" />,
             onClick: () => {
                 // open LearnCardID Preview
@@ -130,7 +137,7 @@ export const FamilyMemberActionMenu: React.FC<{
         },
         {
             id: 2,
-            title: 'Boost',
+            title: m['family.actionMenu.boost'](),
             icon: <QrCodeIcon className="text-grayscale-900" />,
             onClick: () => {
                 // open LearnCardID Preview

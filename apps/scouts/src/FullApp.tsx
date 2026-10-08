@@ -13,11 +13,7 @@ import {
     sqliteInit,
     QRCodeScannerOverlay,
     PushNotificationListener,
-    SCOUTPASS_NETWORK_URL,
-    networkStore,
-    SCOUTPASS_API_ENDPOINT,
     useIsLoggedIn,
-    SCOUTCLOUD_URL,
     sqliteStore,
     ensureReactQueryTableExists,
     ModalsProvider,
@@ -36,6 +32,7 @@ import QRCodeScannerListener from './components/qrcode-scanner-listener/QRCodeSc
 import NetworkListener from './components/network-listener/NetworkListener';
 import UserProfileSetupListener from './components/user-profile/UserProfileSetupListener';
 import { QRCodeScannerStore } from 'learn-card-base';
+import * as m from './paraglide/messages.js';
 
 const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 1 Week
 
@@ -96,10 +93,6 @@ const persister = createAsyncStoragePersister({
 
 setupIonicReact({ swipeBackEnabled: false });
 
-networkStore.set.networkUrl(SCOUTPASS_NETWORK_URL);
-networkStore.set.cloudUrl(SCOUTCLOUD_URL);
-networkStore.set.apiEndpoint(SCOUTPASS_API_ENDPOINT);
-
 const FullApp: React.FC = () => {
     useSQLiteInitWeb(); // initializes SQLite on web
     sqliteInit(); // initializes SQLite on native
@@ -128,7 +121,15 @@ const FullApp: React.FC = () => {
                                     <AppRouter />
                                     <InAppMessageHost />
                                     <QRCodeScannerListener />
-                                    {showScannerOverlay && <QRCodeScannerOverlay />}
+                                    {showScannerOverlay && (
+                                        <QRCodeScannerOverlay
+                                            title={m['scanner.title']()}
+                                            description={m['scanner.description']()}
+                                            frameLabel={m['scanner.frameLabel']()}
+                                            searchingLabel={m['scanner.lookingForQr']()}
+                                            closeLabel={m['scanner.closeAria']()}
+                                        />
+                                    )}
                                     <AuthKeyDebugWidget />
                                 </ModalsProvider>
                             </AuthCoordinatorProvider>

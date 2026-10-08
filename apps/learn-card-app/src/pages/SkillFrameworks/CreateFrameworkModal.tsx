@@ -44,8 +44,10 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
 
-    const [name, setName] = useState(isEdit ? frameworkInfo?.name ?? '' : '');
-    const [description, setDescription] = useState(isEdit ? frameworkInfo?.description ?? '' : '');
+    const [name, setName] = useState(isEdit ? (frameworkInfo?.name ?? '') : '');
+    const [description, setDescription] = useState(
+        isEdit ? (frameworkInfo?.description ?? '') : ''
+    );
     const [image, setImage] = useState<string | undefined>(
         isEdit ? frameworkInfo?.image : undefined
     );

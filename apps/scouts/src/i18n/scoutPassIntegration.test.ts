@@ -183,7 +183,7 @@ describe('ScoutPass locale integration', () => {
     });
 
     it('runs the broadened untranslated-literal guard as an error', () => {
-        const configPath = fileURLToPath(new URL('../../.eslintrc-i18n.cjs', import.meta.url));
+        const configPath = fileURLToPath(new URL('../../eslint-i18n.config.mjs', import.meta.url));
         const configSource = readFileSync(configPath, 'utf8');
 
         expect(configSource).toContain("'error'");

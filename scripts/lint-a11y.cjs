@@ -3,48 +3,26 @@ const { ESLint } = require('eslint');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const APP_SOURCE_PATTERN = 'apps/learn-card-app/src/**/*.{ts,tsx}';
+const BASE_SOURCE_PATTERN = 'packages/learn-card-base/src/**/*.{ts,tsx}';
+const A11Y_WARNING_BASELINE = 327;
 const A11Y_RULE_PREFIX = 'jsx-a11y/';
 
-// Lint the full LearnCard app by default. Passing file/glob arguments makes
-// this script useful for reviewing a smaller set of changed files locally.
+// Lint the LearnCard app and shared component library by default. Passing
+// file/glob arguments makes this script useful for reviewing a smaller set
+// of changed files locally.
 const requestedPatterns = process.argv.slice(2);
-const lintPatterns = requestedPatterns.length > 0 ? requestedPatterns : [APP_SOURCE_PATTERN];
+const lintPatterns =
+    requestedPatterns.length > 0 ? requestedPatterns : [APP_SOURCE_PATTERN, BASE_SOURCE_PATTERN];
 
 // Keep the repository-wide warning baseline compact in normal runs, while
 // showing actionable locations for explicitly requested files or verbose runs.
 const showWarnings = process.env.A11Y_VERBOSE === '1' || requestedPatterns.length > 0;
 
-const rootConfig = require('../.eslintrc.js');
-
-// Treat the root override as the source of truth for rule selection and
-// severity. This keeps rules promoted from warning to error in one place.
-const a11yOverride = rootConfig.overrides?.find(override => override.plugins?.includes('jsx-a11y'));
-
-if (!a11yOverride) {
-    throw new Error('Could not find the LearnCard app jsx-a11y override in .eslintrc.js.');
-}
-
-const a11yRules = Object.fromEntries(
-    Object.entries(a11yOverride.rules ?? {}).filter(([ruleName]) =>
-        ruleName.startsWith(A11Y_RULE_PREFIX)
-    )
-);
-
 // Run an isolated ESLint instance so unrelated legacy lint findings do not
 // hide accessibility regressions or prevent the warning-first rollout.
 const eslint = new ESLint({
     cwd: ROOT_DIR,
-    useEslintrc: false,
-    overrideConfig: {
-        parser: require.resolve('@typescript-eslint/parser'),
-        parserOptions: {
-            ecmaFeatures: { jsx: true },
-            ecmaVersion: 2020,
-            sourceType: 'module',
-        },
-        plugins: ['jsx-a11y'],
-        rules: a11yRules,
-    },
+    overrideConfigFile: path.join(ROOT_DIR, 'eslint.a11y.config.mjs'),
 });
 
 const run = async () => {
@@ -91,8 +69,27 @@ const run = async () => {
         });
     }
 
-    // Warnings are intentionally non-blocking during rollout. Rules promoted
-    // to error in .eslintrc.js, plus fatal lint failures, determine the exit code.
+    const warningBaselineExceeded =
+        requestedPatterns.length === 0 && warningMessages.length > A11Y_WARNING_BASELINE;
+    const warningBaselineImproved =
+        requestedPatterns.length === 0 && warningMessages.length < A11Y_WARNING_BASELINE;
+
+    if (warningBaselineImproved) {
+        console.log(
+            `\nWarning baseline improved: ${A11Y_WARNING_BASELINE} → ${warningMessages.length}. ` +
+                'Lower A11Y_WARNING_BASELINE to preserve the improvement.'
+        );
+    }
+
+    if (warningBaselineExceeded) {
+        console.error(
+            `\nWarning baseline exceeded: ${warningMessages.length} > ${A11Y_WARNING_BASELINE}.`
+        );
+    }
+
+    // Warnings remain non-blocking up to the recorded baseline. Promoted
+    // rules in eslint.a11y.config.mjs, fatal failures, and baseline growth
+    // determine the exit code.
     if (errorMessages.length > 0 || fatalMessages.length > 0) {
         console.error('\nErrors:');
         [...fatalMessages, ...errorMessages].forEach(message => {
@@ -102,7 +99,8 @@ const run = async () => {
         });
     }
 
-    process.exitCode = errorMessages.length > 0 || fatalMessages.length > 0 ? 1 : 0;
+    process.exitCode =
+        errorMessages.length > 0 || fatalMessages.length > 0 || warningBaselineExceeded ? 1 : 0;
 };
 
 run().catch(error => {

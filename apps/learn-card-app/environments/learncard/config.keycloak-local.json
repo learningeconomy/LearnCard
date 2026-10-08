@@ -1,0 +1,26 @@
+{
+    "_comment": "Opt-in Keycloak development stage; config.local.json remains Firebase.",
+    "devDomain": "localhost:3000",
+    "apis": {
+        "brainService": "http://localhost:4000/trpc",
+        "brainServiceApi": "http://localhost:4000/api",
+        "cloudService": "http://localhost:4100/trpc",
+        "lcaApi": "http://localhost:5100/trpc",
+        "notificationsEndpoint": "http://localhost:5100/api/notifications/send",
+        "aiAgentService": "http://localhost:4300",
+        "xapi": "http://localhost:4100/xapi"
+    },
+    "features": { "analytics": false, "useSeededSkillFrameworks": true },
+    "observability": { "sentryEnv": "development", "analyticsProvider": "noop" },
+    "auth": {
+        "provider": "keycloak",
+        "keycloak": {
+            "serverUrl": "http://localhost:8081",
+            "realm": "learncard",
+            "clientId": "learncard-app",
+            "authBridgeUrl": "http://localhost:3000/auth/continue.html"
+        },
+        "keyDerivation": "sss",
+        "sss": { "serverUrl": "http://localhost:5100/api" }
+    }
+}

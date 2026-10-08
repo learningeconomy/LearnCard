@@ -1,3 +1,6 @@
+import { vi } from 'vitest';
+import type { Mock } from 'vitest';
+
 import {
     AUTHORIZATION_CODE_GRANT,
     beginAuthCodeFlow,
@@ -59,7 +62,7 @@ const mockResponse = (body: unknown, init: { ok?: boolean; status?: number } = {
 const fakeSigner: ProofJwtSigner = {
     alg: 'EdDSA',
     kid: 'did:jwk:holder#0',
-    sign: jest.fn().mockResolvedValue('proof.jwt.sig'),
+    sign: vi.fn().mockResolvedValue('proof.jwt.sig'),
 };
 
 /* --------------------------------- tests ---------------------------------- */
@@ -126,7 +129,7 @@ describe('buildAuthorizationUrl', () => {
 
 describe('exchangeAuthorizationCode', () => {
     it('POSTs code + code_verifier + client_id + redirect_uri', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(
+        const fetchMock = vi.fn().mockResolvedValue(
             mockResponse({
                 access_token: 'at-123',
                 token_type: 'Bearer',
@@ -158,7 +161,7 @@ describe('exchangeAuthorizationCode', () => {
     });
 
     it('throws VciError(token_request_failed) on 400', async () => {
-        const fetchMock = jest
+        const fetchMock = vi
             .fn()
             .mockResolvedValue(
                 mockResponse(
@@ -182,7 +185,7 @@ describe('exchangeAuthorizationCode', () => {
 
 describe('beginAuthCodeFlow', () => {
     it('assembles an authorization URL + returns a flowHandle', async () => {
-        const fetchMock = jest
+        const fetchMock = vi
             .fn()
             .mockResolvedValueOnce(mockResponse(issuerMetadata))
             .mockResolvedValueOnce(mockResponse(asMetadata));
@@ -255,7 +258,7 @@ describe('beginAuthCodeFlow', () => {
     });
 
     it('throws metadata_invalid when AS metadata lacks authorization_endpoint', async () => {
-        const fetchMock = jest
+        const fetchMock = vi
             .fn()
             .mockResolvedValueOnce(mockResponse(issuerMetadata))
             .mockResolvedValueOnce(
@@ -275,11 +278,11 @@ describe('beginAuthCodeFlow', () => {
 
 describe('completeAuthCodeFlow', () => {
     beforeEach(() => {
-        (fakeSigner.sign as jest.Mock).mockClear();
+        (fakeSigner.sign as Mock).mockClear();
     });
 
     it('exchanges code → access_token → credential', async () => {
-        const fetchMock = jest
+        const fetchMock = vi
             .fn()
             .mockResolvedValueOnce(
                 mockResponse({
@@ -334,7 +337,7 @@ describe('completeAuthCodeFlow', () => {
         expect(result.c_nonce).toBe('nonce-1');
 
         expect(fakeSigner.sign).toHaveBeenCalledTimes(1);
-        expect((fakeSigner.sign as jest.Mock).mock.calls[0][1]).toMatchObject({
+        expect((fakeSigner.sign as Mock).mock.calls[0][1]).toMatchObject({
             nonce: 'nonce-1',
         });
 
@@ -371,7 +374,7 @@ describe('completeAuthCodeFlow', () => {
     });
 
     it('prefers nonce_endpoint over token response c_nonce when advertised', async () => {
-        const fetchMock = jest
+        const fetchMock = vi
             .fn()
             .mockResolvedValueOnce(
                 mockResponse({
@@ -418,13 +421,13 @@ describe('completeAuthCodeFlow', () => {
             'https://issuer.example.com/nonce',
             { method: 'POST' },
         ]);
-        expect((fakeSigner.sign as jest.Mock).mock.calls[0][1]).toMatchObject({
+        expect((fakeSigner.sign as Mock).mock.calls[0][1]).toMatchObject({
             nonce: 'fresh-endpoint-nonce',
         });
     });
 
     it('re-fetches nonce_endpoint and retries once on invalid_proof', async () => {
-        const fetchMock = jest
+        const fetchMock = vi
             .fn()
             .mockResolvedValueOnce(
                 mockResponse({
@@ -482,10 +485,10 @@ describe('completeAuthCodeFlow', () => {
 
         expect(result.credentials).toHaveLength(1);
         expect(fakeSigner.sign).toHaveBeenCalledTimes(2);
-        expect((fakeSigner.sign as jest.Mock).mock.calls[0][1]).toMatchObject({
+        expect((fakeSigner.sign as Mock).mock.calls[0][1]).toMatchObject({
             nonce: 'fresh-endpoint-nonce',
         });
-        expect((fakeSigner.sign as jest.Mock).mock.calls[1][1]).toMatchObject({
+        expect((fakeSigner.sign as Mock).mock.calls[1][1]).toMatchObject({
             nonce: 'refreshed-endpoint-nonce',
         });
         expect(fetchMock.mock.calls[3]).toEqual([
@@ -497,7 +500,7 @@ describe('completeAuthCodeFlow', () => {
 
 describe('exchangeAuthCodeForToken', () => {
     it('returns the token response without making a credential request', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(
+        const fetchMock = vi.fn().mockResolvedValue(
             mockResponse({
                 access_token: 'at-standalone',
                 token_type: 'Bearer',
@@ -539,11 +542,11 @@ describe('exchangeAuthCodeForToken', () => {
 
 describe('requestCredentialsFromAuthCodeToken', () => {
     beforeEach(() => {
-        (fakeSigner.sign as jest.Mock).mockClear();
+        (fakeSigner.sign as Mock).mockClear();
     });
 
     it('uses the supplied tokenResponse without re-exchanging the auth code', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt' }));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt' }));
         const pkce = await generatePkcePair();
         const flowHandle = {
             version: 1 as const,
@@ -581,7 +584,7 @@ describe('requestCredentialsFromAuthCodeToken', () => {
     });
 
     it('honors nonce_endpoint if present on the flowHandle', async () => {
-        const fetchMock = jest
+        const fetchMock = vi
             .fn()
             .mockResolvedValueOnce(
                 mockResponse({ c_nonce: 'fresh-endpoint-nonce', c_nonce_expires_in: 120 })
@@ -624,13 +627,13 @@ describe('requestCredentialsFromAuthCodeToken', () => {
             'https://issuer.example.com/nonce',
             { method: 'POST' },
         ]);
-        expect((fakeSigner.sign as jest.Mock).mock.calls[0][1]).toMatchObject({
+        expect((fakeSigner.sign as Mock).mock.calls[0][1]).toMatchObject({
             nonce: 'fresh-endpoint-nonce',
         });
     });
 
     it('falls back to tokenResponse.c_nonce when no nonce_endpoint is advertised', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt' }));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt' }));
         const pkce = await generatePkcePair();
         const flowHandle = {
             version: 1 as const,
@@ -663,7 +666,7 @@ describe('requestCredentialsFromAuthCodeToken', () => {
         });
 
         expect(fetchMock).toHaveBeenCalledTimes(1);
-        expect((fakeSigner.sign as jest.Mock).mock.calls[0][1]).toMatchObject({
+        expect((fakeSigner.sign as Mock).mock.calls[0][1]).toMatchObject({
             nonce: 'nonce-from-token',
         });
     });

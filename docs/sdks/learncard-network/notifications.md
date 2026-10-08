@@ -15,16 +15,18 @@ const result = await learnCard.invoke.getNotifications(
 );
 
 console.log(result.notifications); // Array of notifications
-console.log(result.hasMore);       // Boolean indicating more pages
-console.log(result.cursor);        // Cursor for next page
+console.log(result.hasMore); // Boolean indicating more pages
+console.log(result.cursor); // Cursor for next page
 ```
 
 **Options:**
+
 - `limit` - Number of notifications per page
 - `cursor` - Pagination cursor from previous response
 - `sort` - `'CHRONOLOGICAL'` or `'REVERSE_CHRONOLOGICAL'`
 
 **Filters:**
+
 - `type` - Filter by notification type (e.g., `'CREDENTIAL_RECEIVED'`)
 - `read` - Filter by read status (`true` or `false`)
 - `archived` - Filter by archived status (`true` or `false`)
@@ -42,27 +44,29 @@ const result = await learnCard.invoke.queryNotifications(
 );
 
 // Find notifications from a specific sender
-const fromSender = await learnCard.invoke.queryNotifications(
-    { 'from.did': 'did:web:network.learncard.com:users:sender123' }
-);
+const fromSender = await learnCard.invoke.queryNotifications({
+    'from.did': 'did:web:network.learncard.com:users:sender123',
+});
 
 // Find unread boost notifications
-const unreadBoosts = await learnCard.invoke.queryNotifications(
-    { type: 'BOOST_RECEIVED', read: false }
-);
+const unreadBoosts = await learnCard.invoke.queryNotifications({
+    type: 'BOOST_RECEIVED',
+    read: false,
+});
 
 // Combine multiple filters
 const result = await learnCard.invoke.queryNotifications(
-    { 
+    {
         type: 'CREDENTIAL_RECEIVED',
         archived: false,
-        actionStatus: 'PENDING'
+        actionStatus: 'PENDING',
     },
     { limit: 10, sort: 'REVERSE_CHRONOLOGICAL' }
 );
 ```
 
 **Query Fields:**
+
 - `type` - Notification type enum
 - `from.did` - Sender's DID
 - `from.profileId` - Sender's profile ID
@@ -79,7 +83,7 @@ Mark a notification as read, archived, or update its action status:
 ```typescript
 await learnCard.invoke.updateNotificationMeta(notificationId, {
     read: true,
-    actionStatus: 'COMPLETED'
+    actionStatus: 'COMPLETED',
 });
 ```
 
@@ -116,11 +120,15 @@ Profiles may optionally add a `notificationsWebhook` url, which will cause the L
 
 ```typescript
 const updatedProfile = {
-  notificationsWebhook: 'https://example.com/webhooks/learn-cloud-network',
+    notificationsWebhook: 'https://example.com/webhooks/learn-cloud-network',
 };
 
 await learnCard.invoke.updateProfile(updatedProfile);
 ```
+
+{% hint style="info" %}
+This profile-level webhook does not receive `ISSUANCE_DELIVERED`, `ISSUANCE_CLAIMED`, or `ISSUANCE_ERROR` — those three are only delivered to the `options.webhookUrl` you pass on the specific `send()` call that issued the credential. See [Know When a Credential Is Claimed](../../tutorials/listen-to-webhooks.md) for the per-issuance flow.
+{% endhint %}
 
 ## Payload Reference&#x20;
 
@@ -255,7 +263,7 @@ When consenting to a Consent Flow Contract, the owner of the contract will recei
 }
 ```
 
-Where `ownerProfile` and `consenterProfile` are each `LCNProfile` objects, `contract` is a `ConsentFlowContractDetails`  object, and `transaction` is a `ConsentFlowTransaction` object with its `action` set to `'consent'`.
+Where `ownerProfile` and `consenterProfile` are each `LCNProfile` objects, `contract` is a `ConsentFlowContractDetails` object, and `transaction` is a `ConsentFlowTransaction` object with its `action` set to `'consent'`.
 
 #### Re-Consent
 
@@ -274,7 +282,7 @@ When a profile consents, withdraws consent, then _reconsents_ to a contract, the
 }
 ```
 
-Where `ownerProfile` and `consenterProfile` are each `LCNProfile` objects, `contract` is a `ConsentFlowContractDetails`  object, and `transaction` is a `ConsentFlowTransaction` object with its `action` set to `'consent'`.
+Where `ownerProfile` and `consenterProfile` are each `LCNProfile` objects, `contract` is a `ConsentFlowContractDetails` object, and `transaction` is a `ConsentFlowTransaction` object with its `action` set to `'consent'`.
 
 #### Updated Terms
 
@@ -293,7 +301,7 @@ When a profile updates its terms to a contract, the owner of the contract will r
 }
 ```
 
-Where `ownerProfile` and `consenterProfile` are each `LCNProfile` objects, `contract` is a `ConsentFlowContractDetails`  object, and `transaction` is a `ConsentFlowTransaction` object with its `action` set to `'update'`.
+Where `ownerProfile` and `consenterProfile` are each `LCNProfile` objects, `contract` is a `ConsentFlowContractDetails` object, and `transaction` is a `ConsentFlowTransaction` object with its `action` set to `'update'`.
 
 #### Withdrawn Consent
 
@@ -312,4 +320,4 @@ When a profile withdraws consent to a contract, the owner of the contrct will re
 }
 ```
 
-Where `ownerProfile` and `consenterProfile` are each `LCNProfile` objects, `contract` is a `ConsentFlowContractDetails`  object, and `transaction` is a `ConsentFlowTransaction` object with its `action` set to `'withdraw'`.
+Where `ownerProfile` and `consenterProfile` are each `LCNProfile` objects, `contract` is a `ConsentFlowContractDetails` object, and `transaction` is a `ConsentFlowTransaction` object with its `action` set to `'withdraw'`.

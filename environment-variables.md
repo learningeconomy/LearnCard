@@ -4,6 +4,24 @@ This monorepo uses [Infisical](https://infisical.com) to manage shared environme
 
 ## Quick Start
 
+### Lambda runtime bundles (lca-api only)
+
+Backend config step 1 adds an optional AWS Secrets Manager bundle named
+`lca-api/<stage>/runtime-secrets`. Set the deploy environment's GitHub variable
+`RUNTIME_SECRETS_ID` to its name or ARN after provisioning it. SecretString must
+be a flat JSON object of UPPER_SNAKE_CASE env names to strings, starting with
+`GOOGLE_APPLICATION_CREDENTIAL` (the Firebase JSON serialized as a string).
+The API functions load it before configuration validation; non-empty explicit
+environment values win and empty strings count as unset. Failed loads stop startup
+without exposing values. Rotation requires recycling the functions.
+
+Without the id, Lambda uses the existing GitHub Firebase secret fallback; keep
+that secret until all stages opt in. Local, Docker, CI and self-hosters keep using
+plain env vars. This does not change the Infisical commands below or sync secrets
+to AWS yet. Next: step 2 checked-in per-stage non-secret config, step 3 Infisical →
+AWS sync, step 4 brain-service/learn-cloud adoption. See
+[lca-api guidance](services/learn-card-network/lca-api/AGENTS.md#runtime-secrets-backend-config-model-step-1).
+
 ```bash
 # 1. Install the Infisical CLI (one-time)
 #    macOS:
@@ -105,6 +123,23 @@ Each target pulls secrets from its specific Infisical folder path. To enable roo
 
 Generated `.env` files are gitignored and should **never** be committed.
 
+### Validation and access
+
+Each deployable owns a Zod contract in its config directory. Services validate
+`process.env` once before initializing databases or clients and expose a typed
+`environment` object. Browser applications validate Vite build inputs in
+`vite.config` and resolve all runtime behavior through `TenantConfig`.
+
+Direct `process.env` and `import.meta.env` reads outside those config modules are
+rejected by ESLint. `bun run verify:lc-1984` also requires every schema key to be
+documented in the matching `.env.example`, rejects unknown example keys, and
+checks actual source access. Validation errors name the project, source, invalid
+key, and example file without printing secret values.
+
+Booleans accept only `true`, `false`, `1`, or `0`. Invalid explicit config stops
+startup; unavailable remote tenant config may use only a previously validated
+baked or cached value.
+
 ## Adding a New Service
 
 Edit `scripts/pull-env.sh` and add entries to the three parallel arrays:
@@ -141,15 +176,15 @@ The "LearnCard" Infisical project has this folder layout:
 │   ├── brain-service/      ← SEED, SKILL_EMBEDDING_*, SMART_RESUME_*
 │   ├── cloud-service/      ← JWT_SIGNING_KEY, LEARN_CLOUD_*, RSA_PRIVATE_KEY, XAPI_*
 │   ├── lca-api/            ← GOOGLE_APPLICATION_CREDENTIAL, OPENAI_API_KEY, SEED
-├── learn-card-app/         ← VITE_*, CORS_PROXY_API_KEY, WEB3AUTH_*
-│   └── fastlane/           ← (CI/CD keys, not pulled by default)
+├── learn-card-app/         ← build controls only; runtime values live in TenantConfig
+│   └── fastlane/           ← CI/CD keys, not pulled by default
 ```
 
 ### Known Gaps
 
--   **ScoutPass app** (`apps/scouts/`) uses a separate Infisical project ("ScoutPass") — not yet wired into this script.
--   **Example apps** (`examples/app-store-apps/`) are developer-specific and not pulled from Infisical.
--   Some vars in `.env.example` files may not yet exist in Infisical. Compare your generated `.env` against the `.env.example` and add any missing vars to Infisical or fill them in manually.
+- **ScoutPass app** (`apps/scouts/`) uses a separate Infisical project ("ScoutPass") — not yet wired into this script.
+- **Example apps** (`examples/app-store-apps/`) are developer-specific and not pulled from Infisical.
+- `.env.example` files are contract-checked; update the schema and example together.
 
 ## Troubleshooting
 
@@ -160,3 +195,102 @@ The "LearnCard" Infisical project has this folder layout:
 **Missing variables** — Compare the generated `.env` against the `.env.example` in the same directory. Any vars not in Infisical need to be added there or filled in manually.
 
 **Authentication expired** — Run `infisical login` again.
+
+## Local multi-credential sharing (LC-2187)
+
+`apps/learn-card-app/compose-local.yaml` supplies a matching local Brain/LearnCloud
+trust configuration, including LearnCloud's Redis replay store. Rebuild/recreate
+that local stack and enable the client-side LaunchDarkly flag
+`share-multiple-enabled` to exercise the sharing flow. No additional untracked
+service `.env` entries are needed for this Compose setup. These Compose values
+explicitly override the corresponding entries in service `env_file` files.
+
+For services running directly on the host, add these settings to the existing
+service `.env` files (keep the normal database, seed, and Redis configuration):
+
+**Brain** (local port 4000, `IS_OFFLINE=true`):
+
+```dotenv
+SHARE_LINK_MAINTENANCE_NAMESPACE=learncard-local
+SHARE_LINK_MAINTENANCE_ORIGIN=http://localhost:4100
+SHARE_LINK_MAINTENANCE_AUDIENCE=did:web:localhost%3A4100
+SHARE_LINK_MAINTENANCE_ALLOW_INSECURE_LOOPBACK=true
+SHARE_LINK_OWNER_API_NAMESPACE=learncard-local
+```
+
+LC-2189 also requires host-run Brain to set `SHARE_LINK_REQUEST_HASH_SECRET` to a
+stable value of at least 32 bytes (generate one with `openssl rand -hex 32`).
+The tracked local Compose stack supplies a clearly labeled development-only
+fallback instead; never use that fallback in a deployed environment.
+
+**LearnCloud** (local port 4100):
+
+```dotenv
+SHARE_CONTENT_AUDIENCE=did:web:localhost%3A4100
+SHARE_CONTENT_SERVICE_DIDS=did:web:localhost%3A4000
+SHARE_CONTENT_VERIFICATION_METHODS=did:web:localhost%3A4000#owner
+SHARE_CONTENT_NAMESPACE_BINDINGS='{"did:web:localhost%3A4000":["learncard-local"]}'
+```
+
+LearnCloud also requires `REDIS_HOST` and `REDIS_PORT` pointing to its running
+Redis replay store. Brain publishes its service signing method as `#owner` in
+`http://localhost:4000/.well-known/did.json`. If you change the ports or identities,
+update both sides together. Restart both services after changing their environment.
+A coworker whose existing `.env` files already provide matching values can simply
+rebuild/restart and test. Missing trust configuration leaves the share-content
+routes disabled; enabling the UI flag alone does not enable the backend.
+
+These are public, local-development identities, not production credentials.
+Deployed environments must explicitly provision their own HTTPS LearnCloud origin,
+audience, allowed Brain identity, exact signing method, namespace binding, and
+Redis replay store. Do not enable the insecure-loopback option there.
+
+### GitHub deployment configuration
+
+The `.github/workflows/deploy.yml` deployment steps pass the following GitHub
+**environment variables** to Serverless, which installs them as Lambda runtime
+environment variables. They are public configuration, not new secrets. Existing
+`SEED` / `LEARN_CLOUD_SEED` secrets remain unchanged; LearnCloud's Serverless stack
+already supplies its Redis endpoint.
+
+LC-2189 separately requires a private, stable 32+ byte GitHub Actions secret named
+`SHARE_LINK_REQUEST_HASH_SECRET` for Brain. Generate it once with
+`openssl rand -hex 32`; the Brain deployment workflow forwards it to Lambda.
+Do not put it in the public variables below or use the local Compose fallback.
+
+Configure each matching pair of GitHub environments independently:
+
+| Stage                | Brain environment                    | LearnCloud environment               |
+| -------------------- | ------------------------------------ | ------------------------------------ |
+| LearnCard staging    | `learn-cloud-network-api-staging`    | `learn-cloud-storage-api-staging`    |
+| LearnCard production | `learn-cloud-network-api-production` | `learn-cloud-storage-api-production` |
+| ScoutPass staging    | `scout-network-api-staging`          | `scout-storage-api-staging`          |
+| ScoutPass production | `scout-network-api-production`       | `scout-storage-api-production`       |
+
+In the Brain environment, add:
+
+| Variable                           | Value                                                                              |
+| ---------------------------------- | ---------------------------------------------------------------------------------- |
+| `SHARE_LINK_MAINTENANCE_NAMESPACE` | A stable namespace, e.g. `learncard` (or `scouts` for ScoutPass)                   |
+| `SHARE_LINK_MAINTENANCE_ORIGIN`    | That stage's HTTPS LearnCloud origin, e.g. `https://<cloud-host>`; no `/trpc` path |
+| `SHARE_LINK_MAINTENANCE_AUDIENCE`  | `did:web:<cloud-host>`                                                             |
+
+In the matching LearnCloud environment, add:
+
+| Variable                             | Value                                                                                                                    |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `SHARE_CONTENT_AUDIENCE`             | Same value as Brain's audience                                                                                           |
+| `SHARE_CONTENT_SERVICE_DIDS`         | `did:web:<brain-host>` (the deployed Brain service identity)                                                             |
+| `SHARE_CONTENT_VERIFICATION_METHODS` | The exact signing method from Brain's `https://<brain-host>/.well-known/did.json`, normally `did:web:<brain-host>#owner` |
+| `SHARE_CONTENT_NAMESPACE_BINDINGS`   | JSON mapping that Brain DID to its namespace, e.g. `{"did:web:<brain-host>":["learncard"]}`                              |
+
+Replace the host placeholders with the deployed domains; do not paste placeholders
+or local identities into GitHub. Store the JSON as raw JSON without surrounding
+shell quotes. Keep the namespace stable after creating links. The deploy workflow
+forces insecure loopback off. The owner API inherits the maintenance namespace,
+so no separate owner namespace variable is required.
+
+Redeploy both services after setting the variables (rebuilding the frontend alone
+will not update Lambda configuration), then enable `share-multiple-enabled` in
+LaunchDarkly. Check create/open/revoke in the target environment, including opening
+a copied link in a signed-out browser. Missing values keep sharing disabled.

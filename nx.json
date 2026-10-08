@@ -24,7 +24,11 @@
             "outputs": ["{projectRoot}/dist"]
         },
         "test": {
-            "dependsOn": ["^build", "^test"],
+            "dependsOn": ["^build"],
+            "outputs": ["{projectRoot}/coverage"]
+        },
+        "test:coverage": {
+            "dependsOn": ["^build"],
             "outputs": ["{projectRoot}/coverage"]
         }
     },

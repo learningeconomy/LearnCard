@@ -1,0 +1,7 @@
+services:
+    inbox-sqs:
+        image: softwaremill/elasticmq-native:1.6.15
+        ports:
+            - '9324:9324'
+        volumes:
+            - ./inbox-elasticmq.conf:/opt/elasticmq.conf:ro

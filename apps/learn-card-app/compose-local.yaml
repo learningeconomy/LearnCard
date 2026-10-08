@@ -14,6 +14,7 @@ services:
             - brain
             - cloud
             - api
+            - ai-agent
             - delete-service
         networks:
             - learn-card
@@ -23,11 +24,6 @@ services:
             - path: ./.env
               required: false
         environment:
-            LCN_URL: http://localhost:4000/trpc
-            LCN_API_URL: http://localhost:4000/api
-            CLOUD_URL: http://localhost:4100/trpc
-            LEARN_CLOUD_XAPI_URL: http://localhost:4100/xapi
-            API_URL: http://localhost:5100/trpc
             TENANT: ${TENANT:-learncard}
             STAGE: ${STAGE:-local}
             LOCAL_AIP: ${LOCAL_AIP:-}
@@ -46,7 +42,6 @@ services:
             - ./capacitor.config.ts:/app/apps/learn-card-app/capacitor.config.ts
             - ./vite.config.mts:/app/apps/learn-card-app/vite.config.mts
             - ./postcss.config.js:/app/apps/learn-card-app/postcss.config.js
-            - ./tailwind.config.js:/app/apps/learn-card-app/tailwind.config.js
             - ./tsconfig.json:/app/apps/learn-card-app/tsconfig.json
             - ../../packages:/app/packages
             - ../../services/learn-card-network:/app/services/learn-card-network
@@ -119,6 +114,19 @@ services:
             # Zero-cost in hot paths when unset; toggle off by unsetting.
             LC_PERF_LOG: '1'
             DOMAIN_NAME: 'localhost%3A4000'
+            # LC-2187 local-only trust pair; keep in sync with cloud below.
+            # localhost resolves through host-gateway to the published cloud port.
+            SHARE_LINK_MAINTENANCE_NAMESPACE: learncard-local
+            SHARE_LINK_MAINTENANCE_ORIGIN: http://localhost:4100
+            SHARE_LINK_MAINTENANCE_AUDIENCE: did:web:localhost%3A4100
+            SHARE_LINK_MAINTENANCE_ALLOW_INSECURE_LOOPBACK: 'true'
+            SHARE_LINK_OWNER_API_NAMESPACE: learncard-local
+            CREDENTIAL_REFRESH_ENABLED: 'true'
+            CREDENTIAL_REFRESH_DIGEST_SECRET: ${CREDENTIAL_REFRESH_DIGEST_SECRET:-local-only-credential-refresh-digest-secret}
+            # Development-only fallback; deployed Brain instances require their own stable secret.
+            SHARE_LINK_REQUEST_HASH_SECRET: ${SHARE_LINK_REQUEST_HASH_SECRET:-local-only-share-link-request-hash-key-unsafe-for-deployments}
+            # Trust proof-of-login presentations signed by this stack's LCA API.
+            LOGIN_PROVIDER_DID: did:web:localhost%3A5100
             SKIP_DIDKIT_NAPI: '1'
             # Enable polling for file watching in Docker
             CHOKIDAR_USEPOLLING: 'true'
@@ -167,6 +175,11 @@ services:
             IS_OFFLINE: true
             PORT: 4100
             LEARN_CLOUD_SEED: b
+            # Only the local Brain service's exact signing method is authorized.
+            SHARE_CONTENT_AUDIENCE: did:web:localhost%3A4100
+            SHARE_CONTENT_SERVICE_DIDS: did:web:localhost%3A4000
+            SHARE_CONTENT_VERIFICATION_METHODS: did:web:localhost%3A4000#owner
+            SHARE_CONTENT_NAMESPACE_BINDINGS: '{"did:web:localhost%3A4000":["learncard-local"]}'
             SKIP_DIDKIT_NAPI: '1'
             CHOKIDAR_USEPOLLING: 'true'
             CHOKIDAR_INTERVAL: '1000'
@@ -200,6 +213,7 @@ services:
         extra_hosts:
             - 'localhost:host-gateway'
         env_file:
+            - path: ../../services/learn-card-network/lca-api/compose.env
             - path: ../../services/learn-card-network/lca-api/.env
               required: false
         command: ['sh', '-c', 'cd services/learn-card-network/lca-api && bun run dev']
@@ -219,6 +233,57 @@ services:
             REDIS_HOST: redis3
             REDIS_PORT: 6379
             METABASE_SECRET_KEY: ${METABASE_SECRET_KEY:-notARealSecretKey}
+            KEYCLOAK_ISSUERS: http://localhost:8081/realms/learncard
+            KEYCLOAK_AUDIENCES: learncard-app
+            KEYCLOAK_JWKS_URL_OVERRIDES: http://localhost:8081/realms/learncard=http://keycloak:8080/realms/learncard/protocol/openid-connect/certs
+            OIDC_ISSUER: http://localhost:5100
+            OIDC_CLIENT_ID: keycloak-broker
+            OIDC_CLIENT_SECRET: dev-only-broker-secret # Public local-development placeholder
+            # Set by `bun run lc dev` from the tenant's native Firebase files + bundle ID (see `lc auth-audiences`).
+            GOOGLE_OAUTH_CLIENT_IDS: ${GOOGLE_OAUTH_CLIENT_IDS:-}
+            APPLE_OAUTH_CLIENT_IDS: ${APPLE_OAUTH_CLIENT_IDS:-}
+
+    ai-agent:
+        image: learncard-monorepo-local
+        build:
+            context: ../../
+            dockerfile: Dockerfile.monorepo
+        container_name: 'lcn-ai-agent-service'
+        expose:
+            - 4300
+        ports:
+            - '4300:4300'
+        command:
+            - sh
+            - -c
+            - |
+                export PORT="$${PORT:-4300}"
+                export AI_AGENT_CLOUD_URL="$${AI_AGENT_CLOUD_URL:-http://cloud:4100/trpc}"
+                export AI_AGENT_NETWORK_URL="$${AI_AGENT_NETWORK_URL:-http://brain:4000/trpc}"
+                export AI_AGENT_CONSENT_FLOW_APP_URL="$${AI_AGENT_CONSENT_FLOW_APP_URL:-http://localhost:3000}"
+                export AI_AGENT_MONGO_URI="$${AI_AGENT_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}"
+                export AI_AGENT_MONGO_DB_NAME="$${AI_AGENT_MONGO_DB_NAME:-learn-card-ai-agent}"
+                export AI_AGENT_WALLET_SEED="$${AI_AGENT_WALLET_SEED:-$${SEED:-d}}"
+                bun run --cwd services/learn-card-network/ai-agent dev
+        depends_on:
+            - brain
+            - cloud
+            - mongodb
+        networks:
+            - learn-card
+        extra_hosts:
+            - 'localhost:host-gateway'
+        env_file:
+            - path: ../../services/learn-card-network/ai-agent/.env
+              required: false
+        volumes:
+            - ../../services/learn-card-network/ai-agent/src:/app/services/learn-card-network/ai-agent/src
+            - ../../services/learn-card-network/ai-agent/public:/app/services/learn-card-network/ai-agent/public
+            - ../../packages:/app/packages
+        environment:
+            SKIP_DIDKIT_NAPI: '1'
+            CHOKIDAR_USEPOLLING: 'true'
+            CHOKIDAR_INTERVAL: '1000'
 
     neo4j:
         image: neo4j:latest
@@ -358,6 +423,50 @@ services:
             # If Postgres is too slow to start, increase this
             LRSQL_POOL_INITIALIZATION_FAIL_TIMEOUT: 10000
             LRSQL_ALLOW_ALL_ORIGINS: true
+
+    keycloak:
+        image: learncard-keycloak-dev
+        build:
+            context: ../../infra/keycloak
+            dockerfile: Dockerfile.dev
+        command: start-dev --import-realm
+        environment:
+            KC_BOOTSTRAP_ADMIN_USERNAME: admin
+            KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+            KC_HEALTH_ENABLED: 'true'
+            KC_HOSTNAME: http://localhost:8081
+            KC_HTTP_ENABLED: 'true'
+            # Web Google/Apple brokering (infra/keycloak/README.md#google-and-apple-web).
+            # Dev placeholder defaults let the realm import with zero setup; only override
+            # in apps/learn-card-app/.env with real values to test an actual provider.
+            GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-dev-google-client-id.apps.googleusercontent.com}
+            GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-dev-google-client-secret}
+            APPLE_SERVICE_ID: ${APPLE_SERVICE_ID:-com.learncard.dev.signin}
+            APPLE_TEAM_ID: ${APPLE_TEAM_ID:-dev-apple-team-id}
+            APPLE_KEY_ID: ${APPLE_KEY_ID:-dev-apple-key-id}
+            APPLE_P8_CONTENT: ${APPLE_P8_CONTENT:-dev-placeholder-not-a-real-key}
+        ports:
+            - '8081:8080'
+        networks:
+            - learn-card
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+        volumes:
+            - ../../infra/keycloak/realms/learncard-dev-realm.json:/opt/keycloak/data/import/learncard-realm.json:ro
+            - keycloak-data:/opt/keycloak/data
+        healthcheck:
+            test:
+                [
+                    'CMD-SHELL',
+                    "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"status\": *\"UP\"' <&3",
+                ]
+            interval: 5s
+            timeout: 5s
+            retries: 40
+            start_period: 20s
+
+volumes:
+    keycloak-data:
 
 networks:
     learn-card:

@@ -8,17 +8,16 @@ import { ModalContainer } from './types/Modals';
 import AppModal from './surfaces/AppModal';
 
 export const CenterModal: ModalContainer = ({ component, options, open }) => {
-    const { closeModal } = useModal();
+    const { requestCloseModal } = useModal();
 
     const optionalClass = options?.className || 'd-c-modal';
     const hideButton = typeof options?.hideButton === 'boolean' ? options.hideButton : true;
     const customSectionClass = options?.sectionClassName || '';
 
     const handleCloseModal = () => {
-        if (options.disableCloseHandlers) return;
+        if (options?.disableCloseHandlers) return;
 
-        options?.onClose?.();
-        closeModal();
+        void requestCloseModal();
     };
 
     return (
@@ -36,6 +35,20 @@ export const CenterModal: ModalContainer = ({ component, options, open }) => {
                 !hideButton ? (
                     <button type="button" className="center-modal-x" onClick={handleCloseModal}>
                         <X strokeWidth="4" />
+                    </button>
+                ) : undefined
+            }
+            beforeSection={
+                options?.customCloseButton ? (
+                    <button
+                        type="button"
+                        className={`center-modal-custom-close flex h-10 w-10 items-center justify-center rounded-full border border-grayscale-200 bg-white text-grayscale-700 shadow-box-bottom transition-colors hover:bg-grayscale-100 ${
+                            options.customCloseButtonClass || ''
+                        }`}
+                        onClick={handleCloseModal}
+                        aria-label="Close modal"
+                    >
+                        <X className="h-5 w-5" />
                     </button>
                 ) : undefined
             }

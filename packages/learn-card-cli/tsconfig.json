@@ -1,6 +1,7 @@
 {
+    "extends": "../../tsconfig.library.json",
     "compilerOptions": {
-        "lib": ["es2017"],
+        "lib": ["es2022"],
         "module": "esnext",
         "moduleResolution": "bundler",
         "resolveJsonModule": true,
@@ -33,5 +34,6 @@
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true
     },
+    "include": ["src/**/*", "scripts/**/*.ts"],
     "exclude": ["./dist/**/*", "./node_modules/**/*"]
 }

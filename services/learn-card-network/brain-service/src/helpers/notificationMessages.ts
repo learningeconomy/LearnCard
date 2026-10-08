@@ -20,6 +20,7 @@
 export type NotificationMessageKey =
     | 'boostReceived'
     | 'boostAccepted'
+    | 'boostAcceptedConnect'
     | 'credentialReceived'
     | 'endorsementReceived'
     | 'connectionAccepted'
@@ -37,6 +38,10 @@ export type NotificationMessageKey =
     | 'appListingWithdrawn'
     | 'appListingApproved'
     | 'appListingRejected'
+    | 'contractRequestReceived'
+    | 'contractRequestAccepted'
+    | 'contractRequestDenied'
+    | 'contractRequestCancelled'
     | 'consentFlowViewRequest'
     | 'consentFlowInvite'
     | 'consentFlowShare'
@@ -53,7 +58,11 @@ export type NotificationMessageKey =
     | 'credentialSuspendedNamed'
     | 'credentialSuspendedUnnamed'
     | 'credentialRestoredNamed'
-    | 'credentialRestoredUnnamed';
+    | 'credentialRestoredUnnamed'
+    // --- Managed credential refresh (LC-2136) — generic copy only: never name the
+    // credential, the holder's claims, or implementation terms (refresh/sync/etc.) ---
+    | 'credentialRefreshed'
+    | 'shareViewed';
 
 type MessageTemplate = { title: string; body: string };
 type LocaleCatalog = Record<NotificationMessageKey, MessageTemplate>;
@@ -71,6 +80,10 @@ const en: LocaleCatalog = {
     boostAccepted: {
         title: 'Boost Accepted',
         body: '{name} has accepted your boost!',
+    },
+    boostAcceptedConnect: {
+        title: 'Boost Accepted',
+        body: '{name} claimed your credential — connect?',
     },
     credentialReceived: {
         title: 'Credential Received',
@@ -140,6 +153,22 @@ const en: LocaleCatalog = {
         title: 'App Listing Needs Changes',
         body: '"{displayName}" was not approved. Please review and resubmit.',
     },
+    contractRequestReceived: {
+        title: 'Connection request',
+        body: '{referrer} would like to connect you with {contractOwner}.',
+    },
+    contractRequestAccepted: {
+        title: 'Connection request accepted',
+        body: '{name} accepted the request.',
+    },
+    contractRequestDenied: {
+        title: 'Connection request declined',
+        body: '{name} declined the request.',
+    },
+    contractRequestCancelled: {
+        title: 'Connection request cancelled',
+        body: '{name} cancelled the request.',
+    },
     consentFlowViewRequest: {
         title: 'AI Insights',
         body: '{name} has requested to view your insights.',
@@ -204,6 +233,14 @@ const en: LocaleCatalog = {
         title: 'Credential restored',
         body: 'Your credential was restored by {issuer}.',
     },
+    credentialRefreshed: {
+        title: 'Credential updated',
+        body: '{from} updated one of your credentials.',
+    },
+    shareViewed: {
+        title: 'Share viewed',
+        body: 'Your share “{title} ({count})” was viewed.',
+    },
 };
 
 const es: LocaleCatalog = {
@@ -214,6 +251,10 @@ const es: LocaleCatalog = {
     boostAccepted: {
         title: 'Reconocimiento aceptado',
         body: '¡{name} ha aceptado tu reconocimiento!',
+    },
+    boostAcceptedConnect: {
+        title: 'Reconocimiento aceptado',
+        body: '{name} reclamó tu credencial. ¿Conectar?',
     },
     credentialReceived: {
         title: 'Credencial recibida',
@@ -283,6 +324,22 @@ const es: LocaleCatalog = {
         title: 'La aplicación necesita cambios',
         body: '"{displayName}" no fue aprobada. Revísala y vuelve a enviarla.',
     },
+    contractRequestReceived: {
+        title: 'Solicitud de conexión',
+        body: '{referrer} quiere conectarte con {contractOwner}.',
+    },
+    contractRequestAccepted: {
+        title: 'Solicitud de conexión aceptada',
+        body: '{name} aceptó la solicitud.',
+    },
+    contractRequestDenied: {
+        title: 'Solicitud de conexión rechazada',
+        body: '{name} rechazó la solicitud.',
+    },
+    contractRequestCancelled: {
+        title: 'Solicitud de conexión cancelada',
+        body: '{name} canceló la solicitud.',
+    },
     consentFlowViewRequest: {
         title: 'AI Insights',
         body: '{name} ha solicitado ver tus análisis.',
@@ -347,6 +404,14 @@ const es: LocaleCatalog = {
         title: 'Credencial restaurada',
         body: 'Tu credencial fue restaurada por {issuer}.',
     },
+    credentialRefreshed: {
+        title: 'Credencial actualizada',
+        body: '{from} actualizó una de tus credenciales.',
+    },
+    shareViewed: {
+        title: 'Enlace visto',
+        body: 'Se vio tu enlace «{title} ({count})».',
+    },
 };
 
 const fr: LocaleCatalog = {
@@ -357,6 +422,10 @@ const fr: LocaleCatalog = {
     boostAccepted: {
         title: 'Reconnaissance acceptée',
         body: '{name} a accepté votre reconnaissance !',
+    },
+    boostAcceptedConnect: {
+        title: 'Reconnaissance acceptée',
+        body: '{name} a réclamé votre justificatif — vous connecter ?',
     },
     credentialReceived: {
         title: 'Titre reçu',
@@ -426,6 +495,22 @@ const fr: LocaleCatalog = {
         title: "L'application nécessite des modifications",
         body: "« {displayName} » n'a pas été approuvée. Veuillez la réviser et la soumettre à nouveau.",
     },
+    contractRequestReceived: {
+        title: 'Demande de connexion',
+        body: '{referrer} souhaite vous mettre en relation avec {contractOwner}.',
+    },
+    contractRequestAccepted: {
+        title: 'Demande de connexion acceptée',
+        body: '{name} a accepté la demande.',
+    },
+    contractRequestDenied: {
+        title: 'Demande de connexion refusée',
+        body: '{name} a refusé la demande.',
+    },
+    contractRequestCancelled: {
+        title: 'Demande de connexion annulée',
+        body: '{name} a annulé la demande.',
+    },
     consentFlowViewRequest: {
         title: 'AI Insights',
         body: '{name} a demandé à consulter vos analyses.',
@@ -490,6 +575,14 @@ const fr: LocaleCatalog = {
         title: 'Titre rétabli',
         body: 'Votre titre a été rétabli par {issuer}.',
     },
+    credentialRefreshed: {
+        title: 'Titre mis à jour',
+        body: "{from} a mis à jour l'un de vos titres.",
+    },
+    shareViewed: {
+        title: 'Partage consulté',
+        body: 'Votre partage « {title} ({count}) » a été consulté.',
+    },
 };
 
 const ar: LocaleCatalog = {
@@ -500,6 +593,10 @@ const ar: LocaleCatalog = {
     boostAccepted: {
         title: 'تم قبول التحفيز',
         body: 'قام {name} بقبول التحفيز الخاص بك!',
+    },
+    boostAcceptedConnect: {
+        title: 'تم قبول التحفيز',
+        body: 'استلم {name} اعتمادك — هل تريد التواصل؟',
     },
     credentialReceived: {
         title: 'تم استلام شهادة',
@@ -569,6 +666,13 @@ const ar: LocaleCatalog = {
         title: 'التطبيق يحتاج إلى تعديلات',
         body: 'لم تتم الموافقة على "{displayName}". يرجى مراجعته وإعادة إرساله.',
     },
+    contractRequestReceived: {
+        title: 'طلب اتصال',
+        body: 'يريد {referrer} توصيلك بـ {contractOwner}.',
+    },
+    contractRequestAccepted: { title: 'تم قبول طلب الاتصال', body: 'قبل {name} الطلب.' },
+    contractRequestDenied: { title: 'تم رفض طلب الاتصال', body: 'رفض {name} الطلب.' },
+    contractRequestCancelled: { title: 'تم إلغاء طلب الاتصال', body: 'ألغى {name} الطلب.' },
     consentFlowViewRequest: {
         title: 'رؤى الذكاء الاصطناعي',
         body: 'طلب {name} الاطلاع على رؤاك.',
@@ -632,6 +736,14 @@ const ar: LocaleCatalog = {
     credentialRestoredUnnamed: {
         title: 'تمت استعادة الشهادة',
         body: 'تمت استعادة شهادتك بواسطة {issuer}.',
+    },
+    credentialRefreshed: {
+        title: 'تم تحديث الشهادة',
+        body: 'قام {from} بتحديث إحدى شهاداتك.',
+    },
+    shareViewed: {
+        title: 'تمت مشاهدة المشاركة',
+        body: 'تمت مشاهدة مشاركتك «{title} ({count})».',
     },
 };
 

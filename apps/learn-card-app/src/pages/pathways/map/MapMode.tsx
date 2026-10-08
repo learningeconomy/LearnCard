@@ -26,21 +26,12 @@ import { useHistory, useLocation } from 'react-router-dom';
 
 import { pathwayStore } from '../../../stores/pathways';
 import { seedChosenRoute } from '../core/chosenRoute';
-import {
-    findParentCompositeNode,
-    findParentPathway,
-} from '../core/composition';
-import {
-    availableNodes,
-    buildAdjacency,
-    neighborhood,
-} from '../core/graphOps';
+import { findParentCompositeNode, findParentPathway } from '../core/composition';
+import { availableNodes, buildAdjacency, neighborhood } from '../core/graphOps';
 
 import type { NodeDetailLocationState } from '../node/NodeDetail';
 
-import CollectionMapNode, {
-    type CollectionMapNodeData,
-} from './CollectionMapNode';
+import CollectionMapNode, { type CollectionMapNodeData } from './CollectionMapNode';
 import FocusActionBar from './FocusActionBar';
 import MapNode, { type MapNodeData } from './MapNode';
 import NestedPathwayContext from './NestedPathwayContext';
@@ -50,12 +41,7 @@ import {
     computeCollectionProgress,
     detectCollections,
 } from './collectionDetection';
-import {
-    NODE_HEIGHT,
-    NODE_WIDTH,
-    layoutPathway,
-    layoutPathwayNavigate,
-} from './layout';
+import { NODE_HEIGHT, NODE_WIDTH, layoutPathway, layoutPathwayNavigate } from './layout';
 import { buildRouteIndex, getPathwayRoute } from './route';
 
 const NODE_TYPES = {
@@ -88,9 +74,7 @@ const NODE_TYPES = {
  */
 const useIsDesktop = (): boolean => {
     const [isDesktop, setIsDesktop] = React.useState<boolean>(() =>
-        typeof window !== 'undefined'
-            ? window.matchMedia('(min-width: 640px)').matches
-            : true,
+        typeof window !== 'undefined' ? window.matchMedia('(min-width: 640px)').matches : true
     );
 
     useEffect(() => {
@@ -244,7 +228,7 @@ const MapModeInner: React.FC = () => {
     // initializer so later `history.replace` calls from other code
     // paths don't fight this.
     const [focusId, setFocusId] = useState<string | null>(
-        () => location.state?.initialFocusId ?? defaultFocusId,
+        () => location.state?.initialFocusId ?? defaultFocusId
     );
 
     // Re-sync focus to the new `defaultFocusId` only when it *actually
@@ -288,9 +272,7 @@ const MapModeInner: React.FC = () => {
     // a "peek" gesture, not a preference — switching pathways or
     // reloading the Map resets to the Navigate-first default.
     // ------------------------------------------------------------------
-    const [layoutOverride, setLayoutOverride] = useState<
-        'navigate' | 'explore' | null
-    >(null);
+    const [layoutOverride, setLayoutOverride] = useState<'navigate' | 'explore' | null>(null);
 
     // Reset override when the pathway changes — each pathway deserves
     // a fresh peek-at-nothing start.
@@ -298,8 +280,7 @@ const MapModeInner: React.FC = () => {
         setLayoutOverride(null);
     }, [activePathway?.id]);
 
-    const hasChosenRoute =
-        (activePathway?.chosenRoute?.length ?? 0) >= 2;
+    const hasChosenRoute = (activePathway?.chosenRoute?.length ?? 0) >= 2;
 
     const effectiveLayout: 'navigate' | 'explore' =
         layoutOverride ?? (hasChosenRoute ? 'navigate' : 'explore');
@@ -372,8 +353,7 @@ const MapModeInner: React.FC = () => {
         // Establish the routing target: existing destination if set,
         // otherwise the current focus node. If neither is available,
         // there's nothing to route to.
-        const nextDestinationId =
-            activePathway.destinationNodeId ?? focusId ?? null;
+        const nextDestinationId = activePathway.destinationNodeId ?? focusId ?? null;
 
         if (!nextDestinationId) return;
 
@@ -420,17 +400,12 @@ const MapModeInner: React.FC = () => {
     // ------------------------------------------------------------------
     const collections = useMemo(
         () => (activePathway ? detectCollections(activePathway) : []),
-        [activePathway],
+        [activePathway]
     );
 
-    const collectionIndex = useMemo(
-        () => buildCollectionIndex(collections),
-        [collections],
-    );
+    const collectionIndex = useMemo(() => buildCollectionIndex(collections), [collections]);
 
-    const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(
-        () => new Set(),
-    );
+    const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(() => new Set());
 
     // Reset expansion when the active pathway changes — expansion is a
     // per-pathway affordance, not a global preference.
@@ -508,7 +483,7 @@ const MapModeInner: React.FC = () => {
             return layoutPathwayNavigate(
                 activePathway,
                 activePathway.chosenRoute,
-                collapsedMemberToGroup,
+                collapsedMemberToGroup
             );
         }
 
@@ -565,7 +540,7 @@ const MapModeInner: React.FC = () => {
 
     const nb = useMemo(
         () => (activePathway && focusId ? neighborhood(activePathway, focusId, 2) : null),
-        [activePathway, focusId],
+        [activePathway, focusId]
     );
 
     // Precompute prerequisite progress for every node in one adjacency
@@ -580,9 +555,7 @@ const MapModeInner: React.FC = () => {
 
         const { prereqs } = buildAdjacency(activePathway);
         const completed = new Set(
-            activePathway.nodes
-                .filter(n => n.progress.status === 'completed')
-                .map(n => n.id),
+            activePathway.nodes.filter(n => n.progress.status === 'completed').map(n => n.id)
         );
 
         for (const node of activePathway.nodes) {
@@ -617,15 +590,12 @@ const MapModeInner: React.FC = () => {
         (nodeId: string) => {
             if (!activePathway) return;
 
-            history.push(
-                `/pathways/node/${activePathway.id}/${nodeId}`,
-                {
-                    returnTo: '/pathways/map',
-                    restoreFocusId: nodeId,
-                } satisfies NodeDetailLocationState,
-            );
+            history.push(`/pathways/node/${activePathway.id}/${nodeId}`, {
+                returnTo: '/pathways/map',
+                restoreFocusId: nodeId,
+            } satisfies NodeDetailLocationState);
         },
-        [activePathway, history],
+        [activePathway, history]
     );
 
     // ------------------------------------------------------------------
@@ -716,9 +686,7 @@ const MapModeInner: React.FC = () => {
             // obey the neighborhood fade.
             const baseInFocus = nb ? nb.nodeIds.has(pos.id) : true;
             const inFocus =
-                effectiveLayout === 'navigate' && pos.onRoute === true
-                    ? true
-                    : baseInFocus;
+                effectiveLayout === 'navigate' && pos.onRoute === true ? true : baseInFocus;
 
             const isFocusNode = pos.id === focusId;
             const prereq = prereqByNode.get(pos.id) ?? {
@@ -743,8 +711,7 @@ const MapModeInner: React.FC = () => {
             // Explore layout doesn't set `pos.onRoute` at all, so this
             // defaults to undefined/false and the existing depth fade
             // stays the governing emphasis.
-            const isSideBranch =
-                effectiveLayout === 'navigate' && pos.onRoute === false;
+            const isSideBranch = effectiveLayout === 'navigate' && pos.onRoute === false;
 
             // Detour count — non-zero only in Navigate mode (the memo
             // is empty in Explore). Undefined in Explore so the chip
@@ -764,8 +731,7 @@ const MapModeInner: React.FC = () => {
                     isYourPosition,
                     isSideBranch,
                     detourCount,
-                    onDetourTap:
-                        detourCount && detourCount > 0 ? peekDetours : undefined,
+                    onDetourTap: detourCount && detourCount > 0 ? peekDetours : undefined,
                 },
                 width: NODE_WIDTH,
                 height: NODE_HEIGHT,
@@ -781,9 +747,7 @@ const MapModeInner: React.FC = () => {
             if (effectivelyExpandedGroupIds.has(group.id)) continue;
 
             // Reference member to inherit y (they all share a level).
-            const anchorMember = group.memberIds
-                .map(id => positionById.get(id))
-                .find(Boolean);
+            const anchorMember = group.memberIds.map(id => positionById.get(id)).find(Boolean);
             const targetPos = positionById.get(group.targetNodeId);
 
             if (!anchorMember || !targetPos) continue;
@@ -813,14 +777,14 @@ const MapModeInner: React.FC = () => {
             // override above). In Explore, the neighborhood-derived
             // answer still governs so distant collections fade.
             const anyMemberOnRoute = group.memberIds.some(
-                mid => routeIndex?.nodeIndex.has(mid) ?? false,
+                mid => routeIndex?.nodeIndex.has(mid) ?? false
             );
             const inFocus =
                 effectiveLayout === 'navigate' && anyMemberOnRoute
                     ? true
                     : nb
-                        ? group.memberIds.some(mid => nb.nodeIds.has(mid))
-                        : true;
+                      ? group.memberIds.some(mid => nb.nodeIds.has(mid))
+                      : true;
 
             nodes.push({
                 id: group.id,
@@ -977,8 +941,7 @@ const MapModeInner: React.FC = () => {
             let prevRenderId: string | null = null;
 
             for (const routeId of chosenRoute) {
-                const renderId =
-                    collapsedMemberToGroup.get(routeId) ?? routeId;
+                const renderId = collapsedMemberToGroup.get(routeId) ?? routeId;
 
                 // Skip when this id isn't actually rendered (the
                 // defensive branch — shouldn't trigger for a valid
@@ -999,8 +962,7 @@ const MapModeInner: React.FC = () => {
 
                 if (fromCompleted) currentlyCompleted.add(spineEdgeId);
 
-                const isFreshlyCompleted =
-                    fromCompleted && !seen.has(spineEdgeId);
+                const isFreshlyCompleted = fromCompleted && !seen.has(spineEdgeId);
 
                 let stroke: string;
                 let strokeWidth: number;
@@ -1022,9 +984,7 @@ const MapModeInner: React.FC = () => {
                     target: renderId,
                     type: 'default',
                     animated: false,
-                    className: isFreshlyCompleted
-                        ? 'pathway-edge-drawing'
-                        : undefined,
+                    className: isFreshlyCompleted ? 'pathway-edge-drawing' : undefined,
                     style: {
                         stroke,
                         strokeWidth,
@@ -1053,10 +1013,7 @@ const MapModeInner: React.FC = () => {
             // committed route is still visible — we don't filter
             // *route* edges here — because both of its endpoints are
             // on-route and therefore rendered.
-            if (
-                !renderedNodeIds.has(e.from) ||
-                !renderedNodeIds.has(e.to)
-            ) {
+            if (!renderedNodeIds.has(e.from) || !renderedNodeIds.has(e.to)) {
                 continue;
             }
 
@@ -1175,7 +1132,7 @@ const MapModeInner: React.FC = () => {
             // on-route (the whole group shares the target, so if one
             // edge is on-route they all are).
             const anyOutgoingOnRoute = group.edgeIds.some(
-                eid => routeIndex?.edgeOnRoute.has(eid) ?? false,
+                eid => routeIndex?.edgeOnRoute.has(eid) ?? false
             );
 
             edges.push({
@@ -1187,12 +1144,20 @@ const MapModeInner: React.FC = () => {
                 style: {
                     stroke: anyOutgoingOnRoute
                         ? allDone
-                            ? inFocus ? '#10B981' : '#6EE7B7'
-                            : inFocus ? '#10B981' : '#A7F3D0'
+                            ? inFocus
+                                ? '#10B981'
+                                : '#6EE7B7'
+                            : inFocus
+                              ? '#10B981'
+                              : '#A7F3D0'
                         : allDone
-                            ? inFocus ? '#10B981' : '#A7F3D0'
-                            : inFocus ? '#9CA3AF' : '#E5E7EB',
-                    strokeWidth: anyOutgoingOnRoute ? (inFocus ? 2.25 : 1.75) : (inFocus ? 1.5 : 1),
+                          ? inFocus
+                              ? '#10B981'
+                              : '#A7F3D0'
+                          : inFocus
+                            ? '#9CA3AF'
+                            : '#E5E7EB',
+                    strokeWidth: anyOutgoingOnRoute ? (inFocus ? 2.25 : 1.75) : inFocus ? 1.5 : 1,
                     strokeDasharray: anyOutgoingOnRoute && !allDone ? '6 5' : undefined,
                     opacity: inFocus ? 1 : 0.7,
                 },
@@ -1220,10 +1185,12 @@ const MapModeInner: React.FC = () => {
                 // destination), so it's enough to check the prereq
                 // via any of its real member edges.
                 const incomingOnRoute = group.incomingEdgeIds.some(
-                    eid => routeIndex?.edgeOnRoute.has(eid) ?? false,
+                    eid => routeIndex?.edgeOnRoute.has(eid) ?? false
                 );
 
-                const prereqInFocus = nb ? nb.nodeIds.has(prereqId) || nb.nodeIds.has(group.targetNodeId) : true;
+                const prereqInFocus = nb
+                    ? nb.nodeIds.has(prereqId) || nb.nodeIds.has(group.targetNodeId)
+                    : true;
 
                 let stroke: string;
                 let strokeWidth: number;
@@ -1432,21 +1399,13 @@ const MapModeInner: React.FC = () => {
                                     : 'bg-grayscale-400'
                             }`}
                         />
-                        <span>
-                            {effectiveLayout === 'navigate'
-                                ? 'Navigating'
-                                : 'Exploring'}
-                        </span>
+                        <span>{effectiveLayout === 'navigate' ? 'Navigating' : 'Exploring'}</span>
                     </span>
 
                     <button
                         type="button"
                         onClick={() =>
-                            setLayoutOverride(
-                                effectiveLayout === 'navigate'
-                                    ? 'explore'
-                                    : null,
-                            )
+                            setLayoutOverride(effectiveLayout === 'navigate' ? 'explore' : null)
                         }
                         className="py-1.5 px-3 rounded-full
                                    bg-white/80 backdrop-blur-md border border-white/60
@@ -1459,9 +1418,7 @@ const MapModeInner: React.FC = () => {
                                 : 'Resume navigation'
                         }
                     >
-                        {effectiveLayout === 'navigate'
-                            ? 'View full map'
-                            : 'Resume navigation'}
+                        {effectiveLayout === 'navigate' ? 'View full map' : 'Resume navigation'}
                     </button>
 
                     <button
@@ -1477,7 +1434,6 @@ const MapModeInner: React.FC = () => {
                     >
                         Exit navigation
                     </button>
-
                 </div>
             )}
 
@@ -1501,41 +1457,40 @@ const MapModeInner: React.FC = () => {
                 *and* no stored destination — the button would have
                 nothing to commit.
             */}
-            {!hasChosenRoute &&
-                (activePathway?.destinationNodeId || focusId) && (
-                    <div
-                        className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 font-poppins
+            {!hasChosenRoute && (activePathway?.destinationNodeId || focusId) && (
+                <div
+                    className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 font-poppins
                                    flex flex-col items-end gap-1.5 sm:gap-2
                                    max-w-[50vw]
                                    animate-fade-in-up"
-                    >
-                        <button
-                            type="button"
-                            onClick={startNavigation}
-                            className="flex items-center gap-1.5 py-1.5 px-3 rounded-full
+                >
+                    <button
+                        type="button"
+                        onClick={startNavigation}
+                        className="flex items-center gap-1.5 py-1.5 px-3 rounded-full
                                        bg-indigo-600 hover:bg-indigo-700
                                        shadow-md shadow-indigo-900/20
                                        transition-colors
                                        text-[11px] sm:text-xs font-medium text-white
                                        whitespace-nowrap"
-                            aria-label={
-                                activePathway?.destinationNodeId
-                                    ? 'Resume navigation toward the committed destination'
-                                    : 'Start navigation with the focused node as the destination'
-                            }
-                        >
-                            <span
-                                aria-hidden
-                                className="w-1.5 h-1.5 rounded-full bg-white/90 animate-pulse"
-                            />
-                            <span>
-                                {activePathway?.destinationNodeId
-                                    ? 'Resume navigation'
-                                    : 'Start navigation'}
-                            </span>
-                        </button>
-                    </div>
-                )}
+                        aria-label={
+                            activePathway?.destinationNodeId
+                                ? 'Resume navigation toward the committed destination'
+                                : 'Start navigation with the focused node as the destination'
+                        }
+                    >
+                        <span
+                            aria-hidden
+                            className="w-1.5 h-1.5 rounded-full bg-white/90 animate-pulse"
+                        />
+                        <span>
+                            {activePathway?.destinationNodeId
+                                ? 'Resume navigation'
+                                : 'Start navigation'}
+                        </span>
+                    </button>
+                </div>
+            )}
 
             <ReactFlow
                 nodes={rfNodes}
@@ -1589,12 +1544,7 @@ const MapModeInner: React.FC = () => {
                     zoom={effectiveLayout === 'navigate' ? 1.1 : 1}
                 />
 
-                <Background
-                    variant={BackgroundVariant.Dots}
-                    gap={18}
-                    size={1}
-                    color="#D7DAE5"
-                />
+                <Background variant={BackgroundVariant.Dots} gap={18} size={1} color="#D7DAE5" />
 
                 <Controls
                     showInteractive={false}
@@ -1657,8 +1607,7 @@ const MapModeInner: React.FC = () => {
                         // regroup. Also fixes a latent bug where the
                         // FocusPanner would pan to a now-hidden member.
                         if (focusId) {
-                            const containingGroupId =
-                                collectionIndex.memberToGroupId.get(focusId);
+                            const containingGroupId = collectionIndex.memberToGroupId.get(focusId);
 
                             if (containingGroupId) setFocusId(containingGroupId);
                         }
@@ -1696,9 +1645,7 @@ const MapModeInner: React.FC = () => {
             {isDesktop && (
                 <FocusActionBar
                     node={
-                        focusId
-                            ? activePathway.nodes.find(n => n.id === focusId) ?? null
-                            : null
+                        focusId ? (activePathway.nodes.find(n => n.id === focusId) ?? null) : null
                     }
                     nextOnRoute={nextNodeOnRoute}
                     onOpen={openNode}
@@ -1713,7 +1660,6 @@ const MapModeInner: React.FC = () => {
                 pathway. See RouteSwapBanner for the rationale.
             */}
             <RouteSwapBanner />
-
         </div>
     );
 };

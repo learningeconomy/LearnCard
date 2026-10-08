@@ -1,8 +1,13 @@
+// @vitest-environment jsdom
+import { vi } from 'vitest';
+
 /**
  * Tests for standalone mock mode and embed detection in
  * @learncard/partner-connect. These run in jsdom, where `window.self` equals
  * `window.top` (i.e. not embedded), so 'auto' mock mode is active by default.
  */
+
+import type { MockInstance } from 'vitest';
 
 import {
     PartnerConnect,
@@ -21,11 +26,11 @@ const readManifestMap = (namespace: string): Record<string, CapturedAppManifest>
     return raw ? (JSON.parse(raw) as Record<string, CapturedAppManifest>) : {};
 };
 
-let errorSpy: jest.SpyInstance;
+let errorSpy: MockInstance;
 
 beforeEach(() => {
-    jest.spyOn(console, 'log').mockImplementation(() => undefined);
-    errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     try {
         localStorage.clear();
         // Tests that install a trusted `ancestorOrigins` persist an
@@ -37,7 +42,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
     document
         .querySelectorAll('.lc-mock-toast, .lc-mock-stack, .lc-mock-hud')
         .forEach(node => node.remove());
@@ -408,7 +413,7 @@ describe('mock responses', () => {
             },
         });
 
-        const postMessageSpy = jest.spyOn(window.parent, 'postMessage');
+        const postMessageSpy = vi.spyOn(window.parent, 'postMessage');
 
         try {
             const lc = createPartnerConnect({ mock: false });
@@ -448,7 +453,7 @@ describe('mock responses', () => {
             },
         });
 
-        const postMessageSpy = jest.spyOn(window.parent, 'postMessage');
+        const postMessageSpy = vi.spyOn(window.parent, 'postMessage');
 
         try {
             const lc = createPartnerConnect({ mock: false });
@@ -486,7 +491,7 @@ describe('mock responses', () => {
         });
 
         let capturedMessage: unknown;
-        const postMessageSpy = jest
+        const postMessageSpy = vi
             .spyOn(window.parent, 'postMessage')
             .mockImplementation((message: unknown) => {
                 capturedMessage = message;
@@ -1053,7 +1058,7 @@ describe('captured app manifest + publish URL', () => {
 
     it('warns when the same fingerprint is reused across different page paths', () => {
         const namespace = 'manifest-fingerprint-warning';
-        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
         const originalLocation = Object.getOwnPropertyDescriptor(window, 'location');
 
         document.title = 'Shared App';

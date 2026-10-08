@@ -1,3 +1,4 @@
+import moment from 'moment';
 import {
     UnsignedVC,
     VC,
@@ -8,6 +9,11 @@ import {
     Boost,
     Profile,
 } from '@learncard/types';
+import {
+    LER_RS_TYPE_URI_V45,
+    LEGACY_LER_RS_TYPE_URI_V44,
+    LEGACY_LER_RS_TYPE_TOKEN,
+} from '@learncard/ler-rs-plugin';
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
 import { SortedCredentials } from 'learn-card-base/stores/selectedCredsStore';
 import { SyncCredentialsVCs } from 'learn-card-base/stores/syncSchoolStore';
@@ -18,6 +24,7 @@ import {
     CredentialCategory,
     IndexMetadata,
 } from 'learn-card-base/types/credentials';
+import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { getSeason } from './dateHelpers';
 import {
     getAchievementTypeFromCustomType,
@@ -40,6 +47,8 @@ import { getVideoMetadata } from './video.helpers';
 import { getFileMetadata } from './attachment.helpers';
 import { getLogger } from '../logging/logger';
 import { parseLcTags } from './displayTags.helpers';
+import { getBespokeLearnCard } from './walletHelpers';
+import { stringify } from './jsonHelpers';
 const log = getLogger('credential-helpers');
 
 type CredentialType =
@@ -853,6 +862,34 @@ export const getImageUrlFromCredential = (
     return imgUrl;
 };
 
+/**
+ * Checks if a credential is a LER-RS (Resume Builder) credential by inspecting
+ * the credential's type array and credentialSubject type fields.
+ */
+export const isResumeBuilderCredential = (credential: VC): boolean => {
+    const LER_RS_TYPES = [
+        LEGACY_LER_RS_TYPE_TOKEN,
+        LEGACY_LER_RS_TYPE_URI_V44,
+        LER_RS_TYPE_URI_V45,
+    ];
+
+    const typeList = Array.isArray(credential?.type) ? credential.type : [credential?.type];
+    if (typeList.some(type => typeof type === 'string' && LER_RS_TYPES.includes(type))) {
+        return true;
+    }
+
+    const credentialSubject = getCredentialSubject(credential);
+    if (!credentialSubject) return false;
+
+    const inlineType = credentialSubject.type;
+    if (typeof inlineType === 'string' && LER_RS_TYPES.includes(inlineType)) {
+        return true;
+    }
+
+    const nestedType = (credentialSubject.lerrsType as Record<string, unknown> | undefined)?.type;
+    return typeof nestedType === 'string' && LER_RS_TYPES.includes(nestedType);
+};
+
 export const getCredentialName = (credential: VC): string => {
     const credentialTypes = getCredentialType(credential);
     const name = getPotentialNameFieldsFromType(credentialTypes, credential);
@@ -866,7 +903,12 @@ export const getCredentialName = (credential: VC): string => {
     // achievement payload (e.g. the walt.id sandbox `UniversityDegree`).
     const humanizedType = humanizeCredentialType(getMostSpecificCredentialType(credentialTypes));
 
-    return credential?.name || name || credentialSubjectAchievementName || humanizedType;
+    return (
+        credential?.name ||
+        name ||
+        credentialSubjectAchievementName ||
+        (isResumeBuilderCredential(credential) ? 'Resume Builder' : humanizedType)
+    );
 };
 
 export const getCredentialType = (credential: VC) => {
@@ -1197,11 +1239,24 @@ export const getAchievementsForCourse = (entries: EntryVC[]): EntryVC[] => {
     );
 };
 
+/**
+ * Returns the issuance date of a credential, checking both VC 1.1 (`issuanceDate`)
+ * and VC 2.0 (`validFrom`) fields. Uses `||` so empty strings fall through.
+ */
 export const getIssuanceDate = (credential?: VC): string | undefined => {
     if (credential?.boostCredential) {
-        return credential?.boostCredential?.issuanceDate;
+        return credential?.boostCredential?.issuanceDate || credential?.boostCredential?.validFrom;
     }
-    return credential?.issuanceDate;
+    return credential?.issuanceDate || credential?.validFrom;
+};
+
+/**
+ * Formats a credential's issuance date using the provided format string.
+ * Returns empty string if no valid date is found.
+ */
+export const formatCredentialDate = (credential?: VC, format: string = 'MMMM DD, YYYY'): string => {
+    const dateValue = getIssuanceDate(credential);
+    return dateValue ? moment(dateValue).format(format) : '';
 };
 
 export const getAchievementTypeDisplayText = (
@@ -1287,12 +1342,125 @@ export const getCategoryDarkColor = (category = CredentialCategoryEnum.achieveme
     return `${getCategoryPrimaryColor(category)}-700`;
 };
 
-// (Owner POV)
-export const getEndorsements = async (wallet = walletStore.get.wallet(), vc: VC) => {
-    if (!vc?.id) return [];
-    const idxEndorsements = await wallet?.index.LearnCloud.get({ credentialId: vc?.id });
+const sha256 = async (value: string): Promise<string> => {
+    const bytes = new TextEncoder().encode(value);
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
 
-    if (!idxEndorsements || idxEndorsements.length === 0) return [];
+    return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+};
+
+/**
+ * Returns the stable identifier used to link endorsements to a credential.
+ *
+ * W3C credential IDs are optional. Idless credentials use a content-addressed
+ * identifier derived from the exact credential shared with the endorser.
+ */
+export const getEndorsementTargetId = async (credential: VC): Promise<string> => {
+    if (credential.id) return credential.id;
+
+    const sharedCredential = { ...credential } as VC & { boostID?: unknown };
+    delete sharedCredential.boostID;
+
+    return `urn:sha256:${await sha256(stringify(sharedCredential))}`;
+};
+
+const sharedCredentialRequests = new Map<string, Promise<VC | undefined>>();
+
+const loadSharedCredential = async (sharedUri: string): Promise<VC | undefined> => {
+    const { seed, pin, uri } = parseShareLinkParams(sharedUri);
+    if (!seed || !pin || !uri) return undefined;
+
+    try {
+        const sharedWallet = await getBespokeLearnCard(`${seed}${pin}`);
+        const presentation = await sharedWallet.read.get(uri);
+        const credentials = presentation?.verifiableCredential;
+
+        return Array.isArray(credentials) ? credentials[0] : credentials;
+    } catch (error) {
+        log.warn('Unable to resolve shared credential', error);
+        return undefined;
+    }
+};
+
+export const resolveSharedCredential = (sharedUri?: string): Promise<VC | undefined> => {
+    if (!sharedUri) return Promise.resolve(undefined);
+
+    const pendingRequest = sharedCredentialRequests.get(sharedUri);
+    if (pendingRequest) return pendingRequest;
+
+    const request = loadSharedCredential(sharedUri);
+    sharedCredentialRequests.set(sharedUri, request);
+    void request.finally(() => {
+        if (sharedCredentialRequests.get(sharedUri) === request) {
+            sharedCredentialRequests.delete(sharedUri);
+        }
+    });
+
+    return request;
+};
+
+const getMatchingEndorsementRecords = async (
+    wallet: BespokeLearnCard | null,
+    vc: VC,
+    visibility?: 'public' | 'private'
+) => {
+    if (!wallet) return [];
+
+    const credentialId = await getEndorsementTargetId(vc);
+    const [canonicalRecords = [], credentialRecords = []] = await Promise.all([
+        wallet.index.LearnCloud.get({ originalCredentialId: credentialId }),
+        wallet.index.LearnCloud.get({ credentialId }),
+    ]);
+
+    const currentRecords = [...canonicalRecords, ...credentialRecords];
+    const currentRecordKeys = new Set(currentRecords.map(record => record.id ?? record.uri));
+    const subjectId = getCredentialSubject(vc)?.id;
+    const legacyRecords = subjectId
+        ? await wallet.index.LearnCloud.get({ endorsedId: subjectId })
+        : [];
+    const unresolvedLegacyRecords = (legacyRecords ?? []).filter(
+        record => !currentRecordKeys.has(record.id ?? record.uri)
+    );
+    const verifiedLegacyRecords = await Promise.all(
+        unresolvedLegacyRecords.map(async record => {
+            const sharedCredential = await resolveSharedCredential(record.sharedUri);
+            if (!sharedCredential) return undefined;
+
+            const sharedCredentialId = await getEndorsementTargetId(sharedCredential);
+            return sharedCredentialId === credentialId ? record : undefined;
+        })
+    );
+
+    const seen = new Set<string>();
+    return [...currentRecords, ...verifiedLegacyRecords]
+        .filter(record => record !== undefined)
+        .filter(record => !visibility || record.visibility === visibility)
+        .filter(record => {
+            const key = record.id ?? record.uri;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+};
+
+export type CredentialEndorsement = {
+    endorsement: VC | undefined;
+    metadata: {
+        id?: string;
+        uri: string;
+        sharedUri?: string;
+        visibility?: 'public' | 'private';
+        [key: string]: unknown;
+    };
+};
+
+// (Owner POV)
+export const getEndorsements = async (
+    wallet = walletStore.get.wallet(),
+    vc: VC
+): Promise<CredentialEndorsement[]> => {
+    const idxEndorsements = await getMatchingEndorsementRecords(wallet, vc);
+    if (idxEndorsements.length === 0) return [];
 
     const endorsementPromises = idxEndorsements.map(async endorsement => {
         const resolvedEndorsement = await wallet?.read?.get(endorsement.uri);
@@ -1308,13 +1476,8 @@ export const getEndorsementsForVC = async (
     vc: VC,
     visibility: 'public' | 'private' = 'public'
 ): Promise<VC[]> => {
-    const idxEndorsements = await wallet?.index.LearnCloud.get({
-        credentialId: vc?.id,
-    });
-    if (!idxEndorsements || idxEndorsements.length === 0) return [];
-
-    // TODO: handle this server side ^^ filtering is not working above
-    const filteredEndorsements = idxEndorsements.filter(r => r.visibility === visibility);
+    const filteredEndorsements = await getMatchingEndorsementRecords(wallet, vc, visibility);
+    if (filteredEndorsements.length === 0) return [];
 
     const endorsementPromises = filteredEndorsements.map(async endorsement => {
         return wallet?.read?.get(endorsement.uri);

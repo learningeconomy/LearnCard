@@ -1,0 +1,56 @@
+/**
+ * LC-2187 owner share-link policy types.
+ *
+ * Policy is always derived server-side from trusted persisted state; nothing in
+ * this module reads the request body. The conservative default (unknown age,
+ * 30-day expiry, no view counting) is what an unavailable or untrustworthy age
+ * source produces — absence of a manager is NOT evidence of adulthood.
+ */
+
+/** Result of consulting the authoritative server-side age source. */
+export type ShareLinkOwnerAge = 'adult' | 'minor' | 'unknown';
+
+/** Immutable policy snapshot persisted with the share under the write lock. */
+export type ShareLinkPolicySnapshot = {
+    /** `true` known minor, `false` known adult/service profile, `null` unknown. */
+    isMinor: boolean | null;
+    /** `true` when age is known or a persisted service profile is age-exempt. */
+    policyResolved: boolean;
+    defaultExpiryDays: 30 | 365;
+    viewCountingEnabled: boolean;
+};
+
+/** Fresh graph-local classification; never persisted or inferred from an old snapshot. */
+export type CurrentShareLinkPolicy = ShareLinkPolicySnapshot & {
+    isServiceProfile: boolean;
+};
+
+/**
+ * Authoritative server-side sources. Implementations must read persisted server
+ * state only; no request-derived value may be used as authority.
+ */
+export type ShareLinkPolicySource = {
+    /**
+     * Read age, service classification and management from persisted state.
+     * Service profiles may bypass tracking age checks; explicitly typed children
+     * must never be classified as service profiles here.
+     */
+    resolveOwner: (profileId: string) => Promise<{
+        age: ShareLinkOwnerAge;
+        isManaged: boolean;
+        isServiceProfile: boolean;
+    }>;
+};
+
+/** Injectable server-side policy resolver used by the coordinator. */
+export type ShareLinkPolicyResolver = {
+    resolve: (profileId: string) => Promise<ShareLinkPolicySnapshot>;
+};
+
+/** Fail-closed policy: no views, 30 days, age unknown. */
+export const DEFAULT_SHARE_LINK_POLICY: ShareLinkPolicySnapshot = Object.freeze({
+    isMinor: null,
+    policyResolved: false,
+    defaultExpiryDays: 30,
+    viewCountingEnabled: false,
+});

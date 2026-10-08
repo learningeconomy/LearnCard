@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { LEARNCARD_APP_SHORTCUTS } from './learnCardAppShortcuts';
 
 describe('LEARNCARD_APP_SHORTCUTS', () => {

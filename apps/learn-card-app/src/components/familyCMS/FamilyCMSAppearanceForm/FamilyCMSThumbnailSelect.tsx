@@ -47,7 +47,7 @@ export const FamilyCMSThumbnailSelect: React.FC<{
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
     });
 
-    const title = 'Thumbnail';
+    const title = m['arabicFixes.thumbnail']();
 
     return (
         <>

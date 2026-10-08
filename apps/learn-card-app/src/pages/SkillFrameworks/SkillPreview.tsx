@@ -33,7 +33,7 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
 
     const currentNodes =
         navigationPath.length > 0
-            ? navigationPath[navigationPath.length - 1].subskills ?? []
+            ? (navigationPath[navigationPath.length - 1].subskills ?? [])
             : framework.skills;
 
     const isTopLevel = navigationPath.length === 0;

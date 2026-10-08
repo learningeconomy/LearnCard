@@ -1,17 +1,67 @@
+import {
+    environment,
+    getNotificationRuntimeEnvironment,
+    type NotificationRuntimeEnvironment,
+} from '@environment';
 import { getDidWebLearnCard } from '@helpers/learnCard.helpers';
-import { LCNNotification } from '@learncard/types';
+import { LCNNotification, LCNNotificationTypeEnumValidator } from '@learncard/types';
 import { getDidWeb } from '@helpers/did.helpers';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { createWebhookSentRelationship } from '@accesslayer/inbox-credential/relationships/create';
 import cache from '@cache';
 import { randomUUID } from 'crypto';
 
+import type { ProfileType } from 'types/profile';
+
+import {
+    computeCredentialRefreshDeliveryKey,
+    computeCredentialRefreshInitialDeliveryKey,
+    computeCredentialRefreshRouteKey,
+} from './credential-refresh-materiality.helpers';
+import { getNotificationMessage } from './notificationMessages';
+import { resolveRecipientLocale } from './getRecipientLocale.helpers';
+
 // Timeout value in milliseconds for aborting the request
 const TIMEOUT = 6000;
 
-const IS_TEST_ENVIRONMENT = String(process.env.NODE_ENV) === 'test';
+type NotificationDeliveryOptions = {
+    propagateDirectWebhookTransportErrors?: boolean;
+    /** Opt in to terminal rejection errors; legacy callers continue to receive false. */
+    throwOnPermanentFailure?: boolean;
+};
+
+export class PermanentNotificationDeliveryError extends Error {
+    constructor(
+        readonly reason: 'no_webhook' | 'invalid_webhook' | 'webhook_rejected',
+        readonly statusCode?: number
+    ) {
+        super(`Notification delivery rejected: ${reason}`);
+        this.name = 'PermanentNotificationDeliveryError';
+    }
+}
 
 type NotificationWebhookResponseRecord = Record<string, unknown>;
+
+const isDefinitiveWebhookRejection = (statusCode: number): boolean => {
+    return statusCode >= 400 && statusCode < 500 && ![408, 425, 429].includes(statusCode);
+};
+
+const createWebhookTransportError = (statusCode: number): Error => {
+    return Object.assign(new Error(`Notification webhook transport failed with ${statusCode}`), {
+        $metadata: { httpStatusCode: statusCode },
+    });
+};
+
+const createUnrecognizedWebhookAcknowledgementError = (statusCode: number): Error => {
+    return Object.assign(
+        new Error(
+            `Notification webhook returned an unrecognized durable-storage acknowledgement with ${statusCode}`
+        ),
+        {
+            $metadata: { httpStatusCode: statusCode },
+        }
+    );
+};
 
 const LOCAL_WEBHOOK_HOSTNAMES = new Set(['localhost', '127.0.0.1', 'host.docker.internal']);
 
@@ -31,10 +81,10 @@ const isLocalWebhookUrl = (value: string): boolean => {
     }
 };
 
-const getLocalNotificationsWebhookUrl = (): string => {
-    const port = process.env.NOTIFICATIONS_SERVICE_PORT ?? '5100';
-
-    return `http://localhost:${port}/api/notifications/send`;
+const getLocalNotificationsWebhookUrl = (
+    runtimeEnvironment: NotificationRuntimeEnvironment
+): string => {
+    return `http://localhost:${runtimeEnvironment.NOTIFICATIONS_SERVICE_PORT}/api/notifications/send`;
 };
 
 const extractNotificationWebhookSuccess = (value: unknown): boolean | null => {
@@ -78,8 +128,9 @@ export const parseNotificationWebhookResponse = (
     return false;
 };
 
-export const resolveNotificationWebhookUrl = (
-    notification: LCNNotification
+const resolveNotificationWebhookUrlForEnvironment = (
+    notification: LCNNotification,
+    runtimeEnvironment: NotificationRuntimeEnvironment
 ): string | undefined => {
     if (typeof notification.webhookUrl === 'string') {
         return notification.webhookUrl;
@@ -87,9 +138,9 @@ export const resolveNotificationWebhookUrl = (
 
     const profileWebhook =
         typeof notification.to !== 'string' ? notification.to.notificationsWebhook : undefined;
-    const envWebhook = process.env.NOTIFICATIONS_SERVICE_WEBHOOK_URL;
+    const envWebhook = runtimeEnvironment.NOTIFICATIONS_SERVICE_WEBHOOK_URL;
 
-    if (process.env.IS_OFFLINE) {
+    if (runtimeEnvironment.IS_OFFLINE) {
         if (typeof envWebhook === 'string' && isLocalWebhookUrl(envWebhook)) {
             return envWebhook;
         }
@@ -98,7 +149,7 @@ export const resolveNotificationWebhookUrl = (
             return profileWebhook;
         }
 
-        return getLocalNotificationsWebhookUrl();
+        return getLocalNotificationsWebhookUrl(runtimeEnvironment);
     }
 
     if (typeof profileWebhook === 'string') {
@@ -108,16 +159,124 @@ export const resolveNotificationWebhookUrl = (
     return envWebhook;
 };
 
-const pollUrl = process.env.NOTIFICATIONS_QUEUE_POLL_URL;
+// --- Managed credential refresh events (LC-2136) ----------------------------------
+
+export const buildInitialCredentialReceivedNotification = (params: {
+    holderProfile: ProfileType;
+    issuerProfile: ProfileType;
+    refreshId: string;
+    uri: string;
+}): LCNNotification => {
+    const { holderProfile, issuerProfile, refreshId, uri } = params;
+
+    return {
+        type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
+        to: holderProfile,
+        from: issuerProfile,
+        message: getNotificationMessage(
+            'credentialReceived',
+            resolveRecipientLocale(holderProfile),
+            { from: issuerProfile.displayName }
+        ),
+        data: {
+            vcUris: [uri],
+            metadata: {
+                managedCredentialRefreshInitial: true,
+                routeKey: computeCredentialRefreshRouteKey(refreshId),
+                deliveryKey: computeCredentialRefreshInitialDeliveryKey(refreshId),
+            },
+        },
+    };
+};
+
+/**
+ * A privacy-safe `CREDENTIAL_REFRESHED` event ready for `addNotificationToQueue`.
+ *
+ * The event carries opaque routing metadata only — the managed refreshId, the
+ * published version, a stable server-keyed route key, and the delivery-window
+ * collapse key. No credential subject, body, title, evidence, or issuer-authored
+ * update summary ever leaves brain-service: the copy is a generic translated
+ * message and the holder's app fetches the credential itself after
+ * authenticating.
+ */
+export type CredentialRefreshedNotificationEvent = {
+    /** The notification to enqueue */
+    notification: LCNNotification;
+    /** Local observability reference for the emission (logged/recorded, not sent) */
+    notificationId: string;
+    /** Stable opaque per-refresh routing key */
+    routeKey: string;
+    /** Opaque delivery-window collapse key */
+    deliveryKey: string;
+    /** Emission time (ISO), recorded on the aggregate for observability */
+    notifiedAt: string;
+};
+
+export type BuildCredentialRefreshedNotificationParams = {
+    holderProfile: ProfileType;
+    issuerProfile: ProfileType;
+    refreshId: string;
+    /** Published managed version carried by the event */
+    version: number;
+    /** Persisted values make a post-commit retry reproduce the same delivery event. */
+    notificationId?: string;
+    deliveryKey?: string;
+    notifiedAt?: string;
+};
+
+export const buildCredentialRefreshedNotification = (
+    params: BuildCredentialRefreshedNotificationParams
+): CredentialRefreshedNotificationEvent => {
+    const { holderProfile, issuerProfile, refreshId, version } = params;
+
+    const routeKey = computeCredentialRefreshRouteKey(refreshId);
+    const deliveryKey = params.deliveryKey ?? computeCredentialRefreshDeliveryKey(refreshId);
+
+    return {
+        notification: {
+            type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_REFRESHED,
+            // Local webhook delivery normalizes these DIDs in place. Keep the
+            // database profiles intact for the subsequent verified-email lookup.
+            to: { ...holderProfile },
+            from: { ...issuerProfile },
+            message: getNotificationMessage(
+                'credentialRefreshed',
+                resolveRecipientLocale(holderProfile),
+                { from: issuerProfile.displayName }
+            ),
+            data: { metadata: { refreshId, version, routeKey, deliveryKey } },
+        },
+        notificationId: params.notificationId ?? randomUUID(),
+        routeKey,
+        deliveryKey,
+        notifiedAt: params.notifiedAt ?? new Date().toISOString(),
+    };
+};
+
+export const resolveNotificationWebhookUrl = (
+    notification: LCNNotification
+): string | undefined => {
+    return resolveNotificationWebhookUrlForEnvironment(
+        notification,
+        getNotificationRuntimeEnvironment()
+    );
+};
+
+const pollUrl = environment.NOTIFICATIONS_QUEUE_POLL_URL;
 
 const sqs = new SQSClient({
     apiVersion: 'latest',
-    region: process.env.AWS_REGION,
+    region: environment.AWS_REGION,
     ...(pollUrl && { endpoint: pollUrl.split('/').slice(0, -1).join('/') }),
 });
 
-export async function addNotificationToQueue(notification: LCNNotification) {
-    if (process.env.IS_E2E_TEST) {
+export async function addNotificationToQueue(
+    notification: LCNNotification,
+    options: NotificationDeliveryOptions = {}
+) {
+    const runtimeEnvironment = getNotificationRuntimeEnvironment();
+
+    if (runtimeEnvironment.IS_E2E_TEST) {
         /**
          * For end-to-end tests, store the last delivery in cache
          */
@@ -125,38 +284,50 @@ export async function addNotificationToQueue(notification: LCNNotification) {
     }
 
     // If running unit tests, do not attempt to deliver (keep legacy behavior for tests)
-    if (IS_TEST_ENVIRONMENT) {
+    if (runtimeEnvironment.NODE_ENV === 'test') {
         return;
     }
 
     // In local development (offline or missing SQS URL), deliver directly via webhook
-    if (process.env.IS_OFFLINE || !process.env.NOTIFICATIONS_QUEUE_URL) {
+    if (runtimeEnvironment.IS_OFFLINE || !runtimeEnvironment.NOTIFICATIONS_QUEUE_URL) {
         console.log(
             'Notifications Helpers - Local dev fallback: sending directly via sendNotification'
         );
 
-        return sendNotification(notification);
+        return sendNotification(notification, options);
     }
 
     const command = new SendMessageCommand({
-        QueueUrl: process.env.NOTIFICATIONS_QUEUE_URL,
+        QueueUrl: runtimeEnvironment.NOTIFICATIONS_QUEUE_URL,
         MessageBody: JSON.stringify(notification),
     });
 
     return sqs.send(command);
 }
 
-export async function sendNotification(notification: LCNNotification) {
+export async function sendNotification(
+    notification: LCNNotification,
+    options: NotificationDeliveryOptions = {}
+) {
+    const runtimeEnvironment = getNotificationRuntimeEnvironment();
+
+    let directWebhookRequestStarted = false;
+
     try {
-        const notificationsWebhook = resolveNotificationWebhookUrl(notification);
+        const notificationsWebhook = resolveNotificationWebhookUrlForEnvironment(
+            notification,
+            runtimeEnvironment
+        );
 
         if (!notificationsWebhook) {
+            if (options.throwOnPermanentFailure)
+                throw new PermanentNotificationDeliveryError('no_webhook');
             return false;
         }
 
         if (typeof notification.to !== 'string') {
             notification.to.did = getDidWeb(
-                process.env.DOMAIN_NAME ?? 'network.learncard.com',
+                runtimeEnvironment.DOMAIN_NAME ?? 'network.learncard.com',
                 notification.to.profileId ?? ''
             );
         }
@@ -166,7 +337,7 @@ export async function sendNotification(notification: LCNNotification) {
             notification.from.profileId
         ) {
             notification.from.did = getDidWeb(
-                process.env.DOMAIN_NAME ?? 'network.learncard.com',
+                runtimeEnvironment.DOMAIN_NAME ?? 'network.learncard.com',
                 notification.from.profileId
             );
         }
@@ -186,21 +357,38 @@ export async function sendNotification(notification: LCNNotification) {
             // Set a timeout to abort the fetch request
             const timeoutId = setTimeout(() => controller.abort(), TIMEOUT);
 
-            const response = await fetch(notificationsWebhook, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${didJwt}`,
-                },
-                body: JSON.stringify(notification),
-                signal,
-            });
+            let response: Response;
+            try {
+                directWebhookRequestStarted = true;
+                response = await fetch(notificationsWebhook, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${didJwt}`,
+                    },
+                    body: JSON.stringify(notification),
+                    signal,
+                });
+            } finally {
+                clearTimeout(timeoutId);
+            }
 
-            clearTimeout(timeoutId);
+            if (!response.ok) {
+                if (isDefinitiveWebhookRejection(response.status)) {
+                    if (options.throwOnPermanentFailure)
+                        throw new PermanentNotificationDeliveryError(
+                            'webhook_rejected',
+                            response.status
+                        );
+                    return false;
+                }
+
+                throw createWebhookTransportError(response.status);
+            }
 
             const responseText = await response.text();
 
-            let responseBody: unknown = true;
+            let responseBody: unknown;
             if (responseText.trim().length > 0) {
                 try {
                     responseBody = JSON.parse(responseText);
@@ -209,13 +397,20 @@ export async function sendNotification(notification: LCNNotification) {
                 }
             }
 
+            if (
+                notification.data?.metadata?.connectionPrompt &&
+                extractNotificationWebhookSuccess(responseBody) === null
+            ) {
+                throw createUnrecognizedWebhookAcknowledgementError(response.status);
+            }
+
             const notificationDelivered = parseNotificationWebhookResponse(
                 responseBody,
                 response.ok
             );
 
             if (!notificationDelivered) {
-                throw new Error('Notifications Endpoint returned a malformed result');
+                return false;
             }
 
             try {
@@ -237,9 +432,16 @@ export async function sendNotification(notification: LCNNotification) {
 
             return notificationDelivered;
         }
+        if (options.throwOnPermanentFailure)
+            throw new PermanentNotificationDeliveryError('invalid_webhook');
     } catch (error) {
-        if (!IS_TEST_ENVIRONMENT) {
+        if (error instanceof PermanentNotificationDeliveryError) throw error;
+        if (runtimeEnvironment.NODE_ENV !== 'test') {
             console.error('Notifications Helpers - Error While Sending:', error);
+        }
+
+        if (options.propagateDirectWebhookTransportErrors && directWebhookRequestStarted) {
+            throw error;
         }
     }
     return false;

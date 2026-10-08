@@ -1,10 +1,11 @@
+import { environment } from '@environment';
 import type { TracingProvider, SpanContext, SpanResult } from '../types';
 
 export class JsonTracingProvider implements TracingProvider {
     name = 'json';
 
     isEnabled(): boolean {
-        return process.env.TRACE_JSON === 'true';
+        return environment.TRACE_JSON;
     }
 
     onSpanStart(_ctx: SpanContext): void {

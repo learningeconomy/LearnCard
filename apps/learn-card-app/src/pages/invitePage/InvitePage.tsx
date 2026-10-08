@@ -79,9 +79,11 @@ const InvitePage: React.FC = () => {
                 )}
                 {!loading && !lcNetworkProfile && (
                     <section className="flex flex-col pt-[10px] px-[20px] text-center justify-center">
-                        <h1 className="text-center text-xl font-bold text-grayscale-800">Eeek!</h1>
+                        <h1 className="text-center text-xl font-bold text-grayscale-800">
+                            {m['contacts.invite.notFoundTitle']()}
+                        </h1>
                         <strong className="text-center font-medium text-grayscale-600">
-                            Unable to find user
+                            {m['contacts.invite.notFoundBody']()}
                         </strong>
                     </section>
                 )}

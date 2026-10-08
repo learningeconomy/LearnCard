@@ -13,5 +13,12 @@
         "cloudService": "https://cloud.scoutnetwork.org/trpc",
         "lcaApi": "https://api.scoutnetwork.org/trpc",
         "xapi": "https://cloud.scoutnetwork.org/xapi"
+    },
+    "features": {
+        "analytics": true
+    },
+    "observability": {
+        "sentryEnv": "scouts-production",
+        "launchDarklyClientId": "64b59e8227d2d212ef8e8968"
     }
 }

@@ -6,6 +6,8 @@ import {
     LCNVisibleProfileValidator,
     LCNProfileValidator,
     LCNProfileConnectionStatusEnum,
+    LCNConnectionPromptActionResultValidator,
+    LCNConnectionPromptValidator,
     ProfileVisibilityEnum,
     PaginatedLCNProfilesValidator,
     PaginatedVisibleLCNProfilesValidator,
@@ -30,6 +32,12 @@ import {
     getBlockedAndBlockedByIds,
     isRelationshipBlocked,
 } from '@helpers/connection.helpers';
+import {
+    connectWithConnectionPrompt,
+    getConnectionPromptStatus,
+    getPendingConnectionPrompts,
+    skipConnectionPrompt,
+} from '@helpers/connectionPrompt.helpers';
 import {
     getDidWeb,
     getManagedDidWeb,
@@ -59,7 +67,7 @@ import { ProfileType, SigningAuthorityForUserValidator } from 'types/profile';
 
 import { t, openRoute, didAndChallengeRoute, profileRoute, didRoute } from '@routes';
 
-import { transformProfileId } from '@helpers/profile.helpers';
+import { PublicProfileIdValidator, transformProfileId } from '@helpers/profile.helpers';
 import { deleteDidDocForProfile } from '@cache/did-docs';
 import {
     isInviteAlreadySetForProfile,
@@ -94,7 +102,7 @@ import { createProfileContactMethodRelationship } from '@accesslayer/contact-met
 import { deleteAllProfileContactMethodRelationshipsExceptForProfileId } from '@accesslayer/contact-method/relationships/delete';
 
 const UpdateProfileInputValidator = z.object({
-    profileId: z.string().optional(),
+    profileId: PublicProfileIdValidator.optional(),
     displayName: z.string().optional(),
     shortBio: z.string().optional(),
     bio: z.string().optional(),
@@ -146,7 +154,10 @@ export const profilesRouter = t.router({
             LCNProfileValidator.omit({
                 did: true,
                 isServiceProfile: true,
-            }).extend({ authToken: z.string().optional() })
+            }).extend({
+                profileId: PublicProfileIdValidator,
+                authToken: z.string().optional(),
+            })
         )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
@@ -235,7 +246,11 @@ export const profilesRouter = t.router({
             },
             requiredScope: 'profiles:write',
         })
-        .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }))
+        .input(
+            LCNProfileValidator.omit({ did: true, isServiceProfile: true }).extend({
+                profileId: PublicProfileIdValidator,
+            })
+        )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const profileExists = await checkIfProfileExists({ ...input, did: ctx.user.did });
@@ -273,7 +288,11 @@ export const profilesRouter = t.router({
             },
             requiredScope: 'profiles:write',
         })
-        .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }))
+        .input(
+            LCNProfileValidator.omit({ did: true, isServiceProfile: true }).extend({
+                profileId: PublicProfileIdValidator,
+            })
+        )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const { profileId } = input;
@@ -490,7 +509,7 @@ export const profilesRouter = t.router({
             } = input;
 
             const _selfProfile = ctx.user?.did ? await getProfileByDid(ctx.user.did) : null;
-            const selfProfile = includeSelf ? null : _selfProfile ?? null;
+            const selfProfile = includeSelf ? null : (_selfProfile ?? null);
 
             const blacklist =
                 (_selfProfile && (await getBlockedAndBlockedByIds(_selfProfile))) || [];
@@ -555,6 +574,18 @@ export const profilesRouter = t.router({
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
+            if (
+                profile.isServiceProfile === true &&
+                profile.type === 'child' &&
+                typeof input.type === 'string' &&
+                input.type !== 'child'
+            ) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message:
+                        'A service profile explicitly typed as a child cannot change profile type.',
+                });
+            }
 
             const {
                 profileId,
@@ -923,6 +954,32 @@ export const profilesRouter = t.router({
 
             return success;
         }),
+
+    pendingConnectionPrompts: profileRoute
+        .meta({ requiredScope: 'connections:read' })
+        .input(z.void())
+        .output(LCNConnectionPromptValidator.array())
+        .query(({ ctx }) => getPendingConnectionPrompts(ctx.user.profile)),
+
+    connectionPromptStatus: profileRoute
+        .meta({ requiredScope: 'connections:read' })
+        .input(z.object({ promptId: z.string().uuid() }))
+        .output(LCNConnectionPromptActionResultValidator)
+        .query(({ ctx, input }) => getConnectionPromptStatus(ctx.user.profile, input.promptId)),
+
+    skipConnectionPrompt: profileRoute
+        .meta({ requiredScope: 'connections:write' })
+        .input(z.object({ promptId: z.string().uuid() }))
+        .output(LCNConnectionPromptActionResultValidator)
+        .mutation(({ ctx, input }) => skipConnectionPrompt(ctx.user.profile, input.promptId)),
+
+    connectWithConnectionPrompt: profileRoute
+        .meta({ requiredScope: 'connections:write' })
+        .input(z.object({ promptId: z.string().uuid() }))
+        .output(LCNConnectionPromptActionResultValidator)
+        .mutation(({ ctx, input }) =>
+            connectWithConnectionPrompt(ctx.user.profile, input.promptId)
+        ),
 
     connections: profileRoute
         .meta({

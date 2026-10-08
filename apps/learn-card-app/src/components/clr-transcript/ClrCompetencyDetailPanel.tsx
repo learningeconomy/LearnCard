@@ -10,11 +10,10 @@ import { StudiesIcon } from 'learn-card-base/svgs/wallet/StudiesIcon';
 import { useModal } from 'learn-card-base';
 import { formatClrDate, getLinkedCompetencies } from '../../helpers/clrRenderer.helpers';
 import type {
-    AssociationDisplayModel,
+    ClrTranscriptDisplayModel,
     CompetencyDisplayModel,
-    CourseDisplayModel,
-    ProgramDisplayModel,
 } from '../../helpers/clrRenderer.helpers';
+import { getRelationshipsForRecord } from '../../helpers/clrRenderer.helpers';
 
 type CompetencySection = {
     id: string;
@@ -25,25 +24,32 @@ type CompetencySection = {
 };
 
 const ClrCompetencyDetailPanel: React.FC<{
-    competencies: CompetencyDisplayModel[];
-    courses: CourseDisplayModel[];
-    programs: ProgramDisplayModel[];
-    associations: AssociationDisplayModel[];
+    model: ClrTranscriptDisplayModel;
+    initialCompetencyId?: string;
+    onSelectRecord?: (recordId: string) => void;
     adminMode?: boolean;
-}> = ({ competencies, courses, programs, associations, adminMode = false }) => {
+}> = ({ model, initialCompetencyId, onSelectRecord, adminMode = false }) => {
+    const { competencies: allCompetencies, courses, programs, associations, relationships } = model;
+    const competencies = initialCompetencyId
+        ? allCompetencies.filter(
+              competency =>
+                  competency.sourceCredentialId === initialCompetencyId ||
+                  competency.achievementId === initialCompetencyId
+          )
+        : allCompetencies;
     const { closeModal } = useModal();
 
-    const linkedCourseSections: CompetencySection[] = courses
-        .map(course => {
-            const courseCompetencies = getLinkedCompetencies(
-                course.sourceCredentialId,
-                competencies,
-                associations
-            );
+    const linkedCourseSections = courses.flatMap<CompetencySection>(course => {
+        const courseCompetencies = getLinkedCompetencies(
+            course.sourceCredentialId,
+            competencies,
+            associations
+        );
 
-            if (courseCompetencies.length === 0) return undefined;
+        if (courseCompetencies.length === 0) return [];
 
-            return {
+        return [
+            {
                 id: `course-${course.sourceCredentialId}`,
                 dateLabel: course.earnedAt?.value
                     ? `Earned ${formatClrDate(course.earnedAt.value)}`
@@ -51,30 +57,30 @@ const ClrCompetencyDetailPanel: React.FC<{
                 humanCode: course.humanCode?.value,
                 title: course.name?.value ?? 'Course',
                 competencies: courseCompetencies,
-            };
-        })
-        .filter((section): section is CompetencySection => section !== undefined);
+            },
+        ];
+    });
 
-    const linkedProgramSections: CompetencySection[] = programs
-        .map(program => {
-            const programCompetencies = getLinkedCompetencies(
-                program.sourceCredentialId,
-                competencies,
-                associations
-            );
+    const linkedProgramSections = programs.flatMap<CompetencySection>(program => {
+        const programCompetencies = getLinkedCompetencies(
+            program.sourceCredentialId,
+            competencies,
+            associations
+        );
 
-            if (programCompetencies.length === 0) return undefined;
+        if (programCompetencies.length === 0) return [];
 
-            return {
+        return [
+            {
                 id: `program-${program.sourceCredentialId}`,
                 dateLabel: program.earnedAt?.value
                     ? `Awarded ${formatClrDate(program.earnedAt.value)}`
                     : undefined,
                 title: program.name?.value ?? 'Program',
                 competencies: programCompetencies,
-            };
-        })
-        .filter((section): section is CompetencySection => section !== undefined);
+            },
+        ];
+    });
 
     const linkedCompetencyIds = new Set<string>();
     [...linkedCourseSections, ...linkedProgramSections].forEach(section => {
@@ -99,22 +105,18 @@ const ClrCompetencyDetailPanel: React.FC<{
             {!emptyHeader && section.title && (
                 <div className="px-3 py-3 flex items-center gap-2 min-w-0">
                     {section.dateLabel && (
-                        <p className="shrink-0 text-[13px] text-grayscale-700">
-                            {section.dateLabel}
-                        </p>
+                        <p className="shrink-0 text-base text-grayscale-700">{section.dateLabel}</p>
                     )}
                     {section.dateLabel && <span className="shrink-0 text-grayscale-700">•</span>}
                     <span className="shrink-0 text-grayscale-700">
                         <FlatIcon>{icon}</FlatIcon>
                     </span>
                     {section.humanCode && (
-                        <p className="shrink-0 text-[13px] font-semibold text-grayscale-700">
+                        <p className="shrink-0 text-base font-semibold text-grayscale-700">
                             {section.humanCode}
                         </p>
                     )}
-                    <p className="min-w-0 truncate text-[13px] text-grayscale-700">
-                        {section.title}
-                    </p>
+                    <p className="min-w-0 truncate text-base text-grayscale-700">{section.title}</p>
                 </div>
             )}
 
@@ -125,6 +127,11 @@ const ClrCompetencyDetailPanel: React.FC<{
                     <ClrCompetencyBlock
                         key={competency.sourceCredentialId}
                         competency={competency}
+                        relationships={getRelationshipsForRecord(
+                            relationships,
+                            competency.sourceCredentialId
+                        )}
+                        onSelectRecord={onSelectRecord}
                         adminMode={adminMode}
                     />
                 ))}
@@ -133,7 +140,7 @@ const ClrCompetencyDetailPanel: React.FC<{
     );
 
     return (
-        <div className="space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto mt-[var(--ion-safe-area-top,0px)]">
+        <div className="space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto">
             <div className="bg-white rounded-b-[15px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex-1 flex items-center gap-2 min-w-0">

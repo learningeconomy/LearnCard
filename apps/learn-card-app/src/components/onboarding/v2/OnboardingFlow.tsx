@@ -2,12 +2,12 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
-import { auth } from '../../../firebase/firebase';
-import { updateProfile } from 'firebase/auth';
+import { Keyboard } from '@capacitor/keyboard';
+import { useSignInAdapter } from 'learn-card-base';
 import { Check, Loader2, Edit2, ShieldCheck, User } from 'lucide-react';
 
 import * as m from '../../../paraglide/messages.js';
+import { useLocale } from '../../../i18n';
 
 import {
     useModal,
@@ -24,6 +24,7 @@ import {
     UploadRes,
     useImageUpload,
     getLogger,
+    Toggle,
 } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
@@ -37,19 +38,22 @@ import { generateEd25519PrivateKey } from '@learncard/sss-key-manager';
 import { getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
 import { LearnCardRolesEnum, LearnCardRoles } from '../onboarding.helpers';
+import { getRoleTitle } from '../onboardingRoles/onboardingRolesI18n';
 import { isEUCountry, requiresEUParentalConsent } from '../onboardingNetworkForm/helpers/gdpr';
 import { getDefaultPrivacyPreferences, OnboardingPrivacyPreferences } from '../privacyPreferences';
 import { ProfileIDStateValidator } from '../onboardingNetworkForm/helpers/validators';
 import { generateHandle, generateRandomSuffix } from './handleGenerator';
 import { inferCountryCode } from './countryInference';
+import { resolvePostOnboardingRedirect } from './postOnboardingRedirect';
 
+import { RecoveryPinStep } from './RecoveryPinStep';
+import { writeRecoveryPinPromptFlag } from '../../recovery/recoveryPinPromptFlag';
 import BirthdayPicker from './BirthdayPicker';
 import CountrySelectorModal from '../onboardingNetworkForm/components/CountrySelectorModal';
 import LocationIcon from '../../svgs/LocationIcon';
 import UnderageModalContent from '../onboardingNetworkForm/components/UnderageModalContent';
 import GuardianLinkedModal from '../GuardianLinkedModal';
 import { Confetti } from '../../../pages/issue/components/Confetti';
-import AccessibleToggle from '../../accessibility/AccessibleToggle';
 
 import useLogout from '../../../hooks/useLogout';
 import useAutoConsentLearnCardAi from '../../../hooks/useAutoConsentLearnCardAi';
@@ -70,15 +74,16 @@ const COUNTRIES: Record<string, string> = countries as Record<string, string>;
 
 const log = getLogger('onboarding-flow-v2');
 
-type Step = 'age-country' | 'profile' | 'celebrate';
+type Step = 'age-country' | 'profile' | 'pin' | 'celebrate';
 
 type OnboardingFlowProps = {
     onSuccess?: () => void;
 };
 
 const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
+    const adapter = useSignInAdapter();
     const { newModal, closeModal } = useModal();
-    const { state: coordinatorState, setupNewKey } = useAppAuth();
+    const { state: coordinatorState, setupNewKey, setEscrowPin, authProvider } = useAppAuth();
     const { initWallet } = useWallet();
     const { track } = useAnalytics();
     const { mutateAsync: updatePreferences } = useUpdatePreferences();
@@ -86,6 +91,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const { refetch: refetchIsCurrentUserLCNUser } = useIsCurrentUserLCNUser();
     const queryClient = useQueryClient();
     const { isDesktop } = useDeviceTypeByWidth();
+    const locale = useLocale();
+    const countryNames = new Intl.DisplayNames([locale], { type: 'region' });
     const { handleLogout } = useLogout();
     const { autoConsentLearnCardAi } = useAutoConsentLearnCardAi();
     const { updateCurrentUser } = useSQLiteStorage();
@@ -97,6 +104,74 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const currentUser = useCurrentUser();
     const authToken = getAuthToken();
 
+    // Scroll focused input into view when keyboard opens on native
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!Capacitor.isNativePlatform()) return;
+
+        let keyboardListenerHandle: Awaited<ReturnType<typeof Keyboard.addListener>> | null = null;
+        let hideListenerHandle: Awaited<ReturnType<typeof Keyboard.addListener>> | null = null;
+        let isMounted = true;
+        let isKeyboardVisible = false;
+
+        const scrollActiveIntoView = () => {
+            if (!isMounted) return;
+            const activeEl = document.activeElement as HTMLElement | null;
+            if (activeEl?.tagName === 'INPUT' || activeEl?.tagName === 'TEXTAREA') {
+                activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        };
+
+        // Scroll when keyboard finishes opening
+        Keyboard.addListener('keyboardDidShow', () => {
+            isKeyboardVisible = true;
+            scrollActiveIntoView();
+        })
+            .then(handle => {
+                if (isMounted) {
+                    keyboardListenerHandle = handle;
+                } else {
+                    handle.remove();
+                }
+            })
+            .catch(err => {
+                console.error('Keyboard listener failed:', err);
+            });
+
+        // Track when keyboard hides
+        Keyboard.addListener('keyboardDidHide', () => {
+            isKeyboardVisible = false;
+        })
+            .then(handle => {
+                if (isMounted) {
+                    hideListenerHandle = handle;
+                } else {
+                    handle.remove();
+                }
+            })
+            .catch(err => {
+                console.error('Keyboard hide listener failed:', err);
+            });
+
+        // Only scroll on focusin if keyboard is already visible (switching between inputs)
+        const handleFocusIn = () => {
+            if (isKeyboardVisible) {
+                scrollActiveIntoView();
+            }
+        };
+
+        const container = containerRef.current;
+        container?.addEventListener('focusin', handleFocusIn);
+
+        return () => {
+            isMounted = false;
+            keyboardListenerHandle?.remove();
+            hideListenerHandle?.remove();
+            container?.removeEventListener('focusin', handleFocusIn);
+        };
+    }, []);
+
     const flowStartedAt = useRef(
         Number(localStorage.getItem(ONBOARDING_STARTED_AT_KEY) ?? Date.now())
     );
@@ -106,26 +181,28 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const onboardingCompletedRef = useRef(false);
     const currentStepRef = useRef<Step>('age-country');
     const stepStartedAtRef = useRef(Date.now());
-    const completedStepIdsRef = useRef<Record<'age-country' | 'profile', boolean>>({
+    const completedStepIdsRef = useRef<Record<'age-country' | 'profile' | 'pin', boolean>>({
         'age-country': false,
         profile: false,
+        pin: false,
     });
-
     const getStepMetadata = useCallback((currentStep: Step) => {
         switch (currentStep) {
             case 'age-country':
                 return { step_id: 'age-country', step_index: 1 } as const;
             case 'profile':
                 return { step_id: 'profile', step_index: 2 } as const;
+            case 'pin':
+                return { step_id: 'pin', step_index: 3 } as const;
             case 'celebrate':
-                return { step_id: 'celebrate', step_index: 3 } as const;
+                return { step_id: 'celebrate', step_index: 4 } as const;
         }
     }, []);
 
     const getStepDuration = useCallback(() => Date.now() - stepStartedAtRef.current, []);
 
     const trackOnboardingStepCompleted = useCallback(
-        (stepId: 'age-country' | 'profile', stepIndex: number) => {
+        (stepId: 'age-country' | 'profile' | 'pin', stepIndex: number) => {
             if (completedStepIdsRef.current[stepId]) {
                 return;
             }
@@ -281,12 +358,12 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
     // Pre-fill from Firebase
     useEffect(() => {
-        if (auth()?.currentUser) {
-            const fbUser = auth()?.currentUser;
-            if (fbUser?.displayName && !name) setName(fbUser.displayName);
-            if (fbUser?.photoURL && !photo) setPhoto(fbUser.photoURL);
+        const fbUser = adapter.getCurrentUser();
+        if (fbUser) {
+            if (fbUser.displayName && !name) setName(fbUser.displayName);
+            if (fbUser.photoUrl && !photo) setPhoto(fbUser.photoUrl);
         }
-    }, [name, photo]);
+    }, [name, photo, adapter]);
 
     // Photo Upload
     const onUpload = (data: UploadRes) => {
@@ -455,13 +532,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
             let fbAuthToken: string | undefined;
             try {
-                if (Capacitor.isNativePlatform()) {
-                    const res = await FirebaseAuthentication.getIdToken({ forceRefresh: false });
-                    fbAuthToken = res?.token;
-                } else {
-                    const user = auth()?.currentUser;
-                    fbAuthToken = user ? await user.getIdToken(false) : undefined;
-                }
+                fbAuthToken = await authProvider?.getIdToken(false);
             } catch (e) {
                 log.warn('Could not get Firebase ID token (non-fatal):', e);
             }
@@ -539,11 +610,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
                 if (authToken !== 'dummy') {
                     try {
-                        const fbUser = auth()?.currentUser;
+                        const fbUser = adapter.getCurrentUser();
                         if (fbUser) {
-                            await updateProfile(fbUser, {
+                            await adapter.updateProfile?.({
                                 displayName: name,
-                                photoURL: photo,
+                                photoUrl: photo,
                             });
                         }
                     } catch (e) {
@@ -579,18 +650,26 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
                 if (claimedChildren.length > 0) {
                     newModal(
-                        <GuardianLinkedModal children={claimedChildren} onDismiss={closeModal} />,
+                        <GuardianLinkedModal onDismiss={closeModal}>
+                            {claimedChildren}
+                        </GuardianLinkedModal>,
                         { sectionClassName: '!max-w-[400px]' },
                         { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                     );
                 }
 
                 trackOnboardingStepCompleted('profile', 2);
-                setStep('celebrate');
+
+                const pinAvailable =
+                    coordinatorState.status === 'ready' &&
+                    coordinatorState.escrowEnrollment === 'enrolled';
+                setStep(pinAvailable ? 'pin' : 'celebrate');
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
+            const errorDetails =
+                typeof err === 'object' && err !== null ? (err as Record<string, unknown>) : {};
             if (signupLifecycle.terminate()) {
-                const errorCode = err?.code || err?.name;
+                const errorCode = errorDetails.code || errorDetails.name;
                 track(AnalyticsEvents.SIGNUP_FAILED, {
                     flow_id: signupFlowId,
                     method: signupMethod,
@@ -602,7 +681,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
             }
 
             log.error('createProfile::error', err);
-            setError(err?.message || m['onboarding.profile.error.createFailed']());
+            setError(
+                typeof errorDetails.message === 'string'
+                    ? errorDetails.message
+                    : m['onboarding.profile.error.createFailed']()
+            );
         } finally {
             setIsCreating(false);
         }
@@ -614,9 +697,20 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
         if (onSuccess) {
             await onSuccess();
-        } else {
-            history.push('/dashboard');
+            return;
         }
+
+        // Resume a preserved claim/destination only after the profile was
+        // successfully created (this runs from the celebrate step). Clearing
+        // it here — never earlier — keeps it safe across signup and retries.
+        const pendingRedirect = resolvePostOnboardingRedirect(redirectStore.get.lcnRedirect());
+        if (pendingRedirect) {
+            redirectStore.set.lcnRedirect(null);
+            history.push(pendingRedirect);
+            return;
+        }
+
+        history.push('/dashboard');
     };
 
     const handleRoleSelect = async (selectedRole: LearnCardRolesEnum) => {
@@ -648,7 +742,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     );
 
     return (
-        <div className="w-full h-full bg-white flex flex-col overflow-y-auto relative font-poppins">
+        <div
+            ref={containerRef}
+            className="w-full h-full bg-white flex flex-col overflow-y-auto relative font-poppins"
+        >
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 <div
                     className="absolute inset-0 opacity-[0.14] transition-colors duration-700 ease-in-out"
@@ -737,12 +834,14 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                     >
                                         <span id="onboarding-country-value">
                                             {country
-                                                ? COUNTRIES[country] ?? country
+                                                ? (countryNames.of(country) ??
+                                                  COUNTRIES[country] ??
+                                                  country)
                                                 : m['onboarding.v2.selectCountry']()}
                                         </span>
                                         <LocationIcon
                                             aria-hidden="true"
-                                            className="w-5 h-5 text-grayscale-500"
+                                            className="w-6 h-6 text-grayscale-500"
                                         />
                                     </button>
                                 </div>
@@ -862,9 +961,6 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                 <div className="w-full flex justify-center">
                                     <div className="w-full max-w-[320px] bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border border-white/60 p-6 pt-8 flex flex-col items-center gap-3 relative overflow-hidden group transition-all duration-300 hover:shadow-2xl">
                                         <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/15 via-emerald-50/5 to-transparent pointer-events-none" />
-                                        <div className="absolute top-4 left-5 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700/50">
-                                            {brandName}
-                                        </div>
                                         <div className="relative">
                                             <div className="relative flex justify-center items-center h-24 w-24 rounded-full overflow-hidden border-4 border-white shadow-md bg-grayscale-100 transition-transform duration-300 group-hover:scale-105">
                                                 {photo ? (
@@ -955,11 +1051,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                     id="onboarding-profile-id"
                                                     aria-invalid={Boolean(
                                                         profileIdError ||
-                                                            (profileId &&
-                                                                (!isLengthValid ||
-                                                                    !isFormatValid ||
-                                                                    (!uniqueProfileFetching &&
-                                                                        !isUniqueValid)))
+                                                        (profileId &&
+                                                            (!isLengthValid ||
+                                                                !isFormatValid ||
+                                                                (!uniqueProfileFetching &&
+                                                                    !isUniqueValid)))
                                                     )}
                                                     aria-describedby={
                                                         profileIdError
@@ -974,7 +1070,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                         setProfileIdError('');
                                                     }}
                                                     placeholder={m['onboarding.v2.username']()}
-                                                    className="flex-1 py-3 px-2 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none bg-transparent"
+                                                    className="block w-full min-w-0 box-border py-3 px-2 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none bg-transparent"
                                                 />
                                                 <div className="pr-4 flex items-center">
                                                     {uniqueProfileFetching && (
@@ -1060,8 +1156,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                         {uniqueProfileFetching
                                                             ? m['onboarding.v2.checkingAvail']()
                                                             : isUniqueValid
-                                                            ? m['onboarding.v2.available']()
-                                                            : m['onboarding.v2.alreadyTaken']()}
+                                                              ? m['onboarding.v2.available']()
+                                                              : m['onboarding.v2.alreadyTaken']()}
                                                     </div>
                                                 </div>
                                             ) : (
@@ -1092,13 +1188,13 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                         brand: brandName,
                                                     })}
                                                 </span>
-                                                <AccessibleToggle
-                                                    ariaLabel={m['onboarding.v2.brandAi']({
+                                                <Toggle
+                                                    aria-label={m['onboarding.v2.brandAi']({
                                                         brand: brandName,
                                                     })}
                                                     checked={Boolean(
                                                         privacyPreferences?.aiEnabled &&
-                                                            !privacyPreferences?.isMinor
+                                                        !privacyPreferences?.isMinor
                                                     )}
                                                     disabled={privacyPreferences?.isMinor}
                                                     onChange={() =>
@@ -1122,8 +1218,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                 <span className="text-sm font-medium text-grayscale-700">
                                                     {m['onboarding.v2.analytics']()}
                                                 </span>
-                                                <AccessibleToggle
-                                                    ariaLabel={m['onboarding.v2.analytics']()}
+                                                <Toggle
+                                                    aria-label={m['onboarding.v2.analytics']()}
                                                     checked={Boolean(
                                                         privacyPreferences?.analyticsEnabled
                                                     )}
@@ -1144,8 +1240,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                 <span className="text-sm font-medium text-grayscale-700">
                                                     {m['onboarding.v2.bugReports']()}
                                                 </span>
-                                                <AccessibleToggle
-                                                    ariaLabel={m['onboarding.v2.bugReports']()}
+                                                <Toggle
+                                                    aria-label={m['onboarding.v2.bugReports']()}
                                                     checked={Boolean(
                                                         privacyPreferences?.bugReportsEnabled
                                                     )}
@@ -1196,6 +1292,25 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {step === 'pin' && (
+                <RecoveryPinStep
+                    onComplete={() => {
+                        if (coordinatorState.status === 'ready') {
+                            writeRecoveryPinPromptFlag(coordinatorState.did, 'set');
+                        }
+                        trackOnboardingStepCompleted('pin', 3);
+                        setStep('celebrate');
+                    }}
+                    onSkip={() => {
+                        if (coordinatorState.status === 'ready') {
+                            writeRecoveryPinPromptFlag(coordinatorState.did, 'skipped');
+                        }
+                        setStep('celebrate');
+                    }}
+                    setPin={setEscrowPin}
+                />
             )}
 
             {step === 'celebrate' && (
@@ -1267,7 +1382,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                             : 'bg-grayscale-100 border border-grayscale-200 text-grayscale-700 hover:bg-grayscale-200'
                                     }`}
                                 >
-                                    {r.title}
+                                    {getRoleTitle(r.type, locale)}
                                 </button>
                             ))}
                         </div>

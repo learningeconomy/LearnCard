@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import moment from 'moment';
 import { useHistory, useLocation } from 'react-router-dom';
+import { formatCredentialDate } from 'learn-card-base/helpers/credentialHelpers';
 import queryString from 'query-string';
 import { VC, VP } from '@learncard/types';
 import { IonContent, IonPage, useIonModal } from '@ionic/react';
@@ -21,6 +21,7 @@ import {
     useToast,
     ToastTypeEnum,
     CredentialCategoryEnum,
+    useAuthStatus,
 } from 'learn-card-base';
 import { useQueryClient } from '@tanstack/react-query';
 import useRegistry from 'learn-card-base/hooks/useRegistry';
@@ -50,18 +51,29 @@ import { ROUTE_PRELOAD } from '../../Routes';
 import ExchangePresentationRequest from './ExchangePresentationRequest';
 import ExchangeRedirect from './ExchangeRedirect';
 import ExchangeAcceptCredentials from './ExchangeAcceptCredentials';
+import type {
+    ExchangeResponse,
+    ExchangePresentationRequestData,
+    NormalizedExchangeResponse,
+    VCAPIResponse,
+} from './exchange.types';
+export type { ExchangeResponse } from './exchange.types';
+import { getInboxDeliveryId, type InboxDelivery } from './inboxDelivery';
 import ExchangeInitiate from './ExchangeInitiate';
 import ExchangeDidAuth from './ExchangeDidAuth';
 import ExchangeLoading from './ExchangeLoading';
+import InboxClaimProfileGate from './InboxClaimProfileGate';
 
 import { AlertCircle, RefreshCw, Home, CheckCircle } from 'lucide-react';
 import LoggedOutRequest from './LoggedOutRequest';
-import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import * as m from '../../paraglide/messages.js';
 import {
     getClaimInteractionBoostUri,
     getClaimInteractionDuplicateLookup,
+    isInboxClaimInteraction,
+    shouldCompleteInboxClaimLocally,
 } from './claimRequest.helpers';
+import { canParticipateInExchange, deriveInboxClaimProfileState } from './inboxClaimGate';
 
 export type RequestMetadata = {
     credentialName: string;
@@ -70,7 +82,8 @@ export type RequestMetadata = {
     issuedDate: string;
 };
 
-export enum ExchangeState { // For state machine
+export enum ExchangeState {
+    // For state machine
     Initiate,
     PresentationRequest,
     AcceptCredentials,
@@ -80,13 +93,6 @@ export enum ExchangeState { // For state machine
     Error,
     Finished,
 }
-
-export type ExchangeResponse = {
-    // For state machine
-    state: ExchangeState;
-    data?: any;
-    strategy?: VCAPIRequestStrategy;
-};
 
 export enum RequestResponseDataType {
     VerifiablePresentationRequest,
@@ -104,9 +110,7 @@ export enum VCAPIRequestStrategy {
  * As of VC-API 0.7, the requests and responses are wrapped in an object with a verifiablePresentationRequest, verifiablePresentation, or redirectUrl property.
  * Before VC-API 0.7, the requests and responses were not wrapped in an object, and must be implicitly determined by the shape of the object.
  */
-const normalizeRequestResponseData = (
-    data = {} as any
-): { type: RequestResponseDataType; data: any; strategy: VCAPIRequestStrategy } => {
+const normalizeRequestResponseData = (data: VCAPIResponse = {}): NormalizedExchangeResponse => {
     if (data?.verifiablePresentationRequest) {
         return {
             type: RequestResponseDataType.VerifiablePresentationRequest,
@@ -116,7 +120,7 @@ const normalizeRequestResponseData = (
     } else if (data?.query && data?.challenge) {
         return {
             type: RequestResponseDataType.VerifiablePresentationRequest,
-            data: data,
+            data: data as ExchangePresentationRequestData,
             strategy: VCAPIRequestStrategy.Unwrapped,
         };
     } else if (data?.verifiablePresentation) {
@@ -128,7 +132,7 @@ const normalizeRequestResponseData = (
     } else if (data?.hasOwnProperty('@context')) {
         return {
             type: RequestResponseDataType.VerifiablePresentation,
-            data: data,
+            data: data as VP,
             strategy: VCAPIRequestStrategy.Unwrapped,
         };
     } else if (data?.redirectUrl) {
@@ -150,7 +154,8 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
 
-    const issuer = typeof boostVC.issuer === 'string' ? boostVC.issuer : boostVC?.issuer?.id ?? '';
+    const issuer =
+        typeof boostVC.issuer === 'string' ? boostVC.issuer : (boostVC?.issuer?.id ?? '');
 
     const isLCNetworkUrlIssuer = issuer?.includes('did:web');
 
@@ -160,10 +165,7 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
     const issuerName = isLCNetworkUrlIssuer ? data?.displayName : getIssuerNameNonBoost(boostVC);
     const issuerImage = isLCNetworkUrlIssuer ? data?.image : getIssuerImageNonBoost(boostVC);
 
-    const { createdAt } = getInfoFromCredential(boostVC, 'MMMM DD, YYYY', {
-        uppercaseDate: false,
-    });
-    const issueDate = moment(createdAt).format('MMM DD, YYYY');
+    const issueDate = formatCredentialDate(boostVC, 'MMM DD, YYYY');
 
     if (isLoggedIn) {
         return (
@@ -323,14 +325,19 @@ const getFriendlyErrorInfo = (
 };
 
 const ExchangeErrorDisplay: React.FC<{
-    errorData: any;
+    errorData: unknown;
     onRetry: () => void;
     onCancel: () => void;
 }> = ({ errorData, onRetry, onCancel }) => {
     const rawErrorMessage =
         typeof errorData === 'string'
             ? errorData
-            : errorData?.message || 'An unexpected error occurred.';
+            : errorData &&
+                typeof errorData === 'object' &&
+                'message' in errorData &&
+                typeof errorData.message === 'string'
+              ? errorData.message
+              : 'An unexpected error occurred.';
 
     const friendlyError = getFriendlyErrorInfo(rawErrorMessage);
 
@@ -369,7 +376,7 @@ const ExchangeErrorDisplay: React.FC<{
                         </div>
 
                         {/* Technical details (collapsed by default feeling) */}
-                        {errorData && rawErrorMessage !== friendlyError.description && (
+                        {Boolean(errorData) && rawErrorMessage !== friendlyError.description && (
                             <details className="group">
                                 <summary className="text-xs text-grayscale-600 cursor-pointer hover:text-grayscale-900 transition-colors">
                                     Show technical details
@@ -458,6 +465,7 @@ const ClaimFromRequest: React.FC = () => {
     // The credential the user is claiming, captured so that after the exchange
     // completes we can drop them on that credential's wallet category page
     // (e.g. /achievements) instead of the generic passport (all categories).
+    const inboxDeliveriesRef = useRef<InboxDelivery[]>([]);
     const claimedCredentialRef = useRef<VC | undefined>(undefined);
 
     const { track } = useAnalytics();
@@ -562,6 +570,19 @@ const ClaimFromRequest: React.FC = () => {
 
     const isLoggedIn = useIsLoggedIn();
 
+    // The canonical, race-safe auth gate. Universal Inbox claims are finalized
+    // against the recipient's LCN profile, so they must not begin until that
+    // profile is confirmed present — but a loading/error/offline profile is
+    // "unknown", never "absent", and generic VC-API flows stay ungated.
+    const authStatus = useAuthStatus();
+    const isInboxClaim = useMemo(() => isInboxClaimInteraction(vc_request_url), [vc_request_url]);
+    const inboxProfileState = deriveInboxClaimProfileState(authStatus);
+    const canParticipate = canParticipateInExchange({
+        isLoggedIn,
+        isInboxClaim,
+        profileState: inboxProfileState,
+    });
+
     const { initWallet, storeAndAddVCToWallet } = useWallet();
 
     const { presentToast } = useToast();
@@ -604,7 +625,28 @@ const ClaimFromRequest: React.FC = () => {
         handleRedirectTo: handleRedirectTo,
     });
 
-    const handleRequest = async (body: any = {}, credentialClaimCount?: number) => {
+    const handleRequest = async (
+        body: Record<string, unknown> = {},
+        credentialClaimCount?: number
+    ) => {
+        // Hard stop: never contact the exchange endpoint (or locally complete an
+        // inbox batch) until a Universal Inbox recipient has a confirmed LCN
+        // profile. The UI routes profileless inbox claims through
+        // InboxClaimProfileGate, but retries/submits must be safe too.
+        if (!canParticipate) {
+            log.warn('Exchange participation blocked until the profile is confirmed');
+            return;
+        }
+
+        // Inbox credentials are finalized before the returned VCs are shown to the learner.
+        // Once the learner saves that batch locally, there is no server-side completion request
+        // left to make: posting an empty body would be interpreted as a new claim initiation and
+        // incorrectly return "No pending credentials found".
+        if (shouldCompleteInboxClaimLocally(vc_request_url, credentialClaimCount, body)) {
+            void handleAfterCredentialClaim();
+            return;
+        }
+
         setExchangeState({ state: ExchangeState.Loading });
         try {
             if (!vc_request_url) {
@@ -623,7 +665,7 @@ const ClaimFromRequest: React.FC = () => {
             if (!response.ok) throw new Error(`${response.status}`);
 
             const responseText = await response.text();
-            let responseData: any = {};
+            let responseData: VCAPIResponse = {};
             if (responseText) {
                 try {
                     responseData = JSON.parse(responseText);
@@ -666,6 +708,7 @@ const ClaimFromRequest: React.FC = () => {
                 // Server sent a Verifiable Presentation, usually containing a verifiableCredential object
             } else if (type === RequestResponseDataType.VerifiablePresentation) {
                 // Remember the (first) credential being claimed for post-claim routing.
+                inboxDeliveriesRef.current = responseData?.inboxDeliveries ?? [];
                 const vpCreds = data?.verifiableCredential;
                 claimedCredentialRef.current = Array.isArray(vpCreds) ? vpCreds[0] : vpCreds;
                 // Warm the destination category chunk while the user reviews the
@@ -704,10 +747,10 @@ const ClaimFromRequest: React.FC = () => {
     };
 
     useEffect(() => {
-        if (isLoggedIn) {
+        if (canParticipate) {
             handleRequest(); // Initiate the exchange
         }
-    }, [isLoggedIn]);
+    }, [canParticipate]);
 
     const handleAfterCredentialClaim = async (claimedCredential?: VC) => {
         setExchangeState({ state: ExchangeState.Finished });
@@ -762,6 +805,7 @@ const ClaimFromRequest: React.FC = () => {
             // nodes flip.
             const storeResult = await storeAndAddVCToWallet(credential, {
                 title: name,
+                inboxDeliveryId: getInboxDeliveryId(credential, inboxDeliveriesRef.current),
                 allowDuplicate: duplicateResolution.isDuplicate,
                 boostUri: claimInteractionBoostUri,
             });
@@ -849,6 +893,7 @@ const ClaimFromRequest: React.FC = () => {
                 return (
                     <ExchangeAcceptCredentials
                         verifiablePresentation={exchangeState.data}
+                        inboxDeliveries={inboxDeliveriesRef.current}
                         onAccept={handleRequest}
                         strategy={exchangeState.strategy}
                         requestDuplicateResolution={requestDuplicateResolution}
@@ -889,9 +934,23 @@ const ClaimFromRequest: React.FC = () => {
         }
     };
 
-    if (!isLoggedIn) {
+    if (!isLoggedIn || authStatus.tag === 'needs_setup') {
         return <LoggedOutRequest vc_request_url={vc_request_url} />;
     }
+
+    // Universal Inbox deep links / refreshes land here directly. Block the
+    // exchange until the profile is confirmed; the gate starts onboarding on a
+    // confirmed absence and preserves the claim link through it.
+    if (isInboxClaim && inboxProfileState !== 'present') {
+        return (
+            <IonPage>
+                <IonContent>
+                    <InboxClaimProfileGate vc_request_url={vc_request_url} />
+                </IonContent>
+            </IonPage>
+        );
+    }
+
     return (
         <IonPage>
             {duplicateCredentialPrompt}

@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import {
     SD_JWT_VC_FORMAT,
     SD_JWT_VC_FORMAT_LEGACY,
@@ -46,11 +47,11 @@ const makeLearnCard = (
 ) =>
     ({
         invoke: {
-            parseSdJwtVc: jest.fn(async () => {
+            parseSdJwtVc: vi.fn(async () => {
                 if (throws) throw throws;
                 return parsed;
             }),
-            verifySdJwtVc: jest.fn(async () => verifyResult),
+            verifySdJwtVc: vi.fn(async () => verifyResult),
         },
     } as unknown as Parameters<typeof synthesizeSdJwtVc>[2]);
 
@@ -325,7 +326,7 @@ describe('synthesizeSdJwtVc', () => {
             const parsed = makeParsed();
             const learnCard = {
                 invoke: {
-                    parseSdJwtVc: jest.fn(async () => parsed),
+                    parseSdJwtVc: vi.fn(async () => parsed),
                 },
             } as unknown as Parameters<typeof synthesizeSdJwtVc>[2];
 
@@ -336,14 +337,14 @@ describe('synthesizeSdJwtVc', () => {
 
         it('passes { skipStatusCheck: true } to receipt-time verification (revocation freshness is a display-time concern)', async () => {
             const parsed = makeParsed();
-            const verifyFn = jest.fn().mockResolvedValue({
+            const verifyFn = vi.fn().mockResolvedValue({
                 checks: ['issuer_signature'],
                 warnings: [],
                 errors: [],
             });
             const learnCard = {
                 invoke: {
-                    parseSdJwtVc: jest.fn(async () => parsed),
+                    parseSdJwtVc: vi.fn(async () => parsed),
                     verifySdJwtVc: verifyFn,
                 },
             } as unknown as Parameters<typeof synthesizeSdJwtVc>[2];

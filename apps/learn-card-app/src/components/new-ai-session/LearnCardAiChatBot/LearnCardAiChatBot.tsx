@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useStore } from '@nanostores/react';
 import {
-    addActiveLocaleToUrl,
+    aiPassportFetch,
     useDeviceTypeByWidth,
     useKeyboardHeight,
     isPlatformIOS,
@@ -215,15 +215,13 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                     if (!hiddenTimer) {
                         hiddenTimer = setTimeout(() => {
                             const form = new FormData();
-                            form.append('did', did);
                             form.append('threadId', threadId);
                             form.append('event', 'hidden');
-                            navigator.sendBeacon(
-                                addActiveLocaleToUrl(
-                                    `${getBackendUrl()}/threads/visibility?did=${did}`
-                                ),
-                                form
-                            );
+                            void aiPassportFetch(
+                                '/threads/visibility',
+                                { method: 'POST', body: form, keepalive: true },
+                                did
+                            ).catch(error => log.warn('Failed to send hidden event', error));
                             log.debug('sent beacon after 5min hidden');
                             // After the timer fires, reset it to null so a new one can be created.
                             hiddenTimer = null;
@@ -237,13 +235,13 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                     }
                     // Send visible event immediately to cancel any existing timers
                     const form = new FormData();
-                    form.append('did', did);
                     form.append('threadId', threadId);
                     form.append('event', 'visible');
-                    navigator.sendBeacon(
-                        addActiveLocaleToUrl(`${getBackendUrl()}/threads/visibility?did=${did}`),
-                        form
-                    );
+                    void aiPassportFetch(
+                        '/threads/visibility',
+                        { method: 'POST', body: form, keepalive: true },
+                        did
+                    ).catch(error => log.warn('Failed to send visible event', error));
                     log.debug('sent beacon visible');
                 }
             }

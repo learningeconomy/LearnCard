@@ -44,8 +44,8 @@ const ViewEndorsementRequest: React.FC<{
     const [boost, setBoost] = useState<VC[] | undefined>();
     const [category, setCategory] = useState<string>('');
 
-    const { credentialWithEdits } = useGetCredentialWithEdits(boost, uri);
-    let _boost = credentialWithEdits ?? boost;
+    const { credentialWithEdits } = useGetCredentialWithEdits(boost);
+    const _boost = credentialWithEdits ?? boost;
 
     // Get credential from ceramic
     const fetchCredential = async (uri: string) => {

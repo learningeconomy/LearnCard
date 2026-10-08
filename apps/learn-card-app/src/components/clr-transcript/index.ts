@@ -4,11 +4,14 @@ export { default as ClrTranscriptSummaryStats } from './ClrTranscriptSummaryStat
 export { default as ClrTranscriptTrustBadge } from './ClrTranscriptTrustBadge';
 export { default as ClrTranscriptWarningsPanel } from './ClrTranscriptWarningsPanel';
 export { default as ClrTranscriptEvidenceList } from './ClrTranscriptEvidenceList';
-export { default as ClrTranscriptResultsList } from './ClrTranscriptResultsList';
+export { default as ClrResultWithScaleList } from './ClrResultWithScaleList';
 export { default as ClrTranscriptSourceField } from './ClrTranscriptSourceField';
 export { default as ClrCourseTable } from './ClrCourseTable';
 export { default as ClrCourseDetailPanel } from './ClrCourseDetailPanel';
 export { default as ClrTranscriptDetailModal } from './ClrTranscriptDetailModal';
+export { default as ClrAssessmentSection } from './ClrAssessmentSection';
+export { default as ClrAssessmentDetailPanel } from './ClrAssessmentDetailPanel';
+export { default as ClrRubricScale, ClrRubricProgress } from './ClrRubricScale';
 export { default as ClrProvenanceTable } from './ClrProvenanceTable';
 export { default as StructuredTranscriptView } from './views/StructuredTranscriptView';
 export { default as SparseAcademicRecordView } from './views/SparseAcademicRecordView';

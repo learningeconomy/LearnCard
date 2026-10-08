@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { submitPresentation, VpSubmitError } from './submit';
 import { PresentationSubmission } from './select';
 
@@ -24,16 +25,12 @@ const mockFetchOk = (
     init: { contentType?: string; status?: number } = {}
 ): { fetchImpl: typeof fetch; calls: FetchArgs[] } => {
     const calls: FetchArgs[] = [];
-    const fetchImpl = jest.fn(async (input: RequestInfo | URL, reqInit?: RequestInit) => {
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL, reqInit?: RequestInit) => {
         calls.push({ input: String(input), init: reqInit ?? {} });
 
         const contentType = init.contentType ?? 'application/json';
         const text =
-            body === undefined
-                ? ''
-                : typeof body === 'string'
-                ? body
-                : JSON.stringify(body);
+            body === undefined ? '' : typeof body === 'string' ? body : JSON.stringify(body);
 
         return {
             ok: (init.status ?? 200) >= 200 && (init.status ?? 200) < 300,
@@ -207,7 +204,7 @@ describe('submitPresentation — error handling', () => {
     });
 
     it('throws network_error when fetch rejects', async () => {
-        const fetchImpl: typeof fetch = jest.fn(async () => {
+        const fetchImpl: typeof fetch = vi.fn(async () => {
             throw new Error('ECONNRESET');
         }) as unknown as typeof fetch;
 

@@ -6,11 +6,20 @@
         "brainServiceApi": "https://staging.network.learncard.com/api",
         "cloudService": "https://staging.cloud.learncard.com/trpc",
         "lcaApi": "https://staging.api.learncard.app/trpc",
-        "xapi": "https://staging.network.learncard.com/xapi"
+        "notificationsEndpoint": "https://staging.api.learncard.app/api/notifications/send",
+        "xapi": "https://staging.network.learncard.com/xapi",
+        "aiAgentService": "https://agent-staging.learncard.ai"
     },
     "features": {
         "analytics": false,
-        "useSeededSkillFrameworks": true
+        "useSeededSkillFrameworks": true,
+        "samplePersonas": [
+            {
+                "id": "student",
+                "contractUri": "lc:network:staging.network.learncard.com/trpc:contract:79672d1a-fe7c-5715-95db-27586e529934"
+            }
+        ],
+        "legacySamplePersonaContractUris": []
     },
     "observability": {
         "sentryEnv": "staging",
@@ -20,7 +29,11 @@
     "auth": {
         "keyDerivation": "sss",
         "sss": {
-            "serverUrl": "https://staging.api.learncard.app/api"
+            "serverUrl": "https://staging.api.learncard.app/api",
+            "escrowEnclaveMode": "off",
+            "escrowEnclavePublicKeys": [
+                "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEdi2P3bj3ZuaVMRl3CKa78AgtRoIB8NcWX5DX+PmIx7SU6ZJGenmhHiLWzNxgvfAIucQtE4y//dS6W1sgkrJ2Tw=="
+            ]
         }
     }
 }

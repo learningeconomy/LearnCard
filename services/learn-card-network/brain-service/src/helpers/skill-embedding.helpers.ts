@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { z } from 'zod';
 import { createHash } from 'crypto';
 import { GoogleGenAI } from '@google/genai';
@@ -20,8 +21,8 @@ export type UpdateSkillEmbeddingFn = (
     frameworkId?: string
 ) => Promise<boolean>;
 
-const googleApiKey = process.env.SKILL_EMBEDDING_GOOGLE_API_KEY;
-const googleModel = process.env.SKILL_EMBEDDING_GOOGLE_MODEL ?? 'gemini-embedding-001';
+const googleApiKey = environment.SKILL_EMBEDDING_GOOGLE_API_KEY;
+const googleModel = environment.SKILL_EMBEDDING_GOOGLE_MODEL ?? 'gemini-embedding-001';
 const googleClient = googleApiKey ? new GoogleGenAI({ apiKey: googleApiKey }) : null;
 
 const embeddingResponseValidator = z.object({
@@ -31,7 +32,7 @@ const embeddingResponseValidator = z.object({
 const embeddingsResponseValidator = z.array(embeddingResponseValidator);
 
 const getEmbeddingCacheTtlSeconds = (): number => {
-    const raw = Number(process.env.SKILL_EMBEDDING_CACHE_TTL_SECONDS ?? 60 * 60 * 24);
+    const raw = Number(environment.SKILL_EMBEDDING_CACHE_TTL_SECONDS ?? 60 * 60 * 24);
     return Math.min(Math.max(raw, 60), 60 * 60 * 24 * 7);
 };
 
@@ -64,8 +65,8 @@ export const getCachedEmbeddingForText = async (text: string): Promise<number[] 
 
 const getEmbeddingBatchSize = (): number => {
     const raw = Number(
-        process.env.SKILL_EMBEDDING_BATCH_SIZE ??
-            process.env.SKILL_EMBEDDING_BACKFILL_BATCH_SIZE ??
+        environment.SKILL_EMBEDDING_BATCH_SIZE ??
+            environment.SKILL_EMBEDDING_BACKFILL_BATCH_SIZE ??
             25
     );
     return Math.min(Math.max(raw, 1), 100);
@@ -167,7 +168,7 @@ let backfillStarted = false;
 const SKILL_EMBEDDING_BACKFILL_LOCK_KEY = 'skill-embeddings:backfill:lock';
 
 const getBackfillLockTtlSeconds = (): number => {
-    const raw = Number(process.env.SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS ?? 900);
+    const raw = Number(environment.SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS ?? 900);
     return Math.min(Math.max(raw, 60), 60 * 60 * 24);
 };
 
@@ -192,7 +193,7 @@ const acquireBackfillLock = async (): Promise<boolean> => {
 
 export const startSkillEmbeddingBackfill = async (): Promise<void> => {
     if (backfillStarted) return;
-    if (process.env.SKILL_EMBEDDING_BACKFILL_ON_STARTUP !== 'true') return;
+    if (!environment.SKILL_EMBEDDING_BACKFILL_ON_STARTUP) return;
     if (!googleApiKey) return;
 
     const lockAcquired = await acquireBackfillLock();
@@ -200,7 +201,7 @@ export const startSkillEmbeddingBackfill = async (): Promise<void> => {
 
     console.info('Starting skill embedding backfill');
 
-    const pageSize = Number(process.env.SKILL_EMBEDDING_BACKFILL_PAGE_SIZE ?? 100);
+    const pageSize = Number(environment.SKILL_EMBEDDING_BACKFILL_PAGE_SIZE ?? 100);
 
     try {
         let cursor: string | null = null;

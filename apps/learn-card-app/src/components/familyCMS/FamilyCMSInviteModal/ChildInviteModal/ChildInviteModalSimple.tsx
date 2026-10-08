@@ -52,9 +52,10 @@ type ChildInviteModalSimpleProps = {
     >;
 };
 
-const StateValidator = z.object({
-    name: z.string().min(1, 'Name is required!'),
-});
+const getStateValidator = () =>
+    z.object({
+        name: z.string().min(1, m['arabicFixes.nameRequired']()),
+    });
 
 export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
     selectedFamily,
@@ -62,6 +63,7 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
 }) => {
     const { newModal, closeModal } = useModal();
     const { presentToast } = useToast();
+    const brandingConfig = useBrandingConfig();
 
     const { mutate: createChildAccount } = useCreateChildAccount();
 
@@ -91,7 +93,7 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
     });
 
     const validate = () => {
-        const parsedData = StateValidator.safeParse({
+        const parsedData = getStateValidator().safeParse({
             name: name,
         });
 
@@ -205,7 +207,9 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
                     </div>
                     <div>
                         <p className="text-grayscale-600 font-poppins m-0 flex h-full w-full items-center justify-center text-center text-sm font-semibold">
-                            Child in {selectedFamily?.name}
+                            {m['arabicFixes.childInFamily']({
+                                family: selectedFamily?.name ?? '',
+                            })}
                         </p>
                     </div>
 
@@ -284,8 +288,10 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
                         className="w-full text-grayscale-900 text-xl font-poppins flex items-center justify-between px-2 mt-4"
                     >
                         <div className="flex">
-                            <LearnCardIconOutline className="mr-2" /> Edit{' '}
-                            {brandingConfig?.name || 'LearnCard'}
+                            <LearnCardIconOutline className="me-2" />{' '}
+                            {m['arabicFixes.editAppName']({
+                                appName: brandingConfig?.name || 'LearnCard',
+                            })}
                         </div>
 
                         <SlimCaretRight className="text-grayscale-400 w-[22px] h-auto" />

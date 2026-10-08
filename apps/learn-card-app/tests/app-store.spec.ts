@@ -1,10 +1,19 @@
 import { expect } from '@playwright/test';
-import { test } from './fixtures/test';
-import { seedAppListing, mockEmbedRoute, SeededListing } from './app-store.helpers';
+import { test } from './fixtures/isolated-test';
+import {
+    seedAppListing,
+    deleteAppListing,
+    mockEmbedRoute,
+    SeededListing,
+} from './app-store.helpers';
 import { waitForAuthenticatedState } from './test.helpers';
 
 test.describe('App Store — redirect flow', () => {
     let listing: SeededListing;
+
+    test.afterEach(async () => {
+        if (listing) await deleteAppListing(listing.listingId);
+    });
 
     test.beforeEach(async () => {
         listing = await seedAppListing();
@@ -13,13 +22,7 @@ test.describe('App Store — redirect flow', () => {
     test('shows sign-in modal then redirect banner on login page when installing from app listing', async ({
         page,
     }) => {
-        // Clear auth state so user is truly logged out
-        // (demoState.json pre-populates currentUserStore with a demo user)
-        await page.goto('/');
-        await page.evaluate(() => {
-            localStorage.removeItem('currentUserStore');
-            localStorage.removeItem('authStore');
-        });
+        // The isolated fixture starts with empty browser storage.
 
         // Navigate to app listing directly
         await page.goto(`/app/${listing.listingId}`);
@@ -45,9 +48,12 @@ test.describe('App Store — redirect flow', () => {
         ).toBeVisible({ timeout: 5_000 });
     });
 
-    test('auto-triggers install modal after login redirect (existing user)', async ({ page }) => {
+    test('auto-triggers install modal after login redirect (existing user)', async ({
+        page,
+        actors,
+    }) => {
         // Seed a user with a profile BEFORE logging in, so they have an existing account
-        await waitForAuthenticatedState(page, { profileId: 'testa' });
+        await waitForAuthenticatedState(page, actors.learner);
 
         // Log out by clearing all browser storage (localStorage alone isn't enough
         // because the private key is stored in IndexedDB and would re-authenticate)
@@ -78,10 +84,10 @@ test.describe('App Store — redirect flow', () => {
         // Should redirect to /login
         await expect(page).toHaveURL(/\/login/, { timeout: 5_000 });
 
-        // Log in again — waitForAuthenticatedState uses /hidden/seed which bypasses
+        // Log in again — waitForAuthenticatedState uses /developer/sign-in which bypasses
         // the login page's returnUrl redirect, so we navigate back to the listing manually.
         // The installIntent persists in redirectStore across this navigation.
-        await waitForAuthenticatedState(page, { profileId: 'testa' });
+        await waitForAuthenticatedState(page, actors.learner);
         await page.goto(`/app/${listing.listingId}`);
 
         // Should be on the app listing
@@ -97,13 +103,17 @@ test.describe('App Store — redirect flow', () => {
 test.describe('App Store', () => {
     let listing: SeededListing;
 
-    test.beforeEach(async ({ page }) => {
+    test.afterEach(async () => {
+        if (listing) await deleteAppListing(listing.listingId);
+    });
+
+    test.beforeEach(async ({ page, actors }) => {
         // Seed Neo4j listing BEFORE auth so the app's initial queries pick it up
         listing = await seedAppListing();
 
         // Login and create a network profile in one step — the seed route calls
         // wallet.invoke.createProfile() which guarantees DID consistency
-        await waitForAuthenticatedState(page, { profileId: 'testa' });
+        await waitForAuthenticatedState(page, actors.learner);
 
         // Mock only the embed URL — everything else is real
         await mockEmbedRoute(page);

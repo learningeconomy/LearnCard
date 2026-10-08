@@ -7,10 +7,15 @@ import {
     LCNNotificationTypeEnumValidator,
     VC,
     VP,
+    JWE,
 } from '@learncard/types';
 import { sendSpy, addNotificationToQueueSpy } from './helpers/spies';
 import * as notifications from '@helpers/notifications.helpers';
 import { getNotificationMessage } from '@helpers/notificationMessages';
+import { getProfileByProfileId } from '@accesslayer/profile/read';
+import { areProfilesConnected } from '@helpers/connection.helpers';
+import { updateInboxCredential } from '@accesslayer/inbox-credential/update';
+import { neogma } from '@instance';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -21,10 +26,43 @@ vi.mock('@services/delivery/delivery.factory', () => ({
     getDeliveryService: () => ({ send: sendSpy }),
 }));
 
+// Each phone-delivery test explicitly opts its issuer into the trusted fixture registry.
+vi.mock('@services/registry/registry.factory', () => ({
+    getRegistryService: () => ({
+        isTrusted: async (did: string) =>
+            (process.env.TRUSTED_ISSUERS_WHITELIST ?? '').split(',').includes(did),
+        getIssuer: async () => null,
+    }),
+}));
+
 const getExchangeIdFromClaimUrl = (claimUrl: string | undefined) => {
     if (!claimUrl) return undefined;
     const url = new URL(claimUrl);
     return url.pathname.split('/').pop()?.replace('?iuv=1', '');
+};
+
+const claimFromInboxUrl = async (
+    user: Awaited<ReturnType<typeof getUser>>,
+    claimUrl: string | undefined
+): Promise<VC[]> => {
+    const localExchangeId = getExchangeIdFromClaimUrl(claimUrl);
+    if (!localExchangeId) throw new Error('Local exchange ID is undefined');
+
+    const exchangeInitiationResponse = await user.clients.fullAuth.workflows.participateInExchange({
+        localWorkflowId: 'inbox-claim',
+        localExchangeId,
+    });
+    const didAuthVp = (await user.learnCard.invoke.getDidAuthVp({
+        challenge: exchangeInitiationResponse?.verifiablePresentationRequest?.challenge,
+        domain: exchangeInitiationResponse?.verifiablePresentationRequest?.domain,
+    })) as VP;
+    const response = await user.clients.fullAuth.workflows.participateInExchange({
+        localWorkflowId: 'inbox-claim',
+        localExchangeId,
+        verifiablePresentation: didAuthVp,
+    });
+
+    return (response.verifiablePresentation?.verifiableCredential ?? []) as VC[];
 };
 
 describe('Universal Inbox', () => {
@@ -175,6 +213,12 @@ describe('Universal Inbox', () => {
                 credential: vc,
                 recipient: { type: 'email', value: 'userA@test.com' },
             });
+
+            const storedBeforeClaim = (await InboxCredential.findMany({ where: {} })).find(
+                record => record.id === inboxCredential.issuanceId
+            );
+            expect(storedBeforeClaim?.credential).toMatch(/^lc-inbox-jwe:v1:/);
+            expect(storedBeforeClaim?.credential).not.toContain('Test Credential');
             expect(inboxCredential.claimUrl).not.toBeNull();
             expect(inboxCredential.claimUrl).toContain('/interactions/inbox-claim');
             expect(inboxCredential.claimUrl).toContain('?iuv=1');
@@ -897,6 +941,33 @@ describe('Universal Inbox', () => {
                 exchangePresentationResponse?.verifiablePresentation?.verifiableCredential?.[0]
             ).toMatchObject(vc);
 
+            const storedAfterClaim = (await InboxCredential.findMany({ where: {} })).find(
+                record => record.id === inboxCredential.issuanceId
+            );
+            expect(storedAfterClaim?.currentStatus).toBe('ISSUED');
+            expect(storedAfterClaim?.credential).toBeUndefined();
+
+            const [claimerPrompts, senderPrompts, claimer, sender] = await Promise.all([
+                userB.clients.fullAuth.profile.pendingConnectionPrompts(),
+                userA.clients.fullAuth.profile.pendingConnectionPrompts(),
+                getProfileByProfileId('userb'),
+                getProfileByProfileId('usera'),
+            ]);
+
+            expect(claimerPrompts).toHaveLength(1);
+            expect(claimerPrompts[0]).toMatchObject({
+                surface: 'POST_CLAIM',
+                triggerId: `inbox:${inboxCredential.issuanceId}`,
+                counterpart: { profileId: 'usera' },
+            });
+            expect(senderPrompts).toHaveLength(1);
+            expect(senderPrompts[0]).toMatchObject({
+                surface: 'NOTIFICATION',
+                triggerId: `inbox:${inboxCredential.issuanceId}`,
+                counterpart: { profileId: 'userb' },
+            });
+            expect(await areProfilesConnected(claimer!, sender!)).toBe(false);
+
             // Should fail because the exchange is already completed
             await expect(
                 userB.clients.fullAuth.workflows.participateInExchange({
@@ -980,6 +1051,156 @@ describe('Universal Inbox', () => {
             expect(credentials[vc3Index]).toMatchObject(vc3);
         });
 
+        it('collapses a batch to one prompt per sender and orders prompts by triggeredAt', async () => {
+            const [vcA1, vcA2, vcC] = await Promise.all([
+                userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc()),
+                userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc()),
+                userC.learnCard.invoke.issueCredential(await userC.learnCard.invoke.getTestVc()),
+            ]);
+            const issuedA1 = await userA.clients.fullAuth.inbox.issue({
+                credential: vcA1,
+                recipient: { type: 'email', value: 'batch-claim@test.com' },
+            });
+            const issuedA2 = await userA.clients.fullAuth.inbox.issue({
+                credential: vcA2,
+                recipient: { type: 'email', value: 'batch-claim@test.com' },
+            });
+            const issuedC = await userC.clients.fullAuth.inbox.issue({
+                credential: vcC,
+                recipient: { type: 'email', value: 'batch-claim@test.com' },
+            });
+            addNotificationToQueueSpy.mockClear();
+
+            await expect(claimFromInboxUrl(userB, issuedA1.claimUrl)).resolves.toHaveLength(3);
+
+            const [claimerPrompts, senderAPrompts, senderCPrompts, claimer, senderA, senderC] =
+                await Promise.all([
+                    userB.clients.fullAuth.profile.pendingConnectionPrompts(),
+                    userA.clients.fullAuth.profile.pendingConnectionPrompts(),
+                    userC.clients.fullAuth.profile.pendingConnectionPrompts(),
+                    getProfileByProfileId('userb'),
+                    getProfileByProfileId('usera'),
+                    getProfileByProfileId('userc'),
+                ]);
+            const inboxTriggerIds = [issuedA1, issuedA2, issuedC].map(
+                credential => `inbox:${credential.issuanceId}`
+            );
+            const triggeredAt = claimerPrompts.map(prompt => Date.parse(prompt.triggeredAt));
+
+            expect(claimerPrompts).toHaveLength(2);
+            expect(claimerPrompts.map(prompt => prompt.counterpart.profileId).sort()).toEqual([
+                'usera',
+                'userc',
+            ]);
+            expect(claimerPrompts.every(prompt => inboxTriggerIds.includes(prompt.triggerId))).toBe(
+                true
+            );
+            expect(triggeredAt).toEqual([...triggeredAt].sort((a, b) => a - b));
+            expect(senderAPrompts).toHaveLength(1);
+            expect(senderCPrompts).toHaveLength(1);
+            expect(await areProfilesConnected(claimer!, senderA!)).toBe(false);
+            expect(await areProfilesConnected(claimer!, senderC!)).toBe(false);
+
+            const promptNotifications = addNotificationToQueueSpy.mock.calls.filter(
+                call =>
+                    call[0]?.type === LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED &&
+                    call[0]?.data?.metadata?.connectionPrompt
+            );
+            expect(promptNotifications).toHaveLength(2);
+        });
+
+        it('claims a workflow inbox credential issued by an application without creating prompts', async () => {
+            const vc = await userA.learnCard.invoke.issueCredential(
+                await userA.learnCard.invoke.getTestVc()
+            );
+            const issued = await userA.clients.fullAuth.inbox.issue({
+                credential: vc,
+                recipient: { type: 'email', value: 'workflow-app-issuer@test.com' },
+            });
+            await updateInboxCredential(issued.issuanceId, {
+                signingAuthority: {
+                    endpoint: 'https://example.com/app-signing',
+                    name: 'application',
+                    listingSlug: 'test-application',
+                },
+            });
+
+            await expect(claimFromInboxUrl(userB, issued.claimUrl)).resolves.toHaveLength(1);
+            await expect(
+                userA.clients.fullAuth.profile.pendingConnectionPrompts()
+            ).resolves.toHaveLength(0);
+            await expect(
+                userB.clients.fullAuth.profile.pendingConnectionPrompts()
+            ).resolves.toHaveLength(0);
+        });
+
+        it('does not prompt for a DID-only holder until that DID has a profile', async () => {
+            const firstCredential = await userA.learnCard.invoke.issueCredential(
+                await userA.learnCard.invoke.getTestVc()
+            );
+            const firstIssue = await userA.clients.fullAuth.inbox.issue({
+                credential: firstCredential,
+                recipient: { type: 'email', value: 'did-only@test.com' },
+            });
+            await Profile.delete({ detach: true, where: { profileId: 'userb' } });
+
+            await expect(claimFromInboxUrl(userB, firstIssue.claimUrl)).resolves.toHaveLength(1);
+            expect(await userA.clients.fullAuth.profile.pendingConnectionPrompts()).toHaveLength(0);
+
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+            const secondCredential = await userA.learnCard.invoke.issueCredential(
+                await userA.learnCard.invoke.getTestVc()
+            );
+            const secondIssue = await userA.clients.fullAuth.inbox.issue({
+                credential: secondCredential,
+                recipient: { type: 'email', value: 'did-only@test.com' },
+            });
+
+            await expect(claimFromInboxUrl(userB, secondIssue.claimUrl)).resolves.toHaveLength(1);
+            await expect(
+                userB.clients.fullAuth.profile.pendingConnectionPrompts()
+            ).resolves.toMatchObject([
+                {
+                    triggerId: expect.stringMatching(
+                        new RegExp(`^inbox:(${firstIssue.issuanceId}|${secondIssue.issuanceId})$`)
+                    ),
+                    counterpart: { profileId: 'usera' },
+                },
+            ]);
+        });
+
+        it('keeps workflow claims successful when prompt creation fails', async () => {
+            const vc = await userA.learnCard.invoke.issueCredential(
+                await userA.learnCard.invoke.getTestVc()
+            );
+            const inboxCredential = await userA.clients.fullAuth.inbox.issue({
+                credential: vc,
+                recipient: { type: 'email', value: 'prompt-failure@test.com' },
+            });
+            const originalRun = neogma.queryRunner.run.bind(neogma.queryRunner);
+            const queryRunnerSpy = vi
+                .spyOn(neogma.queryRunner, 'run')
+                .mockImplementation(async (...args) => {
+                    if (String(args[0]).includes('MERGE (viewer)-[prompt:CONNECTION_PROMPT]')) {
+                        throw new Error('injected inbox prompt write failure');
+                    }
+
+                    return originalRun(...args);
+                });
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+            try {
+                await expect(
+                    claimFromInboxUrl(userB, inboxCredential.claimUrl)
+                ).resolves.toHaveLength(1);
+            } finally {
+                queryRunnerSpy.mockRestore();
+                consoleErrorSpy.mockRestore();
+            }
+
+            expect(await userB.clients.fullAuth.profile.pendingConnectionPrompts()).toHaveLength(0);
+        });
+
         it('should trigger a webhook if provided when a credential is claimed', async () => {
             process.env.TRUSTED_ISSUERS_WHITELIST = userA.learnCard.id.did();
             const vc = await userA.learnCard.invoke.issueCredential(
@@ -1030,8 +1251,17 @@ describe('Universal Inbox', () => {
                 verifiablePresentation: didAuthVp,
             });
 
-            expect(addNotificationToQueueSpy).toHaveBeenCalledOnce();
-            expect(addNotificationToQueueSpy).toHaveBeenCalledWith(
+            const claimedWebhookCalls = addNotificationToQueueSpy.mock.calls.filter(
+                call => call[0]?.type === LCNNotificationTypeEnumValidator.enum.ISSUANCE_CLAIMED
+            );
+            const promptNotificationCalls = addNotificationToQueueSpy.mock.calls.filter(
+                call =>
+                    call[0]?.type === LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED &&
+                    call[0]?.data?.metadata?.connectionPrompt
+            );
+
+            expect(claimedWebhookCalls).toHaveLength(1);
+            expect(claimedWebhookCalls[0]?.[0]).toEqual(
                 expect.objectContaining({
                     webhookUrl: 'https://example.com/webhook',
                     data: {
@@ -1048,6 +1278,7 @@ describe('Universal Inbox', () => {
                     type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_CLAIMED,
                 })
             );
+            expect(promptNotificationCalls).toHaveLength(1);
         });
 
         it('localizes the claimed webhook to the issuer profile locale', async () => {
@@ -1314,10 +1545,12 @@ describe('Universal Inbox', () => {
             });
 
             // User C attempts to claim second credential
-            await userC.clients.fullAuth.workflows.participateInExchange({
-                localWorkflowId: 'inbox-claim',
-                localExchangeId: localExchangeId2,
-            });
+            await expect(
+                userC.clients.fullAuth.workflows.participateInExchange({
+                    localWorkflowId: 'inbox-claim',
+                    localExchangeId: localExchangeId2,
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
 
             const userCContactMethods =
                 await userC.clients.fullAuth.contactMethods.getMyContactMethods();
@@ -1383,11 +1616,13 @@ describe('Universal Inbox', () => {
             }
             const receivedCred = (await userB.clients.fullAuth.storage.resolve({
                 uri: incomingCredentials?.[0].uri,
-            })) as VC;
+            })) as JWE;
             if (!receivedCred) {
                 throw new Error('Received credential is undefined');
             }
-            expect(receivedCred?.name).toBe('Delivered Straight to Wallet');
+            expect(receivedCred).toHaveProperty('ciphertext');
+            const decrypted = await userB.learnCard.invoke.decryptDagJwe<VC>(receivedCred as JWE);
+            expect(decrypted.name).toBe('Delivered Straight to Wallet');
         });
 
         it('should not route credentials to the profile if the recipient exists with a unverified email contact method', async () => {
@@ -1462,11 +1697,13 @@ describe('Universal Inbox', () => {
             }
             const receivedCred2 = (await userB.clients.fullAuth.storage.resolve({
                 uri: incomingCredentials2?.[0].uri,
-            })) as VC;
+            })) as JWE;
             if (!receivedCred2) {
                 throw new Error('Received credential is undefined');
             }
-            expect(receivedCred2?.name).toBe('Delivered Straight to Wallet');
+            expect(receivedCred2).toHaveProperty('ciphertext');
+            const decrypted = await userB.learnCard.invoke.decryptDagJwe<VC>(receivedCred2 as JWE);
+            expect(decrypted.name).toBe('Delivered Straight to Wallet');
         });
     });
 
@@ -1573,6 +1810,10 @@ describe('Universal Inbox', () => {
     describe('Finalize inbox credentials', () => {
         beforeEach(async () => {
             sendSpy.mockClear();
+            vi.spyOn(notifications, 'addNotificationToQueue').mockImplementation(
+                addNotificationToQueueSpy
+            );
+            addNotificationToQueueSpy.mockClear();
             await Profile.delete({ detach: true, where: {} });
             await InboxCredential.delete({ detach: true, where: {} });
             await ContactMethod.delete({ detach: true, where: {} });
@@ -1629,20 +1870,20 @@ describe('Universal Inbox', () => {
                 },
                 properties: {
                     name: 'example',
-                    did: await (userA.learnCard as any).id.did('key'),
+                    did: await userA.learnCard.id.did('key'),
                 },
             });
             // Issue two unsigned credentials to userA@test.com with signingAuthority metadata
-            const vc1 = await (userA.learnCard as any).invoke.getTestVc();
-            const vc2 = await (userA.learnCard as any).invoke.getTestVc();
-            await userA.clients.fullAuth.inbox.issue({
+            const vc1 = await userA.learnCard.invoke.getTestVc();
+            const vc2 = await userA.learnCard.invoke.getTestVc();
+            const inboxCredential1 = await userA.clients.fullAuth.inbox.issue({
                 credential: vc1,
                 recipient: { type: 'email', value: 'userA@test.com' },
                 configuration: {
                     signingAuthority: { endpoint: 'https://example.com', name: 'example' },
                 },
             });
-            await userA.clients.fullAuth.inbox.issue({
+            const inboxCredential2 = await userA.clients.fullAuth.inbox.issue({
                 credential: vc2,
                 recipient: { type: 'email', value: 'userA@test.com' },
                 configuration: {
@@ -1675,6 +1916,191 @@ describe('Universal Inbox', () => {
             for (const vc of res.verifiableCredentials) {
                 expect(vc.proof).toBeDefined();
             }
+
+            const [claimerPrompts, senderPrompts, claimer, sender] = await Promise.all([
+                userB.clients.fullAuth.profile.pendingConnectionPrompts(),
+                userA.clients.fullAuth.profile.pendingConnectionPrompts(),
+                getProfileByProfileId('userb'),
+                getProfileByProfileId('usera'),
+            ]);
+            const expectedTriggerIds = [
+                `inbox:${inboxCredential1.issuanceId}`,
+                `inbox:${inboxCredential2.issuanceId}`,
+            ];
+
+            expect(claimerPrompts).toHaveLength(1);
+            expect(expectedTriggerIds).toContain(claimerPrompts[0]?.triggerId);
+            expect(claimerPrompts[0]).toMatchObject({
+                surface: 'POST_CLAIM',
+                counterpart: { profileId: 'usera' },
+            });
+            expect(senderPrompts).toHaveLength(1);
+            expect(expectedTriggerIds).toContain(senderPrompts[0]?.triggerId);
+            expect(senderPrompts[0]).toMatchObject({
+                surface: 'NOTIFICATION',
+                counterpart: { profileId: 'userb' },
+            });
+            expect(await areProfilesConnected(claimer!, sender!)).toBe(false);
+            const promptNotifications = addNotificationToQueueSpy.mock.calls.filter(
+                call =>
+                    call[0]?.type === LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED &&
+                    call[0]?.data?.metadata?.connectionPrompt?.promptId ===
+                        senderPrompts[0]?.promptId
+            );
+            expect(promptNotifications).toHaveLength(1);
+        });
+
+        it('keeps same-inbox retries idempotent and suppresses prompts for later inbox claims', async () => {
+            vi.spyOn(notifications, 'addNotificationToQueue').mockImplementation(
+                addNotificationToQueueSpy
+            );
+            addNotificationToQueueSpy.mockClear();
+            const firstVc = await userA.learnCard.invoke.issueCredential(
+                await userA.learnCard.invoke.getTestVc()
+            );
+            const firstIssue = await userA.clients.fullAuth.inbox.issue({
+                credential: firstVc,
+                recipient: { type: 'email', value: 'retry-one@test.com' },
+            });
+            await updateInboxCredential(firstIssue.issuanceId, { isAccepted: true });
+            await userB.clients.fullAuth.contactMethods.addContactMethod({
+                type: 'email',
+                value: 'retry-one@test.com',
+            });
+            await userB.clients.fullAuth.contactMethods.verifyContactMethod({
+                token: sendSpy.mock.calls.at(-1)?.[0].templateModel.verificationToken,
+            });
+
+            await expect(userB.clients.fullAuth.inbox.finalize({})).resolves.toMatchObject({
+                claimed: 1,
+                errors: 0,
+            });
+            const [firstClaimerPrompt] =
+                await userB.clients.fullAuth.profile.pendingConnectionPrompts();
+            const [firstSenderPrompt] =
+                await userA.clients.fullAuth.profile.pendingConnectionPrompts();
+            expect(firstClaimerPrompt?.triggerId).toBe(`inbox:${firstIssue.issuanceId}`);
+            await Promise.all([
+                userB.clients.fullAuth.profile.skipConnectionPrompt({
+                    promptId: firstClaimerPrompt!.promptId,
+                }),
+                userA.clients.fullAuth.profile.skipConnectionPrompt({
+                    promptId: firstSenderPrompt!.promptId,
+                }),
+            ]);
+            addNotificationToQueueSpy.mockClear();
+
+            await expect(userB.clients.fullAuth.inbox.finalize({})).resolves.toMatchObject({
+                claimed: 0,
+                errors: 0,
+            });
+            expect(await userB.clients.fullAuth.profile.pendingConnectionPrompts()).toHaveLength(0);
+            expect(await userA.clients.fullAuth.profile.pendingConnectionPrompts()).toHaveLength(0);
+            expect(addNotificationToQueueSpy).not.toHaveBeenCalled();
+
+            const secondVc = await userA.learnCard.invoke.issueCredential(
+                await userA.learnCard.invoke.getTestVc()
+            );
+            const secondIssue = await userA.clients.fullAuth.inbox.issue({
+                credential: secondVc,
+                recipient: { type: 'email', value: 'retry-two@test.com' },
+            });
+            await updateInboxCredential(secondIssue.issuanceId, { isAccepted: true });
+            await userB.clients.fullAuth.contactMethods.addContactMethod({
+                type: 'email',
+                value: 'retry-two@test.com',
+            });
+            await userB.clients.fullAuth.contactMethods.verifyContactMethod({
+                token: sendSpy.mock.calls.at(-1)?.[0].templateModel.verificationToken,
+            });
+
+            await expect(userB.clients.fullAuth.inbox.finalize({})).resolves.toMatchObject({
+                claimed: 1,
+                errors: 0,
+            });
+            expect(await userB.clients.fullAuth.profile.pendingConnectionPrompts()).toHaveLength(0);
+            expect(await userA.clients.fullAuth.profile.pendingConnectionPrompts()).toHaveLength(0);
+            expect(addNotificationToQueueSpy).not.toHaveBeenCalled();
+        });
+
+        it('finalizes a verified-contact application issuance without creating prompts', async () => {
+            const vc = await userA.learnCard.invoke.issueCredential(
+                await userA.learnCard.invoke.getTestVc()
+            );
+            const issued = await userA.clients.fullAuth.inbox.issue({
+                credential: vc,
+                recipient: { type: 'email', value: 'finalize-app-issuer@test.com' },
+            });
+            await updateInboxCredential(issued.issuanceId, {
+                isAccepted: true,
+                signingAuthority: {
+                    endpoint: 'https://example.com/app-signing',
+                    name: 'application',
+                    listingSlug: 'test-application',
+                },
+            });
+            await userB.clients.fullAuth.contactMethods.addContactMethod({
+                type: 'email',
+                value: 'finalize-app-issuer@test.com',
+            });
+            await userB.clients.fullAuth.contactMethods.verifyContactMethod({
+                token: sendSpy.mock.calls.at(-1)?.[0].templateModel.verificationToken,
+            });
+
+            await expect(userB.clients.fullAuth.inbox.finalize({})).resolves.toMatchObject({
+                processed: 1,
+                claimed: 1,
+                errors: 0,
+            });
+            await expect(
+                userA.clients.fullAuth.profile.pendingConnectionPrompts()
+            ).resolves.toHaveLength(0);
+            await expect(
+                userB.clients.fullAuth.profile.pendingConnectionPrompts()
+            ).resolves.toHaveLength(0);
+        });
+
+        it('keeps finalization successful when prompt creation fails', async () => {
+            const vc = await userA.learnCard.invoke.issueCredential(
+                await userA.learnCard.invoke.getTestVc()
+            );
+            const inboxCredential = await userA.clients.fullAuth.inbox.issue({
+                credential: vc,
+                recipient: { type: 'email', value: 'finalize-prompt-failure@test.com' },
+            });
+            await updateInboxCredential(inboxCredential.issuanceId, { isAccepted: true });
+            await userB.clients.fullAuth.contactMethods.addContactMethod({
+                type: 'email',
+                value: 'finalize-prompt-failure@test.com',
+            });
+            await userB.clients.fullAuth.contactMethods.verifyContactMethod({
+                token: sendSpy.mock.calls.at(-1)?.[0].templateModel.verificationToken,
+            });
+            const originalRun = neogma.queryRunner.run.bind(neogma.queryRunner);
+            const queryRunnerSpy = vi
+                .spyOn(neogma.queryRunner, 'run')
+                .mockImplementation(async (...args) => {
+                    if (String(args[0]).includes('MERGE (viewer)-[prompt:CONNECTION_PROMPT]')) {
+                        throw new Error('injected finalize prompt write failure');
+                    }
+
+                    return originalRun(...args);
+                });
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+            try {
+                await expect(userB.clients.fullAuth.inbox.finalize({})).resolves.toMatchObject({
+                    processed: 1,
+                    claimed: 1,
+                    errors: 0,
+                    verifiableCredentials: [expect.objectContaining({ proof: expect.anything() })],
+                });
+            } finally {
+                queryRunnerSpy.mockRestore();
+                consoleErrorSpy.mockRestore();
+            }
+
+            expect(await userB.clients.fullAuth.profile.pendingConnectionPrompts()).toHaveLength(0);
         });
     });
 
@@ -1764,7 +2190,7 @@ describe('Universal Inbox', () => {
             await expect(
                 userA.clients.fullAuth.inbox.issue({
                     recipient: { type: 'email', value: 'test@test.com' },
-                } as any)
+                } as never)
             ).rejects.toThrow();
         });
 

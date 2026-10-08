@@ -11,7 +11,7 @@ import {
     type ApiSkillNode,
 } from '../../../helpers/skillFramework.helpers';
 import CompetencyIcon from '../../SkillFrameworks/CompetencyIcon';
-import type { SkillFrameworkNode } from '../../../components/boost/boost';
+import { FrameworkNodeRole, type SkillFrameworkNode } from '../../../components/boost/boost';
 
 export const keyFor = (frameworkId: string, id: string) => `${frameworkId}::${id}`;
 export const normalizeName = (name?: string) => (name ?? '').trim().toLowerCase();
@@ -28,14 +28,22 @@ export const dedupeByName = (nodes: SkillFrameworkNode[]): SkillFrameworkNode[] 
     return result;
 };
 
-export const semanticRecordToNode = (record: SemanticSearchSkillRecord): SkillFrameworkNode =>
-    ({
+export const semanticRecordToNode = (record: SemanticSearchSkillRecord): SkillFrameworkNode => {
+    const frameworkId = record.frameworkId || record.targetFramework || '';
+
+    return {
         id: record.id,
-        frameworkId: record.frameworkId,
-        targetFramework: record.targetFramework ?? record.frameworkId,
-        targetName: record.targetName ?? '',
+        frameworkId,
+        targetFramework: record.targetFramework || frameworkId,
+        targetName: record.targetName || record.statement,
+        targetDescription: record.description,
+        targetCode: record.code,
         icon: record.icon,
-    } as SkillFrameworkNode);
+        role: record.type === 'container' ? FrameworkNodeRole.tier : FrameworkNodeRole.competency,
+        subskills: [],
+        type: 'Alignment',
+    };
+};
 
 export const nodeFrameworkId = (node: SkillFrameworkNode): string =>
     node.frameworkId ?? node.targetFramework ?? '';

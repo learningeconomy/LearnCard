@@ -1,7 +1,7 @@
-import { defineConfig } from 'vitest/config';
 import { resolve } from 'path';
+import { createVitestConfig, nodePreset } from '../../vitest.shared';
 
-export default defineConfig({
+export default createVitestConfig(nodePreset, {
     resolve: {
         alias: {
             'learn-card-base/': resolve(__dirname, 'src') + '/',
@@ -9,7 +9,6 @@ export default defineConfig({
         },
     },
     test: {
-        globals: true,
         include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     },
 });

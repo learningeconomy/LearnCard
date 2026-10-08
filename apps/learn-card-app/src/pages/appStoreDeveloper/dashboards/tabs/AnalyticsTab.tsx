@@ -25,14 +25,14 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
         stats.claimRate >= 70
             ? 'text-emerald-600'
             : stats.claimRate >= 40
-            ? 'text-amber-600'
-            : 'text-red-500';
+              ? 'text-amber-600'
+              : 'text-red-500';
     const claimRateBg =
         stats.claimRate >= 70
             ? 'bg-emerald-500'
             : stats.claimRate >= 40
-            ? 'bg-amber-500'
-            : 'bg-red-500';
+              ? 'bg-amber-500'
+              : 'bg-red-500';
 
     return (
         <div className="space-y-6">
@@ -252,10 +252,10 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
                                 {stats.claimRate >= 70
                                     ? m['developerPortal.dashboards.tabs.analytics.excellent']()
                                     : stats.claimRate >= 40
-                                    ? m['developerPortal.dashboards.tabs.analytics.good']()
-                                    : m[
-                                          'developerPortal.dashboards.tabs.analytics.needsAttention'
-                                      ]()}
+                                      ? m['developerPortal.dashboards.tabs.analytics.good']()
+                                      : m[
+                                            'developerPortal.dashboards.tabs.analytics.needsAttention'
+                                        ]()}
                             </span>
                         </div>
 

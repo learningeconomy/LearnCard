@@ -13,7 +13,7 @@
  *     prefix)
  *   - degenerate inputs (empty string, malformed DIDs)
  */
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect } from 'vitest';
 
 import { deriveClientIdPrefix, KNOWN_CLIENT_ID_PREFIXES } from './client-id-prefix';
 

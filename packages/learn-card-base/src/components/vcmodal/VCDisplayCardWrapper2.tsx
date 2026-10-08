@@ -43,6 +43,8 @@ type VCDisplayCardWrapper2Props = {
     customFooterComponent?: React.ReactNode;
     customRibbonComponent?: React.ReactNode;
     checkProof?: boolean;
+    /** Use caller-supplied verification results without re-verifying the credential. */
+    skipVerification?: boolean;
     brandingEnum?: BrandingEnum;
     hideAwardedTo?: boolean;
     handleClose?: () => void;
@@ -96,6 +98,7 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
     customBodyCardComponent = null,
     customFooterComponent = null,
     checkProof = true,
+    skipVerification = false,
     brandingEnum = BrandingEnum.learncard,
     handleClose,
     isFrontOverride,
@@ -205,16 +208,21 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
     const { data: knownDIDRegistry } = useKnownDIDRegistry(issuerDid);
 
     useEffect(() => {
+        if (skipVerification) return;
         verifyCredential(credential, (verificationItems: VerificationItem[]) => {
             setVCVerification(verificationItems);
         });
-    }, [credential]);
+    }, [credential, skipVerification]);
 
     // Override the client-verified "Status" row with the authoritative lifecycle status
     // (the WASM status-list check doesn't surface a set suspension bit — see helper).
     const displayedVerifications = useMemo<VerificationItem[]>(
-        () => applyLifecycleStatusToVerifications(vcVerification, lifecycleStatus),
-        [vcVerification, lifecycleStatus]
+        () =>
+            applyLifecycleStatusToVerifications(
+                skipVerification ? (verificationItems ?? []) : vcVerification,
+                lifecycleStatus
+            ),
+        [skipVerification, verificationItems, vcVerification, lifecycleStatus]
     );
 
     const isID = category === BoostCategoryOptionsEnum.id;
@@ -338,8 +346,8 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
             <VCDisplayCard2
                 categoryType={_category}
                 credential={displayCredential}
-                issueeOverride={overrideIssueName || issueeName}
-                issuerOverride={issuerName}
+                issueeOverride={overrideIssueName ?? issueeOverride ?? issueeName}
+                issuerOverride={issuerOverride ?? issuerName}
                 customThumbComponent={
                     isID || isMembership || isTroopID ? (
                         <IDDisplayCard
@@ -372,9 +380,9 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
                         />
                     )
                 }
-                issuerImageComponent={issuerProfileImageElement}
-                subjectDID={idSubjectDID}
-                subjectImageComponent={subjectProfileImageElement}
+                issuerImageComponent={issuerImageComponent ?? issuerProfileImageElement}
+                subjectDID={subjectDID ?? idSubjectDID}
+                subjectImageComponent={subjectImageComponent ?? subjectProfileImageElement}
                 verificationItems={displayedVerifications}
                 customBodyCardComponent={customBodyCardComponent}
                 customFooterComponent={customFooterComponent}

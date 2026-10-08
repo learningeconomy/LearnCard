@@ -1,36 +1,30 @@
+import { isSharePrivateSession } from '../components/share-links/sharePrivacy';
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('context');
 
 import type { AnalyticsProvider, AnalyticsProviderName } from './types';
-import type { AnalyticsEventName, EventPayload } from './events';
+import type { AnalyticsEventName, EventPayload, FeedbackIdeaPayload } from './events';
 import { NoopProvider } from './providers/noop';
 import { getSharedEventContext, shouldDropEvents } from './sharedContext';
-import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
+import { getResolvedTenantConfig } from '../config/tenantConfigState';
 import { setAnalyticsProvider as setSendCredentialFlowProvider } from '../helpers/sendCredentialFlow.helpers';
 
 /**
- * Lazily load and instantiate the appropriate analytics provider.
- *
- * Reads from TenantConfig.observability first, falling back to VITE_* env vars
- * for backward compatibility during migration.
+ * Lazily load and instantiate the analytics provider from the already validated TenantConfig.
  */
 async function loadProvider(): Promise<AnalyticsProvider> {
-    let providerName: AnalyticsProviderName = 'noop';
-    let posthogKey: string | undefined;
-    let posthogHost: string | undefined;
+    if (isSharePrivateSession()) return new NoopProvider();
+    let config;
 
     try {
-        const config = getResolvedTenantConfig();
-        providerName = config.observability.analyticsProvider ?? 'noop';
-        posthogKey = config.observability.posthogKey;
-        posthogHost = config.observability.posthogHost;
+        config = getResolvedTenantConfig();
     } catch {
-        // TenantConfig not yet resolved — fall back to env vars
-        providerName = (import.meta.env.VITE_ANALYTICS_PROVIDER || 'noop') as AnalyticsProviderName;
-        posthogKey = import.meta.env.VITE_POSTHOG_KEY;
-        posthogHost = import.meta.env.VITE_POSTHOG_HOST;
+        return new NoopProvider();
     }
+    const providerName: AnalyticsProviderName = config.observability.analyticsProvider ?? 'noop';
+    const posthogKey = config.observability.posthogKey;
+    const posthogHost = config.observability.posthogHost;
 
     switch (providerName) {
         case 'posthog': {
@@ -73,7 +67,7 @@ async function loadProvider(): Promise<AnalyticsProvider> {
 function withSharedContext(provider: AnalyticsProvider): AnalyticsProvider {
     return {
         name: provider.name,
-        init: () => provider.init(),
+        init: () => (isSharePrivateSession() ? Promise.resolve() : provider.init()),
         identify: (userId, traits) => {
             // Drop automation/e2e identify calls provider-agnostically —
             // PostHog also catches $identify in before_send, but other
@@ -82,10 +76,21 @@ function withSharedContext(provider: AnalyticsProvider): AnalyticsProvider {
             return provider.identify(userId, traits);
         },
         reset: () => provider.reset(),
-        setEnabled: enabled => provider.setEnabled(enabled),
+        setEnabled: enabled => provider.setEnabled(enabled && !isSharePrivateSession()),
         track: async (event, properties) => {
             if (shouldDropEvents()) return;
             await provider.track(event, { ...properties, ...getSharedEventContext() });
+        },
+        submitFeedbackIdea: async properties => {
+            if (shouldDropEvents()) return;
+            await provider.submitFeedbackIdea({
+                source: properties.source,
+                message: properties.message,
+                currentRoute: properties.currentRoute,
+                ...(typeof properties.appVersion === 'string'
+                    ? { appVersion: properties.appVersion }
+                    : {}),
+            });
         },
         page: async (name, properties) => {
             if (shouldDropEvents()) return;
@@ -135,7 +140,7 @@ export function AnalyticsContextProvider({ children }: AnalyticsProviderProps) {
             .then(async rawProvider => {
                 if (!mounted) return;
 
-                await rawProvider.init();
+                if (!isSharePrivateSession()) await rawProvider.init();
 
                 if (!mounted) return;
 
@@ -199,6 +204,13 @@ export function useAnalytics() {
         [provider]
     );
 
+    const submitFeedbackIdea = useCallback(
+        async (properties: FeedbackIdeaPayload) => {
+            await provider.submitFeedbackIdea(properties);
+        },
+        [provider]
+    );
+
     const page = useCallback(
         async (name: string, properties?: Record<string, unknown>) => {
             await provider.page(name, properties);
@@ -219,6 +231,7 @@ export function useAnalytics() {
 
     return {
         track,
+        submitFeedbackIdea,
         identify,
         page,
         reset,

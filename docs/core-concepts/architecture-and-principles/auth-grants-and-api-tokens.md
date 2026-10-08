@@ -1,74 +1,56 @@
 # Auth Grants and API Tokens
 
-### Overview
+An **API token** lets a server call the LearnCard Network over plain HTTPS without holding your seed. Behind every token is an **auth grant**: a named record on your profile that says what the token may do and until when.
 
-AuthGrants are a secure permission system that allows third-party applications to access the LearnCard Network API with specific, limited permissions. This documentation explains how to create and manage AuthGrants, generate API tokens, and use them to make authenticated API requests.
-
-### Understanding AuthGrants
-
-#### What is an AuthGrant?
-
-An AuthGrant is a permission object that:
-
-* Defines specific access rights (scopes) granted to a client application
-* Has a defined lifecycle (creation, active period, expiration, revocation)
-* Includes metadata such as name, description, and status
-* Serves as the basis for generating API tokens for authentication
-
-#### Scope System
-
-AuthGrants use a scope-based permission model following the pattern: `{resource}:{action}`
-
-**Resources:**
-
-* `boosts`
-* `claimHook`
-* `profile`
-* `profileManager`
-* `credential`
-* `presentation`
-* `storage`
-* `utilities`
-* `contracts`
-* `didMetadata`
-* `authGrants`
-
-**Actions:**
-
-* `read`: Permission to view resources
-* `write`: Permission to create or update resources
-* `delete`: Permission to remove resources
-
-**Special Patterns:**
-
-* All access: `*:*`
-* Read all: `*:read`
-* Resource-wide: `authGrants:*`
-* Multiple scopes: Space-separated list (e.g., `"authGrants:read contracts:write"`)
-
-**Common Scope Bundles:**
-
-```javascript
-// Common scope bundles
-const AUTH_GRANT_READ_ONLY_SCOPE = '*:read';
-const AUTH_GRANT_FULL_ACCESS_SCOPE = '*:*';
-const AUTH_GRANT_NO_ACCESS_SCOPE = '';
-const AUTH_GRANT_PROFILE_MANAGEMENT_SCOPE = 'profile:* profileManager:*';
-const AUTH_GRANT_CREDENTIAL_MANAGEMENT_SCOPE = 'credential:* presentation:* boosts:*';
-const AUTH_GRANT_CONTRACTS_SCOPE = 'contracts:*';
-const AUTH_GRANT_DID_METADATA_SCOPE = 'didMetadata:*';
-const AUTH_GRANT_AUTH_GRANTS_SCOPE = 'authGrants:*';
+```
+your profile ──owns──▶ auth grant { name, scope, expiresAt } ──mints──▶ API token (JWT)
 ```
 
-## Working with Auth Grants & API Tokens
+You create the grant once (Developer Portal → **API Tokens**, or `addAuthGrant()`), mint a token from it (`getAPITokenForAuthGrant()`), and send `Authorization: Bearer <token>` with each request. The network checks the token's grant is still active and its scope covers the route. Walkthrough: [Generate API Tokens](../../how-to-guides/deploy-infrastructure/generate-api-tokens.md).
 
-* Follow a tutorial on how to programmatically [generate-api-tokens.md](../../how-to-guides/deploy-infrastructure/generate-api-tokens.md "mention")
-* Explore Usage Examples with LearnCard SDK Wallet
+## Scopes
 
-### Security Considerations
+A scope is `resource:action`. Space-separate several; `*` wildcards either half.
 
-* Once an AuthGrant is created, its scope and challenge are locked in. If a change is needed, the recommended pattern is to revoke the old grant and issue a new one with the desired properties.
-* Store API tokens securely; they grant access according to the AuthGrant's scope
-* Use the principle of least privilege: request only the scopes needed for your application
-* Set appropriate expiration times for AuthGrants when creating them
-* Revoke AuthGrants when they are no longer needed
+| Resource             | Covers                                                        |
+| -------------------- | ------------------------------------------------------------- |
+| `boosts`             | Creating templates and sending credentials (`POST /api/send`) |
+| `inbox`              | Universal Inbox issuance and status                           |
+| `credentials`        | Credential records on the network                             |
+| `presentations`      | Sending and receiving presentations                           |
+| `profiles`           | Your profile and looking up others                            |
+| `profileManagers`    | Managed profiles you administer                               |
+| `connections`        | Connection requests between profiles                          |
+| `contracts`          | Consent contracts you own                                     |
+| `contracts-data`     | Reading data users have consented to share                    |
+| `signingAuthorities` | Registering signers                                           |
+| `authGrants`         | Managing other grants                                         |
+| `didMetadata`        | Extra entries in your DID Document                            |
+| `claimHooks`         | Actions that run when a credential is claimed                 |
+| `skills`             | Skill frameworks and alignments                               |
+| `app-store`          | App listings and app-scoped features                          |
+| `integrations`       | Developer Portal integrations                                 |
+| `contact-methods`    | Verified emails and phone numbers                             |
+| `activity`           | Activity feed                                                 |
+| `storage`            | Network storage                                               |
+
+Actions are `read`, `write`, and `delete`.
+
+Common choices:
+
+- `boosts:write` — the minimum for sending credentials. Start here.
+- `boosts:write inbox:read` — send, and check whether a send was claimed.
+- `contracts:* contracts-data:read` — run a consent flow and read what users shared.
+- `*:read` — a read-only token for dashboards.
+- `*:*` — everything. Avoid outside local development.
+
+## What you can't change
+
+A grant's scope is fixed when you create it. To change what a token may do, revoke the grant and create a new one — that way an old token can never quietly gain power. Revoking a grant invalidates every token minted from it immediately.
+
+## Habits that keep this safe
+
+- One grant per system, named after it, so you can rotate one without touching the others.
+- Set `expiresAt`. A token for a batch job shouldn't live for a year.
+- Treat the token like the seed it stands in for: environment variable or secrets manager, never in code or a client bundle.
+- Least scope. If the only thing a service does is send, give it `boosts:write` and nothing else.

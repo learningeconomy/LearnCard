@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import * as Sentry from '@sentry/serverless';
 import { TRPC_ERROR_CODE_HTTP_STATUS } from 'trpc-to-openapi';
 import type { TRPCError } from '@trpc/server';
@@ -26,7 +27,7 @@ export const handleTrpcError = ({
 }: {
     error: TRPCError;
     ctx: unknown;
-    path: string;
+    path?: string;
 }): void => {
     error.stack = error.stack?.replace('Mr: ', '');
     error.name = error.message;
@@ -75,7 +76,7 @@ export const sentryBeforeSend: NonNullable<Sentry.AWSLambda.NodeOptions['beforeS
  * Staging/Dev: 1% sampling to minimize costs while still catching issues.
  */
 export const getTracesSampleRate = (): number => {
-    const env = process.env.SENTRY_ENV;
+    const env = environment.SENTRY_ENV;
 
     if (env === 'production') {
         return 0.1;

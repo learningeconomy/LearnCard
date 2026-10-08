@@ -18,6 +18,8 @@ import {
     useGetAppReviews,
     AppStoreAppMetadata,
     AppStoreAppReview,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import redirectStore from 'learn-card-base/stores/redirectStore';
 import { ThreeDotVertical } from '@learncard/react';
@@ -76,6 +78,7 @@ const AppListingPage: React.FC = () => {
     const location = history.location;
     const isLoggedIn = useIsLoggedIn();
     const { newModal, closeModal, replaceModal } = useModal();
+    const { presentToast } = useToast();
     const confirm = useConfirmation();
 
     // Check if we have a preview listing from route state (for admin preview)
@@ -271,7 +274,7 @@ const AppListingPage: React.FC = () => {
                                 }}
                                 className="flex-1 px-4 py-2.5 rounded-xl bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
                             >
-                                Open
+                                {m['common.open']()}
                             </button>
                         )}
                     </div>
@@ -289,7 +292,7 @@ const AppListingPage: React.FC = () => {
         }
     };
 
-    const handleInstall = () => {
+    const handleInstall = async () => {
         if (!listing) return;
 
         if (!isLoggedIn) {
@@ -303,29 +306,36 @@ const AppListingPage: React.FC = () => {
         }
 
         // Guardian verification before showing permissions modal
-        guardedAction(() => {
-            const permissions: string[] = launchConfig?.permissions || [];
-            const contractUri: string | undefined = launchConfig?.contractUri;
+        try {
+            await guardedAction(() => {
+                const permissions: string[] = launchConfig?.permissions || [];
+                const contractUri: string | undefined = launchConfig?.contractUri;
 
-            newModal(
-                <AppInstallConsentModal
-                    appName={listing.display_name}
-                    appIcon={listing.icon_url}
-                    permissions={permissions}
-                    contractUri={contractUri}
-                    onAccept={() => {
-                        closeModal();
-                        doInstall();
-                    }}
-                    onReject={closeModal}
-                />,
-                {
-                    sectionClassName: '!max-w-[500px]',
-                    hideButton: true,
-                },
-                { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
-            );
-        });
+                newModal(
+                    <AppInstallConsentModal
+                        appName={listing.display_name}
+                        appIcon={listing.icon_url}
+                        permissions={permissions}
+                        contractUri={contractUri}
+                        onAccept={() => {
+                            closeModal();
+                            doInstall();
+                        }}
+                        onReject={closeModal}
+                    />,
+                    {
+                        sectionClassName: '!max-w-[500px]',
+                        hideButton: true,
+                    },
+                    { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+                );
+            });
+        } catch {
+            presentToast(m['error.generic'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        }
     };
 
     const handleUninstall = async () => {
@@ -467,14 +477,15 @@ const AppListingPage: React.FC = () => {
                         unsignedDelegateCredential
                     );
 
-                    const unsignedDidAuthVp = await wallet.invoke.newPresentation(
-                        delegateCredential
-                    );
+                    const unsignedDidAuthVp =
+                        await wallet.invoke.newPresentation(delegateCredential);
 
-                    const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
+                    const vp = await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
                         proofPurpose: 'authentication',
                         proofFormat: 'jwt',
-                    })) as any as string;
+                    });
+                    if (typeof vp !== 'string')
+                        throw new Error('Expected a signed JWT presentation');
 
                     urlObj.searchParams.set('vp', vp);
                 }
@@ -505,7 +516,7 @@ const AppListingPage: React.FC = () => {
             newModal(
                 <EmbedIframeModal
                     embedUrl={launchConfig.url}
-                    appId={(listing as any).slug || listing.listing_id}
+                    appId={listing.slug || listing.listing_id}
                     appName={listing.display_name}
                     launchConfig={launchConfig}
                     isInstalled={isInstalled}
@@ -671,7 +682,7 @@ const AppListingPage: React.FC = () => {
                                                     onClick={handleLaunch}
                                                     className="flex-1 sm:flex-none px-8 py-3 bg-indigo-600 text-white rounded-full font-semibold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
                                                 >
-                                                    Open
+                                                    {m['common.open']()}
                                                 </button>
                                             )}
 
@@ -706,7 +717,9 @@ const AppListingPage: React.FC = () => {
                                                             d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                                                         />
                                                     </svg>
-                                                    {isLoggedIn ? 'Install' : 'Get App'}
+                                                    {isLoggedIn
+                                                        ? m['launchpad.detail.install']()
+                                                        : m['launchpad.carousel.getApp']()}
                                                 </>
                                             )}
                                         </button>
@@ -885,7 +898,7 @@ const AppListingPage: React.FC = () => {
                                                     d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
                                                 />
                                             </svg>
-                                            Privacy Policy
+                                            {m['launchpad.detail.privacyPolicy']()}
                                         </a>
                                     )}
 
@@ -909,7 +922,7 @@ const AppListingPage: React.FC = () => {
                                                     d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
                                                 />
                                             </svg>
-                                            Terms of Service
+                                            {m['launchpad.detail.termsOfService']()}
                                         </a>
                                     )}
                                 </div>
