@@ -66,7 +66,18 @@ export const EditListingPage: React.FC = () => {
     const nameRef = useRef<HTMLInputElement>(null);
     const taglineRef = useRef<HTMLInputElement>(null);
     const descriptionRef = useRef<HTMLTextAreaElement>(null);
-    const contactEmailRef = useRef<HTMLInputElement>(null);
+    const privacyPolicyInputRef = useRef<HTMLInputElement>(null);
+    const termsInputRef = useRef<HTMLInputElement>(null);
+    const contactEmailInputRef = useRef<HTMLInputElement>(null);
+    const promoVideoInputRef = useRef<HTMLInputElement>(null);
+    const heroColorInputRef = useRef<HTMLInputElement>(null);
+    const optionalFieldRefs = {
+        privacyPolicyUrl: privacyPolicyInputRef,
+        termsUrl: termsInputRef,
+        contactEmail: contactEmailInputRef,
+        promoVideoUrl: promoVideoInputRef,
+        heroColor: heroColorInputRef,
+    };
 
     const isDraft = listing?.app_listing_status === 'DRAFT';
     const dashboardPath = `/app-store/developer/integrations/${integrationId}`;
@@ -110,7 +121,7 @@ export const EditListingPage: React.FC = () => {
             name: nameRef,
             tagline: taglineRef,
             description: descriptionRef,
-            contactEmail: contactEmailRef,
+            ...optionalFieldRefs,
         };
         const element = refs[field]?.current;
         element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -240,7 +251,7 @@ export const EditListingPage: React.FC = () => {
                             <StandOutSection
                                 details={data}
                                 onChange={updateData}
-                                contactEmailRef={contactEmailRef}
+                                fieldRefs={optionalFieldRefs}
                             />
 
                             {!isDesktop && <div className="mt-6">{preview}</div>}

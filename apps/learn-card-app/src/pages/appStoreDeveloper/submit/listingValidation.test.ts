@@ -56,6 +56,31 @@ describe('getFirstMissingField', () => {
     });
 });
 
+describe('optional field formats', () => {
+    it('blocks a malformed link or color, naming the first one on screen', () => {
+        expect(
+            getFirstMissingField({
+                ...complete,
+                termsUrl: 'terms page',
+                promoVideoUrl: 'video',
+            })
+        ).toEqual({ field: 'termsUrl', message: 'Fix the terms of service link to submit' });
+        expect(getFirstMissingField({ ...complete, heroColor: 'blue' })?.field).toBe('heroColor');
+    });
+
+    it('accepts blank optional fields', () => {
+        expect(
+            getFirstMissingField({
+                ...complete,
+                privacyPolicyUrl: '',
+                termsUrl: ' ',
+                promoVideoUrl: '',
+                heroColor: '',
+            })
+        ).toBeNull();
+    });
+});
+
 describe('getProductionUrlError', () => {
     it('accepts an https domain', () => {
         expect(getProductionUrlError('https://quizquest.app')).toBeNull();

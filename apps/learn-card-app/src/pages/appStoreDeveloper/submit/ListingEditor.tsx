@@ -10,15 +10,31 @@ import {
     DEFAULT_HERO_COLOR,
     MAX_HIGHLIGHTS,
     MAX_SCREENSHOTS,
-    isValidContactEmail,
+    getInvalidOptionalFields,
 } from './listingForm';
-import type { ListingData, ListingDetails } from './listingForm';
+import type { ListingData, ListingDetails, OptionalFormatField } from './listingForm';
 
 const INPUT_CLASS =
     'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white';
 const LABEL_CLASS = 'block text-xs font-medium text-grayscale-700 mb-1.5';
 const ADD_BUTTON_CLASS =
     'mt-3 flex items-center gap-1 text-sm font-medium text-grayscale-700 hover:text-grayscale-900 transition-colors';
+
+const FIELD_ERRORS: Record<OptionalFormatField, string> = {
+    privacyPolicyUrl: 'Enter a full link, like https://myapp.com/privacy.',
+    termsUrl: 'Enter a full link, like https://myapp.com/terms.',
+    contactEmail: 'Enter an email like support@myapp.com.',
+    promoVideoUrl: 'Enter a full link, like https://youtube.com/watch?v=…',
+    heroColor: 'Use a color code like #18224E.',
+};
+
+const FieldError: React.FC<{ field: OptionalFormatField; invalid: Set<OptionalFormatField> }> = ({
+    field,
+    invalid,
+}) =>
+    invalid.has(field) ? (
+        <p className="mt-1.5 text-xs text-red-600">{FIELD_ERRORS[field]}</p>
+    ) : null;
 
 const Counter: React.FC<{ value: string; max: number }> = ({ value, max }) => (
     <div className="mt-1 text-right text-xs text-grayscale-400">
@@ -151,19 +167,20 @@ export const ListingDetailsFields: React.FC<ListingDetailsFieldsProps> = ({
 interface StandOutSectionProps {
     details: ListingDetails;
     onChange: (updates: Partial<ListingDetails>) => void;
-    contactEmailRef?: React.RefObject<HTMLInputElement>;
+    fieldRefs?: Partial<Record<OptionalFormatField, React.RefObject<HTMLInputElement>>>;
     defaultOpen?: boolean;
 }
 
 export const StandOutSection: React.FC<StandOutSectionProps> = ({
     details,
     onChange,
-    contactEmailRef,
+    fieldRefs = {},
     defaultOpen = false,
 }) => {
     const [open, setOpen] = useState(defaultOpen);
-    const emailInvalid =
-        details.contactEmail.trim() !== '' && !isValidContactEmail(details.contactEmail);
+    const invalid = getInvalidOptionalFields(details);
+    const inputClass = (field: OptionalFormatField) =>
+        `${INPUT_CLASS} ${invalid.has(field) ? 'border-red-300' : ''}`;
 
     return (
         <div className="bg-white rounded-[20px] border border-grayscale-200 overflow-hidden">
@@ -189,7 +206,7 @@ export const StandOutSection: React.FC<StandOutSectionProps> = ({
                 />
             </button>
 
-            {(open || emailInvalid) && (
+            {(open || invalid.size > 0) && (
                 <div className="px-6 pb-6 pt-5 border-t border-grayscale-100 space-y-5">
                     <div>
                         <label className={LABEL_CLASS}>Highlights</label>
@@ -280,51 +297,53 @@ export const StandOutSection: React.FC<StandOutSectionProps> = ({
                         <div>
                             <label className={LABEL_CLASS}>Privacy policy link</label>
                             <input
+                                ref={fieldRefs.privacyPolicyUrl}
                                 type="url"
                                 value={details.privacyPolicyUrl}
                                 onChange={e => onChange({ privacyPolicyUrl: e.target.value })}
                                 placeholder="https://"
-                                className={INPUT_CLASS}
+                                className={inputClass('privacyPolicyUrl')}
                             />
+                            <FieldError field="privacyPolicyUrl" invalid={invalid} />
                         </div>
                         <div>
                             <label className={LABEL_CLASS}>Terms of service link</label>
                             <input
+                                ref={fieldRefs.termsUrl}
                                 type="url"
                                 value={details.termsUrl}
                                 onChange={e => onChange({ termsUrl: e.target.value })}
                                 placeholder="https://"
-                                className={INPUT_CLASS}
+                                className={inputClass('termsUrl')}
                             />
+                            <FieldError field="termsUrl" invalid={invalid} />
                         </div>
                     </div>
 
                     <div>
                         <label className={LABEL_CLASS}>Contact email</label>
                         <input
-                            ref={contactEmailRef}
+                            ref={fieldRefs.contactEmail}
                             type="email"
                             value={details.contactEmail}
                             onChange={e => onChange({ contactEmail: e.target.value })}
                             placeholder="support@myapp.com"
-                            className={`${INPUT_CLASS} ${emailInvalid ? 'border-red-300' : ''}`}
+                            className={inputClass('contactEmail')}
                         />
-                        {emailInvalid && (
-                            <p className="mt-1.5 text-xs text-red-600">
-                                Enter an email like support@myapp.com.
-                            </p>
-                        )}
+                        <FieldError field="contactEmail" invalid={invalid} />
                     </div>
 
                     <div>
                         <label className={LABEL_CLASS}>Promo video link</label>
                         <input
+                            ref={fieldRefs.promoVideoUrl}
                             type="url"
                             value={details.promoVideoUrl}
                             onChange={e => onChange({ promoVideoUrl: e.target.value })}
                             placeholder="https://youtube.com/..."
-                            className={INPUT_CLASS}
+                            className={inputClass('promoVideoUrl')}
                         />
+                        <FieldError field="promoVideoUrl" invalid={invalid} />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -335,6 +354,7 @@ export const StandOutSection: React.FC<StandOutSectionProps> = ({
                                 value={details.iosAppStoreId}
                                 onChange={e => onChange({ iosAppStoreId: e.target.value })}
                                 placeholder="e.g. 123456789"
+                                maxLength={20}
                                 className={INPUT_CLASS}
                             />
                         </div>
@@ -345,6 +365,7 @@ export const StandOutSection: React.FC<StandOutSectionProps> = ({
                                 value={details.androidAppStoreId}
                                 onChange={e => onChange({ androidAppStoreId: e.target.value })}
                                 placeholder="e.g. com.myapp.android"
+                                maxLength={100}
                                 className={INPUT_CLASS}
                             />
                         </div>
@@ -361,14 +382,16 @@ export const StandOutSection: React.FC<StandOutSectionProps> = ({
                                 className="w-11 h-11 rounded-xl cursor-pointer border border-grayscale-300 p-1 bg-white"
                             />
                             <input
+                                ref={fieldRefs.heroColor}
                                 type="text"
                                 value={details.heroColor}
                                 onChange={e => onChange({ heroColor: e.target.value })}
                                 placeholder={DEFAULT_HERO_COLOR}
                                 maxLength={7}
-                                className={INPUT_CLASS}
+                                className={inputClass('heroColor')}
                             />
                         </div>
+                        <FieldError field="heroColor" invalid={invalid} />
                     </div>
                 </div>
             )}

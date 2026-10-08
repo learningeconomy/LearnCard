@@ -197,7 +197,18 @@ export const SubmitFromManifestPage: React.FC = () => {
     const nameInputRef = useRef<HTMLInputElement>(null);
     const taglineInputRef = useRef<HTMLInputElement>(null);
     const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
+    const privacyPolicyInputRef = useRef<HTMLInputElement>(null);
+    const termsInputRef = useRef<HTMLInputElement>(null);
     const contactEmailInputRef = useRef<HTMLInputElement>(null);
+    const promoVideoInputRef = useRef<HTMLInputElement>(null);
+    const heroColorInputRef = useRef<HTMLInputElement>(null);
+    const optionalFieldRefs = {
+        privacyPolicyUrl: privacyPolicyInputRef,
+        termsUrl: termsInputRef,
+        contactEmail: contactEmailInputRef,
+        promoVideoUrl: promoVideoInputRef,
+        heroColor: heroColorInputRef,
+    };
 
     const {
         useIntegrations,
@@ -858,7 +869,7 @@ export const SubmitFromManifestPage: React.FC = () => {
             productionUrl: prodUrlInputRef,
             tagline: taglineInputRef,
             description: descriptionInputRef,
-            contactEmail: contactEmailInputRef,
+            ...optionalFieldRefs,
         };
         const element = refs[field].current;
         element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1413,7 +1424,7 @@ export const SubmitFromManifestPage: React.FC = () => {
                 <StandOutSection
                     details={listingDetails}
                     onChange={updateDetails}
-                    contactEmailRef={contactEmailInputRef}
+                    fieldRefs={optionalFieldRefs}
                 />
             </div>
 

@@ -1,8 +1,9 @@
 import { DEFAULT_APP_ICON_URL } from './constants';
-import { isValidContactEmail } from './listingForm';
+import { getInvalidOptionalFields } from './listingForm';
+import type { OptionalFormatField } from './listingForm';
 
 export type ListingField =
-    'icon' | 'name' | 'productionUrl' | 'tagline' | 'description' | 'contactEmail';
+    'icon' | 'name' | 'productionUrl' | 'tagline' | 'description' | OptionalFormatField;
 
 export interface MissingListingField {
     field: ListingField;
@@ -14,10 +15,22 @@ export interface ListingValidationState {
     tagline: string;
     description: string;
     iconUrl: string;
+    privacyPolicyUrl?: string;
+    termsUrl?: string;
     contactEmail?: string;
+    promoVideoUrl?: string;
+    heroColor?: string;
     needsProductionUrl: boolean;
     productionUrl: string;
 }
+
+const OPTIONAL_FIELD_MESSAGES: Array<[OptionalFormatField, string]> = [
+    ['privacyPolicyUrl', 'Fix the privacy policy link to submit'],
+    ['termsUrl', 'Fix the terms of service link to submit'],
+    ['contactEmail', 'Fix the contact email to submit'],
+    ['promoVideoUrl', 'Fix the promo video link to submit'],
+    ['heroColor', 'Fix the header color to submit'],
+];
 
 /** Returns the first thing blocking submission, in the order the fields appear on screen. */
 export const getFirstMissingField = (state: ListingValidationState): MissingListingField | null => {
@@ -32,10 +45,17 @@ export const getFirstMissingField = (state: ListingValidationState): MissingList
     if (!state.description.trim()) {
         return { field: 'description', message: 'Add a description to submit' };
     }
-    if (state.contactEmail?.trim() && !isValidContactEmail(state.contactEmail)) {
-        return { field: 'contactEmail', message: 'Fix the contact email to submit' };
-    }
-    return null;
+
+    const invalid = getInvalidOptionalFields({
+        privacyPolicyUrl: state.privacyPolicyUrl ?? '',
+        termsUrl: state.termsUrl ?? '',
+        contactEmail: state.contactEmail ?? '',
+        promoVideoUrl: state.promoVideoUrl ?? '',
+        heroColor: state.heroColor ?? '',
+    });
+    const firstInvalid = OPTIONAL_FIELD_MESSAGES.find(([field]) => invalid.has(field));
+
+    return firstInvalid ? { field: firstInvalid[0], message: firstInvalid[1] } : null;
 };
 
 export const getProductionUrlError = (value: string): string | null => {

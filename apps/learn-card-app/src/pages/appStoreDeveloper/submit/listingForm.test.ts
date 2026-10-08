@@ -32,12 +32,7 @@ describe('toListingUpdates', () => {
             icon_url: 'https://cdn.filestackcontent.com/icon',
             screenshots: ['https://cdn.filestackcontent.com/shot'],
             highlights: ['Earn badges'],
-            category: '',
             age_rating: '9+',
-            privacy_policy_url: '',
-            terms_url: '',
-            promo_video_url: '',
-            ios_app_store_id: '',
             android_app_store_id: 'app.quizquest',
             hero_background_color: '#123456',
             contact_email: 'help@quizquest.app',
@@ -48,6 +43,28 @@ describe('toListingUpdates', () => {
         const updates = toListingUpdates(data);
         expect(updates).not.toHaveProperty('launch_type');
         expect(updates).not.toHaveProperty('launch_config_json');
+    });
+
+    it('leaves out blank optional fields the store would reject as empty', () => {
+        const updates = toListingUpdates(data);
+
+        expect(updates).not.toHaveProperty('privacy_policy_url');
+        expect(updates).not.toHaveProperty('terms_url');
+        expect(updates).not.toHaveProperty('promo_video_url');
+        expect(updates).not.toHaveProperty('category');
+    });
+
+    it('leaves out malformed links and colors but keeps valid ones', () => {
+        const updates = toListingUpdates({
+            ...data,
+            privacyPolicyUrl: 'myapp.com/privacy',
+            termsUrl: 'https://quizquest.app/terms',
+            heroColor: '#12',
+        });
+
+        expect(updates).not.toHaveProperty('privacy_policy_url');
+        expect(updates.terms_url).toBe('https://quizquest.app/terms');
+        expect(updates).not.toHaveProperty('hero_background_color');
     });
 
     it('leaves out blank required fields, the default icon, and an invalid email', () => {

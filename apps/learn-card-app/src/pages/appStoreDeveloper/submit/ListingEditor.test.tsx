@@ -35,6 +35,19 @@ describe('StandOutSection', () => {
         expect(screen.getByText('Contact email')).toBeInTheDocument();
     });
 
+    it('opens itself to show a malformed link', () => {
+        render(
+            <StandOutSection
+                details={{ ...EMPTY_LISTING_DETAILS, privacyPolicyUrl: 'privacy page' }}
+                onChange={vi.fn()}
+            />
+        );
+
+        expect(
+            screen.getByText('Enter a full link, like https://myapp.com/privacy.')
+        ).toBeInTheDocument();
+    });
+
     it('opens itself to show an invalid contact email', () => {
         render(
             <StandOutSection
