@@ -23,6 +23,7 @@ interface AppStatusViewProps {
     celebrate: boolean;
     hasNewAppChanges: boolean;
     isWorking: boolean;
+    shareUrl: string;
     onMakeChanges: () => void;
     onEdit: () => void;
     onViewInStore: () => void;
@@ -146,6 +147,7 @@ export const AppStatusView: React.FC<AppStatusViewProps> = ({
     celebrate,
     hasNewAppChanges,
     isWorking,
+    shareUrl,
     onMakeChanges,
     onEdit,
     onViewInStore,
@@ -160,11 +162,11 @@ export const AppStatusView: React.FC<AppStatusViewProps> = ({
 
     const copyLink = async () => {
         try {
-            await navigator.clipboard.writeText(window.location.href);
+            await navigator.clipboard.writeText(shareUrl);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch {
-            // Clipboard can be blocked; the address bar still has the link.
+            // Clipboard can be blocked; the link is still on screen in the address bar.
         }
     };
 

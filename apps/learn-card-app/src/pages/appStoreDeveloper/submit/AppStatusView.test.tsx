@@ -39,6 +39,7 @@ const renderView = (
             celebrate={celebrate}
             hasNewAppChanges={hasNewAppChanges}
             isWorking={false}
+            shareUrl="https://learncard.app/app-store/developer/apps/l1"
             onMakeChanges={handlers.onMakeChanges}
             onEdit={handlers.onEdit}
             onViewInStore={handlers.onViewInStore}

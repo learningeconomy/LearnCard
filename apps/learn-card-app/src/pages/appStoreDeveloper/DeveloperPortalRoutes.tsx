@@ -4,6 +4,8 @@ import { Route, Switch, Redirect } from 'react-router-dom';
 import { DeveloperPortalProvider } from './DeveloperPortalContext';
 import DeveloperPortal from './DeveloperPortal';
 import AppsLandingPage from './AppsLandingPage';
+import MyAppsPage from './apps/MyAppsPage';
+import AppStatusPage from './apps/AppStatusPage';
 import IntegrationHub from './guides/IntegrationHub';
 import GuidePage from './guides/GuidePage';
 import IntegrationsList from './integrations/IntegrationsList';
@@ -17,7 +19,9 @@ import { SubmitFromManifestPage, EditListingPage } from './submit';
  * This ensures URL-based state is consistent across all pages.
  *
  * Route structure:
- * - /app-store/developer                                    -> AppsLandingPage (select integration)
+ * - /app-store/developer                                    -> MyAppsPage (every app, any project)
+ * - /app-store/developer/apps/:listingId                   -> AppStatusPage (one app's status)
+ * - /app-store/developer/projects                           -> AppsLandingPage (projects, Build tab)
  * - /app-store/developer/submit                             -> SubmitFromManifestPage (create from manifest)
  * - /app-store/developer/integrations/:id/apps              -> DeveloperPortal (apps for integration)
  * - /app-store/developer/integrations/:id/apps/new          -> SubmissionForm (create app)
@@ -30,8 +34,13 @@ const DeveloperPortalRoutes: React.FC = () => {
     return (
         <DeveloperPortalProvider>
             <Switch>
-                {/* Apps Landing - no integration selected */}
-                <Route exact path="/app-store/developer" component={AppsLandingPage} />
+                <Route exact path="/app-store/developer" component={MyAppsPage} />
+                <Route
+                    exact
+                    path="/app-store/developer/apps/:listingId"
+                    component={AppStatusPage}
+                />
+                <Route exact path="/app-store/developer/projects" component={AppsLandingPage} />
                 <Route
                     exact
                     path="/app-store/developer/submit"

@@ -214,6 +214,36 @@ export const useDeveloperPortal = () => {
     // ========== Listing Hooks ==========
 
     // Query for listings belonging to an integration
+    // Every app the developer has made, across all their projects.
+    const useMyApps = (integrations: LCNIntegration[] | undefined) => {
+        const integrationIds = (integrations ?? []).map(integration => integration.id);
+
+        return useQuery({
+            queryKey: ['developer', 'listings', 'all', integrationIds],
+            queryFn: async (): Promise<
+                Array<{ integrationId: string; listing: AppStoreListing }>
+            > => {
+                const wallet = await initWallet();
+                const perIntegration = await Promise.all(
+                    integrationIds.map(async integrationId => {
+                        const result = await wallet.invoke.getListingsForIntegration(
+                            integrationId,
+                            { limit: 100 }
+                        );
+                        return result.records.map((listing: AppStoreListing) => ({
+                            integrationId,
+                            listing,
+                        }));
+                    })
+                );
+
+                return perIntegration.flat();
+            },
+            enabled: integrations !== undefined,
+            staleTime: 1000 * 60,
+        });
+    };
+
     const useListingsForIntegration = (integrationId: string | null) => {
         return useQuery({
             queryKey: ['developer', 'listings', integrationId],
@@ -607,6 +637,7 @@ export const useDeveloperPortal = () => {
 
         // Listing hooks
         useListingsForIntegration,
+        useMyApps,
         useListing,
         useCreateListing,
         useUpdateListing,

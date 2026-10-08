@@ -45,6 +45,7 @@ import { ConsentDesignerCard } from './ConsentDesignerCard';
 import { findReusableListing } from './listingReuse';
 import { ListingStatusBanner } from './ListingStatusBanner';
 import { AppStatusView } from './AppStatusView';
+import { getAppStatusPath } from '../apps/myApps';
 import { EMBED_APP_GUIDE, findIntegrationForApp, getAppIntegrationRepair } from './appIntegration';
 import { getListingMode, isListingLocked, withPendingChanges } from './listingLifecycle';
 import { ListingDetailsFields, StandOutSection } from './ListingEditor';
@@ -1245,6 +1246,9 @@ export const SubmitFromManifestPage: React.FC = () => {
                             celebrate={celebrate}
                             hasNewAppChanges={Boolean(manifestDiff && !diffApplied)}
                             isWorking={isChangingStatus}
+                            shareUrl={`${window.location.origin}${getAppStatusPath(
+                                ownedListing.listing_id
+                            )}`}
                             onMakeChanges={() => changeListingStatus('withdraw')}
                             onEdit={() => {
                                 setCelebrate(false);

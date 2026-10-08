@@ -22,7 +22,7 @@ const IntegrationDashboardPage: React.FC = () => {
     } = useDeveloperPortalContext();
 
     const handleBack = () => {
-        history.push('/app-store/developer/guides');
+        history.push('/app-store/developer/projects');
     };
 
     const headerContent = (

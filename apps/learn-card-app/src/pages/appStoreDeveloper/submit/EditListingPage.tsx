@@ -15,6 +15,7 @@ import type { ListingData } from './listingForm';
 import { getFirstMissingField } from './listingValidation';
 import type { ListingField } from './listingValidation';
 import { DEFAULT_APP_ICON_URL } from './constants';
+import { getAppStatusPath } from '../apps/myApps';
 import { ListingStatusBanner } from './ListingStatusBanner';
 import { getListingMode, isListingLocked, withPendingChanges } from './listingLifecycle';
 
@@ -92,7 +93,7 @@ export const EditListingPage: React.FC = () => {
     const isLocked = isListingLocked(mode);
     const hasPendingChanges = Boolean(listing?.pending_update) || hasEdits;
     const canSubmitUpdate = mode === 'live' && hasPendingChanges;
-    const dashboardPath = `/app-store/developer/integrations/${integrationId}`;
+    const statusPath = getAppStatusPath(listingId);
 
     useEffect(() => {
         if (!listing || loadedListingIdRef.current === listing.listing_id) return;
@@ -168,7 +169,7 @@ export const EditListingPage: React.FC = () => {
 
     const handlePrimaryAction = async () => {
         if (!isDraft && !canSubmitUpdate) {
-            history.push(dashboardPath);
+            history.push(statusPath);
             return;
         }
         if (missingField) {
@@ -187,7 +188,7 @@ export const EditListingPage: React.FC = () => {
                 const wallet = await initWallet();
                 await wallet.invoke.submitAppStoreListingUpdate(listingId);
             }
-            history.push(dashboardPath);
+            history.push({ pathname: statusPath, state: { celebrate: true } });
         } catch (e) {
             log.error('listing.submit.failed', e, { listingId });
             setFormError("We couldn't submit your app. Please try again.");
@@ -220,10 +221,10 @@ export const EditListingPage: React.FC = () => {
                         </h1>
                         <button
                             type="button"
-                            onClick={() => history.push(dashboardPath)}
+                            onClick={() => history.push('/app-store/developer')}
                             className="mt-4 py-3 px-6 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                         >
-                            Back to Your App
+                            Back to Your Apps
                         </button>
                     </div>
                 </IonContent>
@@ -254,11 +255,13 @@ export const EditListingPage: React.FC = () => {
                         <div className="max-w-xl mx-auto w-full">
                             <button
                                 type="button"
-                                onClick={() => history.push(dashboardPath)}
+                                onClick={() =>
+                                    history.push(isDraft ? '/app-store/developer' : statusPath)
+                                }
                                 className="mt-2 mb-6 flex items-center gap-1.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
                             >
                                 <IonIcon icon={arrowBackOutline} />
-                                Back to your app
+                                {isDraft ? 'Your apps' : "Back to your app's status"}
                             </button>
 
                             {formError && (
