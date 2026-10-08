@@ -25,7 +25,10 @@ case "$1 $2" in
         [[ "$SCENARIO" != recreate-apply-upload-failure ]] || exit 46 ;;
     's3api list-objects-v2') printf '{}\n' ;;
     's3 cp')
-        if [[ "$3" == *rolled-back.json ]]; then cp "$3" "$TEST_STATE/rolled-back.json"; fi ;;
+        if [[ "$3" == *rolled-back.json ]]; then
+            [[ "$SCENARIO" != recreate-apply-journal-failure ]] || exit 51
+            cp "$3" "$TEST_STATE/rolled-back.json"
+        fi ;;
     'ecs wait')
         [[ "$SCENARIO" != recreate-apply-wait-failure || ! -f "$TEST_STATE/restored-task" ]] || exit 47 ;;
     'application-autoscaling register-scalable-target')
@@ -147,7 +150,11 @@ mkdir -p infra/keycloak/terraform/service
 cat >infra/keycloak/scripts/terraform-plan.sh <<'MOCK'
 #!/usr/bin/env bash
 printf '%s\n' '{"resource_changes":[{"address":"aws_ecs_task_definition.keycloak","change":{"after":{"container_definitions":"[{\"name\":\"keycloak\",\"environment\":[{\"name\":\"KC_DB\",\"value\":\"postgres\"},{\"name\":\"KC_BOOTSTRAP_ADMIN_USERNAME\",\"value\":\"bootstrap\"}]}]"}}},{"address":"aws_appautoscaling_target.keycloak","change":{"actions":["no-op"]}}]}' >infra/keycloak/terraform/service/plan.json
-jq --argjson wait "${LEGACY_WAITER:-false}" '.resource_changes += [{address:"aws_ecs_service.keycloak",change:{after:{wait_for_steady_state:$wait}}}]' infra/keycloak/terraform/service/plan.json >infra/keycloak/terraform/service/with-service.json
+if [[ "${LEGACY_WAITER:-false}" == absent ]]; then
+    cp infra/keycloak/terraform/service/plan.json infra/keycloak/terraform/service/with-service.json
+else
+    jq --argjson wait "${LEGACY_WAITER:-false}" '.resource_changes += [{address:"aws_ecs_service.keycloak",change:{after:{wait_for_steady_state:$wait}}}]' infra/keycloak/terraform/service/plan.json >infra/keycloak/terraform/service/with-service.json
+fi
 mv infra/keycloak/terraform/service/with-service.json infra/keycloak/terraform/service/plan.json
 MOCK
 cat >infra/keycloak/scripts/compat-gate.sh <<'MOCK'
@@ -176,7 +183,7 @@ printf '%s\n' "$SMOKE_STATUS"
 MOCK
 chmod +x "$work/bin/"*
 export FULL_DEPLOY=true TEST_STATE="$work"
-for scenario in success discovery-404 realm-failure recreate-poll-error recreate-unknown-start recreate-discovery-404 recreate-apply-failure recreate-apply-active recreate-apply-upload-failure recreate-apply-wrong-task recreate-apply-wrong-image recreate-apply-wait-failure recreate-apply-undescribable recreate-suspend-response-failure recreate-start-response-failure recreate-legacy-waiter recreate-register-failure rolling-apply-failure; do
+for scenario in success discovery-404 realm-failure recreate-poll-error recreate-unknown-start recreate-discovery-404 recreate-apply-failure recreate-apply-active recreate-apply-upload-failure recreate-apply-wrong-task recreate-apply-wrong-image recreate-apply-wait-failure recreate-apply-undescribable recreate-suspend-response-failure recreate-start-response-failure recreate-legacy-waiter recreate-missing-service recreate-apply-null-waiter recreate-apply-journal-failure recreate-register-failure rolling-apply-failure; do
     prepare_inputs
     export BUILD_STATUS=SUCCEEDED SMOKE_STATUS=200 STRATEGY=rolling SCENARIO=$scenario LEGACY_WAITER=false
     case "$scenario" in
@@ -186,6 +193,8 @@ for scenario in success discovery-404 realm-failure recreate-poll-error recreate
     esac
     if [[ "$scenario" == recreate-discovery-404 ]]; then export SMOKE_STATUS=404; fi
     if [[ "$scenario" == recreate-legacy-waiter ]]; then export LEGACY_WAITER=true; fi
+    if [[ "$scenario" == recreate-missing-service ]]; then export LEGACY_WAITER=absent; fi
+    if [[ "$scenario" == recreate-apply-null-waiter ]]; then export LEGACY_WAITER=null; fi
     result=0
     bash "$work/deploy-image.sh" >"$work/log" 2>&1 || result=$?
     case "$scenario" in
@@ -195,7 +204,7 @@ for scenario in success discovery-404 realm-failure recreate-poll-error recreate
             grep -q 'PRIVATE_TERRAFORM_DIAGNOSTIC' "$TEST_STATE/uploaded.log"
             if grep -q 'PRIVATE_TERRAFORM_DIAGNOSTIC\|PRIVATE_UPLOAD_DIAGNOSTIC' "$work/log"; then exit 1; fi
             grep -q 's3://offline/keycloak/production/diagnostics/37696890807-2/apply.log' "$work/log" ;;
-        recreate-suspend-response-failure|recreate-start-response-failure|recreate-legacy-waiter)
+        recreate-suspend-response-failure|recreate-start-response-failure|recreate-legacy-waiter|recreate-missing-service)
             if grep -q 'codebuild start-build' "$AWS_CALLS"; then exit 1; fi ;;
         *) grep -q 'codebuild start-build.*--source-version image-sha' "$AWS_CALLS" ;;
     esac
@@ -210,7 +219,13 @@ for scenario in success discovery-404 realm-failure recreate-poll-error recreate
         if grep -q '/complete.json ' "$AWS_CALLS"; then exit 1; fi
     fi
     case "$scenario" in
-        recreate-apply-failure|recreate-apply-active|recreate-apply-upload-failure|recreate-apply-undescribable|recreate-suspend-response-failure)
+        recreate-apply-journal-failure)
+            # Restored and healthy: a failed journal write must not scale back to zero.
+            grep -q 'ecs update-service.*--task-definition old-task:5 --desired-count 1' "$AWS_CALLS"
+            [[ ! -e "$TEST_STATE/zero" && ! -e "$TEST_STATE/rolled-back.json" ]]
+            if grep -q 'Pre-start recovery failed' "$work/log"; then exit 1; fi
+            grep -q 'Writing the rolled_back journal failed, so it still says pending' "$work/log" ;;
+        recreate-apply-failure|recreate-apply-null-waiter|recreate-apply-active|recreate-apply-upload-failure|recreate-apply-undescribable|recreate-suspend-response-failure)
             expected_task=old-task:5
             if [[ "$scenario" == recreate-apply-active ]]; then
                 expected_task=old-task:3
@@ -246,7 +261,7 @@ for scenario in success discovery-404 realm-failure recreate-poll-error recreate
             fi ;;
         rolling-apply-failure)
             if grep -q 'ecs update-service\|ecs register-task-definition\|register-scalable-target' "$AWS_CALLS"; then exit 1; fi ;;
-        recreate-legacy-waiter)
+        recreate-legacy-waiter|recreate-missing-service)
             grep -q 'Recreate requires wait_for_steady_state=false' "$work/log"
             if grep -q 'ecs update-service\|register-scalable-target\|terraform apply' "$AWS_CALLS"; then exit 1; fi ;;
         recreate-apply-wrong-task|recreate-apply-wrong-image|recreate-apply-wait-failure)

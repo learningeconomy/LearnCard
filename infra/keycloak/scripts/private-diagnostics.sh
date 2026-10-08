@@ -9,8 +9,11 @@ run_before_deadline() {
     pid=$!
     while kill -0 "$pid" 2>/dev/null; do
         if (( $(date +%s) >= deadline )); then
-            kill "$pid" 2>/dev/null || true
-            sleep 1
+            # Past the deadline, a late recovery call must not land after fallback.
+            # Freeze the process so it can't start anything new, kill its children
+            # (found by parent PID while it still exists), then the process itself.
+            kill -STOP "$pid" 2>/dev/null || true
+            pkill -KILL -P "$pid" 2>/dev/null || true
             kill -KILL "$pid" 2>/dev/null || true
             wait "$pid" 2>/dev/null || true
             return 1

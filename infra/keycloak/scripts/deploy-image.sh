@@ -113,9 +113,14 @@ recover_before_start() {
     jq -n --arg image "$previous_image" --arg sha "$release_sha" --arg strategy "$strategy" \
         '{status:"rolled_back",image:$image,sha:$sha,strategy:$strategy,reason:"apply failed before start"}' \
         >"$work/rolled-back.json" || return 1
-    recovery_aws s3 cp "$work/rolled-back.json" "s3://$TF_STATE_BUCKET/$prefix/deployment.json" \
-        --only-show-errors >/dev/null 2>&1 || return 1
-    printf '::error::Deployment failed before the new image started; restored previous task definition and capacity. Journal marked rolled_back; reconcile before retrying.\n' >&2
+    # The service is already restored and healthy. Never tear that down over a journal
+    # write: the journal still says "pending", which blocks retries just the same.
+    if recovery_aws s3 cp "$work/rolled-back.json" "s3://$TF_STATE_BUCKET/$prefix/deployment.json" \
+        --only-show-errors >/dev/null 2>&1; then
+        printf '::error::Deployment failed before the new image started; restored previous task definition and capacity. Journal marked rolled_back; reconcile before retrying.\n' >&2
+    else
+        printf '::error::Deployment failed before the new image started; restored previous task definition and capacity. Writing the rolled_back journal failed, so it still says pending; reconcile before retrying.\n' >&2
+    fi
 }
 cleanup() {
     local result=$? runner_stopped=true restored=false fallback_ok=true
@@ -197,7 +202,7 @@ if [[ "$strategy" == recreate ]]; then
     # Promotions restore Terraform from the image's source SHA, which may predate
     # this waiter fix. Fail before stopping rather than reintroducing that contract.
     jq -e '[.resource_changes[]? | select(.address == "aws_ecs_service.keycloak") |
-        .change.after.wait_for_steady_state] == [false]' "$root/plan.json" >/dev/null || {
+        .change.after.wait_for_steady_state] | length == 1 and .[0] != true' "$root/plan.json" >/dev/null || {
         printf 'Recreate requires wait_for_steady_state=false in the release Terraform; use a reviewed release with script-owned health gating.\n' >&2; exit 1;
     }
     # A saved plan changing the scalable target can reintroduce a positive min
