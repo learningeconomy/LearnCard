@@ -7,6 +7,7 @@ import {
     globeOutline,
     shieldCheckmarkOutline,
     arrowForwardOutline,
+    arrowBackOutline,
     playOutline,
     cameraOutline,
     flashOutline,
@@ -43,6 +44,8 @@ import type { ConsentRequest } from '@learncard/partner-connect-core';
 import { ConsentDesignerCard } from './ConsentDesignerCard';
 import { findReusableListing } from './listingReuse';
 import { ListingStatusBanner } from './ListingStatusBanner';
+import { AppStatusView } from './AppStatusView';
+import { EMBED_APP_GUIDE, findIntegrationForApp, getAppIntegrationRepair } from './appIntegration';
 import { getListingMode, isListingLocked, withPendingChanges } from './listingLifecycle';
 import { ListingDetailsFields, StandOutSection } from './ListingEditor';
 import { StoreListingPreview } from './StoreListingPreview';
@@ -187,11 +190,12 @@ export const SubmitFromManifestPage: React.FC = () => {
     const [saveState, setSaveState] = useState<SaveState>('idle');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showMissingHint, setShowMissingHint] = useState(false);
-    const [submittedIntegrationId, setSubmittedIntegrationId] = useState<string | null>(null);
+    const [isRestoring, setIsRestoring] = useState(true);
+    const [isEditing, setIsEditing] = useState(false);
+    const [celebrate, setCelebrate] = useState(false);
     const [ownedListing, setOwnedListing] = useState<AppStoreListing | null>(null);
     const [hasEdits, setHasEdits] = useState(false);
     const [isChangingStatus, setIsChangingStatus] = useState(false);
-    const [submittedKind, setSubmittedKind] = useState<'listing' | 'update'>('listing');
     const [diffHeldForReview, setDiffHeldForReview] = useState(false);
     const listingMode = getListingMode(ownedListing);
     const isLocked = isListingLocked(listingMode);
@@ -218,7 +222,7 @@ export const SubmitFromManifestPage: React.FC = () => {
 
     const {
         useIntegrations,
-        useCreateIntegration,
+        useUpdateIntegration,
         useCreateListing,
         useUpdateListing,
         useSubmitForReview,
@@ -297,7 +301,25 @@ export const SubmitFromManifestPage: React.FC = () => {
         },
     });
     const { data: integrations, isLoading: isLoadingIntegrations } = useIntegrations();
-    const createIntegration = useCreateIntegration();
+    const updateIntegration = useUpdateIntegration();
+
+    // Projects made by publish links are named after the app and use the app dashboard.
+    const repairAppIntegration = async (integrationId: string, displayName: string) => {
+        const integration = integrations?.find(i => i.id === integrationId);
+        if (!integration || !manifest) return;
+
+        const updates = getAppIntegrationRepair(integration, {
+            appUrl: manifest.appUrl,
+            appName: displayName,
+        });
+        if (!updates) return;
+
+        try {
+            await updateIntegration.mutateAsync({ id: integrationId, updates });
+        } catch (e) {
+            log.warn('integration.repair.failed', e, { integrationId });
+        }
+    };
 
     useEffect(() => {
         if (!manifest || diffApplied) return;
@@ -311,7 +333,7 @@ export const SubmitFromManifestPage: React.FC = () => {
                 // stored record is what survives a title change or an integration the
                 // developer created (or renamed) elsewhere.
                 const integrationId =
-                    stored?.integrationId ?? integrations?.find(i => i.name === host)?.id;
+                    stored?.integrationId ?? findIntegrationForApp(integrations, appUrl)?.id;
 
                 log.debug('manifest.diff-check.start', {
                     appUrl,
@@ -499,20 +521,32 @@ export const SubmitFromManifestPage: React.FC = () => {
             // Preview always provisions against the captured app URL (localhost is
             // allowed for DRAFT listings). The production URL only applies on submit.
             const previewUrl = manifest.appUrl;
-            const host = new URL(previewUrl).host;
             const previewKey = getPreviewDraftKey(manifest);
             const displayName = appName || manifest.suggestedName || 'Preview App';
 
             const storedProvision = readStoredProvision(previewUrl);
 
-            let integrationId =
+            const createAppIntegration = async (): Promise<string> => {
+                const wallet = await initWallet();
+                const createdId = await wallet.invoke.addIntegration({
+                    name: displayName,
+                    whitelistedDomains: [],
+                    guideType: EMBED_APP_GUIDE,
+                });
+                if (!createdId) throw new Error("We couldn't set up your app. Please try again.");
+                await updateIntegration.mutateAsync({
+                    id: createdId,
+                    updates: { guideState: { publishedFromAppUrl: previewUrl } },
+                });
+                setPreviewIntegrationId(createdId);
+                return createdId;
+            };
+
+            const integrationId =
                 previewIntegrationId ||
                 storedProvision?.integrationId ||
-                integrations?.find(i => i.name === host)?.id;
-            if (!integrationId) {
-                integrationId = await createIntegration.mutateAsync(host);
-                setPreviewIntegrationId(integrationId);
-            }
+                findIntegrationForApp(integrations, previewUrl)?.id ||
+                (await createAppIntegration());
 
             if (previewListingId) {
                 storeProvision(previewUrl, { integrationId, listingId: previewListingId });
@@ -833,9 +867,9 @@ export const SubmitFromManifestPage: React.FC = () => {
         const restore = async () => {
             try {
                 const stored = readStoredProvision(manifest.appUrl);
-                const host = new URL(manifest.appUrl).host;
                 const integrationId =
-                    stored?.integrationId ?? integrations?.find(i => i.name === host)?.id;
+                    stored?.integrationId ??
+                    findIntegrationForApp(integrations, manifest.appUrl)?.id;
                 if (!integrationId) return;
 
                 const wallet = await initWallet();
@@ -857,14 +891,21 @@ export const SubmitFromManifestPage: React.FC = () => {
                 storeProvision(manifest.appUrl, { integrationId, listingId: listing.listing_id });
 
                 if (!hasEditedListingRef.current) populateFromListing(listing);
+                await repairAppIntegration(
+                    integrationId,
+                    withPendingChanges(listing).display_name ?? ''
+                );
             } catch (e) {
                 log.debug('listing.restore.failed', e, { appUrl: manifest.appUrl });
+            } finally {
+                if (!cancelled) setIsRestoring(false);
             }
         };
 
         restore();
         return () => {
             cancelled = true;
+            restoredAppUrlRef.current = null;
         };
         // Runs once per app: capture updates change `manifest` but not which listing to restore.
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -975,7 +1016,6 @@ export const SubmitFromManifestPage: React.FC = () => {
             } else {
                 await submitForReview.mutateAsync(listingId);
             }
-            setSubmittedKind(isUpdate ? 'update' : 'listing');
 
             storeProvision(manifest.appUrl, { integrationId, listingId });
             [
@@ -985,7 +1025,10 @@ export const SubmitFromManifestPage: React.FC = () => {
                 'lc-submit-designer-scopes',
             ].forEach(key => sessionStorage.removeItem(key));
 
-            setSubmittedIntegrationId(integrationId);
+            await repairAppIntegration(integrationId, listingData.name);
+            await loadOwnedListing(listingId);
+            setIsEditing(false);
+            setCelebrate(true);
         } catch (err) {
             isSubmittingRef.current = false;
             log.error('listing.submit.failed', err);
@@ -1154,47 +1197,67 @@ export const SubmitFromManifestPage: React.FC = () => {
         );
     }
 
-    if (submittedIntegrationId) {
+    if (isRestoring) {
         return (
             <IonPage>
                 <AppStoreHeader title="Publish your app" />
+                <IonContent className="ion-padding">
+                    <div className="flex justify-center items-center h-full">
+                        <IonSpinner name="crescent" />
+                    </div>
+                </IonContent>
+            </IonPage>
+        );
+    }
+
+    if (ownedListing && listingMode !== 'draft' && !isEditing) {
+        const viewListing = () => {
+            if (listingMode === 'live') {
+                history.push(`/app/${ownedListing.listing_id}`);
+                return;
+            }
+            const working = withPendingChanges(ownedListing);
+            history.push({
+                pathname: `/app/${ownedListing.listing_id}`,
+                state: { listing: working, isPreview: true },
+            });
+        };
+
+        return (
+            <IonPage>
+                <AppStoreHeader title="Your app" />
                 <IonContent>
-                    <div className="min-h-full flex items-center justify-center p-6">
-                        <div className="w-full max-w-[480px] bg-white rounded-[20px] border border-grayscale-200 shadow-sm p-8 text-center font-poppins animate-fade-in-up">
-                            <img
-                                src={listingData.iconUrl}
-                                alt=""
-                                className="w-20 h-20 rounded-2xl object-cover border border-grayscale-200 mx-auto mb-5"
-                            />
-                            <h1 className="text-xl font-semibold text-grayscale-900 mb-2">
-                                {submittedKind === 'update'
-                                    ? `Your ${appName} update is in review`
-                                    : `${appName} is in review`}
-                            </h1>
-                            <p className="text-sm text-grayscale-600 leading-relaxed mb-6">
-                                {submittedKind === 'update'
-                                    ? "Your app stays live as it is. We'll let you know when the update is approved."
-                                    : "We'll take a look and let you know when it's live in the store."}
-                            </p>
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    history.push(
-                                        `/app-store/developer/integrations/${submittedIntegrationId}`
-                                    )
-                                }
-                                className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
-                            >
-                                Go to Your App
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => history.push('/app-store/developer')}
-                                className="mt-4 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
-                            >
-                                Back to Developer Portal
-                            </button>
-                        </div>
+                    <div className={isDesktop ? 'p-6' : 'ion-padding'}>
+                        {formError && (
+                            <div className="max-w-[560px] mx-auto mt-4 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
+                                <IonIcon
+                                    icon={alertCircleOutline}
+                                    className="text-red-400 text-lg mt-0.5 shrink-0"
+                                />
+                                <span className="text-sm text-red-700 leading-relaxed">
+                                    {formError}
+                                </span>
+                            </div>
+                        )}
+                        <AppStatusView
+                            listing={ownedListing}
+                            mode={listingMode}
+                            celebrate={celebrate}
+                            hasNewAppChanges={Boolean(manifestDiff && !diffApplied)}
+                            isWorking={isChangingStatus}
+                            onMakeChanges={() => changeListingStatus('withdraw')}
+                            onEdit={() => {
+                                setCelebrate(false);
+                                setIsEditing(true);
+                            }}
+                            onViewInStore={viewListing}
+                            onOpenDashboard={() =>
+                                previewIntegrationId &&
+                                history.push(
+                                    `/app-store/developer/integrations/${previewIntegrationId}`
+                                )
+                            }
+                        />
                     </div>
                 </IonContent>
             </IonPage>
@@ -1215,6 +1278,17 @@ export const SubmitFromManifestPage: React.FC = () => {
 
     const leftPaneContent = (
         <div className={`${isDesktop ? 'max-w-xl mx-auto' : 'max-w-2xl mx-auto'} pb-12 w-full`}>
+            {listingMode !== 'draft' && (
+                <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    className="mt-2 flex items-center gap-1.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                >
+                    <IonIcon icon={arrowBackOutline} />
+                    Back to your app's status
+                </button>
+            )}
+
             <div className="text-center mb-8 mt-4">
                 <h1 className="text-2xl font-semibold text-grayscale-900 mb-2">
                     {listingMode === 'draft' ? 'Publish your app' : 'Your app'}
