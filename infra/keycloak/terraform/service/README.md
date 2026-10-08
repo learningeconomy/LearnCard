@@ -53,6 +53,11 @@ variables, **not secret values or fabricated image digests in committed tfvars**
 Example Bash runbook from this directory (repeat in a separate directory for
 production by setting `ENVIRONMENT=production` and its account's values):
 
+This is **initial provisioning only**. Use the protected deployment workflow for
+existing-service image upgrades so compatibility, recovery and health gates run.
+Terraform itself no longer waits for readiness; verify both target groups and
+service stability before continuing to realm provisioning.
+
 ```bash
 export ENVIRONMENT=staging
 export AWS_PROFILE=learncard-staging-deploy
@@ -68,6 +73,8 @@ terraform init -reconfigure \
 umask 077
 terraform plan -var-file="environments/$ENVIRONMENT.tfvars" -out=service.tfplan
 terraform apply service.tfplan
+aws ecs wait services-stable --cluster "learncard-keycloak-$ENVIRONMENT" \
+  --services "learncard-keycloak-$ENVIRONMENT"
 rm service.tfplan
 ```
 
