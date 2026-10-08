@@ -261,3 +261,85 @@ export const applyCapturedAction = (
 
     return next;
 };
+
+const union = (base: string[], next: string[]): string[] => [...new Set([...base, ...next])];
+
+const isMoreRecent = (candidate: string, current: string): boolean =>
+    Date.parse(candidate) > Date.parse(current);
+
+interface MergeableRecord {
+    lastUsedAt: string;
+}
+
+interface MergeableTemplate extends MergeableRecord {
+    alias: string;
+    template: unknown;
+}
+
+interface MergeableConsent extends MergeableRecord {
+    scopes: unknown;
+}
+
+/** The capture fields merging reads; any manifest shape carrying them can be merged. */
+export interface MergeableManifest {
+    permissions: string[];
+    templates: MergeableTemplate[];
+    consentRequests: MergeableConsent[];
+    featuresLaunched: string[];
+    counterKeys: string[];
+    usedLearnerContext: boolean;
+    usedNotifications: boolean;
+    firstCapturedAt: string;
+    lastUpdatedAt: string;
+}
+
+const mergeByKey = <T extends MergeableRecord>(
+    base: T[],
+    next: T[],
+    keyOf: (record: T) => string,
+    shouldReplace: (existing: T, candidate: T) => boolean
+): T[] => {
+    const byKey = new Map(base.map(record => [keyOf(record), record]));
+
+    for (const record of next) {
+        const existing = byKey.get(keyOf(record));
+        if (!existing || shouldReplace(existing, record)) byKey.set(keyOf(record), record);
+    }
+
+    return [...byKey.values()];
+};
+
+/**
+ * Combines two captures of the same app. A capture only records what the app did
+ * during one run, so anything missing from `next` was simply not exercised — it is
+ * kept, never treated as removed. Identity fields (URL, name, icon) come from `next`.
+ */
+export const mergeCapturedManifests = <M extends MergeableManifest>(base: M, next: M): M => ({
+    ...base,
+    ...next,
+    permissions: union(base.permissions, next.permissions),
+    templates: mergeByKey(
+        base.templates,
+        next.templates,
+        record => record.alias,
+        (existing, candidate) =>
+            canonicalJsonString(existing.template) !== canonicalJsonString(candidate.template) &&
+            isMoreRecent(candidate.lastUsedAt, existing.lastUsedAt)
+    ),
+    consentRequests: mergeByKey(
+        base.consentRequests,
+        next.consentRequests,
+        record => canonicalJsonString(record.scopes),
+        (existing, candidate) => isMoreRecent(candidate.lastUsedAt, existing.lastUsedAt)
+    ),
+    featuresLaunched: union(base.featuresLaunched, next.featuresLaunched),
+    counterKeys: union(base.counterKeys, next.counterKeys),
+    usedLearnerContext: base.usedLearnerContext || next.usedLearnerContext,
+    usedNotifications: base.usedNotifications || next.usedNotifications,
+    firstCapturedAt: isMoreRecent(next.firstCapturedAt, base.firstCapturedAt)
+        ? base.firstCapturedAt
+        : next.firstCapturedAt,
+    lastUpdatedAt: isMoreRecent(base.lastUpdatedAt, next.lastUpdatedAt)
+        ? base.lastUpdatedAt
+        : next.lastUpdatedAt,
+});

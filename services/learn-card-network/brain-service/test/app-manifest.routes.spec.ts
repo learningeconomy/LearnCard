@@ -154,6 +154,53 @@ describe('app manifest routes', () => {
         expect(versions.records.map(record => record.version)).toEqual([2, 1]);
     });
 
+    it('treats a capture missing earlier features as unchanged, not removed', async () => {
+        const { integration, listing } = await seedListedApp('owner-user');
+        const fuller = makeManifest({
+            permissions: ['send_credential', 'request_identity', 'launch_feature'],
+        });
+
+        const first = await ownerUser.clients.fullAuth.appStore.submitAppManifest({
+            integrationId: integration.id,
+            manifest: fuller,
+        });
+        await ownerUser.clients.fullAuth.appStore.applyManifestVersion({
+            integrationId: integration.id,
+            version: first.version,
+            listingId: listing.listing_id,
+        });
+
+        const partial = await ownerUser.clients.fullAuth.appStore.submitAppManifest({
+            integrationId: integration.id,
+            manifest: makeManifest({
+                permissions: ['send_credential'],
+                consentRequests: [],
+                featuresLaunched: [],
+                counterKeys: [],
+                lastUpdatedAt: '2026-03-01T00:00:00.000Z',
+            }),
+        });
+
+        expect(partial).toMatchObject({ version: first.version, noop: true });
+
+        const grown = await ownerUser.clients.fullAuth.appStore.submitAppManifest({
+            integrationId: integration.id,
+            manifest: makeManifest({
+                permissions: ['send_credential', 'send_notification'],
+                counterKeys: [],
+                lastUpdatedAt: '2026-03-02T00:00:00.000Z',
+            }),
+        });
+
+        expect(grown.diff?.permissions).toEqual({
+            added: ['send_notification'],
+            removed: [],
+            changed: [],
+        });
+        expect(grown.diff?.counterKeys.removed).toEqual([]);
+        expect(grown.diff?.featurePaths.removed).toEqual([]);
+    });
+
     it('applies manifest reconciliation idempotently', async () => {
         const { integration, listing } = await seedListedApp('owner-user');
         const signingAuthority = await createSigningAuthority('https://sa.example.com');

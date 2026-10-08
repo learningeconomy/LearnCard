@@ -41,6 +41,7 @@ import {
 } from '@learncard/partner-connect-core';
 import type { ConsentRequest } from '@learncard/partner-connect-core';
 import { ConsentDesignerCard } from './ConsentDesignerCard';
+import { findReusableListing } from './listingReuse';
 import { ListingDetailsFields, StandOutSection } from './ListingEditor';
 import { StoreListingPreview } from './StoreListingPreview';
 import { AppCapabilitiesSummary } from './AppCapabilitiesSummary';
@@ -478,7 +479,7 @@ export const SubmitFromManifestPage: React.FC = () => {
             if (!manifest) throw new Error('No manifest');
 
             // Preview always provisions against the captured app URL (localhost is
-            // allowed for DRAFT listings). The production URL only applies at Continue.
+            // allowed for DRAFT listings). The production URL only applies on submit.
             const previewUrl = manifest.appUrl;
             const host = new URL(previewUrl).host;
             const previewKey = getPreviewDraftKey(manifest);
@@ -504,38 +505,28 @@ export const SubmitFromManifestPage: React.FC = () => {
             const existingListings = await wallet.invoke.getListingsForIntegration(integrationId, {
                 limit: 100,
             });
-            const existingDraft = existingListings.records.find(listing => {
-                if (listing.app_listing_status !== 'DRAFT') return false;
-
-                try {
-                    const config = JSON.parse(listing.launch_config_json) as {
-                        devPreviewKey?: unknown;
-                        url?: unknown;
-                        contractUri?: unknown;
-                    };
-
-                    if (config.devPreviewKey === previewKey) return true;
-
-                    // Legacy preview drafts predate devPreviewKey. Restrict the fallback
-                    // to this flow's generated name, URL, and tagline so unrelated drafts
-                    // on the same integration are never reused.
-                    return (
-                        config.devPreviewKey === undefined &&
-                        config.url === previewUrl &&
-                        listing.display_name === displayName &&
-                        listing.tagline === `${displayName} preview`
-                    );
-                } catch {
-                    return false;
-                }
+            const existingDraft = findReusableListing(existingListings.records, {
+                storedListingId: storedProvision?.listingId,
+                previewKey,
+                previewUrl,
+                displayName,
             });
+
+            if (existingDraft && existingDraft.app_listing_status !== 'DRAFT') {
+                setExistingListingStatus(existingDraft.app_listing_status);
+            }
 
             let listingId = existingDraft?.listing_id;
 
             if (existingDraft) {
-                const existingConfig = JSON.parse(
-                    existingDraft.launch_config_json
-                ) as PreviewLaunchConfig;
+                let existingConfig: Partial<PreviewLaunchConfig> = {};
+                try {
+                    existingConfig = JSON.parse(
+                        existingDraft.launch_config_json
+                    ) as PreviewLaunchConfig;
+                } catch {
+                    // Older listings may have no launch details yet; start from the capture.
+                }
                 const restoredConfig: PreviewLaunchConfig = {
                     url: previewUrl,
                     permissions: manifest.permissions,
@@ -1203,20 +1194,17 @@ export const SubmitFromManifestPage: React.FC = () => {
                                 try {
                                     const wallet = await initWallet();
                                     if (!wallet?.invoke?.applyManifestVersion) return;
-                                    // On a fresh page load nothing has been provisioned in
-                                    // state yet, so fall back to the listing recorded when
-                                    // this app was first provisioned.
-                                    const listingId =
-                                        previewListingId ||
-                                        readStoredProvision(manifest.appUrl)?.listingId;
+                                    // An app can have more than one listing, so always say
+                                    // which one these changes belong to.
+                                    const { listingId } = await ensureProvisioned();
                                     await wallet.invoke.applyManifestVersion(
                                         previewIntegrationId,
                                         manifestVersion,
-                                        listingId || undefined
+                                        listingId
                                     );
                                     log.debug('manifest.diff.applied', {
                                         integrationId: previewIntegrationId,
-                                        listingId: listingId ?? null,
+                                        listingId,
                                         version: manifestVersion,
                                     });
                                     setDiffApplied(true);

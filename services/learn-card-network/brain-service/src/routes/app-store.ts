@@ -9,6 +9,7 @@ import {
     LCNNotificationTypeEnumValidator,
     SendNotificationEventValidator,
 } from '@learncard/types';
+import { mergeCapturedManifests } from '@learncard/partner-connect-core';
 import type {
     ConsentRequest,
     InlineCredentialTemplate,
@@ -2112,7 +2113,12 @@ export const appStoreRouter = t.router({
             const activeManifestVersion = await getActiveManifestVersionForIntegration(
                 input.integrationId
             );
-            const manifestHash = hashManifest(input.manifest);
+            // Each capture is one run of the app; merging keeps what earlier runs saw
+            // so an unexercised feature never shows up as removed.
+            const manifest = latestManifestVersion
+                ? mergeCapturedManifests(latestManifestVersion.manifest, input.manifest)
+                : input.manifest;
+            const manifestHash = hashManifest(manifest);
 
             if (latestManifestVersion?.manifestHash === manifestHash) {
                 return {
@@ -2127,7 +2133,7 @@ export const appStoreRouter = t.router({
                 integrationId: input.integrationId,
                 version: (latestManifestVersion?.version ?? 0) + 1,
                 manifestHash,
-                manifest: input.manifest,
+                manifest,
                 status: 'draft',
             });
 
@@ -2135,7 +2141,7 @@ export const appStoreRouter = t.router({
                 version: createdManifestVersion.version,
                 manifestHash,
                 diff: activeManifestVersion
-                    ? diffManifests(activeManifestVersion.manifest, input.manifest)
+                    ? diffManifests(activeManifestVersion.manifest, manifest)
                     : null,
                 noop: false,
             };

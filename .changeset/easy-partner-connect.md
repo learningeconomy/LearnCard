@@ -12,3 +12,5 @@ Make Partner Connect apps zero-config. Apps can send credentials from inline tem
 Mock mode now captures an app manifest and offers a one-click publish link (`getCapturedManifest()`, `getPublishUrl()`), and `mock: 'auto'` also activates inside AI app-builder editor previews (Lovable, Bolt, v0, Replit) while never mocking on published app addresses. Adds template validation and preview, template issuance status and recipient queries, and a typed `PartnerConnectError`.
 
 LearnCard gains a publish-from-link page with live preview and a consent designer, a simple app dashboard with manifest version diffs and one-step "Apply & Ship", and network routes plus plugin methods to submit, compare, and apply manifest versions. The publish page asks for the real address when an app was captured on a local or app-builder preview address.
+
+App captures are additive: submitting a manifest merges it into the latest version (`mergeCapturedManifests`), so features a run didn't exercise are kept rather than reported as removed.
