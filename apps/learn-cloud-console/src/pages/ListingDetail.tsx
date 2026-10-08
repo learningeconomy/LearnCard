@@ -15,6 +15,7 @@ import { trpc } from '../trpc';
 import type { InstallIntent } from '@learncard/types';
 
 import { LABELS } from '../lib/labels';
+import { isNoAccessIntegration } from '../lib/no-access';
 
 interface ListingDetailProps {
     session: DashboardSession;
@@ -134,17 +135,15 @@ export function ListingDetail({ session }: ListingDetailProps) {
                             >
                                 <Icon className="w-3 h-3" /> {kindLabel}
                             </Badge>
-                            {activeIntent?.plan &&
-                                Array.isArray(activeIntent.plan.scopesRequested) &&
-                                activeIntent.plan.scopesRequested.length === 0 && (
-                                    <Badge
-                                        variant="outline"
-                                        className="text-xs bg-muted text-muted-foreground"
-                                        title={LABELS.noAccessTooltip}
-                                    >
-                                        {LABELS.noAccessBadge}
-                                    </Badge>
-                                )}
+                            {isNoAccessIntegration(activeIntent) && (
+                                <Badge
+                                    variant="outline"
+                                    className="text-xs bg-muted text-muted-foreground"
+                                    title={LABELS.noAccessTooltip}
+                                >
+                                    {LABELS.noAccessBadge}
+                                </Badge>
+                            )}
                         </div>
                         <h1 className="font-display text-xl sm:text-2xl font-bold text-foreground break-words">
                             {listing.display_name}

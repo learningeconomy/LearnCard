@@ -12,6 +12,7 @@ import type { DashboardSession, CatalogListing, CatalogIntegrationManifestSummar
 import type { InstallIntent } from '@learncard/types';
 
 import { LABELS } from '../lib/labels';
+import { isNoAccessIntegration } from '../lib/no-access';
 
 interface IntegrationsProps {
     session: DashboardSession;
@@ -188,17 +189,15 @@ export function Integrations({ session }: IntegrationsProps) {
                                     here — never on Data Sources, whose reference
                                     enrichment declares no record class (ADR-013 Q4). */}
                                 {recordClasses.map(renderRecordClassPill)}
-                                {activeIntent?.plan &&
-                                    Array.isArray(activeIntent.plan.scopesRequested) &&
-                                    activeIntent.plan.scopesRequested.length === 0 && (
-                                        <Badge
-                                            variant="outline"
-                                            className="text-[10px] bg-muted text-muted-foreground"
-                                            title={LABELS.noAccessTooltip}
-                                        >
-                                            {LABELS.noAccessBadge}
-                                        </Badge>
-                                    )}
+                                {isNoAccessIntegration(activeIntent) && (
+                                    <Badge
+                                        variant="outline"
+                                        className="text-[10px] bg-muted text-muted-foreground"
+                                        title={LABELS.noAccessTooltip}
+                                    >
+                                        {LABELS.noAccessBadge}
+                                    </Badge>
+                                )}
                             </div>
                         </div>
                     </div>

@@ -16,6 +16,7 @@ import { TRPCClientError } from '@trpc/client';
 import type { InstallIntent } from '@learncard/types';
 
 import { LABELS } from '../../lib/labels';
+import { isNoAccessIntegration } from '../../lib/no-access';
 
 type InstallState = 'plan' | 'approve' | 'applying' | 'ready' | 'failed';
 
@@ -161,11 +162,7 @@ export function InstallActions({
     ];
 
     const renderPermissions = () => {
-        if (
-            intent?.plan &&
-            Array.isArray(intent.plan.scopesRequested) &&
-            intent.plan.scopesRequested.length === 0
-        ) {
+        if (isNoAccessIntegration(intent)) {
             return (
                 <div className="mt-2">
                     <Badge

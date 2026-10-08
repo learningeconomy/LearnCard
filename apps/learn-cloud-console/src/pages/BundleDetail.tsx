@@ -53,6 +53,7 @@ const SECTION_BY_TARGET_TYPE: Record<string, { label: string; color: string; pat
 const SECTION_ORDER = Object.values(SECTION_BY_TARGET_TYPE).map(section => section.label);
 
 import { LABELS } from '../lib/labels';
+import { isNoAccessIntegration } from '../lib/no-access';
 
 interface BundleDetailProps {
     session: DashboardSession;
@@ -278,17 +279,15 @@ export function BundleDetail({ session }: BundleDetailProps) {
                                                     Optional
                                                 </Badge>
                                             )}
-                                            {memberIntent?.plan &&
-                                                Array.isArray(memberIntent.plan.scopesRequested) &&
-                                                memberIntent.plan.scopesRequested.length === 0 && (
-                                                    <Badge
-                                                        variant="outline"
-                                                        className="text-[10px] bg-muted text-muted-foreground"
-                                                        title={LABELS.noAccessTooltip}
-                                                    >
-                                                        {LABELS.noAccessBadge}
-                                                    </Badge>
-                                                )}
+                                            {isNoAccessIntegration(memberIntent) && (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="text-[10px] bg-muted text-muted-foreground"
+                                                    title={LABELS.noAccessTooltip}
+                                                >
+                                                    {LABELS.noAccessBadge}
+                                                </Badge>
+                                            )}
                                         </div>
 
                                         <div className="flex items-start gap-3">
