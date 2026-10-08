@@ -108,7 +108,10 @@ ignores its drift. Change min/max for durable sizing changes, not `desired_count
 Deployment min healthy 100% / max 200%, circuit-breaker rollback and AZ rebalancing
 are enabled. They are **not** a schema-upgrade safety guarantee. Per plan PD-7,
 `kc.sh update-compatibility check` must decide rolling versus snapshot/stop/recreate
-before upgrades; automatic gating is deferred to Phase 4. Restore the pre-upgrade
+before upgrades; `deploy-image.sh` owns stability/health gating after apply rather
+than Terraform waiting while recreate holds capacity at zero. See the
+[pre-start recovery and journal reconciliation runbook](../README.md#failure-recovery-and-rollback).
+Restore the pre-upgrade
 database if schema rollback is needed; rolling back only the image is unsafe.
 
 Container liveness uses explicit `/bin/bash` and `/dev/tcp` against

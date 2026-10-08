@@ -274,9 +274,20 @@ network/service provisioning remains the human runbook's responsibility.
 
 The S3 `deployment.json` journal is marked pending **before** mutation. An incomplete
 journal blocks later deployments, even if an old metadata object remains. Do not
-blindly rerun or mark it complete. After a failed recreate the pipeline attempts to
-stop tasks and leave scaling suspended; a killed runner or AWS outage can prevent
+blindly rerun or mark it complete. A recreate failure **before the new-image scale-up
+request** restores the captured task definition (re-registering it with its tags if
+Terraform deregistered it), original desired count and autoscaling state, then waits
+for stability. The journal becomes `rolled_back`, retaining the failed candidate SHA;
+this still blocks retries. Failed restoration falls back to stopped/suspended.
+After scale-up is attempted, migration is possible: cleanup stops tasks and leaves
+scaling suspended, without image rollback. A killed runner or AWS outage can prevent
 cleanup, so an operator must verify capacity, autoscaling and task revisions.
+
+To reconcile `rolled_back`, verify the running image/source SHA, service health and
+scaling, reconcile Terraform's partially applied state/configuration and matching
+compatibility metadata, then write `keycloak/<env>/compat/deployment.json` back to
+`{"status":"complete","image":"<actual running digest>","sha":"<actual source SHA>","strategy":"recreate"}`.
+Do not reuse the failed candidate SHA just because it is in the rollback journal.
 
 For a rolling-compatible rollback, redeploy the previous retained digest through
 manual service apply (set the optional image override), or production promotion.

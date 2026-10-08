@@ -43,20 +43,78 @@ prefix="keycloak/$DEPLOY_ENVIRONMENT/compat"
 umask 077
 work=$(mktemp -d)
 stopped=false
+started=false
 complete=false
+recover_before_start() {
+    local task status
+    printf 'Recovery: checking previous task definition.\n' >&2
+    task=$(jq -er '.taskDefinition.taskDefinitionArn' "$work/previous-task.json") || return 1
+    status=$(aws ecs describe-task-definition --task-definition "$task" \
+        --query taskDefinition.status --output text 2>/dev/null) || return 1
+    if [[ "$status" == INACTIVE ]]; then
+        printf 'Recovery: re-registering previous task definition and tags.\n' >&2
+        # DescribeTaskDefinition includes read-only fields. Keep only RegisterTaskDefinition inputs.
+        jq '.taskDefinition | {family, taskRoleArn, executionRoleArn, networkMode,
+            containerDefinitions, volumes, placementConstraints, requiresCompatibilities,
+            cpu, memory, pidMode, ipcMode, proxyConfiguration, inferenceAccelerators,
+            ephemeralStorage, runtimePlatform, enableFaultInjection} | with_entries(select(.value != null))' \
+            "$work/previous-task.json" >"$work/register-task.json" || return 1
+        jq --slurpfile previous "$work/previous-task.json" \
+            '. + {tags: ($previous[0].tags // [] | map({key, value}))}' \
+            "$work/register-task.json" >"$work/register-tagged-task.json" || return 1
+        task=$(aws ecs register-task-definition --cli-input-json "file://$work/register-tagged-task.json" \
+            --query taskDefinition.taskDefinitionArn --output text 2>/dev/null) || return 1
+        [[ -n "$task" && "$task" != None ]] || return 1
+    elif [[ "$status" != ACTIVE ]]; then
+        return 1
+    fi
+    printf 'Recovery: restoring previous task definition and desired capacity.\n' >&2
+    aws ecs update-service --cluster "$name" --service "$name" --task-definition "$task" \
+        --desired-count "$desired" >/dev/null 2>&1 || return 1
+    printf 'Recovery: restoring original autoscaling limits and suspended state.\n' >&2
+    aws application-autoscaling register-scalable-target --service-namespace ecs \
+        --resource-id "service/$name/$name" --scalable-dimension ecs:service:DesiredCount \
+        --min-capacity "$minimum" --max-capacity "$maximum" --suspended-state "$suspended" \
+        >/dev/null 2>&1 || return 1
+    printf 'Recovery: waiting for previous service stability (bounded ECS waiter).\n' >&2
+    # The CLI waiter polls at 15s for at most 40 attempts. Reserve time for calls
+    # and fallback cleanup rather than starting it near the job's hard deadline.
+    (( $(date +%s) + 11 * 60 < DEPLOY_DEADLINE_EPOCH )) || return 1
+    AWS_MAX_ATTEMPTS=1 aws ecs wait services-stable --cluster "$name" --services "$name" \
+        --cli-connect-timeout 5 --cli-read-timeout 10 >/dev/null 2>&1 || return 1
+    printf 'Recovery: recording rolled_back journal; reconciliation is required.\n' >&2
+    jq -n --arg image "$previous_image" --arg sha "$release_sha" --arg strategy "$strategy" \
+        '{status:"rolled_back",image:$image,sha:$sha,strategy:$strategy,reason:"apply failed before start"}' \
+        >"$work/rolled-back.json" || return 1
+    aws s3 cp "$work/rolled-back.json" "s3://$TF_STATE_BUCKET/$prefix/deployment.json" \
+        --only-show-errors >/dev/null 2>&1 || return 1
+    printf '::error::Deployment failed before the new image started; restored previous task definition and capacity. Journal marked rolled_back; reconcile before retrying.\n' >&2
+}
 cleanup() {
-    local result=$? runner_stopped=true
+    local result=$? runner_stopped=true restored=false
     trap - EXIT
     trap '' INT TERM HUP
     stop_realm_build "$work/realm-build-id" || { runner_stopped=false; result=1; }
     if [[ "$runner_stopped" == true && "$stopped" == true && "$complete" != true ]]; then
+        (( result != 0 )) || result=1
+        if [[ "$strategy" == recreate && "$started" == false ]]; then
+            if recover_before_start; then
+                restored=true
+            else
+                printf '::error::Pre-start recovery failed; falling back to stopped service and suspended autoscaling.\n' >&2
+            fi
+        fi
+        if [[ "$restored" != true ]]; then
         # No automatic rollback across a possible schema migration. Leave scaling suspended.
         aws application-autoscaling register-scalable-target --service-namespace ecs \
             --resource-id "service/$name/$name" --scalable-dimension ecs:service:DesiredCount \
             --min-capacity 0 --max-capacity "$maximum" \
-            --suspended-state DynamicScalingInSuspended=true,DynamicScalingOutSuspended=true,ScheduledScalingSuspended=true >/dev/null || true
-        aws ecs update-service --cluster "$name" --service "$name" --desired-count 0 >/dev/null || true
+            --suspended-state DynamicScalingInSuspended=true,DynamicScalingOutSuspended=true,ScheduledScalingSuspended=true >/dev/null 2>&1 || \
+            printf '::error::Could not suspend autoscaling; operator intervention required.\n' >&2
+        aws ecs update-service --cluster "$name" --service "$name" --desired-count 0 >/dev/null 2>&1 || \
+            printf '::error::Could not stop service; operator intervention required.\n' >&2
         printf '::error::Deployment failed; service stopped, autoscaling suspended. Follow snapshot recovery runbook.\n'
+        fi
     fi
     rm -rf "$work"
     rm -f "$root/"{keycloak.tfplan,plan.json,plan.log,init.log,apply.log}
@@ -110,6 +168,11 @@ bash "$scripts/compat-metadata.sh" "$TF_VAR_keycloak_image" "$work/metadata.json
 aws ecs describe-services --cluster "$name" --services "$name" >"$work/service.json"
 desired=$(jq -er '.services[0].desiredCount | select(. > 0)' "$work/service.json")
 if [[ "$strategy" == recreate ]]; then
+    # Preserve the running definition and tags before any recreate mutation.
+    # Terraform may deregister it even if apply fails before capacity is restored.
+    previous_task=$(jq -er '.services[0].taskDefinition' "$work/service.json")
+    aws ecs describe-task-definition --task-definition "$previous_task" --include TAGS >"$work/previous-task.json"
+    previous_image=$(jq -er '.taskDefinition.containerDefinitions[] | select(.name == "keycloak") | .image' "$work/previous-task.json")
     # Snapshot while healthy, before touching capacity. Production cannot opt out.
     if [[ "$DEPLOY_ENVIRONMENT" == production || ${SNAPSHOT_STAGING:-false} == true ]]; then
         snapshot="$name-pre-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}"
@@ -160,6 +223,7 @@ terraform -chdir="$root" apply -input=false -lock-timeout=5m -auto-approve keycl
 if [[ "$strategy" == recreate ]]; then
     # desired_count is ignored in ecs.tf. Never let the circuit breaker restart an
     # old image after a schema change; restore its setting only after health succeeds.
+    started=true # Set BEFORE the request: a failed response can still have started tasks.
     aws ecs update-service --cluster "$name" --service "$name" --desired-count "$desired" \
         --deployment-configuration 'deploymentCircuitBreaker={enable=true,rollback=false}' >/dev/null
 fi
