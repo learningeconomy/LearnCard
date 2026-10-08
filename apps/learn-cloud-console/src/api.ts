@@ -13,6 +13,7 @@ export type GroupDetail = inferRouterOutputs<ConsoleRouter>['group']['get'];
 export type CatalogListing =
     inferRouterOutputs<ConsoleRouter>['catalog']['listings']['records'][number];
 export type CatalogListingDetail = inferRouterOutputs<ConsoleRouter>['catalog']['get'];
+export type CatalogListingVersion = CatalogListingDetail['versions'][number];
 export type CatalogEnablement = inferRouterOutputs<ConsoleRouter>['catalog']['enablement']['get'];
 export type CatalogBundleMember =
     inferRouterOutputs<ConsoleRouter>['catalog']['getBundleMembers'][number];

@@ -15,6 +15,8 @@ import { cn } from '../../lib/utils';
 import { TRPCClientError } from '@trpc/client';
 import type { InstallIntent } from '@learncard/types';
 
+import { LABELS } from '../../lib/labels';
+
 type InstallState = 'plan' | 'approve' | 'applying' | 'ready' | 'failed';
 
 interface Props {
@@ -159,6 +161,24 @@ export function InstallActions({
     ];
 
     const renderPermissions = () => {
+        if (
+            intent?.plan &&
+            Array.isArray(intent.plan.scopesRequested) &&
+            intent.plan.scopesRequested.length === 0
+        ) {
+            return (
+                <div className="mt-2">
+                    <Badge
+                        variant="outline"
+                        className="bg-muted text-muted-foreground"
+                        title={LABELS.noAccessTooltip}
+                    >
+                        {LABELS.noAccessBadge}
+                    </Badge>
+                </div>
+            );
+        }
+
         if (intent?.plan?.consentTiers && Object.keys(intent.plan.consentTiers).length > 0) {
             return (
                 <ul className="text-sm space-y-1">

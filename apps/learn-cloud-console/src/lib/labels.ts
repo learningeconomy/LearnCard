@@ -77,6 +77,10 @@ export const LABELS = {
     hierarchy: 'Hierarchy',
     root: 'Root',
     below: (n: number) => `${n} below`,
+
+    // --- Integrations / Scopes ------------------------------------------------
+    noAccessBadge: 'No access',
+    noAccessTooltip: 'Requests no permissions — cannot read or change ecosystem data.',
 } as const;
 
 export type EntityKind = 'ecosystem' | 'group' | 'institution' | 'employer';

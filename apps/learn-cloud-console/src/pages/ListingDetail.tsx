@@ -5,9 +5,16 @@ import { Badge } from '../components/ui/badge';
 import { InstallActions } from '../components/catalog/InstallActions';
 import { PageSkeleton } from '../components/PageSkeleton';
 import { ErrorState } from '../components/ErrorState';
-import { getCatalogListing, type DashboardSession, type CatalogListing } from '../api';
+import {
+    getCatalogListing,
+    type DashboardSession,
+    type CatalogListing,
+    type CatalogListingVersion,
+} from '../api';
 import { trpc } from '../trpc';
 import type { InstallIntent } from '@learncard/types';
+
+import { LABELS } from '../lib/labels';
 
 interface ListingDetailProps {
     session: DashboardSession;
@@ -18,7 +25,7 @@ export function ListingDetail({ session }: ListingDetailProps) {
     const id = params?.id;
 
     const [listing, setListing] = useState<CatalogListing | null>(null);
-    const [versions, setVersions] = useState<any[]>([]);
+    const [versions, setVersions] = useState<CatalogListingVersion[]>([]);
     const [intents, setIntents] = useState<InstallIntent[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -44,6 +51,7 @@ export function ListingDetail({ session }: ListingDetailProps) {
     }, [id, ecosystemId]);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         void loadData();
     }, [loadData]);
 
@@ -126,6 +134,17 @@ export function ListingDetail({ session }: ListingDetailProps) {
                             >
                                 <Icon className="w-3 h-3" /> {kindLabel}
                             </Badge>
+                            {activeIntent?.plan &&
+                                Array.isArray(activeIntent.plan.scopesRequested) &&
+                                activeIntent.plan.scopesRequested.length === 0 && (
+                                    <Badge
+                                        variant="outline"
+                                        className="text-xs bg-muted text-muted-foreground"
+                                        title={LABELS.noAccessTooltip}
+                                    >
+                                        {LABELS.noAccessBadge}
+                                    </Badge>
+                                )}
                         </div>
                         <h1 className="font-display text-xl sm:text-2xl font-bold text-foreground break-words">
                             {listing.display_name}

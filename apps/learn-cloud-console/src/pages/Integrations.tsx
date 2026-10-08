@@ -11,6 +11,8 @@ import { getCatalogIntegrationManifestSummary } from '../api';
 import type { DashboardSession, CatalogListing, CatalogIntegrationManifestSummary } from '../api';
 import type { InstallIntent } from '@learncard/types';
 
+import { LABELS } from '../lib/labels';
+
 interface IntegrationsProps {
     session: DashboardSession;
 }
@@ -67,6 +69,7 @@ export function Integrations({ session }: IntegrationsProps) {
     }, [ecosystemId]);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         void loadData();
     }, [loadData]);
 
@@ -185,6 +188,17 @@ export function Integrations({ session }: IntegrationsProps) {
                                     here — never on Data Sources, whose reference
                                     enrichment declares no record class (ADR-013 Q4). */}
                                 {recordClasses.map(renderRecordClassPill)}
+                                {activeIntent?.plan &&
+                                    Array.isArray(activeIntent.plan.scopesRequested) &&
+                                    activeIntent.plan.scopesRequested.length === 0 && (
+                                        <Badge
+                                            variant="outline"
+                                            className="text-[10px] bg-muted text-muted-foreground"
+                                            title={LABELS.noAccessTooltip}
+                                        >
+                                            {LABELS.noAccessBadge}
+                                        </Badge>
+                                    )}
                             </div>
                         </div>
                     </div>
