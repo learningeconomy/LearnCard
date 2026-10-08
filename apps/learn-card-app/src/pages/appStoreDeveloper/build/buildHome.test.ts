@@ -60,6 +60,16 @@ describe('summarizeProjects', () => {
     });
 });
 
+describe('projects with apps', () => {
+    it('treats any project with a store listing as an app and leaves it out', () => {
+        const integrations = [project('app', { guideType: 'embed-app' }), project('guide')];
+        expect(summarizeProject(integrations[0]!, new Set(['app'])).state).toBe('app');
+        expect(
+            summarizeProjects(integrations, new Set(['app'])).map(summary => summary.integration.id)
+        ).toEqual(['guide']);
+    });
+});
+
 describe('getProjectsForGuide', () => {
     it('offers empty projects and ones already on this guide', () => {
         const ids = getProjectsForGuide(

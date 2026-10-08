@@ -17,6 +17,7 @@ import {
 import { mDynamic } from '../../../i18n/mDynamic';
 import { AppStoreHeader } from '../components/AppStoreHeader';
 import { useDeveloperPortalContext } from '../DeveloperPortalContext';
+import { useDeveloperPortal } from '../useDeveloperPortal';
 import { USE_CASES } from '../guides/types';
 import type { UseCaseId } from '../guides/types';
 import { FEATURED_GUIDE, GUIDE_ORDER, summarizeProjects } from './buildHome';
@@ -131,7 +132,13 @@ const ProjectRow: React.FC<{ project: ProjectSummary; onOpen: () => void }> = ({
 const BuildHomePage: React.FC = () => {
     const history = useHistory();
     const { integrations, isLoadingIntegrations } = useDeveloperPortalContext();
-    const projects = summarizeProjects(integrations);
+    const { useMyApps } = useDeveloperPortal();
+    const { data: apps, isLoading: isLoadingApps } = useMyApps(
+        isLoadingIntegrations ? undefined : integrations
+    );
+    const appIntegrationIds = new Set((apps ?? []).map(app => app.integrationId));
+    const projects = summarizeProjects(integrations, appIntegrationIds);
+    const appCount = apps?.length ?? 0;
 
     return (
         <IonPage>
@@ -184,13 +191,13 @@ const BuildHomePage: React.FC = () => {
                         <h2 className="text-base font-semibold text-grayscale-900">
                             Continue where you left off
                         </h2>
-                        {isLoadingIntegrations ? (
+                        {isLoadingIntegrations || isLoadingApps ? (
                             <div className="flex justify-center py-10">
                                 <IonSpinner name="crescent" />
                             </div>
                         ) : projects.length === 0 ? (
                             <p className="mt-2 text-sm text-grayscale-500">
-                                Projects you start from a guide show up here.
+                                Guides you start show up here.
                             </p>
                         ) : (
                             <div className="mt-3 bg-white rounded-[20px] border border-grayscale-200 divide-y divide-grayscale-100 overflow-hidden">
@@ -202,6 +209,18 @@ const BuildHomePage: React.FC = () => {
                                     />
                                 ))}
                             </div>
+                        )}
+                        {appCount > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => history.push('/app-store/developer')}
+                                className="mt-4 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors inline-flex items-center gap-1"
+                            >
+                                {appCount === 1
+                                    ? 'Your app is in the Apps tab'
+                                    : `Your ${appCount} apps are in the Apps tab`}
+                                <IonIcon icon={arrowForwardOutline} />
+                            </button>
                         )}
                     </div>
                 </div>

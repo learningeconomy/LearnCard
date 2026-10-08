@@ -24,11 +24,13 @@ export const GuideProjectPicker: React.FC<GuideProjectPickerProps> = ({
     integrations,
 }) => {
     const history = useHistory();
-    const { useUpdateIntegration, useCreateIntegration } = useDeveloperPortal();
+    const { useUpdateIntegration, useCreateIntegration, useMyApps } = useDeveloperPortal();
+    const { data: apps } = useMyApps(integrations);
+    const appIntegrationIds = new Set((apps ?? []).map(app => app.integrationId));
     const updateIntegration = useUpdateIntegration();
     const createIntegration = useCreateIntegration();
     const guide = USE_CASES[guideType];
-    const existing = getProjectsForGuide(integrations, guideType);
+    const existing = getProjectsForGuide(integrations, guideType, appIntegrationIds);
 
     const [name, setName] = useState('');
     const [busyId, setBusyId] = useState<string | null>(null);

@@ -13,6 +13,11 @@ vi.mock('@ionic/react', () => ({
 }));
 vi.mock('../components/AppStoreHeader', () => ({ AppStoreHeader: () => null }));
 vi.mock('../../../i18n/mDynamic', () => ({ mDynamic: (key: string) => key }));
+vi.mock('../useDeveloperPortal', () => ({
+    useDeveloperPortal: () => ({
+        useMyApps: () => ({ data: [{ integrationId: 'app1' }], isLoading: false }),
+    }),
+}));
 vi.mock('../DeveloperPortalContext', () => ({
     useDeveloperPortalContext: () => ({
         isLoadingIntegrations: false,
@@ -23,6 +28,14 @@ vi.mock('../DeveloperPortalContext', () => ({
                 status: 'setup',
                 guideType: 'issue-credentials',
                 guideState: { currentStep: 1 },
+                whitelistedDomains: [],
+            },
+            {
+                id: 'app1',
+                name: 'Live Quiz App',
+                status: 'setup',
+                guideType: 'embed-app',
+                guideState: { currentStep: 0 },
                 whitelistedDomains: [],
             },
         ],
@@ -45,6 +58,12 @@ const renderPage = () =>
     );
 
 describe('BuildHomePage', () => {
+    it('keeps apps out of the guide list and points to the Apps tab', () => {
+        renderPage();
+        expect(screen.queryByText('Live Quiz App')).toBeNull();
+        expect(screen.getByText('Your app is in the Apps tab')).toBeInTheDocument();
+    });
+
     it('starts the AI app guide from the featured card', () => {
         renderPage();
         fireEvent.click(screen.getByRole('button', { name: /Build an app with AI/ }));

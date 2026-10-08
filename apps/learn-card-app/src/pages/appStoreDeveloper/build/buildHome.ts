@@ -37,12 +37,18 @@ const STATE_ORDER: Record<ProjectState, number> = {
     'app': 3,
 };
 
-export const summarizeProject = (integration: LCNIntegration): ProjectSummary => {
+export const summarizeProject = (
+    integration: LCNIntegration,
+    appIntegrationIds: ReadonlySet<string> = new Set()
+): ProjectSummary => {
     const base = `/app-store/developer/integrations/${integration.id}`;
     const guideState = readGuideState(integration);
     const guideType = isUseCase(integration.guideType) ? integration.guideType : undefined;
 
-    if (typeof guideState.publishedFromAppUrl === 'string') {
+    if (
+        appIntegrationIds.has(integration.id) ||
+        typeof guideState.publishedFromAppUrl === 'string'
+    ) {
         return { integration, state: 'app', guideType, path: base };
     }
     if ((integration.status as string) === 'active') {
@@ -61,9 +67,14 @@ export const summarizeProject = (integration: LCNIntegration): ProjectSummary =>
     return { integration, state: 'not-started', path: `${base}/guides` };
 };
 
-export const summarizeProjects = (integrations: LCNIntegration[]): ProjectSummary[] =>
+/** Projects for "Continue where you left off". Apps are excluded: they live in the Apps tab. */
+export const summarizeProjects = (
+    integrations: LCNIntegration[],
+    appIntegrationIds: ReadonlySet<string> = new Set()
+): ProjectSummary[] =>
     integrations
-        .map(summarizeProject)
+        .map(integration => summarizeProject(integration, appIntegrationIds))
+        .filter(summary => summary.state !== 'app')
         .sort(
             (a, b) =>
                 STATE_ORDER[a.state] - STATE_ORDER[b.state] ||
@@ -73,10 +84,11 @@ export const summarizeProjects = (integrations: LCNIntegration[]): ProjectSummar
 /** Projects a new guide can be set up in without disturbing another guide's progress. */
 export const getProjectsForGuide = (
     integrations: LCNIntegration[],
-    guideType: UseCaseId
+    guideType: UseCaseId,
+    appIntegrationIds: ReadonlySet<string> = new Set()
 ): LCNIntegration[] =>
     integrations.filter(integration => {
-        const summary = summarizeProject(integration);
+        const summary = summarizeProject(integration, appIntegrationIds);
         return (
             summary.state === 'not-started' ||
             (summary.state === 'in-progress' && summary.guideType === guideType)

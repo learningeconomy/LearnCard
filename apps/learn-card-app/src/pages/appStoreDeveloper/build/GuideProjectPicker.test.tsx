@@ -20,6 +20,7 @@ vi.mock('../useDeveloperPortal', () => ({
     useDeveloperPortal: () => ({
         useCreateIntegration: () => ({ mutateAsync: mocks.create }),
         useUpdateIntegration: () => ({ mutateAsync: mocks.update }),
+        useMyApps: () => ({ data: [{ integrationId: 'app-project' }] }),
     }),
 }));
 
@@ -65,14 +66,16 @@ describe('GuideProjectPicker', () => {
     });
 
     it('can reuse an empty project instead', async () => {
-        renderPicker([
-            {
-                id: 'empty',
-                name: 'Spare Project',
+        const project = (id: string, name: string): LCNIntegration =>
+            ({
+                id,
+                name,
                 status: 'setup',
                 whitelistedDomains: [],
-            } as LCNIntegration,
-        ]);
+            }) as Partial<LCNIntegration> as LCNIntegration;
+        renderPicker([project('empty', 'Spare Project'), project('app-project', 'My App')]);
+
+        expect(screen.queryByRole('button', { name: /My App/ })).toBeNull();
 
         fireEvent.click(screen.getByRole('button', { name: /Spare Project/ }));
 

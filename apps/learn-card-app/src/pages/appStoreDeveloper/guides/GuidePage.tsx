@@ -12,6 +12,9 @@ import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelect
 import { useDeveloperPortalContext } from '../DeveloperPortalContext';
 import { USE_CASES, UseCaseId } from './types';
 import { GuideProjectPicker } from '../build/GuideProjectPicker';
+import { useDeveloperPortal } from '../useDeveloperPortal';
+import { getListingMode } from '../submit/listingLifecycle';
+import { STATUS_LABELS, getAppStatusPath } from '../apps/myApps';
 
 import IssueCredentialsGuide from './useCases/IssueCredentialsGuide';
 import EmbedClaimGuide from './useCases/EmbedClaimGuide';
@@ -53,6 +56,10 @@ const GuidePage: React.FC = () => {
 
     // If no integration ID in URL, show a "select project" prompt instead of auto-selecting
     // (removed auto-redirect to first integration)
+
+    const { useListingsForIntegration } = useDeveloperPortal();
+    const { data: projectListings } = useListingsForIntegration(currentIntegrationId);
+    const submittedApp = projectListings?.find(listing => getListingMode(listing) !== 'draft');
 
     // If integration is active, redirect to dashboard (shouldn't be on guides page)
     // Cast to string since server can return 'active' but type may not include it
@@ -168,6 +175,22 @@ const GuidePage: React.FC = () => {
             <AppStoreHeader title={mDynamic(useCaseConfig.titleKey)} rightContent={headerContent} />
 
             <IonContent className="ion-padding">
+                {submittedApp && (
+                    <div className="max-w-3xl mx-auto mb-6 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex flex-col sm:flex-row sm:items-center gap-3 font-poppins">
+                        <p className="flex-1 text-sm text-emerald-800">
+                            <span className="font-medium">{submittedApp.display_name}</span> is
+                            already {STATUS_LABELS[getListingMode(submittedApp)].toLowerCase()}.
+                            This guide is here if you want to add more to it.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() => history.push(getAppStatusPath(submittedApp.listing_id))}
+                            className="py-2 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity shrink-0"
+                        >
+                            See App Status
+                        </button>
+                    </div>
+                )}
                 <GuideComponent
                     selectedIntegration={currentIntegration}
                     setSelectedIntegration={handleSetSelectedIntegration}
