@@ -26,6 +26,7 @@ import { useModal, ModalTypes, useDeviceTypeByWidth, getLogger } from 'learn-car
 import { useImageUpload } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { EmbedIframeModal } from '../../launchPad/EmbedIframeModal';
+import { consumePublishResume } from './publishResume';
 import { applyCapturedAction, isAppBuilderPreviewHost } from '@learncard/partner-connect-core';
 import type { CapturedAppManifest } from '@learncard/partner-connect-core';
 import type { IntegrationHint } from '../../hooks/post-message/useLearnCardPostMessage.handlers';
@@ -177,6 +178,11 @@ export const SubmitFromManifestPage: React.FC = () => {
     const [isLive, setIsLive] = useState(false);
     const [productionUrl, setProductionUrl] = useState('');
     const [isLocalhost, setIsLocalhost] = useState(false);
+    const [resumedAfterSignIn, setResumedAfterSignIn] = useState(false);
+
+    useEffect(() => {
+        if (consumePublishResume()) setResumedAfterSignIn(true);
+    }, []);
     const [uploadedIconUrl, setUploadedIconUrl] = useState<string | undefined>(undefined);
     const [manifestDiff, setManifestDiff] = useState<AppManifestDiff | null>(null);
     const [manifestVersion, setManifestVersion] = useState<number | null>(null);
@@ -989,6 +995,18 @@ export const SubmitFromManifestPage: React.FC = () => {
                     We captured everything your app uses. Review, test, and submit.
                 </p>
             </div>
+
+            {resumedAfterSignIn && (
+                <div className="mb-6 p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5">
+                    <IonIcon
+                        icon={checkmarkCircleOutline}
+                        className="text-emerald-500 text-lg mt-0.5 shrink-0"
+                    />
+                    <span className="text-sm text-emerald-700 leading-relaxed">
+                        You're signed in. Pick up right where you left off.
+                    </span>
+                </div>
+            )}
 
             {formError && (
                 <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3">
