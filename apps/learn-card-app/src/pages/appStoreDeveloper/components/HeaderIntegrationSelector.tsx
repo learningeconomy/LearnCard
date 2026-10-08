@@ -8,6 +8,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('header-integration-selector');
 
 import { useDeveloperPortalContext } from '../DeveloperPortalContext';
+import { useDeveloperPortal } from '../useDeveloperPortal';
 
 interface HeaderIntegrationSelectorProps {
     integrations: LCNIntegration[];
@@ -35,6 +36,15 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
     const { createIntegration, isCreatingIntegration } = useDeveloperPortalContext();
 
     const selectedIntegration = integrations.find(i => i.id === selectedId);
+
+    // Projects that hold an app are managed from the Apps tab, so they're left out
+    // here (unless one is the project you're already on).
+    const { useMyApps } = useDeveloperPortal();
+    const { data: apps } = useMyApps(isLoading ? undefined : integrations);
+    const appIntegrationIds = new Set((apps ?? []).map(app => app.integrationId));
+    const buildProjects = integrations.filter(
+        integration => !appIntegrationIds.has(integration.id) || integration.id === selectedId
+    );
 
     // Update dropdown position when opened
     useEffect(() => {
@@ -112,9 +122,9 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
                 className="fixed w-64 bg-white rounded-xl shadow-lg border border-gray-200 z-[9999] overflow-hidden"
                 style={{ top: dropdownPosition.top, right: dropdownPosition.right }}
             >
-                {integrations.length > 0 && (
+                {buildProjects.length > 0 && (
                     <div className="max-h-48 overflow-y-auto">
-                        {integrations.map(integration => {
+                        {buildProjects.map(integration => {
                             const isSetup = integration.status === 'setup' || !integration.status;
 
                             return (
