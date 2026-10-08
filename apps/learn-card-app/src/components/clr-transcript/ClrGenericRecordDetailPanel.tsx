@@ -1,9 +1,9 @@
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
 import { X } from 'lucide-react';
 import { useModal } from 'learn-card-base';
 import type {
-    AwardDisplayModel,
-    OtherAcademicRecordModel,
+    ClrNavigableRecord,
     ClrTranscriptDisplayModel,
 } from 'learn-card-base/helpers/credentials/clr/renderer';
 import { formatAchievementType } from 'learn-card-base/helpers/credentials/clr/helpers';
@@ -19,11 +19,13 @@ const ClrGenericRecordDetailPanel = ({
     model,
     onSelectRecord,
     adminMode = false,
+    prominentFields = false,
 }: {
-    record: AwardDisplayModel | OtherAcademicRecordModel;
+    record: ClrNavigableRecord['record'];
     model: ClrTranscriptDisplayModel;
     onSelectRecord?: (id: string) => void;
     adminMode?: boolean;
+    prominentFields?: boolean;
 }) => {
     const { closeModal } = useModal();
     const canonical = model.records.find(candidate => candidate.id === record.sourceCredentialId);
@@ -32,7 +34,7 @@ const ClrGenericRecordDetailPanel = ({
             <div className="flex items-start justify-between gap-3 rounded-b-[30px] bg-white px-6 py-5">
                 <div className="min-w-0">
                     <h2 className="break-words text-xl font-semibold text-grayscale-900">
-                        {record.name?.value ?? 'Record Details'}
+                        {record.name?.value ?? m['clrRenderer.recordDetails']()}
                     </h2>
                     {!!canonical?.achievementTypes.length && (
                         <p className="mt-1 text-sm text-grayscale-600">
@@ -44,7 +46,7 @@ const ClrGenericRecordDetailPanel = ({
                 </div>
                 <button
                     type="button"
-                    aria-label="Close record details"
+                    aria-label={m['clrRenderer.closeDetails']()}
                     onClick={closeModal}
                     className="shrink-0 rounded-full border border-grayscale-200 p-3 text-grayscale-600"
                 >
@@ -59,7 +61,7 @@ const ClrGenericRecordDetailPanel = ({
                 )}
                 <div className="space-y-4 rounded-[20px] border border-grayscale-200 bg-white p-4">
                     <ClrResultWithScaleList results={record.results} showResultType={adminMode} />
-                    <ClrRecordDetails record={canonical} />
+                    <ClrRecordDetails record={canonical} prominentFields={prominentFields} />
                     <ClrAlignmentList alignments={record.alignments} />
                     <ClrTranscriptEvidenceList evidence={record.evidence} />
                     <ClrRelationshipChips

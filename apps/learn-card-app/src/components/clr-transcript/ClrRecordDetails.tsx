@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
 
 import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
 import type {
@@ -35,7 +36,13 @@ const IdentifierRows = ({ identifiers }: { identifiers: ClrIdentifierModel[] }) 
             return (
                 <DetailRow
                     key={identifier.sourcePath}
-                    label={`${label || 'Identifier'}${hashed ? ' (hashed)' : ''}`}
+                    label={
+                        hashed
+                            ? m['clrRenderer.hashedIdentifier']({
+                                  label: label || m['clrRenderer.identifier'](),
+                              })
+                            : label || m['clrRenderer.identifier']()
+                    }
                 >
                     {value}
                 </DetailRow>
@@ -45,29 +52,38 @@ const IdentifierRows = ({ identifiers }: { identifiers: ClrIdentifierModel[] }) 
 );
 
 /** Displays supplied child-record facts without borrowing claims from its transcript publisher. */
-export const ClrRecordDetails = ({ record }: { record?: ClrNormalizedRecord }) => {
+export const ClrRecordDetails = ({
+    record,
+    prominentFields = false,
+}: {
+    record?: ClrNormalizedRecord;
+    prominentFields?: boolean;
+}) => {
     if (!record) return null;
 
     const profiles = [
-        { label: 'Issued by', profile: record.provenance.issuer },
-        { label: 'Assessed by', profile: record.provenance.assessor },
-        { label: 'Achievement created by', profile: record.provenance.creator },
+        { label: m['clrRenderer.issuedBy'](), profile: record.provenance.issuer },
+        { label: m['clrRenderer.assessedBy'](), profile: record.provenance.assessor },
+        { label: m['clrRenderer.createdBy'](), profile: record.provenance.creator },
     ].filter(({ profile }) => profile?.name?.value || profile?.id?.value || profile?.url?.value);
     const dates = [
-        { label: 'Activity started', date: record.dates.activityStart },
-        { label: 'Activity ended', date: record.dates.activityEnd },
-        { label: 'Awarded', date: record.dates.awarded },
-        { label: 'Valid from', date: record.dates.validFrom },
-        { label: 'Valid until', date: record.dates.validUntil },
+        { label: m['clrRenderer.activityStart'](), date: record.dates.activityStart },
+        { label: m['clrRenderer.activityEnd'](), date: record.dates.activityEnd },
+        { label: m['clrRenderer.awarded'](), date: record.dates.awarded },
+        { label: m['clrRenderer.validFrom'](), date: record.dates.validFrom },
+        { label: m['clrRenderer.validUntil'](), date: record.dates.validUntil },
     ].filter(({ date }) => date?.value);
+    const primaryFields = [
+        { label: m['clrRenderer.role'](), field: record.role },
+        { label: m['clrRenderer.narrative'](), field: record.narrative },
+        { label: m['clrRenderer.license'](), field: record.licenseNumber },
+    ].filter(({ field }) => field?.value);
     const metadata = [
-        { label: 'Field of study', field: record.fieldOfStudy },
-        { label: 'Specialization', field: record.specialization },
-        { label: 'Language', field: record.language },
-        { label: 'Version', field: record.version },
-        { label: 'Role', field: record.role },
-        { label: 'Learner narrative', field: record.narrative },
-        { label: 'License number', field: record.licenseNumber },
+        { label: m['clrRenderer.field'](), field: record.fieldOfStudy },
+        { label: m['clrRenderer.specialization'](), field: record.specialization },
+        { label: m['clrRenderer.language'](), field: record.language },
+        { label: m['clrRenderer.version'](), field: record.version },
+        ...(!prominentFields ? primaryFields : []),
     ].filter(({ field }) => field?.value);
     const achievementIdentifiers = record.achievementIdentifiers.filter(
         identifier => identifier.identifier?.value || identifier.identityHash?.value
@@ -78,7 +94,7 @@ export const ClrRecordDetails = ({ record }: { record?: ClrNormalizedRecord }) =
     const hasAdditional = Boolean(
         metadata.length ||
         record.tags.length ||
-        achievementIdentifiers.length ||
+        (!prominentFields && achievementIdentifiers.length) ||
         subjectIdentifiers.length ||
         record.subjectId?.value ||
         record.achievementId?.value
@@ -87,10 +103,35 @@ export const ClrRecordDetails = ({ record }: { record?: ClrNormalizedRecord }) =
     const criteriaUrl = safeWebUrl(criteria?.id?.value);
     const hasCriteria = Boolean(criteria?.narrative?.value || criteria?.id?.value);
 
-    if (!profiles.length && !dates.length && !hasCriteria && !hasAdditional) return null;
+    if (
+        !profiles.length &&
+        !dates.length &&
+        !hasCriteria &&
+        !hasAdditional &&
+        !primaryFields.length &&
+        !achievementIdentifiers.length
+    )
+        return null;
 
     return (
         <div className="space-y-5 rounded-2xl border border-grayscale-200 bg-white p-4 font-poppins">
+            {prominentFields && primaryFields.length > 0 && (
+                <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {primaryFields.map(({ label, field }) => (
+                        <DetailRow key={label} label={label}>
+                            {field?.value}
+                        </DetailRow>
+                    ))}
+                </dl>
+            )}
+            {prominentFields && achievementIdentifiers.length > 0 && (
+                <section className="space-y-2">
+                    <h4 className="text-sm font-semibold text-grayscale-900">
+                        {m['clrRenderer.achievementIdentifiers']()}
+                    </h4>
+                    <IdentifierRows identifiers={achievementIdentifiers} />
+                </section>
+            )}
             {profiles.length > 0 && (
                 <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     {profiles.map(({ label, profile }) => {
@@ -128,7 +169,9 @@ export const ClrRecordDetails = ({ record }: { record?: ClrNormalizedRecord }) =
             )}
             {hasCriteria && (
                 <section className="space-y-2">
-                    <h3 className="text-base font-semibold text-grayscale-900">Criteria</h3>
+                    <h3 className="text-base font-semibold text-grayscale-900">
+                        {m['clrRenderer.criteria']()}
+                    </h3>
                     {criteria?.narrative?.value && (
                         <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-grayscale-600">
                             {criteria.narrative.value}
@@ -141,11 +184,13 @@ export const ClrRecordDetails = ({ record }: { record?: ClrNormalizedRecord }) =
                             rel="noopener noreferrer"
                             className="text-sm text-grayscale-700 underline underline-offset-2 focus-visible:outline-emerald-600"
                         >
-                            View criteria
+                            {m['clrRenderer.viewCriteria']()}
                         </a>
                     ) : criteria?.id?.value ? (
                         <dl>
-                            <DetailRow label="Criteria reference">{criteria.id.value}</DetailRow>
+                            <DetailRow label={m['clrRenderer.criteriaReference']()}>
+                                {criteria.id.value}
+                            </DetailRow>
                         </dl>
                     ) : null}
                 </section>
@@ -153,7 +198,7 @@ export const ClrRecordDetails = ({ record }: { record?: ClrNormalizedRecord }) =
             {hasAdditional && (
                 <details className="group">
                     <summary className="cursor-pointer rounded-[20px] text-sm font-semibold text-grayscale-900 focus-visible:outline-emerald-600">
-                        Additional details
+                        {m['clrRenderer.additional']()}
                     </summary>
                     <div className="mt-4 space-y-4">
                         <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -163,7 +208,7 @@ export const ClrRecordDetails = ({ record }: { record?: ClrNormalizedRecord }) =
                                 </DetailRow>
                             ))}
                             {record.tags.length > 0 && (
-                                <DetailRow label="Tags">
+                                <DetailRow label={m['clrRenderer.tags']()}>
                                     <span className="flex flex-wrap gap-2">
                                         {record.tags.map(tag => (
                                             <span
@@ -177,18 +222,20 @@ export const ClrRecordDetails = ({ record }: { record?: ClrNormalizedRecord }) =
                                 </DetailRow>
                             )}
                             {record.achievementId?.value && (
-                                <DetailRow label="Achievement ID">
+                                <DetailRow label={m['clrRenderer.achievementId']()}>
                                     {record.achievementId.value}
                                 </DetailRow>
                             )}
                             {record.subjectId?.value && (
-                                <DetailRow label="Learner ID">{record.subjectId.value}</DetailRow>
+                                <DetailRow label={m['clrRenderer.learnerId']()}>
+                                    {record.subjectId.value}
+                                </DetailRow>
                             )}
                         </dl>
-                        {achievementIdentifiers.length > 0 && (
+                        {!prominentFields && achievementIdentifiers.length > 0 && (
                             <section className="space-y-2">
                                 <h4 className="text-sm font-semibold text-grayscale-900">
-                                    Achievement identifiers
+                                    {m['clrRenderer.achievementIdentifiers']()}
                                 </h4>
                                 <IdentifierRows identifiers={achievementIdentifiers} />
                             </section>
@@ -196,7 +243,7 @@ export const ClrRecordDetails = ({ record }: { record?: ClrNormalizedRecord }) =
                         {subjectIdentifiers.length > 0 && (
                             <section className="space-y-2">
                                 <h4 className="text-sm font-semibold text-grayscale-900">
-                                    Learner identifiers
+                                    {m['clrRenderer.learnerIdentifiers']()}
                                 </h4>
                                 <IdentifierRows identifiers={subjectIdentifiers} />
                             </section>

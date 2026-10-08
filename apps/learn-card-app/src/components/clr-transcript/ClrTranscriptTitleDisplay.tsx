@@ -1,4 +1,6 @@
 import React from 'react';
+import { inferClrLayout, groupClrRecords } from 'learn-card-base/helpers/credentials/clr/layout';
+import { getClrLayoutLabel, getClrSectionLabel } from '../clr-renderer/labels';
 import { getResultDisplayValue } from 'learn-card-base/helpers/credentials/clr/presentation';
 import { VC } from '@learncard/types';
 
@@ -66,6 +68,30 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
                 <span className="w-full px-[8px] text-center text-grayscale-900 text-[16px] font-notoSans font-semibold leading-[125%] line-clamp-2 break-words">
                     {fallbackTitle}
                 </span>
+            </div>
+        );
+    }
+
+    const layout = inferClrLayout(model.canonical).kind;
+    if (layout !== 'academic') {
+        return (
+            <div
+                className="w-full space-y-2 px-2 text-center font-poppins"
+                data-clr-layout={layout}
+            >
+                <p className="text-xs text-grayscale-600">{getClrLayoutLabel(layout)}</p>
+                <p className="break-words text-sm font-semibold text-grayscale-900">
+                    {model.canonical.collection.name?.value ||
+                        fallbackTitle ||
+                        getClrLayoutLabel(layout)}
+                </p>
+                <div className="flex flex-wrap justify-center gap-2 text-xs text-grayscale-600">
+                    {groupClrRecords(model.records, layout).map(section => (
+                        <span key={section.kind}>
+                            {getClrSectionLabel(section.kind, layout)}: {section.records.length}
+                        </span>
+                    ))}
+                </div>
             </div>
         );
     }

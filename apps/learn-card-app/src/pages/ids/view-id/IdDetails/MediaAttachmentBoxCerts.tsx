@@ -37,7 +37,7 @@ type Attachment = {
 };
 
 type AttachmentSourceContext = {
-    kind: 'transcript' | 'course' | 'program';
+    kind: 'transcript' | 'course' | 'program' | 'assessment';
     title: string;
     humanCode?: string;
     dateLabel?: string;

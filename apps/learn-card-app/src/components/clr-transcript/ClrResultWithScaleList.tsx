@@ -3,6 +3,7 @@ import {
     getResultDisplayValue,
 } from 'learn-card-base/helpers/credentials/clr/presentation';
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
 
 import ClrSourceInfo from './ClrSourceInfo';
 
@@ -296,6 +297,19 @@ const ClrResultWithScaleList: React.FC<{
                     </div>
 
                     <ResultScale result={result} />
+                    {result.requiredValue && (
+                        <p className="mt-2 text-xs text-grayscale-600">
+                            {m['clrRenderer.requiredValue']({ value: result.requiredValue.value })}
+                        </p>
+                    )}
+                    {result.requiredLevel && (
+                        <p className="mt-2 text-xs text-grayscale-600">
+                            {m['clrRenderer.requiredLevel']({
+                                value:
+                                    result.requiredRubricLevel?.name ?? result.requiredLevel.value,
+                            })}
+                        </p>
+                    )}
 
                     {result.alignments.length > 0 && (
                         <div className="mt-3 space-y-1">

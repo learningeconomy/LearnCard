@@ -1,0 +1,50 @@
+import React from 'react';
+
+import ClrTranscriptHeader from '../ClrTranscriptHeader';
+import ClrTranscriptEvidenceList from '../ClrTranscriptEvidenceList';
+import ClrTranscriptDetailModal from '../ClrTranscriptDetailModal';
+
+import { ModalTypes, useModal } from 'learn-card-base';
+
+import { ClrTranscriptSurface } from 'learn-card-base/helpers/credentials/clr/renderer';
+import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
+
+import { VC } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
+
+const AcademicClrCard: React.FC<{
+    model: ClrTranscriptDisplayModel;
+    boost: VC;
+    onViewDetails?: () => void;
+}> = ({ model, boost, onViewDetails }) => {
+    const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
+
+    const handleViewDetails = () => {
+        if (onViewDetails) {
+            onViewDetails();
+            return;
+        }
+        newModal(
+            <ClrTranscriptDetailModal
+                model={model}
+                boost={boost}
+                options={{ viewer: 'student', surface: ClrTranscriptSurface.Full }}
+            />
+        );
+    };
+
+    return (
+        <div className="space-y-3 overflow-y-auto">
+            <ClrTranscriptHeader model={model} />
+            <ClrTranscriptEvidenceList evidence={model.evidence} compact />
+            <button
+                className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                onClick={handleViewDetails}
+            >
+                {m['clrRenderer.viewDetails']()}
+            </button>
+        </div>
+    );
+};
+
+export default AcademicClrCard;
