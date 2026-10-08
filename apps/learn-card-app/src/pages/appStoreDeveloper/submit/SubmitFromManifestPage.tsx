@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { IonPage, IonContent, IonSpinner, IonIcon } from '@ionic/react';
 import {
@@ -27,9 +27,13 @@ import { useImageUpload } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { EmbedIframeModal } from '../../launchPad/EmbedIframeModal';
 import { consumePublishResume } from './publishResume';
-import { applyCapturedAction, isAppBuilderPreviewHost } from '@learncard/partner-connect-core';
+import {
+    applyCapturedAction,
+    decodeManifestFromUrl,
+    isAppBuilderPreviewHost,
+} from '@learncard/partner-connect-core';
 import type { CapturedAppManifest } from '@learncard/partner-connect-core';
-import type { IntegrationHint } from '../../hooks/post-message/useLearnCardPostMessage.handlers';
+import type { IntegrationHint } from '../../../hooks/post-message/useLearnCardPostMessage.handlers';
 import { useWallet } from 'learn-card-base';
 import {
     normalizeConsentRequest,
@@ -37,12 +41,20 @@ import {
 } from '@learncard/partner-connect-core';
 import type { ConsentRequest } from '@learncard/partner-connect-core';
 import { ConsentDesignerCard } from './ConsentDesignerCard';
-
-const decodeManifestFromUrl = (base64url: string): CapturedAppManifest => {
-    const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-    const json = atob(base64);
-    return JSON.parse(json);
-};
+import { ListingDetailsFields, StandOutSection } from './ListingEditor';
+import { StoreListingPreview } from './StoreListingPreview';
+import { AppCapabilitiesSummary } from './AppCapabilitiesSummary';
+import { describeManifest, getPermissionLabel } from './appCapabilities';
+import { DEFAULT_APP_ICON_URL } from './constants';
+import {
+    EMPTY_LISTING_DETAILS,
+    listingToData,
+    toListingUpdates,
+    toSubmissionUpdates,
+} from './listingForm';
+import type { ListingData, ListingDetails } from './listingForm';
+import { getFirstMissingField, getProductionUrlError } from './listingValidation';
+import type { ListingField } from './listingValidation';
 
 interface PreviewLaunchConfig {
     url: string;
@@ -95,9 +107,6 @@ const storeProvision = (appUrl: string, provision: StoredProvision): void => {
         // Storage unavailable — the diff check falls back to the host-name lookup.
     }
 };
-
-// Default app icon used across the developer portal (see PartnerDashboard fallback)
-const DEFAULT_APP_ICON_URL = 'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb';
 
 // Mirrors ALLOWED_IMAGE_DOMAINS in brain-service app-store routes — captured favicons
 // from arbitrary sites will be rejected server-side, so filter them client-side too.
@@ -155,7 +164,11 @@ const PERSONAL_FIELD_LABELS: Record<string, string> = {
 };
 
 import { ManifestDiffPanel } from '../dashboards/components/ManifestDiffPanel';
-import { AppManifestDiff } from '@learncard/types';
+import type { AppListingStatus, AppManifestDiff } from '@learncard/types';
+
+const AUTOSAVE_DELAY_MS = 800;
+
+type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
 export const SubmitFromManifestPage: React.FC = () => {
     const history = useHistory();
@@ -167,9 +180,33 @@ export const SubmitFromManifestPage: React.FC = () => {
     const prodUrlInputRef = useRef<HTMLInputElement>(null);
     const [appName, setAppName] = useState('');
     const [tagline, setTagline] = useState('');
-    const [isPreparing, setIsPreparing] = useState(false);
+    const [listingDetails, setListingDetails] = useState<ListingDetails>(EMPTY_LISTING_DETAILS);
+    const [saveState, setSaveState] = useState<SaveState>('idle');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showMissingHint, setShowMissingHint] = useState(false);
+    const [submittedIntegrationId, setSubmittedIntegrationId] = useState<string | null>(null);
+    const [existingListingStatus, setExistingListingStatus] = useState<AppListingStatus | null>(
+        null
+    );
+    const [rightPaneTab, setRightPaneTab] = useState<'store' | 'try'>('store');
+    const hasEditedListingRef = useRef(false);
+    const isSubmittingRef = useRef(false);
+    const restoredAppUrlRef = useRef<string | null>(null);
+    const iconFieldRef = useRef<HTMLDivElement>(null);
+    const nameInputRef = useRef<HTMLInputElement>(null);
+    const taglineInputRef = useRef<HTMLInputElement>(null);
+    const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
+    const contactEmailInputRef = useRef<HTMLInputElement>(null);
 
-    const { useIntegrations, useCreateIntegration, useCreateListing } = useDeveloperPortal();
+    const {
+        useIntegrations,
+        useCreateIntegration,
+        useCreateListing,
+        useUpdateListing,
+        useSubmitForReview,
+    } = useDeveloperPortal();
+    const updateListing = useUpdateListing();
+    const submitForReview = useSubmitForReview();
     const { newModal } = useModal();
     const { isDesktop } = useDeviceTypeByWidth();
     const [previewListingId, setPreviewListingId] = useState<string | null>(null);
@@ -231,6 +268,7 @@ export const SubmitFromManifestPage: React.FC = () => {
         onUpload: (_url, _file, data) => {
             if (data?.url) {
                 if (data.url.startsWith('https://')) {
+                    hasEditedListingRef.current = true;
                     setUploadedIconUrl(data.url);
                     setDisplayIconUrl(data.url);
                 } else {
@@ -320,7 +358,7 @@ export const SubmitFromManifestPage: React.FC = () => {
         const params = new URLSearchParams(location.search);
         const manifestParam = params.get('manifest');
         if (!manifestParam) {
-            setError('No manifest provided in URL.');
+            setError('This publish link is missing its app details.');
             return;
         }
 
@@ -577,6 +615,7 @@ export const SubmitFromManifestPage: React.FC = () => {
         try {
             const { listingId } = await ensureProvisioned();
             setIsLive(true);
+            setRightPaneTab('try');
 
             if (!isDesktop) {
                 newModal(
@@ -719,112 +758,170 @@ export const SubmitFromManifestPage: React.FC = () => {
         return () => window.removeEventListener('message', handleMessage);
     }, [isLive, manifest?.appUrl]);
 
-    const handleContinue = async () => {
-        if (!manifest) return;
-        setIsPreparing(true);
-        setFormError(null);
-        setProdUrlError(null);
-        try {
-            if (isLocalhost && !productionUrl) {
-                setProdUrlError('Enter the https:// domain where your app will live.');
-                setIsPreparing(false);
-                setTimeout(() => {
-                    prodUrlInputRef.current?.focus();
-                    prodUrlInputRef.current?.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center',
-                    });
-                }, 100);
-                return;
-            }
-            if (isLocalhost) {
+    const listingData = useMemo<ListingData>(
+        () => ({
+            ...listingDetails,
+            name: appName,
+            tagline,
+            iconUrl:
+                uploadedIconUrl && isAllowedIconUrl(uploadedIconUrl)
+                    ? uploadedIconUrl
+                    : DEFAULT_APP_ICON_URL,
+        }),
+        [listingDetails, appName, tagline, uploadedIconUrl]
+    );
+
+    const missingField = getFirstMissingField({
+        ...listingData,
+        needsProductionUrl: isLocalhost,
+        productionUrl,
+    });
+
+    const updateDetails = (updates: Partial<ListingDetails>) => {
+        hasEditedListingRef.current = true;
+        setListingDetails(prev => ({ ...prev, ...updates }));
+    };
+
+    // A previous visit may already have a listing for this app: bring back what was
+    // typed there, and point preview/apply at it instead of creating another listing.
+    useEffect(() => {
+        if (!manifest || restoredAppUrlRef.current === manifest.appUrl) return;
+        restoredAppUrlRef.current = manifest.appUrl;
+
+        const stored = readStoredProvision(manifest.appUrl);
+        if (!stored?.listingId) return;
+        const { integrationId, listingId } = stored;
+
+        let cancelled = false;
+        const restore = async () => {
+            try {
+                const wallet = await initWallet();
+                const listing = await wallet.invoke.getAppStoreListing(listingId);
+                if (cancelled || !listing) return;
+
                 try {
-                    const prodUrlObj = new URL(productionUrl);
-                    if (prodUrlObj.protocol !== 'https:') {
-                        setProdUrlError('Production URL must be HTTPS.');
-                        setIsPreparing(false);
-                        setTimeout(() => {
-                            prodUrlInputRef.current?.focus();
-                            prodUrlInputRef.current?.scrollIntoView({
-                                behavior: 'smooth',
-                                block: 'center',
-                            });
-                        }, 100);
-                        return;
-                    }
-                    if (prodUrlObj.pathname !== '/' || prodUrlObj.search || prodUrlObj.hash) {
-                        setProdUrlError(
-                            'Production URL must be an origin only (no path or query).'
-                        );
-                        setIsPreparing(false);
-                        setTimeout(() => {
-                            prodUrlInputRef.current?.focus();
-                            prodUrlInputRef.current?.scrollIntoView({
-                                behavior: 'smooth',
-                                block: 'center',
-                            });
-                        }, 100);
-                        return;
-                    }
+                    const config = JSON.parse(listing.launch_config_json) as PreviewLaunchConfig;
+                    setCurrentLaunchConfig(config);
+                    if (config.contractUri) setContractUri(config.contractUri);
                 } catch {
-                    setProdUrlError('Invalid production URL.');
-                    setIsPreparing(false);
-                    setTimeout(() => {
-                        prodUrlInputRef.current?.focus();
-                        prodUrlInputRef.current?.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'center',
-                        });
-                    }, 100);
+                    // An unreadable launch config is rebuilt from the captured app on submit.
+                }
+                setPreviewIntegrationId(integrationId);
+                setPreviewListingId(listingId);
+
+                if (listing.app_listing_status !== 'DRAFT') {
+                    setExistingListingStatus(listing.app_listing_status);
                     return;
                 }
-            }
-            const finalUrl = isLocalhost ? productionUrl : manifest.appUrl;
-            const appUrlObj = new URL(finalUrl);
-            const host = appUrlObj.host;
+                if (hasEditedListingRef.current) return;
 
-            let integrationId =
-                previewIntegrationId ||
-                readStoredProvision(manifest.appUrl)?.integrationId ||
-                integrations?.find(i => i.name === host)?.id;
-            if (!integrationId) {
-                integrationId = await createIntegration.mutateAsync(host);
+                const { name, tagline: savedTagline, iconUrl, ...details } = listingToData(listing);
+                if (name) setAppName(name);
+                if (savedTagline) setTagline(savedTagline);
+                if (iconUrl !== DEFAULT_APP_ICON_URL && isAllowedIconUrl(iconUrl)) {
+                    setUploadedIconUrl(iconUrl);
+                    setDisplayIconUrl(iconUrl);
+                }
+                setListingDetails(details);
+            } catch (e) {
+                log.debug('listing.restore.failed', e, { listingId });
             }
+        };
 
-            storeProvision(manifest.appUrl, {
+        restore();
+        return () => {
+            cancelled = true;
+        };
+        // Runs once per app: capture updates change `manifest` but not which listing to restore.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [manifest?.appUrl]);
+
+    useEffect(() => {
+        if (!manifest || !hasEditedListingRef.current || existingListingStatus) return;
+
+        const timer = setTimeout(async () => {
+            if (isSubmittingRef.current) return;
+            setSaveState('saving');
+            try {
+                const { listingId } = await ensureProvisioned();
+                await updateListing.mutateAsync({
+                    listingId,
+                    updates: toListingUpdates(listingData),
+                });
+                setSaveState('saved');
+            } catch (e) {
+                log.warn('listing.autosave.failed', e);
+                setSaveState('error');
+            }
+        }, AUTOSAVE_DELAY_MS);
+
+        return () => clearTimeout(timer);
+        // Debounced on listing edits only; ensureProvisioned is recreated every render.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [listingData]);
+
+    const focusField = (field: ListingField) => {
+        const refs: Record<ListingField, React.RefObject<HTMLElement>> = {
+            icon: iconFieldRef,
+            name: nameInputRef,
+            productionUrl: prodUrlInputRef,
+            tagline: taglineInputRef,
+            description: descriptionInputRef,
+            contactEmail: contactEmailInputRef,
+        };
+        const element = refs[field].current;
+        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element?.focus({ preventScroll: true });
+    };
+
+    const handleSubmit = async () => {
+        if (!manifest || isSubmitting) return;
+        setFormError(null);
+
+        if (missingField) {
+            setShowMissingHint(true);
+            focusField(missingField.field);
+            return;
+        }
+
+        const urlError = isLocalhost ? getProductionUrlError(productionUrl) : null;
+        if (urlError) {
+            setProdUrlError(urlError);
+            focusField('productionUrl');
+            return;
+        }
+
+        isSubmittingRef.current = true;
+        setIsSubmitting(true);
+        try {
+            const { integrationId, listingId } = await ensureProvisioned();
+            const finalUrl = isLocalhost ? new URL(productionUrl.trim()).origin : manifest.appUrl;
+            await updateListing.mutateAsync({
+                listingId,
                 integrationId,
-                ...(previewListingId ? { listingId: previewListingId } : {}),
+                updates: toSubmissionUpdates(listingData, {
+                    url: finalUrl,
+                    permissions: manifest.permissions,
+                    contractUri: contractUri ?? currentLaunchConfig?.contractUri,
+                }),
             });
+            await submitForReview.mutateAsync(listingId);
 
-            history.push({
-                pathname: previewListingId
-                    ? `/app-store/developer/integrations/${integrationId}/apps/${previewListingId}`
-                    : `/app-store/developer/integrations/${integrationId}/apps/new`,
-                state: {
-                    capturedManifest: manifest,
-                    listing: {
-                        display_name: appName,
-                        tagline: tagline,
-                        icon_url: isAllowedIconUrl(uploadedIconUrl)
-                            ? uploadedIconUrl
-                            : DEFAULT_APP_ICON_URL,
-                        launch_type: 'EMBEDDED_IFRAME',
-                        launch_config_json: JSON.stringify({
-                            url: finalUrl,
-                            permissions: manifest.permissions,
-                            ...(contractUri ? { contractUri } : {}),
-                        }),
-                    },
-                },
-            });
+            storeProvision(manifest.appUrl, { integrationId, listingId });
+            [
+                SESSION_MANIFEST_KEY,
+                SESSION_MANIFEST_SOURCE_KEY,
+                'lc-submit-designer-key',
+                'lc-submit-designer-scopes',
+            ].forEach(key => sessionStorage.removeItem(key));
+
+            setSubmittedIntegrationId(integrationId);
         } catch (err) {
-            setFormError(
-                toFriendlyError(
-                    err,
-                    "We couldn't prepare your app for submission. Please try again."
-                )
-            );
-            setIsPreparing(false);
+            isSubmittingRef.current = false;
+            log.error('listing.submit.failed', err);
+            setFormError(toFriendlyError(err, "We couldn't submit your app. Please try again."));
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -957,7 +1054,7 @@ export const SubmitFromManifestPage: React.FC = () => {
                             <IonIcon icon={alertCircleOutline} className="w-12 h-12 text-red-500" />
                             <div>
                                 <h2 className="text-lg font-semibold text-red-900 mb-1">
-                                    Invalid Link
+                                    This link doesn't work
                                 </h2>
                                 <p className="text-sm text-red-700">{error}</p>
                             </div>
@@ -987,12 +1084,67 @@ export const SubmitFromManifestPage: React.FC = () => {
         );
     }
 
+    if (submittedIntegrationId) {
+        return (
+            <IonPage>
+                <AppStoreHeader title="Publish your app" />
+                <IonContent>
+                    <div className="min-h-full flex items-center justify-center p-6">
+                        <div className="w-full max-w-[480px] bg-white rounded-[20px] border border-grayscale-200 shadow-sm p-8 text-center font-poppins animate-fade-in-up">
+                            <img
+                                src={listingData.iconUrl}
+                                alt=""
+                                className="w-20 h-20 rounded-2xl object-cover border border-grayscale-200 mx-auto mb-5"
+                            />
+                            <h1 className="text-xl font-semibold text-grayscale-900 mb-2">
+                                {appName} is in review
+                            </h1>
+                            <p className="text-sm text-grayscale-600 leading-relaxed mb-6">
+                                We'll take a look and let you know when it's live in the store.
+                            </p>
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    history.push(
+                                        `/app-store/developer/integrations/${submittedIntegrationId}`
+                                    )
+                                }
+                                className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                            >
+                                Go to Your App
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => history.push('/app-store/developer')}
+                                className="mt-4 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                            >
+                                Back to Developer Portal
+                            </button>
+                        </div>
+                    </div>
+                </IonContent>
+            </IonPage>
+        );
+    }
+
+    const showConsentSetup =
+        manifest.permissions.includes('request_consent') &&
+        (manifest.consentRequests.length === 0 || Boolean(designerConsentScopes)) &&
+        !integrationHints.some(h => h.type === 'consent-not-configured');
+
+    const saveStatusText: Record<SaveState, string> = {
+        idle: '',
+        saving: 'Saving…',
+        saved: 'All changes saved',
+        error: "Couldn't save. We'll try again when you edit.",
+    };
+
     const leftPaneContent = (
         <div className={`${isDesktop ? 'max-w-xl mx-auto' : 'max-w-2xl mx-auto'} pb-12 w-full`}>
             <div className="text-center mb-8 mt-4">
                 <h1 className="text-2xl font-semibold text-grayscale-900 mb-2">Publish your app</h1>
                 <p className="text-sm text-grayscale-600">
-                    We captured everything your app uses. Review, test, and submit.
+                    Add your store details, then submit. Changes save as you go.
                 </p>
             </div>
 
@@ -1015,6 +1167,21 @@ export const SubmitFromManifestPage: React.FC = () => {
                         className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"
                     />
                     <p className="text-sm text-red-700">{formError}</p>
+                </div>
+            )}
+
+            {existingListingStatus && (
+                <div className="mb-6 p-3 bg-grayscale-10 border border-grayscale-200 rounded-2xl flex items-start gap-2.5">
+                    <IonIcon
+                        icon={checkmarkCircleOutline}
+                        className="text-emerald-500 text-lg mt-0.5 shrink-0"
+                    />
+                    <span className="text-sm text-grayscale-700 leading-relaxed">
+                        {existingListingStatus === 'PENDING_REVIEW'
+                            ? 'This app is already in review.'
+                            : 'This app is already in the store.'}{' '}
+                        To change its listing, go to your app.
+                    </span>
                 </div>
             )}
 
@@ -1086,10 +1253,10 @@ export const SubmitFromManifestPage: React.FC = () => {
                 <div className="bg-white rounded-2xl border border-grayscale-300 p-6 mb-6 shadow-sm flex items-center justify-between">
                     <div>
                         <h3 className="text-base font-semibold text-grayscale-900 mb-1">
-                            Preview in LearnCard
+                            Try your app
                         </h3>
                         <p className="text-sm text-grayscale-600">
-                            Run your app inside LearnCard. We'll keep capturing what it uses.
+                            Run it inside LearnCard to make sure everything works.
                         </p>
                     </div>
                     <button
@@ -1116,9 +1283,14 @@ export const SubmitFromManifestPage: React.FC = () => {
                 </div>
             )}
 
-            <div className="bg-white rounded-2xl border border-grayscale-300 p-6 mb-6 shadow-sm">
-                <div className="flex items-start gap-5 mb-6">
-                    <div className="flex flex-col items-center gap-1.5 w-20 shrink-0">
+            <div className="bg-white rounded-[20px] border border-grayscale-200 p-6 mb-6">
+                <h2 className="text-base font-semibold text-grayscale-900 mb-5">Your listing</h2>
+                <div className="flex items-start gap-5 mb-5">
+                    <div
+                        ref={iconFieldRef}
+                        tabIndex={-1}
+                        className="flex flex-col items-center gap-1.5 w-20 shrink-0 outline-none"
+                    >
                         <div
                             className="relative group cursor-pointer w-16 h-16"
                             onClick={handleIconUpload}
@@ -1167,9 +1339,14 @@ export const SubmitFromManifestPage: React.FC = () => {
                             App Name
                         </label>
                         <input
+                            ref={nameInputRef}
                             type="text"
                             value={appName}
-                            onChange={e => setAppName(e.target.value)}
+                            maxLength={50}
+                            onChange={e => {
+                                hasEditedListingRef.current = true;
+                                setAppName(e.target.value);
+                            }}
                             className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                             placeholder="My Awesome App"
                         />
@@ -1222,351 +1399,394 @@ export const SubmitFromManifestPage: React.FC = () => {
                         Tagline
                     </label>
                     <input
+                        ref={taglineInputRef}
                         type="text"
                         value={tagline}
-                        onChange={e => setTagline(e.target.value)}
+                        maxLength={100}
+                        onChange={e => {
+                            hasEditedListingRef.current = true;
+                            setTagline(e.target.value);
+                        }}
                         className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                         placeholder="One sentence about your app"
+                    />
+                </div>
+
+                <div className="mt-5">
+                    <ListingDetailsFields
+                        details={listingDetails}
+                        onChange={updateDetails}
+                        descriptionRef={descriptionInputRef}
                     />
                 </div>
             </div>
 
             <div className="mb-6">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-semibold text-grayscale-900 flex items-center gap-2">
-                        <IonIcon
-                            icon={checkmarkCircleOutline}
-                            className="w-4 h-4 text-emerald-500"
-                        />
-                        Captured from your app
-                    </h3>
-                    {isLive && (
-                        <div className="flex items-center gap-2 text-xs font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            Watching your app...
+                <StandOutSection
+                    details={listingDetails}
+                    onChange={updateDetails}
+                    contactEmailRef={contactEmailInputRef}
+                />
+            </div>
+
+            {(integrationHints.length > 0 || showConsentSetup) && (
+                <div className="mb-6 space-y-3">
+                    {integrationHints.map(hint => {
+                        if (hint.type === 'consent-not-configured') {
+                            return (
+                                <ConsentDesignerCard
+                                    key={hint.type}
+                                    appName={appName}
+                                    onEnable={handleEnableConsent}
+                                    onDismiss={() => dismissHint(hint.type)}
+                                    enabledScopes={designerConsentScopes}
+                                />
+                            );
+                        }
+                        return (
+                            <div
+                                key={hint.type}
+                                className="bg-amber-50 border border-amber-100 rounded-2xl p-5 relative animate-fade-in-up"
+                            >
+                                <button
+                                    onClick={() => dismissHint(hint.type)}
+                                    className="absolute top-3 right-3 p-1 text-amber-600 hover:text-amber-800 hover:bg-amber-100 rounded-full transition-colors"
+                                >
+                                    <IonIcon icon={closeOutline} className="w-4 h-4" />
+                                </button>
+                                <div className="flex items-start gap-3 mb-3">
+                                    <IonIcon
+                                        icon={flashOutline}
+                                        className="w-5 h-5 text-amber-500 shrink-0 mt-0.5"
+                                    />
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-grayscale-900 mb-1">
+                                            {hint.title}
+                                        </h4>
+                                        <p className="text-sm text-grayscale-600">
+                                            {hint.description}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="relative">
+                                    <pre className="bg-white border border-amber-200 rounded-xl p-3 text-xs font-mono text-grayscale-800 whitespace-pre overflow-x-auto">
+                                        {hint.snippet}
+                                    </pre>
+                                    <button
+                                        onClick={() => handleCopySnippet(hint.snippet, hint.type)}
+                                        className="absolute top-2 right-2 py-1.5 px-3 rounded-[20px] border border-grayscale-300 bg-white text-grayscale-700 font-medium text-xs hover:bg-grayscale-10 transition-colors flex items-center gap-1.5 shadow-sm"
+                                    >
+                                        {copiedHint === hint.type ? (
+                                            <>
+                                                <IonIcon
+                                                    icon={checkmarkOutline}
+                                                    className="w-3.5 h-3.5 text-emerald-500"
+                                                />
+                                                Copied
+                                            </>
+                                        ) : (
+                                            <>
+                                                <IonIcon
+                                                    icon={copyOutline}
+                                                    className="w-3.5 h-3.5"
+                                                />
+                                                Copy code
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
+
+                    {showConsentSetup && (
+                        <div>
+                            {showConsentDesigner || designerConsentScopes ? (
+                                <ConsentDesignerCard
+                                    appName={appName}
+                                    onEnable={handleEnableConsent}
+                                    onDismiss={() => {
+                                        setShowConsentDesigner(false);
+                                        setDesignerConsentScopes(null);
+                                        setDesignerConsentKey(null);
+                                        sessionStorage.removeItem('lc-submit-designer-key');
+                                        sessionStorage.removeItem('lc-submit-designer-scopes');
+                                    }}
+                                    enabledScopes={designerConsentScopes}
+                                />
+                            ) : (
+                                <div className="bg-white rounded-[20px] border border-grayscale-200 p-5 flex items-center justify-between gap-4">
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-grayscale-900 mb-1">
+                                            Choose what your app asks for
+                                        </h4>
+                                        <p className="text-xs text-grayscale-600">
+                                            Your app asks people for permission, but hasn't said
+                                            what for yet.
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowConsentDesigner(true)}
+                                        type="button"
+                                        className="shrink-0 text-sm font-medium text-grayscale-900 hover:underline flex items-center gap-1"
+                                    >
+                                        Set It Up{' '}
+                                        <IonIcon icon={arrowForwardOutline} className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
+            )}
 
-                {integrationHints.length > 0 && (
-                    <div className="mb-4 space-y-3">
-                        {integrationHints.map(hint => {
-                            if (hint.type === 'consent-not-configured') {
-                                return (
-                                    <ConsentDesignerCard
-                                        key={hint.type}
-                                        appName={appName}
-                                        onEnable={handleEnableConsent}
-                                        onDismiss={() => dismissHint(hint.type)}
-                                        enabledScopes={designerConsentScopes}
-                                    />
-                                );
-                            }
-                            return (
+            <AppCapabilitiesSummary lines={describeManifest(manifest)} isWatching={isLive}>
+                {capabilityRows.length > 0 && (
+                    <div className="space-y-4">
+                        {capabilityRows.map(row => (
+                            <div key={row.id} className="flex items-start gap-3" title={row.title}>
                                 <div
-                                    key={hint.type}
-                                    className="bg-amber-50 border border-amber-100 rounded-2xl p-5 relative animate-fade-in-up"
+                                    className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors duration-500 ${
+                                        row.highlight
+                                            ? 'bg-emerald-50 text-emerald-600'
+                                            : 'bg-grayscale-100 text-grayscale-700'
+                                    }`}
                                 >
-                                    <button
-                                        onClick={() => dismissHint(hint.type)}
-                                        className="absolute top-3 right-3 p-1 text-amber-600 hover:text-amber-800 hover:bg-amber-100 rounded-full transition-colors"
-                                    >
-                                        <IonIcon icon={closeOutline} className="w-4 h-4" />
-                                    </button>
-                                    <div className="flex items-start gap-3 mb-3">
-                                        <IonIcon
-                                            icon={flashOutline}
-                                            className="w-5 h-5 text-amber-500 shrink-0 mt-0.5"
-                                        />
-                                        <div>
-                                            <h4 className="text-sm font-semibold text-grayscale-900 mb-1">
-                                                {hint.title}
-                                            </h4>
-                                            <p className="text-sm text-grayscale-600">
-                                                {hint.description}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="relative">
-                                        <pre className="bg-white border border-amber-200 rounded-xl p-3 text-xs font-mono text-grayscale-800 whitespace-pre overflow-x-auto">
-                                            {hint.snippet}
-                                        </pre>
-                                        <button
-                                            onClick={() =>
-                                                handleCopySnippet(hint.snippet, hint.type)
-                                            }
-                                            className="absolute top-2 right-2 py-1.5 px-3 rounded-[20px] border border-grayscale-300 bg-white text-grayscale-700 font-medium text-xs hover:bg-grayscale-10 transition-colors flex items-center gap-1.5 shadow-sm"
-                                        >
-                                            {copiedHint === hint.type ? (
-                                                <>
-                                                    <IonIcon
-                                                        icon={checkmarkOutline}
-                                                        className="w-3.5 h-3.5 text-emerald-500"
-                                                    />
-                                                    Copied ✓
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <IonIcon
-                                                        icon={copyOutline}
-                                                        className="w-3.5 h-3.5"
-                                                    />
-                                                    Copy code
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
+                                    <IonIcon icon={row.icon} className="w-4 h-4" />
                                 </div>
-                            );
-                        })}
+                                <div className="pt-1.5">
+                                    <div className="text-sm text-grayscale-800 leading-tight">
+                                        {row.text}
+                                    </div>
+                                    {row.subNode}
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 )}
 
-                <div className="space-y-4">
-                    {manifest.permissions.includes('request_consent') &&
-                        (manifest.consentRequests.length === 0 || designerConsentScopes) &&
-                        !integrationHints.some(h => h.type === 'consent-not-configured') && (
-                            <div className="mb-4">
-                                {showConsentDesigner || designerConsentScopes ? (
-                                    <ConsentDesignerCard
-                                        appName={appName}
-                                        onEnable={handleEnableConsent}
-                                        onDismiss={() => {
-                                            setShowConsentDesigner(false);
-                                            setDesignerConsentScopes(null);
-                                            setDesignerConsentKey(null);
-                                            sessionStorage.removeItem('lc-submit-designer-key');
-                                            sessionStorage.removeItem('lc-submit-designer-scopes');
-                                        }}
-                                        enabledScopes={designerConsentScopes}
-                                    />
-                                ) : (
-                                    <div className="bg-white rounded-2xl border border-grayscale-300 p-5 flex items-center justify-between shadow-sm">
-                                        <div>
-                                            <h4 className="text-sm font-semibold text-grayscale-900 mb-1">
-                                                Consent not configured
-                                            </h4>
-                                            <p className="text-xs text-grayscale-600">
-                                                Your app requests consent, but hasn't set up what to
-                                                ask for.
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={() => setShowConsentDesigner(true)}
-                                            className="text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors flex items-center gap-1"
-                                        >
-                                            Set up consent{' '}
-                                            <IonIcon
-                                                icon={arrowForwardOutline}
-                                                className="w-4 h-4"
-                                            />
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                    {manifest.permissions.length > 0 && (
-                        <div
-                            className={`bg-white rounded-2xl border p-5 transition-colors duration-500 ${
-                                recentlyCaptured.has('permissions')
-                                    ? 'border-emerald-400 ring-1 ring-emerald-400'
-                                    : 'border-grayscale-300'
-                            }`}
-                        >
-                            <h4 className="text-xs font-medium text-grayscale-700 mb-3 uppercase tracking-wider">
-                                Permissions
-                            </h4>
-                            <div className="flex flex-wrap gap-2">
-                                {manifest.permissions.map(p => (
-                                    <span
-                                        key={p}
-                                        className="px-2.5 py-1 bg-grayscale-100 text-grayscale-700 rounded-lg text-xs font-medium"
-                                    >
-                                        {p}
-                                    </span>
-                                ))}
-                            </div>
+                {manifest.permissions.length > 0 && (
+                    <div
+                        className={`rounded-2xl border p-4 transition-colors duration-500 ${
+                            recentlyCaptured.has('permissions')
+                                ? 'border-emerald-400 ring-1 ring-emerald-400'
+                                : 'border-grayscale-200'
+                        }`}
+                    >
+                        <h4 className="text-xs font-medium text-grayscale-700 mb-3">
+                            What it can do in LearnCard
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                            {manifest.permissions.map(permission => (
+                                <span
+                                    key={permission}
+                                    className="px-2.5 py-1 bg-grayscale-100 text-grayscale-700 rounded-full text-xs font-medium"
+                                >
+                                    {getPermissionLabel(permission)}
+                                </span>
+                            ))}
                         </div>
-                    )}
+                    </div>
+                )}
 
-                    {manifest.templates.length > 0 && (
-                        <div
-                            className={`bg-white rounded-2xl border p-5 transition-colors duration-500 ${
-                                recentlyCaptured.has('templates')
-                                    ? 'border-emerald-400 ring-1 ring-emerald-400'
-                                    : 'border-grayscale-300'
-                            }`}
-                        >
-                            <h4 className="text-xs font-medium text-grayscale-700 mb-3 uppercase tracking-wider">
-                                Credential Templates
-                            </h4>
-                            <p className="text-xs text-grayscale-500 mb-4">
-                                Created automatically the first time your app sends it.
-                            </p>
-                            <div className="space-y-3">
-                                {manifest.templates.map(t => (
-                                    <div
-                                        key={t.alias}
-                                        className="p-3 bg-grayscale-10 rounded-xl border border-grayscale-200"
-                                    >
-                                        <div className="font-medium text-sm text-grayscale-900 mb-1">
-                                            {'name' in t.template ? t.template.name : t.alias}
-                                        </div>
-                                        <div className="text-xs text-grayscale-600 flex items-center gap-3">
-                                            <span>
-                                                Alias:{' '}
-                                                <code className="bg-grayscale-200 px-1 rounded">
-                                                    {t.alias}
-                                                </code>
-                                            </span>
-                                            {'achievementType' in t.template &&
-                                                t.template.achievementType && (
-                                                    <span>Type: {t.template.achievementType}</span>
-                                                )}
-                                        </div>
+                {manifest.templates.length > 0 && (
+                    <div
+                        className={`rounded-2xl border p-4 transition-colors duration-500 ${
+                            recentlyCaptured.has('templates')
+                                ? 'border-emerald-400 ring-1 ring-emerald-400'
+                                : 'border-grayscale-200'
+                        }`}
+                    >
+                        <h4 className="text-xs font-medium text-grayscale-700 mb-1">
+                            Credentials it gives out
+                        </h4>
+                        <p className="text-xs text-grayscale-500 mb-3">
+                            Set up automatically the first time your app sends one.
+                        </p>
+                        <div className="space-y-2">
+                            {manifest.templates.map(t => (
+                                <div
+                                    key={t.alias}
+                                    className="p-3 bg-grayscale-10 rounded-xl border border-grayscale-200"
+                                >
+                                    <div className="font-medium text-sm text-grayscale-900">
+                                        {'name' in t.template ? t.template.name : t.alias}
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {manifest.consentRequests.length > 0 && (
-                        <div
-                            className={`bg-white rounded-2xl border p-5 transition-colors duration-500 ${
-                                recentlyCaptured.has('consentRequests')
-                                    ? 'border-emerald-400 ring-1 ring-emerald-400'
-                                    : 'border-grayscale-300'
-                            }`}
-                        >
-                            <h4 className="text-xs font-medium text-grayscale-700 mb-3 uppercase tracking-wider">
-                                Consent Requests
-                            </h4>
-                            <div className="space-y-3">
-                                {manifest.consentRequests.map((c, i) => (
-                                    <div
-                                        key={i}
-                                        className="p-3 bg-grayscale-10 rounded-xl border border-grayscale-200"
-                                    >
-                                        {c.reason && (
-                                            <div className="text-sm text-grayscale-900 mb-2 italic">
-                                                "{c.reason}"
+                                    {'achievementType' in t.template &&
+                                        t.template.achievementType && (
+                                            <div className="text-xs text-grayscale-500 mt-0.5">
+                                                {t.template.achievementType}
                                             </div>
                                         )}
-                                        <div className="flex flex-wrap gap-2">
-                                            {c.scopes.read.personalFields.map(f => (
-                                                <span
-                                                    key={`read-pf-${f}`}
-                                                    className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-xs flex items-center gap-1"
-                                                >
-                                                    <IonIcon
-                                                        icon={shieldCheckmarkOutline}
-                                                        className="w-3 h-3"
-                                                    />{' '}
-                                                    Read: {f}
-                                                </span>
-                                            ))}
-                                            {c.scopes.read.credentialCategories.map(cat => (
-                                                <span
-                                                    key={`read-cat-${cat}`}
-                                                    className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-xs flex items-center gap-1"
-                                                >
-                                                    <IonIcon
-                                                        icon={shieldCheckmarkOutline}
-                                                        className="w-3 h-3"
-                                                    />{' '}
-                                                    Read: {cat}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                                </div>
+                            ))}
                         </div>
-                    )}
+                    </div>
+                )}
 
-                    <div className="bg-white rounded-2xl border border-grayscale-300 p-5 shadow-sm">
-                        <h4 className="text-xs font-medium text-grayscale-700 mb-4 uppercase tracking-wider">
-                            What your app does
+                {manifest.consentRequests.length > 0 && (
+                    <div
+                        className={`rounded-2xl border p-4 transition-colors duration-500 ${
+                            recentlyCaptured.has('consentRequests')
+                                ? 'border-emerald-400 ring-1 ring-emerald-400'
+                                : 'border-grayscale-200'
+                        }`}
+                    >
+                        <h4 className="text-xs font-medium text-grayscale-700 mb-3">
+                            What it asks permission for
                         </h4>
-                        {capabilityRows.length === 0 ? (
-                            <p className="text-sm text-grayscale-600">
-                                Run your app in the preview and we'll list what it does here.
-                            </p>
-                        ) : (
-                            <div className="space-y-4">
-                                {capabilityRows.map(row => (
-                                    <div
-                                        key={row.id}
-                                        className="flex items-start gap-3"
-                                        title={row.title}
-                                    >
-                                        <div
-                                            className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors duration-500 ${
-                                                row.highlight
-                                                    ? 'bg-emerald-50 text-emerald-600'
-                                                    : 'bg-grayscale-100 text-grayscale-700'
-                                            }`}
-                                        >
-                                            <IonIcon icon={row.icon} className="w-4 h-4" />
+                        <div className="space-y-2">
+                            {manifest.consentRequests.map((c, i) => (
+                                <div
+                                    key={i}
+                                    className="p-3 bg-grayscale-10 rounded-xl border border-grayscale-200"
+                                >
+                                    {c.reason && (
+                                        <div className="text-sm text-grayscale-900 mb-2">
+                                            "{c.reason}"
                                         </div>
-                                        <div className="pt-1.5">
-                                            <div className="text-sm text-grayscale-800 leading-tight">
-                                                {row.text}
-                                            </div>
-                                            {row.subNode}
-                                        </div>
+                                    )}
+                                    <div className="flex flex-wrap gap-2">
+                                        {[
+                                            ...c.scopes.read.personalFields.map(
+                                                field => PERSONAL_FIELD_LABELS[field] || field
+                                            ),
+                                            ...c.scopes.read.credentialCategories,
+                                        ].map(item => (
+                                            <span
+                                                key={item}
+                                                className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full text-xs flex items-center gap-1"
+                                            >
+                                                <IonIcon
+                                                    icon={shieldCheckmarkOutline}
+                                                    className="w-3 h-3"
+                                                />
+                                                Read {item}
+                                            </span>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </AppCapabilitiesSummary>
+
+            {!isDesktop && (
+                <div className="mt-6">
+                    <h3 className="text-base font-semibold text-grayscale-900 mb-3">
+                        How it looks in the store
+                    </h3>
+                    <StoreListingPreview
+                        name={listingData.name}
+                        tagline={listingData.tagline}
+                        description={listingData.description}
+                        iconUrl={displayIconUrl || listingData.iconUrl}
+                        category={listingData.category}
+                        ageRating={listingData.ageRating}
+                        screenshots={listingData.screenshots}
+                        highlights={listingData.highlights}
+                        heroColor={listingData.heroColor}
+                    />
+                </div>
+            )}
+
+            <div
+                className="sticky bottom-0 z-10 -mx-1 mt-6 px-1 pt-3 bg-gradient-to-t from-white via-white to-white/0"
+                style={{ paddingBottom: 'calc(1rem + var(--ion-safe-area-bottom, 0px))' }}
+            >
+                <div className="flex items-center gap-4 p-4 bg-white rounded-[20px] border border-grayscale-200 shadow-lg">
+                    <div className="flex-1 min-w-0 text-sm">
+                        {existingListingStatus ? (
+                            <span className="text-grayscale-600">
+                                Changes to the listing live on your app's page.
+                            </span>
+                        ) : showMissingHint && missingField ? (
+                            <button
+                                type="button"
+                                onClick={() => focusField(missingField.field)}
+                                className="text-left font-medium text-grayscale-900 hover:underline"
+                            >
+                                {missingField.message}
+                            </button>
+                        ) : (
+                            <span
+                                className={
+                                    saveState === 'error' ? 'text-red-600' : 'text-grayscale-500'
+                                }
+                            >
+                                {saveStatusText[saveState]}
+                            </span>
                         )}
                     </div>
-                </div>
-            </div>
-
-            <div className="flex justify-end">
-                <button
-                    onClick={handleContinue}
-                    disabled={isPreparing || !appName || !tagline}
-                    className="flex items-center gap-2 py-3 px-6 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                    {isPreparing ? (
-                        <>
-                            <IonSpinner name="crescent" className="w-4 h-4" />
-                            Preparing...
-                        </>
+                    {existingListingStatus ? (
+                        <button
+                            type="button"
+                            onClick={() =>
+                                previewIntegrationId &&
+                                history.push(
+                                    `/app-store/developer/integrations/${previewIntegrationId}`
+                                )
+                            }
+                            className="py-3 px-5 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                        >
+                            Go to Your App
+                        </button>
                     ) : (
-                        <>
-                            Continue
-                            <IonIcon icon={arrowForwardOutline} className="w-4 h-4" />
-                        </>
+                        <button
+                            type="button"
+                            onClick={handleSubmit}
+                            disabled={isSubmitting}
+                            className="py-3 px-5 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    Submitting…
+                                </>
+                            ) : (
+                                'Submit for Review'
+                            )}
+                        </button>
                     )}
-                </button>
+                </div>
             </div>
         </div>
     );
 
+    const tabClass = (active: boolean): string =>
+        `py-1.5 px-3 rounded-full text-xs font-medium transition-colors ${
+            active ? 'bg-grayscale-900 text-white' : 'text-grayscale-700 hover:bg-grayscale-200'
+        }`;
+
     const rightPaneContent = isDesktop && (
         <div className="sticky top-0 h-[calc(100vh-80px)] py-6 pr-6 pl-2 flex flex-col">
-            <div className="flex-1 rounded-2xl border border-grayscale-300 bg-white shadow-sm overflow-hidden flex flex-col">
-                <div className="h-12 border-b border-grayscale-200 bg-grayscale-10 flex items-center justify-between px-4 shrink-0">
-                    <div className="flex items-center gap-2 overflow-hidden">
-                        <span className="text-sm font-medium text-grayscale-900 truncate">
-                            {appName || 'Preview App'}
-                        </span>
-                        {isLive && (
-                            <div className="flex items-center gap-1.5 text-[10px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full shrink-0">
+            <div className="flex-1 rounded-[20px] border border-grayscale-200 bg-white shadow-sm overflow-hidden flex flex-col">
+                <div className="h-12 border-b border-grayscale-200 bg-grayscale-10 flex items-center justify-between px-3 shrink-0">
+                    <div className="flex items-center gap-1 p-1 bg-grayscale-100 rounded-full">
+                        <button
+                            type="button"
+                            onClick={() => setRightPaneTab('store')}
+                            className={tabClass(rightPaneTab === 'store')}
+                        >
+                            Store preview
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setRightPaneTab('try')}
+                            className={tabClass(rightPaneTab === 'try')}
+                        >
+                            Try your app
+                        </button>
+                    </div>
+                    {isLive && rightPaneTab === 'try' && (
+                        <div className="flex items-center gap-3">
+                            <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                 Watching
-                            </div>
-                        )}
-                    </div>
-                    {isLive && (
-                        <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-grayscale-500 hidden xl:inline">
-                                Changes apply when you continue
                             </span>
                             <button
+                                type="button"
                                 onClick={() => setIsLive(false)}
                                 className="text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
                             >
@@ -1577,8 +1797,25 @@ export const SubmitFromManifestPage: React.FC = () => {
                 </div>
 
                 <div className="flex-1 relative bg-grayscale-100">
-                    {isLive ? (
-                        <div className="absolute inset-0 animate-fade-in-up">
+                    {rightPaneTab === 'store' && (
+                        <div className="absolute inset-0 overflow-y-auto p-6 animate-fade-in-up">
+                            <StoreListingPreview
+                                name={listingData.name}
+                                tagline={listingData.tagline}
+                                description={listingData.description}
+                                iconUrl={displayIconUrl || listingData.iconUrl}
+                                category={listingData.category}
+                                ageRating={listingData.ageRating}
+                                screenshots={listingData.screenshots}
+                                highlights={listingData.highlights}
+                                heroColor={listingData.heroColor}
+                            />
+                        </div>
+                    )}
+                    {isLive && (
+                        <div
+                            className={`absolute inset-0 ${rightPaneTab === 'try' ? '' : 'hidden'}`}
+                        >
                             <EmbedIframeModal
                                 embedUrl={manifest.appUrl}
                                 appId={previewListingId || undefined}
@@ -1595,22 +1832,24 @@ export const SubmitFromManifestPage: React.FC = () => {
                                 launchFeaturesInNewTab={true}
                             />
                         </div>
-                    ) : (
+                    )}
+                    {!isLive && rightPaneTab === 'try' && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-                            <div className="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center mb-4">
+                            <div className="w-16 h-16 rounded-full bg-white border border-grayscale-200 flex items-center justify-center mb-4">
                                 <IonIcon
                                     icon={playOutline}
-                                    className="w-8 h-8 text-indigo-500 ml-1"
+                                    className="w-7 h-7 text-grayscale-700 ml-1"
                                 />
                             </div>
                             <h3 className="text-lg font-semibold text-grayscale-900 mb-2">
-                                Preview your app
+                                Try your app
                             </h3>
                             <p className="text-sm text-grayscale-600 mb-6 max-w-xs">
-                                Run your app inside LearnCard to test it and capture any missing
-                                permissions.
+                                Run it inside LearnCard to make sure everything works. We'll notice
+                                anything new it uses.
                             </p>
                             <button
+                                type="button"
                                 onClick={handlePreview}
                                 disabled={isPreviewing || !appName}
                                 className="flex items-center gap-2 py-3 px-6 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
@@ -1618,12 +1857,12 @@ export const SubmitFromManifestPage: React.FC = () => {
                                 {isPreviewing ? (
                                     <>
                                         <IonSpinner name="crescent" className="w-4 h-4" />
-                                        Preparing preview...
+                                        Starting…
                                     </>
                                 ) : (
                                     <>
                                         <IonIcon icon={playOutline} className="w-4 h-4" />
-                                        Start preview
+                                        Start
                                     </>
                                 )}
                             </button>

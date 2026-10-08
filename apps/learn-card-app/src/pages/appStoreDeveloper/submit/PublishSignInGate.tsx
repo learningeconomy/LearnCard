@@ -10,32 +10,9 @@ import type { CapturedAppManifest } from '@learncard/partner-connect-core';
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { PUBLISH_RESUME_KEY } from './publishResume';
+import { describeManifest } from './appCapabilities';
 
 const STEPS = ['Create account', 'Review', 'Publish'] as const;
-
-const pluralize = (count: number, singular: string, plural: string): string =>
-    `${count} ${count === 1 ? singular : plural}`;
-
-const describeManifest = (manifest: CapturedAppManifest): string[] => {
-    const lines: string[] = [];
-
-    if (manifest.permissions.includes('request_identity')) {
-        lines.push('Signs people in with their account');
-    }
-    if (manifest.templates.length > 0) {
-        lines.push(
-            `Gives out ${pluralize(manifest.templates.length, 'kind of credential', 'kinds of credentials')}`
-        );
-    }
-    if (manifest.consentRequests.length > 0) {
-        lines.push('Asks permission before using learner info');
-    }
-    if (manifest.usedNotifications) lines.push('Sends notifications');
-    if (manifest.counterKeys.length > 0) lines.push('Tracks progress');
-    if (manifest.featuresLaunched.length > 0) lines.push('Opens built-in features');
-
-    return lines;
-};
 
 const readManifest = (search: string): CapturedAppManifest | null => {
     const param = new URLSearchParams(search).get('manifest');

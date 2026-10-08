@@ -195,7 +195,7 @@ export const AppHome: React.FC<AppHomeProps> = ({ integration, onBack, onToggleA
                     <button
                         onClick={() =>
                             history.push(
-                                `/app-store/developer/integrations/${integration.id}/apps/${latestListing.listing_id}`
+                                `/app-store/developer/integrations/${integration.id}/apps/${latestListing.listing_id}/listing`
                             )
                         }
                         className="py-2 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"

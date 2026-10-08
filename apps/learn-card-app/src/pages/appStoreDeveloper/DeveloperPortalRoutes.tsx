@@ -10,7 +10,7 @@ import IntegrationsList from './integrations/IntegrationsList';
 import IntegrationDashboardPage from './integrations/IntegrationDashboardPage';
 import SubmissionForm from './SubmissionForm';
 
-import { SubmitFromManifestPage } from './submit';
+import { SubmitFromManifestPage, EditListingPage } from './submit';
 
 /**
  * All developer portal routes wrapped in the context provider.
@@ -48,6 +48,11 @@ const DeveloperPortalRoutes: React.FC = () => {
                     exact
                     path="/app-store/developer/integrations/:integrationId/apps/new"
                     component={SubmissionForm}
+                />
+                <Route
+                    exact
+                    path="/app-store/developer/integrations/:integrationId/apps/:listingId/listing"
+                    component={EditListingPage}
                 />
                 <Route
                     exact
