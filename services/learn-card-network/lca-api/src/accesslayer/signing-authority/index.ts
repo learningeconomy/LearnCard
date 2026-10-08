@@ -9,5 +9,5 @@ export const SigningAuthorities = getSigningAuthoritiesCollection();
 
 // Fire-and-forget at module load; see accesslayer/notifications for why it must not reject.
 SigningAuthorities.createIndex({ ownerDid: 1, name: 1 }, { unique: true }).catch(error => {
-    console.warn('Signing authority index creation failed:', error);
+    console.error('Signing authority unique index creation failed:', error);
 });

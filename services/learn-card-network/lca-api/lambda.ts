@@ -29,6 +29,8 @@ export const didWebHandler = async (...args: Parameters<LambdaApp['didWebHandler
 // Separate entry: the oidc function must not evaluate lambdaApp (see oidcLambdaApp.ts).
 const getOidcApplication = async (): Promise<OidcLambdaApp> => {
     await loadRuntimeSecrets();
+    // Same as getApplication: a failed module evaluation stays cached in the bundle,
+    // so clearing this to retry would only rethrow the same error.
     oidcApplication ??= import('./oidcLambdaApp');
     return oidcApplication;
 };
