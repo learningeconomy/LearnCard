@@ -7,12 +7,17 @@ const require = createRequire(import.meta.url);
 const serverlessRequire = createRequire(require.resolve('serverless/package.json'));
 const yaml: { load: (source: string) => unknown } = serverlessRequire('js-yaml');
 
-const escrowEnvironment = require('../../serverless.escrow-env.cjs') as () => Record<
-    string,
-    string
+const functionEnvironment = require('../../serverless.function-env.cjs') as Record<
+    'api' | 'escrow',
+    () => Record<string, string>
 >;
 
-const ESCROW_FUNCTIONS = ['trpc', 'api', 'escrowHoldReminders', 'escrowBlobRewrap'];
+const ESCROW_FUNCTIONS = {
+    trpc: 'api',
+    api: 'api',
+    escrowHoldReminders: 'escrow',
+    escrowBlobRewrap: 'escrow',
+} as const;
 
 describe('escrow deployment wiring', () => {
     const settings = Object.keys(lcaApiEnvironmentShape).filter(name => name.startsWith('ESCROW_'));
@@ -21,7 +26,6 @@ describe('escrow deployment wiring', () => {
         const serverless = yaml.load(
             readFileSync(new URL('../../serverless.yml', import.meta.url), 'utf8')
         ) as {
-            custom: { escrowEnvironment: string };
             provider: { environment: Record<string, string> };
             functions: Record<string, { environment?: string }>;
         };
@@ -42,10 +46,9 @@ describe('escrow deployment wiring', () => {
             'ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON',
         ]);
 
-        expect(serverless.custom.escrowEnvironment).toBe('${file(./serverless.escrow-env.cjs)}');
-        for (const name of ESCROW_FUNCTIONS) {
+        for (const [name, scope] of Object.entries(ESCROW_FUNCTIONS)) {
             expect(serverless.functions[name]?.environment, name).toBe(
-                '${self:custom.escrowEnvironment}'
+                `\${file(./serverless.function-env.cjs):${scope}}`
             );
         }
         for (const name of settings) {
@@ -61,10 +64,10 @@ describe('escrow deployment wiring', () => {
         const saved = { ...process.env };
         try {
             for (const name of settings) process.env[name] = `value-of-${name}`;
-            expect(Object.keys(escrowEnvironment()).sort()).toEqual([...settings].sort());
+            expect(Object.keys(functionEnvironment.escrow()).sort()).toEqual([...settings].sort());
 
             delete process.env.ESCROW_ENCLAVE_MODE;
-            expect(Object.keys(escrowEnvironment()).sort()).toEqual([
+            expect(Object.keys(functionEnvironment.escrow()).sort()).toEqual([
                 'ESCROW_RELAY_AUTH_TOKEN',
                 'ESCROW_RELAY_URL',
             ]);

@@ -84,9 +84,13 @@ download_optional "$prefix/metadata.json" "$work/prev.json"
 bash "$scripts/terraform-plan.sh" service
 # Mirror every non-secret ECS environment option from the actual candidate plan.
 # Features/build options remain baked in the image. No DB/admin secrets are required.
+# Bootstrap-admin options are runtime-only and do not affect compatibility. Keycloak
+# rejects KC_BOOTSTRAP_ADMIN_USERNAME without its password (an ECS secret we never
+# fetch here), so passing the username alone fails metadata generation.
 jq -er '.resource_changes[] | select(.address == "aws_ecs_task_definition.keycloak") |
     .change.after.container_definitions | fromjson | .[] | select(.name == "keycloak") |
-    .environment[] | .name + "=" + .value' "$root/plan.json" >"$work/runtime.env"
+    .environment[] | select(.name | startswith("KC_BOOTSTRAP_ADMIN_") | not) |
+    .name + "=" + .value' "$root/plan.json" >"$work/runtime.env"
 export KC_ENV_FILE="$work/runtime.env"
 docker pull "$TF_VAR_keycloak_image" >/dev/null
 GITHUB_OUTPUT="$work/gate" bash "$scripts/compat-gate.sh" "$work/prev.json" "$TF_VAR_keycloak_image"
@@ -95,8 +99,9 @@ if [[ "$strategy" == recreate ]]; then
     # A saved plan changing the scalable target can reintroduce a positive min
     # during apply, before our controlled restart. Require sizing as a separate
     # compatible deployment rather than racing Terraform's target registration.
-    jq -e '[.resource_changes[] | select(.address == "aws_appautoscaling_target.keycloak") |
-        .change.actions] == [["no-op"]]' "$root/plan.json" >/dev/null || {
+    # Tag-only updates (default KeycloakVersion tag on every version bump) are
+    # applied via TagResource and never re-register capacity, so they are allowed.
+    jq -e -f "$scripts/autoscaling-unchanged.jq" "$root/plan.json" >/dev/null || {
         printf 'Recreate requires unchanged autoscaling target; apply sizing separately first.\n' >&2; exit 1;
     }
 fi

@@ -18,10 +18,6 @@ custom:
         number: 3
     config:
         CACHE_INSTANCE_SIZE: cache.t2.micro
-    # Lambda caps each function's environment at 4KB. Escrow config is only read
-    # by the trpc/api handlers and the two scheduled escrow jobs, so it is attached
-    # per-function (not provider-wide) and unset keys are omitted entirely.
-    escrowEnvironment: ${file(./serverless.escrow-env.cjs)}
     esbuild:
         # serverless-esbuild does not support Bun as a Lambda artifact packager.
         # Bun remains the repo installer/runner; pnpm is used only for packaging externals.
@@ -155,19 +151,8 @@ provider:
         MONGO_URI: ${env:MONGO_URI, ''}
         MONGO_DB_NAME: ${env:MONGO_DB_NAME, ''}
         AUTHORIZED_DIDS: ${env:AUTHORIZED_DIDS, ''}
-        GOOGLE_APPLICATION_CREDENTIAL: ${env:GOOGLE_APPLICATION_CREDENTIAL, ''}
         SCOUTS_SSO_CLIENT_SECRET: ${env:SCOUTS_SSO_CLIENT_SECRET, ''}
         LEARN_CLOUD_URL: ${env:LEARN_CLOUD_URL, ''}
-        KEYCLOAK_ISSUERS: ${env:KEYCLOAK_ISSUERS, ''}
-        KEYCLOAK_AUDIENCES: ${env:KEYCLOAK_AUDIENCES, ''}
-        KEYCLOAK_JWKS_URL_OVERRIDES: ${env:KEYCLOAK_JWKS_URL_OVERRIDES, ''}
-        OIDC_ISSUER: ${env:OIDC_ISSUER, ''}
-        OIDC_SIGNING_KEY_SECRET_ID: ${env:OIDC_SIGNING_KEY_SECRET_ID, ''}
-        OIDC_CLIENT_ID: ${env:OIDC_CLIENT_ID, ''}
-        OIDC_CLIENT_SECRET: ${env:OIDC_CLIENT_SECRET, ''}
-        OIDC_REDIRECT_URIS: ${env:OIDC_REDIRECT_URIS, ''}
-        GOOGLE_OAUTH_CLIENT_IDS: ${env:GOOGLE_OAUTH_CLIENT_IDS, ''}
-        APPLE_OAUTH_CLIENT_IDS: ${env:APPLE_OAUTH_CLIENT_IDS, ''}
         SENTRY_DSN: ${env:SENTRY_DSN, ''}
         SENTRY_ENV: ${env:SENTRY_ENV, ''}
         REDIS_HOST:
@@ -188,7 +173,7 @@ functions:
         handler: lambda.trpcHandler
         role: SigningAuthorityExecutionRole
         dependsOn: [SigningAuthoritySeedKeyPolicy]
-        environment: ${self:custom.escrowEnvironment}
+        environment: ${file(./serverless.function-env.cjs):api}
         vpc:
             securityGroupIds:
                 - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
@@ -201,7 +186,7 @@ functions:
         handler: lambda.openApiHandler
         role: SigningAuthorityExecutionRole
         dependsOn: [SigningAuthoritySeedKeyPolicy]
-        environment: ${self:custom.escrowEnvironment}
+        environment: ${file(./serverless.function-env.cjs):api}
         vpc:
             securityGroupIds:
                 - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
@@ -227,6 +212,7 @@ functions:
         handler: lambda.oidcHandler
         # Only this function may read the private signing key (see OidcExecutionRole).
         role: OidcExecutionRole
+        environment: ${file(./serverless.function-env.cjs):oidc}
         vpc:
             securityGroupIds:
                 - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
@@ -264,7 +250,7 @@ functions:
     escrowHoldReminders:
         handler: lambda.escrowHoldRemindersHandler
         timeout: 120
-        environment: ${self:custom.escrowEnvironment}
+        environment: ${file(./serverless.function-env.cjs):escrow}
         vpc:
             securityGroupIds:
                 - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
@@ -279,7 +265,7 @@ functions:
     escrowBlobRewrap:
         handler: lambda.escrowBlobRewrapHandler
         timeout: 120
-        environment: ${self:custom.escrowEnvironment}
+        environment: ${file(./serverless.function-env.cjs):escrow}
         vpc:
             securityGroupIds:
                 - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
@@ -319,6 +305,16 @@ resources:
                 ManagedPolicyArns:
                     - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
                     - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess
+                Policies:
+                    - PolicyName: runtime-secrets
+                      PolicyDocument:
+                          Version: '2012-10-17'
+                          Statement:
+                              # seedMigration shares this role; bundle access is acceptable for now.
+                              - Effect: Allow
+                                Action: secretsmanager:GetSecretValue
+                                Resource:
+                                    Fn::Sub: arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:lca-api/${sls:stage}/runtime-secrets-*
         OidcExecutionRole:
             Type: AWS::IAM::Role
             Properties:

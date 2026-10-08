@@ -32,6 +32,24 @@ mock-provider regression checks; CI runs them without AWS credentials.
 
 ## lca-api wiring
 
+Lambda environment settings are function-scoped: `trpc`/`api` receive Keycloak
+verification and Google/Apple client IDs; `oidc` receives `KEYCLOAK_ISSUERS` and the
+`OIDC_*` settings below. Empty function-level keys are omitted.
+
+For backend config step 1, provision `lca-api/<stage>/runtime-secrets` in Secrets
+Manager and set the lca-api GitHub environment **variable** `RUNTIME_SECRETS_ID` to
+its name or ARN. Use a flat JSON object of UPPER_SNAKE_CASE keys to string values,
+starting with `GOOGLE_APPLICATION_CREDENTIAL` (the service-account JSON encoded as
+a string). Only `trpc`/`api` load it at cold start before environment validation;
+non-empty explicit env values win, empty strings do not. Failed reads fail closed
+without logging values. Recycle functions after rotation.
+
+Keep the GitHub `GOOGLE_APPLICATION_CREDENTIAL` secret: without a bundle id it is
+still passed directly to `trpc`/`api`, preserving production until provisioned.
+Self-hosters continue using plain env vars. The OIDC signing-key role is unchanged
+and cannot read the runtime bundle. Roadmap: step 2 checked-in per-stage non-secret
+config, step 3 Infisical → AWS sync, step 4 brain-service/learn-cloud adoption.
+
 `deploy.yml` passes these from lca-api's GitHub environment (the `lca_api_env` of the
 deployment matrix). All unset = Keycloak sign-in disabled, identical to before.
 

@@ -26,6 +26,7 @@ const lca = workflows
     .get('deploy.yml')
     .jobs['deploy-lca-api'].steps.find(step => step.name === 'Deploy LCA API Service Lambda');
 for (const key of [
+    'RUNTIME_SECRETS_ID',
     'KEYCLOAK_ISSUERS',
     'KEYCLOAK_AUDIENCES',
     'KEYCLOAK_JWKS_URL_OVERRIDES',
@@ -38,7 +39,7 @@ for (const key of [
 ]) {
     assert.equal(lca.env[key], '${{ vars.' + key + ' }}');
 }
-for (const key of ['OIDC_CLIENT_SECRET']) {
+for (const key of ['OIDC_CLIENT_SECRET', 'GOOGLE_APPLICATION_CREDENTIAL']) {
     assert.equal(lca.env[key], '${{ secrets.' + key + ' }}');
 }
 assert.equal(lca.env.OIDC_SIGNING_KEY_JWK, undefined);
@@ -46,10 +47,38 @@ const lcaServerless = yaml.load(
     fs.readFileSync(path.join(root, 'services/learn-card-network/lca-api/serverless.yml'), 'utf8')
 );
 assert.equal(lcaServerless.provider.environment.OIDC_SIGNING_KEY_JWK, undefined);
-assert.equal(
-    lcaServerless.provider.environment.OIDC_SIGNING_KEY_SECRET_ID,
-    "${env:OIDC_SIGNING_KEY_SECRET_ID, ''}"
+for (const key of [
+    'RUNTIME_SECRETS_ID', 'GOOGLE_APPLICATION_CREDENTIAL',
+    'KEYCLOAK_ISSUERS', 'KEYCLOAK_AUDIENCES', 'KEYCLOAK_JWKS_URL_OVERRIDES',
+    'GOOGLE_OAUTH_CLIENT_IDS', 'APPLE_OAUTH_CLIENT_IDS',
+    'OIDC_ISSUER', 'OIDC_CLIENT_ID', 'OIDC_CLIENT_SECRET', 'OIDC_REDIRECT_URIS',
+    'OIDC_SIGNING_KEY_SECRET_ID',
+]) assert.equal(lcaServerless.provider.environment[key], undefined, key);
+for (const name of ['trpc', 'api']) {
+    assert.equal(lcaServerless.functions[name].environment, '${file(./serverless.function-env.cjs):api}');
+    assert.equal(lcaServerless.functions[name].role, 'SigningAuthorityExecutionRole');
+}
+assert.equal(lcaServerless.functions.oidc.environment, '${file(./serverless.function-env.cjs):oidc}');
+for (const name of ['swagger', 'didWeb', 'seedMigration']) {
+    assert.equal(lcaServerless.functions[name].environment, undefined);
+}
+const runtimeStatement = {
+    Effect: 'Allow',
+    Action: 'secretsmanager:GetSecretValue',
+    Resource: {
+        'Fn::Sub': 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:lca-api/${sls:stage}/runtime-secrets-*',
+    },
+};
+assert.deepEqual(
+    lcaServerless.resources.Resources.SigningAuthorityExecutionRole.Properties.Policies
+        .flatMap(policy => policy.PolicyDocument.Statement),
+    [runtimeStatement]
 );
+for (const [name, resource] of Object.entries(lcaServerless.resources.Resources)) {
+    if (name !== 'SigningAuthorityExecutionRole') {
+        assert(!JSON.stringify(resource).includes('/runtime-secrets-*'), name);
+    }
+}
 // Only the oidc function may read the private signing key: a dedicated role, no shared grant.
 assert.equal(lcaServerless.provider.iam, undefined);
 assert.equal(lcaServerless.functions.oidc.role, 'OidcExecutionRole');

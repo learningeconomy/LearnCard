@@ -14,6 +14,7 @@ import {
 export const lcaApiEnvironmentShape = {
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     LAMBDA_STAGE: optionalEnvironmentString,
+    RUNTIME_SECRETS_ID: optionalEnvironmentString,
     PORT: environmentPort.default(3000),
     SEED: requiredEnvironmentString,
     SA_SEED_KMS_KEY_ARN: optionalEnvironmentString,

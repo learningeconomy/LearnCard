@@ -8,6 +8,7 @@ mkdir -p "$work/bin" "$work/repo/infra/keycloak/terraform/realm/"{environments,g
 mkdir -p "$work/repo/infra/keycloak/scripts"
 cp "$scripts/realm-runner.sh" "$work/repo/infra/keycloak/scripts/"
 cp "$scripts/check-release-order.sh" "$work/repo/infra/keycloak/scripts/"
+cp "$scripts/autoscaling-unchanged.jq" "$work/repo/infra/keycloak/scripts/"
 cp "$scripts/deploy-image.sh" "$work/deploy-image.sh"
 cat >"$work/bin/aws" <<'MOCK'
 #!/usr/bin/env bash
@@ -95,11 +96,22 @@ for environment in staging production; do
     printf 'PASS: %s preflight requires non-empty inputs committed at the image source SHA before AWS\n' "$environment"
 done
 
+# Recreate guard: tag-only scalable-target updates pass; sizing changes do not.
+guard="$scripts/autoscaling-unchanged.jq"
+target() { printf '{"resource_changes":[{"address":"aws_appautoscaling_target.keycloak","change":%s}]}' "$1"; }
+sized='"min_capacity":1,"max_capacity":3'
+target '{"actions":["no-op"]}' | jq -e -f "$guard" >/dev/null
+target "{\"actions\":[\"update\"],\"before\":{$sized,\"tags\":{\"KeycloakVersion\":\"26.7.4\"}},\"after\":{$sized,\"tags\":{}},\"after_unknown\":{\"tags_all\":{}}}" | jq -e -f "$guard" >/dev/null
+if target '{"actions":["update"],"before":{"min_capacity":1},"after":{"min_capacity":2},"after_unknown":{}}' | jq -e -f "$guard" >/dev/null; then exit 1; fi
+if target '{"actions":["update"],"before":{"min_capacity":1},"after":{"min_capacity":1},"after_unknown":{"max_capacity":true}}' | jq -e -f "$guard" >/dev/null; then exit 1; fi
+if target '{"actions":["delete","create"],"before":{},"after":{}}' | jq -e -f "$guard" >/dev/null; then exit 1; fi
+printf 'PASS: recreate guard allows tag-only scalable-target updates and refuses sizing changes\n'
+
 # Run the real deploy script through service apply, realm runner, smoke, and journal.
 mkdir -p infra/keycloak/terraform/service
 cat >infra/keycloak/scripts/terraform-plan.sh <<'MOCK'
 #!/usr/bin/env bash
-printf '%s\n' '{"resource_changes":[{"address":"aws_ecs_task_definition.keycloak","change":{"after":{"container_definitions":"[{\"name\":\"keycloak\",\"environment\":[{\"name\":\"KC_DB\",\"value\":\"postgres\"}]}]"}}},{"address":"aws_appautoscaling_target.keycloak","change":{"actions":["no-op"]}}]}' >infra/keycloak/terraform/service/plan.json
+printf '%s\n' '{"resource_changes":[{"address":"aws_ecs_task_definition.keycloak","change":{"after":{"container_definitions":"[{\"name\":\"keycloak\",\"environment\":[{\"name\":\"KC_DB\",\"value\":\"postgres\"},{\"name\":\"KC_BOOTSTRAP_ADMIN_USERNAME\",\"value\":\"bootstrap\"}]}]"}}},{"address":"aws_appautoscaling_target.keycloak","change":{"actions":["no-op"]}}]}' >infra/keycloak/terraform/service/plan.json
 MOCK
 cat >infra/keycloak/scripts/compat-gate.sh <<'MOCK'
 #!/usr/bin/env bash
@@ -107,6 +119,7 @@ printf 'strategy=%s\n' "$STRATEGY" >"$GITHUB_OUTPUT"
 MOCK
 cat >infra/keycloak/scripts/compat-metadata.sh <<'MOCK'
 #!/usr/bin/env bash
+cp "$KC_ENV_FILE" "$TEST_STATE/runtime.env"
 printf '{}\n' >"$2"
 MOCK
 for tool in docker terraform sleep; do
@@ -131,6 +144,9 @@ for scenario in success discovery-404 realm-failure recreate-poll-error recreate
     grep -q 'codebuild start-build.*--source-version image-sha' "$AWS_CALLS"
     if [[ "$scenario" == success ]]; then
         [[ "$result" == 0 ]] || { cat "$work/log"; exit 1; }
+        # Keycloak refuses a bootstrap username without its (secret) password.
+        grep -qx 'KC_DB=postgres' "$TEST_STATE/runtime.env"
+        if grep -q '^KC_BOOTSTRAP_ADMIN_' "$TEST_STATE/runtime.env"; then exit 1; fi
         grep -q '/complete.json ' "$AWS_CALLS"
     else
         [[ "$result" != 0 ]] || exit 1
