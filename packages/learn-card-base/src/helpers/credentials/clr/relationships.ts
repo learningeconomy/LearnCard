@@ -171,13 +171,11 @@ export const getLinkedCompetencies = (
     return competencies.filter(competency => linkedIds.has(competency.sourceCredentialId));
 };
 
-export const findClrRecordById = (
+/** Looks up an internal canonical ID; source aliases still use conservative resolution. */
+export const findClrRecordByCanonicalId = (
     model: ClrTranscriptDisplayModel,
     id: string
 ): ClrNavigableRecord | undefined => {
-    const resolved = resolveClrRecord(model.canonical, id);
-    if (resolved.resolution !== 'resolved' || !resolved.record) return undefined;
-    id = resolved.record.id;
     const course = model.courses.find(record => record.sourceCredentialId === id);
     if (course) return { kind: 'course', record: course };
 
@@ -199,12 +197,23 @@ export const findClrRecordById = (
     return undefined;
 };
 
+export const findClrRecordById = (
+    model: ClrTranscriptDisplayModel,
+    id: string
+): ClrNavigableRecord | undefined => {
+    const resolved = resolveClrRecord(model.canonical, id);
+    if (resolved.resolution !== 'resolved' || !resolved.record) return undefined;
+    id = resolved.record.id;
+    return findClrRecordByCanonicalId(model, id);
+};
+
 export const createClrRecordSelection = (
     model: ClrTranscriptDisplayModel,
     onOpenRecord: (selected: ClrNavigableRecord) => void
 ): ClrRecordNavigator => {
     const selectRecord = (recordId: string): void => {
-        const selected = findClrRecordById(model, recordId);
+        const selected =
+            findClrRecordByCanonicalId(model, recordId) ?? findClrRecordById(model, recordId);
         if (selected) onOpenRecord(selected);
     };
 

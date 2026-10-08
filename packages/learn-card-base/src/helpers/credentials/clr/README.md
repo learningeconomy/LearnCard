@@ -58,3 +58,38 @@ Run `vitest run src/helpers/credentials/clr` from `packages/learn-card-base`, an
 the `clrRenderer` suites plus `src/components/clr-transcript` from
 `apps/learn-card-app`. The app corpus suite verifies both canonical preservation
 and display parity against every registered CLR fixture.
+
+## Collection layouts (LC-2215)
+
+`inferClrLayout(canonical)` returns `{ kind, reason }`, with `kind` set to
+`academic`, `military`, or `general`. This is a presentation hint, never a new
+credential claim. CLR 2.0's use-case categories are not machine-readable sectors.
+Military titles explicitly naming training, qualifications, records or transcripts
+select the military layout. Academic titles or explicit GPA/degree evidence in an
+otherwise academic collection select academic. Conflicting titles or insufficient
+evidence select general. Publisher names, child text, tenants and fixture tags do
+not establish the collection's sector. Standalone course presentation is retained.
+
+`groupClrRecords(records, layout)` partitions canonical occurrences exactly once,
+keeping source order within each section. Specific type hints take precedence over
+activity hints derived from dates or roles. Military groups courses and programs as
+Training; general keeps those sections separate. Unknown records and memberships
+remain accessible through Other records. No membership-specific layout is implied.
+
+LearnCard App's `components/clr-renderer` owns the shared frame, collection header,
+section lists and record navigation. Existing transcript surface exports delegate
+to `ClrRenderer` for compatibility. Academic tables/terms/GPA stay in the academic
+views; result scales, evidence, alignments and source-backed record details remain
+shared. New hosts should pass the existing display model, `ViewOptions`, and their
+credential/sharing context to `ClrRenderer`. Optional `onViewDetails` delegates
+navigation to the host. No normalization occurs inside child components.
+
+UI navigation uses `findClrRecordByCanonicalId` before alias lookup so duplicate
+source IDs do not make preserved occurrences inaccessible. `findClrRecordById`
+continues conservative alias resolution; ambiguous association endpoints stay
+non-navigable. Canonical IDs must not be persisted as global credential IDs.
+
+The `/dev/clr-transcript` picker includes comprehensive military, mixed-career,
+and training-provider examples. The military fixture is synthetic and unsigned;
+proof presence is never treated as verification or training completion. New UI
+labels are translated in English, Spanish, French and Arabic.

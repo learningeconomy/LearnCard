@@ -3,6 +3,7 @@ export type { InferredClrKind, ClrTranscriptIssuerInfo } from './display.types';
 import type { VC } from '@learncard/types';
 
 import { normalizeClrTranscriptDisplayModel, type ClrTranscriptDisplayModel } from './display';
+import { inferClrLayout } from './layout';
 import { inferProgramKind } from './presentation';
 
 /** Returns the issuer-provided mark first, with the credential image as a fallback. */
@@ -83,6 +84,7 @@ export const inferClrKindWithTitleFallback = (
     model: ClrTranscriptDisplayModel,
     title?: string
 ): InferredClrKind => {
+    if (inferClrLayout(model.canonical).kind !== 'academic') return 'unknown';
     const inferredKind = inferClrKindFromSignals(model);
     if (inferredKind !== 'unknown') return inferredKind;
     return inferClrKindFromTitle(title);

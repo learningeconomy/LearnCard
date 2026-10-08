@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import { createClrTranscriptDisplayModel, normalizeClrTranscriptDisplayModel } from './display';
 import { normalizeClrCredential } from './normalize';
-import { findClrRecordById, getLinkedCompetencies } from './relationships';
+import {
+    findClrRecordById,
+    findClrRecordByCanonicalId,
+    createClrRecordSelection,
+    getLinkedCompetencies,
+} from './relationships';
 import { resolveClrRecord } from './selectors';
 import { getResultDisplayValue } from './presentation';
 import type { ClrJsonObject } from './types';
@@ -157,6 +162,17 @@ describe('canonical CLR display adapter', () => {
         expect(findClrRecordById(model, 'duplicate')).toBeUndefined();
         const uniqueId = model.courses[1].sourceCredentialId;
         expect(findClrRecordById(model, uniqueId)?.record).toBe(model.courses[1]);
+        const opened: string[] = [];
+        const navigator = createClrRecordSelection(model, selected =>
+            opened.push(selected.record.sourceCredentialId)
+        );
+        for (const record of model.records) {
+            expect(findClrRecordByCanonicalId(model, record.id)?.record.sourceCredentialId).toBe(
+                record.id
+            );
+            navigator.selectRecord(record.id);
+        }
+        expect(opened).toEqual(model.records.map(record => record.id));
     });
 
     it('keeps standalone definitions in categories without manufacturing assertion claims', () => {
