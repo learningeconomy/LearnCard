@@ -49,7 +49,7 @@ build_service_images() {
 
 start_service_stack() {
     cd "$SERVICE_DIR"
-    e2e_pull_compose_images
+    e2e_pull_compose_images || return 1
     docker compose up -d --no-build \
         2>&1 | tee "$E2E_ARTIFACT_DIR/docker-compose-start.log"
 }

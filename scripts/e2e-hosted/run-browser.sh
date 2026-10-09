@@ -146,7 +146,7 @@ build_host_browser_images() {
 start_compose() {
     cd "$APP_DIR"
     docker compose down --remove-orphans -v 2>/dev/null || true
-    e2e_pull_compose_images
+    e2e_pull_compose_images || return 1
     docker compose up -d --no-build
 }
 
