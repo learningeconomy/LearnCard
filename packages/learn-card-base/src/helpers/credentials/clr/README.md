@@ -123,3 +123,21 @@ The `/dev/clr-transcript` picker includes comprehensive military, mixed-career,
 and training-provider examples. The military fixture is synthetic and unsigned;
 proof presence is never treated as verification or training completion. New UI
 labels are translated in English, Spanish, French and Arabic.
+
+Numeric result axes stay left-to-right in every locale: the minimum label is on
+the left, and achieved/required markers use that same coordinate system. The
+surrounding Arabic interface remains right-to-left.
+
+Browser regressions cover military assessment details, training-provider numeric
+results, and malformed stored locales at desktop and mobile widths with simulated
+47/34 insets. The spec runs in the existing mocked E2E tier without sign-in; for
+the Chromium/Firefox/WebKit matrix, run from `apps/learn-card-app`:
+
+```bash
+bunx playwright test --config playwright.clr.config.ts
+```
+
+Set `PW_MOCK_PORT` to reuse an existing local dev server. For manual surface QA,
+select **Military — Training Record**, open **View details** from **Card**, and
+confirm the same three records remain available. **Embed** is a read-only summary
+and must not offer a detail action or record links.

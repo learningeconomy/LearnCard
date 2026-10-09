@@ -168,6 +168,8 @@ const NumericScale: React.FC<{
 
     return (
         <div
+            // Keep endpoint labels and physical marker offsets on the same numeric axis in RTL.
+            dir="ltr"
             role="img"
             aria-label={`Numeric scale from ${min} to ${max}; achieved ${String(value)}${
                 required ? `; passing ${required}` : ''
