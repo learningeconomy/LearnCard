@@ -80,6 +80,7 @@ jobs:
         timeout-minutes: 60
         env:
             E2E_ARTIFACT_DIR: /tmp/learncard-e2e-artifacts/browser
+            E2E_HOST_BROWSER_BUILD: 'true'
             E2E_TEST_FILES: ${{ github.event.inputs.test_files || 'consent-flow-race.spec.ts app-store.spec.ts wallet-credentials.spec.ts' }}
         steps:
             - name: Checkout tested revision
