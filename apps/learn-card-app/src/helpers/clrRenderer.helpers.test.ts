@@ -344,7 +344,7 @@ describe('normalizeClrTranscriptDisplayModel', () => {
         ).toBe('VerifierInspectionView');
     });
 
-    it('uses title heuristics when structured CLR signals are sparse', () => {
+    it('uses an explicit academic title when structured CLR signals are sparse', () => {
         expect(
             getClrTranscriptKind({
                 id: 'urn:test:title-transcript',
@@ -357,16 +357,28 @@ describe('normalizeClrTranscriptDisplayModel', () => {
                 },
             } as unknown as VC)
         ).toBe('transcript');
+    });
 
+    it('requires degree evidence before using an academic degree presentation', () => {
+        const credential = {
+            id: 'urn:test:title-degree',
+            type: ['VerifiableCredential', 'ClrCredential'],
+            name: 'Bachelor of Science in Biology',
+            issuer: { id: 'did:test:issuer', name: 'Issuer' },
+            credentialSubject: {
+                id: 'did:test:learner',
+                type: ['ClrSubject'],
+            },
+        };
+
+        // A title alone is inconclusive; a supplied degree type makes the layout academic.
+        expect(getClrTranscriptKind(credential as unknown as VC)).toBe('unknown');
         expect(
             getClrTranscriptKind({
-                id: 'urn:test:title-degree',
-                type: ['VerifiableCredential', 'ClrCredential'],
-                name: 'Bachelor of Science in Biology',
-                issuer: { id: 'did:test:issuer', name: 'Issuer' },
+                ...credential,
                 credentialSubject: {
-                    id: 'did:test:learner',
-                    type: ['ClrSubject'],
+                    ...credential.credentialSubject,
+                    achievement: [{ achievementType: 'BachelorDegree', name: credential.name }],
                 },
             } as unknown as VC)
         ).toBe('degree');
