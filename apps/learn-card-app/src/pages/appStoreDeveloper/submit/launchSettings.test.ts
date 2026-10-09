@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { getLaunchSettingsError, getLaunchSummary, parseLaunchConfig } from './launchSettings';
+import {
+    getAddressProblem,
+    getLaunchSettingsError,
+    getLaunchSummary,
+    parseLaunchConfig,
+} from './launchSettings';
 
 describe('getLaunchSummary', () => {
     it('names the type in plain words with its address', () => {
@@ -33,5 +38,23 @@ describe('parseLaunchConfig', () => {
         expect(parseLaunchConfig(undefined)).toEqual({});
         expect(parseLaunchConfig('not json')).toEqual({});
         expect(parseLaunchConfig('{"url":"https://a.app"}')).toEqual({ url: 'https://a.app' });
+    });
+});
+
+describe('getAddressProblem', () => {
+    it('spots addresses learners could never open', () => {
+        expect(getAddressProblem('http://localhost:4321')).toBe('local');
+        expect(getAddressProblem('http://127.0.0.1:3000')).toBe('local');
+        expect(getAddressProblem('https://abc.lovableproject.com')).toBe('preview');
+        expect(getAddressProblem('http://quiz.app')).toBe('insecure');
+        expect(getAddressProblem('quiz')).toBe('invalid');
+        expect(getAddressProblem('https://quiz.app')).toBeNull();
+        expect(getAddressProblem('')).toBeNull();
+    });
+
+    it('blocks submitting with a local address', () => {
+        expect(getLaunchSettingsError('EMBEDDED_IFRAME', { url: 'http://localhost:4321' })).toBe(
+            'Use your public address to submit'
+        );
     });
 });

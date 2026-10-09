@@ -9,7 +9,9 @@ import { displayHost, isValidTestAddress, readTestAddress, writeTestAddress } fr
 interface AppPreviewPaneProps {
     listingId: string;
     appName: string;
-    /** The address the app is listed under; null when the app doesn't run inside LearnCard. */
+    /** Whether the app runs inside LearnCard, so it can be tried here. */
+    runsInside: boolean;
+    /** The address the app is listed under, if it has one yet. */
     liveAddress: string | null;
     launchConfig: LaunchConfig;
     storePreview: React.ReactNode;
@@ -23,6 +25,7 @@ const tabClass = (active: boolean): string =>
 export const AppPreviewPane: React.FC<AppPreviewPaneProps> = ({
     listingId,
     appName,
+    runsInside,
     liveAddress,
     launchConfig,
     storePreview,
@@ -50,7 +53,7 @@ export const AppPreviewPane: React.FC<AppPreviewPaneProps> = ({
     return (
         <div className="h-full rounded-[20px] border border-grayscale-200 bg-white shadow-sm overflow-hidden flex flex-col">
             <div className="h-12 border-b border-grayscale-200 bg-grayscale-10 flex items-center px-3 shrink-0">
-                {liveAddress ? (
+                {runsInside ? (
                     <div className="flex items-center gap-1 p-1 bg-grayscale-100 rounded-full">
                         <button
                             type="button"
@@ -74,7 +77,7 @@ export const AppPreviewPane: React.FC<AppPreviewPaneProps> = ({
                 )}
             </div>
 
-            {tab === 'try' && liveAddress && (
+            {tab === 'try' && runsInside && (
                 <div className="border-b border-grayscale-100 px-4 py-2.5 shrink-0">
                     {isEditingTest ? (
                         <form
@@ -117,14 +120,18 @@ export const AppPreviewPane: React.FC<AppPreviewPaneProps> = ({
                                         Test address · {displayHost(test.address)}
                                     </span>
                                 </span>
-                            ) : (
+                            ) : liveAddress ? (
                                 <span className="min-w-0 truncate text-grayscale-600">
                                     Previewing{' '}
                                     <span className="font-medium">{displayHost(liveAddress)}</span>
                                 </span>
+                            ) : (
+                                <span className="min-w-0 truncate text-grayscale-500">
+                                    No published address yet
+                                </span>
                             )}
                             <span className="flex items-center gap-3 shrink-0">
-                                {usingTest && (
+                                {usingTest && liveAddress && (
                                     <button
                                         type="button"
                                         onClick={() => saveTest({ ...test, enabled: false })}
@@ -169,7 +176,7 @@ export const AppPreviewPane: React.FC<AppPreviewPaneProps> = ({
                         />
                     </div>
                 )}
-                {tab === 'try' && !isRunning && (
+                {tab === 'try' && !isRunning && previewAddress && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
                         <h3 className="text-lg font-semibold text-grayscale-900 mb-2">
                             Try your app
@@ -186,6 +193,14 @@ export const AppPreviewPane: React.FC<AppPreviewPaneProps> = ({
                             <IonIcon icon={playOutline} />
                             Start
                         </button>
+                    </div>
+                )}
+                {tab === 'try' && !previewAddress && (
+                    <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
+                        <p className="text-sm text-grayscale-600 max-w-xs">
+                            Add your app's address under How it opens, or use a test address to try
+                            a version you're working on.
+                        </p>
                     </div>
                 )}
             </div>

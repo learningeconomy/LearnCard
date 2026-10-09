@@ -14,6 +14,27 @@ vi.mock('../components/LaunchConfigStep', () => ({
 const value = { type: 'DIRECT_LINK' as const, configJson: '{"url":"https://quiz.app"}' };
 
 describe('LaunchSettingsSection', () => {
+    it('explains a localhost address and offers to keep it for testing', () => {
+        const onChange = vi.fn();
+        const onKeepForTesting = vi.fn();
+        render(
+            <LaunchSettingsSection
+                value={{ type: 'EMBEDDED_IFRAME', configJson: '{"url":"http://localhost:4321"}' }}
+                onChange={onChange}
+                managedByApp
+                open
+                onOpenChange={vi.fn()}
+                onKeepForTesting={onKeepForTesting}
+            />
+        );
+
+        expect(screen.getByText("Learners can't open localhost:4321")).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: /Keep localhost:4321 for testing/ }));
+
+        expect(onKeepForTesting).toHaveBeenCalledWith('http://localhost:4321');
+        expect(JSON.parse(onChange.mock.calls[0][0].configJson).url).toBe('');
+    });
+
     it("remembers each type's settings when switching back", () => {
         const onChange = vi.fn();
         const { rerender } = render(

@@ -5,7 +5,13 @@ import type { LaunchType } from '@learncard/types';
 
 import { LaunchConfigStep } from '../components/LaunchConfigStep';
 import { LISTING_TYPES } from '../apps/listingTypes';
-import { getLaunchSummary, parseLaunchConfig } from './launchSettings';
+import {
+    getAddressProblem,
+    getLaunchAddress,
+    getLaunchSummary,
+    parseLaunchConfig,
+} from './launchSettings';
+import { AddressGuidance } from './AddressGuidance';
 
 export interface LaunchSettings {
     type: LaunchType;
@@ -20,6 +26,8 @@ interface LaunchSettingsSectionProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     error?: string | null;
+    /** Moves an unpublishable address (localhost, a builder preview) into this device's test address. */
+    onKeepForTesting?: (address: string) => void;
     sectionRef?: React.RefObject<HTMLDivElement>;
 }
 
@@ -31,6 +39,7 @@ export const LaunchSettingsSection: React.FC<LaunchSettingsSectionProps> = ({
     onOpenChange,
     error,
     sectionRef,
+    onKeepForTesting,
 }) => {
     const config = parseLaunchConfig(value.configJson);
     const [addressDraft, setAddressDraft] = useState(config.url ?? '');
@@ -41,6 +50,9 @@ export const LaunchSettingsSection: React.FC<LaunchSettingsSectionProps> = ({
     const [typeChange, setTypeChange] = useState<'locked' | 'confirming' | 'unlocked'>(
         managedByApp ? 'locked' : 'unlocked'
     );
+
+    const address = getLaunchAddress(value.type, config);
+    const addressProblem = getAddressProblem(address);
 
     const selectType = (type: LaunchType) => {
         if (type === value.type) return;
@@ -205,7 +217,33 @@ export const LaunchSettingsSection: React.FC<LaunchSettingsSectionProps> = ({
                             />
                         </>
                     )}
-                    {error && <p className="text-xs text-red-600">{error}</p>}
+                    {addressProblem && address ? (
+                        <AddressGuidance
+                            address={address}
+                            problem={addressProblem}
+                            onKeepForTesting={
+                                onKeepForTesting &&
+                                value.type === 'EMBEDDED_IFRAME' &&
+                                (addressProblem === 'local' || addressProblem === 'preview')
+                                    ? () => {
+                                          onKeepForTesting(address);
+                                          setAddressDraft('');
+                                          const remembered = {
+                                              ...settingsByType,
+                                              [value.type]: JSON.stringify({ ...config, url: '' }),
+                                          };
+                                          setSettingsByType(remembered);
+                                          onChange({
+                                              ...value,
+                                              configJson: remembered[value.type] ?? '{}',
+                                          });
+                                      }
+                                    : undefined
+                            }
+                        />
+                    ) : (
+                        error && <p className="text-xs text-red-600">{error}</p>
+                    )}
                 </div>
             )}
         </div>

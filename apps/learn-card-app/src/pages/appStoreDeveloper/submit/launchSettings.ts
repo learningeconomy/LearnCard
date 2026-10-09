@@ -1,4 +1,5 @@
 import type { LaunchType } from '@learncard/types';
+import { isAppBuilderPreviewHost } from '@learncard/partner-connect-core';
 
 import type { LaunchConfig } from '../types';
 
@@ -39,8 +40,44 @@ export const getLaunchSummary = (type: LaunchType, config: LaunchConfig): string
     return address ? `${LAUNCH_TYPE_LABELS[type]} · ${address}` : LAUNCH_TYPE_LABELS[type];
 };
 
-/** The first missing launch setting, phrased for the submit footer, or null. */
+export type AddressProblem = 'local' | 'preview' | 'insecure' | 'invalid';
+
+const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]', '0.0.0.0'];
+
+/** Why learners couldn't reach an address, or null if it's a public https address. */
+export const getAddressProblem = (address: string | undefined): AddressProblem | null => {
+    if (!address?.trim()) return null;
+    try {
+        const { protocol, hostname } = new URL(address.trim());
+        const host = hostname.toLowerCase();
+        if (LOCAL_HOSTS.includes(host) || host.endsWith('.localhost') || host.endsWith('.local')) {
+            return 'local';
+        }
+        if (isAppBuilderPreviewHost(host)) return 'preview';
+        if (protocol !== 'https:') return 'insecure';
+        return null;
+    } catch {
+        return 'invalid';
+    }
+};
+
+const ADDRESS_PROBLEM_HINTS: Record<AddressProblem, string> = {
+    local: 'Use your public address to submit',
+    preview: 'Use your published address to submit',
+    insecure: 'Use an https:// address to submit',
+    invalid: 'Fix the address to submit',
+};
+
+/** The first missing or unusable launch setting, phrased for the submit footer, or null. */
 export const getLaunchSettingsError = (type: LaunchType, config: LaunchConfig): string | null => {
+    const missing = getMissingLaunchSetting(type, config);
+    if (missing) return missing;
+
+    const problem = getAddressProblem(getLaunchAddress(type, config));
+    return problem ? ADDRESS_PROBLEM_HINTS[problem] : null;
+};
+
+const getMissingLaunchSetting = (type: LaunchType, config: LaunchConfig): string | null => {
     switch (type) {
         case 'CONSENT_REDIRECT':
             if (!config.contractUri) return 'Choose what to ask permission for to submit';

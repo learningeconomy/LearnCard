@@ -19,6 +19,7 @@ import { getAppStatusPath } from '../apps/myApps';
 import { useDeveloperPortalContext } from '../DeveloperPortalContext';
 import { LaunchSettingsSection } from './LaunchSettingsSection';
 import { AppPreviewPane } from './AppPreviewPane';
+import { writeTestAddress } from './testAddress';
 import type { LaunchSettings } from './LaunchSettingsSection';
 import { getLaunchSettingsError, parseLaunchConfig } from './launchSettings';
 import { ListingStatusBanner } from './ListingStatusBanner';
@@ -77,6 +78,7 @@ export const EditListingPage: React.FC = () => {
     const [launch, setLaunch] = useState<LaunchSettings | null>(null);
     const [launchChanged, setLaunchChanged] = useState(false);
     const [isLaunchOpen, setIsLaunchOpen] = useState(false);
+    const [testAddressVersion, setTestAddressVersion] = useState(0);
     const hasEditedRef = useRef(false);
     const loadedListingIdRef = useRef<string | null>(null);
     const launchRef = useRef<HTMLDivElement>(null);
@@ -243,7 +245,16 @@ export const EditListingPage: React.FC = () => {
             history.push({ pathname: statusPath, state: { celebrate: true } });
         } catch (e) {
             log.error('listing.submit.failed', e, { listingId });
-            setFormError("We couldn't submit your app. Please try again.");
+            const message = e instanceof Error ? e.message : '';
+            if (/localhost|non-HTTPS|https/i.test(message)) {
+                setFormError(
+                    'Learners need a public https:// address to open your app. Add it under How it opens, and keep your local version for testing.'
+                );
+                setIsLaunchOpen(true);
+                launchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                setFormError("We couldn't submit your app. Please try again.");
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -376,6 +387,10 @@ export const EditListingPage: React.FC = () => {
                                         onOpenChange={setIsLaunchOpen}
                                         error={showMissingHint ? launchError : null}
                                         sectionRef={launchRef}
+                                        onKeepForTesting={address => {
+                                            writeTestAddress(listingId, { address, enabled: true });
+                                            setTestAddressVersion(version => version + 1);
+                                        }}
                                     />
                                 )}
 
@@ -462,7 +477,9 @@ export const EditListingPage: React.FC = () => {
                         <div className="w-1/2 max-w-2xl shrink-0 bg-grayscale-10 border-l border-grayscale-200">
                             <div className="sticky top-0 h-[calc(100vh-80px)] p-6">
                                 <AppPreviewPane
+                                    key={testAddressVersion}
                                     listingId={listingId}
+                                    runsInside={launch?.type === 'EMBEDDED_IFRAME'}
                                     appName={data.name || 'Your app'}
                                     liveAddress={
                                         launch?.type === 'EMBEDDED_IFRAME'

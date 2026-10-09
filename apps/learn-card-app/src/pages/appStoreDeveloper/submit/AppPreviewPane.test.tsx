@@ -14,6 +14,7 @@ const renderPane = (liveAddress: string | null = 'https://quiz.app') =>
         <AppPreviewPane
             listingId="l1"
             appName="Quiz"
+            runsInside={liveAddress !== null}
             liveAddress={liveAddress}
             launchConfig={{ url: liveAddress ?? undefined }}
             storePreview={<div>Store card</div>}
