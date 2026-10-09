@@ -1,3 +1,5 @@
+import './config/applyDockerStageConfig';
+
 import { environment } from '@environment';
 import path from 'path';
 

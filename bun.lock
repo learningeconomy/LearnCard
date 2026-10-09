@@ -1481,6 +1481,17 @@
       "name": "@learncard/render-method-templates",
       "version": "1.0.0",
     },
+    "packages/service-config": {
+      "name": "@learncard/service-config",
+      "version": "0.1.0",
+      "dependencies": {
+        "@aws-sdk/client-secrets-manager": "^3.1139.0",
+      },
+      "devDependencies": {
+        "@types/node": "^18.7.19",
+        "vitest": "4.1.11",
+      },
+    },
     "packages/sss-key-manager": {
       "name": "@learncard/sss-key-manager",
       "version": "0.2.0",
@@ -1606,6 +1617,7 @@
         "@learncard/helpers": "workspace:*",
         "@learncard/learn-card-plugin": "workspace:*",
         "@learncard/partner-connect-core": "workspace:*",
+        "@learncard/service-config": "workspace:*",
         "@learncard/types": "workspace:*",
         "@learncard/vc-plugin": "workspace:*",
         "@learncard/vc-templates-plugin": "workspace:*",
@@ -1686,6 +1698,7 @@
         "@learncard/email-templates": "workspace:*",
         "@learncard/helpers": "workspace:*",
         "@learncard/init": "workspace:*",
+        "@learncard/service-config": "workspace:*",
         "@learncard/sss-key-manager": "workspace:*",
         "@learncard/types": "workspace:*",
         "@sentry/serverless": "^7.61.0",
@@ -1755,6 +1768,7 @@
         "@learncard/expiration-plugin": "workspace:*",
         "@learncard/helpers": "workspace:*",
         "@learncard/learn-card-plugin": "workspace:*",
+        "@learncard/service-config": "workspace:*",
         "@learncard/types": "workspace:*",
         "@learncard/vc-plugin": "workspace:*",
         "@learncard/vc-templates-plugin": "workspace:*",
@@ -3532,6 +3546,8 @@
     "@learncard/render-method-templates": ["@learncard/render-method-templates@workspace:packages/render-method-templates"],
 
     "@learncard/sd-jwt-vc-plugin": ["@learncard/sd-jwt-vc-plugin@workspace:packages/plugins/sd-jwt-vc"],
+
+    "@learncard/service-config": ["@learncard/service-config@workspace:packages/service-config"],
 
     "@learncard/smoketests": ["@learncard/smoketests@workspace:tests/smoketests"],
 
