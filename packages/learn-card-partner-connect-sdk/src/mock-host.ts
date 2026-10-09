@@ -101,9 +101,37 @@ type ToastTone = 'default' | 'positive' | 'publish';
 /** A toast body is a list of plain strings and bold (`{ b }`) segments. */
 type ToastSegment = string | { b: string };
 
+/**
+ * Line glyphs drawn on a 24×24 grid with `stroke="currentColor"`, so they
+ * inherit color and render identically everywhere (unlike emoji).
+ */
+const ICON_PATHS = {
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/>',
+    award: '<circle cx="12" cy="9" r="6"/><path d="M8.6 14 7 22l5-3 5 3-1.6-8"/>',
+    shield: '<path d="M12 3 5 6v6c0 4.4 3 7.6 7 9 4-1.4 7-4.6 7-9V6z"/><path d="m9 12 2 2 4-4"/>',
+    open: '<path d="M7 17 17 7"/><path d="M8 7h9v9"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+    send: '<path d="M21 3 10 14"/><path d="M21 3 14.5 21l-4.5-7-7-4.5z"/>',
+    sparkles:
+        '<path d="M12 3.5 13.9 9l5.6 2-5.6 2L12 18.5 10.1 13l-5.6-2 5.6-2z"/><path d="M19 3v4M17 5h4"/>',
+    sync: '<path d="M20 12a8 8 0 0 1-14.3 4.9M4 12a8 8 0 0 1 14.3-4.9"/><path d="M18.5 3v4h-4M5.5 21v-4h4"/>',
+    bell: '<path d="M6 9a6 6 0 1 1 12 0c0 6.5 2.5 8.5 2.5 8.5h-17S6 15.5 6 9"/><path d="M10.3 20.5a2 2 0 0 0 3.4 0"/>',
+    hash: '<path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/>',
+    users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 2.9-6 6.5-6s6.5 2.5 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20c0-2.8-1.6-4.9-4-5.7"/>',
+    publish: '<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>',
+    mark: '<rect x="3" y="5.5" width="18" height="13" rx="3"/><path d="M7 10h6M7 14h4"/>',
+    copy: '<rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"/>',
+    check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+    close: '<path d="M17 7 7 17M7 7l10 10"/>',
+    chevronDown: '<path d="m6 9 6 6 6-6"/>',
+} as const;
+
+type IconName = keyof typeof ICON_PATHS;
+
 interface ToastSpec {
-    icon: string;
+    icon: IconName;
     segments: ToastSegment[];
+    title?: string;
     tone?: ToastTone;
     ttl?: number;
     dismissible?: boolean;
@@ -119,10 +147,323 @@ interface ActiveToast {
     timeoutId: ReturnType<typeof setTimeout> | null;
     count: number;
     countEl: HTMLElement;
+    ttl: number;
+    persistent: boolean;
 }
+
+interface HudFeature {
+    icon: IconName;
+    label: string;
+    detail?: string;
+}
+
+const MAX_VISIBLE_TOASTS = 3;
+
+const PERMISSION_FEATURES: Record<string, { icon: IconName; label: string }> = {
+    request_identity: { icon: 'user', label: 'Sign in with LearnCard' },
+    send_credential: { icon: 'award', label: 'Award credentials' },
+    template_issuance: { icon: 'send', label: 'Send from your templates' },
+    request_consent: { icon: 'shield', label: 'Ask for permission' },
+    credential_search: { icon: 'search', label: 'Ask learners to share credentials' },
+    credential_by_id: { icon: 'search', label: 'Request a specific credential' },
+    launch_feature: { icon: 'open', label: 'Open LearnCard screens' },
+};
+
+/**
+ * Practice-mode chrome is injected into arbitrary partner pages, so every rule
+ * is scoped under `.lc-mock-stack` / `.lc-mock-hud` and resets the properties
+ * host CSS most often overrides (button/link/list defaults, box-sizing).
+ */
+const MOCK_STYLES = `
+@keyframes lc-mock-in { from { opacity: 0; transform: translateY(14px) scale(0.96); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes lc-mock-in-top { from { opacity: 0; transform: translateY(-14px) scale(0.96); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes lc-mock-out { to { opacity: 0; transform: scale(0.94); filter: blur(4px); } }
+@keyframes lc-mock-pop { from { opacity: 0; transform: translateY(10px) scale(0.94); } to { opacity: 1; transform: none; } }
+@keyframes lc-mock-bump { 40% { transform: scale(1.18); } }
+@keyframes lc-mock-pulse { 0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.5); } 70%, 100% { box-shadow: 0 0 0 6px rgba(16,185,129,0); } }
+
+.lc-mock-stack, .lc-mock-hud {
+  --lc-glass: rgba(255,255,255,0.72);
+  --lc-glass-solid: rgba(251,251,252,0.97);
+  --lc-group: rgba(255,255,255,0.66);
+  --lc-edge: rgba(255,255,255,0.7);
+  --lc-hairline: rgba(24,34,78,0.08);
+  --lc-fill: rgba(24,34,78,0.06);
+  --lc-fill-hover: rgba(24,34,78,0.1);
+  --lc-ink: #18224E;
+  --lc-ink-2: #52597A;
+  --lc-ink-3: #8B91A7;
+  --lc-solid: #18224E;
+  --lc-on-solid: #FFFFFF;
+  --lc-shadow: 0 0 0 0.5px rgba(24,34,78,0.1), 0 2px 8px rgba(24,34,78,0.06), 0 24px 56px -16px rgba(24,34,78,0.32);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 13px; line-height: 1.4; letter-spacing: -0.006em; text-align: left;
+  color: var(--lc-ink); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  position: fixed; z-index: 2147483647;
+}
+@media (prefers-color-scheme: dark) {
+  .lc-mock-stack, .lc-mock-hud {
+    --lc-glass: rgba(30,37,68,0.62);
+    --lc-glass-solid: rgba(30,37,68,0.97);
+    --lc-group: rgba(255,255,255,0.06);
+    --lc-edge: rgba(255,255,255,0.14);
+    --lc-hairline: rgba(255,255,255,0.08);
+    --lc-fill: rgba(255,255,255,0.1);
+    --lc-fill-hover: rgba(255,255,255,0.16);
+    --lc-ink: #FBFBFC;
+    --lc-ink-2: #C5C8D3;
+    --lc-ink-3: #A8ACBD;
+    --lc-solid: #FBFBFC;
+    --lc-on-solid: #18224E;
+    --lc-shadow: 0 0 0 0.5px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2), 0 24px 56px -16px rgba(0,0,0,0.6);
+  }
+}
+.lc-mock-stack *, .lc-mock-hud * { box-sizing: border-box; }
+.lc-mock-stack svg, .lc-mock-hud svg { display: block; flex: none; }
+.lc-mock-stack button, .lc-mock-hud button {
+  font: inherit; color: inherit; margin: 0; text-transform: none; letter-spacing: inherit;
+  -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent;
+}
+.lc-mock-stack a, .lc-mock-hud a { -webkit-tap-highlight-color: transparent; }
+.lc-mock-stack :focus-visible, .lc-mock-hud :focus-visible { outline: 2px solid #10B981; outline-offset: 2px; }
+
+.lc-mock-glass {
+  background: var(--lc-glass);
+  -webkit-backdrop-filter: saturate(180%) blur(28px); backdrop-filter: saturate(180%) blur(28px);
+  border: 0.5px solid var(--lc-edge);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), var(--lc-shadow);
+}
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .lc-mock-glass { background: var(--lc-glass-solid); }
+}
+
+.lc-mock-dot {
+  width: 7px; height: 7px; border-radius: 999px; background: #10B981; flex: none;
+  animation: lc-mock-pulse 2.4s ease-out infinite;
+}
+
+/* Notices */
+.lc-mock-stack {
+  bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 12px));
+  right: max(20px, calc(env(safe-area-inset-right, 0px) + 12px));
+  width: min(360px, calc(100vw - 40px));
+  display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+}
+.lc-mock-toast {
+  position: relative; pointer-events: auto; display: flex; align-items: flex-start; gap: 12px;
+  width: 100%; padding: 12px 14px 13px 12px; border-radius: 22px;
+  animation: lc-mock-in 460ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.lc-mock-toast:hover { transform: translateY(-2px); }
+.lc-mock-toast.lc-mock-out { animation: lc-mock-out 200ms cubic-bezier(0.4, 0, 1, 1) forwards; pointer-events: none; }
+.lc-mock-toast--hidden { display: none; }
+.lc-mock-toast--publish { order: -1; padding: 14px 14px 14px 12px; }
+.lc-mock-toast--dismissible .lc-mock-content { padding-right: 22px; }
+
+.lc-mock-tile {
+  width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex: none;
+  color: #FFFFFF; background: linear-gradient(180deg, #353E64 0%, #18224E 100%);
+  box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.18), 0 1px 2px rgba(24,34,78,0.24);
+}
+.lc-mock-tile svg { width: 18px; height: 18px; }
+.lc-mock-toast--positive .lc-mock-tile { background: linear-gradient(180deg, #34D399 0%, #059669 100%); }
+
+.lc-mock-content { flex: 1; min-width: 0; }
+.lc-mock-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; font-size: 11.5px; font-weight: 600; color: var(--lc-ink-3); }
+.lc-mock-chip { padding: 1px 7px; border-radius: 999px; background: var(--lc-fill); color: var(--lc-ink-2); font-size: 10.5px; font-weight: 600; }
+.lc-mock-count {
+  margin-left: auto; min-width: 22px; padding: 1px 7px; border-radius: 999px; text-align: center;
+  background: var(--lc-solid); color: var(--lc-on-solid); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.lc-mock-bump { animation: lc-mock-bump 260ms ease-out; }
+.lc-mock-title { font-size: 14.5px; font-weight: 600; letter-spacing: -0.012em; margin: 1px 0 2px; }
+.lc-mock-body { font-size: 13.5px; line-height: 1.42; color: var(--lc-ink); overflow-wrap: anywhere; white-space: pre-line; }
+.lc-mock-body strong { font-weight: 600; }
+.lc-mock-toast--publish .lc-mock-body { color: var(--lc-ink-2); }
+
+.lc-mock-action {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 11px; padding: 9px 15px; border-radius: 999px;
+  background: var(--lc-solid); color: var(--lc-on-solid) !important; text-decoration: none !important;
+  font-size: 13px; font-weight: 600; line-height: 1;
+  transition: transform 160ms ease, opacity 160ms ease;
+}
+.lc-mock-action svg { width: 14px; height: 14px; }
+.lc-mock-action:hover { opacity: 0.9; }
+.lc-mock-action:active { transform: scale(0.97); }
+
+.lc-mock-close {
+  position: absolute; top: 10px; right: 10px; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 999px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  background: var(--lc-fill); color: var(--lc-ink-2); transition: background 160ms ease, color 160ms ease;
+}
+.lc-mock-close svg { width: 13px; height: 13px; }
+.lc-mock-close:hover { background: var(--lc-fill-hover); color: var(--lc-ink); }
+
+/* Practice panel */
+.lc-mock-hud {
+  left: max(20px, calc(env(safe-area-inset-left, 0px) + 12px));
+  bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 12px));
+}
+.lc-mock-hud.lc-mock-animate > * { animation: lc-mock-pop 380ms cubic-bezier(0.22, 1, 0.36, 1) backwards; transform-origin: bottom left; }
+
+.lc-mock-hud-pill {
+  display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 8px 0 6px; border-radius: 999px;
+  cursor: pointer; font-size: 13px; font-weight: 600; color: var(--lc-ink);
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.lc-mock-hud-pill:hover { transform: translateY(-2px); }
+.lc-mock-hud-pill:active { transform: scale(0.97); }
+.lc-mock-hud-pill .lc-mock-dot { margin-left: 2px; }
+.lc-mock-hud-mark {
+  width: 28px; height: 28px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex: none;
+  color: #FFFFFF; background: linear-gradient(180deg, #353E64 0%, #18224E 100%);
+  box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.18);
+}
+.lc-mock-hud-mark svg { width: 15px; height: 15px; }
+.lc-mock-hud-mark--lg { width: 36px; height: 36px; border-radius: 11px; }
+.lc-mock-hud-mark--lg svg { width: 19px; height: 19px; }
+.lc-mock-hud-badge {
+  min-width: 24px; height: 24px; padding: 0 7px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--lc-fill); color: var(--lc-ink-2); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+
+.lc-mock-hud-card {
+  width: min(328px, calc(100vw - 40px)); max-height: calc(100vh - 40px); overflow: auto;
+  border-radius: 26px; padding: 8px 8px 10px; overscroll-behavior: contain;
+}
+.lc-mock-hud-header { display: flex; align-items: center; gap: 11px; padding: 6px 4px 12px 6px; }
+.lc-mock-hud-heading { flex: 1; min-width: 0; }
+.lc-mock-hud-title { display: flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 600; letter-spacing: -0.014em; }
+.lc-mock-hud-subtitle { font-size: 12px; color: var(--lc-ink-3); margin-top: 1px; }
+.lc-mock-hud-minimize {
+  width: 30px; height: 30px; padding: 0; border: 0; border-radius: 999px; flex: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--lc-fill); color: var(--lc-ink-2); transition: background 160ms ease, color 160ms ease;
+}
+.lc-mock-hud-minimize svg { width: 16px; height: 16px; }
+.lc-mock-hud-minimize:hover { background: var(--lc-fill-hover); color: var(--lc-ink); }
+
+.lc-mock-hud-group { background: var(--lc-group); border: 0.5px solid var(--lc-hairline); border-radius: 18px; }
+.lc-mock-hud-app { display: flex; align-items: center; gap: 11px; padding: 10px 12px; }
+.lc-mock-hud-avatar {
+  width: 36px; height: 36px; border-radius: 10px; flex: none; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--lc-fill); color: var(--lc-ink-2); font-size: 15px; font-weight: 600;
+}
+.lc-mock-hud-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.lc-mock-hud-app-name { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.lc-mock-hud-section {
+  padding: 14px 12px 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--lc-ink-3);
+}
+.lc-mock-hud-list { list-style: none; margin: 0; padding: 0; max-height: min(40vh, 320px); overflow: auto; }
+.lc-mock-hud-row { position: relative; display: flex; align-items: center; gap: 11px; padding: 9px 12px; margin: 0; }
+.lc-mock-hud-row + .lc-mock-hud-row::before {
+  content: ''; position: absolute; top: 0; left: 50px; right: 0; height: 0.5px; background: var(--lc-hairline);
+}
+.lc-mock-hud-glyph {
+  width: 28px; height: 28px; border-radius: 8px; flex: none; display: flex; align-items: center; justify-content: center;
+  background: var(--lc-fill); color: var(--lc-ink);
+}
+.lc-mock-hud-glyph svg { width: 15px; height: 15px; }
+.lc-mock-hud-row-text { flex: 1; min-width: 0; }
+.lc-mock-hud-row-label { font-size: 13px; font-weight: 500; }
+.lc-mock-hud-row-detail { font-size: 12px; color: var(--lc-ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.lc-mock-hud-check { color: #10B981; flex: none; }
+.lc-mock-hud-check svg { width: 16px; height: 16px; stroke-width: 2.4; }
+.lc-mock-hud-empty { padding: 14px; font-size: 13px; color: var(--lc-ink-3); line-height: 1.45; }
+
+.lc-mock-hud-footer { display: flex; gap: 8px; padding: 12px 2px 0; }
+.lc-mock-hud-publish {
+  flex: 1; height: 42px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  background: var(--lc-solid); color: var(--lc-on-solid) !important; text-decoration: none !important;
+  font-size: 14px; font-weight: 600; transition: transform 160ms ease, opacity 160ms ease;
+}
+.lc-mock-hud-publish svg { width: 15px; height: 15px; }
+.lc-mock-hud-publish:hover { opacity: 0.9; }
+.lc-mock-hud-publish:active { transform: scale(0.98); }
+.lc-mock-hud-copy {
+  width: 42px; height: 42px; padding: 0; border: 0; border-radius: 999px; flex: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--lc-fill); color: var(--lc-ink); transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+.lc-mock-hud-copy svg { width: 17px; height: 17px; }
+.lc-mock-hud-copy:hover { background: var(--lc-fill-hover); }
+.lc-mock-hud-copy:active { transform: scale(0.94); }
+.lc-mock-hud-copy.is-copied { background: rgba(16,185,129,0.14); color: #059669; }
+.lc-mock-hud-publish-hint { padding: 10px 8px 0; font-size: 11.5px; line-height: 1.45; color: var(--lc-ink-3); overflow-wrap: anywhere; }
+.lc-mock-hud-publish-hint code {
+  display: inline-block; max-width: 100%; margin-top: 3px; word-break: break-all;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 11px; padding: 1px 5px; border-radius: 6px;
+  background: var(--lc-fill); color: var(--lc-ink-2);
+}
+
+@media (max-width: 640px) {
+  .lc-mock-stack {
+    top: max(12px, calc(env(safe-area-inset-top, 0px) + 8px)); bottom: auto; left: 12px; right: 12px; width: auto;
+    flex-direction: column-reverse;
+  }
+  .lc-mock-toast { animation-name: lc-mock-in-top; }
+  .lc-mock-toast--older { display: none; }
+  .lc-mock-hud { left: 12px; bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) + 8px)); }
+  .lc-mock-hud-card { width: calc(100vw - 24px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lc-mock-stack *, .lc-mock-hud *, .lc-mock-hud.lc-mock-animate > * { animation: none !important; transition: none !important; }
+}
+`.trim();
 
 const hasDocument = (): boolean =>
     typeof document !== 'undefined' && typeof document.createElement === 'function';
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/** Builds an inline SVG glyph. Paths are static constants, never user input. */
+const createIcon = (name: IconName): SVGSVGElement => {
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '1.9');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.innerHTML = ICON_PATHS[name];
+    return svg;
+};
+
+const createEl = <K extends keyof HTMLElementTagNameMap>(
+    tag: K,
+    className?: string,
+    text?: string
+): HTMLElementTagNameMap[K] => {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    if (text !== undefined) el.textContent = text;
+    return el;
+};
+
+const plural = (count: number, noun: string): string => `${count} ${noun}${count === 1 ? '' : 's'}`;
+
+const readablePath = (path: string): string => path.split(/[?#]/)[0] || path;
+
+const readHost = (url: string | undefined): string => {
+    if (!url) return '';
+    try {
+        return new URL(url).host;
+    } catch {
+        return '';
+    }
+};
+
+const readableTemplateName = (record: CapturedTemplateRecord): string => {
+    const template = record.template as { name?: unknown } | undefined;
+    const name = template?.name;
+    return typeof name === 'string' && name.trim() && !name.includes('{{')
+        ? name.trim()
+        : record.alias;
+};
 
 const MAX_APP_FINGERPRINT_LENGTH = 64;
 
@@ -193,53 +534,46 @@ const buildConsentScopeToastSegments = (payload: unknown): ToastSegment[] => {
 
     if (!scopes || typeof scopes !== 'object' || Array.isArray(scopes)) {
         const parts: ToastSegment[] = [
-            'In LearnCard, the user would review and grant this consent request.',
+            'In LearnCard, the learner would review this request. Approved automatically here.',
         ];
         if (!contractUri) {
             parts.push(
-                '\nTip: pass scopes — ',
+                '\nTip: say what you need — ',
                 { b: "requestConsent({ read: { credentialCategories: ['Achievement'] } })" },
-                ' — so this works in production with zero setup.'
+                ' — and it works when published with no extra setup.'
             );
         }
         return parts;
     }
 
     const normalized = normalizeConsentRequest(scopes as ConsentRequest);
-    const parts: ToastSegment[] = ['Would ask to'];
     const readCategories = normalized.read.credentialCategories;
     const personalFields = normalized.read.personalFields;
     const writeCategories = normalized.write.credentialCategories;
-    let hasPriorPart = false;
+    const asks: ToastSegment[][] = [];
 
     if (readCategories.length > 0) {
-        parts.push(' read ', { b: readCategories.join(', ') }, ' credentials');
-        hasPriorPart = true;
+        asks.push(['see their ', { b: readCategories.join(', ') }, ' credentials']);
     }
 
     if (personalFields.length > 0) {
-        parts.push(
-            hasPriorPart ? ' and ' : ' read ',
-            { b: personalFields.join(', ') },
-            ' personal data'
-        );
-        hasPriorPart = true;
+        asks.push(['see their ', { b: personalFields.join(', ') }]);
     }
 
     if (writeCategories.length > 0) {
-        parts.push(
-            hasPriorPart ? ' and ' : ' write ',
-            { b: writeCategories.join(', ') },
-            ' credentials'
-        );
-        hasPriorPart = true;
+        asks.push(['add ', { b: writeCategories.join(', ') }, ' credentials']);
     }
 
-    if (!hasPriorPart) {
-        parts.push(' request consent with no declared scopes');
+    if (asks.length === 0) {
+        return ['The learner would be asked for permission. Approved automatically here.'];
     }
 
-    parts.push('.');
+    const parts: ToastSegment[] = ['The learner would be asked to let your app '];
+    asks.forEach((ask, index) => {
+        if (index > 0) parts.push(index === asks.length - 1 ? ' and ' : ', ');
+        parts.push(...ask);
+    });
+    parts.push('. Approved automatically here.');
 
     return parts;
 };
@@ -283,7 +617,7 @@ export class MockHost {
     private styleEl: HTMLStyleElement | null = null;
     private stackEl: HTMLElement | null = null;
     private hudEl: HTMLElement | null = null;
-    private hudBodyEl: HTMLElement | null = null;
+    private hudAnimateNext = true;
     private readonly activeToasts = new Map<string, ActiveToast>();
     /** Pending exit-animation timers, tracked so `destroy()` can cancel them. */
     private readonly exitTimers = new Set<ReturnType<typeof setTimeout>>();
@@ -349,9 +683,9 @@ export class MockHost {
             switch (action) {
                 case 'REQUEST_IDENTITY':
                     this.toast({
-                        icon: '👤',
+                        icon: 'user',
                         segments: [
-                            'In LearnCard, the user would sign in. Returning a mock identity.',
+                            'In LearnCard, the learner would sign in. Using a practice profile for now.',
                         ],
                     });
                     return Promise.resolve({
@@ -391,12 +725,7 @@ export class MockHost {
                         );
                     }
 
-                    this.showConsentBanner(redirect);
-                    this.toast({
-                        icon: '✅',
-                        tone: 'positive',
-                        segments: buildConsentScopeToastSegments(payload),
-                    });
+                    this.showConsentToast(payload, redirect);
                     return Promise.resolve({ granted: true });
                 }
 
@@ -404,9 +733,13 @@ export class MockHost {
                     const featurePath =
                         (payload as { featurePath?: string } | undefined)?.featurePath ?? '';
                     this.toast({
-                        icon: '🚀',
+                        icon: 'open',
                         segments: featurePath
-                            ? ['In LearnCard, this would open ', { b: featurePath }, '.']
+                            ? [
+                                  'In LearnCard, this would open ',
+                                  { b: readablePath(featurePath) },
+                                  '.',
+                              ]
                             : ['In LearnCard, this would open a feature screen.'],
                     });
                     return Promise.resolve({ launched: true, featurePath });
@@ -415,15 +748,15 @@ export class MockHost {
                 case 'ASK_CREDENTIAL_SEARCH': {
                     const held = this.selfCredentials();
                     this.toast({
-                        icon: '🔍',
+                        icon: 'search',
                         segments: held.length
                             ? [
-                                  'The user could share ',
-                                  { b: String(held.length) },
-                                  ' credential(s).',
+                                  'The learner could share ',
+                                  { b: plural(held.length, 'credential') },
+                                  '.',
                               ]
                             : [
-                                  'In LearnCard, the user would be asked to share matching credentials. None in mock.',
+                                  'In LearnCard, the learner would choose credentials to share. None yet in practice.',
                               ],
                     });
                     return Promise.resolve({
@@ -438,11 +771,11 @@ export class MockHost {
                         ?.credentialId;
                     const found = this.credentials.find(c => c.credentialUri === credentialId);
                     this.toast({
-                        icon: '🔍',
+                        icon: 'search',
                         segments: found
-                            ? ['Sharing ', { b: found.name }, '.']
+                            ? ['The learner would share ', { b: found.name }, '.']
                             : [
-                                  'In LearnCard, the user would be asked to share a credential. Not found in mock.',
+                                  'In LearnCard, the learner would be asked to share this credential. It isn’t in practice data yet.',
                               ],
                     });
                     return Promise.resolve({ credential: found?.credential });
@@ -464,14 +797,14 @@ export class MockHost {
                         });
                     }
                     this.toast({
-                        icon: '📤',
+                        icon: 'send',
                         segments: recipients.length
                             ? [
-                                  'This would issue to ',
-                                  { b: String(recipients.length) },
-                                  ' recipient(s).',
+                                  'In LearnCard, this would send to ',
+                                  { b: plural(recipients.length, 'person') },
+                                  '.',
                               ]
-                            : ['In LearnCard, this would open the Send Boost flow.'],
+                            : ['In LearnCard, this would open the send screen.'],
                     });
                     return Promise.resolve({ issued: true });
                 }
@@ -485,13 +818,19 @@ export class MockHost {
                     const structured = opts.format === 'structured';
                     const held = includeCredentials ? this.selfCredentials() : [];
                     this.toast({
-                        icon: '🧠',
+                        icon: 'sparkles',
                         segments: !includeCredentials
-                            ? ['Learner profile requested with credentials excluded.']
+                            ? [
+                                  'In LearnCard, the learner’s profile would load, without credentials.',
+                              ]
                             : held.length
-                              ? ['Learner profile: ', { b: String(held.length) }, ' credential(s).']
+                              ? [
+                                    'Learner profile loaded with ',
+                                    { b: plural(held.length, 'credential') },
+                                    '.',
+                                ]
                               : [
-                                    "In LearnCard, the user's learner profile would load. Empty in mock.",
+                                    'In LearnCard, the learner’s profile would load here. Empty in practice.',
                                 ],
                     });
                     const prompt = !includeCredentials
@@ -514,9 +853,9 @@ export class MockHost {
 
                 case 'GET_SYNC_STATUS':
                     this.toast({
-                        icon: '🔄',
+                        icon: 'sync',
                         segments: [
-                            'In LearnCard, this reports data sync progress. Mock reports ready.',
+                            'In LearnCard, this checks that the learner’s data is up to date. Ready in practice.',
                         ],
                     });
                     return Promise.resolve({
@@ -531,7 +870,7 @@ export class MockHost {
 
                 default:
                     this.toast({
-                        icon: '✨',
+                        icon: 'sparkles',
                         segments: ['In LearnCard, this would run ', { b: action }, '.'],
                     });
                     return Promise.resolve({});
@@ -656,8 +995,12 @@ export class MockHost {
                             );
                             if (existing) {
                                 this.toast({
-                                    icon: '✅',
-                                    segments: ['The user already has ', { b: existing.name }, '.'],
+                                    icon: 'award',
+                                    segments: [
+                                        'The learner already has ',
+                                        { b: existing.name },
+                                        '.',
+                                    ],
                                 });
                                 return Promise.resolve({
                                     credentialUri: existing.credentialUri,
@@ -715,8 +1058,8 @@ export class MockHost {
                         );
                         if (existing) {
                             this.toast({
-                                icon: '✅',
-                                segments: ['The user already has ', { b: existing.name }, '.'],
+                                icon: 'award',
+                                segments: ['The learner already has ', { b: existing.name }, '.'],
                             });
                             return Promise.resolve({
                                 credentialUri: existing.credentialUri,
@@ -749,10 +1092,10 @@ export class MockHost {
                 case 'check-credential': {
                     const held = this.selfCredentials().find(c => this.matchesTemplate(c, event));
                     this.toast({
-                        icon: '🔎',
+                        icon: 'search',
                         segments: held
-                            ? ['The user already has ', { b: held.name }, '.']
-                            : ["Mock: the user doesn't have this credential yet."],
+                            ? ['The learner already has ', { b: held.name }, '.']
+                            : ['The learner doesn’t have this credential yet.'],
                     });
                     return Promise.resolve(
                         held
@@ -772,10 +1115,10 @@ export class MockHost {
                         c => this.matchesTemplate(c, event) && c.recipient === recipient
                     );
                     this.toast({
-                        icon: '🔎',
+                        icon: 'send',
                         segments: match
-                            ? ['Issued to ', { b: recipient }, ' — ', { b: match.status }, '.']
-                            : ['Mock: not sent to this recipient yet.'],
+                            ? ['Sent to ', { b: recipient }, ' — ', { b: match.status }, '.']
+                            : ['Not sent to this person yet.'],
                     });
                     return Promise.resolve(
                         match
@@ -808,11 +1151,11 @@ export class MockHost {
                     const nextOffset = offset + page.length;
                     const hasMore = nextOffset < matched.length;
                     this.toast({
-                        icon: '👥',
+                        icon: 'users',
                         segments: [
-                            'In LearnCard, this lists recipients. ',
+                            'In LearnCard, this lists who received it. ',
                             { b: String(matched.length) },
-                            ' in mock.',
+                            ' so far in practice.',
                         ],
                     });
                     return Promise.resolve({
@@ -828,10 +1171,10 @@ export class MockHost {
                     const body = typeof event.body === 'string' ? event.body : '';
                     const text = [title, body].filter(Boolean).join(' — ');
                     this.toast({
-                        icon: '🔔',
+                        icon: 'bell',
                         segments: text
-                            ? ['The user would be notified: ', { b: text }]
-                            : ['In LearnCard, the user would receive a notification.'],
+                            ? ['The learner would get a notification: ', { b: text }]
+                            : ['In LearnCard, the learner would get a notification.'],
                     });
                     return Promise.resolve({ sent: true });
                 }
@@ -843,7 +1186,7 @@ export class MockHost {
                     const next = previous + amount;
                     this.writeCounter(key, next);
                     this.toast({
-                        icon: '🔢',
+                        icon: 'hash',
                         segments: ['Counter ', { b: key }, ' → ', { b: String(next) }, '.'],
                     });
                     return Promise.resolve({ key, previousValue: previous, newValue: next });
@@ -854,7 +1197,7 @@ export class MockHost {
                     const stored = this.readCounter(key);
                     const value = stored?.value ?? 0;
                     this.toast({
-                        icon: '🔢',
+                        icon: 'hash',
                         segments: ['Counter ', { b: key }, ' is ', { b: String(value) }, '.'],
                     });
                     return Promise.resolve({
@@ -877,8 +1220,8 @@ export class MockHost {
                         };
                     });
                     this.toast({
-                        icon: '🔢',
-                        segments: ['Read ', { b: String(counters.length) }, ' counter(s).'],
+                        icon: 'hash',
+                        segments: ['Read ', { b: plural(counters.length, 'counter') }, '.'],
                     });
                     return Promise.resolve({ counters });
                 }
@@ -895,10 +1238,12 @@ export class MockHost {
                         status: 'claimed',
                     });
                     this.toast({
-                        icon: '✅',
+                        icon: 'award',
+                        tone: 'positive',
                         segments: [
-                            'In LearnCard, an AI session credential would be saved: ',
+                            'In LearnCard, the learner would keep a record of ',
                             { b: sessionTitle },
+                            '.',
                         ],
                     });
 
@@ -926,7 +1271,7 @@ export class MockHost {
 
                 default:
                     this.toast({
-                        icon: '✨',
+                        icon: 'sparkles',
                         segments: ['In LearnCard, this would run ', { b: type }, '.'],
                     });
                     return Promise.resolve({});
@@ -1050,6 +1395,7 @@ export class MockHost {
 
         this.saveManifest(next);
         this.updateManifestHud(next);
+        this.refreshPublishPromptLink(next);
         this.maybeShowPublishPrompt(next);
     }
 
@@ -1399,38 +1745,83 @@ export class MockHost {
 
         this.publishPromptShown = true;
         this.toast({
-            icon: '↗',
+            icon: 'publish',
             tone: 'publish',
             persistent: true,
             dismissible: true,
+            title: 'Ready to publish',
             action: {
-                label: 'Publish to LearnCard →',
+                label: 'Publish to LearnCard',
                 href: this.getPublishUrl(manifest),
             },
             segments: [
-                'Your app is ready for LearnCard — ',
-                { b: String(manifest.templates.length) },
-                ' credential template(s), ',
-                { b: String(manifest.permissions.length) },
-                ' permission(s) captured.',
+                'Your app works with LearnCard. Put it in front of learners in a few steps.',
             ],
         });
     }
 
-    private readCapabilityCount(manifest: CapturedAppManifest): number {
-        return (
-            manifest.permissions.length +
-            manifest.templates.length +
-            manifest.consentRequests.length +
-            manifest.featuresLaunched.length +
-            manifest.counterKeys.length +
-            (manifest.usedLearnerContext ? 1 : 0) +
-            (manifest.usedNotifications ? 1 : 0)
+    private refreshPublishPromptLink(manifest: CapturedAppManifest): void {
+        const link = this.stackEl?.querySelector<HTMLAnchorElement>(
+            '.lc-mock-toast--publish .lc-mock-action'
         );
+        if (link) link.href = this.getPublishUrl(manifest);
     }
 
-    private formatConsentSummary(manifest: CapturedAppManifest): string {
-        if (manifest.consentRequests.length === 0) return 'None yet';
+    private describeFeatures(manifest: CapturedAppManifest): HudFeature[] {
+        const features: HudFeature[] = [];
+
+        for (const permission of manifest.permissions) {
+            const known = PERMISSION_FEATURES[permission];
+            const feature: HudFeature = known
+                ? { ...known }
+                : { icon: 'sparkles', label: permission.replace(/_/g, ' ') };
+
+            if (permission === 'send_credential' && manifest.templates.length > 0) {
+                feature.detail = manifest.templates.map(readableTemplateName).join(', ');
+            }
+
+            if (permission === 'request_consent') {
+                feature.detail = this.formatConsentSummary(manifest);
+            }
+
+            if (permission === 'launch_feature' && manifest.featuresLaunched.length > 0) {
+                feature.detail = Array.from(
+                    new Set(manifest.featuresLaunched.map(readablePath))
+                ).join(', ');
+            }
+
+            features.push(feature);
+        }
+
+        if (manifest.templates.length > 0 && !manifest.permissions.includes('send_credential')) {
+            features.push({
+                icon: 'award',
+                label: 'Award credentials',
+                detail: manifest.templates.map(readableTemplateName).join(', '),
+            });
+        }
+
+        if (manifest.usedLearnerContext) {
+            features.push({ icon: 'sparkles', label: 'Personalize with the learner’s profile' });
+        }
+
+        if (manifest.usedNotifications) {
+            features.push({ icon: 'bell', label: 'Send notifications' });
+        }
+
+        if (manifest.counterKeys.length > 0) {
+            features.push({
+                icon: 'hash',
+                label: 'Track progress',
+                detail: manifest.counterKeys.join(', '),
+            });
+        }
+
+        return features;
+    }
+
+    private formatConsentSummary(manifest: CapturedAppManifest): string | undefined {
+        if (manifest.consentRequests.length === 0) return undefined;
 
         const readCategories = new Set<string>();
         const personalFields = new Set<string>();
@@ -1447,13 +1838,11 @@ export class MockHost {
         }
 
         const parts: string[] = [];
-        if (readCategories.size > 0)
-            parts.push(`read ${readCategories.size} credential categories`);
-        if (personalFields.size > 0) parts.push(`read ${personalFields.size} personal fields`);
-        if (writeCategories.size > 0)
-            parts.push(`write ${writeCategories.size} credential categories`);
+        if (readCategories.size > 0) parts.push(`See ${[...readCategories].join(', ')}`);
+        if (personalFields.size > 0) parts.push(`See ${[...personalFields].join(', ')}`);
+        if (writeCategories.size > 0) parts.push(`Add ${[...writeCategories].join(', ')}`);
 
-        return parts.join(' • ') || `${manifest.consentRequests.length} request(s)`;
+        return parts.join(' · ') || undefined;
     }
 
     private copyText(text: string): void {
@@ -1506,228 +1895,207 @@ export class MockHost {
             return;
         }
 
-        if (!this.hudEl || !document.body.contains(this.hudEl)) {
-            const hud = document.createElement('div');
-            hud.className = 'lc-mock-hud';
-            Object.assign(hud.style, {
-                position: 'fixed',
-                left: '20px',
-                bottom: '20px',
-                zIndex: '2147483647',
-                width: 'min(340px, calc(100vw - 40px))',
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-            });
+        this.ensureStyles();
 
-            const body = document.createElement('div');
-            hud.appendChild(body);
+        if (!this.hudEl || !document.body.contains(this.hudEl)) {
+            const hud = createEl('div', 'lc-mock-hud');
+            hud.setAttribute('role', 'region');
+            hud.setAttribute('aria-label', 'LearnCard practice mode');
             document.body.appendChild(hud);
             this.domNodes.add(hud);
             this.hudEl = hud;
-            this.hudBodyEl = body;
+            this.hudAnimateNext = true;
         }
 
-        this.hudEl.style.display = 'block';
+        const hud = this.hudEl;
+        hud.style.display = '';
+        hud.replaceChildren(
+            this.loadHudCollapsed()
+                ? this.renderHudPill(currentManifest)
+                : this.renderHudCard(currentManifest)
+        );
 
-        const body = this.hudBodyEl;
-        if (!body) return;
+        hud.classList.toggle('lc-mock-animate', this.hudAnimateNext);
+        this.hudAnimateNext = false;
+    }
 
-        const collapsed = this.loadHudCollapsed();
-        const capabilityCount = this.readCapabilityCount(currentManifest);
-        const publishUrl = this.getPublishUrl(currentManifest);
+    private setHudCollapsed(collapsed: boolean, manifest: CapturedAppManifest): void {
+        this.saveHudCollapsed(collapsed);
+        this.hudAnimateNext = true;
+        this.updateManifestHud(manifest);
+        const focusTarget = this.hudEl?.querySelector<HTMLElement>(
+            collapsed ? '.lc-mock-hud-pill' : '.lc-mock-hud-minimize'
+        );
+        focusTarget?.focus({ preventScroll: true });
+    }
 
-        body.innerHTML = '';
+    private renderHudPill(manifest: CapturedAppManifest): HTMLElement {
+        const count = this.describeFeatures(manifest).length;
+        const pill = createEl('button', 'lc-mock-hud-pill lc-mock-glass');
+        pill.type = 'button';
+        pill.setAttribute('aria-expanded', 'false');
+        pill.setAttribute(
+            'aria-label',
+            `LearnCard practice mode. Your app uses ${plural(count, 'feature')}. Show details.`
+        );
 
-        if (collapsed) {
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.textContent = `LC · ${capabilityCount} capabilities`;
-            Object.assign(button.style, {
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: '999px',
-                background: '#18224E',
-                color: '#FFFFFF',
-                boxShadow: '0 10px 30px rgba(24,34,78,0.22)',
-                fontSize: '12px',
-                lineHeight: '1',
-                padding: '10px 12px',
-                cursor: 'pointer',
-                fontWeight: '600',
-            });
-            button.addEventListener('click', () => {
-                this.saveHudCollapsed(false);
-                this.updateManifestHud(currentManifest);
-            });
-            body.appendChild(button);
-            return;
-        }
+        const mark = createEl('span', 'lc-mock-hud-mark');
+        mark.appendChild(createIcon('mark'));
 
-        const card = document.createElement('div');
-        Object.assign(card.style, {
-            background: '#18224E',
-            color: '#FFFFFF',
-            borderRadius: '16px',
-            boxShadow: '0 10px 30px rgba(24,34,78,0.22)',
-            padding: '12px',
-            border: '1px solid rgba(255,255,255,0.1)',
-        });
+        const label = createEl('span', 'lc-mock-hud-pill-label', 'Practice mode');
+        const badge = createEl('span', 'lc-mock-hud-badge', String(count));
 
-        const header = document.createElement('div');
-        Object.assign(header.style, {
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '8px',
-            marginBottom: '10px',
-        });
+        pill.append(mark, createEl('span', 'lc-mock-dot'), label, badge);
+        pill.addEventListener('click', () => this.setHudCollapsed(false, manifest));
 
-        const title = document.createElement('div');
-        title.textContent = 'LearnCard manifest';
-        Object.assign(title.style, {
-            fontSize: '12px',
-            fontWeight: '700',
-            letterSpacing: '0.02em',
-            textTransform: 'uppercase',
-            opacity: '0.82',
-        });
+        return pill;
+    }
 
-        const collapseButton = document.createElement('button');
-        collapseButton.type = 'button';
-        collapseButton.textContent = 'Collapse';
-        Object.assign(collapseButton.style, {
-            border: '0',
-            background: 'rgba(255,255,255,0.08)',
-            color: '#FFFFFF',
-            borderRadius: '999px',
-            padding: '6px 8px',
-            fontSize: '11px',
-            cursor: 'pointer',
-        });
-        collapseButton.addEventListener('click', () => {
-            this.saveHudCollapsed(true);
-            this.updateManifestHud(currentManifest);
-        });
+    private renderHudCard(manifest: CapturedAppManifest): HTMLElement {
+        const card = createEl('div', 'lc-mock-hud-card lc-mock-glass');
 
-        header.append(title, collapseButton);
+        const header = createEl('div', 'lc-mock-hud-header');
+        const mark = createEl('span', 'lc-mock-hud-mark lc-mock-hud-mark--lg');
+        mark.appendChild(createIcon('mark'));
+
+        const heading = createEl('div', 'lc-mock-hud-heading');
+        const title = createEl('div', 'lc-mock-hud-title');
+        title.append(createEl('span', undefined, 'Practice mode'), createEl('span', 'lc-mock-dot'));
+        heading.append(
+            title,
+            createEl('div', 'lc-mock-hud-subtitle', 'LearnCard actions are simulated here.')
+        );
+
+        const minimize = createEl('button', 'lc-mock-hud-minimize');
+        minimize.type = 'button';
+        minimize.setAttribute('aria-label', 'Minimize');
+        minimize.setAttribute('aria-expanded', 'true');
+        minimize.title = 'Minimize';
+        minimize.appendChild(createIcon('chevronDown'));
+        minimize.addEventListener('click', () => this.setHudCollapsed(true, manifest));
+
+        header.append(mark, heading, minimize);
         card.appendChild(header);
 
-        const appName = document.createElement('div');
-        appName.textContent = currentManifest.suggestedName || 'Untitled app';
-        Object.assign(appName.style, {
-            fontSize: '14px',
-            fontWeight: '700',
-            marginBottom: '8px',
-        });
-        card.appendChild(appName);
+        card.appendChild(this.renderHudApp(manifest));
 
-        const sections: Array<{ label: string; value: string }> = [
-            {
-                label: 'Permissions',
-                value:
-                    currentManifest.permissions.length > 0
-                        ? currentManifest.permissions
-                              .map(permission => `✓ ${permission}`)
-                              .join(', ')
-                        : 'None yet',
-            },
-            {
-                label: 'Templates',
-                value:
-                    currentManifest.templates.length > 0
-                        ? currentManifest.templates
-                              .map(template => `${template.alias} · v${template.version}`)
-                              .join(', ')
-                        : 'None yet',
-            },
-            { label: 'Consent', value: this.formatConsentSummary(currentManifest) },
-            {
-                label: 'Features',
-                value:
-                    currentManifest.featuresLaunched.length > 0
-                        ? currentManifest.featuresLaunched.join(', ')
-                        : 'None yet',
-            },
-            {
-                label: 'Counters',
-                value:
-                    currentManifest.counterKeys.length > 0
-                        ? currentManifest.counterKeys.join(', ')
-                        : 'None yet',
-            },
-        ];
+        const features = this.describeFeatures(manifest);
+        card.appendChild(
+            createEl(
+                'div',
+                'lc-mock-hud-section',
+                features.length > 0 ? 'What your app uses' : 'Nothing yet'
+            )
+        );
 
-        if (currentManifest.usedLearnerContext || currentManifest.usedNotifications) {
-            sections.push({
-                label: 'Flags',
-                value: [
-                    currentManifest.usedLearnerContext ? 'learner_context' : null,
-                    currentManifest.usedNotifications ? 'notifications' : null,
-                ]
-                    .filter(Boolean)
-                    .join(', '),
-            });
+        const list = createEl('ul', 'lc-mock-hud-group lc-mock-hud-list');
+        if (features.length === 0) {
+            list.appendChild(
+                createEl(
+                    'li',
+                    'lc-mock-hud-empty',
+                    'Use a LearnCard feature in your app and it will show up here.'
+                )
+            );
         }
 
-        for (const section of sections) {
-            const row = document.createElement('div');
-            Object.assign(row.style, {
-                marginTop: '8px',
-                fontSize: '12px',
-                lineHeight: '1.45',
-            });
+        for (const feature of features) {
+            const row = createEl('li', 'lc-mock-hud-row');
+            const glyph = createEl('span', 'lc-mock-hud-glyph');
+            glyph.appendChild(createIcon(feature.icon));
 
-            const label = document.createElement('div');
-            label.textContent = section.label;
-            Object.assign(label.style, {
-                opacity: '0.72',
-                fontWeight: '600',
-                marginBottom: '2px',
-            });
+            const text = createEl('div', 'lc-mock-hud-row-text');
+            text.appendChild(createEl('div', 'lc-mock-hud-row-label', feature.label));
+            if (feature.detail) {
+                const detail = createEl('div', 'lc-mock-hud-row-detail', feature.detail);
+                detail.title = feature.detail;
+                text.appendChild(detail);
+            }
 
-            const value = document.createElement('div');
-            value.textContent = section.value;
-            Object.assign(value.style, {
-                color: '#EFF0F5',
-                wordBreak: 'break-word',
-            });
+            const check = createEl('span', 'lc-mock-hud-check');
+            check.appendChild(createIcon('check'));
 
-            row.append(label, value);
-            card.appendChild(row);
+            row.append(glyph, text, check);
+            list.appendChild(row);
         }
+        card.appendChild(list);
 
-        if (publishUrl) {
-            const copyButton = document.createElement('button');
-            copyButton.type = 'button';
-            copyButton.textContent = 'Copy publish link';
-            Object.assign(copyButton.style, {
-                marginTop: '12px',
-                border: '1px solid rgba(255,255,255,0.14)',
-                background: 'rgba(255,255,255,0.08)',
-                color: '#FFFFFF',
-                borderRadius: '999px',
-                padding: '8px 10px',
-                fontSize: '11px',
-                fontWeight: '600',
-                cursor: 'pointer',
-            });
-            copyButton.addEventListener('click', () => this.copyText(publishUrl));
-            card.appendChild(copyButton);
-        }
+        card.appendChild(this.renderHudFooter(manifest));
 
         if (this.shouldHintLocalPublishOverride()) {
-            const hint = document.createElement('div');
-            hint.className = 'lc-mock-hud-publish-hint';
-            hint.textContent = 'Local LearnCard? Add ?lc_publish_override=http://localhost:3000';
-            Object.assign(hint.style, {
-                marginTop: '10px',
-                fontSize: '11px',
-                lineHeight: '1.45',
-                opacity: '0.62',
-                wordBreak: 'break-word',
-            });
+            const hint = createEl('div', 'lc-mock-hud-publish-hint', 'Local LearnCard? Add ');
+            hint.appendChild(
+                createEl('code', undefined, '?lc_publish_override=http://localhost:3000')
+            );
             card.appendChild(hint);
         }
 
-        body.appendChild(card);
+        return card;
+    }
+
+    private renderHudApp(manifest: CapturedAppManifest): HTMLElement {
+        const app = createEl('div', 'lc-mock-hud-group lc-mock-hud-app');
+        const name = manifest.suggestedName || 'Untitled app';
+
+        const avatar = createEl('span', 'lc-mock-hud-avatar');
+        const initial = name.trim().charAt(0).toUpperCase() || 'A';
+        if (manifest.suggestedIconUrl) {
+            const img = createEl('img');
+            img.alt = '';
+            img.src = manifest.suggestedIconUrl;
+            img.addEventListener('error', () => {
+                img.remove();
+                avatar.textContent = initial;
+            });
+            avatar.appendChild(img);
+        } else {
+            avatar.textContent = initial;
+        }
+
+        const text = createEl('div', 'lc-mock-hud-row-text');
+        text.appendChild(createEl('div', 'lc-mock-hud-app-name', name));
+
+        const host = readHost(manifest.appUrl);
+        if (host) text.appendChild(createEl('div', 'lc-mock-hud-row-detail', host));
+
+        app.append(avatar, text);
+        return app;
+    }
+
+    private renderHudFooter(manifest: CapturedAppManifest): HTMLElement {
+        const publishUrl = this.getPublishUrl(manifest);
+        const footer = createEl('div', 'lc-mock-hud-footer');
+
+        const publish = createEl('a', 'lc-mock-hud-publish');
+        publish.href = publishUrl;
+        publish.target = '_blank';
+        publish.rel = 'noopener';
+        publish.append(createEl('span', undefined, 'Publish app'), createIcon('open'));
+
+        const copy = createEl('button', 'lc-mock-hud-copy');
+        copy.type = 'button';
+        copy.title = 'Copy publish link';
+        copy.setAttribute('aria-label', 'Copy publish link');
+        copy.appendChild(createIcon('copy'));
+        copy.addEventListener('click', () => {
+            this.copyText(publishUrl);
+            copy.classList.add('is-copied');
+            copy.replaceChildren(createIcon('check'));
+            copy.title = 'Link copied';
+            copy.setAttribute('aria-label', 'Link copied');
+
+            const reset = setTimeout(() => {
+                this.exitTimers.delete(reset);
+                copy.classList.remove('is-copied');
+                copy.replaceChildren(createIcon('copy'));
+                copy.title = 'Copy publish link';
+                copy.setAttribute('aria-label', 'Copy publish link');
+            }, 1800);
+            this.exitTimers.add(reset);
+        });
+
+        footer.append(publish, copy);
+        return footer;
     }
 
     private nextUri(prefix: string): string {
@@ -1874,28 +2242,26 @@ export class MockHost {
     private showClaimToast(credentialName: string, templateVersion?: number): void {
         const versionSuffix =
             typeof templateVersion === 'number' && templateVersion > 1
-                ? ` (inline template v${templateVersion})`
+                ? ` Template updated to v${templateVersion}.`
                 : '';
 
         this.toast({
-            icon: '✅',
+            icon: 'award',
+            tone: 'positive',
             ttl: 5200,
             segments: [
-                'In LearnCard, the user would receive ',
+                'In LearnCard, the learner would receive ',
                 { b: credentialName },
-                ` here.${versionSuffix}`,
+                `.${versionSuffix}`,
             ],
         });
     }
 
-    private showConsentBanner(redirectIgnored = false): void {
-        this.toast({
-            icon: '🔓',
-            tone: 'positive',
-            segments: redirectIgnored
-                ? ['Consent auto-granted. Redirect ignored in mock.']
-                : ['The user would review and grant consent. Auto-granted in mock.'],
-        });
+    private showConsentToast(payload: unknown, redirectIgnored: boolean): void {
+        const segments = buildConsentScopeToastSegments(payload);
+        if (redirectIgnored) segments.push(' Redirect skipped in practice.');
+
+        this.toast({ icon: 'shield', tone: 'positive', segments });
 
         if (redirectIgnored) {
             this.note(
@@ -1921,19 +2287,20 @@ export class MockHost {
 
         const tone = spec.tone ?? 'default';
         const ttl = spec.ttl ?? 4200;
+        const persistent = Boolean(spec.persistent);
         const text = spec.segments.map(s => (typeof s === 'string' ? s : s.b)).join('');
         const actionKey = spec.action ? `|${spec.action.href}|${spec.action.label}` : '';
-        const key = `${tone}|${spec.icon}|${text}${actionKey}`;
+        const key = `${tone}|${spec.icon}|${spec.title ?? ''}|${text}${actionKey}`;
 
         const existing = this.activeToasts.get(key);
         if (existing) {
             existing.count += 1;
             existing.countEl.textContent = `×${existing.count}`;
             existing.countEl.style.display = '';
-            if (existing.timeoutId) clearTimeout(existing.timeoutId);
-            existing.timeoutId = spec.persistent
-                ? null
-                : setTimeout(() => this.dismissToast(key), ttl);
+            existing.countEl.classList.remove('lc-mock-bump');
+            void existing.countEl.offsetWidth;
+            existing.countEl.classList.add('lc-mock-bump');
+            this.scheduleToastDismiss(key);
             return;
         }
 
@@ -1941,52 +2308,52 @@ export class MockHost {
         if (!stack) return;
         this.ensureStyles();
 
-        const toast = document.createElement('div');
-        toast.className = `lc-mock-toast lc-mock-toast--${tone}`;
+        const toast = createEl('div', `lc-mock-toast lc-mock-glass lc-mock-toast--${tone}`);
+        if (spec.dismissible) toast.classList.add('lc-mock-toast--dismissible');
 
-        const badge = document.createElement('div');
-        badge.className = 'lc-mock-badge';
-        const name = document.createElement('span');
-        name.className = 'lc-mock-badge-name';
-        name.textContent = `${spec.icon} LearnCard`;
-        const pill = document.createElement('span');
-        pill.className = 'lc-mock-pill';
-        pill.textContent = 'MOCK';
-        badge.append(name, pill);
+        const tile = createEl('span', 'lc-mock-tile');
+        tile.appendChild(createIcon(spec.icon));
 
-        const body = document.createElement('div');
-        body.className = 'lc-mock-body';
+        const content = createEl('div', 'lc-mock-content');
+
+        const meta = createEl('div', 'lc-mock-meta');
+        const countEl = createEl('span', 'lc-mock-count');
+        countEl.style.display = 'none';
+        meta.append(
+            createEl('span', 'lc-mock-meta-name', 'LearnCard'),
+            createEl('span', 'lc-mock-chip', 'Practice'),
+            countEl
+        );
+        content.appendChild(meta);
+
+        if (spec.title) content.appendChild(createEl('div', 'lc-mock-title', spec.title));
+
+        const body = createEl('div', 'lc-mock-body');
         for (const seg of spec.segments) {
             if (typeof seg === 'string') {
                 body.append(seg);
             } else {
-                const strong = document.createElement('strong');
-                strong.textContent = seg.b;
-                body.appendChild(strong);
+                body.appendChild(createEl('strong', undefined, seg.b));
             }
         }
-
-        const countEl = document.createElement('span');
-        countEl.className = 'lc-mock-count';
-        countEl.style.display = 'none';
-        body.appendChild(countEl);
+        content.appendChild(body);
 
         if (spec.action) {
-            const action = document.createElement('a');
-            action.className = 'lc-mock-action';
+            const action = createEl('a', 'lc-mock-action');
             action.href = spec.action.href;
             action.target = '_blank';
             action.rel = 'noopener';
-            action.textContent = spec.action.label;
-            body.appendChild(action);
+            action.append(createEl('span', undefined, spec.action.label), createIcon('open'));
+            content.appendChild(action);
         }
 
+        toast.append(tile, content);
+
         if (spec.dismissible) {
-            const close = document.createElement('button');
+            const close = createEl('button', 'lc-mock-close');
             close.type = 'button';
-            close.className = 'lc-mock-close';
-            close.setAttribute('aria-label', 'Dismiss LearnCard mock notice');
-            close.textContent = '✕';
+            close.setAttribute('aria-label', 'Dismiss');
+            close.appendChild(createIcon('close'));
             close.addEventListener('click', () => {
                 if (tone === 'publish') {
                     this.savePublishDismissedAt(new Date().toISOString());
@@ -1996,12 +2363,48 @@ export class MockHost {
             toast.appendChild(close);
         }
 
-        toast.append(badge, body);
+        toast.addEventListener('mouseenter', () => {
+            const entry = this.activeToasts.get(key);
+            if (entry?.timeoutId) {
+                clearTimeout(entry.timeoutId);
+                entry.timeoutId = null;
+            }
+        });
+        toast.addEventListener('mouseleave', () => this.scheduleToastDismiss(key));
+
         stack.appendChild(toast);
         this.domNodes.add(toast);
 
-        const timeoutId = spec.persistent ? null : setTimeout(() => this.dismissToast(key), ttl);
-        this.activeToasts.set(key, { node: toast, timeoutId, count: 1, countEl });
+        this.activeToasts.set(key, {
+            node: toast,
+            timeoutId: null,
+            count: 1,
+            countEl,
+            ttl,
+            persistent,
+        });
+        this.scheduleToastDismiss(key);
+        this.refreshToastVisibility();
+    }
+
+    private scheduleToastDismiss(key: string): void {
+        const entry = this.activeToasts.get(key);
+        if (!entry) return;
+
+        if (entry.timeoutId) clearTimeout(entry.timeoutId);
+        entry.timeoutId = entry.persistent
+            ? null
+            : setTimeout(() => this.dismissToast(key), entry.ttl);
+    }
+
+    private refreshToastVisibility(): void {
+        const transient = Array.from(this.activeToasts.values()).filter(entry => !entry.persistent);
+        const hiddenCount = Math.max(0, transient.length - MAX_VISIBLE_TOASTS);
+
+        transient.forEach((entry, index) => {
+            entry.node.classList.toggle('lc-mock-toast--hidden', index < hiddenCount);
+            entry.node.classList.toggle('lc-mock-toast--older', index < transient.length - 1);
+        });
     }
 
     private dismissToast(key: string): void {
@@ -2010,6 +2413,7 @@ export class MockHost {
 
         this.activeToasts.delete(key);
         if (entry.timeoutId) clearTimeout(entry.timeoutId);
+        this.refreshToastVisibility();
 
         const { node } = entry;
         node.classList.add('lc-mock-out');
@@ -2025,8 +2429,9 @@ export class MockHost {
         if (!document.body) return null;
         if (this.stackEl && document.body.contains(this.stackEl)) return this.stackEl;
 
-        const stack = document.createElement('div');
-        stack.className = 'lc-mock-stack';
+        const stack = createEl('div', 'lc-mock-stack');
+        stack.setAttribute('role', 'status');
+        stack.setAttribute('aria-live', 'polite');
         document.body.appendChild(stack);
         this.stackEl = stack;
         return stack;
@@ -2036,42 +2441,7 @@ export class MockHost {
         if (!this.options.ui || !hasDocument() || this.styleEl || !document.head) return;
 
         const style = document.createElement('style');
-        style.textContent = `
-@keyframes lc-mock-in { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
-@keyframes lc-mock-out { to { opacity: 0; transform: translateY(6px); } }
-.lc-mock-stack {
-  position: fixed; bottom: 20px; right: 20px; z-index: 2147483647;
-  display: flex; flex-direction: column; gap: 10px; align-items: flex-end;
-  pointer-events: none; max-width: min(360px, calc(100vw - 40px));
-}
-.lc-mock-toast {
-  position: relative; pointer-events: auto; width: 100%; box-sizing: border-box; padding: 11px 14px; border-radius: 14px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13.5px;
-  line-height: 1.45; box-shadow: 0 10px 30px rgba(24,34,78,0.22); animation: lc-mock-in 180ms cubic-bezier(0.2,0.8,0.2,1);
-}
-.lc-mock-toast.lc-mock-out { animation: lc-mock-out 180ms ease-in forwards; }
-.lc-mock-toast--default { background: #18224E; color: #fff; }
-.lc-mock-toast--positive { background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
-.lc-mock-toast--publish { background: #FFFFFF; color: #18224E; border: 1px solid #C5C8D3; }
-.lc-mock-badge {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px;
-  font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; opacity: 0.72;
-}
-.lc-mock-badge-name { font-weight: 600; }
-.lc-mock-pill { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 999px; background: rgba(255,255,255,0.16); }
-.lc-mock-toast--positive .lc-mock-pill { background: rgba(6,95,70,0.12); }
-.lc-mock-toast--publish .lc-mock-pill { background: #EFF0F5; }
-.lc-mock-body strong { font-weight: 700; }
-.lc-mock-count { margin-left: 6px; font-weight: 700; opacity: 0.75; }
-.lc-mock-action { display: inline-flex; margin-top: 9px; color: inherit; font-weight: 700; text-decoration: none; }
-.lc-mock-action:hover { text-decoration: underline; }
-.lc-mock-close {
-  position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border: 0; border-radius: 999px;
-  background: transparent; color: inherit; font-size: 13px; line-height: 1; cursor: pointer; opacity: 0.7;
-}
-.lc-mock-close:hover { opacity: 1; background: rgba(24,34,78,0.06); }
-`.trim();
-
+        style.textContent = MOCK_STYLES;
         document.head.appendChild(style);
         this.styleEl = style;
     }

@@ -110,10 +110,12 @@ While mock mode is active, the SDK silently captures an app manifest in local st
 - permissions inferred from SDK calls
 - launched feature paths, counter keys, learner-context usage, notifications
 
-When `mockOptions.ui !== false`, mock mode also shows a small **Live Manifest HUD** in the
-bottom-left corner. It starts collapsed as a pill (`LC · N capabilities`) and expands into a
-dark summary card with the app name, permissions, templates, consent summary, feature paths,
-counter keys, and a **Copy publish link** button when available.
+When `mockOptions.ui !== false`, mock mode also shows a **Practice mode** panel in the
+bottom-left corner. It starts collapsed as a pill (`Practice mode` plus a feature count) and
+expands into a frosted-glass card with the app name and address, a plain-language list of the
+LearnCard features the app uses (templates, consent, screens, counters as details), a
+**Publish app** button, and a copy-link button. It follows the system light/dark setting and
+respects reduced motion.
 
 Once the manifest becomes publishable (at least **1 inline template** or **2 distinct permissions**), mock mode shows a persistent, dismissible **Publish to LearnCard** card. The link opens:
 
@@ -198,7 +200,7 @@ Add the parameter to your app's URL:
 http://localhost:4321/?lc_publish_override=http://localhost:3000
 ```
 
-`getPublishUrl()`, `getPublishOrigin()`, and the HUD's **Copy publish link** button
+`getPublishUrl()`, `getPublishOrigin()`, and the practice panel's **Publish app** and copy-link buttons
 all immediately target `http://localhost:3000`.
 
 The value is validated as a parseable `http:` / `https:` URL and reduced to its
@@ -266,7 +268,7 @@ learnCard.getPublishUrl(); // 'http://localhost:3000/app-store/developer/submit?
 ```
 
 When mock mode is running on `localhost` and publish links would still go to
-production, the expanded manifest HUD shows a one-line reminder:
+production, the expanded practice panel shows a one-line reminder:
 `Local LearnCard? Add ?lc_publish_override=http://localhost:3000`. It disappears as
 soon as an override or an explicit `publishOrigin` is in effect.
 
@@ -369,9 +371,9 @@ builders.** Whenever no LearnCard host is present and your app runs on a local
 dev host (`localhost`, `127.0.0.1`, `[::1]`, `*.localhost`, `*.local`) or in
 the editor preview of Lovable, Bolt, v0, or Replit, the SDK simulates the host:
 
-- **Every method shows a branded toast** describing what would happen once embedded — e.g. `sendCredential` → _"✅ In LearnCard, the user would receive **[name]** here."_, `incrementCounter` → _"Counter **coins** → **10**."_, `launchFeature` → _"Would open **/wallet**."_ So you get strong, visible feedback for every call, not just console logs.
-- `requestConsent(...)` auto-grants and shows a "mock consent" toast; `incrementCounter` / `getCounter` / `getCounters` persist to `localStorage` so values survive reloads.
-- Identical or polled calls **coalesce** into a single toast with a ×N counter, so nothing spams the screen.
+- **Every method shows a short notice** describing what would happen once embedded — e.g. `sendCredential` → _"In LearnCard, the learner would receive **[name]**."_, `incrementCounter` → _"Counter **coins** → **10**."_, `launchFeature` → _"In LearnCard, this would open **/wallet**."_ So you get strong, visible feedback for every call, not just console logs. At most three notices show at once (one on phones); hovering a notice keeps it on screen.
+- `requestConsent(...)` auto-grants and shows a notice describing what the learner would be asked to share; `incrementCounter` / `getCounter` / `getCounters` persist to `localStorage` so values survive reloads.
+- Identical or polled calls **coalesce** into a single notice with a ×N counter, so nothing spams the screen.
 - `requestIdentity`, notifications, learner context, sync status, etc. all resolve with sensible fake data.
 - Every simulated interaction is also logged to the console with a `[LearnCard SDK · MOCK]` prefix.
 

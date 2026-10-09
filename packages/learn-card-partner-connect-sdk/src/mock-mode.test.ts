@@ -1311,14 +1311,17 @@ describe('mock UI', () => {
         await lc.requestIdentity();
         await flush();
 
-        const collapsedButton = Array.from(document.querySelectorAll('button')).find(button =>
-            (button.textContent ?? '').includes('LC ·')
-        ) as HTMLButtonElement | undefined;
-        expect(collapsedButton).toBeDefined();
+        const collapsedButton = document.querySelector(
+            '.lc-mock-hud-pill'
+        ) as HTMLButtonElement | null;
+        expect(collapsedButton?.textContent).toContain('Practice mode');
+        expect(document.querySelector('.lc-mock-hud-card')).toBeNull();
 
         collapsedButton?.click();
         await flush();
-        expect(document.body.textContent).toContain('LearnCard manifest');
+        expect(document.querySelector('.lc-mock-hud-card')?.textContent).toContain(
+            'Sign in with LearnCard'
+        );
         expect(
             localStorage.getItem(`${namespace}:manifest-hud-collapsed:hud-persisted-state`)
         ).toBe('false');
@@ -1328,7 +1331,7 @@ describe('mock UI', () => {
         const next = createPartnerConnect({ mock: true, mockOptions: { ui: true, namespace } });
         await next.requestIdentity();
         await flush();
-        expect(document.body.textContent).toContain('LearnCard manifest');
+        expect(document.querySelector('.lc-mock-hud-card')).not.toBeNull();
     });
 
     const expandHud = async (
@@ -1429,6 +1432,72 @@ describe('mock UI', () => {
         await flush();
         expect(toastCount()).toBe(1);
         expect(toastText()).toContain('×3');
+    });
+
+    it('keeps at most three transient notices on screen at once', async () => {
+        const lc = createPartnerConnect({ mockOptions: { ui: true, publishPrompt: false } });
+
+        await lc.requestIdentity();
+        await lc.launchFeature('/wallet');
+        await lc.getSyncStatus();
+        await lc.sendNotification({ title: 'Hi' });
+        await lc.getCounter('coins');
+        await flush();
+
+        const visible = Array.from(document.querySelectorAll('.lc-mock-toast')).filter(
+            node => !node.classList.contains('lc-mock-toast--hidden')
+        );
+        expect(toastCount()).toBe(5);
+        expect(visible).toHaveLength(3);
+        expect(visible[visible.length - 1]?.textContent).toContain('coins');
+    });
+
+    it('lists what the app uses in plain language and offers a publish link', async () => {
+        const namespace = 'hud-plain-language';
+        const lc = createPartnerConnect({
+            mock: true,
+            mockOptions: { ui: true, namespace, appId: namespace, publishPrompt: false },
+        });
+        localStorage.setItem(`${namespace}:manifest-hud-collapsed:${namespace}`, 'false');
+
+        await lc.requestIdentity();
+        await lc.launchFeature('/ai/topics?shortCircuitStep=newTopic');
+        await lc.requestLearnerContext();
+        await flush();
+
+        const card = document.querySelector('.lc-mock-hud-card');
+        expect(card?.textContent).toContain('Sign in with LearnCard');
+        expect(card?.textContent).toContain('/ai/topics');
+        expect(card?.textContent).not.toContain('shortCircuitStep');
+        expect(card?.textContent).not.toContain('request_identity');
+        expect(
+            (document.querySelector('.lc-mock-hud-publish') as HTMLAnchorElement | null)?.href
+        ).toContain('/app-store/developer/submit?manifest=');
+
+        lc.destroy();
+    });
+
+    it('keeps the publish card link in sync as the app uses more features', async () => {
+        const namespace = 'publish-link-sync';
+        const lc = createPartnerConnect({
+            mock: true,
+            mockOptions: { ui: true, namespace, appId: namespace },
+        });
+
+        await lc.requestIdentity();
+        await lc.launchFeature('/wallet');
+        await lc.requestLearnerContext();
+        await flush();
+
+        const href =
+            (
+                document.querySelector(
+                    '.lc-mock-toast--publish .lc-mock-action'
+                ) as HTMLAnchorElement | null
+            )?.href ?? '';
+        expect(href).toBe(lc.getPublishUrl());
+
+        lc.destroy();
     });
 
     it('cleans up injected DOM on destroy', async () => {

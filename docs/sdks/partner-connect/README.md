@@ -81,9 +81,10 @@ The SDK only does real work when it's embedded inside LearnCard — that's what 
 
 Mock mode fixes this automatically in local development and AI app builders. Whenever no LearnCard host is present and your app runs on a local dev host (`localhost`, `127.0.0.1`, `[::1]`, `*.localhost`, `*.local`) or in the editor preview of Lovable, Bolt, v0, or Replit, the SDK stands in for LearnCard so your app stays fully usable:
 
-- **Every method shows a branded toast** describing what would happen once embedded — e.g. `sendCredential` → _"✅ In LearnCard, the user would receive **[name]** here"_, `incrementCounter` → _"Counter **coins** → **10**"_, `launchFeature` → _"Would open **/wallet**"_. Strong, visible feedback for every call.
-- `requestConsent(...)` grants automatically and shows a "mock consent" toast; counters (`incrementCounter` / `getCounter` / `getCounters`) save to the browser and survive reloads.
-- Identical or polled calls coalesce into one toast with a ×N counter, so nothing spams the screen.
+- **Every method shows a short notice** describing what would happen once embedded — e.g. `sendCredential` → _"In LearnCard, the learner would receive **[name]**."_, `incrementCounter` → _"Counter **coins** → **10**."_, `launchFeature` → _"In LearnCard, this would open **/wallet**."_ Strong, visible feedback for every call. At most three show at once (one on phones).
+- A **Practice mode** pill in the bottom-left corner expands into a plain-language list of the LearnCard features your app uses, with a **Publish app** button and a copy-link button.
+- `requestConsent(...)` grants automatically and the notice spells out what the learner would be asked to share; counters (`incrementCounter` / `getCounter` / `getCounters`) save to the browser and survive reloads.
+- Identical or polled calls coalesce into one notice with a ×N counter, so nothing spams the screen.
 - `requestIdentity`, notifications, learner context, and sync status return sensible placeholder data.
 - Everything is also logged to the console with a `[LearnCard SDK · MOCK]` prefix.
 
