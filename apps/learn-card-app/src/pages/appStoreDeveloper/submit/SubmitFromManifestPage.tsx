@@ -140,6 +140,21 @@ const ALLOWED_ICON_DOMAINS = [
     'i.imgur.com',
 ];
 
+const imageLoads = (src: string): Promise<boolean> =>
+    new Promise(resolve => {
+        const image = new Image();
+        const timer = setTimeout(() => resolve(false), 5000);
+        image.onload = () => {
+            clearTimeout(timer);
+            resolve(image.naturalWidth > 0);
+        };
+        image.onerror = () => {
+            clearTimeout(timer);
+            resolve(false);
+        };
+        image.src = src;
+    });
+
 const isAllowedIconUrl = (url: string | undefined): url is string => {
     if (!url || !url.startsWith('https://')) return false;
     try {
@@ -517,11 +532,12 @@ const SubmitManifest: React.FC = () => {
                 applyDecodedManifest();
             }
             const suggestedIcon = decoded.suggestedIconDataUrl || decoded.suggestedIconUrl;
-            if (isAllowedIconUrl(suggestedIcon)) {
-                setUploadedIconUrl(suggestedIcon);
-                setDisplayIconUrl(suggestedIcon);
-            } else if (suggestedIcon) {
-                setDisplayIconUrl(suggestedIcon);
+            if (suggestedIcon) {
+                imageLoads(suggestedIcon).then(loads => {
+                    if (!loads) return;
+                    if (isAllowedIconUrl(suggestedIcon)) setUploadedIconUrl(suggestedIcon);
+                    setDisplayIconUrl(current => current ?? suggestedIcon);
+                });
             }
 
             const sessionDesignerKey = sessionStorage.getItem('lc-submit-designer-key');
@@ -554,9 +570,9 @@ const SubmitManifest: React.FC = () => {
             let isMounted = true;
             const importIcon = async () => {
                 try {
-                    const url = await uploadImageFromUrl(
-                        (manifest.suggestedIconDataUrl || manifest.suggestedIconUrl)!
-                    );
+                    const source = (manifest.suggestedIconDataUrl || manifest.suggestedIconUrl)!;
+                    if (!(await imageLoads(source))) return;
+                    const url = await uploadImageFromUrl(source);
                     if (url && isMounted) {
                         setIsIconImported(true);
                         setTimeout(() => {
@@ -1695,6 +1711,7 @@ const SubmitManifest: React.FC = () => {
                                 ) : displayIconUrl ? (
                                     <img
                                         src={displayIconUrl}
+                                        onError={() => setDisplayIconUrl(undefined)}
                                         alt="App Icon"
                                         className="w-16 h-16 rounded-2xl object-cover border border-grayscale-200"
                                     />

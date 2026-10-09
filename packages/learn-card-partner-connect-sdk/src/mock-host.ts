@@ -1516,7 +1516,7 @@ export class MockHost {
     }
 
     private readSuggestedIconUrl(): string | undefined {
-        return this.iconCandidates().find(url => /^https?:/.test(url)) ?? this.iconFallback();
+        return this.iconCandidates().find(url => /^https?:/.test(url));
     }
 
     private appKeyStorageKey(): string {
@@ -1687,40 +1687,50 @@ export class MockHost {
                 }
             }
             if (this.destroyed || generation !== this.iconGeneration) return;
-            url ??= this.iconFallback();
+            const fallback = url ? undefined : this.iconFallback();
+            url ??= fallback;
             source ??= url;
-            const dataUrl = source ? await this.rasterizeIcon(source) : undefined;
+            const result = source ? await this.rasterizeIcon(source) : undefined;
             if (this.destroyed || generation !== this.iconGeneration) return;
             const manifest = this.loadManifest();
             if (!manifest) return;
-            manifest.suggestedIconUrl = url;
-            manifest.suggestedIconDataUrl = dataUrl;
+            // A guessed /favicon.ico, or a same-origin icon that fails to load, is broken.
+            // Cross-origin failures stay: a missing CORS header looks like an error too.
+            const isSameOrigin = (href: string): boolean =>
+                href.startsWith(window.location.origin + '/');
+            const broken =
+                result?.status !== 'loaded' &&
+                (url === fallback || (!!url && result?.status === 'failed' && isSameOrigin(url)));
+            manifest.suggestedIconUrl = broken ? undefined : url;
+            manifest.suggestedIconDataUrl = result?.dataUrl;
             this.saveManifest(manifest);
             this.updateManifestHud(manifest);
             this.refreshPublishPromptLink(manifest);
         })().catch(() => undefined);
     }
 
-    private rasterizeIcon(source: string): Promise<string | undefined> {
+    private rasterizeIcon(
+        source: string
+    ): Promise<{ status: 'loaded' | 'failed' | 'timeout'; dataUrl?: string }> {
         return new Promise(resolve => {
             const image = new Image();
-            const finish = (value?: string): void => {
+            const finish = (status: 'loaded' | 'failed' | 'timeout', dataUrl?: string): void => {
                 clearTimeout(timer);
                 image.onload = null;
                 image.onerror = null;
                 this.iconCleanups.delete(cancel);
-                resolve(value);
+                resolve({ status, dataUrl });
             };
             const cancel = (): void => {
-                finish();
+                finish('timeout');
                 image.removeAttribute('src');
             };
             const timer = setTimeout(cancel, 4000);
             this.iconCleanups.add(cancel);
-            image.onerror = () => finish();
+            image.onerror = () => finish('failed');
             image.onload = () => {
                 try {
-                    if (!image.naturalWidth || !image.naturalHeight) return finish();
+                    if (!image.naturalWidth || !image.naturalHeight) return finish('failed');
                     const canvas = document.createElement('canvas');
                     for (const size of [128, 96, 64]) {
                         canvas.width = canvas.height = size;
@@ -1738,12 +1748,12 @@ export class MockHost {
                         );
                         const data = canvas.toDataURL('image/webp', 0.85);
                         if (data.startsWith('data:image/') && data.length <= 3000)
-                            return finish(data);
+                            return finish('loaded', data);
                     }
                 } catch {
                     /* Tainted or unsupported canvas. */
                 }
-                finish();
+                finish('loaded');
             };
             if (/^https?:/.test(source) && new URL(source).origin !== window.location.origin)
                 image.crossOrigin = 'anonymous';

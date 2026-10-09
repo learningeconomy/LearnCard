@@ -128,7 +128,38 @@ describe('practice identity, reset and icons', () => {
         document.querySelectorAll('[data-test-icon]').forEach(node => node.remove());
         const fallback = create('fallback');
         await fallback.requestIdentity();
-        expect(fallback.getCapturedManifest()?.suggestedIconUrl).toBe(
+        expect(fallback.getCapturedManifest()?.suggestedIconUrl).toBeUndefined();
+    });
+
+    it('only keeps the guessed /favicon.ico when it actually loads', async () => {
+        vi.useFakeTimers();
+        const stubImage = (outcome: 'load' | 'error') =>
+            vi.stubGlobal(
+                'Image',
+                class {
+                    naturalWidth = 32;
+                    naturalHeight = 32;
+                    crossOrigin = '';
+                    onload: (() => void) | null = null;
+                    onerror: (() => void) | null = null;
+                    removeAttribute(): void {}
+                    set src(_value: string) {
+                        setTimeout(() => (outcome === 'load' ? this.onload : this.onerror)?.(), 0);
+                    }
+                }
+            );
+
+        stubImage('error');
+        const missing = create('favicon-missing');
+        await missing.requestIdentity();
+        await vi.advanceTimersByTimeAsync(10);
+        expect(missing.getCapturedManifest()?.suggestedIconUrl).toBeUndefined();
+
+        stubImage('load');
+        const present = create('favicon-present');
+        await present.requestIdentity();
+        await vi.advanceTimersByTimeAsync(10);
+        expect(present.getCapturedManifest()?.suggestedIconUrl).toBe(
             new URL('/favicon.ico', location.href).href
         );
     });

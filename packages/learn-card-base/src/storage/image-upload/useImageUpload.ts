@@ -203,10 +203,10 @@ export const useImageUpload: UseImageUpload = ({
         if (!url) return '';
 
         try {
-            // Fetch the file from the URL
             const response = await fetch(url);
+            if (!response.ok) return null;
             const blob = await response.blob();
-
+            if (/^(text\/|application\/(json|xhtml))/i.test(blob.type)) return null;
             // Extract the filename from the URL or use a fallback name
             const filename = url.split('/').pop() || 'uploaded-file';
 
