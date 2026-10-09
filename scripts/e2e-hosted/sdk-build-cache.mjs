@@ -161,6 +161,9 @@ const specification = workspace => {
     );
     const configuration = {
         schema: 1,
+        // Sentry otherwise injects the event SHA into service bundles. These test
+        // prerequisites use their source identity so frontend commits can reuse them.
+        releaseIdentity: 'sdk-input-key',
         projects,
         roots,
         environment,
@@ -172,6 +175,11 @@ const specification = workspace => {
         platform: process.platform,
         architecture: process.arch,
         abi: process.versions.modules,
+        osDistribution:
+            process.platform === 'linux'
+                ? fs.readFileSync('/etc/os-release', 'utf8')
+                : os.release(),
+        libc: process.report.getReport().header.glibcVersionRuntime || '',
     };
     return { key: inputKey(workspace, files, configuration), projects, roots };
 };
@@ -231,6 +239,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     } else {
         const spec = JSON.parse(fs.readFileSync(specFile));
         if (command === 'projects') console.log(spec.projects.join(','));
+        else if (command === 'release') console.log(spec.key);
         else if (command === 'clean') {
             for (const root of spec.roots)
                 fs.rmSync(path.join(process.cwd(), safePath(root)), {

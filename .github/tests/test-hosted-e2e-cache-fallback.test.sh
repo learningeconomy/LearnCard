@@ -10,6 +10,7 @@ node() {
     case "$2" in
         restore) return "$RESTORE_STATUS" ;;
         projects) echo types,init ;;
+        release) echo exact-sdk-input-key ;;
         clean) return 0 ;;
         snapshot) echo snapshot >> "$TEST_ROOT/calls" ;;
         *) return 1 ;;
@@ -20,7 +21,11 @@ bunx() {
     [[ "$*" == 'nx run-many -t build -p types,init --verbose --skip-nx-cache' ]] || return 1
     return "$BUILD_STATUS"
 }
-env() { while [[ "$1" == *=* ]]; do shift; done; "$@"; }
+env() {
+    [[ "$*" == *'SENTRY_RELEASE=exact-sdk-input-key'* ]] || return 1
+    while [[ "$1" == *=* ]]; do shift; done
+    "$@"
+}
 e2e_timed() { shift; set +e; "$@"; }
 for scenario in hit miss invalid failed-build; do
     E2E_SDK_CACHE_HIT=true RESTORE_STATUS=0 BUILD_STATUS=0
