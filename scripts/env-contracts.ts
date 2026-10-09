@@ -302,7 +302,7 @@ const readStageConfig = (path: string): Record<string, string> => {
     }
     return Object.fromEntries(
         Object.entries(parsed).map(([key, value]) => {
-            if (typeof value !== 'string' || !/^[A-Z][A-Z0-9_]*$/.test(key)) {
+            if (typeof value !== 'string' || !/^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$/.test(key)) {
                 throw new Error(`${path} must contain environment names with string values`);
             }
             return [key, value];

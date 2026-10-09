@@ -164,6 +164,7 @@ const productionStage = JSON.parse(
 // Fixed synthetic lengths, not deployed values. Count ALL provider keys, even empty ones.
 const lengths = {
     LAMBDA_STAGE: 10,
+    CONFIG_TENANT: 9,
     PORT: 4,
     REDIS_HOST: 120,
     REDIS_PORT: 4,
@@ -210,7 +211,14 @@ const withEnv = (overrides, run) => {
         }
     }
 };
-const infraKeys = ['LAMBDA_STAGE', 'PORT', 'REDIS_HOST', 'REDIS_PORT', 'SA_SEED_KMS_KEY_ARN'];
+const infraKeys = [
+    'CONFIG_TENANT',
+    'LAMBDA_STAGE',
+    'PORT',
+    'REDIS_HOST',
+    'REDIS_PORT',
+    'SA_SEED_KMS_KEY_ARN',
+];
 withEnv({ RUNTIME_SECRETS_ID: 'lca-api/dev/runtime-secrets' }, () => {
     const provider = functionEnv.provider({ options: { stage: 'production', httpPort: '5100' } });
     assert.deepEqual(Object.keys(provider).sort(), infraKeys);
@@ -358,28 +366,51 @@ const hashPreflight = brainSteps.find(
     step => step.name === 'Validate share-link request hash secret'
 );
 assert.equal(refreshPreflight.env.CREDENTIAL_REFRESH_ENABLED, undefined);
-for (const stage of ['dev', 'production']) {
-    for (const [bundleId, digestSecret, expected] of [
-        ['', '', 1],
-        ['', 'fallback-secret', 0],
-        ['bundle', '', 0],
-    ]) {
-        const result = spawnSync('bash', ['-e', '-c', refreshPreflight.run], {
-            cwd: root,
-            env: {
-                ...process.env,
-                SERVERLESS_STAGE: stage,
-                RUNTIME_SECRETS_ID: bundleId,
-                CREDENTIAL_REFRESH_DIGEST_SECRET: digestSecret,
-            },
-        });
-        assert.equal(
-            result.status,
-            expected,
-            `refresh preflight ${stage}/${bundleId || 'fallback'}`
-        );
+assert.equal(refreshPreflight.env.CONFIG_TENANT, "${{ matrix.tenant || 'learncard' }}");
+// LearnCard enables refresh (digest secret required in fallback mode); ScoutPass disables it,
+// so a fallback-mode ScoutPass deploy must not demand the secret. Unknown tenants fail closed.
+for (const [tenant, refreshEnabled] of [
+    ['', true],
+    ['learncard', true],
+    ['scouts', false],
+]) {
+    for (const stage of ['dev', 'production']) {
+        for (const [bundleId, digestSecret, expected] of [
+            ['', '', refreshEnabled ? 1 : 0],
+            ['', 'fallback-secret', 0],
+            ['bundle', '', 0],
+        ]) {
+            const result = spawnSync('bash', ['-e', '-c', refreshPreflight.run], {
+                cwd: root,
+                env: {
+                    ...process.env,
+                    SERVERLESS_STAGE: stage,
+                    CONFIG_TENANT: tenant,
+                    RUNTIME_SECRETS_ID: bundleId,
+                    CREDENTIAL_REFRESH_DIGEST_SECRET: digestSecret,
+                },
+            });
+            assert.equal(
+                result.status,
+                expected,
+                `refresh preflight ${tenant || 'default'}/${stage}/${bundleId || 'fallback'}`
+            );
+        }
     }
 }
+assert.notEqual(
+    spawnSync('bash', ['-e', '-c', refreshPreflight.run], {
+        cwd: root,
+        env: {
+            ...process.env,
+            SERVERLESS_STAGE: 'dev',
+            CONFIG_TENANT: 'unknown',
+            RUNTIME_SECRETS_ID: '',
+        },
+    }).status,
+    0,
+    'refresh preflight fails closed for a tenant without stage files'
+);
 for (const [bundleId, secret, expected] of [
     ['', '', 0],
     ['', 'too-short', 1],
@@ -596,6 +627,7 @@ serviceConfigContract({
     optionalFallback: ['SKILLS_PROVIDER_API_KEY', 'TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN'],
     stageKeys: brainStageKeys,
     infraKeys: [
+        'CONFIG_TENANT',
         'LAMBDA_STAGE',
         'PORT',
         'REDIS_HOST',
@@ -625,6 +657,7 @@ serviceConfigContract({
     ],
     lengths: {
         LAMBDA_STAGE: 10,
+        CONFIG_TENANT: 9,
         PORT: 4,
         REDIS_HOST: 120,
         REDIS_PORT: 4,
@@ -658,7 +691,7 @@ serviceConfigContract({
     dir: path.join(root, 'services/learn-card-network/learn-cloud-service'),
     service: 'learn-cloud-service',
     stageKeys: cloudStageKeys,
-    infraKeys: ['LAMBDA_STAGE', 'PORT', 'REDIS_HOST', 'REDIS_PORT'],
+    infraKeys: ['CONFIG_TENANT', 'LAMBDA_STAGE', 'PORT', 'REDIS_HOST', 'REDIS_PORT'],
     fallback: [
         'LEARN_CLOUD_SEED',
         'LEARN_CLOUD_MONGO_URI',
@@ -673,6 +706,7 @@ serviceConfigContract({
     ],
     lengths: {
         LAMBDA_STAGE: 10,
+        CONFIG_TENANT: 9,
         PORT: 4,
         REDIS_HOST: 120,
         REDIS_PORT: 4,

@@ -453,12 +453,14 @@ jobs:
             - name: Validate credential refresh configuration
               env:
                   SERVERLESS_STAGE: ${{ vars.SERVERLESS_STAGE }}
+                  CONFIG_TENANT: ${{ matrix.tenant || 'learncard' }}
                   RUNTIME_SECRETS_ID: ${{ vars.RUNTIME_SECRETS_ID }}
                   CREDENTIAL_REFRESH_DIGEST_SECRET: ${{ secrets.CREDENTIAL_REFRESH_DIGEST_SECRET }}
               run: |
                   # Bundle contents are validated at runtime; only validate GitHub fallbacks here.
                   if [[ -n "$RUNTIME_SECRETS_ID" ]]; then exit 0; fi
-                  enabled=$(node -e 'const stage = process.env.SERVERLESS_STAGE; if (!["dev", "production"].includes(stage)) process.exit(1); process.stdout.write(require(`./services/learn-card-network/brain-service/config/config.${stage}.json`).CREDENTIAL_REFRESH_ENABLED);')
+                  # Same tenant/stage file the runtime loads; a missing tenant file fails closed.
+                  enabled=$(node -e 'const stage = process.env.SERVERLESS_STAGE; const tenant = process.env.CONFIG_TENANT || "learncard"; if (!["dev", "production"].includes(stage)) process.exit(1); const file = tenant === "learncard" ? stage : `${tenant}.${stage}`; process.stdout.write(String(require(`./services/learn-card-network/brain-service/config/config.${file}.json`).CREDENTIAL_REFRESH_ENABLED ?? ""));')
                   if [[ "$enabled" == "true" && -z "$CREDENTIAL_REFRESH_DIGEST_SECRET" ]]; then
                     echo "::error::CREDENTIAL_REFRESH_DIGEST_SECRET must be configured when credential refresh is enabled."
                     exit 1
