@@ -177,12 +177,12 @@ export const USE_CASES: Record<UseCaseId, Omit<UseCaseConfig, 'steps'>> = {
     },
     'course-catalog': {
         id: 'course-catalog',
-        title: 'Connect Course Catalog',
+        title: 'Issue from a Course Catalog',
         titleKey: 'developerPortal.guides.useCases.courseCatalog.title',
-        subtitle: 'Enterprise LMS integration',
+        subtitle: 'Turn a spreadsheet of courses into credentials',
         subtitleKey: 'developerPortal.guides.useCases.courseCatalog.subtitle',
         description:
-            'Full guided setup for LMS partners. Configure webhooks, build credential templates, map your data, and go live with automatic credential issuance.',
+            'Upload your list of courses, get a credential design for each one, then award them to learners as they finish.',
         descriptionKey: 'developerPortal.guides.useCases.courseCatalog.description',
         icon: 'rocket',
         color: 'text-violet-600',

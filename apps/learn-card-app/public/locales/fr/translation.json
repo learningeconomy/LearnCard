@@ -8041,9 +8041,9 @@
                     "description": "Mettez en place un flux de consentement pour envoyer et accéder aux données et credentials de l'utilisateur avec son autorisation."
                 },
                 "courseCatalog": {
-                    "title": "Connecter le catalogue de cours",
-                    "subtitle": "Intégration LMS d'entreprise",
-                    "description": "Configuration guidée complète pour les partenaires LMS. Configurez les webhooks, créez des modèles de credentials, mappez vos données et passez en production avec une émission automatique de credentials."
+                    "title": "Émettre depuis un catalogue de cours",
+                    "subtitle": "Transformez un tableur de cours en certifications",
+                    "description": "Importez votre liste de cours, obtenez un modèle de certification pour chacun, puis décernez-les aux apprenants lorsqu’ils terminent."
                 },
                 "verifyCredentials": {
                     "title": "Vérifier des credentials",

@@ -8041,9 +8041,9 @@
                     "description": "Configura un flujo de consentimiento para enviar y acceder a datos de usuario y credenciales con su permiso."
                 },
                 "courseCatalog": {
-                    "title": "Conectar catálogo de cursos",
-                    "subtitle": "Integración LMS empresarial",
-                    "description": "Configuración guiada completa para socios LMS. Configura webhooks, crea plantillas de credenciales, mapea tus datos y publica con emisión automática de credenciales."
+                    "title": "Emitir desde un catálogo de cursos",
+                    "subtitle": "Convierte una hoja de cursos en credenciales",
+                    "description": "Sube tu lista de cursos, obtén un diseño de credencial para cada uno y otórgalos a los estudiantes cuando terminen."
                 },
                 "verifyCredentials": {
                     "title": "Verificar credenciales",

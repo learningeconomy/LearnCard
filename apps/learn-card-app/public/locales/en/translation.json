@@ -8092,9 +8092,9 @@
                     "description": "Set up a consent flow to send and access user data and credentials with their permission."
                 },
                 "courseCatalog": {
-                    "title": "Connect Course Catalog",
-                    "subtitle": "Enterprise LMS integration",
-                    "description": "Full guided setup for LMS partners. Configure webhooks, build credential templates, map your data, and go live with automatic credential issuance."
+                    "title": "Issue from a Course Catalog",
+                    "subtitle": "Turn a spreadsheet of courses into credentials",
+                    "description": "Upload your list of courses, get a credential design for each one, then award them to learners as they finish."
                 },
                 "verifyCredentials": {
                     "title": "Verify Credentials",
