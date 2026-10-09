@@ -18,8 +18,13 @@ const safePath = value => {
     return value;
 };
 
-export const inputKey = (root, files, configuration, prefix = 'e2e-sdk-outputs-v1') => {
-    const hash = createHash('sha256').update(canonical(configuration));
+export const inputKey = (root, files, configuration, prefix = 'e2e-sdk-outputs-v2') => {
+    const hash = createHash('sha256');
+    const append = value => {
+        const bytes = Buffer.from(value);
+        hash.update(`${bytes.length}:`).update(bytes);
+    };
+    append(canonical(configuration));
     for (const file of [...files].sort()) {
         const location = path.join(root, file);
         let bytes;
@@ -33,7 +38,8 @@ export const inputKey = (root, files, configuration, prefix = 'e2e-sdk-outputs-v
         } else {
             bytes = fs.readFileSync(location);
         }
-        hash.update(file).update('\0').update(bytes).update('\0');
+        append(file);
+        append(bytes);
     }
     return `${prefix}-${hash.digest('hex')}`;
 };
@@ -100,7 +106,24 @@ export const restore = (workspace, cache, spec) => {
         fs.mkdirSync(path.dirname(path.join(workspace, root)), { recursive: true });
         fs.cpSync(path.join(payload, root), path.join(workspace, root), { recursive: true });
     }
-    console.log(`Verified and restored ${spec.roots.length} SDK output directories`);
+    console.log(`Verified and restored ${spec.roots.length} build output directories`);
+};
+
+const rootTargets = ['learn-card-app:docker-build', 'e2e:test:e2e'];
+
+export const buildOutputs = tasks => {
+    for (const task of Object.values(tasks)) {
+        if (task.target.target !== 'build' && !rootTargets.includes(task.id))
+            throw new Error(`Unaudited build dependency: ${task.id}`);
+    }
+    const builds = Object.values(tasks).filter(task => task.target.target === 'build');
+    const projects = builds.map(task => task.target.project).sort();
+    const roots = [...new Set(builds.flatMap(task => task.outputs))].sort().map(safePath);
+    for (const root of roots) {
+        if (!/^(packages|services|tools)\//.test(root) || /[*{}]/.test(root))
+            throw new Error(`Unaudited build output: ${root}`);
+    }
+    return { projects, roots };
 };
 
 const specification = workspace => {
@@ -109,7 +132,7 @@ const specification = workspace => {
     const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'e2e-sdk-graph-'));
     const tasks = {};
     try {
-        for (const target of ['learn-card-app:docker-build', 'e2e:test:e2e']) {
+        for (const target of rootTargets) {
             const graphFile = path.join(directory, `${target.split(':')[0]}.json`);
             execFileSync(
                 process.execPath,
@@ -130,13 +153,7 @@ const specification = workspace => {
     } finally {
         fs.rmSync(directory, { recursive: true, force: true });
     }
-    const builds = Object.values(tasks).filter(task => task.target.target === 'build');
-    const projects = builds.map(task => task.target.project).sort();
-    const roots = [...new Set(builds.flatMap(task => task.outputs))].sort().map(safePath);
-    for (const root of roots) {
-        if (!/^(packages|services|tools)\//.test(root) || /[*{}]/.test(root))
-            throw new Error(`Unaudited build output: ${root}`);
-    }
+    const { projects, roots } = buildOutputs(tasks);
     const files = execFileSync('git', ['ls-files', '-z'], { cwd: workspace })
         .toString()
         .split('\0')
@@ -160,7 +177,7 @@ const specification = workspace => {
         ].map(name => [name, process.env[name] || ''])
     );
     const configuration = {
-        schema: 1,
+        schema: 2,
         // Sentry otherwise injects the event SHA into service bundles. These test
         // prerequisites use their source identity so frontend commits can reuse them.
         releaseIdentity: 'sdk-input-key',
@@ -189,7 +206,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     if (command === 'key') {
         const spec = specification(process.cwd());
         fs.writeFileSync(specFile, canonical(spec));
-        console.log(`key=${spec.key}`);
+        console.log(spec.key);
     } else if (command === 'key-spa') {
         const workspace = process.cwd();
         const files = execFileSync('git', ['ls-files', '-z'], { cwd: workspace })
@@ -225,17 +242,17 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
                 .map(name => [name, process.env[name]])
         );
         const configuration = {
-            schema: 1,
+            schema: 2,
             sdk: JSON.parse(fs.readFileSync(cache)).key,
             environment,
             testedSha: execFileSync('git', ['rev-parse', 'HEAD']).toString().trim(),
         };
         const spec = {
-            key: inputKey(workspace, [...new Set(files)], configuration, 'e2e-spa-outputs-v1'),
+            key: inputKey(workspace, [...new Set(files)], configuration, 'e2e-spa-outputs-v2'),
             roots: ['apps/learn-card-app/build'],
         };
         fs.writeFileSync(specFile, canonical(spec));
-        console.log(`key=${spec.key}`);
+        console.log(spec.key);
     } else {
         const spec = JSON.parse(fs.readFileSync(specFile));
         if (command === 'projects') console.log(spec.projects.join(','));

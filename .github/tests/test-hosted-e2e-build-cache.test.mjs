@@ -4,7 +4,12 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { execFileSync } from 'node:child_process';
-import { inputKey, restore, snapshot } from '../../scripts/e2e-hosted/sdk-build-cache.mjs';
+import {
+    buildOutputs,
+    inputKey,
+    restore,
+    snapshot,
+} from '../../scripts/e2e-hosted/sdk-build-cache.mjs';
 
 const fixture = t => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'e2e-output-test-'));
@@ -94,4 +99,50 @@ test('keys include submodule revisions with initialized or absent directories', 
     assert.equal(inputKey(workspace, ['lib/didkit'], {}), first);
     setRevision('2'.repeat(40));
     assert.notEqual(inputKey(workspace, ['lib/didkit'], {}), first);
+});
+
+test('keys frame binary inputs so embedded NULs cannot hide file boundaries', t => {
+    const { workspace } = fixture(t);
+    fs.writeFileSync(path.join(workspace, 'a'), 'x\0b\0y');
+    const combined = inputKey(workspace, ['a'], {});
+    fs.writeFileSync(path.join(workspace, 'a'), 'x');
+    fs.writeFileSync(path.join(workspace, 'b'), 'y');
+    assert.notEqual(inputKey(workspace, ['a', 'b'], {}), combined);
+});
+
+test('SDK contract rejects unrepresented dependency tasks and unsafe output paths', () => {
+    const tasks = {};
+    for (const [id, project, target, outputs] of [
+        [
+            'learn-card-app:docker-build',
+            'learn-card-app',
+            'docker-build',
+            ['apps/learn-card-app/build'],
+        ],
+        ['e2e:test:e2e', 'e2e', 'test:e2e', []],
+        ['types:build', 'types', 'build', ['packages/types/dist']],
+    ]) {
+        tasks[id] = { id, target: { project, target }, outputs };
+    }
+    assert.deepEqual(buildOutputs(tasks), {
+        projects: ['types'],
+        roots: ['packages/types/dist'],
+    });
+    const codegen = {
+        id: 'types:codegen',
+        target: { project: 'types', target: 'codegen' },
+        outputs: ['packages/types/generated'],
+    };
+    assert.throws(
+        () => buildOutputs({ ...tasks, [codegen.id]: codegen }),
+        /Unaudited build dependency/
+    );
+    for (const output of ['../outside', '/absolute', 'apps/other/dist', 'packages/types/*']) {
+        assert.throws(() =>
+            buildOutputs({
+                ...tasks,
+                'types:build': { ...tasks['types:build'], outputs: [output] },
+            })
+        );
+    }
 });

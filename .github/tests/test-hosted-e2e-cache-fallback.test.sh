@@ -26,7 +26,7 @@ env() {
     while [[ "$1" == *=* ]]; do shift; done
     "$@"
 }
-e2e_timed() { shift; set +e; "$@"; }
+e2e_timed() { shift; "$@"; }
 for scenario in hit miss invalid failed-build; do
     E2E_SDK_CACHE_HIT=true RESTORE_STATUS=0 BUILD_STATUS=0
     case "$scenario" in
@@ -37,7 +37,6 @@ for scenario in hit miss invalid failed-build; do
     : > "$TEST_ROOT/calls"
     status=0
     prepare_sdk_build || status=$?
-    set -e
     case "$scenario" in
         hit) [[ "$status" == 0 && ! -s "$TEST_ROOT/calls" ]] ;;
         miss|invalid) [[ "$status" == 0 && "$(cat "$TEST_ROOT/calls")" == $'build\nsnapshot' ]] ;;

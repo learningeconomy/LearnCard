@@ -161,7 +161,7 @@ jobs:
               run: bash scripts/e2e-hosted/run-browser.sh
 
             - name: Save verified SDK build snapshot
-              if: ${{ success() && steps.build-cache.outputs.sdk-hit != 'true' }}
+              if: ${{ success() && env.E2E_SDK_BUILD_CACHE == 'true' && steps.build-cache.outputs.sdk-hit != 'true' }}
               uses: actions/cache/save@v6
               continue-on-error: true
               with:
@@ -169,7 +169,7 @@ jobs:
                   key: ${{ steps.build-cache.outputs.sdk-key }}
 
             - name: Save verified SPA build snapshot
-              if: ${{ success() && steps.build-cache.outputs.spa-hit != 'true' }}
+              if: ${{ success() && env.E2E_SDK_BUILD_CACHE == 'true' && steps.build-cache.outputs.spa-hit != 'true' }}
               uses: actions/cache/save@v6
               continue-on-error: true
               with:
