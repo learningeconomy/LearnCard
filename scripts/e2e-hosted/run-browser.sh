@@ -6,6 +6,9 @@ APP_DIR="$REPO_ROOT/apps/learn-card-app"
 BAKE_FILE="$REPO_ROOT/scripts/e2e-hosted/docker-bake.hcl"
 : "${E2E_ARTIFACT_DIR:?E2E_ARTIFACT_DIR must be set}"
 E2E_TEST_FILES="${E2E_TEST_FILES:-consent-flow-race.spec.ts app-store.spec.ts wallet-credentials.spec.ts}"
+BROWSER_BUILD_BACKEND_PID=""
+BROWSER_BUILD_HOST_PID=""
+BROWSER_RUNTIME_CONTEXT=""
 
 source "$REPO_ROOT/scripts/e2e-hosted/metrics.sh"
 e2e_metrics_init browser
@@ -13,6 +16,7 @@ e2e_metrics_init browser
 collect_browser_artifacts() {
     local status=$?
     set +e
+    cleanup_browser_build
     cd "$APP_DIR"
     docker compose logs --no-color > "$E2E_ARTIFACT_DIR/docker-compose.log" 2>&1
     for path in playwright-report test-results playwright-report-a11y test-results-a11y; do
@@ -25,6 +29,8 @@ collect_browser_artifacts() {
     exit "$status"
 }
 trap collect_browser_artifacts EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 wait_for_url() {
     local name="${1:?name required}" url="${2:?url required}" timeout="${3:-300}" start=$SECONDS
@@ -49,6 +55,92 @@ build_images() {
     docker buildx bake --file "$BAKE_FILE" browser --load --progress=plain \
         2>&1 | tee "$E2E_ARTIFACT_DIR/docker-buildx-bake.log"
 }
+
+# BEGIN hosted browser build helpers
+stop_browser_build() {
+    local pid="${1:?build PID required}" child
+    # Background timing jobs own Docker/Bun descendants. Freeze each parent
+    # before enumerating children so it cannot fork replacements during shutdown.
+    kill -STOP "$pid" 2>/dev/null || return 0
+    while read -r child; do
+        [[ -z "$child" ]] || stop_browser_build "$child"
+    done < <(pgrep -P "$pid" || true)
+    kill -TERM "$pid" 2>/dev/null || true
+    kill -CONT "$pid" 2>/dev/null || true
+}
+
+cleanup_browser_build() {
+    local pid
+    for pid in "${BROWSER_BUILD_HOST_PID:-}" "${BROWSER_BUILD_BACKEND_PID:-}"; do
+        if [[ -n "$pid" ]]; then
+            stop_browser_build "$pid"
+            wait "$pid" 2>/dev/null || true
+        fi
+    done
+    BROWSER_BUILD_HOST_PID="" BROWSER_BUILD_BACKEND_PID=""
+    if [[ -n "${BROWSER_RUNTIME_CONTEXT:-}" ]]; then
+        rm -rf "$BROWSER_RUNTIME_CONTEXT"
+        BROWSER_RUNTIME_CONTEXT=""
+    fi
+}
+
+build_host_browser() {
+    cd "$REPO_ROOT" || return
+    # Old Sentry build plugins can fail compilation when optional telemetry
+    # cannot connect. Keep hosted test builds independent of that endpoint.
+    export SENTRY_BUILD_TELEMETRY=false
+    # The app's ^build graph includes all three SDK roots used by Playwright.
+    # Use the tested checkout for Vite provenance, including manual dispatches.
+    GITHUB_SHA=$(git rev-parse HEAD) SKIP_DIDKIT_NAPI=1 NX_DAEMON=false \
+        bunx nx run learn-card-app:docker-build --verbose --skip-nx-cache || return
+    [[ -s "$APP_DIR/build/index.html" ]] || return 1
+    local output
+    for output in packages/learn-card-types/dist packages/learn-card-init/dist packages/plugins/lca-api-plugin/dist; do
+        [[ -d "$REPO_ROOT/$output" ]] || { echo "Missing fixture build: $output" >&2; return 1; }
+    done
+    mkdir -p "$E2E_BROWSER_RUNTIME_CONTEXT" || return
+    cp -R "$APP_DIR/build" "$E2E_BROWSER_RUNTIME_CONTEXT/build" || return
+    cp "$APP_DIR/nginx.conf" "$E2E_BROWSER_RUNTIME_CONTEXT/nginx.conf" || return
+    cp "$REPO_ROOT/scripts/e2e-hosted/Dockerfile.browser-runtime" "$E2E_BROWSER_RUNTIME_CONTEXT/Dockerfile" || return
+}
+
+build_browser_runtime_image() {
+    docker buildx bake --file "$BAKE_FILE" hosted-browser-app --load --progress=plain \
+        2>&1 | tee "$E2E_ARTIFACT_DIR/docker-buildx-bake-runtime.log"
+}
+
+build_host_browser_images() {
+    cd "$REPO_ROOT" || return
+    mkdir -p "$REPO_ROOT/node_modules/.cache" || return
+    BROWSER_RUNTIME_CONTEXT=$(mktemp -d "$REPO_ROOT/node_modules/.cache/e2e-browser-runtime.XXXXXX") || return
+    E2E_BROWSER_RUNTIME_CONTEXT="$BROWSER_RUNTIME_CONTEXT"
+    export E2E_BROWSER_RUNTIME_CONTEXT
+    # Reap both jobs even when one fails: e2e_timed disables errexit.
+    e2e_timed backend_image_build docker buildx bake --file "$BAKE_FILE" hosted-browser-backend \
+        --load --progress=plain > "$E2E_ARTIFACT_DIR/docker-buildx-bake.log" 2>&1 &
+    BROWSER_BUILD_BACKEND_PID=$!
+    local status=0
+    # Waiting on background jobs lets INT/TERM reach the EXIT cleanup promptly.
+    e2e_timed host_browser_build build_host_browser &
+    BROWSER_BUILD_HOST_PID=$!
+    wait "$BROWSER_BUILD_HOST_PID" || status=1
+    BROWSER_BUILD_HOST_PID=""
+    if ! wait "$BROWSER_BUILD_BACKEND_PID"; then
+        status=1
+        echo 'Backend image build failed; last 100 log lines:' >&2
+        tail -n 100 "$E2E_ARTIFACT_DIR/docker-buildx-bake.log" >&2
+    fi
+    BROWSER_BUILD_BACKEND_PID=""
+    if [[ "$status" -eq 0 ]]; then
+        e2e_timed browser_runtime_image build_browser_runtime_image &
+        BROWSER_BUILD_HOST_PID=$!
+        wait "$BROWSER_BUILD_HOST_PID" || status=1
+        BROWSER_BUILD_HOST_PID=""
+    fi
+    cleanup_browser_build
+    return "$status"
+}
+# END hosted browser build helpers
 
 start_compose() {
     cd "$APP_DIR"
@@ -118,10 +210,17 @@ run_accessibility() {
 }
 
 e2e_snapshot startup
-e2e_timed docker_buildx_bake build_images
+if [[ "${E2E_HOST_BROWSER_BUILD:-false}" == true ]]; then
+    # e2e_timed invokes this function in the current shell: ownership reaches EXIT.
+    e2e_timed image_preparation build_host_browser_images
+else
+    e2e_timed docker_buildx_bake build_images
+fi
 e2e_snapshot after-image-build
 e2e_timed compose_start start_compose
-e2e_timed host_dependency_build build_test_dependencies
+if [[ "${E2E_HOST_BROWSER_BUILD:-false}" != true ]]; then
+    e2e_timed host_dependency_build build_test_dependencies
+fi
 e2e_timed playwright_runner_prepare prepare_browser_runner
 e2e_snapshot stack-running
 e2e_timed service_readiness wait_for_stack

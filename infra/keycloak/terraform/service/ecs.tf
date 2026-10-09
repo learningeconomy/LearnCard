@@ -153,14 +153,16 @@ resource "aws_ecs_task_definition" "keycloak" {
 }
 
 resource "aws_ecs_service" "keycloak" {
-  name                               = local.name
-  cluster                            = aws_ecs_cluster.keycloak.id
-  task_definition                    = aws_ecs_task_definition.keycloak.arn
-  launch_type                        = "FARGATE"
-  desired_count                      = var.desired_count
-  health_check_grace_period_seconds  = 120
-  enable_execute_command             = false
-  wait_for_steady_state              = true
+  name                              = local.name
+  cluster                           = aws_ecs_cluster.keycloak.id
+  task_definition                   = aws_ecs_task_definition.keycloak.arn
+  launch_type                       = "FARGATE"
+  desired_count                     = var.desired_count
+  health_check_grace_period_seconds = 120
+  enable_execute_command            = false
+  # deploy-image.sh owns stability and health gating after restoring capacity.
+  # Waiting inside apply breaks recreate while the service is deliberately held at 0.
+  wait_for_steady_state              = false
   deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
   availability_zone_rebalancing      = "ENABLED"

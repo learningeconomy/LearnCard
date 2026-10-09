@@ -67,7 +67,9 @@ e2e_snapshot() {
 }
 
 e2e_render_summary() {
-    local summary="$E2E_ARTIFACT_DIR/summary.md"
+    local summary="$E2E_ARTIFACT_DIR/summary.md" temporary
+    # Concurrent build stages must publish whole summaries, never partial writes.
+    temporary=$(mktemp "$E2E_ARTIFACT_DIR/.summary.XXXXXX") || return
     {
         echo '# Hosted E2E diagnostics'
         echo
@@ -79,5 +81,6 @@ e2e_render_summary() {
               done
         echo
         echo 'Capacity snapshots are included in this artifact as `capacity-*.txt`.'
-    } > "$summary"
+    } > "$temporary"
+    mv -f "$temporary" "$summary"
 }
