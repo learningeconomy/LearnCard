@@ -17,7 +17,9 @@ UPPER_SNAKE_CASE environment names to string values, initially:
 
 The Firebase JSON is a **string inside the bundle**, not a nested object. No secret
 values belong in checked-in files. `lambda.ts` loads and validates the bundle once
-before importing `lambdaApp.ts` and the environment schema. Non-empty explicit env
+before importing `lambdaApp.ts` (or `oidcLambdaApp.ts` for the `oidc` function) and the
+environment schema. `oidcLambdaApp.ts` must stay free of Mongo, models and DIDKit: a Mongo
+connect left pending when an idle sandbox freezes crashes the next request after thaw. Non-empty explicit env
 values win; empty strings are unset. Failures stop startup with a sanitized error
 and can retry. Redeploy/recycle functions after rotating the bundle.
 

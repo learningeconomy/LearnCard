@@ -3,6 +3,16 @@
 # DynamoDB and service discovery are not read by these roots or keycloak-drift.yml.
 data "aws_iam_policy_document" "plan_read" {
   statement {
+    sid       = "WritePrivateDiagnostics"
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.state.arn}/keycloak/${var.environment}/diagnostics/*"]
+    condition {
+      test     = "StringEquals"
+      variable = "s3:x-amz-server-side-encryption"
+      values   = ["AES256"]
+    }
+  }
+  statement {
     sid = "InfrastructureConfiguration"
     actions = [
       "sts:GetCallerIdentity",

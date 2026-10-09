@@ -863,25 +863,37 @@ jobs:
             - name: Prepare tenant config
               if: steps.vars.outputs.project_name == 'learn-card-app'
               working-directory: apps/learn-card-app
+              env:
+                  TENANT: ${{ vars.TENANT || 'learncard' }}
+                  STAGE: ${{ vars.STAGE || '' }}
               run: |
-                  TENANT="${{ vars.TENANT || 'learncard' }}"
-                  STAGE="${{ vars.STAGE || '' }}"
-                  STAGE_FLAG=""
+                  STAGE_ARGS=()
                   if [[ -n "$STAGE" ]]; then
-                    STAGE_FLAG="--stage $STAGE"
+                    STAGE_ARGS=(--stage "$STAGE")
                   fi
-                  echo "Preparing tenant config: $TENANT $STAGE_FLAG"
-                  bunx tsx scripts/prepare-native-config.ts "$TENANT" $STAGE_FLAG
+                  echo "Preparing tenant config: $TENANT ${STAGE_ARGS[*]}"
+                  bunx tsx scripts/prepare-native-config.ts "$TENANT" "${STAGE_ARGS[@]}"
 
             # Generate the resolved per-tenant configs consumed by the Netlify edge
             # function (netlify/edge-functions/shared/resolved-tenant-configs.generated.json).
             # This previously ran inside Netlify's own build command; now that CI builds the
             # artifact and deploys it with `--no-build`, we must generate it here so the
             # edge function bundles the up-to-date data. LCA only — Scouts has no edge config.
+            # A non-empty STAGE pins the edge overlay to the stage baked above, so
+            # /__tenant-config can't override it with the hostname-derived stage
+            # (staging.learncard.ai would otherwise always serve config.staging.json).
             - name: Generate edge tenant configs
               if: steps.vars.outputs.project_name == 'learn-card-app'
               working-directory: apps/learn-card-app
-              run: bun scripts/generate-edge-tenant-configs.ts
+              env:
+                  TENANT: ${{ vars.TENANT || 'learncard' }}
+                  STAGE: ${{ vars.STAGE || '' }}
+              run: |
+                  PIN_ARGS=()
+                  if [[ -n "$STAGE" ]]; then
+                    PIN_ARGS=(--tenant "$TENANT" --stage "$STAGE")
+                  fi
+                  bun scripts/generate-edge-tenant-configs.ts "${PIN_ARGS[@]}"
 
             # Scouts backend URLs come from the checked-in stage configs
             # (environments/scoutpass/config[.<stage>].json) via the same resolution local
