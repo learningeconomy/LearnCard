@@ -143,11 +143,33 @@ interface IdentityResponse {
 
 #### `sendCredential(input)`
 
-Send a credential to the user's LearnCard wallet. Supports two modes:
+Send a credential to the user's LearnCard wallet. Supports three modes:
 
-**Mode 1: Template-Based Issuance (Recommended for App Store Apps)**
+**Mode 1: Inline Template (Recommended for App Store Apps)**
 
-Issue a credential using a pre-configured boost template attached to your App Store listing. LearnCard handles signing and delivery.
+Define the template in your code with an `alias`. No setup is needed: LearnCard creates the template for your app when you publish, signs the credential as your app, and delivers it. The SDK checks the template and `templateData` before sending, so mistakes fail fast with `TEMPLATE_INVALID` or `TEMPLATE_DATA_INVALID`.
+
+**Returns:** `Promise<TemplateCredentialResponse>` (includes `templateVersion`)
+
+```typescript
+const result = await learnCard.sendCredential({
+    alias: 'course-complete',
+    template: {
+        name: 'Completed {{courseName}}',
+        description: 'Awarded for finishing {{courseName}}.',
+        achievementType: 'Course',
+        criteria: { narrative: 'Finished all modules' },
+    },
+    templateData: { courseName: 'Intro to Baking' },
+});
+console.log(result.credentialUri, result.templateVersion);
+```
+
+Templates are versioned by `alias`: sending the same template keeps its version, and changing it under the same alias creates the next version. Works in practice mode too.
+
+**Mode 2: Existing Template**
+
+Issue a credential from a template already attached to your App Store listing (for example, one made in the Developer Portal). LearnCard handles signing and delivery.
 
 **Parameters:**
 
@@ -166,7 +188,7 @@ const result = await learnCard.sendCredential({
 console.log('Credential URI:', result.credentialUri);
 ```
 
-**Mode 2: Raw Credential**
+**Mode 3: Raw Credential**
 
 Send a pre-signed verifiable credential directly. Your backend must issue and sign the credential first.
 
@@ -186,7 +208,7 @@ console.log('Credential ID:', response.credentialId);
 ```
 
 {% hint style="info" %}
-For App Store embedded apps, template-based issuance is strongly recommended. See [Build an App Inside LearnCard](../../how-to-guides/publish-your-app.md) for a complete walkthrough.
+For App Store embedded apps, use inline templates (Mode 1). See [Build an App Inside LearnCard](../../how-to-guides/publish-your-app.md) for a complete walkthrough.
 {% endhint %}
 
 #### `launchFeature(featurePath, initialPrompt?)`

@@ -1,55 +1,88 @@
 ---
-description: Build, test, and publish an app that runs inside LearnCard and issues credentials to its users.
+description: Build, try, and publish an app that runs inside LearnCard and issues credentials to its users.
 ---
 
 # Build an App Inside LearnCard
 
-Users install your app from the LearnCard app store. The [Partner Connect SDK](../sdks/partner-connect/README.md) provides single sign-on, credential issuance, notifications, and learner context.
+Users install your app from the LearnCard app store. The [Partner Connect SDK](../sdks/partner-connect/README.md) gives your app sign-in, credential issuance, permission requests, notifications, and learner context.
+
+The whole flow is **Build → Try → Publish**. You build against a practice version of LearnCard, then publish from the app itself.
 
 {% hint style="info" %}
-**~20 min to a working local app** · Start here — a LearnCard account is needed only at step 2.
+**~20 min to a working app** · No LearnCard account is needed until you publish.
 {% endhint %}
 
-## 1. Build locally — no registration needed
+## 1. Build with practice mode
 
-On localhost, the SDK's mock mode simulates the LearnCard host without registration:
+Install the SDK:
 
 ```bash
 npm install @learncard/partner-connect
 ```
 
+Then use it like this:
+
 ```typescript
 import { createPartnerConnect } from '@learncard/partner-connect';
 
-const learnCard = createPartnerConnect({
-    hostOrigin: 'https://learncard.app',
-    mock: 'auto',
+const learnCard = createPartnerConnect({ hostOrigin: 'https://learncard.app' });
+
+// Sign the learner in
+const { user } = await learnCard.requestIdentity();
+
+// Award a credential. LearnCard creates the template the first time you publish.
+await learnCard.sendCredential({
+    alias: 'course-complete',
+    template: {
+        name: 'Completed {{courseName}}',
+        description: 'Awarded for finishing {{courseName}}.',
+        achievementType: 'Course',
+        criteria: { narrative: 'Finished all modules' },
+    },
+    templateData: { courseName: 'Intro to Baking' },
 });
 
-const identity = await learnCard.requestIdentity();
-
-await learnCard.sendCredential({
-    templateAlias: 'achievement',
-    templateData: { score: '95' },
+// Ask permission, saying exactly what you need
+const { granted } = await learnCard.requestConsent({
+    read: { credentialCategories: ['Achievement'], personalFields: ['name'] },
+    reason: 'Personalize your experience',
 });
 ```
 
-In mock mode, each call shows a production-action toast, counters persist to localStorage, and `requestIdentity()` returns a seeded user. Embedded in LearnCard, the same code uses the real host.
+When your app runs on `localhost` or in the editor preview of Lovable, Bolt, v0, or Replit, the SDK switches to **practice mode** automatically:
 
-**Working example**: the [Basic Launchpad app](https://github.com/learningeconomy/LearnCard/tree/main/examples/app-store-apps/1-basic-launchpad-app) (~200 lines, Astro + vanilla JS) exercises every SDK method.
+- Every call works and shows a short notice of what would happen inside LearnCard. `requestIdentity()` returns a practice profile, credentials and counters are kept in the browser, and permission requests are approved.
+- A **Practice mode** panel in the bottom-left corner lists the LearnCard features your app uses, in plain words.
+- **Start over** in that panel (or `learnCard.resetPracticeMode()`) clears what was recorded for this app, so it publishes as a new app.
 
-## 2. Register your listing
+Inside LearnCard, the same code talks to the real host. Practice mode never turns on for a published address such as `*.lovable.app` or your own domain. See [Standalone / Mock Mode](../sdks/partner-connect/README.md#standalone-mock-mode) for every option.
 
-In the LearnCard app, open **App Store → Developer Portal** (`/app-store/developer`) and run the Partner Onboarding Wizard:
+{% hint style="warning" %}
+**Say what you're asking for.** Calling `requestConsent()` with no details is approved in practice, but LearnCard needs to know what to ask the learner. Practice mode flags this as **Not set up yet**. Either pass the details as above, or choose them on the publish page (one tap).
+{% endhint %}
 
-1. Project setup (creates your Integration — the entity that owns your listings and templates)
-2. Signing authority (for server-side credential issuance)
-3. Branding — name, tagline, icon, description
-4. Credential template builder (defines the `templateAlias` values your app issues; optionally [link each template to its Credential Engine Registry entry](../core-concepts/credentials-and-data/building-verifiable-credentials.md#ctid))
-5. Integration method — `EMBEDDED_IFRAME` with your app's URL
-6. Data mapping, sandbox test, and production checks
+**Working example**: the [Basic Launchpad app](https://github.com/learningeconomy/LearnCard/tree/main/examples/app-store-apps/1-basic-launchpad-app) (Astro + vanilla JS) exercises every SDK method.
 
-Your listing starts as a **DRAFT** — visible to you, not the public.
+{% hint style="info" %}
+**Add an icon.** Publishing picks up your app's `apple-touch-icon` or largest favicon as its store icon, so add `<link rel="apple-touch-icon" href="/apple-touch-icon.png">` to your page.
+{% endhint %}
+
+## 2. Publish from your app
+
+Click **Publish app** in the practice panel (or **Publish to LearnCard** on the card that appears once your app uses LearnCard). The publish page opens in LearnCard:
+
+1. **Sign in or create an account.** You come straight back to your app afterwards.
+2. **Fill in your store listing.** The name and icon are filled in from your app. Add a tagline, description, category, and screenshots — the **Store preview** shows the listing as learners will see it. Changes save as you go.
+3. **Choose where your app will live.** If you published from `localhost` or a builder preview, enter your public address (for example `https://myapp.com`). Learners can't open local or preview addresses.
+4. **Try your app.** Switch to **Try your app** to run it inside LearnCard with a real account. Use **Use a test address** to try a version still running on your computer or in a builder preview — learners always get your public address. Anything new your app does while you try it is added to the listing.
+5. **Set up permission requests if asked.** If your app asks for permission without saying what for, the page suggests choices based on what your app does. Tap **Enable Consent** and the preview reloads so you can check it.
+6. Click **Submit for Review**.
+
+LearnCard recognizes your app each time you publish, so re-publishing updates the same listing instead of creating a new one. If several apps share one address (for example a few examples on `localhost:4321`), each keeps its own identity; set `mockOptions.appId` to pin it. If LearnCard isn't sure which app you mean, it asks.
+
+{% hint style="info" %}
+Testing against a local copy of LearnCard? Open your app with `?lc_publish_override=http://localhost:3000` so **Publish app** goes there. See the [SDK README](https://github.com/learningeconomy/LearnCard/tree/main/packages/learn-card-partner-connect-sdk#1-lc_publish_override-no-code-changes).
+{% endhint %}
 
 ### Age restrictions
 
@@ -65,35 +98,34 @@ You can configure age-based access controls for your app:
 
 - **`min_age`** is a hard minimum age requirement. If a user's age is known and below `min_age`, the user is blocked from installing the app (including for managed/child profiles).
 - **`age_rating`** is a content rating. For managed/child profiles, installs that would violate the rating will require guardian approval.
-- If a managed/child profile's age is **unknown** (no valid DOB on the profile), the install flow will require the guardian to verify age (e.g., by entering DOB) before continuing.
+- If a managed/child profile's age is **unknown** (no valid date of birth on the profile), the install flow will require the guardian to verify age (e.g., by entering a date of birth) before continuing.
 
 {% endhint %}
 
 {% hint style="info" %}
-**Contract-based listings and managed profiles**
+**Permission requests and managed profiles**
 
-If your listing's launch configuration includes a `contractUri`, the install flow will require **guardian approval** for managed/child profiles before the child can install/consent.
+If your app asks learners for permission (a consent flow), the install flow requires **guardian approval** for managed/child profiles before the child can install or agree.
 {% endhint %}
+
+## 3. After you submit
+
+Every app has a status page under **Your Apps** (`/app-store/developer`), which shows where it is:
+
+| Status        | What it means                                             | What you can do                   |
+| :------------ | :-------------------------------------------------------- | :-------------------------------- |
+| **Draft**     | Only you can see it.                                      | Edit, try, submit, or delete it.  |
+| **In review** | Waiting for the LearnCard team.                           | Withdraw it to make more changes. |
+| **Live**      | In the app store.                                         | Submit updates.                   |
+| **Removed**   | Not in the store — it wasn't approved, or was taken down. | Delete it, then publish again.    |
+
+You get a LearnCard notification when your app is approved or needs changes.
+
+**Updating a live app.** Edits to a live app — including new features your app starts using — are saved as an update and go through review. Learners keep seeing the current version until the update is approved. You can withdraw or discard a pending update at any time.
 
 ### Who signs app credentials
 
-App-issued credentials are signed as the app's DID `did:web:network.learncard.com:app:<slug>` (not your personal profile). In the LearnCard App, credentials issued by apps display the app name and icon.
-
-## 3. Test embedded
-
-Launch your draft listing from the Developer Portal. LearnCard loads it in an iframe, and the SDK switches from mock mode to the real host. Verify:
-
-- [ ] `requestIdentity()` returns a real user DID
-- [ ] Credentials appear in the test user's wallet after `sendCredential()`
-- [ ] Notifications, counters, and any consent flows behave as expected
-
-## 4. Submit for review
-
-Click **Submit for Review** in the Developer Portal. The status moves to **PENDING_REVIEW**, then to **LISTED** after approval. You can unsubmit a pending listing or later mark it **ARCHIVED**.
-
-{% hint style="info" %}
-There is currently no automatic notification when your listing is approved — check the Developer Portal, or contact [sdk@learningeconomy.io](mailto:sdk@learningeconomy.io) with questions about a pending review.
-{% endhint %}
+Credentials your app issues are signed by your app, not your personal account (technically, the app's identifier `did:web:network.learncard.com:app:<slug>`). In the LearnCard App, they show your app's name and icon.
 
 ## Know who the user is
 
@@ -129,7 +161,8 @@ The Partner Connect SDK provides several advanced capabilities for apps:
 
 | Capability                 | What it's for                                                       | Reference                                                                                                                |
 | :------------------------- | :------------------------------------------------------------------ | :----------------------------------------------------------------------------------------------------------------------- |
-| **Request consent**        | Ask users to accept terms or data sharing agreements                | [`requestConsent`](../sdks/partner-connect/methods.md#requestconsent-contracturi-options)                                |
+| **Award credentials**      | Issue badges and certificates from templates defined in your code   | [`sendCredential`](../sdks/partner-connect/methods.md#sendcredential-input)                                              |
+| **Request consent**        | Ask users to share data or accept terms                             | [`requestConsent`](../sdks/partner-connect/methods.md#requestconsent-contracturi-options)                                |
 | **Learner context for AI** | Retrieve a user's credentials and profile data to personalize AI    | [`requestLearnerContext`](../sdks/partner-connect/methods.md#requestlearnercontext-options)                              |
 | **Record AI sessions**     | Save structured summaries of AI tutoring or interactions            | [`sendAiSessionCredential`](../sdks/partner-connect/methods.md#sendaisessioncredential-input)                            |
 | **Counters**               | Track progress, streaks, or thresholds (up to 50 keys per app/user) | [`incrementCounter` / `getCounter`](../sdks/partner-connect/methods.md#counters-incrementcounter-getcounter-getcounters) |
