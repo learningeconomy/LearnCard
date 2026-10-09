@@ -7,6 +7,7 @@ BAKE_FILE="$REPO_ROOT/scripts/e2e-hosted/docker-bake.hcl"
 : "${E2E_ARTIFACT_DIR:?E2E_ARTIFACT_DIR must be set}"
 
 source "$REPO_ROOT/scripts/e2e-hosted/metrics.sh"
+source "$REPO_ROOT/scripts/e2e-hosted/prepare-sdk-build.sh"
 e2e_metrics_init service
 
 collect_service_artifacts() {
@@ -29,12 +30,17 @@ trap collect_service_artifacts EXIT
 run_service_suite() {
     cd "$REPO_ROOT"
     local vitest_args=''
+    local -a dependency_args=()
+    if [[ "${E2E_SDK_BUILD_CACHE:-false}" == true ]]; then
+        prepare_sdk_build || return
+        dependency_args=(--excludeTaskDependencies)
+    fi
     if [[ -n "${E2E_SHARD:-}" && -n "${E2E_SHARD_TOTAL:-}" ]]; then
         vitest_args="--shard=${E2E_SHARD}/${E2E_SHARD_TOTAL}"
         echo "Running vitest shard ${E2E_SHARD}/${E2E_SHARD_TOTAL}"
     fi
     E2E_VITEST_ARGS="$vitest_args" \
-        E2E_MANAGE_DOCKER=false NX_DAEMON=false bunx nx run e2e:test:e2e --verbose --skip-nx-cache \
+        E2E_MANAGE_DOCKER=false NX_DAEMON=false bunx nx run e2e:test:e2e --verbose --skip-nx-cache ${dependency_args[@]+"${dependency_args[@]}"} \
         2>&1 | tee "$E2E_ARTIFACT_DIR/vitest.log"
 }
 

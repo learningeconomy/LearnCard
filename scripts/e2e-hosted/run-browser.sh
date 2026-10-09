@@ -8,6 +8,7 @@ BAKE_FILE="$REPO_ROOT/scripts/e2e-hosted/docker-bake.hcl"
 E2E_TEST_FILES="${E2E_TEST_FILES:-consent-flow-race.spec.ts app-store.spec.ts wallet-credentials.spec.ts}"
 
 source "$REPO_ROOT/scripts/e2e-hosted/metrics.sh"
+source "$REPO_ROOT/scripts/e2e-hosted/prepare-sdk-build.sh"
 e2e_metrics_init browser
 
 collect_browser_artifacts() {
@@ -54,8 +55,26 @@ build_host_browser() {
     cd "$REPO_ROOT" || return
     # The app's ^build graph includes all three SDK roots used by Playwright.
     # Use the tested checkout for Vite provenance, including manual dispatches.
-    GITHUB_SHA=$(git rev-parse HEAD) SKIP_DIDKIT_NAPI=1 NX_DAEMON=false \
-        bunx nx run learn-card-app:docker-build --verbose --skip-nx-cache || return
+    local -a dependency_args=()
+    if [[ "${E2E_SDK_BUILD_CACHE:-false}" == true ]]; then
+        prepare_sdk_build || return
+        dependency_args=(--excludeTaskDependencies)
+    fi
+    local spa_restored=false cache_script="$REPO_ROOT/scripts/e2e-hosted/sdk-build-cache.mjs"
+    if [[ "${E2E_SPA_CACHE_HIT:-false}" == true ]]; then
+        if e2e_timed spa_output_restore node "$cache_script" restore "$E2E_SPA_SPEC" "$E2E_SPA_CACHE_DIR"; then
+            spa_restored=true
+        else
+            echo 'SPA cache failed verification; rebuilding the browser app.' >&2
+        fi
+    fi
+    if [[ "$spa_restored" != true ]]; then
+        e2e_timed spa_build env GITHUB_SHA="$(git rev-parse HEAD)" SKIP_DIDKIT_NAPI=1 NX_DAEMON=false \
+            bunx nx run learn-card-app:docker-build --verbose --skip-nx-cache ${dependency_args[@]+"${dependency_args[@]}"} || return
+        if [[ "${E2E_SDK_BUILD_CACHE:-false}" == true ]]; then
+            e2e_timed spa_output_snapshot node "$cache_script" snapshot "$E2E_SPA_SPEC" "$E2E_SPA_CACHE_DIR" || return
+        fi
+    fi
     [[ -s "$APP_DIR/build/index.html" ]] || return 1
     local output
     for output in packages/learn-card-types/dist packages/learn-card-init/dist packages/plugins/lca-api-plugin/dist; do

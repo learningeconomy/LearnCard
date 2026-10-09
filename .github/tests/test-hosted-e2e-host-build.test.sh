@@ -29,6 +29,10 @@ bunx() {
     echo compiled > "$APP_DIR/build/index.html"
 }
 e2e_timed() { shift; set +e; "$@"; }
+env() {
+    while [[ "$1" == *=* ]]; do export "$1"; shift; done
+    "$@"
+}
 docker() {
     if [[ "$*" == *hosted-browser-backend* ]]; then
         sleep 0.1

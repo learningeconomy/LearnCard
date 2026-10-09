@@ -151,8 +151,30 @@ jobs:
               with:
                   save-cache: 'false'
 
+            - name: Prepare exact build caches
+              id: build-cache
+              uses: ./.github/actions/e2e-build-cache
+              with:
+                  browser: 'true'
+
             - name: Run Playwright and accessibility suites
               run: bash scripts/e2e-hosted/run-browser.sh
+
+            - name: Save verified SDK build snapshot
+              if: ${{ success() && steps.build-cache.outputs.sdk-hit != 'true' }}
+              uses: actions/cache/save@v6
+              continue-on-error: true
+              with:
+                  path: ${{ runner.temp }}/e2e-sdk-cache
+                  key: ${{ steps.build-cache.outputs.sdk-key }}
+
+            - name: Save verified SPA build snapshot
+              if: ${{ success() && steps.build-cache.outputs.spa-hit != 'true' }}
+              uses: actions/cache/save@v6
+              continue-on-error: true
+              with:
+                  path: ${{ runner.temp }}/e2e-spa-cache
+                  key: ${{ steps.build-cache.outputs.spa-key }}
 
             - name: Publish browser diagnostic summary
               if: always()
@@ -260,6 +282,10 @@ jobs:
               with:
                   # One writer per E2E run avoids sibling jobs compressing the same cache.
                   save-cache: ${{ matrix.shard == 1 }}
+
+            - name: Prepare exact build caches
+              id: build-cache
+              uses: ./.github/actions/e2e-build-cache
 
             - name: Run tests/e2e
               run: bash scripts/e2e-hosted/run-service.sh
