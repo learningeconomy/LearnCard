@@ -151,7 +151,13 @@ Define the template in your code with an `alias`. No setup is needed: LearnCard 
 
 **Returns:** `Promise<TemplateCredentialResponse>` (includes `templateVersion`)
 
+<!-- snippet: partner-connect/send-inline-template.ts -->
+
 ```typescript
+import { createPartnerConnect } from '@learncard/partner-connect';
+
+const learnCard = createPartnerConnect({ hostOrigin: 'https://learncard.app' });
+
 const result = await learnCard.sendCredential({
     alias: 'course-complete',
     template: {
@@ -164,6 +170,8 @@ const result = await learnCard.sendCredential({
 });
 console.log(result.credentialUri, result.templateVersion);
 ```
+
+<!-- /snippet -->
 
 Templates are versioned by `alias`: sending the same template keeps its version, and changing it under the same alias creates the next version. Works in practice mode too.
 

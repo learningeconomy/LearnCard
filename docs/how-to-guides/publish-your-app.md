@@ -22,6 +22,8 @@ npm install @learncard/partner-connect
 
 Then use it like this:
 
+<!-- snippet: publish-your-app/build.ts -->
+
 ```typescript
 import { createPartnerConnect } from '@learncard/partner-connect';
 
@@ -31,7 +33,7 @@ const learnCard = createPartnerConnect({ hostOrigin: 'https://learncard.app' });
 const { user } = await learnCard.requestIdentity();
 
 // Award a credential. LearnCard creates the template the first time you publish.
-await learnCard.sendCredential({
+const credential = await learnCard.sendCredential({
     alias: 'course-complete',
     template: {
         name: 'Completed {{courseName}}',
@@ -48,6 +50,8 @@ const { granted } = await learnCard.requestConsent({
     reason: 'Personalize your experience',
 });
 ```
+
+<!-- /snippet -->
 
 When your app runs on `localhost` or in the editor preview of Lovable, Bolt, v0, or Replit, the SDK switches to **practice mode** automatically:
 
