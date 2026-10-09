@@ -1,10 +1,12 @@
 import React, { useMemo } from 'react';
 
+import ClrGenericRecordDetailPanel from '../ClrGenericRecordDetailPanel';
 import ClrCourseSection from '../ClrCourseSection';
 import ClrAssessmentSection from '../ClrAssessmentSection';
 import ClrAssessmentDetailPanel from '../ClrAssessmentDetailPanel';
 import ClrProgramsSection from '../ClrProgramsSection';
 import ClrAwardsSection from '../ClrAwardsSection';
+import { ClrOtherRecordsSection } from '../ClrOtherRecordsSection';
 import ClrCourseDetailPanel from '../ClrCourseDetailPanel';
 import ClrProgramDetailPanel from '../ClrProgramDetailPanel';
 import ClrCompetencyDetailPanel from '../ClrCompetencyDetailPanel';
@@ -23,14 +25,14 @@ import type {
     ProgramDisplayModel,
     ClrRecordNavigator,
     ClrTranscriptDisplayModel,
-} from '../../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 import {
     createClrRecordSelection,
     selectClrTranscriptView,
-} from '../../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 
 import type { VC } from '@learncard/types';
-import { getClrIssuerLogo } from '../clrKind.helpers';
+import { getClrIssuerLogo } from 'learn-card-base/helpers/credentials/clr/kind';
 
 type ClrRecordNavigatorOptions = {
     model: ClrTranscriptDisplayModel;
@@ -84,6 +86,17 @@ export const createClrRecordNavigator = ({
                         adminMode={adminMode}
                         issuerName={model.header.issuerName?.value}
                         issuerLogo={issuerLogo}
+                    />
+                );
+                break;
+            case 'award':
+            case 'other':
+                openPanel(
+                    <ClrGenericRecordDetailPanel
+                        record={selected.record}
+                        model={model}
+                        onSelectRecord={navigator.selectRecord}
+                        adminMode={adminMode}
                     />
                 );
                 break;
@@ -195,11 +208,33 @@ const ClrTranscriptFullPage: React.FC<{
                     {/* Awards & Recognitions */}
                     {(selectedView === 'StructuredTranscriptView' ||
                         selectedView === 'VerifierInspectionView') &&
-                        model.awards.length > 0 && <ClrAwardsSection awards={model.awards} />}
+                        model.awards.length > 0 && (
+                            <ClrAwardsSection
+                                awards={model.awards}
+                                records={model.records}
+                                relationships={model.relationships}
+                                onSelectRecord={handleSelectRecord}
+                                onSelectAward={award =>
+                                    handleSelectRecord(award.sourceCredentialId)
+                                }
+                            />
+                        )}
+
+                    {selectedView !== 'SparseAcademicRecordView' && (
+                        <ClrOtherRecordsSection
+                            model={model}
+                            showSource={adminMode}
+                            onSelectRecord={handleSelectRecord}
+                        />
+                    )}
 
                     {/* Sparse / summary views */}
                     {selectedView === 'SparseAcademicRecordView' && (
-                        <SparseAcademicRecordView model={model} showSource={adminMode} />
+                        <SparseAcademicRecordView
+                            model={model}
+                            showSource={adminMode}
+                            onSelectRecord={handleSelectRecord}
+                        />
                     )}
                     {selectedView === 'CredentialSummaryView' && (
                         <CredentialSummaryView model={model} />

@@ -1,4 +1,6 @@
 import React from 'react';
+import { ClrRecordDetails } from './ClrRecordDetails';
+import type { ClrNormalizedRecord } from 'learn-card-base/helpers/credentials/clr/types';
 
 import { SkillCompetencyCard } from 'learn-card-base';
 import ClrRelationshipChips from './ClrRelationshipChips';
@@ -6,14 +8,15 @@ import ClrResultWithScaleList from './ClrResultWithScaleList';
 import type {
     CompetencyDisplayModel,
     RelationshipDisplayModel,
-} from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const ClrCompetencyBlock: React.FC<{
     competency: CompetencyDisplayModel;
+    record?: ClrNormalizedRecord;
     relationships?: RelationshipDisplayModel[];
     onSelectRecord?: (recordId: string) => void;
     adminMode?: boolean;
-}> = ({ competency, relationships = [], onSelectRecord, adminMode = false }) => {
+}> = ({ competency, record, relationships = [], onSelectRecord, adminMode = false }) => {
     const primaryAlignment = competency.alignments[0];
 
     return (
@@ -37,6 +40,7 @@ const ClrCompetencyBlock: React.FC<{
                     ) : undefined
                 }
             />
+            <ClrRecordDetails record={record} />
             <ClrResultWithScaleList results={competency.results} showResultType={adminMode} />
             <ClrRelationshipChips relationships={relationships} onSelectRecord={onSelectRecord} />
         </div>

@@ -29,7 +29,7 @@ import {
 import {
     ClrTranscriptSurface,
     normalizeClrTranscriptDisplayModel,
-} from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 import { BrandingEnum, useGetCredentialWithEdits, useIsLoggedIn } from 'learn-card-base';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';

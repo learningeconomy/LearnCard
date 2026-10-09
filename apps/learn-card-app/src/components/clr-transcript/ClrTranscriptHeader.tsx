@@ -4,7 +4,7 @@ import ClrIssuerAddress from './ClrIssuerAddress';
 import ClrTranscriptSourceField from './ClrTranscriptSourceField';
 import ClrTranscriptTrustBadge from './ClrTranscriptTrustBadge';
 
-import type { ClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
+import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const ClrTranscriptHeader: React.FC<{
     model: ClrTranscriptDisplayModel;
@@ -49,11 +49,20 @@ const ClrTranscriptHeader: React.FC<{
                     field={model.header.learnerName}
                     showSource={showSource}
                 />
-                <ClrTranscriptSourceField
-                    label="Issued"
-                    field={model.header.issuedAt}
-                    showSource={showSource}
-                />
+                {model.header.issuedAt && (
+                    <ClrTranscriptSourceField
+                        label="Issued"
+                        field={model.header.issuedAt}
+                        showSource={showSource}
+                    />
+                )}
+                {model.header.validFrom && (
+                    <ClrTranscriptSourceField
+                        label="Valid from"
+                        field={model.header.validFrom}
+                        showSource={showSource}
+                    />
+                )}
                 {model.header.awardedDate && (
                     <ClrTranscriptSourceField
                         label="Awarded"

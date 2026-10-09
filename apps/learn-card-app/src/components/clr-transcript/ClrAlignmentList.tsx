@@ -3,7 +3,7 @@ import React from 'react';
 import { Target, ExternalLink } from 'lucide-react';
 
 import { SkillCompetencyCard, isSkillCompetencyAlignment } from 'learn-card-base';
-import type { AlignmentDisplayModel } from '../../helpers/clrRenderer.helpers';
+import type { AlignmentDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 /**
  * Renders a record's `achievement.alignment[]` entries — the CLR/OB mechanism for tying

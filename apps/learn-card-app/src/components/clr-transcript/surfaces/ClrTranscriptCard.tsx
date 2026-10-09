@@ -6,8 +6,8 @@ import ClrTranscriptDetailModal from '../ClrTranscriptDetailModal';
 
 import { ModalTypes, useModal } from 'learn-card-base';
 
-import { ClrTranscriptSurface } from '../../../helpers/clrRenderer.helpers';
-import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
+import { ClrTranscriptSurface } from 'learn-card-base/helpers/credentials/clr/renderer';
+import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 import { VC } from '@learncard/types';
 

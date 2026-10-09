@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { IonPopover } from '@ionic/react';
 import { Info } from 'lucide-react';
 
-import type { SourceMappedField } from '../../helpers/clrRenderer.helpers';
+import type { SourceMappedField } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const ClrSourceInfo: React.FC<{
     field?: SourceMappedField<unknown>;

@@ -18,7 +18,10 @@ import BoostPreviewBody from '../../boost/boostCMS/BoostPreview/BoostPreviewBody
 import CustomBoostTitleDisplay from '../boost-earned-card/helpers/CustomBoostTitleDisplay';
 import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import BadgeSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BadgeSkeleton';
-import { getClrTranscriptKind, getClrTranscriptIssuerInfo } from '../../clr-transcript';
+import {
+    getClrTranscriptKind,
+    getClrTranscriptIssuerInfo,
+} from 'learn-card-base/helpers/credentials/clr/kind';
 
 import {
     useModal,
@@ -161,7 +164,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
         );
     }
 
-    let customButtonComponent = (
+    const customButtonComponent = (
         <CustomManagedBoostButton
             showSkeleton={showSkeleton}
             isDraft={isDraft}

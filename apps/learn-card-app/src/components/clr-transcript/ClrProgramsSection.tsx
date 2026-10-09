@@ -3,8 +3,12 @@ import { formatLocaleDate } from '../../i18n/formatters';
 
 import { CertificateDisplayIcon } from 'learn-card-base';
 
-import type { ProgramDisplayModel } from '../../helpers/clrRenderer.helpers';
-import { inferProgramKind, achievementTypeLabel, formatAchievementType } from './clr.helpers';
+import type { ProgramDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
+import {
+    inferProgramKind,
+    achievementTypeLabel,
+    formatAchievementType,
+} from 'learn-card-base/helpers/credentials/clr/helpers';
 
 const ClrProgramsSection: React.FC<{
     programs: ProgramDisplayModel[];

@@ -1,9 +1,10 @@
 import React from 'react';
+import { ClrCreditValues } from '../ClrCreditValues';
 
 import ClrResultWithScaleList from '../ClrResultWithScaleList';
 
-import { formatClrDate } from '../../../helpers/clrRenderer.helpers';
-import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
+import { ClrRecordDetails } from '../ClrRecordDetails';
+import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const StructuredTranscriptView: React.FC<{
     model: ClrTranscriptDisplayModel;
@@ -27,15 +28,11 @@ const StructuredTranscriptView: React.FC<{
                                     {program.description.value}
                                 </p>
                             )}
-                            {(program.earnedAt?.value || program.validUntil?.value) && (
-                                <p className="text-xs text-grayscale-500">
-                                    {program.earnedAt?.value &&
-                                        `Earned: ${formatClrDate(program.earnedAt.value)}`}
-                                    {program.earnedAt?.value && program.validUntil?.value && ' · '}
-                                    {program.validUntil?.value &&
-                                        `Expires: ${formatClrDate(program.validUntil.value)}`}
-                                </p>
-                            )}
+                            <ClrRecordDetails
+                                record={model.records.find(
+                                    record => record.id === program.sourceCredentialId
+                                )}
+                            />
                             <ClrResultWithScaleList
                                 results={program.results}
                                 showResultType={showSource}
@@ -82,27 +79,14 @@ const StructuredTranscriptView: React.FC<{
                                     )}
                                 </div>
                                 <div className="flex flex-col items-end gap-0.5 shrink-0">
-                                    {course.creditsEarned?.value !== undefined && (
-                                        <span className="text-xs font-medium text-grayscale-900 whitespace-nowrap">
-                                            {course.creditsEarned.value} cr earned
-                                        </span>
-                                    )}
-                                    {course.creditsAvailable?.value !== undefined && (
-                                        <span className="text-xs text-grayscale-500 whitespace-nowrap">
-                                            {course.creditsAvailable.value} cr available
-                                        </span>
-                                    )}
+                                    <ClrCreditValues course={course} />
                                 </div>
                             </div>
-                            {(course.earnedAt?.value || course.validUntil?.value) && (
-                                <p className="text-xs text-grayscale-500">
-                                    {course.earnedAt?.value &&
-                                        `Earned: ${formatClrDate(course.earnedAt.value)}`}
-                                    {course.earnedAt?.value && course.validUntil?.value && ' · '}
-                                    {course.validUntil?.value &&
-                                        `Expires: ${formatClrDate(course.validUntil.value)}`}
-                                </p>
-                            )}
+                            <ClrRecordDetails
+                                record={model.records.find(
+                                    record => record.id === course.sourceCredentialId
+                                )}
+                            />
                             <ClrResultWithScaleList
                                 results={course.results}
                                 showResultType={showSource}

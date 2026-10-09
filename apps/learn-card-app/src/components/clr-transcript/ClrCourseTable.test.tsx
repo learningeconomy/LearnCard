@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { clrAchievementIdAssociations } from '../../../../../packages/credential-library/src/fixtures/clr/achievement-id-associations';
-import { normalizeClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
+import { normalizeClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 import ClrCourseTable from './ClrCourseTable';
 
@@ -24,7 +24,7 @@ describe('ClrCourseTable', () => {
             'grid-cols-[minmax(0,1fr)_64px_72px_24px]',
             'sm:grid-cols-[minmax(0,1fr)_80px_80px_64px_80px_24px]'
         );
-        expect(grade.parentElement).toHaveClass('min-w-0', 'pl-2');
+        expect(grade.parentElement?.parentElement).toHaveClass('min-w-0', 'pl-2');
         expect(grade).toHaveClass('max-w-full', 'truncate');
         expect(grade).toHaveAttribute('title', 'Advanced');
     });

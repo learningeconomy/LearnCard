@@ -1,16 +1,28 @@
 import React from 'react';
+import { ClrRecordDetails } from './ClrRecordDetails';
+import ClrResultWithScaleList from './ClrResultWithScaleList';
+import ClrRelationshipChips from './ClrRelationshipChips';
+import ClrAlignmentList from './ClrAlignmentList';
+import ClrTranscriptEvidenceList from './ClrTranscriptEvidenceList';
+import type { ClrNormalizedRecord } from 'learn-card-base/helpers/credentials/clr/types';
 
 import { ChevronRight, Award } from 'lucide-react';
 
-import { formatClrDate } from '../../helpers/clrRenderer.helpers';
-import { formatAchievementType } from './clr.helpers';
+import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
+import { formatAchievementType } from 'learn-card-base/helpers/credentials/clr/helpers';
 
-import type { AwardDisplayModel } from '../../helpers/clrRenderer.helpers';
+import type {
+    AwardDisplayModel,
+    RelationshipGraph,
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const ClrAwardsSection: React.FC<{
     awards: AwardDisplayModel[];
+    records?: ClrNormalizedRecord[];
+    relationships?: RelationshipGraph;
+    onSelectRecord?: (id: string) => void;
     onSelectAward?: (award: AwardDisplayModel) => void;
-}> = ({ awards, onSelectAward }) => {
+}> = ({ awards, records = [], relationships = {}, onSelectRecord, onSelectAward }) => {
     if (awards.length === 0) return null;
 
     return (
@@ -26,6 +38,7 @@ const ClrAwardsSection: React.FC<{
 
             <div className="bg-white border border-grayscale-200 rounded-[20px] overflow-hidden">
                 {awards.map((award, index) => {
+                    const record = records.find(record => record.id === award.sourceCredentialId);
                     const key = `${award.sourceCredentialId}-${index}`;
                     const rowContent = (
                         <>
@@ -53,7 +66,7 @@ const ClrAwardsSection: React.FC<{
                                         {award.description.value}
                                     </p>
                                 )}
-                                {award.criteria?.value && (
+                                {!record && award.criteria?.value && (
                                     <p className="text-xs text-grayscale-500 leading-relaxed mt-1 italic line-clamp-2">
                                         {award.criteria.value}
                                     </p>
@@ -69,18 +82,41 @@ const ClrAwardsSection: React.FC<{
                     const rowClassName =
                         'w-full flex items-center gap-4 px-3 sm:px-5 py-4 border-b border-grayscale-100 last:border-0 text-left odd:bg-white even:bg-grayscale-50 transition-colors';
 
-                    return onSelectAward ? (
-                        <button
-                            key={key}
-                            type="button"
-                            className={rowClassName}
-                            onClick={() => onSelectAward(award)}
-                        >
-                            {rowContent}
-                        </button>
-                    ) : (
-                        <div key={key} className={rowClassName}>
-                            {rowContent}
+                    return (
+                        <div key={key}>
+                            {onSelectAward ? (
+                                <button
+                                    type="button"
+                                    className={rowClassName}
+                                    onClick={() => onSelectAward(award)}
+                                >
+                                    {rowContent}
+                                </button>
+                            ) : (
+                                <div className={rowClassName}>{rowContent}</div>
+                            )}
+                            {(award.results.length > 0 ||
+                                award.alignments.length > 0 ||
+                                award.evidence.length > 0 ||
+                                record ||
+                                relationships[award.sourceCredentialId]?.length) && (
+                                <div className="px-3 pb-4 sm:px-5">
+                                    <ClrResultWithScaleList results={award.results} />
+                                    {award.alignments.length > 0 && (
+                                        <ClrAlignmentList alignments={award.alignments} />
+                                    )}
+                                    {award.evidence.length > 0 && (
+                                        <ClrTranscriptEvidenceList evidence={award.evidence} />
+                                    )}
+                                    <ClrRecordDetails record={record} />
+                                    <ClrRelationshipChips
+                                        relationships={
+                                            relationships[award.sourceCredentialId] ?? []
+                                        }
+                                        onSelectRecord={onSelectRecord}
+                                    />
+                                </div>
+                            )}
                         </div>
                     );
                 })}

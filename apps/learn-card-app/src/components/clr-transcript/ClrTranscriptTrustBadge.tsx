@@ -1,5 +1,5 @@
 import React from 'react';
-import type { VerificationSummary } from '../../helpers/clrRenderer.helpers';
+import type { VerificationSummary } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const ClrTranscriptTrustBadge: React.FC<{
     verification: VerificationSummary;

@@ -1,6 +1,6 @@
 import React from 'react';
 
-import type { RubricLevelDisplayModel } from '../../helpers/clrRenderer.helpers';
+import type { RubricLevelDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const isAchieved = (level: RubricLevelDisplayModel, achieved?: RubricLevelDisplayModel) =>
     achieved !== undefined &&

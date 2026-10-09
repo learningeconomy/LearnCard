@@ -1,8 +1,8 @@
 import React from 'react';
 import DownloadIcon from 'learn-card-base/svgs/DownloadIcon';
-import { downloadEvidence } from '../../../clr-transcript/clr.helpers';
+import { downloadEvidence } from 'learn-card-base/helpers/credentials/clr/helpers';
 import { useToast, ToastTypeEnum } from 'learn-card-base';
-import type { EvidenceDisplayModel } from '../../../../helpers/clrRenderer.helpers';
+import type { EvidenceDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 type ClrEvidenceHeaderProps = {
     evidence: EvidenceDisplayModel[];

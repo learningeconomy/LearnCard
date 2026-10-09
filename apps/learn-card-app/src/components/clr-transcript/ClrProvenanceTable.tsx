@@ -1,6 +1,9 @@
 import React from 'react';
 
-import type { CourseDisplayModel, SourceMappedField } from '../../helpers/clrRenderer.helpers';
+import type {
+    CourseDisplayModel,
+    SourceMappedField,
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 
 type Row = {
     field: string;

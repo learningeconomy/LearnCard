@@ -1,4 +1,5 @@
 import React from 'react';
+import { getResultDisplayValue } from 'learn-card-base/helpers/credentials/clr/presentation';
 import { VC } from '@learncard/types';
 
 import { SkillsIcon } from 'learn-card-base/svgs/wallet/SkillsIcon';
@@ -10,8 +11,11 @@ import {
     normalizeClrTranscriptDisplayModel,
     type ClrTranscriptDisplayModel,
     type CourseDisplayModel,
-} from '../../helpers/clrRenderer.helpers';
-import { inferClrKindWithTitleFallback, type InferredClrKind } from './clrKind.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
+import {
+    inferClrKindWithTitleFallback,
+    type InferredClrKind,
+} from 'learn-card-base/helpers/credentials/clr/kind';
 
 const getClrGrade = (course?: CourseDisplayModel): string | undefined => {
     if (!course) return undefined;
@@ -28,9 +32,8 @@ const getClrGrade = (course?: CourseDisplayModel): string | undefined => {
         course?.results?.find(result => result.resultType?.value !== 'GradePointAverage') ??
         course?.results?.[0];
 
-    if (!resolvedResult?.value?.value && resolvedResult?.value?.value !== 0) return undefined;
-
-    return String(resolvedResult.value.value);
+    if (!resolvedResult) return undefined;
+    return String(getResultDisplayValue(resolvedResult));
 };
 
 const ClrMetricChip: React.FC<{
@@ -162,4 +165,3 @@ const ClrTranscriptTitleDisplay: React.FC<{ credential: VC; fallbackTitle: strin
 };
 
 export default ClrTranscriptTitleDisplay;
-export { getClrTranscriptKind } from './clrKind.helpers';

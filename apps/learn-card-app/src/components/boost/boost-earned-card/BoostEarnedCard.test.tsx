@@ -109,7 +109,7 @@ vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
 vi.mock('learn-card-base/components/CredentialBadge/CredentialVerificationDisplay', () => ({
     getInfoFromCredential: () => ({ createdAt: '2026-08-06' }),
 }));
-vi.mock('../../clr-transcript', () => ({
+vi.mock('learn-card-base/helpers/credentials/clr/kind', () => ({
     getClrTranscriptKind: () => 'unknown',
     getClrTranscriptIssuerInfo: () => ({}),
 }));
