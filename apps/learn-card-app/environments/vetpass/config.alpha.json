@@ -1,4 +1,5 @@
 {
+    "stage": "staging",
     "domain": "alpha.vetpass.app",
     "apis": {
         "brainService": "https://network.learncard.com/trpc",
@@ -12,9 +13,6 @@
         "launchDarklyClientId": "69d016bd5bb5390aaec9af07"
     },
     "native": {
-        "deepLinkDomains": [
-            "alpha.vetpass.app",
-            "vetpass.app"
-        ]
+        "deepLinkDomains": ["alpha.vetpass.app", "vetpass.app"]
     }
 }

@@ -1,5 +1,6 @@
 {
     "_comment": "Staging overrides for LearnCard. Merged on top of config.json via deepMerge.",
+    "stage": "staging",
     "domain": "staging.learncard.ai",
     "apis": {
         "brainService": "https://staging.network.learncard.com/trpc",
