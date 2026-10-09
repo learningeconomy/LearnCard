@@ -13,6 +13,7 @@ export default createVitestConfig(nodePreset, {
             'test/keycloak-provider-links.spec.ts',
             'test/provision-keycloak-users.spec.ts',
             'src/**/*.test.ts',
+            'scripts/**/*.test.ts',
             '*Lambda.test.ts',
             'test/keycloak-verify.spec.ts',
             'test/keycloak-verify.integration.spec.ts',

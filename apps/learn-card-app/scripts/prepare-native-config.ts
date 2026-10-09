@@ -274,6 +274,12 @@ merged['_tenant'] = tenantArg;
 merged['_stage'] = stageArg ?? 'production';
 merged['_localAi'] = useLocalAi;
 
+// Schema-validated deploy stage (see `stage` in tenantConfigSchema.ts). Distinct from the
+// `_stage` debug metadata above: this one is a typed TenantConfig field that runtime code
+// (e.g. the escrow software-enclave guard in authConfig.ts) can read to distinguish a
+// staging deploy from production, since both build in Vite "production" mode.
+merged['stage'] = stageArg ?? 'production';
+
 // ---------------------------------------------------------------------------
 // 3. Validate against the Zod schema
 // ---------------------------------------------------------------------------

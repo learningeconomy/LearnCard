@@ -26,6 +26,14 @@ export const swaggerUiHandler = async (...args: Parameters<LambdaApp['swaggerUiH
 export const didWebHandler = async (...args: Parameters<LambdaApp['didWebHandler']>) =>
     (await getApplication()).didWebHandler(...args);
 
+export const escrowHoldRemindersHandler = async (
+    ...args: Parameters<LambdaApp['escrowHoldRemindersHandler']>
+) => (await getApplication()).escrowHoldRemindersHandler(...args);
+
+export const escrowBlobRewrapHandler = async (
+    ...args: Parameters<LambdaApp['escrowBlobRewrapHandler']>
+) => (await getApplication()).escrowBlobRewrapHandler(...args);
+
 // Separate entry: the oidc function must not evaluate lambdaApp (see oidcLambdaApp.ts).
 const getOidcApplication = async (): Promise<OidcLambdaApp> => {
     await loadRuntimeSecrets();
