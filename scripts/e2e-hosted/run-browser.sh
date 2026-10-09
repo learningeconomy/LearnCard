@@ -11,6 +11,7 @@ BROWSER_BUILD_HOST_PID=""
 BROWSER_RUNTIME_CONTEXT=""
 
 source "$REPO_ROOT/scripts/e2e-hosted/metrics.sh"
+source "$REPO_ROOT/scripts/e2e-hosted/compose-pull.sh"
 e2e_metrics_init browser
 
 collect_browser_artifacts() {
@@ -145,6 +146,7 @@ build_host_browser_images() {
 start_compose() {
     cd "$APP_DIR"
     docker compose down --remove-orphans -v 2>/dev/null || true
+    e2e_pull_compose_images
     docker compose up -d --no-build
 }
 
