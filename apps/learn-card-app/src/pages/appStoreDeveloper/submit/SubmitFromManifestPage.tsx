@@ -45,7 +45,8 @@ import { ConsentDesignerCard } from './ConsentDesignerCard';
 import { findReusableListing } from './listingReuse';
 import { ListingStatusBanner } from './ListingStatusBanner';
 import { AppStatusView } from './AppStatusView';
-import { displayHost } from './testAddress';
+import { TestAddressBar } from './TestAddressBar';
+import { useTestAddress } from './useTestAddress';
 import { getAppStatusPath } from '../apps/myApps';
 import { EMBED_APP_GUIDE, findIntegrationForApp, getAppIntegrationRepair } from './appIntegration';
 import { getListingMode, isListingLocked, withPendingChanges } from './listingLifecycle';
@@ -260,6 +261,19 @@ export const SubmitFromManifestPage: React.FC = () => {
         null
     );
     const provisioningPromiseRef = useRef<Promise<ProvisionedPreview> | null>(null);
+    const {
+        test: testAddress,
+        saveTest: saveTestAddress,
+        activeTestAddress,
+    } = useTestAddress(previewListingId ?? (manifest ? `app:${manifest.appUrl}` : null));
+    const previewAddress = activeTestAddress ?? manifest?.appUrl ?? '';
+    const previewLaunchConfig = {
+        ...(currentLaunchConfig ?? {
+            url: manifest?.appUrl ?? '',
+            permissions: manifest?.permissions ?? [],
+        }),
+        url: previewAddress,
+    };
     const [designerConsentKey, setDesignerConsentKey] = useState<string | null>(null);
     const [designerConsentScopes, setDesignerConsentScopes] = useState<ConsentRequest | null>(null);
     const { initWallet } = useWallet();
@@ -663,15 +677,10 @@ export const SubmitFromManifestPage: React.FC = () => {
             if (!isDesktop) {
                 newModal(
                     <EmbedIframeModal
-                        embedUrl={manifest.appUrl}
+                        embedUrl={previewAddress}
                         appId={listingId}
                         appName={appName || 'Preview App'}
-                        launchConfig={
-                            currentLaunchConfig || {
-                                url: manifest.appUrl,
-                                permissions: manifest.permissions,
-                            }
-                        }
+                        launchConfig={previewLaunchConfig}
                         isInstalled={true}
                         onIntegrationHint={handleIntegrationHint}
                         launchFeaturesInNewTab={true}
@@ -760,7 +769,7 @@ export const SubmitFromManifestPage: React.FC = () => {
         const handleMessage = (event: MessageEvent) => {
             if (event.data?.protocol === 'LEARNCARD_V1' && event.data?.action) {
                 try {
-                    const previewOrigin = new URL(manifest.appUrl).origin;
+                    const previewOrigin = new URL(previewAddress).origin;
                     if (event.origin === previewOrigin) {
                         setManifest(prev => {
                             if (!prev) return prev;
@@ -799,7 +808,7 @@ export const SubmitFromManifestPage: React.FC = () => {
 
         window.addEventListener('message', handleMessage);
         return () => window.removeEventListener('message', handleMessage);
-    }, [isLive, manifest?.appUrl]);
+    }, [isLive, previewAddress]);
 
     const listingData = useMemo<ListingData>(
         () => ({
@@ -1418,19 +1427,26 @@ export const SubmitFromManifestPage: React.FC = () => {
             )}
 
             {!isDesktop && (
-                <div className="bg-white rounded-2xl border border-grayscale-300 p-6 mb-6 shadow-sm flex items-center justify-between">
-                    <div>
+                <div className="bg-white rounded-2xl border border-grayscale-300 p-6 mb-6 shadow-sm flex items-center justify-between gap-4">
+                    <div className="min-w-0 flex-1">
                         <h3 className="text-base font-semibold text-grayscale-900 mb-1">
                             Try your app
                         </h3>
                         <p className="text-sm text-grayscale-600">
                             Run it inside LearnCard to make sure everything works.
                         </p>
+                        <TestAddressBar
+                            test={testAddress}
+                            onChange={saveTestAddress}
+                            defaultAddress={manifest.appUrl}
+                            resetLabel="Use original address"
+                            className="mt-3"
+                        />
                     </div>
                     <button
                         onClick={handlePreview}
                         disabled={isPreviewing || !appName}
-                        className={`flex items-center gap-2 py-3 px-6 rounded-[20px] font-medium text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                        className={`shrink-0 flex items-center gap-2 py-3 px-6 rounded-[20px] font-medium text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                             previewListingId
                                 ? 'bg-grayscale-900 text-white hover:opacity-90'
                                 : 'border border-grayscale-300 text-grayscale-700 hover:bg-grayscale-10'
@@ -1973,10 +1989,6 @@ export const SubmitFromManifestPage: React.FC = () => {
                     </div>
                     {isLive && rightPaneTab === 'try' && (
                         <div className="flex items-center gap-3">
-                            <span className="hidden lg:inline text-xs text-grayscale-500 truncate max-w-[180px]">
-                                Previewing{' '}
-                                <span className="font-medium">{displayHost(manifest.appUrl)}</span>
-                            </span>
                             <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                 Watching
@@ -1991,6 +2003,17 @@ export const SubmitFromManifestPage: React.FC = () => {
                         </div>
                     )}
                 </div>
+
+                {rightPaneTab === 'try' && (
+                    <div className="border-b border-grayscale-100 px-4 py-2.5 shrink-0">
+                        <TestAddressBar
+                            test={testAddress}
+                            onChange={saveTestAddress}
+                            defaultAddress={manifest.appUrl}
+                            resetLabel="Use original address"
+                        />
+                    </div>
+                )}
 
                 <div className="flex-1 relative bg-grayscale-100">
                     {rightPaneTab === 'store' && (
@@ -2013,15 +2036,11 @@ export const SubmitFromManifestPage: React.FC = () => {
                             className={`absolute inset-0 ${rightPaneTab === 'try' ? '' : 'hidden'}`}
                         >
                             <EmbedIframeModal
-                                embedUrl={manifest.appUrl}
+                                key={previewAddress}
+                                embedUrl={previewAddress}
                                 appId={previewListingId || undefined}
                                 appName={appName || 'Preview App'}
-                                launchConfig={
-                                    currentLaunchConfig || {
-                                        url: manifest.appUrl,
-                                        permissions: manifest.permissions,
-                                    }
-                                }
+                                launchConfig={previewLaunchConfig}
                                 isInstalled={true}
                                 inline={true}
                                 onIntegrationHint={handleIntegrationHint}
@@ -2042,7 +2061,8 @@ export const SubmitFromManifestPage: React.FC = () => {
                             </h3>
                             <p className="text-sm text-grayscale-600 mb-6 max-w-xs">
                                 Run it inside LearnCard to make sure everything works. We'll notice
-                                anything new it uses.
+                                anything new it uses. Use a test address to try a version you're
+                                still working on.
                             </p>
                             <button
                                 type="button"

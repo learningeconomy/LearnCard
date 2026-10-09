@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { IonIcon } from '@ionic/react';
-import { flaskOutline, playOutline } from 'ionicons/icons';
+import { playOutline } from 'ionicons/icons';
 
 import { EmbedIframeModal } from '../../launchPad/EmbedIframeModal';
 import type { LaunchConfig } from '../types';
-import { displayHost, isValidTestAddress, readTestAddress, writeTestAddress } from './testAddress';
+import { TestAddressBar } from './TestAddressBar';
+import { useTestAddress } from './useTestAddress';
 
 interface AppPreviewPaneProps {
     listingId: string;
@@ -32,23 +33,8 @@ export const AppPreviewPane: React.FC<AppPreviewPaneProps> = ({
 }) => {
     const [tab, setTab] = useState<'store' | 'try'>('store');
     const [isRunning, setIsRunning] = useState(false);
-    const [test, setTest] = useState(() => readTestAddress(listingId));
-    const [isEditingTest, setIsEditingTest] = useState(false);
-    const [draft, setDraft] = useState(test.address);
-
-    const usingTest = test.enabled && isValidTestAddress(test.address);
-    const previewAddress = usingTest ? test.address.trim() : liveAddress;
-
-    const saveTest = (next: typeof test) => {
-        setTest(next);
-        writeTestAddress(listingId, next);
-    };
-
-    const applyDraft = () => {
-        if (!isValidTestAddress(draft)) return;
-        saveTest({ address: draft.trim(), enabled: true });
-        setIsEditingTest(false);
-    };
+    const { test, saveTest, activeTestAddress } = useTestAddress(listingId);
+    const previewAddress = activeTestAddress ?? liveAddress;
 
     return (
         <div className="h-full rounded-[20px] border border-grayscale-200 bg-white shadow-sm overflow-hidden flex flex-col">
@@ -79,80 +65,12 @@ export const AppPreviewPane: React.FC<AppPreviewPaneProps> = ({
 
             {tab === 'try' && runsInside && (
                 <div className="border-b border-grayscale-100 px-4 py-2.5 shrink-0">
-                    {isEditingTest ? (
-                        <form
-                            className="flex items-center gap-2"
-                            onSubmit={event => {
-                                event.preventDefault();
-                                applyDraft();
-                            }}
-                        >
-                            <input
-                                type="url"
-                                value={draft}
-                                onChange={e => setDraft(e.target.value)}
-                                placeholder="http://localhost:5173"
-                                aria-label="Test address"
-                                autoFocus
-                                className="flex-1 min-w-0 py-2 px-3 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
-                            />
-                            <button
-                                type="submit"
-                                disabled={!isValidTestAddress(draft)}
-                                className="py-2 px-3 rounded-[20px] bg-grayscale-900 text-white font-medium text-xs hover:opacity-90 transition-opacity disabled:opacity-40"
-                            >
-                                Use
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setIsEditingTest(false)}
-                                className="text-xs text-grayscale-600 hover:text-grayscale-900 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                        </form>
-                    ) : (
-                        <div className="flex items-center justify-between gap-3 text-xs">
-                            {usingTest ? (
-                                <span className="flex items-center gap-1.5 min-w-0 px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 font-medium">
-                                    <IonIcon icon={flaskOutline} className="shrink-0" />
-                                    <span className="truncate">
-                                        Test address · {displayHost(test.address)}
-                                    </span>
-                                </span>
-                            ) : liveAddress ? (
-                                <span className="min-w-0 truncate text-grayscale-600">
-                                    Previewing{' '}
-                                    <span className="font-medium">{displayHost(liveAddress)}</span>
-                                </span>
-                            ) : (
-                                <span className="min-w-0 truncate text-grayscale-500">
-                                    No published address yet
-                                </span>
-                            )}
-                            <span className="flex items-center gap-3 shrink-0">
-                                {usingTest && liveAddress && (
-                                    <button
-                                        type="button"
-                                        onClick={() => saveTest({ ...test, enabled: false })}
-                                        className="font-medium text-grayscale-700 hover:text-grayscale-900 transition-colors"
-                                    >
-                                        Use live address
-                                    </button>
-                                )}
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setDraft(test.address);
-                                        setIsEditingTest(true);
-                                    }}
-                                    className="font-medium text-grayscale-700 hover:text-grayscale-900 transition-colors"
-                                >
-                                    {usingTest ? 'Edit' : 'Use a test address'}
-                                </button>
-                            </span>
-                        </div>
-                    )}
+                    <TestAddressBar
+                        test={test}
+                        onChange={saveTest}
+                        defaultAddress={liveAddress}
+                        resetLabel="Use live address"
+                    />
                 </div>
             )}
 
