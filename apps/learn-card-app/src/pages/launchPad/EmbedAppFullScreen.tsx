@@ -13,6 +13,8 @@ import {
 import { getLogger, useIsOffline, connectivityStore, appendQueryParams } from 'learn-card-base';
 import { Network } from '@capacitor/network';
 import { AppEmbedOfflineState } from './AppEmbedOfflineState';
+import { toSafeFrameUrl } from './frameUrl';
+import type { VC, VP } from '@learncard/types';
 const log = getLogger('embed-app-full-screen');
 
 import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPostMessage';
@@ -79,11 +81,11 @@ export const EmbedAppFullScreen: React.FC = () => {
     const [pendingCredential, setPendingCredential] = useState<{
         credentialUri: string;
         boostUri?: string;
-        credential?: any; // LC-1644: pre-resolved VC/VP from APP_EVENT, avoids redundant wallet.read.get()
+        credential?: VC | VP; // LC-1644: pre-resolved VC/VP from APP_EVENT, avoids redundant wallet.read.get()
     } | null>(null);
 
     const handleCredentialIssued = useCallback(
-        (credentialUri: string, boostUri?: string, credential?: any) => {
+        (credentialUri: string, boostUri?: string, credential?: VC | VP) => {
             setPendingCredential({ credentialUri, boostUri, credential });
         },
         []
@@ -120,9 +122,12 @@ export const EmbedAppFullScreen: React.FC = () => {
                 // Verify the constructed URL hasn't escaped to a different origin
                 if (base.origin !== expectedOrigin) return;
 
-                iframeRef.current.src = appendQueryParams(base.toString(), {
-                    lc_host_override: window.location.origin,
-                });
+                const next = toSafeFrameUrl(
+                    appendQueryParams(base.toString(), {
+                        lc_host_override: window.location.origin,
+                    })
+                );
+                if (next) iframeRef.current.src = next;
             } catch {
                 // embedUrl is invalid — do not navigate
             }
@@ -178,9 +183,12 @@ export const EmbedAppFullScreen: React.FC = () => {
         return null; // Will redirect via useEffect
     }
 
-    const embedUrlWithOverride = appendQueryParams(embedUrl, {
-        lc_host_override: window.location.origin,
-    });
+    const embedUrlWithOverride =
+        toSafeFrameUrl(
+            appendQueryParams(embedUrl, {
+                lc_host_override: window.location.origin,
+            })
+        ) ?? undefined;
     return (
         <IonPage>
             <IonHeader>

@@ -23,6 +23,7 @@ import type { IntegrationHint } from '../../hooks/post-message/useLearnCardPostM
 import { CredentialClaimModal } from './CredentialClaimModal';
 import { AppCredentialDashboard } from './AppCredentialDashboard';
 import { useAppNotificationToast } from '../../hooks/useAppNotificationToast';
+import { toSafeFrameUrl } from './frameUrl';
 
 interface LaunchConfig {
     url?: string;
@@ -118,9 +119,12 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                 // Verify the constructed URL hasn't escaped to a different origin
                 if (base.origin !== expectedOrigin) return;
 
-                iframeRef.current.src = appendQueryParams(base.toString(), {
-                    lc_host_override: window.location.origin,
-                });
+                const next = toSafeFrameUrl(
+                    appendQueryParams(base.toString(), {
+                        lc_host_override: window.location.origin,
+                    })
+                );
+                if (next) iframeRef.current.src = next;
             } catch {
                 // embedUrl is invalid — do not navigate
             }
@@ -199,10 +203,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
     const embedUrlWithOverride = appendQueryParams(embedUrl, {
         lc_host_override: window.location.origin,
     });
-    const iframeSrc =
-        embedOrigin && /^https?:\/\//i.test(embedUrlWithOverride)
-            ? embedUrlWithOverride
-            : undefined;
+    const iframeSrc = (embedOrigin && toSafeFrameUrl(embedUrlWithOverride)) || undefined;
 
     const innerContent = (
         <div className="w-full h-full flex-1 relative">
