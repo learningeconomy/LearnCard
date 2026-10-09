@@ -18,6 +18,9 @@ describe('buildStarterPrompt', () => {
         expect(prompt).toContain('Build a small learning app.');
         expect(prompt).toContain('No setup or API keys are needed');
         expect(prompt).not.toMatch(/contractUri|boostUri|templateUri/);
+        expect(prompt.indexOf('requestConsent')).toBeLessThan(
+            prompt.indexOf('requestLearnerContext')
+        );
     });
 });
 

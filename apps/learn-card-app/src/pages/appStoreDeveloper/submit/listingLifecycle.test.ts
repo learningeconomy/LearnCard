@@ -5,10 +5,10 @@ import { getListingMode, isListingLocked, withPendingChanges } from './listingLi
 describe('getListingMode', () => {
     it('maps each listing state to what the developer can do', () => {
         expect(getListingMode(null)).toBe('draft');
-        expect(getListingMode({ app_listing_status: 'DRAFT' })).toBe('draft');
-        expect(getListingMode({ app_listing_status: 'PENDING_REVIEW' })).toBe('in-review');
-        expect(getListingMode({ app_listing_status: 'LISTED' })).toBe('live');
-        expect(getListingMode({ app_listing_status: 'ARCHIVED' })).toBe('removed');
+        expect(getListingMode({ app_listing_status: 'DRAFT' as const })).toBe('draft');
+        expect(getListingMode({ app_listing_status: 'PENDING_REVIEW' as const })).toBe('in-review');
+        expect(getListingMode({ app_listing_status: 'LISTED' as const })).toBe('live');
+        expect(getListingMode({ app_listing_status: 'ARCHIVED' as const })).toBe('removed');
     });
 
     it('tells a live app with an update in review apart from one being edited', () => {

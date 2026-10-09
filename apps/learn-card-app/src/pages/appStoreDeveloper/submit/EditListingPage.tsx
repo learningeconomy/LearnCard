@@ -16,6 +16,10 @@ import { getFirstMissingField } from './listingValidation';
 import type { ListingField } from './listingValidation';
 import { DEFAULT_APP_ICON_URL } from './constants';
 import { getAppStatusPath } from '../apps/myApps';
+import { useDeveloperPortalContext } from '../DeveloperPortalContext';
+import { LaunchSettingsSection } from './LaunchSettingsSection';
+import type { LaunchSettings } from './LaunchSettingsSection';
+import { getLaunchSettingsError, parseLaunchConfig } from './launchSettings';
 import { ListingStatusBanner } from './ListingStatusBanner';
 import { getListingMode, isListingLocked, withPendingChanges } from './listingLifecycle';
 
@@ -68,8 +72,20 @@ export const EditListingPage: React.FC = () => {
     const [showMissingHint, setShowMissingHint] = useState(false);
     const [hasEdits, setHasEdits] = useState(false);
     const [isChangingStatus, setIsChangingStatus] = useState(false);
+    const [launch, setLaunch] = useState<LaunchSettings | null>(null);
+    const [launchChanged, setLaunchChanged] = useState(false);
+    const [isLaunchOpen, setIsLaunchOpen] = useState(false);
     const hasEditedRef = useRef(false);
     const loadedListingIdRef = useRef<string | null>(null);
+    const launchRef = useRef<HTMLDivElement>(null);
+
+    const { integrations } = useDeveloperPortalContext();
+    const managedByApp = Boolean(
+        (
+            integrations.find(integration => integration.id === integrationId)?.guideState as
+                Record<string, unknown> | undefined
+        )?.publishedFromAppUrl
+    );
 
     const iconRef = useRef<HTMLDivElement>(null);
     const nameRef = useRef<HTMLInputElement>(null);
@@ -98,8 +114,28 @@ export const EditListingPage: React.FC = () => {
     useEffect(() => {
         if (!listing || loadedListingIdRef.current === listing.listing_id) return;
         loadedListingIdRef.current = listing.listing_id;
-        setData(listingToData(withPendingChanges(listing)));
+        const working = withPendingChanges(listing);
+        setData(listingToData(working));
+        setLaunch({ type: working.launch_type, configJson: working.launch_config_json });
     }, [listing]);
+
+    const updateLaunch = (next: LaunchSettings) => {
+        hasEditedRef.current = true;
+        setHasEdits(true);
+        setLaunchChanged(true);
+        setLaunch(next);
+    };
+
+    const launchError = launch
+        ? getLaunchSettingsError(launch.type, parseLaunchConfig(launch.configJson))
+        : null;
+
+    const buildUpdates = () => ({
+        ...toListingUpdates(data),
+        ...(launch && launchChanged
+            ? { launch_type: launch.type, launch_config_json: launch.configJson }
+            : {}),
+    });
 
     const updateData = (updates: Partial<ListingData>) => {
         hasEditedRef.current = true;
@@ -113,7 +149,7 @@ export const EditListingPage: React.FC = () => {
         const timer = setTimeout(async () => {
             setSaveState('saving');
             try {
-                await saveListing({ listingId, updates: toListingUpdates(data) });
+                await saveListing({ listingId, updates: buildUpdates() });
                 setSaveState('saved');
             } catch (e) {
                 log.warn('listing.autosave.failed', e, { listingId });
@@ -122,7 +158,9 @@ export const EditListingPage: React.FC = () => {
         }, AUTOSAVE_DELAY_MS);
 
         return () => clearTimeout(timer);
-    }, [data, listingId, saveListing, isLocked]);
+        // buildUpdates reads data and launch, both listed here.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [data, launch, listingId, saveListing, isLocked]);
 
     const changeStatus = async (action: 'withdraw' | 'discard') => {
         setIsChangingStatus(true);
@@ -139,7 +177,10 @@ export const EditListingPage: React.FC = () => {
                 hasEditedRef.current = false;
                 setHasEdits(false);
                 setSaveState('idle');
-                setData(listingToData(withPendingChanges(refreshed)));
+                const working = withPendingChanges(refreshed);
+                setData(listingToData(working));
+                setLaunch({ type: working.launch_type, configJson: working.launch_config_json });
+                setLaunchChanged(false);
             }
         } catch (e) {
             log.error('listing.status-change.failed', e, { listingId, action });
@@ -177,11 +218,17 @@ export const EditListingPage: React.FC = () => {
             focusField(missingField.field);
             return;
         }
+        if (launchError) {
+            setShowMissingHint(true);
+            setIsLaunchOpen(true);
+            launchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
 
         setIsSubmitting(true);
         setFormError(null);
         try {
-            await saveListing({ listingId, integrationId, updates: toListingUpdates(data) });
+            await saveListing({ listingId, integrationId, updates: buildUpdates() });
             if (isDraft) {
                 await submitListingForReview(listingId);
             } else {
@@ -314,6 +361,18 @@ export const EditListingPage: React.FC = () => {
                                     />
                                 </div>
 
+                                {launch && (
+                                    <LaunchSettingsSection
+                                        value={launch}
+                                        onChange={updateLaunch}
+                                        managedByApp={managedByApp}
+                                        open={isLaunchOpen}
+                                        onOpenChange={setIsLaunchOpen}
+                                        error={showMissingHint ? launchError : null}
+                                        sectionRef={launchRef}
+                                    />
+                                )}
+
                                 <StandOutSection
                                     details={data}
                                     onChange={updateData}
@@ -340,6 +399,22 @@ export const EditListingPage: React.FC = () => {
                                                 className="text-left font-medium text-grayscale-900 hover:underline"
                                             >
                                                 {missingField.message}
+                                            </button>
+                                        ) : (isDraft || canSubmitUpdate) &&
+                                          showMissingHint &&
+                                          launchError ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setIsLaunchOpen(true);
+                                                    launchRef.current?.scrollIntoView({
+                                                        behavior: 'smooth',
+                                                        block: 'center',
+                                                    });
+                                                }}
+                                                className="text-left font-medium text-grayscale-900 hover:underline"
+                                            >
+                                                {launchError}
                                             </button>
                                         ) : (
                                             <span

@@ -38,6 +38,7 @@ describe('NewAppSheet', () => {
         const { onListExisting } = renderSheet();
         fireEvent.click(screen.getByRole('button', { name: /List something you already have/ }));
 
+        expect(screen.getByText('Runs inside LearnCard')).toBeInTheDocument();
         expect(screen.getByText('Opens in a new tab')).toBeInTheDocument();
         expect(screen.getByText('Runs on a server')).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: /AI tutor/ }));

@@ -16,6 +16,7 @@ import { DEFAULT_APP_ICON_URL } from '../submit/constants';
 import type { ListingMode } from '../submit/listingLifecycle';
 import { STATUS_LABELS, getAppStatusPath, toMyApps } from './myApps';
 import type { MyApp } from './myApps';
+import { LAUNCH_TYPE_LABELS } from '../submit/launchSettings';
 import { DEVELOPER_DOCS_URL, NewAppSheet } from './NewAppSheet';
 import { openExternalLink } from '../../../helpers/externalLinkHelpers';
 
@@ -62,11 +63,18 @@ const AppCard: React.FC<{ app: MyApp; onOpen: () => void }> = ({ app, onOpen }) 
                         />
                     </div>
                     <p className="text-sm text-grayscale-500 truncate">{listing.tagline}</p>
-                    <span
-                        className={`inline-block mt-2 px-2.5 py-0.5 rounded-full text-xs font-medium ${PILL_CLASS[mode]}`}
-                    >
-                        {STATUS_LABELS[mode]}
-                    </span>
+                    <div className="mt-2 flex items-center gap-2 min-w-0">
+                        <span
+                            className={`shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium ${PILL_CLASS[mode]}`}
+                        >
+                            {STATUS_LABELS[mode]}
+                        </span>
+                        {listing.launch_type !== 'EMBEDDED_IFRAME' && (
+                            <span className="text-xs text-grayscale-500 truncate">
+                                {LAUNCH_TYPE_LABELS[listing.launch_type]}
+                            </span>
+                        )}
+                    </div>
                 </div>
             </div>
 

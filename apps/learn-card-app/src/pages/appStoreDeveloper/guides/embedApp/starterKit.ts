@@ -38,14 +38,22 @@ const userId = identity.user.did;`,
     },
     {
         id: 'consent',
-        title: 'Ask to use learner info',
-        description: 'With permission, read achievements or add new ones.',
+        title: 'Personalize with what they know',
+        description: 'With permission, use their achievements and skills to tailor your app.',
         promptLine:
-            "Before using the person's existing achievements, call `learnCard.requestConsent({ read: { credentialCategories: ['Achievement'], personalFields: ['name'] }, reason: '...' })` with a short, friendly reason, and only continue if `granted` is true.",
+            "To personalize the app, first call `learnCard.requestConsent({ read: { credentialCategories: ['Achievement', 'Skill'], personalFields: ['name'] }, reason: '...' })` with a short, friendly reason. Only if `granted` is true, call `learnCard.requestLearnerContext({ includeCredentials: true, format: 'structured' })` and use `context.raw.credentials` to tailor the experience (for example, skip what they've already mastered). If the app has its own AI, `requestLearnerContext({ includeCredentials: true, format: 'prompt' })` returns a ready-made learner summary in `context.prompt` to pass to it.",
         code: `const { granted } = await learnCard.requestConsent({
-    read: { credentialCategories: ['Achievement'], personalFields: ['name'] },
+    read: { credentialCategories: ['Achievement', 'Skill'], personalFields: ['name'] },
     reason: 'Suggest lessons based on what you already know',
-});`,
+});
+
+if (granted) {
+    const context = await learnCard.requestLearnerContext({
+        includeCredentials: true,
+        format: 'structured',
+    });
+    const achievements = context.raw?.credentials ?? [];
+}`,
     },
     {
         id: 'progress',

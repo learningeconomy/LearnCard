@@ -13,6 +13,7 @@ import { Confetti } from '../../issue/components/Confetti';
 import { StoreListingPreview } from './StoreListingPreview';
 import { listingToData } from './listingForm';
 import { withPendingChanges } from './listingLifecycle';
+import { getLaunchSummary, parseLaunchConfig } from './launchSettings';
 import type { ListingMode } from './listingLifecycle';
 
 type StatusMode = Exclude<ListingMode, 'draft'>;
@@ -155,7 +156,8 @@ export const AppStatusView: React.FC<AppStatusViewProps> = ({
 }) => {
     const [confirmingWithdraw, setConfirmingWithdraw] = useState(false);
     const [copied, setCopied] = useState(false);
-    const data = listingToData(withPendingChanges(listing));
+    const working = withPendingChanges(listing);
+    const data = listingToData(working);
     const name = data.name || 'Your app';
     const { title, body } = COPY[mode](name);
     const inReview = mode === 'in-review' || mode === 'update-in-review';
@@ -189,6 +191,12 @@ export const AppStatusView: React.FC<AppStatusViewProps> = ({
                 />
                 <h1 className="mt-5 text-xl font-semibold text-grayscale-900">{title}</h1>
                 <p className="mt-1 text-sm text-grayscale-600 leading-relaxed">{body}</p>
+                <p className="mt-2 text-xs text-grayscale-500 break-words">
+                    {getLaunchSummary(
+                        working.launch_type,
+                        parseLaunchConfig(working.launch_config_json)
+                    )}
+                </p>
 
                 {mode !== 'removed' && <ProgressTracker steps={getSteps(mode, listing)} />}
 

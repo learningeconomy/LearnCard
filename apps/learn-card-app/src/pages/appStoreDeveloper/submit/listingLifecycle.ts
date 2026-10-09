@@ -2,7 +2,10 @@ import type { AppStoreListing } from '@learncard/types';
 
 export type ListingMode = 'draft' | 'in-review' | 'live' | 'update-in-review' | 'removed';
 
-type LifecycleListing = Pick<AppStoreListing, 'app_listing_status' | 'pending_update'>;
+type LifecycleListing = {
+    app_listing_status: AppStoreListing['app_listing_status'];
+    pending_update?: AppStoreListing['pending_update'];
+};
 
 export const getListingMode = (listing: LifecycleListing | null | undefined): ListingMode => {
     if (!listing) return 'draft';
