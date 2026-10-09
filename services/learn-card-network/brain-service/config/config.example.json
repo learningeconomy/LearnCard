@@ -1,5 +1,4 @@
 {
-    "APP_BRAND": "scouts",
     "CLIENT_APP_DOMAIN_NAME": "example.com",
     "CREDENTIAL_REFRESH_ENABLED": "false",
     "CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS": "24",

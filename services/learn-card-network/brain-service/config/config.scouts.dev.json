@@ -1,6 +1,5 @@
 {
-    "APP_BRAND": "scouts",
-    "CLIENT_APP_DOMAIN_NAME": "learncard.app",
+    "CLIENT_APP_DOMAIN_NAME": "staging.pass.scout.org",
     "CREDENTIAL_REFRESH_ENABLED": "false",
     "CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS": "24",
     "DOMAIN_NAME": "staging.scoutnetwork.org",
