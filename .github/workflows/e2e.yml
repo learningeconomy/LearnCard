@@ -135,8 +135,8 @@ jobs:
             - name: Authenticate Docker Hub pulls
               uses: ./.github/actions/dockerhub-login
               with:
-                  username: ${{ secrets.DOCKERHUB_USERNAME }}
-                  token: ${{ secrets.DOCKERHUB_TOKEN }}
+                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
 
             - name: Setup Docker Buildx
               uses: docker/setup-buildx-action@v3
@@ -250,8 +250,8 @@ jobs:
             - name: Authenticate Docker Hub pulls
               uses: ./.github/actions/dockerhub-login
               with:
-                  username: ${{ secrets.DOCKERHUB_USERNAME }}
-                  token: ${{ secrets.DOCKERHUB_TOKEN }}
+                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
 
             - name: Setup Docker Buildx
               uses: docker/setup-buildx-action@v3

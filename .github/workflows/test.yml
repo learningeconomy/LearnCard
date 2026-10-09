@@ -39,8 +39,8 @@ jobs:
             - name: Authenticate Docker Hub pulls
               uses: ./.github/actions/dockerhub-login
               with:
-                  username: ${{ secrets.DOCKERHUB_USERNAME }}
-                  token: ${{ secrets.DOCKERHUB_TOKEN }}
+                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
 
             - name: Run tests
               uses: nick-fields/retry@v2
@@ -119,8 +119,8 @@ jobs:
             - name: Authenticate Docker Hub pulls
               uses: ./.github/actions/dockerhub-login
               with:
-                  username: ${{ secrets.DOCKERHUB_USERNAME }}
-                  token: ${{ secrets.DOCKERHUB_TOKEN }}
+                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
             - name: Test inbox security and queued issuance with Neo4j, Redis, and SQS
               run: bunx nx run network-brain-service:test:inbox:e2e
 

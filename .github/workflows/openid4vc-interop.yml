@@ -59,8 +59,8 @@ jobs:
             - name: Authenticate Docker Hub pulls
               uses: ./.github/actions/dockerhub-login
               with:
-                  username: ${{ secrets.DOCKERHUB_USERNAME }}
-                  token: ${{ secrets.DOCKERHUB_TOKEN }}
+                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
 
             - name: Build openid4vc plugin
               run: bunx nx build openid4vc-plugin

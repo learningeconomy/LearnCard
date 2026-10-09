@@ -1,15 +1,20 @@
 name: 'Docker Hub login (best effort)'
 description: >-
     Authenticate Docker Hub pulls so CI is not throttled by the per-IP anonymous pull
-    limit shared across GitHub-hosted runners. Never fails the job: without credentials
-    (fork and Dependabot PRs) or with a rejected token, pulls stay anonymous as before.
+    limit shared across GitHub-hosted runners. Credentials live in a job-scoped
+    DOCKER_CONFIG under RUNNER_TEMP, which the runner empties at the start and end of
+    every job, so they never reach the shared ~/.docker store on reused runners. Never
+    fails the job: without credentials (fork and Dependabot PRs) or with a rejected
+    token, pulls stay anonymous, and still use the isolated, empty config.
 
 inputs:
     username:
-        description: 'Docker Hub username (secrets.DOCKERHUB_USERNAME).'
+        description: 'Docker Hub organization name for the pull-only token.'
         default: ''
     token:
-        description: 'Docker Hub read-only access token (secrets.DOCKERHUB_TOKEN).'
+        description: >-
+            Pull-only Docker Hub access token (secrets.DOCKERHUB_PULL_TOKEN). PR code runs
+            after this step, so never pass a token that can push.
         default: ''
 
 runs:
@@ -21,6 +26,17 @@ runs:
               DOCKERHUB_USERNAME: ${{ inputs.username }}
               DOCKERHUB_TOKEN: ${{ inputs.token }}
           run: |
+              docker_config="$RUNNER_TEMP/docker-config"
+              rm -rf "$docker_config"
+              mkdir -m 700 "$docker_config"
+              # Keep any per-user CLI plugins (buildx/compose) visible from the new config.
+              if [[ -d "$HOME/.docker/cli-plugins" ]]; then
+                ln -s "$HOME/.docker/cli-plugins" "$docker_config/cli-plugins"
+              fi
+              # Docker CLI, Compose, Buildx and Testcontainers all read DOCKER_CONFIG.
+              echo "DOCKER_CONFIG=$docker_config" >> "$GITHUB_ENV"
+              export DOCKER_CONFIG="$docker_config"
+
               if [[ -z "$DOCKERHUB_USERNAME" || -z "$DOCKERHUB_TOKEN" ]]; then
                 echo "Docker Hub credentials unavailable; pulling anonymously."
                 exit 0
@@ -28,5 +44,6 @@ runs:
               if printf '%s' "$DOCKERHUB_TOKEN" | docker login docker.io --username "$DOCKERHUB_USERNAME" --password-stdin >/dev/null 2>&1; then
                 echo "Authenticated Docker Hub pulls."
               else
-                echo "::warning title=Docker Hub login failed::Pulling anonymously; rotate DOCKERHUB_TOKEN to restore authenticated pulls."
+                rm -f "$docker_config/config.json"
+                echo "::warning title=Docker Hub login failed::Pulling anonymously; rotate DOCKERHUB_PULL_TOKEN to restore authenticated pulls."
               fi
