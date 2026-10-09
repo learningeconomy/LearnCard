@@ -24,6 +24,7 @@ cp "$SOURCE_ROOT/scripts/e2e-hosted/Dockerfile.browser-runtime" "$REPO_ROOT/scri
 echo nginx > "$APP_DIR/nginx.conf"
 git() { echo tested-checkout-sha; }
 bunx() {
+    [[ "$SENTRY_BUILD_TELEMETRY" == false ]] || return 1
     [[ "$GITHUB_SHA" == tested-checkout-sha && "$SKIP_DIDKIT_NAPI" == 1 && "$NX_DAEMON" == false ]] || return 1
     [[ "$*" == 'nx run learn-card-app:docker-build --verbose --skip-nx-cache' ]] || return 1
     [[ "$FAIL_HOST" == false ]] || return 1

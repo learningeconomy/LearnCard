@@ -86,6 +86,9 @@ cleanup_browser_build() {
 
 build_host_browser() {
     cd "$REPO_ROOT" || return
+    # Old Sentry build plugins can fail compilation when optional telemetry
+    # cannot connect. Keep hosted test builds independent of that endpoint.
+    export SENTRY_BUILD_TELEMETRY=false
     # The app's ^build graph includes all three SDK roots used by Playwright.
     # Use the tested checkout for Vite provenance, including manual dispatches.
     GITHUB_SHA=$(git rev-parse HEAD) SKIP_DIDKIT_NAPI=1 NX_DAEMON=false \
