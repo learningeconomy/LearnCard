@@ -118,9 +118,18 @@ jobs:
               working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
               run: bun install --frozen-lockfile
 
-            # Prepare tenant config before building.
-            # Uses TENANT and STAGE vars from the GitHub Environment (defaults: learncard, no stage).
+            # ScoutPass uses its checked-in stage configs, matching the web deploy.
+            # Do not inherit a LearnCard VITE_NODE_ENV from GitHub settings.
+            - name: Resolve Scouts stage env
+              id: scouts-stage-env
+              if: startsWith(inputs.environment, 'scout-app-')
+              shell: bash
+              working-directory: apps/scouts
+              run: bun scripts/lc.ts stage-env "${{ inputs.environment == 'scout-app-staging' && 'staging' || 'production' }}" | tee -a "$GITHUB_OUTPUT"
+
+            # Only LearnCard uses the tenant config preparation scripts.
             - name: Prepare tenant config
+              if: ${{ !startsWith(inputs.environment, 'scout-app-') }}
               working-directory: apps/learn-card-app
               run: |
                   TENANT="${{ vars.TENANT || 'learncard' }}"
@@ -137,7 +146,7 @@ jobs:
               run: bun run build
               env:
                   NODE_ENV: ${{ vars.NODE_ENV }}
-                  VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
+                  VITE_NODE_ENV: ${{ steps.scouts-stage-env.outputs.VITE_NODE_ENV || vars.VITE_NODE_ENV }}
                   VITE_ENABLE_AUTH_DEBUG_WIDGET: ${{ vars.VITE_ENABLE_AUTH_DEBUG_WIDGET }}
                   VITE_WEB3AUTH_CLIENT_ID: ${{ secrets.VITE_WEB3AUTH_CLIENT_ID }}
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
@@ -148,6 +157,7 @@ jobs:
 
             # Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
             - name: Re-patch tenant config (post-sync)
+              if: ${{ !startsWith(inputs.environment, 'scout-app-') }}
               working-directory: apps/learn-card-app
               run: |
                   TENANT="${{ vars.TENANT || 'learncard' }}"
@@ -245,9 +255,18 @@ jobs:
               working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
               run: bun install --frozen-lockfile
 
-            # Prepare tenant config before building.
-            # Uses TENANT and STAGE vars from the GitHub Environment (defaults: learncard, no stage).
+            # ScoutPass uses its checked-in stage configs, matching the web deploy.
+            # Do not inherit a LearnCard VITE_NODE_ENV from GitHub settings.
+            - name: Resolve Scouts stage env
+              id: scouts-stage-env
+              if: startsWith(inputs.environment, 'scout-app-')
+              shell: bash
+              working-directory: apps/scouts
+              run: bun scripts/lc.ts stage-env "${{ inputs.environment == 'scout-app-staging' && 'staging' || 'production' }}" | tee -a "$GITHUB_OUTPUT"
+
+            # Only LearnCard uses the tenant config preparation scripts.
             - name: Prepare tenant config
+              if: ${{ !startsWith(inputs.environment, 'scout-app-') }}
               working-directory: apps/learn-card-app
               run: |
                   TENANT="${{ vars.TENANT || 'learncard' }}"
@@ -264,7 +283,7 @@ jobs:
               run: bun run build
               env:
                   NODE_ENV: ${{ vars.NODE_ENV }}
-                  VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
+                  VITE_NODE_ENV: ${{ steps.scouts-stage-env.outputs.VITE_NODE_ENV || vars.VITE_NODE_ENV }}
                   VITE_ENABLE_AUTH_DEBUG_WIDGET: ${{ vars.VITE_ENABLE_AUTH_DEBUG_WIDGET }}
                   VITE_WEB3AUTH_CLIENT_ID: ${{ secrets.VITE_WEB3AUTH_CLIENT_ID }}
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
@@ -275,6 +294,7 @@ jobs:
 
             # Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
             - name: Re-patch tenant config (post-sync)
+              if: ${{ !startsWith(inputs.environment, 'scout-app-') }}
               working-directory: apps/learn-card-app
               run: |
                   TENANT="${{ vars.TENANT || 'learncard' }}"
