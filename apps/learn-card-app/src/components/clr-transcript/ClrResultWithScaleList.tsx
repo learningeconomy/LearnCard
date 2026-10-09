@@ -3,6 +3,7 @@ import {
     getResultDisplayValue,
 } from 'learn-card-base/helpers/credentials/clr/presentation';
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
 
 import ClrSourceInfo from './ClrSourceInfo';
 
@@ -167,6 +168,8 @@ const NumericScale: React.FC<{
 
     return (
         <div
+            // Keep endpoint labels and physical marker offsets on the same numeric axis in RTL.
+            dir="ltr"
             role="img"
             aria-label={`Numeric scale from ${min} to ${max}; achieved ${String(value)}${
                 required ? `; passing ${required}` : ''
@@ -296,6 +299,19 @@ const ClrResultWithScaleList: React.FC<{
                     </div>
 
                     <ResultScale result={result} />
+                    {result.requiredValue && (
+                        <p className="mt-2 text-xs text-grayscale-600">
+                            {m['clrRenderer.requiredValue']({ value: result.requiredValue.value })}
+                        </p>
+                    )}
+                    {result.requiredLevel && (
+                        <p className="mt-2 text-xs text-grayscale-600">
+                            {m['clrRenderer.requiredLevel']({
+                                value:
+                                    result.requiredRubricLevel?.name ?? result.requiredLevel.value,
+                            })}
+                        </p>
+                    )}
 
                     {result.alignments.length > 0 && (
                         <div className="mt-3 space-y-1">

@@ -1,4 +1,11 @@
 import { useState } from 'react';
+import {
+    useLocale,
+    useChangeLocale,
+    SUPPORTED_LANGUAGES,
+    type SupportedLanguage,
+} from '../../i18n';
+import * as m from '../../paraglide/messages.js';
 import { IonItem, IonLabel, IonList, IonPopover } from '@ionic/react';
 import type { VC } from '@learncard/types';
 
@@ -6,6 +13,7 @@ import { CLR_TRANSCRIPT_DEMO_FIXTURES as FIXTURES } from './clrTranscriptDemo.fi
 
 import {
     normalizeClrTranscriptDisplayModel,
+    inferClrLayout,
     ClrTranscriptSurface,
     type ClrTranscriptViewer,
 } from 'learn-card-base/helpers/credentials/clr/renderer';
@@ -25,6 +33,8 @@ const VIEWER_LABELS: Record<string, string> = {
 type FixtureKey = keyof typeof FIXTURES;
 
 const ClrTranscriptRendererDemo = () => {
+    const locale = useLocale();
+    const changeLocale = useChangeLocale();
     const [fixture, setFixture] = useState<FixtureKey>('westbridge');
     const [viewer, setViewer] = useState<ClrTranscriptViewer>('student');
     const [surface, setSurface] = useState<ClrTranscriptSurface>(ClrTranscriptSurface.Full);
@@ -39,16 +49,6 @@ const ClrTranscriptRendererDemo = () => {
         FIXTURES[fixture].credential as Record<string, unknown>
     );
 
-    // return (
-    //     <div className="bg-grayscale-10 h-screen overflow-y-auto font-poppins flex flex-col">
-    //         <ClrTranscriptFullPage
-    //             model={currentModel}
-    //             credential={FIXTURES[fixture] as any}
-    //             options={{ viewer, surface }}
-    //         />
-    //     </div>
-    // );
-
     return (
         <div className="bg-grayscale-10 h-dvh overflow-hidden font-poppins flex flex-col pt-[var(--ion-safe-area-top,0px)] pb-[var(--ion-safe-area-bottom,0px)]">
             {/* Controls header */}
@@ -56,7 +56,7 @@ const ClrTranscriptRendererDemo = () => {
                 <div className="flex items-center justify-between">
                     <h1 className="text-base font-semibold text-grayscale-900">CLR Renderer</h1>
                     <span className="text-xs text-grayscale-400 font-mono">
-                        {currentModel.quality.level}
+                        {inferClrLayout(currentModel.canonical).kind}
                     </span>
                 </div>
 
@@ -113,7 +113,7 @@ const ClrTranscriptRendererDemo = () => {
                     </IonPopover>
 
                     {/* Viewer picker */}
-                    {/* <button
+                    <button
                         type="button"
                         onClick={e => {
                             setViewerPopoverEvent(e.nativeEvent);
@@ -123,7 +123,7 @@ const ClrTranscriptRendererDemo = () => {
                     >
                         {VIEWER_LABELS[viewer]}
                         <span className="text-grayscale-400 text-xs">▾</span>
-                    </button> */}
+                    </button>
 
                     <IonPopover
                         isOpen={viewerPopoverOpen}
@@ -161,8 +161,23 @@ const ClrTranscriptRendererDemo = () => {
                     </IonPopover>
                 </div>
 
+                <label className="flex items-center gap-2 text-xs font-medium text-grayscale-700">
+                    {m['clrRenderer.language']()}
+                    <select
+                        aria-label={m['clrRenderer.language']()}
+                        value={locale}
+                        onChange={event => changeLocale(event.target.value as SupportedLanguage)}
+                        className="rounded-xl border border-grayscale-300 bg-white px-3 py-2 text-sm text-grayscale-900 focus:ring-2 focus:ring-emerald-500"
+                    >
+                        {SUPPORTED_LANGUAGES.map(language => (
+                            <option key={language} value={language}>
+                                {language}
+                            </option>
+                        ))}
+                    </select>
+                </label>
                 {/* Surface tabs */}
-                {/* <div className="bg-grayscale-100 flex rounded-full py-[2px] px-[1px]">
+                <div className="bg-grayscale-100 flex rounded-full py-[2px] px-[1px]">
                     {(
                         [
                             ClrTranscriptSurface.Full,
@@ -173,6 +188,7 @@ const ClrTranscriptRendererDemo = () => {
                         <button
                             key={s}
                             type="button"
+                            aria-pressed={surface === s}
                             onClick={() => setSurface(s)}
                             className={`flex-1 py-[12px] rounded-full text-[14px] font-semibold font-poppins text-grayscale-900 transition-colors ${
                                 surface === s ? 'bg-white shadow-sm' : ''
@@ -181,7 +197,7 @@ const ClrTranscriptRendererDemo = () => {
                             {s.charAt(0).toUpperCase() + s.slice(1)}
                         </button>
                     ))}
-                </div> */}
+                </div>
             </div>
 
             {/* Content */}
@@ -189,12 +205,17 @@ const ClrTranscriptRendererDemo = () => {
                 {surface === ClrTranscriptSurface.Card && (
                     <ClrTranscriptCard
                         model={currentModel}
+                        options={{ viewer, surface }}
                         boost={FIXTURES[fixture].credential as unknown as VC}
                         onViewDetails={() => setSurface(ClrTranscriptSurface.Full)}
                     />
                 )}
                 {surface === ClrTranscriptSurface.Embed && (
-                    <ClrTranscriptEmbedWidget model={currentModel} />
+                    <ClrTranscriptEmbedWidget
+                        model={currentModel}
+                        boost={FIXTURES[fixture].credential as unknown as VC}
+                        options={{ viewer, surface }}
+                    />
                 )}
                 {surface === ClrTranscriptSurface.Full && (
                     <ClrTranscriptFullPage

@@ -1,21 +1,13 @@
 import React from 'react';
-
-import ClrTranscriptHeader from '../ClrTranscriptHeader';
-import ClrTranscriptSummaryStats from '../ClrTranscriptSummaryStats';
-import ClrTranscriptEvidenceList from '../ClrTranscriptEvidenceList';
-
-import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
-
-const ClrTranscriptEmbedWidget: React.FC<{
-    model: ClrTranscriptDisplayModel;
-}> = ({ model }) => {
-    return (
-        <div className="space-y-3">
-            <ClrTranscriptHeader model={model} />
-            <ClrTranscriptSummaryStats model={model} />
-            <ClrTranscriptEvidenceList evidence={model.evidence} compact />
-        </div>
-    );
-};
-
+import { ClrRenderer } from '../../clr-renderer/ClrRenderer';
+import type { ClrRendererProps } from '../../clr-renderer/types';
+import { ClrTranscriptSurface } from 'learn-card-base/helpers/credentials/clr/renderer';
+const ClrTranscriptEmbedWidget = (
+    props: Omit<ClrRendererProps, 'options'> & Partial<Pick<ClrRendererProps, 'options'>>
+) => (
+    <ClrRenderer
+        {...props}
+        options={{ viewer: 'student', ...props.options, surface: ClrTranscriptSurface.Embed }}
+    />
+);
 export default ClrTranscriptEmbedWidget;

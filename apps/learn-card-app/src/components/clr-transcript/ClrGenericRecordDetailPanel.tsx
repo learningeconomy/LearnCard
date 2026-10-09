@@ -4,8 +4,7 @@ import { createClrCanonicalRecordMap } from 'learn-card-base/helpers/credentials
 import { X } from 'lucide-react';
 import { useModal } from 'learn-card-base';
 import type {
-    AwardDisplayModel,
-    OtherAcademicRecordModel,
+    ClrNavigableRecord,
     ClrTranscriptDisplayModel,
 } from 'learn-card-base/helpers/credentials/clr/renderer';
 import { formatAchievementType } from 'learn-card-base/helpers/credentials/clr/helpers';
@@ -21,11 +20,13 @@ const ClrGenericRecordDetailPanel = ({
     model,
     onSelectRecord,
     adminMode = false,
+    prominentFields = false,
 }: {
-    record: AwardDisplayModel | OtherAcademicRecordModel;
+    record: ClrNavigableRecord['record'];
     model: ClrTranscriptDisplayModel;
     onSelectRecord?: (id: string) => void;
     adminMode?: boolean;
+    prominentFields?: boolean;
 }) => {
     const { closeModal } = useModal();
     const recordsById = useMemo(
@@ -65,7 +66,7 @@ const ClrGenericRecordDetailPanel = ({
                 )}
                 <div className="space-y-4 rounded-[20px] border border-grayscale-200 bg-white p-4">
                     <ClrResultWithScaleList results={record.results} showResultType={adminMode} />
-                    <ClrRecordDetails record={canonical} />
+                    <ClrRecordDetails record={canonical} prominentFields={prominentFields} />
                     <ClrAlignmentList alignments={record.alignments} />
                     <ClrTranscriptEvidenceList evidence={record.evidence} />
                     <ClrRelationshipChips

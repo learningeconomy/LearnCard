@@ -3,7 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { ALL_FIXTURES } from '../../../../packages/credential-library/src/fixtures';
 import type { CredentialFixture } from '../../../../packages/credential-library/src/types';
 
-import { normalizeClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
+import {
+    inferClrLayout,
+    createClrRecordMap,
+    findClrRecordByCanonicalId,
+    normalizeClrTranscriptDisplayModel,
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const asObjects = (value: unknown): Record<string, unknown>[] =>
     Array.isArray(value)
@@ -20,12 +25,34 @@ const clrFixtures = ALL_FIXTURES.filter(
 );
 
 describe('CLR canonical normalization corpus', () => {
+    it('preserves academic fixture routing while distinguishing military and general records', () => {
+        const generalIds = new Set([
+            'clr/employment-record',
+            'clr/training-provider-record',
+            'clr/professional-organization-record',
+            'clr/licensing-regulatory-record',
+            'clr/mixed-career-record',
+        ]);
+        for (const fixture of clrFixtures) {
+            const model = normalizeClrTranscriptDisplayModel(
+                fixture.credential as Record<string, unknown>
+            );
+            const expected = fixture.id.startsWith('clr/military-')
+                ? 'military'
+                : generalIds.has(fixture.id)
+                  ? 'general'
+                  : 'academic';
+            expect(inferClrLayout(model.canonical).kind, fixture.id).toBe(expected);
+        }
+    });
     it.each(clrFixtures)(
         'projects every record and result into display categories: $id',
         fixture => {
             const model = normalizeClrTranscriptDisplayModel(
                 fixture.credential as unknown as Record<string, unknown>
             );
+            const records = createClrRecordMap(model);
+            expect(records.size).toBe(model.records.length);
             const displayed = [
                 ...model.courses,
                 ...model.programs,
@@ -38,6 +65,9 @@ describe('CLR canonical normalization corpus', () => {
                 model.records.map(record => record.id).sort()
             );
             for (const record of model.records) {
+                expect(records.get(record.id)).toEqual(
+                    findClrRecordByCanonicalId(model, record.id)
+                );
                 const projected = displayed.find(item => item.sourceCredentialId === record.id)!;
                 expect(projected.results).toHaveLength(record.results.length);
                 expect(projected.evidence).toHaveLength(record.evidence.length);
@@ -61,7 +91,7 @@ describe('CLR canonical normalization corpus', () => {
         let resultCount = 0;
         let associationCount = 0;
 
-        expect(clrFixtures).toHaveLength(17);
+        expect(clrFixtures).toHaveLength(18);
 
         for (const fixture of clrFixtures) {
             const credential = fixture.credential as unknown as Record<string, unknown>;
@@ -86,10 +116,10 @@ describe('CLR canonical normalization corpus', () => {
             associationCount += model.canonical.associations.length;
         }
 
-        expect(embeddedCount).toBe(208);
+        expect(embeddedCount).toBe(214);
         expect(definitionOnlyCount).toBe(6);
-        expect(resultCount).toBe(277);
-        expect(associationCount).toBe(181);
+        expect(resultCount).toBe(281);
+        expect(associationCount).toBe(183);
     });
 
     it('retains status-only, rubric-level-only, and unresolved result references', () => {
@@ -101,8 +131,8 @@ describe('CLR canonical normalization corpus', () => {
         const results = models.flatMap(model => model.records.flatMap(record => record.results));
         const warnings = models.flatMap(model => model.canonical.warnings);
 
-        expect(results.filter(result => result.status && !result.value)).toHaveLength(17);
-        expect(results.filter(result => result.achievedLevelId && !result.value)).toHaveLength(3);
+        expect(results.filter(result => result.status && !result.value)).toHaveLength(19);
+        expect(results.filter(result => result.achievedLevelId && !result.value)).toHaveLength(4);
         expect(
             warnings.filter(warning => warning.code === 'UNRESOLVED_RESULT_DESCRIPTION')
         ).toHaveLength(6);

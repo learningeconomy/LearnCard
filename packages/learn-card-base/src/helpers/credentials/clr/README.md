@@ -70,3 +70,74 @@ Run `vitest run src/helpers/credentials/clr` from `packages/learn-card-base`, an
 the `clrRenderer` suites plus `src/components/clr-transcript` from
 `apps/learn-card-app`. The app corpus suite verifies both canonical preservation
 and display parity against every registered CLR fixture.
+
+## Collection layouts (LC-2215)
+
+`inferClrLayout(canonical)` returns `{ kind, reason }`, with `kind` set to
+`academic`, `military`, or `general`. Title terms and compatible academic types are
+configured in `layout-heuristics.ts`; its linear scanner avoids backtracking on
+untrusted collection titles. This is a presentation hint, never a new
+credential claim. CLR 2.0's use-case categories are not machine-readable sectors.
+Military or service-branch titles explicitly naming training, service, qualifications,
+records or transcripts select the military layout. Known record titles include
+Joint Services Transcript, AARTS (including its expanded name), and CCAF Transcript.
+These phrases consume their own transcript word; a separate academic title still
+conflicts (for example, "Military Service and Academic Transcript" selects general).
+Provider names alone, including Community College of the Air Force, are insufficient.
+Academic titles or explicit GPA/degree evidence in an otherwise academic collection
+select academic. Conflicting titles or insufficient
+evidence select general. Publisher names, child text, tenants and fixture tags do
+not establish the collection's sector. Standalone course presentation is retained.
+
+This intentionally narrows the previous academic default: a course-only collection
+named "Westbridge University – Fall 2025" selects general, even with credits or
+terms. Without a decisive title, explicit GPA or a degree is required and **every**
+child must have only configured academic-compatible types. An untyped child,
+Certificate, License, or Membership prevents that structural fallback. An explicit
+academic collection title still selects academic for those records. Source data and
+record access are preserved; the general view simply avoids assuming academic context.
+
+`groupClrRecords(records, layout)` partitions canonical occurrences exactly once,
+keeping source order within each section. Specific type hints take precedence over
+activity hints derived from dates or roles. Military groups courses and programs as
+Training; general keeps those sections separate. Unknown records and memberships
+remain accessible through Other records. No membership-specific layout is implied.
+
+LearnCard App's `components/clr-renderer` owns the shared frame, collection header,
+section lists and record navigation. Existing transcript surface exports delegate
+to `ClrRenderer` for compatibility. Academic tables/terms/GPA stay in the academic
+views; result scales, evidence, alignments and source-backed record details remain
+shared. New hosts should pass the existing display model, `ViewOptions`, and their
+credential/sharing context to `ClrRenderer`. Optional `onViewDetails` delegates
+navigation to the host. Only cards offer the detail action; embeds are summaries
+for every layout. The renderer memoizes layout, sections, and the canonical display
+record map per model, sharing these with its header, lists, and navigator. No
+normalization occurs inside child components.
+
+UI navigation checks the canonical display-record map before alias lookup so duplicate
+source IDs do not make preserved occurrences inaccessible. `findClrRecordById`
+continues conservative alias resolution; ambiguous association endpoints stay
+non-navigable. Canonical IDs must not be persisted as global credential IDs.
+
+The `/dev/clr-transcript` picker includes comprehensive military, mixed-career,
+and training-provider examples. The military fixture is synthetic and unsigned;
+proof presence is never treated as verification or training completion. New UI
+labels are translated in English, Spanish, French and Arabic.
+
+Numeric result axes stay left-to-right in every locale: the minimum label is on
+the left, and achieved/required markers use that same coordinate system. The
+surrounding Arabic interface remains right-to-left.
+
+Browser regressions cover military assessment details, training-provider numeric
+results, and malformed stored locales at desktop and mobile widths with simulated
+47/34 insets. The spec runs in the existing mocked E2E tier without sign-in; for
+the Chromium/Firefox/WebKit matrix, run from `apps/learn-card-app`:
+
+```bash
+bunx playwright test --config playwright.clr.config.ts
+```
+
+Set `PW_MOCK_PORT` to reuse an existing local dev server. For manual surface QA,
+select **Military — Training Record**, open **View details** from **Card**, and
+confirm the same three records remain available. **Embed** is a read-only summary
+and must not offer a detail action or record links.
