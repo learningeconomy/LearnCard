@@ -34,3 +34,20 @@
         opacity: 0.55;
     }
 }
+// ML Kit renders the camera beneath the WebView. Keep the scanner controls
+// visible while hiding routes, modal backdrops, and other app chrome.
+body.scanner-active {
+    visibility: hidden;
+    background: transparent !important;
+    --background: transparent;
+    --ion-background-color: transparent;
+
+    #root,
+    ion-app {
+        background: transparent !important;
+    }
+
+    .qr-code-scanner-overlay {
+        visibility: visible;
+    }
+}

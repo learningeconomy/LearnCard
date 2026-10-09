@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import * as m from '../../paraglide/messages.js';
 import { BarcodeScanner, BarcodeFormat, LensFacing } from '@capacitor-mlkit/barcode-scanning';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
 
 import { useWallet, useModal, ModalTypes, getLogger } from 'learn-card-base';
 
@@ -19,20 +19,7 @@ export const QRCodeScannerListener: React.FC = () => {
     const { newModal, closeModal } = useModal();
     const showScanner = QRCodeScannerStore.useTracked.showScanner();
 
-    const handleStartScanning = async () => {
-        return new Promise(async resolve => {
-            const listener = await BarcodeScanner?.addListener('barcodeScanned', async result => {
-                await listener.remove();
-                await BarcodeScanner.stopScan();
-                resolve(result.barcode);
-            });
-
-            await BarcodeScanner.startScan({
-                formats: [BarcodeFormat.QrCode],
-                lensFacing: LensFacing.Back,
-            });
-        });
-    };
+    const cleanupRef = useRef<Promise<void>>(Promise.resolve());
 
     const presentScannerFailedModal = () => {
         newModal(
@@ -59,10 +46,8 @@ export const QRCodeScannerListener: React.FC = () => {
     };
 
     const handleScan = async (qrCodeValue: string) => {
-        const wallet = await initWallet();
-        await handleCancelScanning();
-
         try {
+            const wallet = await initWallet();
             if (qrCodeValue) {
                 const query = new URLSearchParams(qrCodeValue);
 
@@ -107,7 +92,7 @@ export const QRCodeScannerListener: React.FC = () => {
                                 return;
                             }
                         } catch (err) {
-                            log.debug('❌❌ scanner::error ❌❌', err);
+                            log.error('scan::contact-error', err);
                         }
                         presentScannerFailedModal();
                     }
@@ -116,38 +101,97 @@ export const QRCodeScannerListener: React.FC = () => {
                 }
             }
         } catch (error) {
-            log.debug('❌❌ scanner::error ❌❌', error);
-            await handleCancelScanning();
+            log.error('scan::result-error', error);
+            presentScannerFailedModal();
         }
     };
 
-    const handleCancelScanning = async () => {
-        document?.querySelector('#app-router')?.classList?.remove('scanner-active');
-        QRCodeScannerStore.set.closeScanner();
-
-        // Remove all listeners
-        await BarcodeScanner?.removeAllListeners();
-
-        // Stop the barcode scanner
-        await BarcodeScanner?.stopScan();
-    };
+    const handleScanRef = useRef(handleScan);
+    const presentFailureRef = useRef(presentScannerFailedModal);
+    useEffect(() => {
+        handleScanRef.current = handleScan;
+        presentFailureRef.current = presentScannerFailedModal;
+    });
 
     useEffect(() => {
-        if (Capacitor.isNativePlatform()) {
-            if (showScanner) {
-                handleStartScanning()
-                    .then(async res => {
-                        log.debug('scan::success', res);
-                        await handleScan(res?.rawValue);
-                    })
-                    .catch(async error => {
-                        log.debug('scan::error', error);
-                        await handleCancelScanning();
-                    });
-            } else if (!showScanner) {
-                handleCancelScanning();
-            }
-        }
+        if (!Capacitor.isNativePlatform() || !showScanner) return;
+
+        const previousCleanup = cleanupRef.current;
+        const listeners: PluginListenerHandle[] = [];
+        let disposed = false;
+        let processing = false;
+        let scanRequested = false;
+        let stopPromise: Promise<void> | undefined;
+
+        // Wait for startup to settle before stopping, and finish this session's
+        // cleanup before another session can start the same native camera.
+        const stopSession = (): Promise<void> => {
+            stopPromise ??= (async () => {
+                await startup.catch(() => undefined);
+                for (const listener of listeners) {
+                    try {
+                        await listener.remove();
+                    } catch (error) {
+                        log.warn('scan::listener-remove-error', error);
+                    }
+                }
+                try {
+                    if (scanRequested) await BarcodeScanner.stopScan();
+                } catch (error) {
+                    log.warn('scan::stop-error', error);
+                } finally {
+                    document.body.classList.remove('scanner-active');
+                }
+            })();
+            return stopPromise;
+        };
+
+        const fail = async (error: unknown): Promise<void> => {
+            if (disposed || processing) return;
+            processing = true;
+            log.error('scan::start-error', error);
+            await stopSession();
+            if (disposed) return;
+            QRCodeScannerStore.set.closeScanner();
+            presentFailureRef.current();
+        };
+
+        const onResult = async (rawValue: string): Promise<void> => {
+            if (disposed || processing) return;
+            processing = true;
+            await stopSession();
+            if (disposed) return;
+            QRCodeScannerStore.set.closeScanner();
+            await handleScanRef.current(rawValue);
+        };
+
+        const startup = (async () => {
+            await previousCleanup;
+            if (disposed) return;
+            listeners.push(
+                await BarcodeScanner.addListener('barcodesScanned', result => {
+                    const rawValue = result.barcodes.find(barcode => barcode.rawValue)?.rawValue;
+                    if (rawValue) void onResult(rawValue);
+                })
+            );
+            if (disposed) return;
+            listeners.push(
+                await BarcodeScanner.addListener('scanError', error => void fail(error))
+            );
+            if (disposed) return;
+            document.body.classList.add('scanner-active');
+            scanRequested = true;
+            await BarcodeScanner.startScan({
+                formats: [BarcodeFormat.QrCode],
+                lensFacing: LensFacing.Back,
+            });
+        })();
+        void startup.catch(fail);
+
+        return () => {
+            disposed = true;
+            cleanupRef.current = stopSession();
+        };
     }, [showScanner]);
 
     return null;
