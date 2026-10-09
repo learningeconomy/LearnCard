@@ -158,7 +158,7 @@
         "next": "15.5.18",
         "protobufjs": "7.6.3",
         "jsonpath-plus": "10.3.0",
-        "simple-git": "3.36.0",
+        "simple-git": "4.0.2",
         "handlebars": "4.7.9",
         "fast-xml-parser@4": "5.8.0",
         "fast-xml-parser@5": "5.8.0",
