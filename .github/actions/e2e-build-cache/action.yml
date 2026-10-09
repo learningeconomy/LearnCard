@@ -1,0 +1,85 @@
+name: Prepare exact E2E build caches
+description: Restore checked SDK outputs and optionally the browser SPA for the experiment.
+inputs:
+    browser:
+        description: Restore SPA output and write new cache snapshots.
+        default: 'false'
+outputs:
+    sdk-key:
+        value: ${{ steps.keys.outputs.sdk-key }}
+        description: Exact SDK input key.
+    spa-key:
+        value: ${{ steps.keys.outputs.spa-key }}
+        description: Exact SPA input key.
+    sdk-hit:
+        value: ${{ steps.sdk.outputs.cache-hit }}
+        description: Exact SDK cache match.
+    spa-hit:
+        value: ${{ steps.spa.outputs.cache-hit }}
+        description: Exact SPA cache match.
+runs:
+    using: composite
+    steps:
+        - id: keys
+          # Unsupported graphs or key-generation errors use the ordinary host build.
+          continue-on-error: true
+          shell: bash
+          env:
+              BUILD_TEMP: ${{ runner.temp }}
+              CACHE_BROWSER: ${{ inputs.browser }}
+          run: |
+              started=$SECONDS
+              sdk_spec="$BUILD_TEMP/e2e-sdk-spec.json"
+              sdk_key=$(node scripts/e2e-hosted/sdk-build-cache.mjs key "$sdk_spec")
+              [[ "$sdk_key" =~ ^e2e-sdk-outputs-v2-[a-f0-9]{64}$ ]]
+              if [[ "$CACHE_BROWSER" == true ]]; then
+                spa_spec="$BUILD_TEMP/e2e-spa-spec.json"
+                spa_key=$(node scripts/e2e-hosted/sdk-build-cache.mjs key-spa "$spa_spec" "$sdk_spec")
+                [[ "$spa_key" =~ ^e2e-spa-outputs-v2-[a-f0-9]{64}$ ]]
+                cp "$spa_spec" "$E2E_ARTIFACT_DIR/"
+              fi
+              cp "$sdk_spec" "$E2E_ARTIFACT_DIR/"
+              echo "build_key_seconds=$((SECONDS - started))" > "$E2E_ARTIFACT_DIR/build-cache-key-timing.txt"
+              # Publish only after every requested key/spec is ready. A partial
+              # browser setup must not disable Nx dependency builds.
+              echo "sdk-key=$sdk_key" >> "$GITHUB_OUTPUT"
+              {
+                echo 'E2E_SDK_BUILD_CACHE=true'
+                echo "E2E_SDK_SPEC=$sdk_spec"
+                echo "E2E_SDK_CACHE_DIR=$BUILD_TEMP/e2e-sdk-cache"
+                echo "E2E_SDK_CACHE_WRITER=$CACHE_BROWSER"
+              } >> "$GITHUB_ENV"
+              if [[ "$CACHE_BROWSER" == true ]]; then
+                echo "spa-key=$spa_key" >> "$GITHUB_OUTPUT"
+                {
+                  echo "E2E_SPA_SPEC=$spa_spec"
+                  echo "E2E_SPA_CACHE_DIR=$BUILD_TEMP/e2e-spa-cache"
+                } >> "$GITHUB_ENV"
+              fi
+
+        - if: ${{ steps.keys.outcome == 'failure' }}
+          shell: bash
+          run: |
+              echo '::warning::Build cache key preparation failed; using the ordinary host build.'
+              echo 'E2E_SDK_BUILD_CACHE=false' >> "$GITHUB_ENV"
+
+        - id: sdk
+          if: ${{ steps.keys.outcome == 'success' }}
+          uses: actions/cache/restore@v6
+          continue-on-error: true
+          with:
+              path: ${{ runner.temp }}/e2e-sdk-cache
+              key: ${{ steps.keys.outputs.sdk-key }}
+
+        - id: spa
+          if: ${{ steps.keys.outcome == 'success' && inputs.browser == 'true' }}
+          uses: actions/cache/restore@v6
+          continue-on-error: true
+          with:
+              path: ${{ runner.temp }}/e2e-spa-cache
+              key: ${{ steps.keys.outputs.spa-key }}
+
+        - shell: bash
+          run: |
+              echo "E2E_SDK_CACHE_HIT=${{ steps.sdk.outcome == 'success' && steps.sdk.outputs.cache-hit == 'true' }}" >> "$GITHUB_ENV"
+              echo "E2E_SPA_CACHE_HIT=${{ steps.spa.outcome == 'success' && steps.spa.outputs.cache-hit == 'true' }}" >> "$GITHUB_ENV"

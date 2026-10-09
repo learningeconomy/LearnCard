@@ -33,6 +33,10 @@ bunx() {
     echo compiled > "$APP_DIR/build/index.html"
 }
 e2e_timed() { shift; "$@"; }
+env() {
+    while [[ "$1" == *=* ]]; do export "$1"; shift; done
+    "$@"
+}
 docker() {
     if [[ "$*" == *hosted-browser-backend* ]]; then
         sleep 0.1
@@ -83,6 +87,8 @@ cleanup_browser_build
 # Exercise real metrics and signal handling while both builds own a long-lived
 # command and grandchild. No Docker daemon or installed dependencies are needed.
 printf '%s\n' "$helpers" > "$TEST_ROOT/cancel-build.sh"
+# The cache path invokes env before its SPA build; keep that invocation mocked.
+declare -f env >> "$TEST_ROOT/cancel-build.sh"
 cat >> "$TEST_ROOT/cancel-build.sh" <<'SH'
 set -Eeuo pipefail
 source "$SOURCE_ROOT/scripts/e2e-hosted/metrics.sh"
