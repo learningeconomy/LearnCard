@@ -1,6 +1,7 @@
 {
     "extends": "../../../tsconfig.node.json",
     "compilerOptions": {
+        "resolveJsonModule": true,
         "removeComments": true,
         "preserveConstEnums": true,
         "noUncheckedIndexedAccess": true,

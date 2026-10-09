@@ -2,25 +2,112 @@
 
 This monorepo uses [Infisical](https://infisical.com) to manage shared environment variables. A script generates `.env` files for each service/app from the Infisical "LearnCard" project.
 
+## Backend configuration model
+
+lca-api, brain-service and learn-cloud-service all use the shared
+`@learncard/service-config` package. Each service checks its non-secret per-stage
+config into `config/config.<stage>.json` and reads private values from an AWS
+Secrets Manager runtime bundle (Lambda) or local env. Precedence, lowest to highest:
+
+| Priority | Source                             | Purpose                                   |
+| -------- | ---------------------------------- | ----------------------------------------- |
+| 1        | Zod schema defaults                | Safe defaults                             |
+| 2        | `config/config.json`               | Checked-in service defaults               |
+| 3        | `config/config.<stage>.json`       | Checked-in `dev` / `production` overrides |
+| 4        | AWS Secrets Manager runtime bundle | Private values; Lambda only               |
+| 5        | Real environment variables         | Explicit deployment or local overrides    |
+
+Stage files and bundles are flat JSON objects of `ENV_NAME` → string. JSON files
+are imported statically into the build; configuration is merged into `process.env`
+before the validating environment module or application is imported.
+
+Empty strings count as **unset** and do not override a lower layer; only
+non-empty values take effect.
+
+### Stage selection
+
+The active stage is chosen in order:
+
+1. On Lambda, `LAMBDA_STAGE`.
+2. Otherwise, `CONFIG_STAGE`.
+3. If neither is set, the stage is **unknown** and only the base
+   `config/config.json` plus schema defaults apply (no per-stage file is loaded).
+
+An unknown or unrecognized stage never falls back to another stage's file — it
+uses the base config only.
+
+### Tenant selection
+
+LearnCard and ScoutPass deploy the same three services with the same stage names
+(`dev`, `production`), so the stage alone cannot pick a file. `CONFIG_TENANT`
+names the product (default `learncard`):
+
+| `CONFIG_TENANT`     | Stage file                          |
+| ------------------- | ----------------------------------- |
+| `learncard` / unset | `config/config.<stage>.json`        |
+| `scouts`            | `config/config.scouts.<stage>.json` |
+
+The deploy workflow bakes it into every function from the matrix leg's `tenant`
+(ScoutPass legs set `scouts`). A named tenant **fails closed**: a missing
+`config.<tenant>.<stage>.json` stops startup instead of loading LearnCard's or the
+base settings. ScoutPass files were generated from the live ScoutPass Lambdas;
+ScoutPass production keeps `SA_SEED_ALLOW_LEGACY_READ=true` /
+`SA_SEED_ENCRYPT_WRITES=false` until its seed migration is confirmed complete.
+To add a tenant, add its stage files to each service and register them in
+`src/config/stageConfig.ts`.
+
+### What belongs where
+
+| Kind                              | Lives in                                                  |
+| --------------------------------- | --------------------------------------------------------- |
+| Non-secret per-stage config       | `config/config.json` / `config.<stage>.json` (checked in) |
+| Credentials, tokens, signing keys | Runtime AWS secrets bundle (Lambda) or local env          |
+| Authorization allowlists          | Runtime AWS secrets bundle (not stage files)              |
+| Internal service endpoints        | Runtime AWS secrets bundle (not stage files)              |
+
+Stage files are committed and world-readable in the repo. Treat anything you
+would not publish as a secret and keep it out of them.
+
+### lca-api escrow settings
+
+| Setting                                                                                                                                                | Source                                                       |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
+| `ESCROW_RELAY_URL`, `ESCROW_RELAY_AUTH_TOKEN`, `ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON`, `ESCROW_ENCLAVE_REMOTE_URL`, `ESCROW_ENCLAVE_REMOTE_TOKEN` | Runtime bundle (GitHub fallback only without a bundle)       |
+| `ESCROW_ENCLAVE_MODE`, `ESCROW_RELEASE_KILL_SWITCH`                                                                                                    | GitHub variables, forwarded in every mode (operator toggles) |
+| `ESCROW_ENCLAVE_ACTIVE_KEY_ID`, `ESCROW_HOLD_DURATION_MS`, `ESCROW_HOLD_RESTART_MIN_AGE_MS`, `ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS`                        | `config/config.<stage>.json` (or schema default)             |
+| `ESCROW_ENCLAVE_ENDPOINT_SERVICE_NAME`, `ESCROW_ENCLAVE_HOSTNAME`                                                                                      | GitHub variables, deploy time only (PrivateLink resources)   |
+
+Escrow stays off unless `ESCROW_ENCLAVE_MODE` is set. The scheduled
+`escrowHoldReminders` / `escrowBlobRewrap` jobs use the API function environment
+and the default role's scoped bundle-read grant. Run any escrow-enabled stage in
+bundle mode: remote escrow without a bundle leaves almost no headroom under
+Lambda's 4 KB environment limit. When enabling escrow on a bundle stage, add its
+credentials to the bundle; GitHub fallback secrets are ignored there.
+
 ## Quick Start
 
-### Lambda runtime bundles (lca-api only)
+### Lambda runtime bundles
 
-Backend config step 1 adds an optional AWS Secrets Manager bundle named
-`lca-api/<stage>/runtime-secrets`. Set the deploy environment's GitHub variable
-`RUNTIME_SECRETS_ID` to its name or ARN after provisioning it. SecretString must
-be a flat JSON object of UPPER_SNAKE_CASE env names to strings, starting with
-`GOOGLE_APPLICATION_CREDENTIAL` (the Firebase JSON serialized as a string).
-The API functions load it before configuration validation; non-empty explicit
+Each service has an optional AWS Secrets Manager bundle named
+`<service>/<stage>/runtime-secrets` (`lca-api/<stage>/runtime-secrets`,
+`brain-service/<stage>/runtime-secrets`,
+`learn-cloud-service/<stage>/runtime-secrets`). Set the deploy environment's GitHub
+variable `RUNTIME_SECRETS_ID` to its name or ARN after provisioning it. SecretString
+must be a flat JSON object of UPPER_SNAKE_CASE env names to strings, including all
+required credentials for that service (for lca-api,
+`GOOGLE_APPLICATION_CREDENTIAL` is Firebase JSON serialized as a string, not a
+nested object).
+The functions load it before configuration validation; non-empty explicit
 environment values win and empty strings count as unset. Failed loads stop startup
 without exposing values. Rotation requires recycling the functions.
 
-Without the id, Lambda uses the existing GitHub Firebase secret fallback; keep
-that secret until all stages opt in. Local, Docker, CI and self-hosters keep using
-plain env vars. This does not change the Infisical commands below or sync secrets
-to AWS yet. Next: step 2 checked-in per-stage non-secret config, step 3 Infisical →
-AWS sync, step 4 brain-service/learn-cloud adoption. See
-[lca-api guidance](services/learn-card-network/lca-api/AGENTS.md#runtime-secrets-backend-config-model-step-1).
+Without the id, Lambda uses the existing GitHub secret fallbacks; keep
+those secrets until all stages opt in. Local, Docker, CI and self-hosters keep using
+plain env vars. This layer sits above the checked-in
+[config stage files](#backend-configuration-model) and below real environment
+variables. For how the bundles are kept in sync and the per-stage cutover, see
+[Infisical → AWS secrets sync](#infisical--aws-secrets-sync). See
+[lca-api guidance](services/learn-card-network/lca-api/AGENTS.md#backend-configuration-model).
 
 ```bash
 # 1. Install the Infisical CLI (one-time)
@@ -131,9 +218,10 @@ Each deployable owns a Zod contract in its config directory. Services validate
 `vite.config` and resolve all runtime behavior through `TenantConfig`.
 
 Direct `process.env` and `import.meta.env` reads outside those config modules are
-rejected by ESLint. `bun run verify:lc-1984` also requires every schema key to be
-documented in the matching `.env.example`, rejects unknown example keys, and
-checks actual source access. Validation errors name the project, source, invalid
+rejected by ESLint. The environment contract verifier checks required inputs against
+the matching `.env.example` and checked-in stage files; optional backend tuning can
+use schema defaults. It rejects unknown example keys and checks actual source access.
+Validation errors name the project, source, invalid
 key, and example file without printing secret values.
 
 Booleans accept only `true`, `false`, `1`, or `0`. Invalid explicit config stops
@@ -185,6 +273,145 @@ The "LearnCard" Infisical project has this folder layout:
 - **ScoutPass app** (`apps/scouts/`) uses a separate Infisical project ("ScoutPass") — not yet wired into this script.
 - **Example apps** (`examples/app-store-apps/`) are developer-specific and not pulled from Infisical.
 - `.env.example` files are contract-checked; update the schema and example together.
+
+## Infisical → AWS secrets sync
+
+Deployed Lambda stages read secrets from an AWS Secrets Manager runtime bundle
+instead of Lambda environment variables. Infisical's native **AWS Secrets
+Manager** integration keeps those bundles in sync with the source of truth in
+Infisical.
+
+### One-time AWS access setup
+
+Infisical authenticates to AWS with an **Assume Role** connection:
+
+1. Have an administrator apply [infra/aws/infisical-sync](infra/aws/infisical-sync/README.md)
+   in account `206533012615`, region `us-east-1`, supplying `infisical_project_id`.
+2. The role trusts the Infisical US principal `arn:aws:iam::381492033652:root`
+   with **External ID equal to the Infisical project ID**.
+3. In Infisical, create an AWS connection using **Assume Role**, the Terraform
+   role ARN output, and that same project ID as the External ID.
+
+The Terraform policy grants only the required list/batch-read actions and scoped
+read/create/update/tag actions for the three runtime-secret namespaces. It grants
+no `DeleteSecret`; do not replace it with `secretsmanager:*`.
+
+### Create the six sync integrations
+
+Create **six** Many-To-One auto-sync integrations — one per `(service, stage)`
+pair — each mapping an Infisical source folder to a single AWS secret. Use these
+settings on every integration:
+
+- **Sync behavior**: Many-To-One (all keys in the source folder → one JSON
+  SecretString).
+- **Auto-sync**: enabled (pushes on every Infisical change).
+- **Disable Secret Deletion**: enabled (the role cannot delete AWS secrets).
+
+Infisical environment → stage mapping:
+
+| Infisical environment | Stage        |
+| --------------------- | ------------ |
+| `staging`             | `dev`        |
+| `prod`                | `production` |
+
+Folder → AWS secret mapping:
+
+| Infisical source folder  | AWS Secrets Manager secret                    |
+| ------------------------ | --------------------------------------------- |
+| `/lca-api/runtime`       | `lca-api/<stage>/runtime-secrets`             |
+| `/brain-service/runtime` | `brain-service/<stage>/runtime-secrets`       |
+| `/cloud-service/runtime` | `learn-cloud-service/<stage>/runtime-secrets` |
+
+With `staging` and `prod` each covering all three services, that is the full set
+of six integrations.
+
+These `/runtime` folders are dedicated sync sources to create, not the existing
+CLI export folders. `scripts/pull-env.sh` currently exports
+`/LearnCard/lca-api`, `/LearnCard/brain-service`, and `/LearnCard/cloud-service`;
+it does not export `/runtime`. Populate the sync sources with private runtime
+keys without disrupting those existing `.env` exports. In particular, the
+Infisical service name is `cloud-service`, while the AWS name is
+`learn-cloud-service`.
+
+### Per-environment cutover
+
+Cut each service over one stage at a time (`dev`, then `production`), one
+`(service, stage)` bundle at a time. A stage without a `RUNTIME_SECRETS_ID` keeps
+using its GitHub secret fallbacks, so services and stages can migrate independently:
+
+1. Provision the AWS runtime bundle and wire its Infisical sync integration.
+2. Confirm the synced SecretString includes every required private runtime key
+   for that service as a string. For lca-api it must exclude `OIDC_CLIENT_SECRET`.
+   A partial bundle is not sufficient once all secret environment fallbacks are
+   omitted in bundle mode.
+3. Set the deploy environment's `RUNTIME_SECRETS_ID` GitHub variable to the
+   bundle's name or ARN, then redeploy so the functions load it.
+4. Verify the stage boots and reads values from the bundle.
+5. Recycle functions after rotation; warm processes cache the bundle. To roll
+   back, unset `RUNTIME_SECRETS_ID` and redeploy with the retained GitHub secrets.
+   Retiring legacy GitHub secrets is a later operator action, not part of this change.
+
+| Service    | GitHub environment (`dev` / `production`)                                | Bundle ID (`dev` / `production`)                                                             |
+| ---------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| Brain      | `learn-cloud-network-api-staging` / `learn-cloud-network-api-production` | `brain-service/dev/runtime-secrets` / `brain-service/production/runtime-secrets`             |
+| LearnCloud | `learn-cloud-storage-api-staging` / `learn-cloud-storage-api-production` | `learn-cloud-service/dev/runtime-secrets` / `learn-cloud-service/production/runtime-secrets` |
+
+Brain's bundle holds `SEED`, `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`,
+`POSTMARK_API_KEY`, `MESSAGEBIRD_AUTH_TOKEN`, `SENTRY_DSN`, `POSTHOG_API_KEY`,
+`SKILL_EMBEDDING_GOOGLE_API_KEY`, `SMART_RESUME_CLIENT_ID`, `SMART_RESUME_ACCESS_KEY`,
+`SMART_RESUME_CONTRACT_URI`, `CREDENTIAL_REFRESH_DIGEST_SECRET`,
+`SHARE_LINK_REQUEST_HASH_SECRET`, `APP_STORE_ADMIN_PROFILE_IDS`, `LOGIN_PROVIDER_DID`,
+and `NOTIFICATIONS_SERVICE_WEBHOOK_URL` when those integrations are used.
+Optional provider credentials `SKILLS_PROVIDER_API_KEY`, `TWILIO_ACCOUNT_SID`, and
+`TWILIO_AUTH_TOKEN` also belong in the bundle, never stage files.
+Both checked-in Brain stages enable credential refresh, so include its digest secret;
+active share links also require the stable request-hash secret (at least 32 bytes).
+
+LearnCloud's bundle holds `LEARN_CLOUD_SEED`, `LEARN_CLOUD_MONGO_URI`,
+`LEARN_CLOUD_MONGO_DB_NAME`, `RSA_PRIVATE_KEY`, `RSA_PUBLIC_KEY`, `JWT_SIGNING_KEY`,
+`XAPI_ENDPOINT`, `XAPI_USERNAME`, `XAPI_PASSWORD`, and `SENTRY_DSN` when used.
+Preserve PEM newlines as JSON string escapes. Even `XAPI_ENDPOINT` is bundle-only
+in bundle mode; it is not an infrastructure passthrough.
+
+Deployment preflight checks validate Brain's GitHub credential fallbacks only when
+the bundle ID is unset. They cannot inspect a bundle without AWS access, so verify
+bundle completeness before enabling the ID and smoke-test both API and scheduled
+handlers after deploying. No GitHub variables or secrets need to be deleted for cutover.
+
+Until a stage's `RUNTIME_SECRETS_ID` is configured, the existing GitHub secret
+**fallback is retained** — keep those secrets until every stage has opted in.
+Checked-in, non-secret per-stage config now lives in each service's
+`config/config.<stage>.json` and is no longer passed through the deploy workflow;
+`SENTRY_ENV` moved there too, while the build-time `SENTRY_AUTH_TOKEN` / `SENTRY_ORG`
+/ `SENTRY_PROJECT` sourcemap-upload inputs stay in the deploy step.
+
+**`OIDC_CLIENT_SECRET` is the lca-api exception.** It is the confidential broker
+client secret for the lca-api OIDC Lambda only. Keep it as a GitHub-environment
+secret on the OIDC function and **never** place it in the runtime bundle. The OIDC
+function makes no AWS Secrets Manager calls for it.
+
+For lca-api, `trpc`, `api`, and `seedMigration` use `SigningAuthorityExecutionRole`
+and receive the bundle ID. `didWeb` and `swagger` also receive it, but use the
+Serverless default execution role with only a scoped runtime-bundle read grant, not
+the signing-authority KMS grant. Functions with explicit roles do not inherit that
+default role's permissions. OIDC uses a separate entrypoint and focused
+configuration so it needs no API seed or Mongo credentials in bundle mode; its
+independent signing-key secret remains on `OidcExecutionRole`.
+
+Brain-service and learn-cloud-service each run every function on a single generated
+execution role whose only Secrets Manager grant is a scoped read of that service's
+`<service>/<stage>/runtime-secrets-*`. serverless-lift owns Brain's SQS queues and
+their IAM; the runtime-bundle grant sits alongside those queue policies, not in
+place of them.
+
+## Self-hosting
+
+Self-hosters do not use Infisical or AWS secrets at all. Copy
+`config/config.example.json` to `config/config.<stage>.json` (or just provide a
+plain `.env`) and fill in the public values for your deployment. For a new stage
+name, register a static JSON import in `src/config/stageConfig.ts` and rebuild.
+Set `CONFIG_STAGE` to select that stage; keep credentials in `.env`. Real
+environment variables always win.
 
 ## Troubleshooting
 
@@ -245,20 +472,25 @@ Deployed environments must explicitly provision their own HTTPS LearnCloud origi
 audience, allowed Brain identity, exact signing method, namespace binding, and
 Redis replay store. Do not enable the insecure-loopback option there.
 
-### GitHub deployment configuration
+### Deployment configuration
 
-The `.github/workflows/deploy.yml` deployment steps pass the following GitHub
-**environment variables** to Serverless, which installs them as Lambda runtime
-environment variables. They are public configuration, not new secrets. Existing
-`SEED` / `LEARN_CLOUD_SEED` secrets remain unchanged; LearnCloud's Serverless stack
-already supplies its Redis endpoint.
+Brain's `SHARE_LINK_MAINTENANCE_*` and LearnCloud's `SHARE_CONTENT_*` trust values
+are **non-secret per-stage config** and are now checked in under each service's
+`config/config.<stage>.json`, not passed through `.github/workflows/deploy.yml`.
+The deploy step no longer forwards them (nor `DOMAIN_NAME`, `SENTRY_ENV`,
+`SERVER_URL`, `POSTMARK_FROM_EMAIL`, `MESSAGEBIRD_ORIGINATOR`,
+`CLIENT_APP_DOMAIN_NAME`, `OIDC_TRUSTED_ISSUERS`, `OIDC_EXPECTED_AUDIENCE`,
+`CREDENTIAL_REFRESH_ENABLED` / `_NOTIFICATION_WINDOW_HOURS`,
+`SKILL_EMBEDDING_GOOGLE_MODEL`, and the other captured stage keys). Existing
+`SEED` / `LEARN_CLOUD_SEED` and the other credential secrets remain unchanged as
+fallbacks used only when `RUNTIME_SECRETS_ID` is unset.
 
-LC-2189 separately requires a private, stable 32+ byte GitHub Actions secret named
+LC-2189 still requires a private, stable 32+ byte GitHub Actions secret named
 `SHARE_LINK_REQUEST_HASH_SECRET` for Brain. Generate it once with
-`openssl rand -hex 32`; the Brain deployment workflow forwards it to Lambda.
-Do not put it in the public variables below or use the local Compose fallback.
+`openssl rand -hex 32`; the Brain deployment workflow forwards it to Lambda as a
+credential fallback. Do not use the local Compose fallback in a deployed environment.
 
-Configure each matching pair of GitHub environments independently:
+The matching GitHub environments remain:
 
 | Stage                | Brain environment                    | LearnCloud environment               |
 | -------------------- | ------------------------------------ | ------------------------------------ |
@@ -267,30 +499,21 @@ Configure each matching pair of GitHub environments independently:
 | ScoutPass staging    | `scout-network-api-staging`          | `scout-storage-api-staging`          |
 | ScoutPass production | `scout-network-api-production`       | `scout-storage-api-production`       |
 
-In the Brain environment, add:
+To change a stage's trust values, edit that service's `config/config.<stage>.json`
+(Brain: `SHARE_LINK_MAINTENANCE_NAMESPACE` / `_ORIGIN` / `_AUDIENCE`; LearnCloud:
+`SHARE_CONTENT_AUDIENCE` / `_SERVICE_DIDS` / `_VERIFICATION_METHODS` /
+`_NAMESPACE_BINDINGS`) and redeploy. Keep Brain's audience and LearnCloud's
+`SHARE_CONTENT_AUDIENCE` identical, set `SHARE_CONTENT_SERVICE_DIDS` to the deployed
+Brain `did:web:<brain-host>`, `SHARE_CONTENT_VERIFICATION_METHODS` to Brain's exact
+signing method (normally `did:web:<brain-host>#owner`), and
+`SHARE_CONTENT_NAMESPACE_BINDINGS` to raw JSON mapping that Brain DID to its
+namespace. These files are committed and world-readable, so they must contain only
+deployed public identities — never local/loopback identities or secrets. Keep the
+namespace stable after creating links. The deploy workflow forces insecure loopback
+off. The owner API inherits the maintenance namespace, so no separate owner
+namespace value is required.
 
-| Variable                           | Value                                                                              |
-| ---------------------------------- | ---------------------------------------------------------------------------------- |
-| `SHARE_LINK_MAINTENANCE_NAMESPACE` | A stable namespace, e.g. `learncard` (or `scouts` for ScoutPass)                   |
-| `SHARE_LINK_MAINTENANCE_ORIGIN`    | That stage's HTTPS LearnCloud origin, e.g. `https://<cloud-host>`; no `/trpc` path |
-| `SHARE_LINK_MAINTENANCE_AUDIENCE`  | `did:web:<cloud-host>`                                                             |
-
-In the matching LearnCloud environment, add:
-
-| Variable                             | Value                                                                                                                    |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `SHARE_CONTENT_AUDIENCE`             | Same value as Brain's audience                                                                                           |
-| `SHARE_CONTENT_SERVICE_DIDS`         | `did:web:<brain-host>` (the deployed Brain service identity)                                                             |
-| `SHARE_CONTENT_VERIFICATION_METHODS` | The exact signing method from Brain's `https://<brain-host>/.well-known/did.json`, normally `did:web:<brain-host>#owner` |
-| `SHARE_CONTENT_NAMESPACE_BINDINGS`   | JSON mapping that Brain DID to its namespace, e.g. `{"did:web:<brain-host>":["learncard"]}`                              |
-
-Replace the host placeholders with the deployed domains; do not paste placeholders
-or local identities into GitHub. Store the JSON as raw JSON without surrounding
-shell quotes. Keep the namespace stable after creating links. The deploy workflow
-forces insecure loopback off. The owner API inherits the maintenance namespace,
-so no separate owner namespace variable is required.
-
-Redeploy both services after setting the variables (rebuilding the frontend alone
+Redeploy both services after editing the stage config (rebuilding the frontend alone
 will not update Lambda configuration), then enable `share-multiple-enabled` in
 LaunchDarkly. Check create/open/revoke in the target environment, including opening
 a copied link in a signed-out browser. Missing values keep sharing disabled.

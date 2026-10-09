@@ -23,7 +23,7 @@
 import crypto from 'node:crypto';
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 
-import { environment } from '@environment';
+import { environment } from '@config/oidcEnvironment';
 import { TRPCError } from '@trpc/server';
 import { SignJWT, calculateJwkThumbprint, exportJWK, importJWK } from 'jose';
 import type { CryptoKey, JWK, JWTPayload } from 'jose';
