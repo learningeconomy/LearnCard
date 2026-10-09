@@ -140,6 +140,18 @@ afterAll(async () => {
 });
 
 describe('A6 escrow recovery', () => {
+    it('preserves previous key IDs in the attestation route after rotation', async () => {
+        const enclave = getEscrowEnclave();
+        const attestation = await enclave.getAttestation();
+        vi.spyOn(enclave, 'getAttestation').mockResolvedValue({
+            ...attestation,
+            previousKeyIds: ['retired-key-1', 'retired-key-2'],
+        });
+        expect(await getClient().escrow.getAttestation({})).toMatchObject({
+            attestation: { ...attestation, previousKeyIds: ['retired-key-1', 'retired-key-2'] },
+        });
+    });
+
     it('P4.2 stores the full enclave record and releases exactly that record', async () => {
         setDuration(1);
         await enroll();

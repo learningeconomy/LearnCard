@@ -357,6 +357,7 @@ export const escrowRouter = t.router({
                 attestation: z.object({
                     mode: z.enum(['software', 'nitro']),
                     keyId: z.string(),
+                    previousKeyIds: z.array(z.string()).optional(),
                     publicKey: z.string(),
                     measurements: EscrowBlobValidator.shape.measurements,
                     document: z.string(),
