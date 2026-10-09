@@ -12,7 +12,7 @@ export const QRCodeScannerButton: React.FC<{ branding: BrandingEnum }> = ({ bran
     const currentUser = useCurrentUser();
     const history = useHistory();
 
-    const { newModal, closeModal } = useModal({
+    const { newModal, closeModalById } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
     });
@@ -28,11 +28,11 @@ export const QRCodeScannerButton: React.FC<{ branding: BrandingEnum }> = ({ bran
     }, []);
 
     const handleQrCodeClick = () => {
-        newModal(
+        const cardId = newModal(
             <QrCodeUserCardModal
                 branding={branding}
                 history={history}
-                handleQRCodeCardModal={closeModal}
+                handleQRCodeCardModal={() => closeModalById(cardId)}
                 qrOnly
             />,
             { sectionClassName: '!max-w-[400px]' },

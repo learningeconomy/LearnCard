@@ -4,15 +4,15 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-    newModal: vi.fn(),
-    closeModal: vi.fn(),
+    newModal: vi.fn().mockReturnValue(42),
+    closeModalById: vi.fn(),
     history: { push: vi.fn() },
 }));
 vi.mock('react-router-dom', () => ({ useHistory: () => mocks.history }));
 vi.mock('learn-card-base', () => ({
     useCurrentUser: () => ({}),
     useGetProfile: () => ({ data: undefined }),
-    useModal: () => ({ newModal: mocks.newModal, closeModal: mocks.closeModal }),
+    useModal: () => ({ newModal: mocks.newModal, closeModalById: mocks.closeModalById }),
     ModalTypes: { FullScreen: 'full', Cancel: 'cancel' },
 }));
 vi.mock('learn-card-base/components/profilePicture/ProfilePicture', () => ({
@@ -28,13 +28,13 @@ import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBr
 afterEach(cleanup);
 
 describe('header QR card', () => {
-    it('supplies the dismissal callback used to open the scanner after permission is granted', () => {
+    it('dismisses its own QR card by the ID returned when opening it', () => {
         render(<QRCodeScannerButton branding={BrandingEnum.scoutPass} />);
         fireEvent.click(screen.getAllByRole('button', { name: 'Scan QR' })[1]);
         const card = mocks.newModal.mock.calls[0][0];
         expect(card.props.history).toBe(mocks.history);
         expect(card.props.handleQRCodeCardModal).toBeTypeOf('function');
         card.props.handleQRCodeCardModal();
-        expect(mocks.closeModal).toHaveBeenCalledOnce();
+        expect(mocks.closeModalById).toHaveBeenCalledExactlyOnceWith(42);
     });
 });
