@@ -1,6 +1,6 @@
 import { LCNIntegration } from '@learncard/types';
 import type { ConsentRequest } from '@learncard/partner-connect-core';
-import { getLogger } from 'learn-card-base';
+import { getLogger } from 'learn-card-base/logging/logger';
 
 const log = getLogger('post-message-handlers');
 import {
