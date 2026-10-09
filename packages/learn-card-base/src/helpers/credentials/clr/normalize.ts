@@ -920,11 +920,10 @@ export const normalizeClrCredential = (
                 : allocateSyntheticId(`${collectionId}#embedded-${index}`);
         const occurrences = (credentialIds.get(rawCredentialId) ?? 0) + 1;
         credentialIds.set(rawCredentialId, occurrences);
-        let recordId =
+        const recordId =
             occurrences === 1 && !usedRecordIds.has(rawCredentialId)
                 ? rawCredentialId
                 : allocateSyntheticId(`${rawCredentialId}#occurrence-${index}`);
-        while (usedRecordIds.has(recordId)) recordId += '#duplicate';
         usedRecordIds.add(recordId);
 
         if (occurrences > 1) {
@@ -961,10 +960,9 @@ export const normalizeClrCredential = (
             typeof achievement.id === 'string'
                 ? achievement.id
                 : allocateSyntheticId(`${collectionId}#achievement-${index}`);
-        let recordId = usedRecordIds.has(rawId)
+        const recordId = usedRecordIds.has(rawId)
             ? allocateSyntheticId(`${rawId}#definition-${index}`)
             : rawId;
-        while (usedRecordIds.has(recordId)) recordId += '#duplicate';
         usedRecordIds.add(recordId);
         records.push(
             buildRecord({
