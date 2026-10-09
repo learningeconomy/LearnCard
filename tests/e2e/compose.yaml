@@ -170,7 +170,7 @@ services:
             METABASE_SECRET_KEY: ${METABASE_SECRET_KEY:-test-key}
 
     neo4j:
-        image: neo4j:latest
+        image: neo4j:2026.09.0-community
         ports:
             - '7687:7687'
             - '7474:7474'
@@ -191,7 +191,7 @@ services:
             - learn-card
 
     redis:
-        image: redis:alpine
+        image: redis:8.10.2-alpine
         environment:
             - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
             - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
@@ -201,7 +201,7 @@ services:
             - learn-card
 
     redis2:
-        image: redis:alpine
+        image: redis:8.10.2-alpine
         environment:
             - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
             - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
@@ -211,7 +211,7 @@ services:
             - learn-card
 
     redis3:
-        image: redis:alpine
+        image: redis:8.10.2-alpine
         environment:
             - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
             - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
@@ -251,7 +251,7 @@ services:
             - learn-card
 
     elasticmq:
-        image: softwaremill/elasticmq-native
+        image: softwaremill/elasticmq-native:1.7.1
         expose:
             - 9324
         ports:
@@ -260,7 +260,7 @@ services:
             - learn-card
 
     postgres:
-        image: postgres
+        image: postgres:18.6
         networks:
             - learn-card
         environment:
@@ -271,7 +271,7 @@ services:
             - '5432:5432'
 
     lrs:
-        image: yetanalytics/lrsql:latest
+        image: yetanalytics/lrsql:v0.9.9
         command:
             - /lrsql/bin/run_postgres.sh
         networks:
