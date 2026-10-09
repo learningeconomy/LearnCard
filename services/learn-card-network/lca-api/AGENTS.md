@@ -49,7 +49,8 @@ execution permissions, not signing-authority KMS access. All five receive the
 bundle id and run in the service VPC. Explicit function roles do not inherit the
 default role's grants. OIDC has an isolated
 `oidcLambda.ts` → `oidcLambdaApp.ts` import path and focused OIDC/cache schemas,
-so it never imports the API schema requiring seed and Mongo credentials. OIDC gets
+so it never imports the API schema requiring seed and Mongo credentials. Keep that path free of Mongo, models and DIDKit:
+a Mongo connect left pending when an idle sandbox freezes crashes the next request after thaw. OIDC gets
 its broker settings and keeps its separate signing-key secret and IAM role.
 `OIDC_CLIENT_SECRET` stays a GitHub-environment secret on the OIDC function and is
 **never** placed in the runtime bundle; that function makes no AWS Secrets Manager

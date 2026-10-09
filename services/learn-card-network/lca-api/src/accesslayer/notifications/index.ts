@@ -12,12 +12,19 @@ export const getNotificationsCollection = () => {
 
 export const Notifications = getNotificationsCollection();
 
-Notifications.createIndex({ 'to.did': 1, read: 1, sent: -1, _id: 1 });
+// Fire-and-forget at module load: every Lambda imports this, so an uncaught
+// rejection (e.g. a Mongo connect that outlives a frozen invocation) would
+// crash whichever function thaws next.
+const logIndexFailure = (error: unknown): void => {
+    console.error('Notifications index creation failed:', error);
+};
+
+Notifications.createIndex({ 'to.did': 1, read: 1, sent: -1, _id: 1 }).catch(logIndexFailure);
 Notifications.createIndex({
     'to.did': 1,
     type: 1,
     'data.metadata.connectionPrompt.promptId': 1,
-});
+}).catch(logIndexFailure);
 
 const LEGACY_CREDENTIAL_REFRESH_INDEX = 'to.did_1_type_1_data.metadata.deliveryKey_1';
 const MANAGED_CREDENTIAL_REFRESH_INDEX = 'managed_credential_refresh_delivery_key_unique';
