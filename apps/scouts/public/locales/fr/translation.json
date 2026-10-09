@@ -137,6 +137,8 @@
         "neutralMode": "Mode neutre"
     },
     "scanner": {
+        "incompatibleTitle": "Code QR non pris en charge",
+        "incompatible": "Le code QR que vous avez scanné n’est pas compatible.",
         "title": "Scanner le code QR",
         "description": "Dirigez votre caméra vers un code QR",
         "frameLabel": "Placez le QR dans le cadre",

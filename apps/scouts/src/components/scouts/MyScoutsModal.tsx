@@ -89,7 +89,9 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
     } = useAppAuth();
     const { currentLCNUser, refetch } = useGetCurrentLCNUser();
 
-    const { newModal, newModalWithToken, closeModal, forceCloseModalByToken } = useModal();
+    const { newModal, newModalWithToken, closeModal, closeModalById, forceCloseModalByToken } =
+        useModal();
+    const history = useHistory();
     const { handleLogout, isLoggingOut } = useLogout();
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
 
@@ -598,11 +600,11 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
     }
 
     const handleQrCodeClick = () => {
-        newModal(
+        const cardId = newModal(
             <QrCodeUserCardModal
                 branding={branding}
                 history={history}
-                connections={connections ?? []}
+                handleQRCodeCardModal={() => closeModalById(cardId)}
                 qrOnly
             />,
             { sectionClassName: '!max-w-[400px]' },

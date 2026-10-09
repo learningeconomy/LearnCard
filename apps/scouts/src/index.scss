@@ -8,10 +8,6 @@
         'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
 }
 
-body.scanner-active > * {
-    display: none;
-}
-
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
