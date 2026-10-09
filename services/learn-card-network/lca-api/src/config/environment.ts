@@ -30,6 +30,7 @@ export const lcaApiEnvironmentShape = {
     NETWORK_BRAIN_SERVICE_URL: optionalEnvironmentUrl,
     GOOGLE_APPLICATION_CREDENTIAL: optionalEnvironmentString,
     OPENAI_API_KEY: optionalEnvironmentString,
+    BEDROCK_BASE_URL: optionalEnvironmentString,
     METABASE_SECRET_KEY: optionalEnvironmentString,
     SCOUTS_SSO_CLIENT_SECRET: optionalEnvironmentString,
     KEYCLOAK_ISSUERS: optionalEnvironmentString,
