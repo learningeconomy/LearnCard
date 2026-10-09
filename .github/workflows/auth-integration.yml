@@ -8,6 +8,9 @@ on:
             - 'apps/learn-card-app/scripts/keycloak-realm-inputs*'
             - 'apps/learn-card-app/scripts/native-auth-audiences*'
             - 'apps/learn-card-app/environments/**'
+            - 'apps/learn-card-app/netlify/edge-functions/**'
+            - 'apps/learn-card-app/scripts/generate-edge-tenant-configs*'
+            - 'apps/learn-card-app/scripts/edge-tenant-stage*'
             - 'scripts/export-keycloak-realm*'
             - '.github/workflows/auth-integration.yml'
     workflow_dispatch:
@@ -186,7 +189,7 @@ jobs:
             - name: Check tenant realm inputs
               working-directory: apps/learn-card-app
               run: |
-                  bun test scripts/keycloak-realm-inputs.test.ts
+                  bun test scripts/keycloak-realm-inputs.test.ts scripts/edge-tenant-stage.test.ts
                   bun run lc keycloak realm-inputs keycloak-staging --check
             - name: Set up Terraform
               uses: hashicorp/setup-terraform@v3
