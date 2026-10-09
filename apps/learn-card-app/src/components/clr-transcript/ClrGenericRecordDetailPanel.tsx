@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import * as m from '../../paraglide/messages.js';
+import { createClrCanonicalRecordMap } from 'learn-card-base/helpers/credentials/clr/renderer';
 import { X } from 'lucide-react';
 import { useModal } from 'learn-card-base';
 import type {
@@ -28,13 +29,17 @@ const ClrGenericRecordDetailPanel = ({
     prominentFields?: boolean;
 }) => {
     const { closeModal } = useModal();
-    const canonical = model.records.find(candidate => candidate.id === record.sourceCredentialId);
+    const recordsById = useMemo(
+        () => createClrCanonicalRecordMap(model.canonical),
+        [model.canonical]
+    );
+    const canonical = recordsById.get(record.sourceCredentialId);
     return (
         <div className="h-full overflow-y-auto bg-grayscale-100 font-poppins pb-10">
             <div className="flex items-start justify-between gap-3 rounded-b-[30px] bg-white px-6 py-5">
                 <div className="min-w-0">
                     <h2 className="break-words text-xl font-semibold text-grayscale-900">
-                        {record.name?.value ?? m['clrRenderer.recordDetails']()}
+                        {record.name?.value ?? m['clrTranscript.details.recordDetails']()}
                     </h2>
                     {!!canonical?.achievementTypes.length && (
                         <p className="mt-1 text-sm text-grayscale-600">
@@ -46,7 +51,7 @@ const ClrGenericRecordDetailPanel = ({
                 </div>
                 <button
                     type="button"
-                    aria-label={m['clrRenderer.closeDetails']()}
+                    aria-label={m['clrTranscript.details.closeRecordDetails']()}
                     onClick={closeModal}
                     className="shrink-0 rounded-full border border-grayscale-200 p-3 text-grayscale-600"
                 >

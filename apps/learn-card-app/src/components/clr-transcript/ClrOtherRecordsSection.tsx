@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import * as m from '../../paraglide/messages.js';
+import { createClrCanonicalRecordMap } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 import { ClrRecordDetails } from './ClrRecordDetails';
@@ -17,16 +19,26 @@ export const ClrOtherRecordsSection = ({
     showSource?: boolean;
     onSelectRecord?: (id: string) => void;
 }) => {
+    const recordsById = useMemo(
+        () => createClrCanonicalRecordMap(model.canonical),
+        [model.canonical]
+    );
     if (!model.otherRecords.length) return null;
 
     return (
-        <section aria-label="Other records" className="space-y-3">
+        <section aria-label={m['clrTranscript.details.otherRecords']()} className="space-y-3">
             <div className="flex items-center justify-between border-b border-grayscale-100 px-1 pb-2">
                 <h3 className="text-xs font-semibold uppercase tracking-widest text-grayscale-500">
-                    Other Records
+                    {m['clrTranscript.details.otherRecords']()}
                 </h3>
                 <p className="text-xs text-grayscale-500">
-                    {model.otherRecords.length} item{model.otherRecords.length !== 1 ? 's' : ''}
+                    {model.otherRecords.length === 1
+                        ? m['clrTranscript.details.itemCountOne']({
+                              count: model.otherRecords.length,
+                          })
+                        : m['clrTranscript.details.itemCountOther']({
+                              count: model.otherRecords.length,
+                          })}
                 </p>
             </div>
             {model.otherRecords.map(other => (
@@ -41,10 +53,10 @@ export const ClrOtherRecordsSection = ({
                                 className="text-left hover:underline"
                                 onClick={() => onSelectRecord(other.sourceCredentialId)}
                             >
-                                {other.name?.value || 'Record'}
+                                {other.name?.value || m['clrTranscript.details.record']()}
                             </button>
                         ) : (
-                            other.name?.value || 'Record'
+                            other.name?.value || m['clrTranscript.details.record']()
                         )}
                     </h4>
                     {other.description?.value && (
@@ -59,11 +71,7 @@ export const ClrOtherRecordsSection = ({
                         relationships={model.relationships[other.sourceCredentialId] ?? []}
                         onSelectRecord={onSelectRecord}
                     />
-                    <ClrRecordDetails
-                        record={model.records.find(
-                            record => record.id === other.sourceCredentialId
-                        )}
-                    />
+                    <ClrRecordDetails record={recordsById.get(other.sourceCredentialId)} />
                 </div>
             ))}
         </section>

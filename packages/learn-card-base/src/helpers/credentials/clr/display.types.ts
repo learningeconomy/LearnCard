@@ -257,6 +257,7 @@ export type RelationshipDisplayModel = {
     recordId: string;
     relatedRecordId: string;
     relatedRecordName: string;
+    /** @deprecated English compatibility fallback only. Translate `kind` with `relatedRecordName` at render time. */
     label: string;
     navigable: boolean;
     resolution?: import('./types').ClrAssociationResolution;

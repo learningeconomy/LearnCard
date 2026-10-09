@@ -189,3 +189,69 @@ describe('normalizeClrCredential', () => {
         );
     });
 });
+
+describe('canonical CLR identity edge cases', () => {
+    it('reserves later supplied IDs before allocating missing and duplicate occurrence IDs', () => {
+        const model = normalizeClrCredential({
+            id: 'collection',
+            credentialSubject: {
+                verifiableCredential: [
+                    { credentialSubject: { achievement: { name: 'Missing ID' } } },
+                    {
+                        id: 'collection#embedded-0',
+                        credentialSubject: { achievement: { name: 'Supplied fallback ID' } },
+                    },
+                    {
+                        id: 'duplicate',
+                        credentialSubject: { achievement: { name: 'First duplicate' } },
+                    },
+                    {
+                        id: 'duplicate',
+                        credentialSubject: { achievement: { name: 'Second duplicate' } },
+                    },
+                    {
+                        id: 'duplicate#occurrence-3',
+                        credentialSubject: { achievement: { name: 'Supplied occurrence ID' } },
+                    },
+                ],
+                achievement: [
+                    { name: 'Missing definition ID' },
+                    { id: 'collection#achievement-0', name: 'Supplied definition ID' },
+                ],
+            },
+        });
+        expect(model.records.map(record => record.id)).toEqual([
+            'collection#embedded-0#duplicate',
+            'collection#embedded-0',
+            'duplicate',
+            'duplicate#occurrence-3#duplicate',
+            'duplicate#occurrence-3',
+            'collection#achievement-0#duplicate',
+            'collection#achievement-0',
+        ]);
+        expect(new Set(model.records.map(record => record.id)).size).toBe(model.records.length);
+        expect(model.warnings.filter(w => w.code === 'DUPLICATE_CREDENTIAL_ID')).toHaveLength(1);
+    });
+
+    it('describes the selected top-level value accurately when the local field is absent', () => {
+        const model = normalizeClrCredential({
+            credentialSubject: {
+                verifiableCredential: [
+                    { id: 'child', credentialSubject: { achievement: { id: 'shared' } } },
+                ],
+                achievement: [
+                    { id: 'shared', name: 'First definition' },
+                    { id: 'shared', name: 'Second definition' },
+                ],
+            },
+        });
+        expect(model.records[0].name?.value).toBe('First definition');
+        expect(
+            model.warnings.find(w => w.code === 'CONFLICTING_ACHIEVEMENT_DEFINITION')
+        ).toMatchObject({
+            message:
+                'Achievement definitions disagree on name; the first supplied top-level value wins.',
+            sourcePath: 'credentialSubject.achievement[0].name',
+        });
+    });
+});

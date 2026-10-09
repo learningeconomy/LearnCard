@@ -1,8 +1,10 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { normalizeClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
+import { setLocale } from '../../paraglide/runtime.js';
+import * as m from '../../paraglide/messages.js';
 import { ClrRecordDetails } from './ClrRecordDetails';
 import ClrCourseDetailPanel from './ClrCourseDetailPanel';
 import ClrProgramDetailPanel from './ClrProgramDetailPanel';
@@ -83,6 +85,9 @@ const expectRow = (label: string, value: string) => {
     const row = screen.getByText(label).parentElement;
     expect(row).toHaveTextContent(value);
 };
+
+beforeEach(() => setLocale('en', { reload: false }));
+afterEach(() => setLocale('en', { reload: false }));
 
 describe('canonical CLR record details', () => {
     it('keeps issuer, assessor, creator and all five dates distinct', () => {
@@ -300,4 +305,77 @@ describe('canonical CLR record details', () => {
         expect(screen.queryByText('1 Credential')).not.toBeInTheDocument();
         expect(screen.queryByTestId('verified-credential')).not.toBeInTheDocument();
     });
+});
+
+describe('localized CLR details', () => {
+    it.each([
+        {
+            locale: 'es',
+            issuer: 'Emitido por',
+            assessor: 'Evaluado por',
+            criteria: 'Criterios',
+            additional: 'Detalles adicionales',
+        },
+        {
+            locale: 'fr',
+            issuer: 'Émis par',
+            assessor: 'Évalué par',
+            criteria: 'Critères',
+            additional: 'Détails supplémentaires',
+        },
+        {
+            locale: 'ar',
+            issuer: 'صادر عن',
+            assessor: 'تم التقييم بواسطة',
+            criteria: 'المعايير',
+            additional: 'تفاصيل إضافية',
+        },
+    ] as const)(
+        'updates labels and preserves supplied claims when switching to $locale',
+        expected => {
+            const record = modelFor().records[0];
+            const view = render(<ClrRecordDetails record={record} />);
+            expectRow('Issued by', 'Issuing College');
+            setLocale(expected.locale, { reload: false });
+            view.rerender(<ClrRecordDetails record={record} />);
+            expectRow(expected.issuer, 'Issuing College');
+            expectRow(expected.assessor, 'Assessment Board');
+            expect(screen.getByRole('heading', { name: expected.criteria })).toBeInTheDocument();
+            const disclosure = screen.getByText(expected.additional);
+            fireEvent.click(disclosure);
+            expect(disclosure.closest('details')).toHaveAttribute('open');
+            for (const key of [
+                'createdBy',
+                'activityStarted',
+                'activityEnded',
+                'awarded',
+                'validFrom',
+                'validUntil',
+                'fieldOfStudy',
+                'specialization',
+                'language',
+                'version',
+                'role',
+                'narrative',
+                'licenseNumber',
+                'tags',
+                'achievementId',
+                'learnerId',
+                'achievementIdentifiers',
+                'learnerIdentifiers',
+            ] as const) {
+                expect(screen.getByText(m[`clrTranscript.details.${key}`]())).toBeInTheDocument();
+            }
+            expect(
+                screen.getByRole('link', { name: m['clrTranscript.details.viewCriteria']() })
+            ).toHaveAttribute('href', 'https://example.edu/criteria');
+            expectRow(
+                m['clrTranscript.details.hashedIdentifier']({ label: 'studentId' }),
+                'hashed-student'
+            );
+            expect(screen.getByText('Coordinated a group project.')).toBeInTheDocument();
+            expect(screen.queryByText('Issued by')).not.toBeInTheDocument();
+            expect(screen.queryByText('private-salt')).not.toBeInTheDocument();
+        }
+    );
 });

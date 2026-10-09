@@ -2,5 +2,5 @@
 export * from './display';
 export * from './relationships';
 export { formatClrDate } from './presentation';
-export { isStandaloneCourseCredential } from './selectors';
+export { createClrCanonicalRecordMap, isStandaloneCourseCredential } from './selectors';
 export * from './layout';

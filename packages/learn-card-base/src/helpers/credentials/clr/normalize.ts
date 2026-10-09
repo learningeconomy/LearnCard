@@ -304,7 +304,7 @@ const definitionScalar = <T>(
     if (candidates.some(candidate => stableJson(candidate.value) !== stableJson(selected.value))) {
         warnings.push({
             code: 'CONFLICTING_ACHIEVEMENT_DEFINITION',
-            message: `Achievement definitions disagree on ${key}; the assertion-local value wins.`,
+            message: `Achievement definitions disagree on ${key}; ${selected.sourceKind === 'embeddedCredential' ? 'the assertion-local value' : 'the first supplied top-level value'} wins.`,
             sourcePath: selected.sourcePath,
             recordId,
         });
@@ -492,6 +492,8 @@ const presentationHints = (
             hints.add('activity');
         }
     });
+    // Hints are non-exclusive: a course can also supply activity dates or a role.
+    // Presentation consumers must prioritize specific types over this broad activity hint.
     if (subject?.activityStartDate || subject?.activityEndDate || subject?.role) {
         hints.add('activity');
     }
@@ -855,7 +857,18 @@ export const normalizeClrCredential = (
     });
 
     const matchedTopLevelIndexes = new Set<number>();
+    // Reserve supplied IDs before allocating synthetic IDs, including later records.
+    const suppliedIds = new Set(
+        [...embeddedCredentials, ...topLevelAchievements]
+            .map(item => item.id)
+            .filter((id): id is string => typeof id === 'string')
+    );
     const usedRecordIds = new Set<string>();
+    const allocateSyntheticId = (candidate: string): string => {
+        while (usedRecordIds.has(candidate) || suppliedIds.has(candidate))
+            candidate += '#duplicate';
+        return candidate;
+    };
     const credentialIds = new Map<string, number>();
 
     const records = embeddedCredentials.map((credential, index) => {
@@ -902,21 +915,22 @@ export const normalizeClrCredential = (
         }
 
         const rawCredentialId =
-            typeof credential.id === 'string' ? credential.id : `${collectionId}#embedded-${index}`;
+            typeof credential.id === 'string'
+                ? credential.id
+                : allocateSyntheticId(`${collectionId}#embedded-${index}`);
         const occurrences = (credentialIds.get(rawCredentialId) ?? 0) + 1;
         credentialIds.set(rawCredentialId, occurrences);
-        let recordId =
+        const recordId =
             occurrences === 1 && !usedRecordIds.has(rawCredentialId)
                 ? rawCredentialId
-                : `${rawCredentialId}#occurrence-${index}`;
-        while (usedRecordIds.has(recordId)) recordId += '#duplicate';
+                : allocateSyntheticId(`${rawCredentialId}#occurrence-${index}`);
         usedRecordIds.add(recordId);
 
         if (occurrences > 1) {
             warnings.push({
                 code: 'DUPLICATE_CREDENTIAL_ID',
                 message: `Credential ID ${rawCredentialId} appears more than once; assertions remain distinct.`,
-                sourcePath: `${path}.id`,
+                sourcePath: propertyPath(path, 'id'),
                 recordId,
             });
         }
@@ -945,9 +959,10 @@ export const normalizeClrCredential = (
         const rawId =
             typeof achievement.id === 'string'
                 ? achievement.id
-                : `${collectionId}#achievement-${index}`;
-        let recordId = usedRecordIds.has(rawId) ? `${rawId}#definition-${index}` : rawId;
-        while (usedRecordIds.has(recordId)) recordId += '#duplicate';
+                : allocateSyntheticId(`${collectionId}#achievement-${index}`);
+        const recordId = usedRecordIds.has(rawId)
+            ? allocateSyntheticId(`${rawId}#definition-${index}`)
+            : rawId;
         usedRecordIds.add(recordId);
         records.push(
             buildRecord({

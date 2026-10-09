@@ -29,7 +29,11 @@ remain available through `records` and the display model's catch-all category.
 Use canonical record IDs for UI keys. Missing/duplicate-ID fallbacks are scoped to
 the source document and must not be persisted as globally stable credential IDs.
 Resolve aliases with `resolveClrRecord`; an ambiguous alias never selects the first
-assertion. Multiple credential subjects emit a warning and are not collapsed to one
+assertion. Internal UI navigation uses `findClrRecordByCanonicalId` (or
+`createClrRecordSelection`) so even the first duplicate occurrence remains selectable.
+Do not use canonical-first lookup for unresolved external association aliases.
+Synthetic IDs reserve supplied IDs throughout the document before allocation.
+Multiple credential subjects emit a warning and are not collapsed to one
 learner. The original credential remains accessible unchanged.
 
 Results preserve `value`, `status`, and `achievedLevel` separately. Display callers
@@ -49,6 +53,14 @@ quantity kind and exact declared unit; unspecified units form their own group.
 No unit conversion is inferred. Compatibility scalar totals are absent when a
 category has multiple unit groups. Collection issuance (`issuanceDate`) and validity
 start (`validFrom`) are also independent fields.
+
+Relationship `kind` and source-provided names are stable data; the app translates
+chip labels at render time. `RelationshipDisplayModel.label` is a deprecated English
+compatibility fallback; new consumers should translate `kind` with `relatedRecordName`.
+The app uses this fallback only when a relationship message is unavailable.
+Date and quantity formatters validate BCP-47 locales
+and fall back to English for malformed persisted values. Hashed identifiers remain
+available in details but are excluded from learner display names.
 
 Proof presence is metadata, not successful cryptographic verification.
 

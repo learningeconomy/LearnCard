@@ -6,7 +6,7 @@ import type {
     ResultDisplayModel,
     RubricLevelDisplayModel,
 } from './display.types';
-import { getActiveLocale } from '../../../i18n';
+import { getActiveLocale, normalizeLocale } from '../../../i18n';
 
 // "BachelorDegree" → "Bachelor Degree", "LearningProgram" → "Learning Program"
 /** Inserts spaces between camelCase segments so achievement types read naturally in the UI. */
@@ -164,5 +164,9 @@ export const formatClrDate = (value: string, locale = getActiveLocale()): string
     const date = new Date(value);
     return Number.isNaN(date.getTime())
         ? value
-        : date.toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
+        : date.toLocaleDateString(normalizeLocale(locale), {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+          });
 };

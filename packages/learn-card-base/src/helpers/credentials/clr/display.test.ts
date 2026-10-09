@@ -161,6 +161,11 @@ describe('canonical CLR display adapter', () => {
         );
         expect(new Set(model.courses.map(course => course.sourceCredentialId)).size).toBe(2);
         expect(findClrRecordById(model, 'duplicate')).toBeUndefined();
+        for (const course of model.courses) {
+            expect(findClrRecordByCanonicalId(model, course.sourceCredentialId)?.record).toBe(
+                course
+            );
+        }
         const uniqueId = model.courses[1].sourceCredentialId;
         expect(findClrRecordById(model, uniqueId)?.record).toBe(model.courses[1]);
         const records = createClrRecordMap(model);
@@ -312,5 +317,25 @@ describe('mixed CLR relationship navigation', () => {
             resolution: 'unresolved',
         });
         expect(findClrRecordById(model, 'missing-record')).toBeUndefined();
+    });
+});
+
+describe('learner display identity', () => {
+    it('skips hashed names and identifiers while retaining clear identifiers and source data', () => {
+        const identifiers = [
+            { identityType: 'name', identityHash: 'hashed-name', hashed: true },
+            { identityType: 'name', identityHash: 'Supplied Name', hashed: false },
+        ];
+        const model = normalizeClrTranscriptDisplayModel({
+            type: ['ClrCredential'],
+            credentialSubject: { id: 'learner', identifier: identifiers },
+        });
+        expect(model.header.learnerName?.value).toBe('Supplied Name');
+        expect(model.canonical.collection.subjectIdentifiers).toHaveLength(2);
+        const hashedOnly = normalizeClrTranscriptDisplayModel({
+            type: ['ClrCredential'],
+            credentialSubject: { id: 'learner', identifier: [identifiers[0]] },
+        });
+        expect(hashedOnly.header.learnerName?.value).toBe('learner');
     });
 });
