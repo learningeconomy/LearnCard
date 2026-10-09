@@ -47,6 +47,12 @@ body.scanner-active {
         background: transparent !important;
     }
 
+    // A portal or component can override inherited visibility. Keep every
+    // background descendant hidden (and out of focus/accessibility navigation).
+    :not(.qr-code-scanner-overlay, .qr-code-scanner-overlay *) {
+        visibility: hidden !important;
+    }
+
     .qr-code-scanner-overlay {
         visibility: visible;
     }
