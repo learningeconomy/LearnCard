@@ -64,9 +64,9 @@ describe('BuildHomePage', () => {
         expect(screen.getByText('Your app is in the Apps tab')).toBeInTheDocument();
     });
 
-    it('starts the AI app guide from the featured card', () => {
+    it('starts the app guide from the featured card', () => {
         renderPage();
-        fireEvent.click(screen.getByRole('button', { name: /Build an app with AI/ }));
+        fireEvent.click(screen.getByRole('button', { name: /Build an app/ }));
         expect(screen.getByText('Guide embed-app')).toBeInTheDocument();
     });
 
