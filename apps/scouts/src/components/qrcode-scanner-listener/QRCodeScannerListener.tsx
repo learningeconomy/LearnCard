@@ -116,12 +116,16 @@ export const QRCodeScannerListener: React.FC = () => {
         let disposed = false;
         let processing = false;
         let scanRequested = false;
+        let stopping = false;
         let stopPromise: Promise<void> | undefined;
 
         // Wait for startup to settle before stopping, and finish this session's
         // cleanup before another session can start the same native camera.
         const stopSession = (): Promise<void> => {
+            // Latch the stop request synchronously, before any pending startup resumes.
+            stopping = true;
             stopPromise ??= (async () => {
+                // A cached cleanup cannot finish before startup adds its body class.
                 await startup.catch(() => undefined);
                 for (const listener of listeners) {
                     try {
@@ -142,11 +146,12 @@ export const QRCodeScannerListener: React.FC = () => {
         };
 
         const fail = async (error: unknown): Promise<void> => {
-            if (disposed || processing) return;
+            const shouldPresentFailure = !disposed && !processing;
             processing = true;
-            log.error('scan::start-error', error);
+            if (shouldPresentFailure) log.error('scan::start-error', error);
+            // Every error joins cleanup; only the first live error presents a notice.
             await stopSession();
-            if (disposed) return;
+            if (disposed || !shouldPresentFailure) return;
             QRCodeScannerStore.set.closeScanner();
             presentFailureRef.current();
         };
@@ -162,18 +167,18 @@ export const QRCodeScannerListener: React.FC = () => {
 
         const startup = (async () => {
             await previousCleanup;
-            if (disposed) return;
+            if (disposed || stopping) return;
             listeners.push(
                 await BarcodeScanner.addListener('barcodesScanned', result => {
                     const rawValue = result.barcodes.find(barcode => barcode.rawValue)?.rawValue;
                     if (rawValue) void onResult(rawValue);
                 })
             );
-            if (disposed) return;
+            if (disposed || stopping) return;
             listeners.push(
                 await BarcodeScanner.addListener('scanError', error => void fail(error))
             );
-            if (disposed) return;
+            if (disposed || stopping) return;
             document.body.classList.add('scanner-active');
             scanRequested = true;
             await BarcodeScanner.startScan({

@@ -65,10 +65,12 @@ import QRCodeScannerListener from './QRCodeScannerListener';
 
 const deferred = () => {
     let resolve!: () => void;
-    const promise = new Promise<void>(done => {
+    let reject!: (error: Error) => void;
+    const promise = new Promise<void>((done, fail) => {
         resolve = done;
+        reject = fail;
     });
-    return { promise, resolve };
+    return { promise, resolve, reject };
 };
 
 describe('native scanner session', () => {
@@ -177,6 +179,93 @@ describe('native scanner session', () => {
         view.unmount();
         await waitFor(() => expect(document.body.classList.contains('scanner-active')).toBe(false));
         expect(mocks.newModal).not.toHaveBeenCalled();
+    });
+
+    it('does not start a disposed session while it is waiting for previous cleanup', async () => {
+        const pendingStop = deferred();
+        mocks.stop.mockReturnValueOnce(pendingStop.promise);
+        const view = render(<QRCodeScannerListener />);
+        await waitFor(() => expect(mocks.start).toHaveBeenCalledOnce());
+        mocks.showScanner = false;
+        view.rerender(<QRCodeScannerListener />);
+        await waitFor(() => expect(mocks.stop).toHaveBeenCalledOnce());
+        mocks.showScanner = true;
+        view.rerender(<QRCodeScannerListener />);
+        view.unmount();
+        await act(async () => pendingStop.resolve());
+        expect(mocks.start).toHaveBeenCalledOnce();
+        expect(mocks.remove).toHaveBeenCalledTimes(2);
+        expect(document.body.classList.contains('scanner-active')).toBe(false);
+    });
+
+    it('removes a listener that finishes registering after disposal without starting the camera', async () => {
+        const registration = deferred();
+        mocks.addListener.mockImplementationOnce(async () => {
+            await registration.promise;
+            return { remove: mocks.remove };
+        });
+        const view = render(<QRCodeScannerListener />);
+        await waitFor(() => expect(mocks.addListener).toHaveBeenCalledOnce());
+        view.unmount();
+        await act(async () => registration.resolve());
+        expect(mocks.remove).toHaveBeenCalledOnce();
+        expect(mocks.start).not.toHaveBeenCalled();
+        expect(document.body.classList.contains('scanner-active')).toBe(false);
+    });
+
+    it('stops the camera and clears visibility after disposal during pending startup', async () => {
+        const pendingStart = deferred();
+        mocks.start.mockReturnValueOnce(pendingStart.promise);
+        const view = render(<QRCodeScannerListener />);
+        await waitFor(() => expect(mocks.start).toHaveBeenCalledOnce());
+        const emitError = mocks.events.scanError;
+        view.unmount();
+        await act(async () => {
+            emitError({ message: 'Late native error' });
+            pendingStart.reject(new Error('Startup rejected after disposal'));
+        });
+        expect(mocks.stop).toHaveBeenCalledOnce();
+        expect(mocks.remove).toHaveBeenCalledTimes(2);
+        expect(document.body.classList.contains('scanner-active')).toBe(false);
+        expect(mocks.newModal).not.toHaveBeenCalled();
+    });
+
+    it.each(['event-first', 'rejection-first'])(
+        'joins cleanup and presents one notice when native errors race: %s',
+        async order => {
+            const pendingStart = deferred();
+            const pendingStop = deferred();
+            mocks.start.mockReturnValueOnce(pendingStart.promise);
+            mocks.stop.mockReturnValueOnce(pendingStop.promise);
+            render(<QRCodeScannerListener />);
+            await waitFor(() => expect(mocks.start).toHaveBeenCalledOnce());
+            if (order === 'event-first') {
+                await act(async () => mocks.events.scanError({ message: 'Native error' }));
+            }
+            await act(async () => pendingStart.reject(new Error('Startup failed')));
+            await waitFor(() => expect(mocks.stop).toHaveBeenCalledOnce());
+            if (order === 'rejection-first') {
+                await act(async () => mocks.events.scanError({ message: 'Native error' }));
+            }
+            expect(mocks.newModal).not.toHaveBeenCalled();
+            await act(async () => pendingStop.resolve());
+            expect(mocks.remove).toHaveBeenCalledTimes(2);
+            expect(mocks.newModal).toHaveBeenCalledOnce();
+            expect(mocks.closeScanner).toHaveBeenCalledOnce();
+            expect(document.body.classList.contains('scanner-active')).toBe(false);
+        }
+    );
+
+    it('does not start the camera if a native error arrives during listener registration', async () => {
+        mocks.addListener.mockImplementation(async (event, callback) => {
+            if (event === 'scanError') callback({ message: 'Camera unavailable' });
+            return { remove: mocks.remove };
+        });
+        render(<QRCodeScannerListener />);
+        await waitFor(() => expect(mocks.newModal).toHaveBeenCalledOnce());
+        expect(mocks.start).not.toHaveBeenCalled();
+        expect(mocks.remove).toHaveBeenCalledTimes(2);
+        expect(document.body.classList.contains('scanner-active')).toBe(false);
     });
 
     const scan = async (value: string): Promise<void> => {
