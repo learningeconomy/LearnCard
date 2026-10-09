@@ -596,7 +596,7 @@ describe('App Store Credential Issuance E2E Tests', () => {
             ).rejects.toThrow('App not installed');
         });
 
-        it('should require signing authority for credential issuance', async () => {
+        it('should auto-provision and reuse a signing authority for credential issuance', async () => {
             // Use a fresh user who has NO signing authority configured
             const noSaOwner = await getLearnCardForUser('c');
 
@@ -620,16 +620,64 @@ describe('App Store Credential Issuance E2E Tests', () => {
             // addBoostToApp succeeds even without SA (it just won't auto-associate one)
             await noSaOwner.invoke.addBoostToApp(noSaListingId, noSaBoostUri, 'no-sa-badge');
 
-            // Install app as appUser
-            await appUser.invoke.installApp(noSaListingId);
+            const listing = await noSaOwner.invoke.getAppStoreListing(noSaListingId);
+            if (!listing?.slug) throw new Error('Listing should have auto-generated slug');
 
-            // sendAppEvent should fail because the listing has no signing authority
+            expect(await noSaOwner.invoke.getRegisteredSigningAuthorities()).toHaveLength(0);
+            expect(await noSaOwner.invoke.getListingSigningAuthority(noSaListingId)).toBeUndefined();
+
+            // An uninstalled caller must not trigger provisioning as a side effect.
             await expect(
                 appUser.invoke.sendAppEvent(noSaListingId, {
                     type: 'send-credential',
                     templateAlias: 'no-sa-badge',
                 })
-            ).rejects.toThrow('No signing authority');
+            ).rejects.toThrow('App not installed');
+            expect(await noSaOwner.invoke.getRegisteredSigningAuthorities()).toHaveLength(0);
+            expect(await noSaOwner.invoke.getListingSigningAuthority(noSaListingId)).toBeUndefined();
+
+            await appUser.invoke.installApp(noSaListingId);
+
+            // First issuance provisions a real encrypted signing authority through LCA API.
+            const issued = await appUser.invoke.sendAppEvent(noSaListingId, {
+                type: 'send-credential',
+                templateAlias: 'no-sa-badge',
+            });
+            expect(issued.credentialUri).toBeDefined();
+            expect(issued.boostUri).toBe(noSaBoostUri);
+
+            const signingAuthority = await noSaOwner.invoke.getListingSigningAuthority(noSaListingId);
+            expect(signingAuthority).toMatchObject({
+                endpoint: 'http://localhost:5200/api',
+                name: 'app-no-sa-app',
+                did: expect.stringMatching(/^did:key:/),
+                isPrimary: true,
+            });
+            expect(await noSaOwner.invoke.getRegisteredSigningAuthorities()).toHaveLength(1);
+
+            // The provisioned key must produce a verifiable credential under the app's DID.
+            const resolved = await appUser.invoke.resolveFromLCN(issued.credentialUri as string);
+            const credential = unwrapBoostCredential(
+                await appUser.invoke.decryptDagJwe(resolved)
+            ) as VC;
+            const issuerId =
+                typeof credential.issuer === 'string' ? credential.issuer : credential.issuer?.id;
+            expect(issuerId).toBe(getAppDidFromSlug(listing.slug));
+            const verification = await appUser.invoke.verifyCredential(credential);
+            expect(verification.errors).toHaveLength(0);
+            expect(verification.checks).toContain('proof');
+
+            // A second issuance reuses the same authority rather than creating another key.
+            const second = await appUser.invoke.sendAppEvent(noSaListingId, {
+                type: 'send-credential',
+                templateAlias: 'no-sa-badge',
+            });
+            expect(second.credentialUri).toBeDefined();
+            expect(second.credentialUri).not.toBe(issued.credentialUri);
+            expect(await noSaOwner.invoke.getListingSigningAuthority(noSaListingId)).toEqual(
+                signingAuthority
+            );
+            expect(await noSaOwner.invoke.getRegisteredSigningAuthorities()).toHaveLength(1);
         });
     });
 });
