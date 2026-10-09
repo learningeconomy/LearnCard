@@ -409,6 +409,7 @@ async function handlePresentationForClaim(
         // Inject OBv3 skill alignments based on boost's framework/skills
         await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost, domain);
 
+        // encrypt=false on purpose: interoperable claim wallets may not decrypt LearnCard JWEs. See LC-2201.
         const vc = (
             await issueCredentialWithSigningAuthority(
                 { type: 'profile', profile: saOwnerProfile },
@@ -679,14 +680,14 @@ async function handleInboxClaimPresentation(
                 // Set issuer from signing authority
                 unsignedCredential.issuer = signingAuthorityForUser.relationship.did;
 
-                // Sign the credential
+                // encrypt=false on purpose: interoperable inbox claim wallets may not decrypt LearnCard JWEs. See LC-2201.
                 finalCredential = (
                     await issueCredentialWithSigningAuthority(
                         { type: 'profile', profile: issuerProfile },
                         unsignedCredential,
                         signingAuthorityForUser,
                         ctx.domain,
-                        false // don't encrypt
+                        false
                     )
                 ).credential as VC;
             }

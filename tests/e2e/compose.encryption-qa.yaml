@@ -1,0 +1,51 @@
+# Pair with compose.yaml (Docker Compose 2.24.4+).
+# Reuse the host's installed dependencies; never build/install another monorepo copy.
+# The checkout is read-only. Databases and generated assets stay in LC2201_QA_DIR.
+x-qa-runtime: &qa-runtime
+    image: oven/bun:1.3.14
+    build: !reset null
+    working_dir: /app
+    volumes: !override
+        - ../..:/app:ro
+services:
+    brain:
+        <<: *qa-runtime
+        # Ignore inherited service credentials/URLs: this walkthrough must stay local.
+        environment:
+            NEO4J_URI: bolt://neo4j:7687
+            NEO4J_USERNAME: neo4j
+            NEO4J_PASSWORD: this-is-the-password
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
+            AWS_ACCESS_KEY_ID: notARealKey
+            AWS_SECRET_ACCESS_KEY: notARealSecretKey
+            NOTIFICATIONS_QUEUE_POLL_URL: http://elasticmq:9324/notifications
+            NOTIFICATIONS_QUEUE_URL: http://elasticmq:9324/notifications
+            NOTIFICATIONS_SERVICE_PORT: 5200
+    cloud:
+        <<: *qa-runtime
+        volumes: !override
+            - ../..:/app:ro
+            - ${LC2201_QA_DIR:?Set LC2201_QA_DIR first}/generated:/app/services/learn-card-network/learn-cloud-service/generated
+        environment:
+            LEARN_CLOUD_MONGO_URI: mongodb://mongodb:27017?ssl=false&replicaSet=rs0
+            LEARN_CLOUD_MONGO_DB_NAME: learn-cloud
+    neo4j:
+        environment:
+            NEO4J_AUTH: neo4j/this-is-the-password
+        volumes:
+            - ${LC2201_QA_DIR:?Set LC2201_QA_DIR first}/data/neo4j:/data
+            - ${LC2201_QA_DIR:?Set LC2201_QA_DIR first}/data/neo4j-logs:/logs
+    mongodb:
+        volumes:
+            - ${LC2201_QA_DIR:?Set LC2201_QA_DIR first}/data/mongo:/data/db
+            - ${LC2201_QA_DIR:?Set LC2201_QA_DIR first}/data/mongo-config:/data/configdb
+    postgres:
+        volumes:
+            - ${LC2201_QA_DIR:?Set LC2201_QA_DIR first}/data/postgres:/var/lib/postgresql
+    lca-api:
+        <<: *qa-runtime
+        environment:
+            SKIP_DIDKIT_NAPI: '1'
+            MONGO_URI: mongodb://mongodb:27017?ssl=false&replicaSet=rs0
+            MONGO_DB_NAME: lca-api-e2e

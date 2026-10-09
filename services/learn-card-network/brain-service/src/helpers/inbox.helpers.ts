@@ -28,6 +28,7 @@ import {
 
 import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 import type { IssuedCredential } from 'types/credential';
+import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
 import { getBitstringStatusListEntries } from '@learncard/helpers';
 import { createInboxCredential } from '@accesslayer/inbox-credential/create';
 import { Context } from '@routes';
@@ -111,51 +112,47 @@ export const claimIntoInbox = async (
     );
 
     if (existingProfile) {
-        // Auto-deliver to existing user
-        let finalCredential: VC;
-
+        let issued: IssuedCredential;
         if (isSigned) {
-            finalCredential = credential as VC;
+            const signedCredential = credential as VC;
+            const learnCard = await getEmptyLearnCard();
+            issued = {
+                kind: 'issued-credential',
+                credential: await learnCard.invoke.createDagJwe(signedCredential, [
+                    existingProfile.did,
+                    issuerProfile.did,
+                ]),
+                statusEntries: getBitstringStatusListEntries(signedCredential),
+            };
         } else {
-            // For app-based SAs (listings), use the app did:web as ownerDid
+            const unsignedCredential = credential as UnsignedVC;
+            setCredentialSubjectIds(unsignedCredential, existingProfile.did);
+            // Listings sign as the app, but the issuing profile must remain a reader.
             const ownerDidOverride = listingSlug
                 ? getAppDidWeb(ctx.domain, listingSlug)
                 : undefined;
-
-            finalCredential = (
-                await issueCredentialWithSigningAuthority(
-                    { type: 'profile', profile: issuerProfile },
-                    credential as UnsignedVC,
-                    signingAuthorityForUser,
-                    ctx.domain,
-                    false, // don't encrypt
-                    ownerDidOverride
-                )
-            ).credential as VC;
+            issued = await issueCredentialWithSigningAuthority(
+                { type: 'profile', profile: issuerProfile },
+                unsignedCredential,
+                signingAuthorityForUser,
+                ctx.domain,
+                undefined,
+                ownerDidOverride,
+                undefined,
+                [issuerProfile.did]
+            );
         }
-
-        // Use the explicit-recipient API; the seeded encryption plugin also adds the service DID.
-        const learnCard = await getEmptyLearnCard();
-        const encryptedDelivery = await learnCard.invoke.createDagJwe(finalCredential, [
-            existingProfile.did,
-            issuerProfile.did,
-        ]);
         await sendCredential(
             issuerProfile,
             existingProfile,
-            {
-                kind: 'issued-credential',
-                credential: encryptedDelivery,
-                statusEntries: getBitstringStatusListEntries(finalCredential),
-            },
+            issued,
             ctx.domain,
             undefined,
             activityId,
             integrationId
         );
-        // Record successful delivery without creating temporary service-readable escrow.
         const finalizedInboxCredential = await createInboxCredential({
-            credential: JSON.stringify(finalCredential),
+            credential: JSON.stringify(issued.credential),
             isSigned: true,
             delivered: true,
             isAccepted: true,
@@ -166,7 +163,6 @@ export const claimIntoInbox = async (
             activityId,
             expiresInDays,
         });
-
         return {
             status: LCNInboxStatusEnumValidator.enum.ISSUED,
             inboxCredential: finalizedInboxCredential,
@@ -333,50 +329,39 @@ export const issueToInbox = async (
     const recipientIsManaged = recipientManagers.length > 0;
 
     if (existingProfile && !guardianEmail && !recipientIsManaged && !configuration.refresh) {
-        // Auto-deliver to existing user
-        let finalCredential: VC;
-
+        let issued: IssuedCredential;
         if (isSigned) {
-            finalCredential = credential as VC;
+            const signedCredential = credential as VC;
+            const learnCard = await getEmptyLearnCard();
+            issued = {
+                kind: 'issued-credential',
+                credential: await learnCard.invoke.createDagJwe(signedCredential, [
+                    existingProfile.did,
+                    issuerProfile.did,
+                ]),
+                statusEntries: getBitstringStatusListEntries(signedCredential),
+            };
         } else {
-            // Sign the credential using signing authority
             const signingAuthorityForUser = await getSigningAuthorityForUserByName(
                 issuerProfile,
                 signingAuthority!.endpoint,
                 signingAuthority!.name
             );
-
             if (!signingAuthorityForUser) {
                 throw new InboxIssuancePreflightError({
                     code: 'NOT_FOUND',
                     message: 'Signing authority not found for issuer',
                 });
             }
-
-            finalCredential = (
-                await issueCredentialWithSigningAuthority(
-                    { type: 'profile', profile: issuerProfile },
-                    credential as UnsignedVC,
-                    signingAuthorityForUser,
-                    ctx.domain,
-                    false // don't encrypt
-                )
-            ).credential as VC;
+            const unsignedCredential = credential as UnsignedVC;
+            setCredentialSubjectIds(unsignedCredential, existingProfile.did);
+            issued = await issueCredentialWithSigningAuthority(
+                { type: 'profile', profile: issuerProfile },
+                unsignedCredential,
+                signingAuthorityForUser,
+                ctx.domain
+            );
         }
-
-        // Send credential using appropriate helper (sendBoost handles boost tracking)
-        // Pass activityId and integrationId so they're stored on the relationship for CLAIMED chaining
-        const learnCard = await getEmptyLearnCard();
-        const encryptedDelivery = await learnCard.invoke.createDagJwe(finalCredential, [
-            existingProfile.did,
-            issuerProfile.did,
-        ]);
-        // Carry only public status coordinates alongside the newly encrypted payload.
-        const delivery: IssuedCredential = {
-            kind: 'issued-credential',
-            credential: encryptedDelivery,
-            statusEntries: getBitstringStatusListEntries(finalCredential),
-        };
         const boost = boostUri ? await getBoostByUri(boostUri) : undefined;
         await checkpointDelivery();
         if (boostUri && boost) {
@@ -384,27 +369,25 @@ export const issueToInbox = async (
                 from: { type: 'profile', profile: issuerProfile },
                 to: existingProfile,
                 boost,
-                credential: delivery,
+                credential: issued,
                 domain: ctx.domain,
                 activityId,
                 integrationId,
             });
         } else {
-            // Fall back to ordinary delivery when no boost exists for the supplied URI.
             await sendCredential(
                 issuerProfile,
                 existingProfile,
-                delivery,
+                issued,
                 ctx.domain,
                 undefined,
                 activityId,
                 integrationId
             );
         }
-
         // Record successful delivery without creating temporary service-readable escrow.
         const finalizedInboxCredential = await createInboxCredential({
-            credential: JSON.stringify(finalCredential),
+            credential: JSON.stringify(issued.credential),
             isSigned: true,
             delivered: true,
             recipient,
