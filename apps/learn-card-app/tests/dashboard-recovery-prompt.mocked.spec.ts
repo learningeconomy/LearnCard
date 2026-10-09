@@ -135,6 +135,9 @@ test.describe('Dashboard recovery prompt @mocked', () => {
         });
 
         await expect(page).toHaveURL(/\/launchpad\/browse\?tab=All/);
+        await expect(
+            page.getByRole('textbox').and(page.getByPlaceholder('Search apps...'))
+        ).toBeVisible({ timeout: 30_000 });
         await expect(prompt(page)).toHaveCount(0);
     });
 });
