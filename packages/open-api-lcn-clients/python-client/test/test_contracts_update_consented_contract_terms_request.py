@@ -59,7 +59,8 @@ class TestContractsUpdateConsentedContractTermsRequest(unittest.TestCase):
                         ''
                         ], ),
                 expires_at = '',
-                one_time = True
+                one_time = True,
+                audience_version = 0
             )
         else:
             return ContractsUpdateConsentedContractTermsRequest(

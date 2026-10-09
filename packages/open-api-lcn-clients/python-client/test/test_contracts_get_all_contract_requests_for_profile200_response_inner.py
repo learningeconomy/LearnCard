@@ -35,6 +35,11 @@ class TestContractsGetAllContractRequestsForProfile200ResponseInner(unittest.Tes
         model = ContractsGetAllContractRequestsForProfile200ResponseInner()
         if include_optional:
             return ContractsGetAllContractRequestsForProfile200ResponseInner(
+                request_id = '',
+                requested_by = '',
+                external_reference_id = '',
+                requested_at = '',
+                message = '',
                 contract = openapi_client.models.contracts_get_all_contract_requests_for_profile_200_response_inner_contract.contracts_getAllContractRequestsForProfile_200_response_inner_contract(
                     read = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read.storage_resolve_200_response_anyOf_anyOf_1_read(
                         anonymize = True, 
@@ -57,7 +62,10 @@ class TestContractsGetAllContractRequestsForProfile200ResponseInner(unittest.Tes
                         personal = {
                             'key' : 
                             }, ), 
-                    uri = '', ),
+                    uri = '', 
+                    name = '', 
+                    image = '', 
+                    description = '', ),
                 profile = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_3.boost_getBoostRecipients_200_response_inner_to_anyOf_3(
                     profile_id = '012', 
                     display_name = '', 
@@ -122,7 +130,10 @@ class TestContractsGetAllContractRequestsForProfile200ResponseInner(unittest.Tes
                         personal = {
                             'key' : 
                             }, ), 
-                    uri = '', ),
+                    uri = '', 
+                    name = '', 
+                    image = '', 
+                    description = '', ),
                 profile = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_3.boost_getBoostRecipients_200_response_inner_to_anyOf_3(
                     profile_id = '012', 
                     display_name = '', 

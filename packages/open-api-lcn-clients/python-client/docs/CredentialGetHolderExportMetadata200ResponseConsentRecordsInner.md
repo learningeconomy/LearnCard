@@ -2,12 +2,13 @@
 
 ## Properties
 
-| Name             | Type                                                                                                                                                                              | Description | Notes |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| Name             | Type                                                                                                                                                                              | Description | Notes      |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
 | **terms_uri**    | **str**                                                                                                                                                                           |             |
 | **status**       | **str**                                                                                                                                                                           |             |
 | **contract**     | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContract**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContract.md)                         |             |
 | **terms**        | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms.md)                               |             |
+| **referral**     | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerReferral**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerReferral.md)                         |             | [optional] |
 | **transactions** | [**List[CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInner]**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInner.md) |             |
 
 ## Example

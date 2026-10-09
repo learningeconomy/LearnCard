@@ -75,6 +75,10 @@ class TestContractsGetTermsTransactionHistory200Response(unittest.TestCase):
                             guardian_did = '', 
                             approved_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                             contract_updated_at = '', ), 
+                        referral = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_referral.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_referral(
+                            request_id = '', 
+                            requested_by = '', 
+                            external_reference_id = '', ), 
                         id = '', 
                         action = 'consent', 
                         date = '', 
@@ -124,6 +128,10 @@ class TestContractsGetTermsTransactionHistory200Response(unittest.TestCase):
                             guardian_did = '', 
                             approved_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                             contract_updated_at = '', ), 
+                        referral = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_referral.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_referral(
+                            request_id = '', 
+                            requested_by = '', 
+                            external_reference_id = '', ), 
                         id = '', 
                         action = 'consent', 
                         date = '', 

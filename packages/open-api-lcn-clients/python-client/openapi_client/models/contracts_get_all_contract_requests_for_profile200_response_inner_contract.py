@@ -32,8 +32,11 @@ class ContractsGetAllContractRequestsForProfile200ResponseInnerContract(BaseMode
     read: StorageResolve200ResponseAnyOfAnyOf1Read
     write: CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite
     uri: Optional[StrictStr]
+    name: Optional[StrictStr] = None
+    image: Optional[StrictStr] = None
+    description: Optional[StrictStr] = None
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["read", "write", "uri"]
+    __properties: ClassVar[List[str]] = ["read", "write", "uri", "name", "image", "description"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -92,6 +95,21 @@ class ContractsGetAllContractRequestsForProfile200ResponseInnerContract(BaseMode
         if self.uri is None and "uri" in self.model_fields_set:
             _dict['uri'] = None
 
+        # set to None if name (nullable) is None
+        # and model_fields_set contains the field
+        if self.name is None and "name" in self.model_fields_set:
+            _dict['name'] = None
+
+        # set to None if image (nullable) is None
+        # and model_fields_set contains the field
+        if self.image is None and "image" in self.model_fields_set:
+            _dict['image'] = None
+
+        # set to None if description (nullable) is None
+        # and model_fields_set contains the field
+        if self.description is None and "description" in self.model_fields_set:
+            _dict['description'] = None
+
         return _dict
 
     @classmethod
@@ -106,7 +124,10 @@ class ContractsGetAllContractRequestsForProfile200ResponseInnerContract(BaseMode
         _values = {
             "read": StorageResolve200ResponseAnyOfAnyOf1Read.from_dict(obj["read"]) if obj.get("read") is not None else None,
             "write": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite.from_dict(obj["write"]) if obj.get("write") is not None else None,
-            "uri": obj.get("uri")
+            "uri": obj.get("uri"),
+            "name": obj.get("name"),
+            "image": obj.get("image"),
+            "description": obj.get("description")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

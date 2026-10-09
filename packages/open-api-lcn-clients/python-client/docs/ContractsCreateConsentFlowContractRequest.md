@@ -16,6 +16,7 @@
 | **expires_at**             | **str**                                                                                                                           |             | [optional] |
 | **autoboosts**             | [**List[ContractsCreateConsentFlowContractRequestAutoboostsInner]**](ContractsCreateConsentFlowContractRequestAutoboostsInner.md) |             | [optional] |
 | **writers**                | **List[str]**                                                                                                                     |             | [optional] |
+| **recipients**             | **List[Optional[str]]**                                                                                                           |             | [optional] |
 
 ## Example
 
