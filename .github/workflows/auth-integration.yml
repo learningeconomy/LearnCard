@@ -266,6 +266,11 @@ jobs:
             - name: Typecheck browser tests
               working-directory: services/learn-card-network/lca-api
               run: bun run typecheck:oidc:e2e
+            - name: Authenticate Docker Hub pulls
+              uses: ./.github/actions/dockerhub-login
+              with:
+                  username: ${{ secrets.DOCKERHUB_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_TOKEN }}
             - name: Complete login tickets through the real Keycloak broker
               working-directory: services/learn-card-network/lca-api
               run: bun run test:oidc:e2e

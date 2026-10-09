@@ -132,6 +132,12 @@ jobs:
             - name: Prepare runner storage
               run: bash scripts/e2e-hosted/prepare-storage.sh
 
+            - name: Authenticate Docker Hub pulls
+              uses: ./.github/actions/dockerhub-login
+              with:
+                  username: ${{ secrets.DOCKERHUB_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_TOKEN }}
+
             - name: Setup Docker Buildx
               uses: docker/setup-buildx-action@v3
               with:
@@ -240,6 +246,12 @@ jobs:
 
             - name: Prepare runner storage
               run: bash scripts/e2e-hosted/prepare-storage.sh
+
+            - name: Authenticate Docker Hub pulls
+              uses: ./.github/actions/dockerhub-login
+              with:
+                  username: ${{ secrets.DOCKERHUB_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_TOKEN }}
 
             - name: Setup Docker Buildx
               uses: docker/setup-buildx-action@v3

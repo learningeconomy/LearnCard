@@ -62,6 +62,12 @@ jobs:
             - name: Run in-process OID4VC e2e suite
               run: bun run --filter @workspace/openid4vc-e2e-tests test:openid4vc:e2e
 
+            - name: Authenticate Docker Hub pulls
+              uses: ./.github/actions/dockerhub-login
+              with:
+                  username: ${{ secrets.DOCKERHUB_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_TOKEN }}
+
             - name: Run cross-vendor interop suite (docker compose)
               run: bun run --filter @workspace/openid4vc-interop-e2e-tests test:interop:e2e
               env:

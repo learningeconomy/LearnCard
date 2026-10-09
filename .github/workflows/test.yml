@@ -36,6 +36,12 @@ jobs:
               working-directory: services/escrow-enclave-app
               run: rustup toolchain install
 
+            - name: Authenticate Docker Hub pulls
+              uses: ./.github/actions/dockerhub-login
+              with:
+                  username: ${{ secrets.DOCKERHUB_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_TOKEN }}
+
             - name: Run tests
               uses: nick-fields/retry@v2
               with:
@@ -110,6 +116,11 @@ jobs:
                   ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
                   fetch-depth: 0
             - uses: ./.github/actions/setup
+            - name: Authenticate Docker Hub pulls
+              uses: ./.github/actions/dockerhub-login
+              with:
+                  username: ${{ secrets.DOCKERHUB_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_TOKEN }}
             - name: Test inbox security and queued issuance with Neo4j, Redis, and SQS
               run: bunx nx run network-brain-service:test:inbox:e2e
 
