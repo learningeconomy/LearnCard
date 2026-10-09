@@ -59,7 +59,11 @@ export const EN_DEFAULTS: Record<string, string> = {
     'boostFooter.accept': 'Accept',
 };
 
-/** Canonicalizes a BCP-47 locale and uses English for malformed input. */
+/**
+ * Canonicalizes a BCP-47 locale and uses English for malformed input.
+ * Validation also rejects request delimiters in crafted storage values, keeping
+ * the locale safe for backend request parameters as well as Intl formatters.
+ */
 export const normalizeLocale = (value: string): string => {
     try {
         return Intl.getCanonicalLocales(value)[0] ?? 'en';

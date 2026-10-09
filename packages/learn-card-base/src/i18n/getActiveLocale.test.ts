@@ -116,3 +116,24 @@ describe('addActiveLocaleToPayload', () => {
         expect(payload).not.toHaveProperty('locale');
     });
 });
+
+describe('locale normalization for backend callers', () => {
+    it.each([
+        ['en_US', 'en'],
+        ['en--US', 'en'],
+        ['EN-us', 'en-US'],
+        ['es-MX', 'es-MX'],
+        ['en&did=attacker', 'en'],
+    ])('sends %s as %s in both URLs and payloads', (stored, expected) => {
+        store['i18n.language'] = stored;
+        const url = new URL(addActiveLocaleToUrl('https://ai.example/threads?did=original'));
+        expect([...url.searchParams.entries()]).toEqual([
+            ['did', 'original'],
+            ['locale', expected],
+        ]);
+        expect(addActiveLocaleToPayload({ action: 'continue_plan' })).toEqual({
+            action: 'continue_plan',
+            locale: expected,
+        });
+    });
+});
