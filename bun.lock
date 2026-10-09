@@ -257,7 +257,7 @@
     },
     "apps/scouts": {
       "name": "scoutpass-app",
-      "version": "1.90.37",
+      "version": "1.90.38",
       "dependencies": {
         "@capacitor-community/sqlite": "8.1.1",
         "@capacitor-firebase/analytics": "8.5.2",
