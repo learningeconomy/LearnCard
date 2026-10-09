@@ -83,6 +83,9 @@ Mock mode fixes this automatically in local development and AI app builders. Whe
 
 - **Every method shows a short notice** describing what would happen once embedded — e.g. `sendCredential` → _"In LearnCard, the learner would receive **[name]**."_, `incrementCounter` → _"Counter **coins** → **10**."_, `launchFeature` → _"In LearnCard, this would open **/wallet**."_ Strong, visible feedback for every call. At most three show at once (one on phones).
 - A **Practice mode** pill in the bottom-left corner expands into a plain-language list of the LearnCard features your app uses, with a **Publish app** button and a copy-link button.
+
+Captures include a stable `appKey` saved per app title, or the exact `mockOptions.appId` you provide, so apps sharing an address remain distinct. Use **Start over** in the expanded panel (with confirmation) or call `learnCard.resetPracticeMode()` to clear only this app's captures, practice credentials, and counters. The next capture gets a new generated identity; explicit `appId` values stay unchanged. The method is safe with the UI disabled and does nothing outside mock mode. Icon capture prefers Apple touch icons, large favicons, and same-origin web app manifest icons before `/favicon.ico`, and tries to include a small rasterized image. Long publish links omit the embedded image.
+
 - `requestConsent(...)` grants automatically and the notice spells out what the learner would be asked to share; counters (`incrementCounter` / `getCounter` / `getCounters`) save to the browser and survive reloads.
 - Identical or polled calls coalesce into one notice with a ×N counter, so nothing spams the screen.
 - `requestIdentity`, notifications, learner context, and sync status return sensible placeholder data.

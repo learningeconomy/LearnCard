@@ -2678,6 +2678,7 @@ export const AppManifestValidator = z
     .object({
         manifestVersion: z.literal(1),
         appUrl: z.string(),
+        appKey: z.string().max(200).optional(),
         suggestedName: z.string().optional(),
         suggestedIconUrl: z.string().optional(),
         permissions: z.array(z.string()).default([]),

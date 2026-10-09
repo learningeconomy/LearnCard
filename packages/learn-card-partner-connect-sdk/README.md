@@ -110,6 +110,8 @@ While mock mode is active, the SDK silently captures an app manifest in local st
 - permissions inferred from SDK calls
 - launched feature paths, counter keys, learner-context usage, notifications
 
+Practice captures include a stable `appKey`, saved per app title in this browser (or set exactly by `mockOptions.appId`). Give apps distinct titles or explicit IDs when they share an address. **Start over** in the expanded panel asks for confirmation; `learnCard.resetPracticeMode()` does the same reset directly, clearing only this app's captures, practice credentials, counters, and generated identity. The next capture gets a new key unless you supplied `appId`. Outside mock mode the method is a no-op. Icon capture prefers Apple touch icons, then large favicons, then same-origin web app manifest icons, with `/favicon.ico` as fallback; it also tries to include a small rasterized image for publishing. Oversized publish links omit that image.
+
 When `mockOptions.ui !== false`, mock mode also shows a **Practice mode** panel in the
 bottom-left corner. It starts collapsed as a pill (`Practice mode` plus a feature count) and
 expands into a frosted-glass card with the app name and address, a plain-language list of the

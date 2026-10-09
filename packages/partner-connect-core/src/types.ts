@@ -270,8 +270,20 @@ export interface CapturedAppManifest {
     appUrl: string;
     /** Best-effort app name (document.title). */
     suggestedName?: string;
-    /** Best-effort icon URL (favicon / web app manifest icon). */
+    /**
+     * Stable per-app identifier, so apps that share an address (several local
+     * dev servers on localhost:4321) are never mistaken for one another.
+     * `mockOptions.appId` when set, otherwise random and kept in the browser.
+     */
+    appKey?: string;
+    /** Best-effort icon URL (apple-touch-icon / largest favicon). */
     suggestedIconUrl?: string;
+    /**
+     * Small PNG/WebP data URL of the icon, drawn in the app's own page. Lets
+     * LearnCard import icons it can't fetch (localhost, previews without CORS).
+     * Only carried in the publish link; never stored with app versions.
+     */
+    suggestedIconDataUrl?: string;
     /**
      * App Store permissions derived from observed SDK calls, e.g.
      * 'request_identity', 'send_credential', 'request_consent',

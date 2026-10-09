@@ -23,7 +23,6 @@ import {
     isAppBuilderEditorOrigin,
     isAppBuilderPreviewHost,
     decodeManifestFromUrl,
-    encodeManifestForUrl,
     normalizeConsentRequest,
     renderCompiledTemplate,
     validateInlineTemplate,
@@ -634,14 +633,12 @@ export class PartnerConnect {
      * ```
      */
     public getPublishUrl(): string | undefined {
-        const manifest = this.mockHost?.getCapturedManifest();
-        const publishOrigin = this.mockHost?.getPublishOrigin();
+        return this.mockHost?.getPublishUrl();
+    }
 
-        if (!manifest || !publishOrigin) return undefined;
-
-        return `${publishOrigin}/app-store/developer/submit?manifest=${encodeManifestForUrl(
-            manifest
-        )}`;
+    /** Clears this app's practice captures, credentials and counters. No-op outside mock mode. */
+    public resetPracticeMode(): void {
+        this.mockHost?.resetPracticeMode();
     }
 
     /**

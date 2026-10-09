@@ -392,6 +392,13 @@ const MOCK_STYLES = `
 .lc-mock-hud-copy:hover { background: var(--lc-fill-hover); }
 .lc-mock-hud-copy:active { transform: scale(0.94); }
 .lc-mock-hud-copy.is-copied { background: rgba(16,185,129,0.14); color: #059669; }
+.lc-mock-hud .lc-mock-hud-reset { display: block; margin: 10px auto 0; border: 0; background: transparent; color: var(--lc-ink-3); font-size: 12px; cursor: pointer; }
+.lc-mock-hud .lc-mock-hud-reset:hover { color: var(--lc-ink); }
+.lc-mock-hud .lc-mock-hud-confirm { padding: 12px 8px; color: var(--lc-ink); }
+.lc-mock-hud .lc-mock-hud-confirm p { color: var(--lc-ink-3); font-size: 13px; line-height: 1.5; }
+.lc-mock-hud .lc-mock-hud-confirm-actions { display: flex; gap: 8px; margin-top: 16px; }
+.lc-mock-hud .lc-mock-hud-confirm button { border-radius: 999px; padding: 10px 16px; border: 1px solid var(--lc-ink-3); background: transparent; color: var(--lc-ink); cursor: pointer; }
+.lc-mock-hud .lc-mock-hud-confirm .lc-mock-hud-reset-confirm { background: #DC2626; color: white; border-color: #DC2626; }
 .lc-mock-hud-publish-hint { padding: 10px 8px 0; font-size: 11.5px; line-height: 1.45; color: var(--lc-ink-3); overflow-wrap: anywhere; }
 .lc-mock-hud-publish-hint code {
   display: inline-block; max-width: 100%; margin-top: 3px; word-break: break-all;
@@ -599,6 +606,11 @@ export class MockHost {
 
     private initialDocumentTitle: string | null | undefined;
     private appFingerprint: string | undefined;
+    private memoryAppKey: string | undefined;
+    private iconSource: string | undefined;
+    private iconGeneration = 0;
+    private readonly iconCleanups = new Set<() => void>();
+    private confirmingReset = false;
 
     /** Session-scoped credential store; reads reflect writes and seeds. */
     private readonly credentials: MockCredential[] = [];
@@ -886,6 +898,7 @@ export class MockHost {
     /** Tear down injected UI and clear in-memory state. */
     public destroy(): void {
         this.destroyed = true;
+        this.cancelIconCapture();
 
         for (const entry of this.activeToasts.values()) {
             if (entry.timeoutId) clearTimeout(entry.timeoutId);
@@ -924,6 +937,42 @@ export class MockHost {
 
     public getPublishOrigin(): string {
         return this.options.publishOrigin;
+    }
+
+    public resetPracticeMode(): void {
+        if (this.destroyed) return;
+        this.cancelIconCapture();
+        const manifests = this.loadManifestMap();
+        delete manifests[this.getAppFingerprint()];
+        this.replaceMemoryManifestMap(manifests);
+        if (this.options.persist) {
+            try {
+                localStorage.setItem(this.manifestStorageKey(), JSON.stringify(manifests));
+                for (const key of [
+                    this.counterStorageKey(),
+                    this.publishDismissedStorageKey(),
+                    this.appKeyStorageKey(),
+                ]) {
+                    localStorage.removeItem(key);
+                }
+            } catch {
+                /* Storage may be unavailable. */
+            }
+        }
+        this.memoryCounters.clear();
+        this.memoryAppKey = undefined;
+        delete this.memoryPublishDismissedAt[this.getAppFingerprint()];
+        this.credentials.length = 0;
+        this.inlineTemplateVersions.clear();
+        this.aiTopic = null;
+        this.publishPromptShown = false;
+        this.confirmingReset = false;
+        for (const [key, entry] of this.activeToasts) {
+            if (entry.node.classList.contains('lc-mock-toast--publish')) this.dismissToast(key);
+        }
+        this.saveHudCollapsed(true);
+        this.updateManifestHud();
+        this.toast({ icon: 'sync', segments: ['Started fresh.'] });
     }
 
     private handleAppEvent(event: Record<string, unknown>): Promise<unknown> {
@@ -1397,6 +1446,7 @@ export class MockHost {
         this.updateManifestHud(next);
         this.refreshPublishPromptLink(next);
         this.maybeShowPublishPrompt(next);
+        this.captureIcon();
     }
 
     private createManifestSkeleton(): CapturedAppManifest {
@@ -1406,6 +1456,7 @@ export class MockHost {
 
         return {
             manifestVersion: 1,
+            appKey: this.getAppKey(),
             appUrl: this.readAppOrigin(),
             ...(suggestedName ? { suggestedName } : {}),
             ...(suggestedIconUrl ? { suggestedIconUrl } : {}),
@@ -1465,22 +1516,239 @@ export class MockHost {
     }
 
     private readSuggestedIconUrl(): string | undefined {
-        if (typeof document === 'undefined' || typeof window === 'undefined') return undefined;
+        return this.iconCandidates().find(url => /^https?:/.test(url)) ?? this.iconFallback();
+    }
 
-        const links = Array.from(document.querySelectorAll('link[rel]'));
-        const preferred = links.find(link => {
-            const rel = link.getAttribute('rel')?.toLowerCase() ?? '';
-            return rel.includes('apple-touch-icon') || rel === 'icon' || rel.includes(' icon');
-        });
-        const href = preferred?.getAttribute('href');
+    private appKeyStorageKey(): string {
+        return `${this.options.namespace}:app-key:${this.getAppFingerprint()}`;
+    }
 
-        if (!href) return undefined;
+    private getAppKey(): string {
+        if (this.options.appId !== undefined) return this.options.appId;
+        if (this.options.persist) {
+            try {
+                this.memoryAppKey =
+                    localStorage.getItem(this.appKeyStorageKey()) || this.memoryAppKey;
+            } catch {
+                /* Use the session fallback. */
+            }
+        }
+        this.memoryAppKey ??=
+            globalThis.crypto?.randomUUID?.() ??
+            `app-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+        if (this.options.persist) {
+            try {
+                localStorage.setItem(this.appKeyStorageKey(), this.memoryAppKey);
+            } catch {
+                /* Use the session fallback. */
+            }
+        }
+        return this.memoryAppKey;
+    }
 
+    private iconFallback(): string | undefined {
+        return typeof window !== 'undefined'
+            ? this.resolveIcon('/favicon.ico', window.location.origin)
+            : undefined;
+    }
+
+    private resolveIcon(href: string, base: string): string | undefined {
         try {
-            return new URL(href, window.location.href).toString();
+            const url = new URL(href, base);
+            return ['http:', 'https:', 'data:'].includes(url.protocol) ? url.href : undefined;
         } catch {
             return undefined;
         }
+    }
+
+    private iconSize(sizes: string, type: string): number {
+        if (sizes.toLowerCase().split(/\s+/).includes('any') || type === 'image/svg+xml')
+            return Number.MAX_SAFE_INTEGER;
+        return Math.max(
+            0,
+            ...sizes.split(/\s+/).map(size => {
+                const match = /^(\d+)x(\d+)$/i.exec(size);
+                return match ? Number(match[1]) * Number(match[2]) : 0;
+            })
+        );
+    }
+
+    private iconCandidates(): string[] {
+        if (typeof document === 'undefined') return [];
+        return Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel]'))
+            .map(link => {
+                const rels = link.rel.toLowerCase().split(/\s+/);
+                const priority = rels.includes('mask-icon')
+                    ? 0
+                    : rels.some(
+                            rel =>
+                                rel === 'apple-touch-icon' || rel === 'apple-touch-icon-precomposed'
+                        )
+                      ? 2
+                      : rels.includes('icon')
+                        ? 1
+                        : 0;
+                return {
+                    priority,
+                    size: this.iconSize(link.getAttribute('sizes') ?? '', link.type),
+                    url: this.resolveIcon(link.href, document.baseURI),
+                };
+            })
+            .filter(candidate => candidate.priority > 0 && candidate.url)
+            .sort((a, b) => b.priority - a.priority || b.size - a.size)
+            .flatMap(candidate => (candidate.url ? [candidate.url] : []));
+    }
+
+    private cancelIconCapture(): void {
+        this.iconGeneration++;
+        for (const cleanup of this.iconCleanups) cleanup();
+        this.iconCleanups.clear();
+        this.iconSource = undefined;
+    }
+
+    private captureIcon(): void {
+        if (this.destroyed || typeof document === 'undefined') return;
+        const candidates = this.iconCandidates();
+        const manifestHref = document.querySelector<HTMLLinkElement>('link[rel~="manifest"]')?.href;
+        const signature = JSON.stringify([candidates, manifestHref]);
+        if (signature === this.iconSource) return;
+        this.cancelIconCapture();
+        this.iconSource = signature;
+        const generation = this.iconGeneration;
+        void (async () => {
+            let source: string | undefined = candidates[0];
+            let url = candidates.find(candidate => /^https?:/.test(candidate));
+            if (
+                (!source || !url) &&
+                manifestHref &&
+                new URL(manifestHref).origin === window.location.origin
+            ) {
+                const controller = new AbortController();
+                let rejectPending: (reason: Error) => void = () => undefined;
+                const timeout = new Promise<never>((_, reject) => {
+                    rejectPending = reject;
+                });
+                const cleanup = (): void => {
+                    clearTimeout(timer);
+                    controller.abort();
+                    rejectPending(new Error('Icon capture cancelled'));
+                };
+                const timer = setTimeout(cleanup, 4000);
+                this.iconCleanups.add(cleanup);
+                try {
+                    const data: unknown = await Promise.race([
+                        fetch(manifestHref, { signal: controller.signal, redirect: 'error' }).then(
+                            response => {
+                                if (!response.ok) return undefined;
+                                return response.json() as Promise<unknown>;
+                            }
+                        ),
+                        timeout,
+                    ]);
+                    {
+                        const icons =
+                            data && typeof data === 'object' && 'icons' in data
+                                ? data.icons
+                                : undefined;
+                        if (Array.isArray(icons)) {
+                            const ranked = icons
+                                .filter(
+                                    (
+                                        icon
+                                    ): icon is { src: string; sizes?: string; type?: string } =>
+                                        !!icon &&
+                                        typeof icon === 'object' &&
+                                        typeof icon.src === 'string'
+                                )
+                                .sort(
+                                    (a, b) =>
+                                        this.iconSize(
+                                            typeof b.sizes === 'string' ? b.sizes : '',
+                                            b.type ?? ''
+                                        ) -
+                                        this.iconSize(
+                                            typeof a.sizes === 'string' ? a.sizes : '',
+                                            a.type ?? ''
+                                        )
+                                )
+                                .flatMap(icon => {
+                                    const href = this.resolveIcon(icon.src, manifestHref);
+                                    return href ? [href] : [];
+                                });
+                            source ??= ranked[0];
+                            url ??= ranked.find(href => /^https?:/.test(href));
+                        }
+                    }
+                } catch {
+                    /* Icon discovery is best effort. */
+                } finally {
+                    cleanup();
+                    this.iconCleanups.delete(cleanup);
+                }
+            }
+            if (this.destroyed || generation !== this.iconGeneration) return;
+            url ??= this.iconFallback();
+            source ??= url;
+            const dataUrl = source ? await this.rasterizeIcon(source) : undefined;
+            if (this.destroyed || generation !== this.iconGeneration) return;
+            const manifest = this.loadManifest();
+            if (!manifest) return;
+            manifest.suggestedIconUrl = url;
+            manifest.suggestedIconDataUrl = dataUrl;
+            this.saveManifest(manifest);
+            this.updateManifestHud(manifest);
+            this.refreshPublishPromptLink(manifest);
+        })().catch(() => undefined);
+    }
+
+    private rasterizeIcon(source: string): Promise<string | undefined> {
+        return new Promise(resolve => {
+            const image = new Image();
+            const finish = (value?: string): void => {
+                clearTimeout(timer);
+                image.onload = null;
+                image.onerror = null;
+                this.iconCleanups.delete(cancel);
+                resolve(value);
+            };
+            const cancel = (): void => {
+                finish();
+                image.removeAttribute('src');
+            };
+            const timer = setTimeout(cancel, 4000);
+            this.iconCleanups.add(cancel);
+            image.onerror = () => finish();
+            image.onload = () => {
+                try {
+                    if (!image.naturalWidth || !image.naturalHeight) return finish();
+                    const canvas = document.createElement('canvas');
+                    for (const size of [128, 96, 64]) {
+                        canvas.width = canvas.height = size;
+                        const context = canvas.getContext('2d');
+                        if (!context) break;
+                        const ratio = size / Math.max(image.naturalWidth, image.naturalHeight);
+                        const width = image.naturalWidth * ratio;
+                        const height = image.naturalHeight * ratio;
+                        context.drawImage(
+                            image,
+                            (size - width) / 2,
+                            (size - height) / 2,
+                            width,
+                            height
+                        );
+                        const data = canvas.toDataURL('image/webp', 0.85);
+                        if (data.startsWith('data:image/') && data.length <= 3000)
+                            return finish(data);
+                    }
+                } catch {
+                    /* Tainted or unsupported canvas. */
+                }
+                finish();
+            };
+            if (/^https?:/.test(source) && new URL(source).origin !== window.location.origin)
+                image.crossOrigin = 'anonymous';
+            image.src = source;
+        });
     }
 
     private manifestStorageKey(): string {
@@ -1565,6 +1833,14 @@ export class MockHost {
     private loadManifest(): CapturedAppManifest | undefined {
         const manifests = this.loadManifestMap();
         const manifest = manifests[this.getAppFingerprint()];
+        if (
+            manifest &&
+            (!manifest.appKey ||
+                (this.options.appId !== undefined && manifest.appKey !== this.options.appId))
+        ) {
+            manifest.appKey = this.getAppKey();
+            this.saveManifest(manifest);
+        }
         return manifest ? this.cloneManifest(manifest) : undefined;
     }
 
@@ -1725,10 +2001,16 @@ export class MockHost {
         return hostname === 'localhost' || hostname === '127.0.0.1';
     }
 
-    private getPublishUrl(manifest: CapturedAppManifest): string {
-        return `${
-            this.options.publishOrigin
-        }/app-store/developer/submit?manifest=${encodeManifestForUrl(manifest)}`;
+    public getPublishUrl(manifest: CapturedAppManifest): string;
+    public getPublishUrl(): string | undefined;
+    public getPublishUrl(manifest = this.loadManifest()): string | undefined {
+        if (!manifest) return undefined;
+        const prefix = `${this.options.publishOrigin}/app-store/developer/submit?manifest=`;
+        const url = prefix + encodeManifestForUrl(manifest);
+        if (url.length <= 7000) return url;
+        const compact = { ...manifest };
+        delete compact.suggestedIconDataUrl;
+        return prefix + encodeManifestForUrl(compact);
     }
 
     private maybeShowPublishPrompt(manifest: CapturedAppManifest): void {
@@ -1910,9 +2192,11 @@ export class MockHost {
         const hud = this.hudEl;
         hud.style.display = '';
         hud.replaceChildren(
-            this.loadHudCollapsed()
-                ? this.renderHudPill(currentManifest)
-                : this.renderHudCard(currentManifest)
+            this.confirmingReset
+                ? this.renderResetConfirmation()
+                : this.loadHudCollapsed()
+                  ? this.renderHudPill(currentManifest)
+                  : this.renderHudCard(currentManifest)
         );
 
         hud.classList.toggle('lc-mock-animate', this.hudAnimateNext);
@@ -2021,6 +2305,14 @@ export class MockHost {
         card.appendChild(list);
 
         card.appendChild(this.renderHudFooter(manifest));
+        const reset = createEl('button', 'lc-mock-hud-reset', 'Start over');
+        reset.type = 'button';
+        reset.addEventListener('click', () => {
+            this.confirmingReset = true;
+            this.updateManifestHud();
+            this.hudEl?.querySelector<HTMLButtonElement>('.lc-mock-hud-reset-cancel')?.focus();
+        });
+        card.appendChild(reset);
 
         if (this.shouldHintLocalPublishOverride()) {
             const hint = createEl('div', 'lc-mock-hud-publish-hint', 'Local LearnCard? Add ');
@@ -2033,16 +2325,51 @@ export class MockHost {
         return card;
     }
 
+    private renderResetConfirmation(): HTMLElement {
+        const card = createEl('div', 'lc-mock-hud-card lc-mock-glass');
+        const body = createEl('div', 'lc-mock-hud-confirm');
+        body.append(
+            createEl('div', 'lc-mock-hud-title', 'Start over with this app?'),
+            createEl(
+                'p',
+                undefined,
+                "This clears what LearnCard recorded here — features, practice credentials, and counters. Your code isn't touched, and nothing already in LearnCard changes."
+            )
+        );
+        const actions = createEl('div', 'lc-mock-hud-confirm-actions');
+        const cancel = createEl('button', 'lc-mock-hud-reset-cancel', 'Cancel');
+        const confirm = createEl('button', 'lc-mock-hud-reset-confirm', 'Start Over');
+        cancel.type = confirm.type = 'button';
+        const restore = (): void => {
+            this.confirmingReset = false;
+            this.updateManifestHud();
+            this.hudEl?.querySelector<HTMLButtonElement>('.lc-mock-hud-reset')?.focus();
+        };
+        cancel.addEventListener('click', restore);
+        card.addEventListener('keydown', event => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                restore();
+            }
+        });
+        confirm.addEventListener('click', () => this.resetPracticeMode());
+        actions.append(cancel, confirm);
+        body.appendChild(actions);
+        card.appendChild(body);
+        return card;
+    }
+
     private renderHudApp(manifest: CapturedAppManifest): HTMLElement {
         const app = createEl('div', 'lc-mock-hud-group lc-mock-hud-app');
         const name = manifest.suggestedName || 'Untitled app';
 
         const avatar = createEl('span', 'lc-mock-hud-avatar');
         const initial = name.trim().charAt(0).toUpperCase() || 'A';
-        if (manifest.suggestedIconUrl) {
+        const icon = manifest.suggestedIconDataUrl ?? manifest.suggestedIconUrl;
+        if (icon) {
             const img = createEl('img');
             img.alt = '';
-            img.src = manifest.suggestedIconUrl;
+            img.src = icon;
             img.addEventListener('error', () => {
                 img.remove();
                 avatar.textContent = initial;
@@ -2171,7 +2498,7 @@ export class MockHost {
     }
 
     private counterStorageKey(): string {
-        return `${this.options.namespace}:counters`;
+        return `${this.options.namespace}:counters:${this.getAppFingerprint()}`;
     }
 
     private loadCounters(): Record<string, StoredCounter> {

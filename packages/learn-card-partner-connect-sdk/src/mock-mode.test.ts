@@ -21,6 +21,238 @@ import type { CapturedAppManifest, ConsentRequest } from './types';
 
 const flush = (): Promise<void> => new Promise(resolve => setTimeout(resolve, 0));
 
+describe('practice identity, reset and icons', () => {
+    const namespace = 'practice-features';
+    const clients: PartnerConnect[] = [];
+    const create = (appId?: string, ui = false): PartnerConnect => {
+        const client = createPartnerConnect({
+            mock: true,
+            mockOptions: { namespace, appId, ui, log: false },
+        });
+        clients.push(client);
+        return client;
+    };
+    let title: string;
+    beforeEach(() => {
+        title = document.title;
+    });
+    afterEach(() => {
+        clients.splice(0).forEach(client => client.destroy());
+        document.title = title;
+        document.querySelectorAll('[data-test-icon]').forEach(node => node.remove());
+        vi.unstubAllGlobals();
+        vi.useRealTimers();
+    });
+    const icon = (rel: string, href: string, sizes = ''): void => {
+        const link = document.createElement('link');
+        link.rel = rel;
+        link.href = href;
+        link.setAttribute('sizes', sizes);
+        link.setAttribute('data-test-icon', '');
+        document.head.appendChild(link);
+    };
+
+    it('persists generated keys per title and uses explicit app IDs exactly', async () => {
+        document.title = 'First practice app';
+        const first = create();
+        await first.requestIdentity();
+        const key = first.getCapturedManifest()?.appKey;
+        expect(key).toBeTruthy();
+        expect(create().getCapturedManifest()?.appKey).toBe(key);
+        document.title = 'Second practice app';
+        const second = create();
+        await second.requestIdentity();
+        expect(second.getCapturedManifest()?.appKey).not.toBe(key);
+        const explicit = create('My Exact ID');
+        await explicit.requestIdentity();
+        expect(explicit.getCapturedManifest()?.appKey).toBe('My Exact ID');
+    });
+
+    it('resets only the current app and generates a fresh key on next capture', async () => {
+        document.title = 'Reset app';
+        const first = create();
+        await first.incrementCounter('points', 4);
+        const key = first.getCapturedManifest()?.appKey;
+        const second = create('other');
+        await second.incrementCounter('points', 9);
+        first.resetPracticeMode();
+        expect(first.getCapturedManifest()).toBeUndefined();
+        expect((await first.getCounter('points')).value).toBe(0);
+        expect(first.getCapturedManifest()?.appKey).not.toBe(key);
+        expect((await second.getCounter('points')).value).toBe(9);
+        expect(second.getCapturedManifest()?.appKey).toBe('other');
+        expect(() => createPartnerConnect({ mock: false }).resetPracticeMode()).not.toThrow();
+    });
+
+    it('confirms in place, focuses Cancel, supports cancellation and clears the HUD', async () => {
+        const client = create('reset-ui', true);
+        await client.requestIdentity();
+        const click = (selector: string): void => {
+            document.querySelector<HTMLButtonElement>(selector)!.click();
+        };
+        click('.lc-mock-hud-pill');
+        click('.lc-mock-hud-reset');
+        expect(document.activeElement?.textContent).toBe('Cancel');
+        expect(document.querySelector('.lc-mock-hud')?.textContent).toContain(
+            'Start over with this app?'
+        );
+        click('.lc-mock-hud-reset-cancel');
+        expect(document.querySelector('.lc-mock-hud-reset')).not.toBeNull();
+        click('.lc-mock-hud-reset');
+        document.activeElement?.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+        );
+        expect(document.querySelector('.lc-mock-hud-reset')).not.toBeNull();
+        click('.lc-mock-hud-reset');
+        click('.lc-mock-hud-reset-confirm');
+        expect(client.getCapturedManifest()).toBeUndefined();
+        expect(document.querySelector<HTMLElement>('.lc-mock-hud')?.style.display).toBe('none');
+    });
+
+    it('ranks Apple icons above large icons, ignores masks, and falls back to favicon', async () => {
+        icon('icon', '/small.png', '16x16');
+        icon('shortcut icon', '/large.png', '256x256');
+        icon('mask-icon', '/mask.svg', 'any');
+        icon('apple-touch-icon-precomposed', '/apple.png', '32x32');
+        const apple = create('apple');
+        await apple.requestIdentity();
+        expect(apple.getCapturedManifest()?.suggestedIconUrl).toBe(
+            new URL('/apple.png', location.href).href
+        );
+        document.querySelector('[rel="apple-touch-icon-precomposed"]')?.remove();
+        const large = create('large');
+        await large.requestIdentity();
+        expect(large.getCapturedManifest()?.suggestedIconUrl).toBe(
+            new URL('/large.png', location.href).href
+        );
+        document.querySelectorAll('[data-test-icon]').forEach(node => node.remove());
+        const fallback = create('fallback');
+        await fallback.requestIdentity();
+        expect(fallback.getCapturedManifest()?.suggestedIconUrl).toBe(
+            new URL('/favicon.ico', location.href).href
+        );
+    });
+
+    it('rasterizes an icon and prefers the captured data in the avatar', async () => {
+        const data = 'data:image/webp;base64,aGVsbG8=';
+        vi.stubGlobal(
+            'Image',
+            class {
+                naturalWidth = 256;
+                naturalHeight = 128;
+                onload: (() => void) | null = null;
+                onerror: (() => void) | null = null;
+                set src(_value: string) {
+                    queueMicrotask(() => this.onload?.());
+                }
+                removeAttribute(): void {}
+            }
+        );
+        const drawImage = vi.fn();
+        vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+            drawImage,
+        } as unknown as CanvasRenderingContext2D);
+        vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue(data);
+        const client = create('raster', true);
+        await client.requestIdentity();
+        await flush();
+        expect(client.getCapturedManifest()?.suggestedIconDataUrl).toBe(data);
+        expect(drawImage).toHaveBeenCalledWith(expect.anything(), 0, 32, 128, 64);
+        document.querySelector<HTMLButtonElement>('.lc-mock-hud-pill')!.click();
+        expect(document.querySelector<HTMLImageElement>('.lc-mock-hud-avatar img')?.src).toBe(data);
+    });
+
+    it('drops oversized image data from publish links without changing stored captures', async () => {
+        const client = create('long-url');
+        await client.requestIdentity();
+        const manifests = readManifestMap(namespace);
+        manifests['long-url'].suggestedIconDataUrl = `data:image/png;base64,${'x'.repeat(8000)}`;
+        localStorage.setItem(`${namespace}:manifests`, JSON.stringify(manifests));
+        const url = client.getPublishUrl()!;
+        expect(url.length).toBeLessThan(7000);
+        expect(
+            decodeManifestFromUrl(new URL(url).searchParams.get('manifest')!)?.suggestedIconDataUrl
+        ).toBeUndefined();
+        expect(client.getCapturedManifest()?.suggestedIconDataUrl).toBeTruthy();
+    });
+
+    it('clears practice credentials, template versions and publish dismissal', async () => {
+        const client = create('reset-records');
+        const template = { name: 'First badge' };
+        await client.sendCredential({ alias: 'badge', template });
+        await client.sendCredential({ alias: 'badge', template: { name: 'Updated badge' } });
+        localStorage.setItem(
+            `${namespace}:publish-dismissed-at:reset-records`,
+            new Date().toISOString()
+        );
+        client.resetPracticeMode();
+        expect(localStorage.getItem(`${namespace}:publish-dismissed-at:reset-records`)).toBeNull();
+        expect(
+            (await client.checkUserHasCredential({ templateAlias: 'badge' })).hasCredential
+        ).toBe(false);
+        expect((await client.sendCredential({ alias: 'badge', template })).templateVersion).toBe(1);
+    });
+
+    it('falls back to session identity and resets when storage throws', async () => {
+        vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+            throw new Error('blocked');
+        });
+        vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+            throw new Error('blocked');
+        });
+        const client = create();
+        await client.requestIdentity();
+        const key = client.getCapturedManifest()?.appKey;
+        await client.requestIdentity();
+        expect(client.getCapturedManifest()?.appKey).toBe(key);
+        client.resetPracticeMode();
+        expect(client.getCapturedManifest()).toBeUndefined();
+        await client.requestIdentity();
+        expect(client.getCapturedManifest()?.appKey).not.toBe(key);
+    });
+
+    it('reads the largest same-origin manifest icon and cancels pending image work on destroy', async () => {
+        vi.useFakeTimers();
+        icon('manifest', '/app.webmanifest');
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                icons: [
+                    { src: '/tiny.png', sizes: '16x16' },
+                    { src: '/big.png', sizes: '512x512' },
+                ],
+            }),
+        });
+        vi.stubGlobal('fetch', fetchMock);
+        const client = create('manifest-icon');
+        await client.requestIdentity();
+        await vi.advanceTimersByTimeAsync(4001);
+        expect(client.getCapturedManifest()?.suggestedIconUrl).toBe(
+            new URL('/big.png', location.href).href
+        );
+        expect(client.getCapturedManifest()?.suggestedIconDataUrl).toBeUndefined();
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        await client.requestIdentity();
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        client.destroy();
+        await vi.advanceTimersByTimeAsync(50);
+        expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('aborts a pending manifest fetch without recreating a reset capture', async () => {
+        vi.useFakeTimers();
+        icon('manifest', '/pending.webmanifest');
+        vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => undefined)));
+        const client = create('pending-icon');
+        await client.requestIdentity();
+        client.resetPracticeMode();
+        await vi.advanceTimersByTimeAsync(5000);
+        expect(client.getCapturedManifest()).toBeUndefined();
+        client.destroy();
+        expect(vi.getTimerCount()).toBe(0);
+    });
+});
+
 const readManifestMap = (namespace: string): Record<string, CapturedAppManifest> => {
     const raw = localStorage.getItem(`${namespace}:manifests`);
     return raw ? (JSON.parse(raw) as Record<string, CapturedAppManifest>) : {};
@@ -1191,7 +1423,7 @@ describe('captured app manifest + publish URL', () => {
             mockOptions: { ui: false, namespace },
         });
 
-        expect(lc.getCapturedManifest()).toEqual(legacyManifest);
+        expect(lc.getCapturedManifest()).toEqual({ ...legacyManifest, appKey: expect.any(String) });
         expect(localStorage.getItem(`${namespace}:manifest`)).toBeNull();
         expect(readManifestMap(namespace)).toMatchObject({
             'legacy-app': expect.objectContaining({ suggestedName: 'Legacy App' }),

@@ -316,6 +316,8 @@ export interface MockCredentialSeed {
 export interface CapturedManifestReadable {
     getCapturedManifest(): CapturedAppManifest | undefined;
     getPublishUrl(): string | undefined;
+    /** Start fresh for the current practice app; no-op outside mock mode. */
+    resetPracticeMode(): void;
     getActiveHostOrigin(): string | null;
     getPublishOrigin(): string | null;
 }

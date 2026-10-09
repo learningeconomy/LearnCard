@@ -16,3 +16,5 @@ LearnCard gains a publish-from-link page with live preview and a consent designe
 App captures are additive: submitting a manifest merges it into the latest version (`mergeCapturedManifests`), so features a run didn't exercise are kept rather than reported as removed.
 
 Practice mode gets a redesigned look: frosted-glass notices with clear icons and plain-language copy (at most three on screen, one on phones), and a "Practice mode" panel that lists the LearnCard features your app uses in plain words with a one-tap Publish button. Both follow the system light/dark setting and respect reduced motion.
+
+Practice mode now remembers a separate identity for each app, so apps sharing a local address publish separately. Start over from the panel or with `resetPracticeMode()` to clear just that app's practice history. App icons are picked more accurately and can travel with the publish link as a small image, with a size limit to keep links manageable.
