@@ -1,3 +1,4 @@
+# Keep this runtime in sync with apps/learn-card-app/Dockerfile's runtime stage.
 FROM nginx:1.28-alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY build /usr/share/nginx/html
