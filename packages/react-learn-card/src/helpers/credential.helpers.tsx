@@ -15,6 +15,7 @@ import PuzzlePiece from '../components/svgs/PuzzlePiece';
 import KeyIcon from '../components/svgs/KeyIcon';
 import User from '../components/svgs/User';
 import Trophy from '../components/svgs/Trophy';
+import QualificationsIcon from '../components/svgs/QualificationsIcon';
 import Graduation from '../components/svgs/Graduation';
 import Briefcase from '../components/svgs/Briefcase';
 import AccommodationsIcon from '../components/svgs/AccommodationsIcon';
@@ -97,6 +98,8 @@ export const getCategoryColor = (category = LCCategoryEnum.achievement) => {
             return 'indigo-600';
         case LCCategoryEnum.achievement:
             return 'pink-600';
+        case LCCategoryEnum.qualifications:
+            return 'orange-700';
         case LCCategoryEnum.learningHistory:
             return 'emerald-700';
         case LCCategoryEnum.id:
@@ -124,6 +127,8 @@ export const getCategoryPrimaryColor = (category = LCCategoryEnum.achievement) =
             return 'indigo';
         case LCCategoryEnum.achievement:
             return 'pink';
+        case LCCategoryEnum.qualifications:
+            return 'orange';
         case LCCategoryEnum.learningHistory:
             return 'emerald';
         case LCCategoryEnum.id:
@@ -151,6 +156,7 @@ export const getCategoryLightColor = (category = LCCategoryEnum.achievement) => 
     if (category === LCCategoryEnum.meritBadge) {
         return 'sp-purple-base';
     }
+    if (category === LCCategoryEnum.qualifications) return 'orange-700';
 
     return `${getCategoryPrimaryColor(category)}-500`;
 };
@@ -159,6 +165,7 @@ export const getCategoryDarkColor = (category = LCCategoryEnum.achievement) => {
     if (category === LCCategoryEnum.meritBadge) {
         return 'sp-purple-base';
     }
+    if (category === LCCategoryEnum.qualifications) return 'orange-900';
 
     return `${getCategoryPrimaryColor(category)}-700`;
 };
@@ -171,6 +178,8 @@ export const getCategoryIcon = (category = LCCategoryEnum.achievement, size: str
             return <PuzzlePiece size={size} />;
         case LCCategoryEnum.achievement:
             return <Trophy size={size} />;
+        case LCCategoryEnum.qualifications:
+            return <QualificationsIcon size={size} />;
         case LCCategoryEnum.course:
         case LCCategoryEnum.learningHistory:
             return <Graduation size={size} />;

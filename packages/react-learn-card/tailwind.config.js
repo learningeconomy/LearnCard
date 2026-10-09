@@ -27,6 +27,15 @@ const lineClampPlugin = plugin(({ addUtilities }) => {
 
 module.exports = {
     content: [path.join(__dirname, 'src/**/*.{js,jsx,ts,tsx}')],
+    // Qualifications colors are assembled dynamically by the category helpers.
+    safelist: [
+        'bg-orange-200',
+        'bg-orange-300',
+        'bg-orange-700',
+        'border-orange-700',
+        'text-orange-700',
+        'text-orange-900',
+    ],
     theme: {
         extend: {
             boxShadow: {

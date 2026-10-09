@@ -274,6 +274,7 @@ export const AchievementTypes = {
 
 export const ACHIEVEMENT_CATEGORIES = {
     Achievement: 'Achievement',
+    Qualifications: 'Qualifications',
     Skill: 'Skill',
     ID: 'ID',
     LearningHistory: 'Learning History',
@@ -346,6 +347,13 @@ export const CATEGORY_TO_TEMPLATE_LIST = {
             type: AchievementTypes.Badge,
         },
     ],
+    [ACHIEVEMENT_CATEGORIES.Qualifications]: [
+        { title: 'License', type: AchievementTypes.License },
+        { title: 'Certification', type: AchievementTypes.Certification },
+        { title: 'Journeyman Certificate', type: AchievementTypes.JourneymanCertificate },
+        { title: 'Master Certificate', type: AchievementTypes.MasterCertificate },
+        { title: 'Apprenticeship Certificate', type: AchievementTypes.ApprenticeshipCertificate },
+    ],
     [ACHIEVEMENT_CATEGORIES.ID]: [
         {
             title: 'School ID',
@@ -380,20 +388,11 @@ export const CATEGORY_TO_TEMPLATE_LIST = {
             title: 'EventID',
             type: AchievementTypes.EventID,
         },
-
-        {
-            title: 'License',
-            type: AchievementTypes.License,
-        },
     ],
     [ACHIEVEMENT_CATEGORIES.Skill]: [
         {
             title: 'Assessment',
             type: AchievementTypes.Assessment,
-        },
-        {
-            title: 'Certification',
-            type: AchievementTypes.Certification,
         },
         {
             title: 'Competency',
@@ -540,19 +539,6 @@ export const CATEGORY_TO_TEMPLATE_LIST = {
         {
             title: 'Community Service',
             type: AchievementTypes.CommunityService,
-        },
-        {
-            title: 'Apprenticeship Certificate',
-            type: AchievementTypes.ApprenticeshipCertificate,
-        },
-
-        {
-            title: 'Journeyman Certificate',
-            type: AchievementTypes.JourneymanCertificate,
-        },
-        {
-            title: 'Master Certificate',
-            type: AchievementTypes.MasterCertificate,
         },
     ],
 
@@ -792,6 +778,13 @@ export const AchievementCategoryTypes = [
     AchievementTypes.Language,
     AchievementTypes.Upskilling,
 ];
+export const QualificationsCategoryTypes = [
+    AchievementTypes.License,
+    AchievementTypes.Certification,
+    AchievementTypes.JourneymanCertificate,
+    AchievementTypes.MasterCertificate,
+    AchievementTypes.ApprenticeshipCertificate,
+];
 export const IdCategoryTypes = [
     AchievementTypes.EmployerID,
     AchievementTypes.SchoolID,
@@ -804,8 +797,6 @@ export const IdCategoryTypes = [
     AchievementTypes.CommunityOfPracticeID,
     AchievementTypes.EventID,
 
-    AchievementTypes.License,
-
     // extended ( ID ) category types
     AchievementTypes.StudentID,
     AchievementTypes.MemberID,
@@ -816,7 +807,6 @@ export const IdCategoryTypes = [
 ];
 export const SkillCategroyTypes = [
     AchievementTypes.Assessment,
-    AchievementTypes.Certification,
     AchievementTypes.Competency,
     AchievementTypes.MicroCredential,
 ];
@@ -868,10 +858,6 @@ export const WorkHistoryCategoryTypes = [
     AchievementTypes.Internship,
     AchievementTypes.Volunteer,
     AchievementTypes.Board,
-
-    AchievementTypes.ApprenticeshipCertificate,
-    AchievementTypes.JourneymanCertificate,
-    AchievementTypes.MasterCertificate,
 ];
 export const MembershipCategoryTypes = [
     AchievementTypes.Group,

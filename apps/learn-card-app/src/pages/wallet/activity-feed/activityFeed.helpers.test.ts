@@ -36,12 +36,18 @@ describe('resolveActivityCategory', () => {
     it('maps an enum key string to the enum', () => {
         expect(resolveActivityCategory('socialBadge')).toBe(CredentialCategoryEnum.socialBadge);
         expect(resolveActivityCategory('achievement')).toBe(CredentialCategoryEnum.achievement);
+        expect(resolveActivityCategory('qualifications')).toBe(
+            CredentialCategoryEnum.qualifications
+        );
     });
     it('maps the enum display value (how boosts persist category) to the enum', () => {
         expect(resolveActivityCategory('Social Badge')).toBe(CredentialCategoryEnum.socialBadge);
         expect(resolveActivityCategory('Achievement')).toBe(CredentialCategoryEnum.achievement);
         expect(resolveActivityCategory('ID')).toBe(CredentialCategoryEnum.id);
         expect(resolveActivityCategory('Work History')).toBe(CredentialCategoryEnum.workHistory);
+        expect(resolveActivityCategory('Qualifications')).toBe(
+            CredentialCategoryEnum.qualifications
+        );
     });
     it('falls back to socialBadge for unknown/missing', () => {
         expect(resolveActivityCategory(undefined)).toBe(CredentialCategoryEnum.socialBadge);

@@ -17,6 +17,6 @@ export const NEW_LABEL_KEYS: Record<string, string> = {
     [CredentialCategoryEnum.achievement]: K.achievement,
     [CredentialCategoryEnum.skill]: K.skill,
     [CredentialCategoryEnum.id]: K.id,
-    [CredentialCategoryEnum.membership]: K.membership,
+    [CredentialCategoryEnum.qualifications]: K.qualifications,
     [CredentialCategoryEnum.course]: K.course,
 };

@@ -66,6 +66,7 @@ const CATEGORY_LOOKUP: Record<string, CredentialCategoryEnum> = (() => {
 const CATEGORY_KEY: Partial<Record<CredentialCategoryEnum, string>> = {
     [CredentialCategoryEnum.socialBadge]: 'socialBadge',
     [CredentialCategoryEnum.achievement]: 'achievement',
+    [CredentialCategoryEnum.qualifications]: 'qualifications',
     [CredentialCategoryEnum.learningHistory]: 'learningHistory',
     [CredentialCategoryEnum.accomplishment]: 'accomplishment',
     [CredentialCategoryEnum.accommodation]: 'accommodation',
@@ -78,6 +79,7 @@ const CATEGORY_KEY: Partial<Record<CredentialCategoryEnum, string>> = {
 const CAT_LABEL_FN: Record<string, () => string> = {
     socialBadge: m['passport.activity.categories.socialBadge'],
     achievement: m['passport.activity.categories.achievement'],
+    qualifications: m['passport.activity.categories.qualifications'],
     learningHistory: m['passport.activity.categories.learningHistory'],
     accomplishment: m['passport.activity.categories.accomplishment'],
     accommodation: m['passport.activity.categories.accommodation'],
@@ -90,6 +92,7 @@ const CAT_ARTICLE_FN: Record<string, () => string> = {
     socialBadge: m['passport.activity.article.socialBadge'],
     achievement: m['passport.activity.article.achievement'],
     learningHistory: m['passport.activity.article.learningHistory'],
+    qualifications: m['passport.activity.article.qualifications'],
     accomplishment: m['passport.activity.article.accomplishment'],
     accommodation: m['passport.activity.article.accommodation'],
     workHistory: m['passport.activity.article.workHistory'],
@@ -272,7 +275,7 @@ export const toActivityFeedVM = (record: RawActivity, myProfileId?: string): Act
     const actorName =
         direction === 'sent'
             ? m['passport.activity.you']()
-            : record.actorProfileId ?? m['passport.activity.someone']();
+            : (record.actorProfileId ?? m['passport.activity.someone']());
     const isSelf =
         direction === 'sent' &&
         Boolean(myProfileId) &&
@@ -424,6 +427,10 @@ export const getActivityFilters = (): { id: ActivityFilterId; label: string }[] 
     {
         id: CredentialCategoryEnum.achievement,
         label: m['passport.activity.categoriesPlural.achievement'](),
+    },
+    {
+        id: CredentialCategoryEnum.qualifications,
+        label: m['passport.activity.categoriesPlural.qualifications'](),
     },
     {
         id: CredentialCategoryEnum.learningHistory,

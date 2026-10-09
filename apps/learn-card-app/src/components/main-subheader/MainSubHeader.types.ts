@@ -17,6 +17,7 @@ const {
     SkillsIconWithShape,
     BoostsIcon,
     AchievementsIcon,
+    QualificationsIcon,
     StudiesIcon,
     PortfolioIcon,
     AssistanceIcon,
@@ -28,6 +29,7 @@ export enum SubheaderTypeEnum {
     Learning = 'learning',
     SocialBadge = 'socialBadge',
     Achievement = 'achievement',
+    Qualifications = 'qualifications',
     Accomplishment = 'accomplishment',
     Skill = 'skill',
     AiSessions = 'aiSessions',
@@ -97,6 +99,16 @@ export const SubheaderContentType: Record<
         bgColor: 'bg-pink-400',
         helperText: 'Your',
         helperTextClickable: 'proudest moments',
+    },
+    [SubheaderTypeEnum.Qualifications]: {
+        title: 'Qualifications',
+        IconComponent: QualificationsIcon,
+        iconColor: 'text-orange-700',
+        iconPadding: 'p-0',
+        textColor: 'text-grayscale-900',
+        bgColor: 'bg-orange-400',
+        helperText: 'Your',
+        helperTextClickable: 'qualifications',
     },
     [SubheaderTypeEnum.Accomplishment]: {
         title: 'Portfolio',
@@ -257,6 +269,8 @@ export const credentialCategoryToSubheaderType = (category: CredentialCategoryEn
             return SubheaderTypeEnum.Learning;
         case CredentialCategoryEnum.achievement:
             return SubheaderTypeEnum.Achievement;
+        case CredentialCategoryEnum.qualifications:
+            return SubheaderTypeEnum.Qualifications;
         case CredentialCategoryEnum.accomplishment:
             return SubheaderTypeEnum.Accomplishment;
         case CredentialCategoryEnum.skill:

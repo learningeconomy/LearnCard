@@ -146,6 +146,11 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                 walletFolder: 'Boosts',
             },
             {
+                value: 'Qualifications',
+                label: m['wallet.categories.qualifications'](),
+                walletFolder: 'Qualifications',
+            },
+            {
                 value: 'ID',
                 label: m['developerPortal.credentialBuilder.achievement.walletCategories.id'](),
                 walletFolder: 'IDs',

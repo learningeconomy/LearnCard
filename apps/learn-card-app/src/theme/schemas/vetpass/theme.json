@@ -19,6 +19,18 @@
                 "backgroundSecondaryColor": "grayscale-100",
                 "tabActiveColor": "bg-baltic-blue-100"
             },
+            "qualifications": {
+                "primaryColor": "orange-100",
+                "secondaryColor": "orange-700",
+                "indicatorColor": "orange-300",
+                "borderColor": "white",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-orange-100"
+            },
             "socialBadge": {
                 "primaryColor": "navy-50",
                 "secondaryColor": "navy-700",
@@ -206,6 +218,13 @@
                     "backsplash": "#66B8FF",
                     "spill": "#33A0FF",
                     "cupOutline": "#0055A3"
+                }
+            },
+            "qualifications": {
+                "spilledCup": {
+                    "backsplash": "#FDBA74",
+                    "spill": "#FB923C",
+                    "cupOutline": "#C2410C"
                 }
             },
             "socialBadge": {
