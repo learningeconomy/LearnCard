@@ -223,6 +223,73 @@ export class AuthCoordinator {
         this.stopEscrowPolling?.();
     }
 
+    /**
+     * Staged-rollout gate for FIRST-TIME automatic enrollment only (see
+     * `AuthCoordinatorConfig.isEscrowEnrollmentAllowed`). Defaults to allowed,
+     * and fails closed if the configured predicate rejects; the userKey is
+     * passed through untouched and never logged here.
+     */
+    private async isEscrowEnrollmentAllowed(userKey: string): Promise<boolean> {
+        if (!this.config.isEscrowEnrollmentAllowed) return true;
+        try {
+            return await this.config.isEscrowEnrollmentAllowed(userKey);
+        } catch (err) {
+            log.warn('escrow.rollout.check.failed', err);
+            return false;
+        }
+    }
+
+    /**
+     * Decide whether `ensureEscrowEnrollment` may run this cycle, and hand back
+     * whatever enrollment-state read was needed to decide so `refreshEscrow`
+     * doesn't have to fetch it twice.
+     *
+     * The rollout gate only ever applies to a `not-enrolled` account — an
+     * account that already has (or once had) escrow material must keep being
+     * repaired regardless of bucket, because `ensureEscrowEnrollment` is also
+     * the maintenance path that re-seals after a share-version rotation and
+     * repairs a `stale` (mode-mismatch / key-rotated, P6.1) blob. Without this,
+     * lowering the rollout percent — or simply being outside it when a
+     * migration runs — would silently break recovery for people who are
+     * already enrolled, which the rollout must never do.
+     *
+     * When no rollout predicate is configured at all, this is a no-op
+     * (`{ allowed: true }`, no prefetch) so behavior is unchanged for any
+     * consumer that hasn't opted into staged rollout.
+     */
+    private async resolveEscrowEnrollmentGate(
+        userKey: string,
+        credentials: { token: string; providerType: string }
+    ): Promise<{ allowed: boolean; prefetched?: EscrowEnrollmentState }> {
+        if (!this.config.isEscrowEnrollmentAllowed) return { allowed: true };
+
+        if (!this.keyDerivation.getEscrowEnrollmentState) {
+            // No way to know current status on this strategy — apply the gate as if new.
+            return { allowed: await this.isEscrowEnrollmentAllowed(userKey) };
+        }
+
+        let prefetched: EscrowEnrollmentState;
+        try {
+            prefetched = normalizeEscrowEnrollmentState(
+                await this.keyDerivation.getEscrowEnrollmentState(credentials)
+            );
+        } catch (err) {
+            log.warn('escrow.pin.status.failed', err);
+            // Unknown status — fail closed for a possible NEW enrollment. An already-enrolled
+            // account is unaffected beyond this one cycle: the next refresh retries the lookup.
+            return { allowed: await this.isEscrowEnrollmentAllowed(userKey) };
+        }
+
+        if (prefetched.state !== 'not-enrolled') {
+            // enrolled / stale: always repair. opted-out / disabled: `ensureEscrowEnrollment`
+            // already no-ops safely for these (its own return-type contract) — call it
+            // unconditionally, exactly as before the rollout gate existed.
+            return { allowed: true, prefetched };
+        }
+
+        return { allowed: await this.isEscrowEnrollmentAllowed(userKey), prefetched };
+    }
+
     /** Best-effort repair and hold discovery must never block account access. */
     private async refreshEscrow(
         ready: Extract<UnifiedAuthState, { status: 'ready' }>
@@ -244,19 +311,33 @@ export class AuthCoordinator {
             const credentials = await this.getAuthCredentials();
             if (!isCurrentAccount()) return;
             const signDidAuthVp = this.config.signDidAuthVp;
+            let publishedEnrollment = false;
             if (signDidAuthVp && this.keyDerivation.ensureEscrowEnrollment) {
-                await this.runEscrowOperation(async () =>
-                    isCurrentAccount()
-                        ? this.keyDerivation.ensureEscrowEnrollment?.({
-                              ...credentials,
-                              privateKey: ready.privateKey,
-                              signDidAuthVp,
-                          })
-                        : undefined
-                ).catch(err => log.warn('escrow.enrollment.failed', err));
+                const gate = await this.resolveEscrowEnrollmentGate(ready.did, credentials);
+                if (gate.allowed) {
+                    await this.runEscrowOperation(async () =>
+                        isCurrentAccount()
+                            ? this.keyDerivation.ensureEscrowEnrollment?.({
+                                  ...credentials,
+                                  privateKey: ready.privateKey,
+                                  signDidAuthVp,
+                              })
+                            : undefined
+                    ).catch(err => log.warn('escrow.enrollment.failed', err));
+                } else if (gate.prefetched && isCurrentAccount() && this.state.status === 'ready') {
+                    // The gate blocked the call precisely because the prefetch already proved
+                    // this account is not-enrolled; nothing ran that could change that, so
+                    // publish it without a second getEscrowEnrollmentState round-trip below.
+                    this.setState({
+                        ...this.state,
+                        escrowPin: gate.prefetched.escrowPin,
+                        escrowEnrollment: gate.prefetched.state,
+                    });
+                    publishedEnrollment = true;
+                }
             }
             if (!isCurrentAccount()) return;
-            if (this.keyDerivation.getEscrowEnrollmentState) {
+            if (!publishedEnrollment && this.keyDerivation.getEscrowEnrollmentState) {
                 try {
                     const enrollment = normalizeEscrowEnrollmentState(
                         await this.keyDerivation.getEscrowEnrollmentState(credentials)
