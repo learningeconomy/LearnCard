@@ -11,6 +11,14 @@ inspected at main `300c0af3125a4f1b1785820a2d33866723a88f30`.
 | `generateBoostSkills` | `us.openai.gpt-6.1-sol`     | `medium` | Infer appropriate skills and subskills within the existing hierarchy.                  |
 | `generateSkillIcons`  | `us.openai.gpt-6-luna`      | `none`   | Straightforward semantic mapping of supplied names to emoji.                           |
 
+AWS's current [Sol model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-6-1-sol.html),
+[Luna model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-6-luna.html)
+and [Responses compatibility guide](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-responses-api.html)
+confirm these Runtime profiles and API support. The 8,192-token request ceiling is below
+both documented model output limits. Although the current cards advertise native JSON
+Schema output, this migration retains AI Passport's required-function pattern and
+local validation to preserve existing optional-category semantics.
+
 `generateImage` remains on first-party OpenAI (`dall-e-3`, `OPENAI_API_KEY`), including
 its existing Filestack storage. Embeddings and Nova are outside this migration.
 
@@ -49,6 +57,9 @@ Before rollout, obtain approved staging tests for all three real schemas, locale
 typical and maximum input sizes, token ceilings, timeout behavior and error handling.
 Offline tests do not establish provider acceptance, entitlement, latency or generation
 quality. Live model calls require separate approval.
+
+Responses does not support attaching native Bedrock Guardrails; if the approved data-handling
+policy requires filtering, a separately approved pre-invocation path is a rollout gate.
 
 The deployed Lambda role must have approved Bedrock/default-project access for both
 exact cross-region US profiles and access to the Runtime endpoint. Confirm rotating
