@@ -50,6 +50,41 @@ build_images() {
         2>&1 | tee "$E2E_ARTIFACT_DIR/docker-buildx-bake.log"
 }
 
+build_host_browser() {
+    cd "$REPO_ROOT" || return
+    # The app's ^build graph includes all three SDK roots used by Playwright.
+    # Use the tested checkout for Vite provenance, including manual dispatches.
+    GITHUB_SHA=$(git rev-parse HEAD) SKIP_DIDKIT_NAPI=1 NX_DAEMON=false \
+        bunx nx run learn-card-app:docker-build --verbose --skip-nx-cache || return
+    [[ -s "$APP_DIR/build/index.html" ]] || return 1
+    local output
+    for output in packages/learn-card-types/dist packages/learn-card-init/dist packages/plugins/lca-api-plugin/dist; do
+        [[ -d "$REPO_ROOT/$output" ]] || { echo "Missing fixture build: $output" >&2; return 1; }
+    done
+    mkdir -p "$E2E_BROWSER_RUNTIME_CONTEXT" || return
+    cp -R "$APP_DIR/build" "$E2E_BROWSER_RUNTIME_CONTEXT/build" || return
+    cp "$APP_DIR/nginx.conf" "$E2E_BROWSER_RUNTIME_CONTEXT/nginx.conf" || return
+    cp "$REPO_ROOT/scripts/e2e-hosted/Dockerfile.browser-runtime" "$E2E_BROWSER_RUNTIME_CONTEXT/Dockerfile" || return
+}
+
+build_host_browser_images() {
+    cd "$REPO_ROOT" || return
+    E2E_BROWSER_RUNTIME_CONTEXT=$(mktemp -d) || return
+    export E2E_BROWSER_RUNTIME_CONTEXT
+    # Reap both jobs even when one fails: e2e_timed disables errexit.
+    e2e_timed backend_image_build docker buildx bake --file "$BAKE_FILE" hosted-browser-backend \
+        --load --progress=plain > "$E2E_ARTIFACT_DIR/docker-buildx-bake.log" 2>&1 &
+    local backend_pid=$! status=0
+    e2e_timed host_browser_build build_host_browser || status=1
+    wait "$backend_pid" || status=1
+    if [[ "$status" -eq 0 ]]; then
+        e2e_timed browser_runtime_image docker buildx bake --file "$BAKE_FILE" hosted-browser-app \
+            --load --progress=plain || status=1
+    fi
+    rm -rf "$E2E_BROWSER_RUNTIME_CONTEXT"
+    return "$status"
+}
+
 start_compose() {
     cd "$APP_DIR"
     docker compose down --remove-orphans -v 2>/dev/null || true
@@ -118,10 +153,16 @@ run_accessibility() {
 }
 
 e2e_snapshot startup
-e2e_timed docker_buildx_bake build_images
+if [[ "${E2E_HOST_BROWSER_BUILD:-false}" == true ]]; then
+    e2e_timed image_preparation build_host_browser_images
+else
+    e2e_timed docker_buildx_bake build_images
+fi
 e2e_snapshot after-image-build
 e2e_timed compose_start start_compose
-e2e_timed host_dependency_build build_test_dependencies
+if [[ "${E2E_HOST_BROWSER_BUILD:-false}" != true ]]; then
+    e2e_timed host_dependency_build build_test_dependencies
+fi
 e2e_timed playwright_runner_prepare prepare_browser_runner
 e2e_snapshot stack-running
 e2e_timed service_readiness wait_for_stack

@@ -77,3 +77,18 @@ target "service-base" {
 group "service" {
   targets = ["backend-dependency-cache", "service-base"]
 }
+
+# Experiment: compile the SPA and SDK once on the host, then load only runtimes.
+variable "E2E_BROWSER_RUNTIME_CONTEXT" {
+  default = "/tmp/learncard-browser-runtime"
+}
+
+target "hosted-browser-app" {
+  context    = E2E_BROWSER_RUNTIME_CONTEXT
+  dockerfile = "Dockerfile"
+  tags       = ["learn-card-e2e-app"]
+}
+
+group "hosted-browser-backend" {
+  targets = ["backend-dependency-cache", "browser-base", "browser-delete"]
+}
