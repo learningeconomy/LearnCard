@@ -356,10 +356,14 @@ export const ConsentDesignerCard: React.FC<ConsentDesignerCardProps> = ({
                 </div>
 
                 <div>
-                    <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                    <label
+                        htmlFor="consent-designer-reason"
+                        className="block text-xs font-medium text-grayscale-700 mb-1.5"
+                    >
                         Why are you asking?
                     </label>
                     <input
+                        id="consent-designer-reason"
                         type="text"
                         value={reason}
                         onChange={e => setReason(e.target.value)}

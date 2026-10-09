@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import { flaskOutline } from 'ionicons/icons';
 
@@ -23,6 +23,11 @@ export const TestAddressBar: React.FC<TestAddressBarProps> = ({
 }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [draft, setDraft] = useState(test.address);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (isEditing) inputRef.current?.focus();
+    }, [isEditing]);
 
     const usingTest = test.enabled && isValidTestAddress(test.address);
 
@@ -46,8 +51,8 @@ export const TestAddressBar: React.FC<TestAddressBarProps> = ({
                     value={draft}
                     onChange={e => setDraft(e.target.value)}
                     placeholder="http://localhost:5173"
+                    ref={inputRef}
                     aria-label="Test address"
-                    autoFocus
                     className="flex-1 min-w-0 py-2 px-3 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                 />
                 <button

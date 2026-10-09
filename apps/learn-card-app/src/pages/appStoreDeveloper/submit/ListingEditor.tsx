@@ -58,8 +58,16 @@ export const ListingIdentityFields: React.FC<ListingIdentityFieldsProps> = ({
     taglineRef,
 }) => (
     <div className="space-y-5">
-        <div ref={iconRef} tabIndex={-1} className="outline-none">
-            <label className={LABEL_CLASS}>App icon</label>
+        <div
+            ref={iconRef}
+            tabIndex={-1}
+            role="group"
+            aria-labelledby="listing-icon-label"
+            className="outline-none"
+        >
+            <span id="listing-icon-label" className={LABEL_CLASS}>
+                App icon
+            </span>
             <ImageUpload
                 value={data.iconUrl === DEFAULT_APP_ICON_URL ? '' : data.iconUrl}
                 onChange={url => onChange({ iconUrl: url })}
@@ -69,8 +77,11 @@ export const ListingIdentityFields: React.FC<ListingIdentityFieldsProps> = ({
             />
         </div>
         <div>
-            <label className={LABEL_CLASS}>App name</label>
+            <label htmlFor="listing-name" className={LABEL_CLASS}>
+                App name
+            </label>
             <input
+                id="listing-name"
                 ref={nameRef}
                 type="text"
                 value={data.name}
@@ -81,8 +92,11 @@ export const ListingIdentityFields: React.FC<ListingIdentityFieldsProps> = ({
             />
         </div>
         <div>
-            <label className={LABEL_CLASS}>Tagline</label>
+            <label htmlFor="listing-tagline" className={LABEL_CLASS}>
+                Tagline
+            </label>
             <input
+                id="listing-tagline"
                 ref={taglineRef}
                 type="text"
                 value={data.tagline}
@@ -112,8 +126,11 @@ export const ListingDetailsFields: React.FC<ListingDetailsFieldsProps> = ({
     return (
         <div className="space-y-5">
             <div>
-                <label className={LABEL_CLASS}>Description</label>
+                <label htmlFor="listing-description" className={LABEL_CLASS}>
+                    Description
+                </label>
                 <textarea
+                    id="listing-description"
                     ref={descriptionRef}
                     value={details.description}
                     onChange={e => onChange({ description: e.target.value })}
@@ -125,8 +142,10 @@ export const ListingDetailsFields: React.FC<ListingDetailsFieldsProps> = ({
                 <Counter value={details.description} max={2000} />
             </div>
 
-            <div>
-                <label className={LABEL_CLASS}>Screenshots</label>
+            <div role="group" aria-labelledby="listing-screenshots-label">
+                <span id="listing-screenshots-label" className={LABEL_CLASS}>
+                    Screenshots
+                </span>
                 <p className="text-xs text-grayscale-500 mb-3">
                     Optional, but listings with screenshots get more installs.
                 </p>
@@ -208,8 +227,10 @@ export const StandOutSection: React.FC<StandOutSectionProps> = ({
 
             {(open || invalid.size > 0) && (
                 <div className="px-6 pb-6 pt-5 border-t border-grayscale-100 space-y-5">
-                    <div>
-                        <label className={LABEL_CLASS}>Highlights</label>
+                    <div role="group" aria-labelledby="listing-highlights-label">
+                        <span id="listing-highlights-label" className={LABEL_CLASS}>
+                            Highlights
+                        </span>
                         <div className="space-y-2">
                             {details.highlights.map((highlight, index) => (
                                 <div key={index} className="flex gap-2">
@@ -260,8 +281,11 @@ export const StandOutSection: React.FC<StandOutSectionProps> = ({
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className={LABEL_CLASS}>Category</label>
+                            <label htmlFor="listing-category" className={LABEL_CLASS}>
+                                Category
+                            </label>
                             <select
+                                id="listing-category"
                                 value={details.category}
                                 onChange={e => onChange({ category: e.target.value })}
                                 className={INPUT_CLASS}
@@ -275,8 +299,11 @@ export const StandOutSection: React.FC<StandOutSectionProps> = ({
                             </select>
                         </div>
                         <div>
-                            <label className={LABEL_CLASS}>Age rating</label>
+                            <label htmlFor="listing-age-rating" className={LABEL_CLASS}>
+                                Age rating
+                            </label>
                             <select
+                                id="listing-age-rating"
                                 value={details.ageRating}
                                 onChange={e =>
                                     onChange({ ageRating: e.target.value as AgeRating | '' })
@@ -295,8 +322,11 @@ export const StandOutSection: React.FC<StandOutSectionProps> = ({
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className={LABEL_CLASS}>Privacy policy link</label>
+                            <label htmlFor="listing-privacy-policy" className={LABEL_CLASS}>
+                                Privacy policy link
+                            </label>
                             <input
+                                id="listing-privacy-policy"
                                 ref={fieldRefs.privacyPolicyUrl}
                                 type="url"
                                 value={details.privacyPolicyUrl}
@@ -307,8 +337,11 @@ export const StandOutSection: React.FC<StandOutSectionProps> = ({
                             <FieldError field="privacyPolicyUrl" invalid={invalid} />
                         </div>
                         <div>
-                            <label className={LABEL_CLASS}>Terms of service link</label>
+                            <label htmlFor="listing-terms" className={LABEL_CLASS}>
+                                Terms of service link
+                            </label>
                             <input
+                                id="listing-terms"
                                 ref={fieldRefs.termsUrl}
                                 type="url"
                                 value={details.termsUrl}
@@ -321,8 +354,11 @@ export const StandOutSection: React.FC<StandOutSectionProps> = ({
                     </div>
 
                     <div>
-                        <label className={LABEL_CLASS}>Contact email</label>
+                        <label htmlFor="listing-contact-email" className={LABEL_CLASS}>
+                            Contact email
+                        </label>
                         <input
+                            id="listing-contact-email"
                             ref={fieldRefs.contactEmail}
                             type="email"
                             value={details.contactEmail}
@@ -334,8 +370,11 @@ export const StandOutSection: React.FC<StandOutSectionProps> = ({
                     </div>
 
                     <div>
-                        <label className={LABEL_CLASS}>Promo video link</label>
+                        <label htmlFor="listing-promo-video" className={LABEL_CLASS}>
+                            Promo video link
+                        </label>
                         <input
+                            id="listing-promo-video"
                             ref={fieldRefs.promoVideoUrl}
                             type="url"
                             value={details.promoVideoUrl}
@@ -348,9 +387,12 @@ export const StandOutSection: React.FC<StandOutSectionProps> = ({
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className={LABEL_CLASS}>App Store ID (iPhone)</label>
+                            <label htmlFor="listing-ios-app-id" className={LABEL_CLASS}>
+                                App Store ID (iPhone)
+                            </label>
                             <input
                                 type="text"
+                                id="listing-ios-app-id"
                                 value={details.iosAppStoreId}
                                 onChange={e => onChange({ iosAppStoreId: e.target.value })}
                                 placeholder="e.g. 123456789"
@@ -359,9 +401,12 @@ export const StandOutSection: React.FC<StandOutSectionProps> = ({
                             />
                         </div>
                         <div>
-                            <label className={LABEL_CLASS}>Google Play ID (Android)</label>
+                            <label htmlFor="listing-android-app-id" className={LABEL_CLASS}>
+                                Google Play ID (Android)
+                            </label>
                             <input
                                 type="text"
+                                id="listing-android-app-id"
                                 value={details.androidAppStoreId}
                                 onChange={e => onChange({ androidAppStoreId: e.target.value })}
                                 placeholder="e.g. com.myapp.android"
@@ -372,7 +417,9 @@ export const StandOutSection: React.FC<StandOutSectionProps> = ({
                     </div>
 
                     <div>
-                        <label className={LABEL_CLASS}>Header color</label>
+                        <label htmlFor="listing-header-color" className={LABEL_CLASS}>
+                            Header color
+                        </label>
                         <div className="flex items-center gap-3">
                             <input
                                 type="color"
@@ -382,6 +429,7 @@ export const StandOutSection: React.FC<StandOutSectionProps> = ({
                                 className="w-11 h-11 rounded-xl cursor-pointer border border-grayscale-300 p-1 bg-white"
                             />
                             <input
+                                id="listing-header-color"
                                 ref={fieldRefs.heroColor}
                                 type="text"
                                 value={details.heroColor}

@@ -1483,8 +1483,17 @@ export const SubmitFromManifestPage: React.FC = () => {
                             className="flex flex-col items-center gap-1.5 w-20 shrink-0 outline-none"
                         >
                             <div
-                                className="relative group cursor-pointer w-16 h-16"
+                                role="button"
+                                tabIndex={0}
+                                aria-label="Change app icon"
+                                className="relative group cursor-pointer w-16 h-16 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                                 onClick={handleIconUpload}
+                                onKeyDown={event => {
+                                    if (event.key === 'Enter' || event.key === ' ') {
+                                        event.preventDefault();
+                                        handleIconUpload();
+                                    }
+                                }}
                             >
                                 {isIconUploading ? (
                                     <div className="w-16 h-16 rounded-2xl bg-grayscale-100 border border-grayscale-200 flex items-center justify-center">
@@ -1529,10 +1538,14 @@ export const SubmitFromManifestPage: React.FC = () => {
                             )}
                         </div>
                         <div className="flex-1">
-                            <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                            <label
+                                htmlFor="publish-app-name"
+                                className="block text-xs font-medium text-grayscale-700 mb-1.5"
+                            >
                                 App Name
                             </label>
                             <input
+                                id="publish-app-name"
                                 ref={nameInputRef}
                                 type="text"
                                 value={appName}
@@ -1552,10 +1565,14 @@ export const SubmitFromManifestPage: React.FC = () => {
                                         You're testing from{' '}
                                         <strong>{new URL(manifest.appUrl).host}</strong>
                                     </div>
-                                    <label className="block text-xs font-medium text-amber-900 mb-1">
+                                    <label
+                                        htmlFor="publish-production-url"
+                                        className="block text-xs font-medium text-amber-900 mb-1"
+                                    >
                                         Where will your app live?
                                     </label>
                                     <input
+                                        id="publish-production-url"
                                         ref={prodUrlInputRef}
                                         type="text"
                                         value={productionUrl}
@@ -1590,10 +1607,14 @@ export const SubmitFromManifestPage: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                        <label
+                            htmlFor="publish-tagline"
+                            className="block text-xs font-medium text-grayscale-700 mb-1.5"
+                        >
                             Tagline
                         </label>
                         <input
+                            id="publish-tagline"
                             ref={taglineInputRef}
                             type="text"
                             value={tagline}
