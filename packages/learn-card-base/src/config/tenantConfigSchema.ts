@@ -55,6 +55,40 @@ export const tenantFirebaseConfigSchema = z
     })
     .passthrough();
 
+/** 96 hex chars = 48-byte SHA-384 digest (both Nitro PCRs and imageSha384 use this length). */
+const hex96 = z.string().regex(/^[0-9a-fA-F]{96}$/, 'Expected a 96-character hex string (SHA-384)');
+
+/**
+ * Nitro measurement pin. Two accepted shapes:
+ *  - A full PCR0/1/2 tuple (the only shape that can ever match an attestation —
+ *    see `verifyNitroAttestationDocument` in `@learncard/sss-key-manager`).
+ *  - A legacy image-only pin (`{ imageSha384 }`), kept for backward compatibility with
+ *    existing configs. These are accepted by the schema but map to NO nitro pins:
+ *    `sss-key-manager` treats image-only pins as never-matching (see P4.3 / 7db56e2e5).
+ */
+const pcrTupleMeasurementSchema = z
+    .object({
+        pcr0: hex96,
+        pcr1: hex96,
+        pcr2: hex96,
+        imageSha384: hex96.optional(),
+    })
+    .passthrough();
+
+const legacyImageOnlyMeasurementSchema = z
+    .object({
+        imageSha384: hex96,
+        pcr0: hex96.optional(),
+        pcr1: hex96.optional(),
+        pcr2: hex96.optional(),
+    })
+    .passthrough();
+
+const escrowEnclaveMeasurementSchema = z.union([
+    pcrTupleMeasurementSchema,
+    legacyImageOnlyMeasurementSchema,
+]);
+
 export const tenantKeycloakConfigSchema = z
     .object({
         serverUrl: z.string().url(),
@@ -81,7 +115,14 @@ export const tenantSSSConfigSchema = z
         escrowRelayKeyId: z.string().default(''),
         escrowEnclaveMode: z.enum(['off', 'software', 'nitro']).default('off'),
         escrowEnclavePublicKeys: z.array(z.string()).default([]),
-        escrowEnclaveMeasurements: z.array(z.object({ imageSha384: z.string() })).default([]),
+        escrowEnclaveMeasurements: z.array(escrowEnclaveMeasurementSchema).default([]),
+        /** SHA-256 (hex) of the pinned Nitro root certificate DER. Overrides the AWS default root. */
+        escrowEnclaveRootSha256: z
+            .string()
+            .regex(/^[0-9a-f]{64}$/i, 'Expected a 64-character hex SHA-256 hash')
+            .optional(),
+        /** Max attestation age in ms. Nitro policy default is 300000 (5 min) when unset. */
+        escrowEnclaveMaxAgeMs: z.number().int().positive().max(3_600_000).optional(),
         enableEmailBackupShare: z.boolean().default(true),
         requireEmailForPhoneUsers: z.boolean().default(true),
     })
@@ -267,6 +308,33 @@ export const tenantFeatureConfigSchema = z
          * set `true` in the `config.local.json` / `config.staging.json` overlays.
          */
         useSeededSkillFrameworks: z.boolean().default(false),
+
+        /**
+         * Staged rollout percentage (0-100) for AUTOMATIC escrow recovery enrollment.
+         *
+         * This narrows WHO gets silently auto-enrolled by `AuthCoordinator`'s background
+         * `ensureEscrowEnrollment` call (see `config/escrowRollout.ts`). It does NOT gate
+         * whether escrow exists for the tenant at all — `auth.sss.escrowEnclaveMode` is
+         * the on/off switch for that — and it never affects users who are already
+         * enrolled, nor a user who explicitly opts in via `enableEscrowRecovery()`.
+         * Defaults to 0 so escrow stays internal-only until a tenant explicitly stages
+         * a rollout (see the P7.3 runbook at `services/escrow-enclave-app/ROLLOUT.md`).
+         */
+        escrowRolloutPercent: z.number().int().min(0).max(100).default(0),
+
+        /**
+         * Allowlist of internal testers for automatic escrow enrollment, independent of
+         * `escrowRolloutPercent` (an allowlisted user is enrolled at 0% too).
+         *
+         * Entries are lowercase hex SHA-256 hashes of the user's stable identifier
+         * (their primary DID) — NEVER raw emails/DIDs. Compute one with:
+         *   printf '%s' '<did>' | shasum -a 256 | cut -d' ' -f1
+         * See `isEscrowRolloutEnabledFor` in `config/escrowRollout.ts`.
+         */
+        escrowRolloutAllowlist: z
+            .array(z.string().regex(/^[0-9a-f]{64}$/i, 'Expected a 64-character hex SHA-256 hash'))
+            .default([]),
+
         samplePersonas: z.array(samplePersonaConfigSchema).default([]),
         legacySamplePersonaContractUris: z.array(z.string().min(1)).default([]),
     })
@@ -382,6 +450,23 @@ export const tenantConfigSchema = z
         tenantId: z.string(),
         domain: z.string(),
         devDomain: z.string().optional(),
+
+        /**
+         * The deploy stage this config was baked/served for — 'local', 'staging', or
+         * 'production'. Written by `prepare-native-config.ts --stage <stage>` (learn-card-app)
+         * and the equivalent `VITE_NODE_ENV`-driven overlay (scouts) at build time.
+         *
+         * This is deliberately distinct from the Vite build *mode* (`IS_PRODUCTION` /
+         * `isProductionEnvironment()`), which is `'production'` for every deployed build
+         * including staging. `stage` is the only signal that tells production-mode code
+         * apart from a staging deploy — see `getEscrowStrategyConfig`'s software-enclave
+         * guard in `authConfig.ts`.
+         *
+         * Defaults to `'production'` so a config that predates this field, or one served by
+         * an edge function that doesn't set it, fails closed rather than accidentally
+         * unlocking a staging-only behavior.
+         */
+        stage: z.enum(['local', 'staging', 'production']).default('production'),
 
         apis: tenantApiConfigSchema,
         auth: tenantAuthConfigSchema,

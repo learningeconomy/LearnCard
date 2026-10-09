@@ -9,7 +9,11 @@
 import { ServerClient } from 'postmark';
 
 import { renderEmail, resolveBranding } from '@learncard/email-templates';
-import type { TemplateId, TemplateDataMap } from '@learncard/email-templates';
+import type {
+    TemplateId,
+    TemplateDataMap,
+    EscrowHoldCancelledReason,
+} from '@learncard/email-templates';
 
 import { DeliveryService, Notification, isTemplateNotification } from '../delivery.service';
 
@@ -35,6 +39,11 @@ const LOCAL_TEMPLATE_ALIASES: Record<string, TemplateId> = {
     'account-approved': 'account-approved',
     'contact-method-verification': 'contact-method-verification',
     'account-sign-in-changed': 'account-sign-in-changed',
+    'escrow-hold-started': 'escrow-hold-started',
+    'escrow-hold-reminder': 'escrow-hold-reminder',
+    'escrow-hold-released': 'escrow-hold-released',
+    'escrow-hold-cancelled': 'escrow-hold-cancelled',
+    'escrow-pin-locked': 'escrow-pin-locked',
 };
 
 /** Whether the given alias is a sentinel we registered (vs. a real Postmark alias). */
@@ -204,6 +213,39 @@ export class PostmarkAdapter implements DeliveryService {
             case 'account-approved':
                 return {
                     user: model.user as { displayName?: string } | undefined,
+                };
+
+            case 'escrow-hold-started':
+                return {
+                    requestedAt: (model.requestedAt as string) ?? '',
+                    releaseAfter: (model.releaseAfter as string) ?? '',
+                    cancelUrl: (model.cancelUrl as string) ?? '',
+                    deviceHint: model.deviceHint as string | undefined,
+                };
+
+            case 'escrow-hold-reminder':
+                return {
+                    releaseAfter: (model.releaseAfter as string) ?? '',
+                    cancelUrl: (model.cancelUrl as string) ?? '',
+                };
+
+            case 'escrow-hold-released':
+                return {
+                    completedAt: (model.completedAt as string) ?? '',
+                    supportUrl: model.supportUrl as string | undefined,
+                };
+
+            case 'escrow-hold-cancelled':
+                return {
+                    cancelledAt: (model.cancelledAt as string) ?? '',
+                    reason: model.reason as EscrowHoldCancelledReason | undefined,
+                };
+
+            case 'escrow-pin-locked':
+                return {
+                    lockedAt: (model.lockedAt as string) ?? '',
+                    releaseAfter: model.releaseAfter as string | undefined,
+                    cancelUrl: model.cancelUrl as string | undefined,
                 };
 
             default:

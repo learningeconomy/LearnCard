@@ -16,6 +16,8 @@ import {
 import { environment } from './src/config/environment';
 import { toServerlessApplication } from './src/helpers/serverlessApplication';
 import { ensureUserKeysIndexes, createEscrowHoldsIndexes } from './src/models';
+import { runEscrowHoldReminders } from './src/jobs/escrowHoldReminders';
+import { runEscrowBlobRewrap } from './src/jobs/escrowBlobRewrap';
 
 const startupPromise = Promise.all([
     getEmptyLearnCard(), // Load WASM in for better cold starts
@@ -126,3 +128,19 @@ export const trpcHandler = Sentry.AWSLambda.wrapHandler(
         return _trpcHandler(event, context);
     }
 );
+
+// Scheduled (EventBridge) functions, not API-Gateway-triggered: they share
+// startupPromise with the handlers above; warmup/OPTIONS handling doesn't apply.
+export const escrowHoldRemindersHandler = Sentry.AWSLambda.wrapHandler(async (): Promise<void> => {
+    await startupPromise;
+    const counts = await runEscrowHoldReminders();
+    console.log('[escrow-hold-reminders] completed', counts);
+});
+
+// P9.3: migrates escrow blobs off a retiring enclave key for accounts that
+// never sign in again (P9.2 already covers accounts that do, on next login).
+export const escrowBlobRewrapHandler = Sentry.AWSLambda.wrapHandler(async (): Promise<void> => {
+    await startupPromise;
+    const counts = await runEscrowBlobRewrap();
+    console.log('[escrow-blob-rewrap] completed', counts);
+});

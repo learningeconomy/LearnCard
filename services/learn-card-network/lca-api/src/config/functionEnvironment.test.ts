@@ -6,6 +6,7 @@ const require = createRequire(import.meta.url);
 const functions: {
     api: () => Record<string, string>;
     oidc: () => Record<string, string>;
+    escrow: () => Record<string, string>;
 } = require('../../serverless.function-env.cjs');
 const yaml = require('js-yaml');
 const config = yaml.load(readFileSync(new URL('../../serverless.yml', import.meta.url), 'utf8'));
@@ -31,6 +32,10 @@ const enclaveKeys = [
     'ESCROW_ENCLAVE_MODE',
     'ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON',
     'ESCROW_ENCLAVE_ACTIVE_KEY_ID',
+    'ESCROW_ENCLAVE_REMOTE_URL',
+    'ESCROW_ENCLAVE_REMOTE_TOKEN',
+    'ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS',
+    'ESCROW_RELEASE_KILL_SWITCH',
     'ESCROW_HOLD_DURATION_MS',
     'ESCROW_HOLD_RESTART_MIN_AGE_MS',
 ];
@@ -79,11 +84,24 @@ describe('function environments', () => {
             ESCROW_ENCLAVE_MODE: 'software',
         });
         expect(functions.oidc()).toEqual({});
+        expect(functions.escrow()).toEqual({
+            ...Object.fromEntries([...relayKeys, ...enclaveKeys].map(key => [key, key])),
+            ESCROW_ENCLAVE_MODE: 'software',
+        });
+    });
+    it('gives scheduled escrow jobs only escrow settings', () => {
+        [...authKeys, ...oidcKeys, ...relayKeys, ...enclaveKeys].forEach(key =>
+            vi.stubEnv(key, key)
+        );
+        vi.stubEnv('RUNTIME_SECRETS_ID', 'bundle');
+        expect(functions.escrow()).toEqual(
+            Object.fromEntries([...relayKeys, ...enclaveKeys].map(key => [key, key]))
+        );
     });
     it('resolves named function exports with the installed Serverless v3 file resolver', async () => {
         const source = require('serverless/lib/configuration/variables/sources/file');
         vi.stubEnv('RUNTIME_SECRETS_ID', 'bundle');
-        for (const name of ['api', 'oidc'] as const) {
+        for (const name of ['api', 'oidc', 'escrow'] as const) {
             const result = await source.resolve({
                 serviceDir: new URL('../../', import.meta.url).pathname,
                 params: [new URL('../../serverless.function-env.cjs', import.meta.url).pathname],
@@ -124,6 +142,10 @@ describe('function environments', () => {
             OIDC_SIGNING_KEY_SECRET_ID: 90,
             ESCROW_ENCLAVE_MODE: 8,
             ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON: 160,
+            ESCROW_ENCLAVE_REMOTE_URL: 50,
+            ESCROW_ENCLAVE_REMOTE_TOKEN: 64,
+            ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS: 5,
+            ESCROW_RELEASE_KILL_SWITCH: 5,
             ESCROW_HOLD_DURATION_MS: 9,
             ESCROW_HOLD_RESTART_MIN_AGE_MS: 8,
         };
@@ -145,7 +167,9 @@ describe('function environments', () => {
                     ? functions.api()
                     : name === 'oidc'
                       ? functions.oidc()
-                      : {};
+                      : name === 'escrowHoldReminders' || name === 'escrowBlobRewrap'
+                        ? functions.escrow()
+                        : {};
             vi.stubEnv('RUNTIME_SECRETS_ID', placeholder('RUNTIME_SECRETS_ID'));
             const bundle = size({ ...provider, ...scoped() });
             expect(bundle, name).toBeLessThanOrEqual(4096 - 512);

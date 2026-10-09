@@ -10,7 +10,8 @@
         "src"
     ],
     "scripts": {
-        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntrypoint.js ./dist/index.js && tsc --p tsconfig.json",
+        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntrypoint.js ./dist/index.js && tsc --p tsconfig.json && node ./scripts/check-cjs.mjs",
+        "check:cjs": "bun run build",
         "dev": "node ./scripts/build.mjs --watch",
         "test": "vitest run",
         "test:watch": "vitest",
@@ -40,8 +41,11 @@
     "dependencies": {
         "@learncard/types": "workspace:*",
         "@noble/ed25519": "^2.0.0",
+        "@peculiar/x509": "^2.1.0",
         "@scure/bip39": "^1.2.1",
+        "cborg": "^6.1.2",
         "hash-wasm": "^4.11.0",
+        "reflect-metadata": "^0.2.2",
         "shamir-secret-sharing": "^0.0.4"
     },
     "peerDependencies": {

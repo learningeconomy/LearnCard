@@ -2144,6 +2144,36 @@
             "invalidCode": "Ce code est incorrect ou a expiré. Demandez un nouveau code et réessayez.",
             "invalidRecoveryMethod": "Cette méthode n’a pas permis de vérifier votre compte. Essayez-en une autre."
         },
+        "cancel": {
+            "invalidLink": {
+                "title": "Ce lien n’est pas valide",
+                "body": "Ouvrez notre dernier e-mail ou connectez-vous pour vérifier votre compte.",
+                "signIn": "Se connecter"
+            },
+            "confirm": {
+                "title": "Annuler la récupération du compte ?",
+                "body": "Quelqu’un a demandé à récupérer votre compte. Si ce n’était pas vous, annulez cette demande maintenant.",
+                "cancelBtn": "Annuler la récupération",
+                "notNowBtn": "Pas maintenant",
+                "cancelling": "Annulation en cours..."
+            },
+            "success": {
+                "title": "Récupération annulée. Votre compte est en sécurité.",
+                "body": "Nous vous recommandons de vous connecter et de vérifier vos options de récupération.",
+                "doneBtn": "Ouvrir LearnCard"
+            },
+            "expired": {
+                "title": "Lien expiré",
+                "body": "Ce lien a expiré ou a déjà été utilisé. Si une récupération est encore en cours, connectez-vous pour l’annuler.",
+                "signInBtn": "Se connecter"
+            },
+            "error": {
+                "network": "Problème de connexion. Vérifiez votre connexion internet et réessayez.",
+                "tooMany": "Trop de tentatives. Patientez une minute et réessayez.",
+                "generic": "Une erreur s’est produite. Veuillez réessayer.",
+                "tryAgainBtn": "Réessayer"
+            }
+        },
         "automatic": {
             "restoreWait": "Restaurer après un délai de 7 jours"
         },
