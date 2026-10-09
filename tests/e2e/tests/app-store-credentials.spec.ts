@@ -624,7 +624,9 @@ describe('App Store Credential Issuance E2E Tests', () => {
             if (!listing?.slug) throw new Error('Listing should have auto-generated slug');
 
             expect(await noSaOwner.invoke.getRegisteredSigningAuthorities()).toHaveLength(0);
-            expect(await noSaOwner.invoke.getListingSigningAuthority(noSaListingId)).toBeUndefined();
+            expect(
+                await noSaOwner.invoke.getListingSigningAuthority(noSaListingId)
+            ).toBeUndefined();
 
             // An uninstalled caller must not trigger provisioning as a side effect.
             await expect(
@@ -634,7 +636,9 @@ describe('App Store Credential Issuance E2E Tests', () => {
                 })
             ).rejects.toThrow('App not installed');
             expect(await noSaOwner.invoke.getRegisteredSigningAuthorities()).toHaveLength(0);
-            expect(await noSaOwner.invoke.getListingSigningAuthority(noSaListingId)).toBeUndefined();
+            expect(
+                await noSaOwner.invoke.getListingSigningAuthority(noSaListingId)
+            ).toBeUndefined();
 
             await appUser.invoke.installApp(noSaListingId);
 
@@ -646,7 +650,8 @@ describe('App Store Credential Issuance E2E Tests', () => {
             expect(issued.credentialUri).toBeDefined();
             expect(issued.boostUri).toBe(noSaBoostUri);
 
-            const signingAuthority = await noSaOwner.invoke.getListingSigningAuthority(noSaListingId);
+            const signingAuthority =
+                await noSaOwner.invoke.getListingSigningAuthority(noSaListingId);
             expect(signingAuthority).toMatchObject({
                 endpoint: 'http://localhost:5200/api',
                 name: 'app-no-sa-app',
