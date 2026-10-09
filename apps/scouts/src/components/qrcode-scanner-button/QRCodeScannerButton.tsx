@@ -1,21 +1,16 @@
 import React, { useEffect, useState } from 'react';
+import { useHistory } from 'react-router-dom';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
-import {
-    useCurrentUser,
-    useGetProfile,
-    useModal,
-    ModalTypes,
-    useGetConnections,
-} from 'learn-card-base';
+import { useCurrentUser, useGetProfile, useModal, ModalTypes } from 'learn-card-base';
 import MyScoutsModal from '../scouts/MyScoutsModal';
 import * as m from '../../paraglide/messages.js';
 import QrCodeUserCardModal from '../qrcode-user-card/QRCodeUserCard';
 
 export const QRCodeScannerButton: React.FC<{ branding: BrandingEnum }> = ({ branding }) => {
     const currentUser = useCurrentUser();
-    const { data: connections } = useGetConnections();
+    const history = useHistory();
 
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.FullScreen,
@@ -37,7 +32,7 @@ export const QRCodeScannerButton: React.FC<{ branding: BrandingEnum }> = ({ bran
             <QrCodeUserCardModal
                 branding={branding}
                 history={history}
-                connections={connections ?? []}
+                handleQRCodeCardModal={closeModal}
                 qrOnly
             />,
             { sectionClassName: '!max-w-[400px]' },
