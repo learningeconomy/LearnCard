@@ -28,6 +28,8 @@ trap collect_service_artifacts EXIT
 # ordering dependency and can be split across runners with separate stacks.
 run_service_suite() {
     cd "$REPO_ROOT"
+    # These host SDK prerequisites use the same Sentry plugins as the browser.
+    export SENTRY_BUILD_TELEMETRY=false
     local vitest_args=''
     if [[ -n "${E2E_SHARD:-}" && -n "${E2E_SHARD_TOTAL:-}" ]]; then
         vitest_args="--shard=${E2E_SHARD}/${E2E_SHARD_TOTAL}"

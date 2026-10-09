@@ -78,6 +78,12 @@ the default for existing local Docker build commands.
 
 ## Browser runtime
 
+Hosted browser and service prerequisite builds set `SENTRY_BUILD_TELEMETRY=false`. The three
+service esbuild configurations pass this through to Sentry's `telemetry` option:
+the older LearnCloud plugin can otherwise fail its build-start hook when the
+optional telemetry endpoint is unreachable. Release injection remains enabled;
+ordinary builds retain the plugin's default telemetry behavior.
+
 The hosted launcher derives the official Playwright `-noble` image tag from the
 installed package version. Browsers and OS dependencies are already in that image;
 there is no per-run apt installation. Tests mount the installed workspace at its
