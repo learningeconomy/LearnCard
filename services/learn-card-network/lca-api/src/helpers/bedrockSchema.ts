@@ -181,7 +181,7 @@ export function validateBedrockJsonSchema(schema: unknown): void {
             'enum' in node &&
             (!Array.isArray(node.enum) ||
                 !node.enum.length ||
-                node.enum.some(value => !scalar(value)))
+                node.enum.some(item => !scalar(item)))
         )
             fail(`${path}/enum`, 'enum must contain scalar JSON values');
         if ('const' in node && !scalar(node.const))

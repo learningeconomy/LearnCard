@@ -248,7 +248,7 @@ Rules:
                 });
             }
 
-            const filestackRes = (await client.storeURL(res?.data[0]?.url)) as any;
+            const filestackRes = await client.storeURL(res.data[0].url);
             if (!filestackRes || !filestackRes.url) {
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
