@@ -41,6 +41,7 @@ const keys = [
     ...enclaveKeys,
     'RUNTIME_SECRETS_ID',
     'GOOGLE_APPLICATION_CREDENTIAL',
+    'BEDROCK_BASE_URL',
 ];
 
 beforeEach(() => keys.forEach(key => vi.stubEnv(key, '')));
@@ -55,6 +56,13 @@ describe('function environments', () => {
     it('preserves the Firebase fallback when no bundle is provided', () => {
         vi.stubEnv('GOOGLE_APPLICATION_CREDENTIAL', 'credential');
         expect(functions.api()).toEqual({ GOOGLE_APPLICATION_CREDENTIAL: 'credential' });
+    });
+    it('scopes the optional generation endpoint to API functions', () => {
+        vi.stubEnv('BEDROCK_BASE_URL', 'https://bedrock-runtime.us-east-1.amazonaws.com/openai/v1');
+        expect(functions.api()).toEqual({
+            BEDROCK_BASE_URL: 'https://bedrock-runtime.us-east-1.amazonaws.com/openai/v1',
+        });
+        expect(functions.oidc()).toEqual({});
     });
     it('omits empty keys', () => {
         expect(functions.api()).toEqual({});

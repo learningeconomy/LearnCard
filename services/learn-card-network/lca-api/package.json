@@ -30,7 +30,8 @@
         "serverless-deploy": "node scripts/check-seed-encryption-infrastructure.mjs && node ../../../scripts/prepare-didkit-native-layer.cjs && serverless deploy",
         "serverless-deploy-scouts": "serverless deploy --config serverless-scouts.yml",
         "test:oidc:e2e": "node test/oidc-e2e/run.mjs",
-        "typecheck:oidc:e2e": "tsc --noEmit -p test/oidc-e2e/tsconfig.json"
+        "typecheck:oidc:e2e": "tsc --noEmit -p test/oidc-e2e/tsconfig.json",
+        "typecheck:bedrock": "tsc --noEmit -p tsconfig.bedrock.json"
     },
     "keywords": [],
     "author": "WeLibrary, LLC (www.welibrary.io)",
@@ -94,11 +95,12 @@
         "mongodb": "^6.2.0",
         "multiformats": "^11.0.1",
         "node-forge": "^1.4.0",
-        "openai": "^4.55.7",
+        "openai": "6.47.0",
         "postmark": "^4.0.5",
         "trpc-to-openapi": "^3.1.0",
         "uuid": "^14.0.0",
-        "zod": "4.4.3"
+        "zod": "4.4.3",
+        "@aws/bedrock-token-generator": "1.1.0"
     },
     "repository": {
         "type": "git",

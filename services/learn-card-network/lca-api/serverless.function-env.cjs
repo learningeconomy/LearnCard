@@ -18,6 +18,7 @@ exports.api = () => {
     const keys = process.env.ESCROW_ENCLAVE_MODE ? [...RELAY_KEYS, ...ENCLAVE_KEYS] : RELAY_KEYS;
     return pick([
         ...keys,
+        'BEDROCK_BASE_URL',
         'KEYCLOAK_ISSUERS',
         'KEYCLOAK_AUDIENCES',
         'KEYCLOAK_JWKS_URL_OVERRIDES',
