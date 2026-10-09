@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { act, cleanup, render, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -13,11 +13,14 @@ const mocks = vi.hoisted(() => ({
     closeScanner: vi.fn(),
     newModal: vi.fn(),
     initWallet: vi.fn(),
+    getProfile: vi.fn(),
+    openBrowser: vi.fn(),
     events: {} as Record<
         string,
         (event: { barcodes: { rawValue: string }[] } | { message: string }) => void
     >,
 }));
+vi.mock('@capacitor/browser', () => ({ Browser: { open: mocks.openBrowser } }));
 vi.mock('@capacitor/core', () => ({
     Capacitor: { isNativePlatform: () => mocks.native },
 }));
@@ -50,7 +53,9 @@ vi.mock('../../pages/addressBook/addContactView/AddContactView', () => ({
 vi.mock('../../paraglide/messages.js', () => ({
     'scanner.eek': () => 'Something went wrong',
     'scanner.errOcurred': () => 'Please try again',
-    'common.cancel': () => 'Cancel',
+    'scanner.incompatibleTitle': () => 'QR code not supported',
+    'scanner.incompatible': () => 'The QR code you have scanned is not compatible.',
+    'common.done': () => 'Done',
 }));
 
 import QRCodeScannerListener from './QRCodeScannerListener';
@@ -72,7 +77,8 @@ describe('native scanner session', () => {
         mocks.start.mockResolvedValue(undefined);
         mocks.stop.mockResolvedValue(undefined);
         mocks.remove.mockResolvedValue(undefined);
-        mocks.initWallet.mockResolvedValue({});
+        mocks.initWallet.mockResolvedValue({ invoke: { getProfile: mocks.getProfile } });
+        mocks.openBrowser.mockResolvedValue(undefined);
         mocks.addListener.mockImplementation(async (event, callback) => {
             mocks.events[event] = callback;
             return { remove: mocks.remove };
@@ -138,7 +144,7 @@ describe('native scanner session', () => {
             mocks.events.barcodesScanned(result);
         });
         await waitFor(() => expect(mocks.newModal).toHaveBeenCalledOnce());
-        expect(mocks.initWallet).toHaveBeenCalledOnce();
+        expect(mocks.initWallet).not.toHaveBeenCalled();
         expect(mocks.stop).toHaveBeenCalledOnce();
         expect(document.body.classList.contains('scanner-active')).toBe(false);
     });
@@ -168,5 +174,106 @@ describe('native scanner session', () => {
         view.unmount();
         await waitFor(() => expect(document.body.classList.contains('scanner-active')).toBe(false));
         expect(mocks.newModal).not.toHaveBeenCalled();
+    });
+
+    const scan = async (value: string): Promise<void> => {
+        render(<QRCodeScannerListener />);
+        await waitFor(() => expect(mocks.start).toHaveBeenCalledOnce());
+        await act(async () => mocks.events.barcodesScanned({ barcodes: [{ rawValue: value }] }));
+    };
+
+    it.each(['https://example.com/path?x=1#section', 'http://example.com/'])(
+        'opens a website in the native browser after stopping the scanner: %s',
+        async url => {
+            await scan(url);
+            await waitFor(() => expect(mocks.openBrowser).toHaveBeenCalledWith({ url }));
+            expect(mocks.stop.mock.invocationCallOrder[0]).toBeLessThan(
+                mocks.openBrowser.mock.invocationCallOrder[0]
+            );
+            expect(mocks.closeScanner).toHaveBeenCalledOnce();
+            expect(document.body.classList.contains('scanner-active')).toBe(false);
+            expect(mocks.initWallet).not.toHaveBeenCalled();
+            expect(mocks.newModal).not.toHaveBeenCalled();
+        }
+    );
+
+    it('trims whitespace around website URLs', async () => {
+        await scan('  https://example.com/  ');
+        expect(mocks.openBrowser).toHaveBeenCalledWith({ url: 'https://example.com/' });
+    });
+
+    it.each([
+        'random text',
+        '   ',
+        'https://',
+        'javascript:alert(1)',
+        'data:text/html,<script>alert(1)</script>',
+        'file:///etc/passwd',
+        'intent://example.com',
+        'mailto:person@example.com',
+        'did=did:web:scoutnetwork.org',
+        'boostUri=incomplete',
+    ])('shows the compatibility message for unsupported content: %s', async value => {
+        await scan(value);
+        await waitFor(() => expect(mocks.newModal).toHaveBeenCalledOnce());
+        render(mocks.newModal.mock.calls[0][0]);
+        expect(screen.getByText('The QR code you have scanned is not compatible.')).toBeTruthy();
+        expect(mocks.openBrowser).not.toHaveBeenCalled();
+        expect(mocks.initWallet).not.toHaveBeenCalled();
+    });
+
+    it('shows the compatibility message if the browser cannot open the website', async () => {
+        mocks.openBrowser.mockRejectedValue(new Error('Cannot open browser'));
+        await scan('https://example.com/');
+        await waitFor(() => expect(mocks.newModal).toHaveBeenCalledOnce());
+        render(mocks.newModal.mock.calls[0][0]);
+        expect(screen.getByText('The QR code you have scanned is not compatible.')).toBeTruthy();
+    });
+
+    it.each([
+        'https://pass.scout.org/claim?boostUri=boost%3Atest&challenge=secret',
+        'boostUri=boost%3Atest&challenge=secret',
+        '?challenge=secret&boostUri=boost%3Atest',
+    ])('routes boost codes before the browser fallback: %s', async value => {
+        await scan(value);
+        await waitFor(() => expect(mocks.newModal).toHaveBeenCalledOnce());
+        expect(mocks.newModal.mock.calls[0][0].props).toMatchObject({
+            uri: 'boost:test',
+            claimChallenge: 'secret',
+        });
+        expect(mocks.openBrowser).not.toHaveBeenCalled();
+        expect(mocks.initWallet).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        'https://pass.scout.org/connect?did=did%3Aweb%3Ascoutnetwork.org%3Ausers%3Ascout',
+        'https://pass.scout.org/connect?connect=true&did=did:web:scoutnetwork.org:users:scout',
+        'did=did:web:scoutnetwork.org:users:scout',
+    ])('routes profile codes before the browser fallback: %s', async value => {
+        const user = { profileId: 'scout' };
+        mocks.getProfile.mockResolvedValue(user);
+        await scan(value);
+        await waitFor(() => expect(mocks.newModal).toHaveBeenCalledOnce());
+        expect(mocks.getProfile).toHaveBeenCalledWith('scout');
+        expect(mocks.newModal.mock.calls[0][0].props).toMatchObject({ user, mode: 'request' });
+        expect(mocks.openBrowser).not.toHaveBeenCalled();
+    });
+
+    it('shows the compatibility message when the profile does not exist', async () => {
+        mocks.getProfile.mockResolvedValue(undefined);
+        await scan('https://pass.scout.org/connect?did=did:web:scoutnetwork.org:users:missing');
+        await waitFor(() => expect(mocks.newModal).toHaveBeenCalledOnce());
+        render(mocks.newModal.mock.calls[0][0]);
+        expect(screen.getByText('The QR code you have scanned is not compatible.')).toBeTruthy();
+        expect(mocks.openBrowser).not.toHaveBeenCalled();
+    });
+
+    it('keeps operational failures distinct from incompatible QR codes', async () => {
+        mocks.getProfile.mockRejectedValue(new Error('Network unavailable'));
+        await scan('did=did:web:scoutnetwork.org:users:scout');
+        await waitFor(() => expect(mocks.newModal).toHaveBeenCalledOnce());
+        render(mocks.newModal.mock.calls[0][0]);
+        expect(screen.getByText('Please try again')).toBeTruthy();
+        expect(mocks.openBrowser).not.toHaveBeenCalled();
     });
 });

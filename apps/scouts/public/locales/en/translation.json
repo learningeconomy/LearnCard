@@ -137,6 +137,8 @@
         "neutralMode": "Neutral Mode"
     },
     "scanner": {
+        "incompatibleTitle": "QR code not supported",
+        "incompatible": "The QR code you have scanned is not compatible.",
         "cameraPermission": "Camera permission required",
         "failed": "Failed to import credential",
         "importCredential": "Import Credential",

@@ -12,6 +12,7 @@ import AddContactView, {
 } from '../../pages/addressBook/addContactView/AddContactView';
 
 import QRCodeScannerStore from 'learn-card-base/stores/QRCodeScannerStore';
+import { openExternalLink } from '../../helpers/externalLinkHelpers';
 const log = getLogger('qr-code-scanner-listener');
 
 export const QRCodeScannerListener: React.FC = () => {
@@ -21,22 +22,22 @@ export const QRCodeScannerListener: React.FC = () => {
 
     const cleanupRef = useRef<Promise<void>>(Promise.resolve());
 
-    const presentScannerFailedModal = () => {
+    const presentScannerFailedModal = (incompatible = false): void => {
         newModal(
             <section className="flex flex-col items-center text-center justify-center h-[90%]">
                 <img src={MiniGhost} alt="ghost" className="relative max-w-[250px] m-auto mb-0" />
                 <h1 className="text-center text-3xl font-bold text-grayscale-800 m-0 p-0 mt-4">
-                    {m['scanner.eek']()}
+                    {incompatible ? m['scanner.incompatibleTitle']() : m['scanner.eek']()}
                 </h1>
                 <strong className="text-center font-medium text-grayscale-600 m-0 p-0">
-                    {m['scanner.errOcurred']()}
+                    {incompatible ? m['scanner.incompatible']() : m['scanner.errOcurred']()}
                 </strong>
                 <div className="w-full flex items-center justify-center mt-8">
                     <button
                         onClick={() => closeModal()}
-                        className="text-grayscale-900 text-center text-sm"
+                        className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                     >
-                        {m['common.cancel']()}
+                        {m['common.done']()}
                     </button>
                 </div>
             </section>,
@@ -45,61 +46,65 @@ export const QRCodeScannerListener: React.FC = () => {
         );
     };
 
-    const handleScan = async (qrCodeValue: string) => {
+    const handleScan = async (qrCodeValue: string): Promise<void> => {
+        const value = qrCodeValue.trim();
+        let url: URL | undefined;
         try {
-            const wallet = await initWallet();
-            if (qrCodeValue) {
-                const query = new URLSearchParams(qrCodeValue);
+            url = new URL(value);
+        } catch {
+            // Older QR codes contain query parameters without a full URL.
+        }
+        const query = url?.searchParams ?? new URLSearchParams(value);
+        const boostUri = query.get('boostUri');
+        const challenge = query.get('challenge');
+        const profileId = query.get('did')?.match(/^did:web:scoutnetwork\.org:users:(.+)$/)?.[1];
 
-                let profileId = null;
-                // for scanning user qr codes
-                const userDid = query.get('did') ?? '';
+        try {
+            // Recognize ScoutPass content before considering a browser fallback.
+            if (boostUri && challenge) {
+                newModal(
+                    <ClaimBoostModal
+                        uri={boostUri}
+                        claimChallenge={challenge}
+                        dismissClaimModal={() => closeModal()}
+                    />,
+                    { hideButton: true },
+                    { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                );
+                return;
+            }
 
-                // for scanning boost qr codes
-                const boostUri = query.get('boostUri');
-                const challenge = query.get('challenge');
-
-                const isLCNetworkUrl = userDid.includes(`did:web:scoutnetwork.org`);
-
-                if (boostUri && challenge) {
+            if (profileId) {
+                const wallet = await initWallet();
+                const user = await wallet.invoke.getProfile(profileId);
+                if (user) {
                     newModal(
-                        <ClaimBoostModal
-                            uri={boostUri}
-                            claimChallenge={challenge}
-                            dismissClaimModal={() => closeModal()}
+                        <AddContactView
+                            handleCancel={() => closeModal()}
+                            user={user}
+                            mode={AddContactViewMode.requestConnection}
                         />,
-                        { hideButton: true },
-                        { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                        { hideButton: true, hideDimmer: true },
+                        { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                     );
-                    return;
-                } else if (isLCNetworkUrl) {
-                    const regex = /(users:)(.*)/;
-                    profileId = userDid?.match(regex)?.[2];
-
-                    if (profileId) {
-                        try {
-                            const user = await wallet?.invoke?.getProfile(profileId);
-                            if (user) {
-                                newModal(
-                                    <AddContactView
-                                        handleCancel={() => closeModal()}
-                                        user={user}
-                                        mode={AddContactViewMode.requestConnection}
-                                    />,
-                                    { hideButton: true, hideDimmer: true },
-                                    { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
-                                );
-                                return;
-                            }
-                        } catch (err) {
-                            log.error('scan::contact-error', err);
-                        }
-                        presentScannerFailedModal();
-                    }
                 } else {
-                    presentScannerFailedModal();
+                    presentScannerFailedModal(true);
+                }
+                return;
+            }
+
+            // Only website URLs may leave the app; never execute QR payloads
+            // using javascript:, data:, file:, or arbitrary custom schemes.
+            if (url && (url.protocol === 'https:' || url.protocol === 'http:')) {
+                try {
+                    await openExternalLink(url.href);
+                    return;
+                } catch {
+                    log.warn('scan::browser-open-failed');
                 }
             }
+
+            presentScannerFailedModal(true);
         } catch (error) {
             log.error('scan::result-error', error);
             presentScannerFailedModal();
