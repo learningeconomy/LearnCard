@@ -18,9 +18,14 @@ import {
 import { useUpdateTerms } from 'learn-card-base/hooks/useUpdateTerms';
 import { useConsentToContract } from 'learn-card-base/hooks/useConsentToContract';
 import FullScreenConsentFlow from './FullScreenConsentFlow';
+import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
+import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { ReferralConsentReview } from '../../components/contract-requests/ReferralModal';
 
 const state = vi.hoisted(() => ({
+    search: '',
+    push: vi.fn(),
+    closeAllModals: vi.fn(),
     child: true,
     referralsEnabled: true,
     service: false,
@@ -35,6 +40,19 @@ const state = vi.hoisted(() => ({
     presentToast: vi.fn(),
 }));
 
+vi.mock('../../paraglide/messages.js', async () => {
+    const catalog = (await import('../../../public/locales/en/translation.json')).default;
+    const messages: Record<string, () => string> = {};
+    const flatten = (value: object, prefix = '') => {
+        for (const [key, child] of Object.entries(value)) {
+            const name = prefix ? `${prefix}.${key}` : key;
+            if (typeof child === 'string') messages[name] = () => child;
+            else if (child && typeof child === 'object') flatten(child, name);
+        }
+    };
+    flatten(catalog);
+    return messages;
+});
 vi.mock('../../hooks/useContractRequestsEnabled', () => ({
     useContractRequestsEnabled: () => state.referralsEnabled,
 }));
@@ -65,7 +83,11 @@ vi.mock('learn-card-base', async () => ({
     useGetCurrentLCNUser: () => ({ currentLCNUser: null }),
     calculateAge: () => NaN,
     getLogger: () => ({ warn: vi.fn() }),
-    useModal: () => ({ newModal: state.newModal, closeModal: vi.fn(), closeAllModals: vi.fn() }),
+    useModal: () => ({
+        newModal: state.newModal,
+        closeModal: vi.fn(),
+        closeAllModals: state.closeAllModals,
+    }),
     useToast: () => ({ presentToast: state.presentToast }),
     useSyncConsentFlow: () => ({ refetch: vi.fn() }),
     useGetProfile: () => ({ data: undefined }),
@@ -77,11 +99,15 @@ vi.mock('learn-card-base', async () => ({
     ToastTypeEnum: { Error: 'error', Success: 'success' },
 }));
 vi.mock('learn-card-base/components/modals/useModal', () => ({
-    useModal: () => ({ newModal: state.newModal, closeModal: vi.fn(), closeAllModals: vi.fn() }),
+    useModal: () => ({
+        newModal: state.newModal,
+        closeModal: vi.fn(),
+        closeAllModals: state.closeAllModals,
+    }),
 }));
 vi.mock('react-router-dom', () => ({
-    useHistory: () => ({ push: vi.fn() }),
-    useLocation: () => ({ search: '' }),
+    useHistory: () => ({ push: state.push }),
+    useLocation: () => ({ search: state.search }),
 }));
 vi.mock('../../components/network-prompts/hooks/useLCNGatedAction', () => ({
     default: () => ({ gate: async () => ({ prompted: false }) }),
@@ -154,6 +180,8 @@ const approvePin = async (modalNumber: number) => {
 describe('guardian approval at the consent submission boundary', () => {
     beforeEach(() => {
         vi.resetAllMocks();
+        state.search = '';
+        networkStore.set.aiServiceUrl('https://api.example.test');
         state.child = true;
         state.referralsEnabled = true;
         state.service = false;
@@ -196,6 +224,128 @@ describe('guardian approval at the consent submission boundary', () => {
         vi.restoreAllMocks();
     });
 
+    it.each(['query', 'contract'])(
+        'rejects known legacy %s redirect before saving consent or success',
+        async source => {
+            state.child = false;
+            if (source === 'query')
+                state.search = '?returnTo=https%3A%2F%2Fapi.example.test%2Fcallback';
+            const success = vi.fn();
+            showFlow({
+                disableRedirect: false,
+                successCallback: success,
+                contractDetails: {
+                    ...contract,
+                    uri: LEARNCARD_AI_PASSPORT_CONTRACT_URI,
+                    ...(source === 'contract'
+                        ? { redirectUrl: 'https://api.example.test/callback' }
+                        : {}),
+                },
+            });
+            fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+            await waitFor(() =>
+                expect(state.presentToast).toHaveBeenCalledWith(
+                    expect.stringMatching(/Refresh the page and sign in again/),
+                    expect.objectContaining({ type: 'error' })
+                )
+            );
+            expect(state.consent).not.toHaveBeenCalled();
+            expect(success).not.toHaveBeenCalled();
+            expect(state.closeAllModals).not.toHaveBeenCalled();
+            expect(screen.getByRole('button', { name: 'Connect' })).toBeVisible();
+        }
+    );
+    it('rejects unexpected returned redirect before success', async () => {
+        state.child = false;
+        state.consent.mockResolvedValue({ redirectUrl: 'https://api.example.test/callback' });
+        const success = vi.fn();
+        showFlow({
+            disableRedirect: false,
+            successCallback: success,
+            contractDetails: { ...contract, uri: LEARNCARD_AI_PASSPORT_CONTRACT_URI },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() =>
+            expect(state.presentToast).toHaveBeenCalledWith(
+                expect.stringMatching(/Refresh the page/),
+                expect.objectContaining({ type: 'error' })
+            )
+        );
+        expect(state.consent).toHaveBeenCalledOnce();
+        expect(success).not.toHaveBeenCalled();
+        expect(state.closeAllModals).not.toHaveBeenCalled();
+    });
+
+    it('waits for challenged proof generation before signaling success', async () => {
+        state.child = false;
+        state.search =
+            '?returnTo=https%3A%2F%2Fapi.example.test%2Fcallback&challenge=backend-challenge&domain=https%3A%2F%2Fapi.example.test';
+        const wallet = await state.initWallet();
+        wallet.id = { did: () => 'did:key:holder' };
+        wallet.invoke.issuePresentation = vi
+            .fn()
+            .mockRejectedValue(new Error('Signing interrupted'));
+        const success = vi.fn();
+        showFlow({
+            disableRedirect: false,
+            successCallback: success,
+            contractDetails: { ...contract, uri: LEARNCARD_AI_PASSPORT_CONTRACT_URI },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() =>
+            expect(state.presentToast).toHaveBeenCalledWith(
+                expect.any(String),
+                expect.objectContaining({ type: 'error' })
+            )
+        );
+        expect(wallet.invoke.issuePresentation).toHaveBeenCalledWith(
+            expect.any(Object),
+            expect.objectContaining({
+                challenge: 'backend-challenge',
+                domain: 'https://api.example.test',
+                proofFormat: 'jwt',
+                proofPurpose: 'authentication',
+            })
+        );
+        expect(state.consent).toHaveBeenCalledOnce();
+        expect(success).not.toHaveBeenCalled();
+        expect(state.closeAllModals).not.toHaveBeenCalled();
+    });
+    it('completes in-app consent with configured and returned redirects', async () => {
+        state.child = false;
+        state.consent.mockResolvedValue({ redirectUrl: 'https://api.example.test/callback' });
+        const success = vi.fn();
+        showFlow({
+            disableRedirect: true,
+            successCallback: success,
+            contractDetails: {
+                ...contract,
+                uri: LEARNCARD_AI_PASSPORT_CONTRACT_URI,
+                redirectUrl: 'https://api.example.test/callback',
+            },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() => expect(success).toHaveBeenCalledOnce());
+        expect(state.consent).toHaveBeenCalledOnce();
+        expect(state.presentToast).not.toHaveBeenCalledWith(
+            expect.any(String),
+            expect.objectContaining({ type: 'error' })
+        );
+    });
+    it('navigates locally after successful AI Passport consent', async () => {
+        state.child = false;
+        state.search = '?returnTo=%2Fai%2Fsessions';
+        const success = vi.fn();
+        showFlow({
+            disableRedirect: false,
+            successCallback: success,
+            contractDetails: { ...contract, uri: LEARNCARD_AI_PASSPORT_CONTRACT_URI },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() => expect(state.push).toHaveBeenCalledWith('/ai/sessions'));
+        expect(success).toHaveBeenCalledOnce();
+        expect(state.consent).toHaveBeenCalledOnce();
+    });
     it('keeps an audience conflict in review without calling the success callback', async () => {
         state.child = false;
         const onSuccess = vi.fn();

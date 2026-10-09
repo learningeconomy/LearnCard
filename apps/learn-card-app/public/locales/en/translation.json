@@ -1756,6 +1756,7 @@
         "previewCredentials": "Preview {{count}} Credentials"
     },
     "consentFlow": {
+        "aiPassportReauthenticationRequired": "AI Passport sign-in needs a fresh authentication request. Refresh the page and sign in again.",
         "reviewChanged": "The sharing details changed. Review them before connecting again.",
         "guardianApprovalRequired": "Ask a current account manager to approve this connection, then try again.",
         "acceptAndSync": "Accept & Sync",

@@ -1,6 +1,7 @@
 import type { UnsignedVP } from '@learncard/types';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
+import { isLearnCardAiPassportContractUri } from 'learn-card-base/constants/aiPassport';
 
 type QueryParam = string | null | (string | null)[] | undefined;
 const validateConsentFlowDidAuthParams = (challenge?: QueryParam, domain?: QueryParam): boolean => {
@@ -18,16 +19,95 @@ const validateConsentFlowDidAuthParams = (challenge?: QueryParam, domain?: Query
     return hasChallenge;
 };
 
+export class AiPassportReauthenticationRequired extends Error {
+    constructor() {
+        super('AI Passport requires challenge-based authentication; refresh and sign in again');
+        this.name = 'AiPassportReauthenticationRequired';
+    }
+}
+
+// Local navigation never transports an authentication presentation. Protocol-relative
+// URLs and backslashes are excluded because browsers can resolve them off-origin.
+const isLocalNavigation = (destination: string): boolean =>
+    destination.startsWith('/') &&
+    !destination.startsWith('//') &&
+    !destination.includes('\\') &&
+    Array.from(destination).every(character => character.charCodeAt(0) > 32);
+
+const getAiPassportOrigin = (): string | undefined => {
+    try {
+        const url = new URL(networkStore.get.aiServiceUrl());
+        return url.protocol === 'https:' || url.protocol === 'http:' ? url.origin : undefined;
+    } catch {
+        // Allowed TODO_* tenant placeholders must not break unrelated integrations.
+        return undefined;
+    }
+};
+
+const validateDestination = (
+    destination: QueryParam,
+    challenged: boolean,
+    contractUri?: string,
+    domain?: QueryParam
+): void => {
+    if (typeof destination !== 'string' || !destination) return;
+    if (isLocalNavigation(destination)) return;
+    // Contract identity still protects external AI Passport callbacks even when
+    // tenant configuration is missing or malformed.
+    if (!challenged && isLearnCardAiPassportContractUri(contractUri)) {
+        throw new AiPassportReauthenticationRequired();
+    }
+    let redirect: URL;
+    try {
+        redirect = new URL(destination);
+    } catch {
+        if (challenged) throw new Error('Invalid consent redirect URL');
+        return; // Preserve unrelated relative contract navigation.
+    }
+    if (redirect.protocol !== 'http:' && redirect.protocol !== 'https:') {
+        if (challenged) throw new Error('Invalid consent redirect URL');
+        return;
+    }
+    const aiPassportOrigin = getAiPassportOrigin();
+    if (!challenged && redirect.origin === aiPassportOrigin) {
+        throw new AiPassportReauthenticationRequired();
+    }
+    if (challenged) {
+        let audienceOrigin: string;
+        try {
+            audienceOrigin = new URL(domain as string).origin;
+        } catch {
+            throw new Error('Invalid DID Auth domain');
+        }
+        if (
+            !aiPassportOrigin ||
+            redirect.origin !== aiPassportOrigin ||
+            audienceOrigin !== aiPassportOrigin
+        ) {
+            throw new Error('DID Auth callback must use the configured AI Passport origin');
+        }
+    }
+};
+
 export const getConsentFlowContractRedirect = ({
     challenge,
     contractRedirectUrl,
+    contractUri,
     domain,
+    returnTo,
 }: {
     challenge?: QueryParam;
     contractRedirectUrl?: string;
+    contractUri?: string;
     domain?: QueryParam;
-}): string | undefined =>
-    validateConsentFlowDidAuthParams(challenge, domain) ? undefined : contractRedirectUrl;
+    returnTo?: QueryParam;
+}): string | undefined => {
+    const challenged = validateConsentFlowDidAuthParams(challenge, domain);
+    validateDestination(returnTo, challenged, contractUri, domain);
+    // Challenged flows suppress this server-provided override and use returnTo.
+    if (!challenged) validateDestination(contractRedirectUrl, false, contractUri);
+    return challenged ? undefined : contractRedirectUrl;
+};
 
 export const getConsentFlowDidAuthRedirect = async ({
     challenge,
@@ -44,28 +124,15 @@ export const getConsentFlowDidAuthRedirect = async ({
     returnTo: string;
     wallet: BespokeLearnCard;
 }): Promise<string> => {
-    validateConsentFlowDidAuthParams(challenge, domain);
-
+    const challenged = validateConsentFlowDidAuthParams(challenge, domain);
+    validateDestination(returnTo, challenged, contractUri, domain);
+    // Callers normally navigate local paths themselves; never generate a proof for one.
+    if (isLocalNavigation(returnTo)) return returnTo;
     const redirect = new URL(returnTo);
-
     if (redirect.protocol !== 'http:' && redirect.protocol !== 'https:') {
         throw new Error('Invalid consent redirect URL');
     }
 
-    if (typeof challenge === 'string' && typeof domain === 'string') {
-        const aiPassportOrigin = new URL(networkStore.get.aiServiceUrl()).origin;
-        let audienceOrigin: string;
-
-        try {
-            audienceOrigin = new URL(domain).origin;
-        } catch {
-            throw new Error('Invalid DID Auth domain');
-        }
-
-        if (redirect.origin !== aiPassportOrigin || audienceOrigin !== aiPassportOrigin) {
-            throw new Error('DID Auth callback must use the configured AI Passport origin');
-        }
-    }
     let presentation: UnsignedVP & { contractUri: string };
     let proofOptions: {
         challenge?: string;

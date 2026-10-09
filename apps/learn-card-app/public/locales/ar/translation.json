@@ -1756,6 +1756,7 @@
         "previewCredentials": "معاينة {{count}} من بيانات الاعتماد"
     },
     "consentFlow": {
+        "aiPassportReauthenticationRequired": "يتطلب تسجيل الدخول إلى AI Passport طلب مصادقة جديدًا. حدّث الصفحة وسجّل الدخول مرة أخرى.",
         "reviewChanged": "تغيّرت تفاصيل مشاركة البيانات. راجعها قبل الاتصال مرة أخرى.",
         "guardianApprovalRequired": "اطلب من أحد مديري الحساب الحاليين الموافقة على هذا الاتصال، ثم حاول مرة أخرى.",
         "title": "الموافقة",
