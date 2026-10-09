@@ -153,13 +153,14 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
     const embedOrigin = React.useMemo(() => {
         try {
             const url = new URL(embedUrl);
-            // Reject non-HTTPS URLs unless they are secure-context localhost
+            // Only https, or plain http for localhost testing. Checking the scheme (not just
+            // the host) matters: `javascript://localhost/…` has a localhost hostname.
             if (url.protocol !== 'https:') {
                 const isLocalhost =
                     url.hostname === 'localhost' ||
                     url.hostname === '127.0.0.1' ||
                     url.hostname === '[::1]';
-                if (!isLocalhost) {
+                if (url.protocol !== 'http:' || !isLocalhost) {
                     log.error('[PostMessage] Insecure embedUrl:', embedUrl);
                     setErrorMessage('Embed URL must be HTTPS (except for localhost testing).');
                     setShowErrorToast(true);
@@ -198,12 +199,16 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
     const embedUrlWithOverride = appendQueryParams(embedUrl, {
         lc_host_override: window.location.origin,
     });
+    const iframeSrc =
+        embedOrigin && /^https?:\/\//i.test(embedUrlWithOverride)
+            ? embedUrlWithOverride
+            : undefined;
 
     const innerContent = (
         <div className="w-full h-full flex-1 relative">
             {isOffline || hasLoadFailed ? (
                 <AppEmbedOfflineState appName={appName} onRetry={handleRetry} />
-            ) : (
+            ) : iframeSrc ? (
                 <>
                     {isLoading && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50 z-10">
@@ -225,7 +230,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                     <iframe
                         key={iframeKey}
                         ref={iframeRef}
-                        src={embedUrlWithOverride}
+                        src={iframeSrc}
                         onLoad={() => setIsLoading(false)}
                         onError={() => {
                             setHasLoadFailed(true);
@@ -240,7 +245,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                         title={`${appName} - Modal View`}
                     />
                 </>
-            )}
+            ) : null}
             <IonToast
                 isOpen={showErrorToast}
                 onDidDismiss={() => setShowErrorToast(false)}
@@ -285,6 +290,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                                     onClick={handleFullScreen}
                                     className="px-4 py-2 rounded-full bg-indigo-500 hover:bg-indigo-600 text-white font-medium flex items-center gap-2"
                                     title="Open in full screen"
+                                    aria-label="Open in full screen"
                                 >
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
