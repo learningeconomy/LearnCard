@@ -3033,14 +3033,34 @@ export const appStoreRouter = t.router({
                 path: '/app-store/listing/{listingId}',
                 tags: ['App Store'],
                 summary: 'Delete App Store Listing',
-                description: 'Delete an App Store Listing',
+                description:
+                    'Delete an App Store Listing. Only draft or rejected listings may be deleted; in-review and live listings must be withdrawn or removed from the store first.',
             },
             requiredScope: 'app-store:delete',
         })
         .input(z.object({ listingId: z.string() }))
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
-            await verifyListingOwnership(input.listingId, ctx.user.profile.profileId);
+            const { listing } = await verifyListingOwnership(
+                input.listingId,
+                ctx.user.profile.profileId
+            );
+
+            // ARCHIVED is how a rejected listing is represented (there is no
+            // separate REJECTED status), so DRAFT and ARCHIVED are deletable.
+            if (listing.app_listing_status === 'PENDING_REVIEW') {
+                throw new TRPCError({
+                    code: 'PRECONDITION_FAILED',
+                    message: 'Only draft apps can be deleted. Withdraw it from review first.',
+                });
+            }
+
+            if (listing.app_listing_status === 'LISTED') {
+                throw new TRPCError({
+                    code: 'PRECONDITION_FAILED',
+                    message: "Live apps can't be deleted. Remove it from the store first.",
+                });
+            }
 
             await deleteAppStoreListing(input.listingId);
 

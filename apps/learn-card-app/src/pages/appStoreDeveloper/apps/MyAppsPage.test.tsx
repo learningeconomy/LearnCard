@@ -15,6 +15,14 @@ vi.mock('@ionic/react', () => ({
     IonIcon: () => <span />,
     IonSpinner: () => <div>Loading</div>,
 }));
+vi.mock('learn-card-base', () => ({
+    useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),
+    ModalTypes: { Center: 'center', BottomSheet: 'bottom-sheet' },
+    getLogger: () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
+    useToast: () => ({ presentToast: vi.fn(), dismissToast: vi.fn() }),
+    ToastTypeEnum: { Success: 'success', Error: 'error' },
+    useWallet: () => ({ initWallet: vi.fn() }),
+}));
 vi.mock('../components/AppStoreHeader', () => ({ AppStoreHeader: () => null }));
 vi.mock('../../../helpers/externalLinkHelpers', () => ({ openExternalLink: vi.fn() }));
 vi.mock('./NewAppSheet', () => ({

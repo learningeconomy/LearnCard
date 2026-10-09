@@ -19,6 +19,7 @@ import type { MyApp } from './myApps';
 import { LAUNCH_TYPE_LABELS } from '../submit/launchSettings';
 import { DEVELOPER_DOCS_URL, NewAppSheet } from './NewAppSheet';
 import { openExternalLink } from '../../../helpers/externalLinkHelpers';
+import { DeleteAppMenu } from './DeleteAppMenu';
 
 const PILL_CLASS: Record<ListingMode, string> = {
     'draft': 'bg-grayscale-100 text-grayscale-700',
@@ -36,15 +37,29 @@ const PROGRESS: Record<ListingMode, { width: string; color: string }> = {
     'removed': { width: '0%', color: 'bg-red-300' },
 };
 
+const handleCardKeyDown = (
+    event: React.KeyboardEvent<HTMLDivElement>,
+    onOpen: () => void
+): void => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        onOpen();
+    }
+};
+
 const AppCard: React.FC<{ app: MyApp; onOpen: () => void }> = ({ app, onOpen }) => {
-    const { listing, mode, nudge } = app;
+    const { listing, mode, nudge, integrationId } = app;
     const progress = PROGRESS[mode];
 
     return (
-        <button
-            type="button"
+        <div
+            role="button"
+            tabIndex={0}
+            aria-label={`Open ${listing.display_name}`}
             onClick={onOpen}
-            className="group text-left w-full bg-white rounded-[20px] border border-grayscale-200 p-5 hover:border-grayscale-300 hover:shadow-md transition-all"
+            onKeyDown={event => handleCardKeyDown(event, onOpen)}
+            className="group relative text-left w-full bg-white rounded-[20px] border border-grayscale-200 p-5 hover:border-grayscale-300 hover:shadow-md transition-all cursor-pointer"
         >
             <div className="flex items-start gap-4">
                 <img
@@ -57,10 +72,18 @@ const AppCard: React.FC<{ app: MyApp; onOpen: () => void }> = ({ app, onOpen }) 
                         <h3 className="text-base font-semibold text-grayscale-900 truncate">
                             {listing.display_name}
                         </h3>
-                        <IonIcon
-                            icon={chevronForwardOutline}
-                            className="text-grayscale-400 group-hover:text-grayscale-700 transition-colors shrink-0"
-                        />
+                        <div className="flex items-center gap-0.5 shrink-0">
+                            <DeleteAppMenu
+                                listingId={listing.listing_id}
+                                integrationId={integrationId}
+                                displayName={listing.display_name}
+                                mode={mode}
+                            />
+                            <IonIcon
+                                icon={chevronForwardOutline}
+                                className="text-grayscale-400 group-hover:text-grayscale-700 transition-colors"
+                            />
+                        </div>
                     </div>
                     <p className="text-sm text-grayscale-500 truncate">{listing.tagline}</p>
                     <div className="mt-2 flex items-center gap-2 min-w-0">
@@ -91,7 +114,7 @@ const AppCard: React.FC<{ app: MyApp; onOpen: () => void }> = ({ app, onOpen }) 
                     <IonIcon icon={arrowForwardOutline} />
                 </p>
             )}
-        </button>
+        </div>
     );
 };
 

@@ -10,6 +10,7 @@ import { AppStoreHeader } from '../components/AppStoreHeader';
 import { AppStatusView } from '../submit/AppStatusView';
 import { getListingMode, withPendingChanges } from '../submit/listingLifecycle';
 import { getAppStatusPath } from './myApps';
+import { DeleteAppMenu } from './DeleteAppMenu';
 
 const log = getLogger('app-status-page');
 
@@ -120,14 +121,23 @@ const AppStatusPage: React.FC = () => {
             <IonContent>
                 <div className="px-4 sm:px-6 pt-6">
                     <div className="max-w-[560px] mx-auto">
-                        <button
-                            type="button"
-                            onClick={() => history.push('/app-store/developer')}
-                            className="flex items-center gap-1.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
-                        >
-                            <IonIcon icon={arrowBackOutline} />
-                            Your apps
-                        </button>
+                        <div className="flex items-center justify-between gap-2">
+                            <button
+                                type="button"
+                                onClick={() => history.push('/app-store/developer')}
+                                className="flex items-center gap-1.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                            >
+                                <IonIcon icon={arrowBackOutline} />
+                                Your apps
+                            </button>
+                            <DeleteAppMenu
+                                listingId={listingId}
+                                integrationId={integrationId}
+                                displayName={listing.display_name}
+                                mode={mode}
+                                onDeleted={() => history.push('/app-store/developer')}
+                            />
+                        </div>
                         {error && (
                             <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
                                 <IonIcon
