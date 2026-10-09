@@ -26,7 +26,7 @@ Available on:
 
 Open your profile QR card and select **Scan**. Boost codes open the claim flow, and supported profile codes open the contact view. Other HTTP or HTTPS website links open in the browser.
 
-If the code contains unsupported content or its website link cannot be opened, ScoutPass displays “The QR code you have scanned is not compatible.” Select **Done** to return to the app.
+If the code contains unsupported content or its website link cannot be opened, ScoutPass displays “The QR code you have scanned is not compatible.” Select **Scan Another** to try a different code, or **Done** to return to the app.
 
 ---
 

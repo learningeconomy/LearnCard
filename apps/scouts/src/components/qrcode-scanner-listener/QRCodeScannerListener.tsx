@@ -1,12 +1,11 @@
 import React, { useEffect, useRef } from 'react';
-import * as m from '../../paraglide/messages.js';
 import { BarcodeScanner, BarcodeFormat, LensFacing } from '@capacitor-mlkit/barcode-scanning';
 import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
 
 import { useWallet, useModal, ModalTypes, getLogger } from 'learn-card-base';
 
 import { ClaimBoostModal } from '../../pages/claimBoost/ClaimBoost';
-import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
+import { QRCodeScannerNotice } from './QRCodeScannerNotice';
 import AddContactView, {
     AddContactViewMode,
 } from '../../pages/addressBook/addContactView/AddContactView';
@@ -24,24 +23,15 @@ export const QRCodeScannerListener: React.FC = () => {
 
     const presentScannerFailedModal = (incompatible = false): void => {
         newModal(
-            <section className="flex flex-col items-center text-center justify-center h-[90%]">
-                <img src={MiniGhost} alt="ghost" className="relative max-w-[250px] m-auto mb-0" />
-                <h1 className="text-center text-3xl font-bold text-grayscale-800 m-0 p-0 mt-4">
-                    {incompatible ? m['scanner.incompatibleTitle']() : m['scanner.eek']()}
-                </h1>
-                <strong className="text-center font-medium text-grayscale-600 m-0 p-0">
-                    {incompatible ? m['scanner.incompatible']() : m['scanner.errOcurred']()}
-                </strong>
-                <div className="w-full flex items-center justify-center mt-8">
-                    <button
-                        onClick={() => closeModal()}
-                        className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
-                    >
-                        {m['common.done']()}
-                    </button>
-                </div>
-            </section>,
-            { hideButton: true, hideDimmer: true },
+            <QRCodeScannerNotice
+                incompatible={incompatible}
+                onDismiss={closeModal}
+                onScanAgain={() => {
+                    closeModal();
+                    QRCodeScannerStore.set.openScanner();
+                }}
+            />,
+            { hideButton: true, className: 'scanner-notice-modal' },
             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
     };

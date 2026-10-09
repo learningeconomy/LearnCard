@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -11,6 +11,8 @@ const mocks = vi.hoisted(() => ({
     addListener: vi.fn(),
     remove: vi.fn(),
     closeScanner: vi.fn(),
+    openScanner: vi.fn(),
+    closeModal: vi.fn(),
     newModal: vi.fn(),
     initWallet: vi.fn(),
     getProfile: vi.fn(),
@@ -36,12 +38,12 @@ vi.mock('@capacitor-mlkit/barcode-scanning', () => ({
 vi.mock('learn-card-base/stores/QRCodeScannerStore', () => ({
     default: {
         useTracked: { showScanner: () => mocks.showScanner },
-        set: { closeScanner: mocks.closeScanner },
+        set: { closeScanner: mocks.closeScanner, openScanner: mocks.openScanner },
     },
 }));
 vi.mock('learn-card-base', () => ({
     useWallet: () => ({ initWallet: mocks.initWallet }),
-    useModal: () => ({ newModal: mocks.newModal, closeModal: vi.fn() }),
+    useModal: () => ({ newModal: mocks.newModal, closeModal: mocks.closeModal }),
     ModalTypes: { Center: 'center', FullScreen: 'fullscreen' },
     getLogger: () => ({ error: vi.fn(), warn: vi.fn() }),
 }));
@@ -51,8 +53,9 @@ vi.mock('../../pages/addressBook/addContactView/AddContactView', () => ({
     AddContactViewMode: { requestConnection: 'request' },
 }));
 vi.mock('../../paraglide/messages.js', () => ({
-    'scanner.eek': () => 'Something went wrong',
-    'scanner.errOcurred': () => 'Please try again',
+    'boost.somethingWentWrong': () => 'Something went wrong',
+    'error.generic': () => 'Please try again',
+    'scanner.scanAnother': () => 'Scan Another',
     'scanner.incompatibleTitle': () => 'QR code not supported',
     'scanner.incompatible': () => 'The QR code you have scanned is not compatible.',
     'common.done': () => 'Done',
@@ -275,5 +278,24 @@ describe('native scanner session', () => {
         render(mocks.newModal.mock.calls[0][0]);
         expect(screen.getByText('Please try again')).toBeTruthy();
         expect(mocks.openBrowser).not.toHaveBeenCalled();
+    });
+
+    it('dismisses the notice before opening a fresh scanner session', async () => {
+        await scan('unsupported content');
+        render(mocks.newModal.mock.calls[0][0]);
+        fireEvent.click(screen.getByRole('button', { name: 'Scan Another' }));
+        expect(mocks.closeModal).toHaveBeenCalledOnce();
+        expect(mocks.openScanner).toHaveBeenCalledOnce();
+        expect(mocks.closeModal.mock.invocationCallOrder[0]).toBeLessThan(
+            mocks.openScanner.mock.invocationCallOrder[0]
+        );
+    });
+
+    it('dismisses the notice without reopening the scanner when Done is selected', async () => {
+        await scan('unsupported content');
+        render(mocks.newModal.mock.calls[0][0]);
+        fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+        expect(mocks.closeModal).toHaveBeenCalledOnce();
+        expect(mocks.openScanner).not.toHaveBeenCalled();
     });
 });
