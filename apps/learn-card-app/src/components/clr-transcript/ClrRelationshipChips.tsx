@@ -1,5 +1,6 @@
 import React from 'react';
 import * as m from '../../paraglide/messages.js';
+import { mDynamic } from '../../i18n/mDynamic';
 import { ChevronRight } from 'lucide-react';
 
 import ClrSourceInfo from './ClrSourceInfo';
@@ -18,9 +19,12 @@ const ClrRelationshipChips: React.FC<{
             aria-label={m['clrTranscript.relationships.relatedRecords']()}
         >
             {relationships.map(relationship => {
-                const label = m[`clrTranscript.relationships.${relationship.kind}`]({
+                const messageKey = `clrTranscript.relationships.${relationship.kind}`;
+                const translatedLabel = mDynamic(messageKey, {
                     name: relationship.relatedRecordName,
                 });
+                // Unknown kinds or missing messages retain the compatibility label without throwing.
+                const label = translatedLabel === messageKey ? relationship.label : translatedLabel;
                 const isNavigable = relationship.navigable && onSelectRecord !== undefined;
 
                 return (

@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { clrAchievementIdAssociations } from '../../../../../packages/credential-library/src/fixtures/clr/achievement-id-associations';
+import type { RelationshipKind } from 'learn-card-base/helpers/credentials/clr/renderer';
 import { normalizeClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 import ClrRelationshipChips from './ClrRelationshipChips';
@@ -49,6 +50,9 @@ describe('ClrRelationshipChips', () => {
         )!;
         const relationship = {
             ...model.relationships[foundation.sourceCredentialId][0]!,
+            kind: 'unlock' as const,
+            relatedRecordName: 'Applied Systems Design',
+            label: 'Legacy English compatibility text',
             navigable: false,
         };
         const onSelectRecord = vi.fn();
@@ -56,7 +60,8 @@ describe('ClrRelationshipChips', () => {
             <ClrRelationshipChips relationships={[relationship]} onSelectRecord={onSelectRecord} />
         );
 
-        expect(screen.getByText(relationship.label)).toBeInTheDocument();
+        expect(screen.getByText('Unlocks Applied Systems Design')).toBeInTheDocument();
+        expect(screen.queryByText(relationship.label)).not.toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /^Open / })).not.toBeInTheDocument();
 
         rerender(<ClrRelationshipChips relationships={[{ ...relationship, navigable: true }]} />);
@@ -64,6 +69,39 @@ describe('ClrRelationshipChips', () => {
         expect(screen.queryByRole('button', { name: /^Open / })).not.toBeInTheDocument();
         expect(onSelectRecord).not.toHaveBeenCalled();
     });
+    it('uses the compatibility fallback for an unknown kind without breaking navigation', () => {
+        setLocale('es', { reload: false });
+        const source = Object.values(model.relationships).flat()[0];
+        const relationship = {
+            ...source,
+            // Simulates a newer producer sending a kind that has no app message yet.
+            kind: 'futureRelationship' as RelationshipKind,
+            label: 'Supplied compatibility label',
+            navigable: true,
+            resolution: 'resolved' as const,
+        };
+        const onSelectRecord = vi.fn();
+        const view = render(
+            <ClrRelationshipChips relationships={[relationship]} onSelectRecord={onSelectRecord} />
+        );
+        const button = screen.getByRole('button', {
+            name: m['clrTranscript.relationships.openRecord']({
+                name: relationship.relatedRecordName,
+                label: relationship.label,
+            }),
+        });
+        expect(button).toHaveTextContent(relationship.label);
+        fireEvent.click(button);
+        expect(onSelectRecord).toHaveBeenCalledWith(relationship.relatedRecordId);
+
+        view.rerender(<ClrRelationshipChips relationships={[relationship]} />);
+        expect(screen.getByText(relationship.label)).toBeInTheDocument();
+        expect(
+            screen.queryByText('clrTranscript.relationships.futureRelationship')
+        ).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /^Abrir / })).not.toBeInTheDocument();
+    });
+
     it.each([
         { locale: 'es', ambiguous: 'Destino ambiguo', unresolved: 'Destino sin resolver' },
         { locale: 'fr', ambiguous: 'Cible ambiguë', unresolved: 'Cible non résolue' },

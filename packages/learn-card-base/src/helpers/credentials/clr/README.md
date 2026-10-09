@@ -55,7 +55,10 @@ category has multiple unit groups. Collection issuance (`issuanceDate`) and vali
 start (`validFrom`) are also independent fields.
 
 Relationship `kind` and source-provided names are stable data; the app translates
-chip labels at render time. Date and quantity formatters validate BCP-47 locales
+chip labels at render time. `RelationshipDisplayModel.label` is a deprecated English
+compatibility fallback; new consumers should translate `kind` with `relatedRecordName`.
+The app uses this fallback only when a relationship message is unavailable.
+Date and quantity formatters validate BCP-47 locales
 and fall back to English for malformed persisted values. Hashed identifiers remain
 available in details but are excluded from learner display names.
 
