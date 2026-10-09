@@ -162,7 +162,7 @@ const BuildHomePage: React.FC = () => {
                             Most popular
                         </span>
                         <h2 className="mt-4 text-xl font-semibold text-white">
-                            Build an app with AI
+                            Build an app
                         </h2>
                         <p className="mt-1 text-sm text-white/70 max-w-lg leading-relaxed">
                             Make it in Lovable, Bolt, v0, or your own code. It runs inside LearnCard
