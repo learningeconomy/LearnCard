@@ -344,6 +344,17 @@ for (const [mode, bundleId] of [
     });
 }
 
+// `serverless-deploy` runs this checker before `serverless deploy` (`&&`), so it must pass on
+// the source config or every lca-api deployment stops before Serverless.
+const lcaDeployScript = JSON.parse(fs.readFileSync(path.join(lcaDir, 'package.json'), 'utf8'))
+    .scripts['serverless-deploy'];
+assert.match(lcaDeployScript, /^node scripts\/check-seed-encryption-infrastructure\.mjs && /);
+const saInfraCheck = spawnSync('node', ['scripts/check-seed-encryption-infrastructure.mjs'], {
+    cwd: lcaDir,
+    encoding: 'utf8',
+});
+assert.equal(saInfraCheck.status, 0, `lca-api deploy preflight failed:\n${saInfraCheck.stderr}`);
+
 // The least-privilege OIDC function gets neither a bundle pointer nor API credentials.
 withEnv({ SEED: 'x', MONGO_URI: 'x', MONGO_DB_NAME: 'x', RUNTIME_SECRETS_ID: 'bundle' }, () => {
     const env = { ...functionEnv.provider(), ...functionEnv.oidc() };
