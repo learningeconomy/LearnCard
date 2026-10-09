@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import { execFileSync } from 'node:child_process';
 import { inputKey, restore, snapshot } from '../../scripts/e2e-hosted/sdk-build-cache.mjs';
 
 const fixture = t => {
@@ -76,4 +77,21 @@ test('snapshot refuses symlinks instead of caching data outside the output contr
     const { workspace, cache, output, spec } = fixture(t);
     fs.symlinkSync('/etc/hosts', path.join(workspace, output, 'outside'));
     assert.throws(() => snapshot(workspace, cache, spec));
+});
+
+test('keys include submodule revisions with initialized or absent directories', t => {
+    const { workspace } = fixture(t);
+    execFileSync('git', ['init', '-q'], { cwd: workspace });
+    const setRevision = revision =>
+        execFileSync(
+            'git',
+            ['update-index', '--add', '--cacheinfo', `160000,${revision},lib/didkit`],
+            { cwd: workspace }
+        );
+    setRevision('1'.repeat(40));
+    const first = inputKey(workspace, ['lib/didkit'], {});
+    fs.mkdirSync(path.join(workspace, 'lib/didkit'), { recursive: true });
+    assert.equal(inputKey(workspace, ['lib/didkit'], {}), first);
+    setRevision('2'.repeat(40));
+    assert.notEqual(inputKey(workspace, ['lib/didkit'], {}), first);
 });

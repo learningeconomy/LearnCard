@@ -21,10 +21,19 @@ const safePath = value => {
 export const inputKey = (root, files, configuration, prefix = 'e2e-sdk-outputs-v1') => {
     const hash = createHash('sha256').update(canonical(configuration));
     for (const file of [...files].sort()) {
-        hash.update(file)
-            .update('\0')
-            .update(fs.readFileSync(path.join(root, file)))
-            .update('\0');
+        const location = path.join(root, file);
+        let bytes;
+        if (!fs.existsSync(location) || fs.lstatSync(location).isDirectory()) {
+            // git ls-files includes submodule entries even without initialized contents.
+            const entry = execFileSync('git', ['ls-files', '--stage', '--', file], {
+                cwd: root,
+            }).toString();
+            if (!entry.startsWith('160000 ')) throw new Error(`Missing tracked input: ${file}`);
+            bytes = entry;
+        } else {
+            bytes = fs.readFileSync(location);
+        }
+        hash.update(file).update('\0').update(bytes).update('\0');
     }
     return `${prefix}-${hash.digest('hex')}`;
 };
