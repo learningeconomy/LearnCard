@@ -390,6 +390,10 @@ describe('Notifications', () => {
 
         it('records exactly one E2E push attempt per delivery window', async () => {
             vi.stubEnv('IS_E2E_TEST', 'true');
+            // Earlier notification cases also write E2E attempts into this cache.
+            // Isolate this window-count assertion just as we clean up afterward.
+            const previousKeys = await cache.keys('e2e:push-attempt:*');
+            if (previousKeys?.length) await cache.delete(previousKeys);
 
             try {
                 await expect(sendRefresh('window-1', 1)).resolves.toBe(true);

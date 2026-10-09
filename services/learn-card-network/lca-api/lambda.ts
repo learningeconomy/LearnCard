@@ -27,3 +27,12 @@ export const didWebHandler = async (...args: Parameters<LambdaApp['didWebHandler
 
 // Preserve the local/offline handler name without importing the full API for OIDC.
 export { handler as oidcHandler } from './oidcLambda';
+
+// Scheduled (EventBridge) escrow jobs share the API bootstrap: they need Mongo/Postmark from the bundle.
+export const escrowHoldRemindersHandler = async (
+    ...args: Parameters<LambdaApp['escrowHoldRemindersHandler']>
+) => (await getApplication()).escrowHoldRemindersHandler(...args);
+
+export const escrowBlobRewrapHandler = async (
+    ...args: Parameters<LambdaApp['escrowBlobRewrapHandler']>
+) => (await getApplication()).escrowBlobRewrapHandler(...args);

@@ -68,6 +68,22 @@ To add a tenant, add its stage files to each service and register them in
 Stage files are committed and world-readable in the repo. Treat anything you
 would not publish as a secret and keep it out of them.
 
+### lca-api escrow settings
+
+| Setting                                                                                                                                                | Source                                                       |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
+| `ESCROW_RELAY_URL`, `ESCROW_RELAY_AUTH_TOKEN`, `ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON`, `ESCROW_ENCLAVE_REMOTE_URL`, `ESCROW_ENCLAVE_REMOTE_TOKEN` | Runtime bundle (GitHub fallback only without a bundle)       |
+| `ESCROW_ENCLAVE_MODE`, `ESCROW_RELEASE_KILL_SWITCH`                                                                                                    | GitHub variables, forwarded in every mode (operator toggles) |
+| `ESCROW_ENCLAVE_ACTIVE_KEY_ID`, `ESCROW_HOLD_DURATION_MS`, `ESCROW_HOLD_RESTART_MIN_AGE_MS`, `ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS`                        | `config/config.<stage>.json` (or schema default)             |
+| `ESCROW_ENCLAVE_ENDPOINT_SERVICE_NAME`, `ESCROW_ENCLAVE_HOSTNAME`                                                                                      | GitHub variables, deploy time only (PrivateLink resources)   |
+
+Escrow stays off unless `ESCROW_ENCLAVE_MODE` is set. The scheduled
+`escrowHoldReminders` / `escrowBlobRewrap` jobs use the API function environment
+and the default role's scoped bundle-read grant. Run any escrow-enabled stage in
+bundle mode: remote escrow without a bundle leaves almost no headroom under
+Lambda's 4 KB environment limit. When enabling escrow on a bundle stage, add its
+credentials to the bundle; GitHub fallback secrets are ignored there.
+
 ## Quick Start
 
 ### Lambda runtime bundles

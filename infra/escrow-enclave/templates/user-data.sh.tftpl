@@ -1,0 +1,195 @@
+#!/bin/bash
+set -euo pipefail
+
+exec > >(tee /var/log/escrow-enclave-user-data.log) 2>&1
+echo "[user-data] escrow-enclave-host bootstrap starting"
+
+REGION="${aws_region}"
+ENCLAVE_CPU_COUNT="${enclave_cpu_count}"
+ENCLAVE_MEMORY_MIB="${enclave_memory_mib}"
+EIF_S3_URI="${eif_s3_uri}"
+ENCLAVE_IMAGE_VERSION="${enclave_image_version}"
+ROUGHTIME_ALLOWLIST_JSON='${roughtime_allowlist_json}'
+ARTIFACTS_BUCKET="${artifacts_bucket}"
+SEALED_KEY_OBJECT="${sealed_key_object}"
+HOST_BINARY_S3_URI="${host_binary_s3_uri}"
+HOST_BINARY_SHA256="${host_binary_sha256}"
+ESCROW_KEY_ID="${escrow_key_id}"
+ESCROW_PREVIOUS_KEY_IDS="${escrow_previous_key_ids_csv}"
+ESCROW_PREVIOUS_KEY_OBJECTS="${escrow_previous_key_objects_csv}"
+ESCROW_ALLOW_FIRST_BOOT="${escrow_allow_first_boot}"
+LEDGER_RECORDS_TABLE="${ledger_records_table}"
+LEDGER_HEADS_TABLE="${ledger_heads_table}"
+AUDIT_BUCKET="${audit_bucket}"
+HOST_BEARER_TOKEN_PARAMETER="${host_bearer_token_parameter_name}"
+HOST_TLS_CERTIFICATE_PARAMETER="${host_tls_certificate_parameter_name}"
+HOST_TLS_PRIVATE_KEY_PARAMETER="${host_tls_private_key_parameter_name}"
+KMS_ENDPOINT="kms.$REGION.amazonaws.com"
+
+# 1) Nitro Enclaves CLI. AL2023 ships AWS CLI v2 pre-installed, so only the
+#    enclave tooling needs to be added.
+dnf install -y aws-nitro-enclaves-cli aws-nitro-enclaves-cli-devel
+usermod -aG ne ec2-user 2>/dev/null || true
+
+# 2) Allocator: reserve CPU/memory exclusively for the enclave. The parent
+#    keeps the rest of this instance_type's vCPUs/RAM (must be >= *.xlarge —
+#    see decisions.md D1 — for the OS, vsock-proxy, and the host binary below).
+mkdir -p /etc/nitro_enclaves
+cat > /etc/nitro_enclaves/allocator.yaml <<ALLOCATOR_EOF
+---
+memory_mib: $ENCLAVE_MEMORY_MIB
+cpu_count: $ENCLAVE_CPU_COUNT
+ALLOCATOR_EOF
+
+systemctl daemon-reload
+systemctl enable nitro-enclaves-allocator.service
+systemctl restart nitro-enclaves-allocator.service
+
+# 3) vsock-proxy allowlist: the enclave's ONLY network path is
+#    vsock -> this proxy -> KMS. No S3, no DynamoDB, no Roughtime here by
+#    design — those are brokered by the escrow-enclave-host parent binary
+#    (step 6), which the enclave does not trust for policy decisions
+#    (decisions.md D2/D3).
+cat > /etc/nitro_enclaves/vsock-proxy.yaml <<PROXY_EOF
+allowlist:
+  - {address: $KMS_ENDPOINT, port: 443}
+PROXY_EOF
+
+cat > /etc/systemd/system/vsock-proxy.service <<PROXY_UNIT_EOF
+[Unit]
+Description=vsock-proxy - enclave-only egress to AWS KMS ($KMS_ENDPOINT:443)
+After=network-online.target nitro-enclaves-allocator.service
+Wants=network-online.target
+Requires=nitro-enclaves-allocator.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/vsock-proxy 8000 $KMS_ENDPOINT 443 --config /etc/nitro_enclaves/vsock-proxy.yaml
+Restart=always
+RestartSec=2
+User=root
+
+[Install]
+WantedBy=multi-user.target
+PROXY_UNIT_EOF
+
+# 4) Fetch the enclave image (.eif) built + PCR-measured in P2.
+mkdir -p /opt/escrow-enclave-host/eif /opt/escrow-enclave-host/bin
+aws s3 cp "$EIF_S3_URI" "/opt/escrow-enclave-host/eif/escrow-enclave-$ENCLAVE_IMAGE_VERSION.eif" --region "$REGION"
+ln -sf "/opt/escrow-enclave-host/eif/escrow-enclave-$ENCLAVE_IMAGE_VERSION.eif" /opt/escrow-enclave-host/eif/current.eif
+
+# SECURITY: never add --debug-mode to a `nitro-cli run-enclave` invocation
+# anywhere on this host (including manual/interactive use). Debug mode zeroes
+# out PCR0/PCR1/PCR2 in the attestation document, which (a) can never satisfy
+# the KMS key policy's RecipientAttestation PCR conditions (decisions.md D7)
+# and (b) would let a debug enclave impersonate any pinned measurement to a
+# client that fails to reject the all-zero PCR case. Non-debug mode only, in
+# every environment this launch template is used for, including staging.
+# services/escrow-enclave-host's supervisor never constructs a --debug-mode
+# flag either (it only ever emits --eif-path/--cpu-count/--memory/
+# --enclave-cid to `nitro-cli run-enclave`), so this is enforced at both the
+# host-binary level and by this operational policy.
+
+# 5) Fetch the host's boot-time secrets (bearer token + TLS cert/key) from
+#    SSM Parameter Store. These are written to a root-only (0700) directory
+#    with 0600 file permissions and referenced by the systemd unit below as
+#    FILE PATHS — never inlined into the unit file or logged. Redirecting
+#    `aws ssm get-parameter`'s stdout straight to disk means the secret
+#    value itself never appears in /var/log/escrow-enclave-user-data.log
+#    (which captures this whole script's stdout/stderr via the `exec` at
+#    the top of this file).
+install -d -m 0700 -o root -g root /etc/escrow-enclave-host
+
+aws ssm get-parameter \
+  --name "$HOST_BEARER_TOKEN_PARAMETER" \
+  --with-decryption \
+  --region "$REGION" \
+  --query 'Parameter.Value' \
+  --output text > /etc/escrow-enclave-host/bearer-token
+chmod 0600 /etc/escrow-enclave-host/bearer-token
+
+aws ssm get-parameter \
+  --name "$HOST_TLS_CERTIFICATE_PARAMETER" \
+  --with-decryption \
+  --region "$REGION" \
+  --query 'Parameter.Value' \
+  --output text > /etc/escrow-enclave-host/tls.crt
+chmod 0600 /etc/escrow-enclave-host/tls.crt
+
+aws ssm get-parameter \
+  --name "$HOST_TLS_PRIVATE_KEY_PARAMETER" \
+  --with-decryption \
+  --region "$REGION" \
+  --query 'Parameter.Value' \
+  --output text > /etc/escrow-enclave-host/tls.key
+chmod 0600 /etc/escrow-enclave-host/tls.key
+
+# 6) Fetch the escrow-enclave-host parent binary and verify its SHA-256
+#    digest BEFORE installing it to its fixed, executable path. A mismatch
+#    aborts this script immediately (set -euo pipefail): the systemd unit
+#    below is never written and the service is never started, so the
+#    instance simply never passes its NLB health check (nlb.tf) and the ASG
+#    replaces it — this is the practical "fail boot on mismatch" behavior,
+#    without this script trying to reach into EC2's own instance-lifecycle
+#    APIs to force a termination itself.
+HOST_BINARY_TMP="$(mktemp /opt/escrow-enclave-host/bin/.download.XXXXXX)"
+aws s3 cp "$HOST_BINARY_S3_URI" "$HOST_BINARY_TMP" --region "$REGION"
+if ! echo "$HOST_BINARY_SHA256  $HOST_BINARY_TMP" | sha256sum -c -; then
+  echo "[user-data] FATAL: escrow-enclave-host binary sha256 mismatch, refusing to install or start the service" >&2
+  rm -f "$HOST_BINARY_TMP"
+  exit 1
+fi
+install -m 0755 -o root -g root "$HOST_BINARY_TMP" /opt/escrow-enclave-host/bin/escrow-enclave-host
+rm -f "$HOST_BINARY_TMP"
+
+# 7) escrow-enclave-host parent process. The binary itself supervises
+#    `nitro-cli run-enclave` (via ESCROW_ENCLAVE_EIF_PATH/CPU_COUNT/
+#    MEMORY_MIB below — see services/escrow-enclave-host/src/supervisor.rs;
+#    it never constructs a --debug-mode flag), bridges lca-api's HTTPS calls
+#    on 8443 to the enclave over vsock, writes the DynamoDB ledger and S3
+#    Object Lock audit records, relays (but does not trust) Roughtime UDP
+#    responses, and serves plain HTTP GET /health on 8444 for the NLB.
+cat > /etc/systemd/system/escrow-enclave-host.service <<HOST_UNIT_EOF
+[Unit]
+Description=escrow-enclave-host parent process (Nitro Enclave supervisor)
+After=network-online.target vsock-proxy.service nitro-enclaves-allocator.service
+Wants=network-online.target
+Requires=vsock-proxy.service nitro-enclaves-allocator.service
+
+[Service]
+Type=simple
+ExecStart=/opt/escrow-enclave-host/bin/escrow-enclave-host
+Restart=always
+RestartSec=2
+User=root
+Environment=AWS_REGION=$REGION
+Environment=ESCROW_ENCLAVE_CPU_COUNT=$ENCLAVE_CPU_COUNT
+Environment=ESCROW_ENCLAVE_MEMORY_MIB=$ENCLAVE_MEMORY_MIB
+Environment=ESCROW_ENCLAVE_EIF_PATH=/opt/escrow-enclave-host/eif/current.eif
+Environment=ESCROW_ENCLAVE_IMAGE_VERSION=$ENCLAVE_IMAGE_VERSION
+Environment=ESCROW_ENCLAVE_HEALTH_PORT=8444
+Environment=ESCROW_ENCLAVE_TLS_CERT=/etc/escrow-enclave-host/tls.crt
+Environment=ESCROW_ENCLAVE_TLS_KEY=/etc/escrow-enclave-host/tls.key
+Environment=ESCROW_ENCLAVE_TOKEN_FILE=/etc/escrow-enclave-host/bearer-token
+Environment=ESCROW_ARTIFACTS_BUCKET=$ARTIFACTS_BUCKET
+Environment=ESCROW_SEALED_KEY_OBJECT=$SEALED_KEY_OBJECT
+Environment=ESCROW_KEY_ID=$ESCROW_KEY_ID
+Environment=ESCROW_PREVIOUS_KEY_IDS=$ESCROW_PREVIOUS_KEY_IDS
+Environment=ESCROW_PREVIOUS_KEY_OBJECTS=$ESCROW_PREVIOUS_KEY_OBJECTS
+Environment=ESCROW_ALLOW_FIRST_BOOT=$ESCROW_ALLOW_FIRST_BOOT
+Environment=ESCROW_LEDGER_RECORDS_TABLE=$LEDGER_RECORDS_TABLE
+Environment=ESCROW_LEDGER_HEADS_TABLE=$LEDGER_HEADS_TABLE
+Environment=ESCROW_AUDIT_BUCKET=$AUDIT_BUCKET
+# Single quotes preserve the JSON double quotes when systemd parses Environment.
+Environment='ESCROW_ROUGHTIME_ALLOWLIST_JSON=$ROUGHTIME_ALLOWLIST_JSON'
+
+[Install]
+WantedBy=multi-user.target
+HOST_UNIT_EOF
+
+systemctl daemon-reload
+systemctl enable vsock-proxy.service
+systemctl start vsock-proxy.service
+systemctl enable --now escrow-enclave-host.service
+
+echo "[user-data] escrow-enclave-host bootstrap complete"

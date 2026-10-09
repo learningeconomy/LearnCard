@@ -97,14 +97,20 @@ const functionsWithRole = role =>
         .map(([name]) => name)
         .sort();
 // Explicit roles replace, rather than inherit, the provider's generated default role.
-assert.deepEqual(functionsWithRole(undefined), ['didWeb', 'swagger']);
+// Scheduled escrow jobs need the runtime bundle (Mongo/Postmark) but not signing-authority KMS.
+assert.deepEqual(functionsWithRole(undefined), [
+    'didWeb',
+    'escrowBlobRewrap',
+    'escrowHoldReminders',
+    'swagger',
+]);
 assert.deepEqual(functionsWithRole('SigningAuthorityExecutionRole'), [
     'api',
     'seedMigration',
     'trpc',
 ]);
 assert.deepEqual(functionsWithRole('OidcExecutionRole'), ['oidc']);
-for (const name of ['didWeb', 'swagger']) {
+for (const name of ['didWeb', 'swagger', 'escrowHoldReminders', 'escrowBlobRewrap']) {
     const fn = lcaServerless.functions[name];
     assert.equal(Object.hasOwn(fn, 'role'), false, name);
     assert.equal(
@@ -113,6 +119,13 @@ for (const name of ['didWeb', 'swagger']) {
         `${name} must not depend on the signing-authority KMS grant`
     );
     assert.deepEqual(fn.vpc, lcaServerless.functions.trpc.vpc, `${name} stays in the service VPC`);
+}
+for (const name of ['escrowHoldReminders', 'escrowBlobRewrap']) {
+    assert.equal(
+        lcaServerless.functions[name].environment,
+        '${file(./serverless.function-env.cjs):escrow}',
+        name
+    );
 }
 assert.equal(
     lcaServerless.functions.oidc.environment,
@@ -158,6 +171,7 @@ for (const [name, resource] of Object.entries(lcaServerless.resources.Resources)
 // Uses the PRODUCTION checked-in stage (no keycloak/escrow) and realistic value lengths.
 const lcaDir = path.join(root, 'services/learn-card-network/lca-api');
 const functionEnv = require(path.join(lcaDir, 'serverless.function-env.cjs'));
+assert.equal(functionEnv.escrow, functionEnv.api, 'escrow jobs share the API environment');
 const productionStage = JSON.parse(
     fs.readFileSync(path.join(lcaDir, 'config/config.production.json'), 'utf8')
 );
@@ -185,6 +199,9 @@ const lengths = {
     ESCROW_RELAY_AUTH_TOKEN: 64,
     ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON: 400,
     ESCROW_ENCLAVE_MODE: 8,
+    ESCROW_ENCLAVE_REMOTE_URL: 60,
+    ESCROW_ENCLAVE_REMOTE_TOKEN: 64,
+    ESCROW_RELEASE_KILL_SWITCH: 5,
     OIDC_CLIENT_SECRET: 64,
     OIDC_REDIRECT_URIS: 200,
 };
@@ -258,6 +275,9 @@ const emptied = Object.fromEntries(
         'ESCROW_RELAY_AUTH_TOKEN',
         'ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON',
         'ESCROW_ENCLAVE_MODE',
+        'ESCROW_ENCLAVE_REMOTE_URL',
+        'ESCROW_ENCLAVE_REMOTE_TOKEN',
+        'ESCROW_RELEASE_KILL_SWITCH',
         'OIDC_CLIENT_SECRET',
         'OIDC_REDIRECT_URIS',
         'POSTHOG_API_KEY',
@@ -290,6 +310,40 @@ for (const [mode, bundleId] of [
         }
     });
 }
+// Remote escrow enabled: bundle mode keeps only the two toggles in Lambda env; fallback mode
+// must still fit, since every escrow credential then rides in the function environment.
+const remoteEscrow = Object.fromEntries(
+    [
+        'ESCROW_ENCLAVE_MODE',
+        'ESCROW_ENCLAVE_REMOTE_URL',
+        'ESCROW_ENCLAVE_REMOTE_TOKEN',
+        'ESCROW_RELEASE_KILL_SWITCH',
+    ].map(key => [key, placeholder(key)])
+);
+for (const [mode, bundleId] of [
+    ['bundle', placeholder('RUNTIME_SECRETS_ID')],
+    ['fallback', undefined],
+]) {
+    withEnv({ ...secretEnv, ...emptied, ...remoteEscrow, RUNTIME_SECRETS_ID: bundleId }, () => {
+        const provider = functionEnv.provider({ options: { stage: 'production' } });
+        for (const key of infraKeys) provider[key] = placeholder(key);
+        const combined = { ...provider, ...functionEnv.escrow() };
+        if (mode === 'bundle') {
+            assert.deepEqual(
+                Object.keys(combined).sort(),
+                [
+                    ...infraKeys,
+                    'RUNTIME_SECRETS_ID',
+                    'ESCROW_ENCLAVE_MODE',
+                    'ESCROW_RELEASE_KILL_SWITCH',
+                ].sort()
+            );
+        }
+        assert(size(combined) <= 4096, `remote escrow/${mode}: ${size(combined)} bytes`);
+        console.log(`LCA Lambda env remote-escrow/${mode}: ${size(combined)} bytes`);
+    });
+}
+
 // The least-privilege OIDC function gets neither a bundle pointer nor API credentials.
 withEnv({ SEED: 'x', MONGO_URI: 'x', MONGO_DB_NAME: 'x', RUNTIME_SECRETS_ID: 'bundle' }, () => {
     const env = { ...functionEnv.provider(), ...functionEnv.oidc() };

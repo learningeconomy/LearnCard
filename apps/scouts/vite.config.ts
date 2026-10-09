@@ -80,6 +80,14 @@ export default defineConfig(({ mode, command }) => {
         productionTenantConfig as Record<string, unknown>,
         stageTenantConfig as Record<string, unknown>
     );
+    // Same three-way split as stageTenantConfig above, expressed as the schema-validated
+    // `stage` field so runtime code (e.g. the escrow software-enclave guard in
+    // authConfig.ts) can tell a staging deploy apart from production.
+    tenantOverrides.stage = environment.VITE_NODE_ENV.startsWith('staging')
+        ? 'staging'
+        : environment.VITE_NODE_ENV.startsWith('development')
+          ? 'local'
+          : 'production';
 
     return {
         cacheDir,

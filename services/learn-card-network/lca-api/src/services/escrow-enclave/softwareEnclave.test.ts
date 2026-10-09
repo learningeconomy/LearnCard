@@ -9,7 +9,7 @@ import {
     EscrowBlobError,
     EscrowPolicyError,
     EscrowPinMismatchError,
-    type EscrowHoldForEnclave,
+    type EscrowHoldRecord,
 } from './types';
 
 describe('software enclave', () => {
@@ -58,6 +58,9 @@ describe('software enclave', () => {
             expectedDid: scenario === 'expected DID' ? 'did:key:other' : did,
             sourceShareVersion: scenario === 'source version' ? 1 : 2,
             targetShareVersion: scenario === 'target version' ? 4 : targetVersion,
+            targetEnrollmentEpoch: 2,
+            // Unused in software mode (see softwareEnclave.ts); any value is fine here.
+            sourceEnrollmentEpoch: 1,
         });
         if (scenario !== 'success') {
             await expect(result).rejects.toBeInstanceOf(EscrowBlobError);
@@ -74,13 +77,21 @@ describe('software enclave', () => {
             pinProof: pinVerifier,
             clientEphemeralPublicKey: client.publicKey,
             hold: {
-                _id: 'carry',
-                status: 'pending',
-                releasePolicy: 'pin',
-                releaseAfter: new Date(0),
-                primaryDid: did,
-                shareVersion: 3,
-                clientEphemeralPublicKey: client.publicKey,
+                hold: {
+                    holdId: 'carry',
+                    did,
+                    shareVersion: 3,
+                    blobHash: 'ab'.repeat(32),
+                    enrollmentEpoch: 1,
+                    releasePolicy: 'pin',
+                    clientEphemeralPublicKey: client.publicKey,
+                    createdLo: 0,
+                    createdHi: 0,
+                    policyVersion: 1,
+                    signature: 'test-signature',
+                },
+                holdDurationMs: 0,
+                ledgerSeq: 0,
             },
         });
         expect(await openEscrowRelease(sealed, client.privateKey)).toEqual({
@@ -89,6 +100,84 @@ describe('software enclave', () => {
             holdId: 'carry',
         });
     });
+
+    it.each(['success', 'current key', 'unknown key', 'wrong DID', 'wrong version'])(
+        'rewraps an escrow blob sealed under a previous key (P9.3): %s',
+        async scenario => {
+            const current = await generateEscrowKeyPair();
+            const previous = await generateEscrowKeyPair();
+            const client = await generateEscrowKeyPair();
+            const enclave = new SoftwareEnclave({
+                privateKeys: { current: current.privateKey, previous: previous.privateKey },
+                activeKeyId: 'current',
+            });
+            const did = 'did:key:test';
+            const pinVerifier = 'ab'.repeat(32);
+            const target = { recoveryShare: 'ef'.repeat(33), did, shareVersion: 1 };
+            const sourceKeys = scenario === 'current key' ? current : previous;
+            const sourceKeyId = scenario === 'current key' ? 'current' : 'previous';
+            const sourceEnvelope = await encryptEscrowBlob(
+                { ...target, pinVerifier },
+                sourceKeys.publicKey,
+                sourceKeyId
+            );
+            const unknown =
+                scenario === 'unknown key'
+                    ? await encryptEscrowBlob(
+                          target,
+                          (await generateEscrowKeyPair()).publicKey,
+                          'retired-and-removed'
+                      )
+                    : undefined;
+            const result = enclave.rewrapEscrowBlob({
+                envelope: unknown ?? sourceEnvelope,
+                expectedDid: scenario === 'wrong DID' ? 'did:key:other' : did,
+                expectedShareVersion: scenario === 'wrong version' ? 2 : 1,
+                sourceEnrollmentEpoch: 1,
+            });
+            if (scenario !== 'success') {
+                await expect(result).rejects.toBeInstanceOf(EscrowBlobError);
+                return;
+            }
+            const { envelope } = await result;
+            expect(envelope.ciphertext).not.toBe(sourceEnvelope.ciphertext);
+            expect(
+                await enclave.verifyEscrowBlob({
+                    envelope,
+                    expectedDid: did,
+                    expectedShareVersion: 1,
+                })
+            ).toEqual({ ok: true, hasPin: true });
+            const { sealed } = await enclave.releaseEscrow({
+                envelope,
+                expectedDid: did,
+                pinProof: pinVerifier,
+                clientEphemeralPublicKey: client.publicKey,
+                hold: {
+                    hold: {
+                        holdId: 'rewrap',
+                        did,
+                        shareVersion: 1,
+                        blobHash: 'ab'.repeat(32),
+                        enrollmentEpoch: 1,
+                        releasePolicy: 'pin',
+                        clientEphemeralPublicKey: client.publicKey,
+                        createdLo: 0,
+                        createdHi: 0,
+                        policyVersion: 1,
+                        signature: 'test-signature',
+                    },
+                    holdDurationMs: 0,
+                    ledgerSeq: 0,
+                },
+            });
+            expect(await openEscrowRelease(sealed, client.privateKey)).toEqual({
+                ...target,
+                version: 1,
+                holdId: 'rewrap',
+            });
+        }
+    );
 
     it('derives the attestation key, verifies enrollment, and enforces release policy', async () => {
         const keys = await generateEscrowKeyPair();
@@ -102,6 +191,7 @@ describe('software enclave', () => {
         expect(JSON.parse(Buffer.from(attestation.document, 'base64').toString())).toEqual({
             mode: 'software',
             keyId: 'test',
+            previousKeyIds: [],
             publicKey: keys.publicKey,
             issuedAt: attestation.issuedAt,
         });
@@ -121,33 +211,86 @@ describe('software enclave', () => {
                 expectedShareVersion: 1,
             })
         ).toMatchObject({ ok: false });
-        const hold: EscrowHoldForEnclave = {
-            _id: 'test-hold',
-            primaryDid: plaintext.did,
-            shareVersion: 1,
-            status: 'pending',
-            releaseAfter: new Date(1000),
+        const { holdRecord: created } = await enclave.createHold({
+            envelope,
+            holdId: 'test-hold',
+            expectedDid: plaintext.did,
+            expectedShareVersion: 1,
+            enrollmentEpoch: 1,
             releasePolicy: 'hold',
             clientEphemeralPublicKey: client.publicKey,
+        });
+        const hold: EscrowHoldRecord = {
+            ...created,
+            hold: { ...created.hold, createdLo: 0, createdHi: 0 },
+            holdDurationMs: 1000,
         };
+        expect(created).toMatchObject({
+            hold: {
+                holdId: 'test-hold',
+                did: plaintext.did,
+                shareVersion: 1,
+                enrollmentEpoch: 1,
+                releasePolicy: 'hold',
+                clientEphemeralPublicKey: client.publicKey,
+                createdLo: expect.any(Number),
+                createdHi: expect.any(Number),
+                policyVersion: 1,
+                signature: 'software-mode-unsigned',
+                blobHash: expect.stringMatching(/^[0-9a-f]{64}$/),
+            },
+            holdDurationMs: 604800000,
+            ledgerSeq: 0,
+        });
+        const createInput = {
+            envelope,
+            holdId: 'test-hold',
+            expectedDid: plaintext.did,
+            expectedShareVersion: 1,
+            enrollmentEpoch: 1,
+            releasePolicy: 'hold' as const,
+            clientEphemeralPublicKey: client.publicKey,
+        };
+        for (const change of [
+            { expectedDid: 'did:key:other' },
+            { expectedShareVersion: 2 },
+            { enrollmentEpoch: 0 },
+            { releasePolicy: 'pin' as const },
+        ]) {
+            await expect(enclave.createHold({ ...createInput, ...change })).rejects.toBeInstanceOf(
+                EscrowPolicyError
+            );
+        }
+        await expect(
+            enclave.createHold({ ...createInput, envelope: { ...envelope, ciphertext: 'bad' } })
+        ).rejects.toBeInstanceOf(EscrowBlobError);
         const request = {
             envelope,
             hold,
             clientEphemeralPublicKey: client.publicKey,
             expectedDid: plaintext.did,
         };
+        await expect(enclave.cancelHold(request)).resolves.toBeUndefined();
+        for (const change of [
+            { expectedDid: 'did:key:other' },
+            { clientEphemeralPublicKey: keys.publicKey },
+            { hold: { ...hold, hold: { ...hold.hold, did: 'did:key:other' } } },
+        ]) {
+            await expect(enclave.cancelHold({ ...request, ...change })).rejects.toBeInstanceOf(
+                EscrowPolicyError
+            );
+        }
+        await expect(
+            enclave.cancelHold({ ...request, envelope: { ...envelope, ciphertext: 'bad' } })
+        ).rejects.toBeInstanceOf(EscrowBlobError);
         await expect(
             enclave.releaseEscrow({ ...request, now: new Date(999) })
         ).rejects.toBeInstanceOf(EscrowPolicyError);
-        for (const changed of [
-            { status: 'cancelled' as const },
-            { shareVersion: 2 },
-            { primaryDid: 'did:key:wrong' },
-        ]) {
+        for (const changed of [{ shareVersion: 2 }, { did: 'did:key:wrong' }]) {
             await expect(
                 enclave.releaseEscrow({
                     ...request,
-                    hold: { ...hold, ...changed },
+                    hold: { ...hold, hold: { ...hold.hold, ...changed } },
                     now: new Date(1000),
                 })
             ).rejects.toBeInstanceOf(EscrowPolicyError);
@@ -166,7 +309,7 @@ describe('software enclave', () => {
         expect(await openEscrowRelease(released.sealed, client.privateKey)).toEqual({
             ...plaintext,
             version: 1,
-            holdId: hold._id,
+            holdId: hold.hold.holdId,
         });
         await expect(
             enclave.verifyEscrowBlob({
@@ -220,20 +363,29 @@ describe('software enclave', () => {
                     expectedShareVersion: 1,
                 })
             ).toEqual({ ok: true, hasPin: verifier });
+            const createInput = {
+                envelope,
+                holdId: 'pin-hold',
+                expectedDid: plaintext.did,
+                expectedShareVersion: 1,
+                enrollmentEpoch: 1,
+                releasePolicy: policy,
+                clientEphemeralPublicKey: client.publicKey,
+            };
+            if (policy === 'pin' && !verifier) {
+                await expect(enclave.createHold(createInput)).rejects.toBeInstanceOf(
+                    EscrowPolicyError
+                );
+                return;
+            }
+            const { holdRecord } = await enclave.createHold(createInput);
             const request = {
                 envelope,
                 expectedDid: plaintext.did,
                 clientEphemeralPublicKey: client.publicKey,
                 pinProof: proof,
-                hold: {
-                    _id: 'pin-hold',
-                    status: 'pending' as const,
-                    primaryDid: plaintext.did,
-                    shareVersion: 1,
-                    releasePolicy: policy,
-                    releaseAfter: new Date(0),
-                    clientEphemeralPublicKey: client.publicKey,
-                },
+                hold: holdRecord,
+                now: new Date(holdRecord.hold.createdHi + holdRecord.holdDurationMs),
             };
             if (error) await expect(enclave.releaseEscrow(request)).rejects.toBeInstanceOf(error);
             else {
@@ -246,4 +398,53 @@ describe('software enclave', () => {
             }
         }
     );
+
+    // P9.1 software-enclave equivalent: every configured key other than
+    // activeKeyId is already usable for decrypt (verifyEscrowBlob/createHold/
+    // releaseEscrow key the plaintext lookup by the envelope's own keyId, not
+    // by activeKeyId) — this test asserts the attestation now ADVERTISES that
+    // existing capability, and that a blob still sealed under a retired key
+    // decrypts/creates a hold/releases exactly like a current-key blob.
+    it('advertises other configured keys as previousKeyIds and still releases a blob sealed under one', async () => {
+        const active = await generateEscrowKeyPair();
+        const retired = await generateEscrowKeyPair();
+        const client = await generateEscrowKeyPair();
+        const enclave = new SoftwareEnclave({
+            privateKeys: { active: active.privateKey, retired: retired.privateKey },
+            activeKeyId: 'active',
+        });
+        const attestation = await enclave.getAttestation();
+        expect(attestation.keyId).toBe('active');
+        expect(attestation.previousKeyIds).toEqual(['retired']);
+        const plaintext = { recoveryShare: 'cd'.repeat(33), did: 'did:key:test', shareVersion: 1 };
+        const envelope = await encryptEscrowBlob(plaintext, retired.publicKey, 'retired');
+        expect(
+            await enclave.verifyEscrowBlob({
+                envelope,
+                expectedDid: plaintext.did,
+                expectedShareVersion: 1,
+            })
+        ).toEqual({ ok: true, hasPin: false });
+        const { holdRecord } = await enclave.createHold({
+            envelope,
+            holdId: 'retired-key-hold',
+            expectedDid: plaintext.did,
+            expectedShareVersion: 1,
+            enrollmentEpoch: 1,
+            releasePolicy: 'hold',
+            clientEphemeralPublicKey: client.publicKey,
+        });
+        const result = await enclave.releaseEscrow({
+            envelope,
+            hold: holdRecord,
+            expectedDid: plaintext.did,
+            clientEphemeralPublicKey: client.publicKey,
+            now: new Date(holdRecord.hold.createdHi + holdRecord.holdDurationMs),
+        });
+        expect(await openEscrowRelease(result.sealed, client.privateKey)).toEqual({
+            ...plaintext,
+            version: 1,
+            holdId: 'retired-key-hold',
+        });
+    });
 });

@@ -20,8 +20,15 @@ const API_SECRETS = [
     'ESCROW_RELAY_URL',
     'ESCROW_RELAY_AUTH_TOKEN',
     'ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON',
+    'ESCROW_ENCLAVE_REMOTE_URL',
+    'ESCROW_ENCLAVE_REMOTE_TOKEN',
     'KEYCLOAK_JWKS_URL_OVERRIDES',
 ];
+
+// Non-secret operator toggles forwarded in bundle mode too, so enabling RUNTIME_SECRETS_ID
+// can never silently change them: escrow stays off unless ESCROW_ENCLAVE_MODE is set, and
+// ESCROW_RELEASE_KILL_SWITCH must be flippable without editing the bundle.
+const API_TOGGLES = ['ESCROW_ENCLAVE_MODE', 'ESCROW_RELEASE_KILL_SWITCH'];
 
 // Serverless v3 supplies CLI options to file functions and preserves CF intrinsics.
 // No stage-file values are forwarded from the deployment environment.
@@ -38,13 +45,15 @@ exports.provider = ({ options = {} } = {}) => ({
 
 // API/migration and the default-role didWeb/swagger functions get the bundle pointer.
 // Reading the bundle does not grant the default role signing-authority KMS access.
-// ESCROW_ENCLAVE_MODE is a non-secret toggle: forward it in bundle mode too, so enabling
-// RUNTIME_SECRETS_ID can never silently disable escrow.
 exports.api = () =>
     functionEnvironment({
-        always: ['RUNTIME_SECRETS_ID', 'ESCROW_ENCLAVE_MODE'],
+        always: ['RUNTIME_SECRETS_ID', ...API_TOGGLES],
         fallback: API_SECRETS,
     });
+
+// Scheduled escrow jobs load the full app (Mongo, Postmark, seed) through lambda.ts, so they
+// need the same bundle pointer and escrow settings as the API functions.
+exports.escrow = exports.api;
 
 // OIDC has its own signing-key secret and cannot read the runtime bundle.
 exports.oidc = () => pickNonEmpty(['OIDC_CLIENT_SECRET', 'OIDC_REDIRECT_URIS']);
