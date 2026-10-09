@@ -39,6 +39,8 @@ docker() {
         echo reaped > "$TEST_ROOT/backend-finished"
         [[ "$FAIL_BACKEND" == false ]]
     else
+        echo 'runtime stdout diagnostic marker'
+        echo 'runtime stderr diagnostic marker' >&2
         [[ "$FAIL_RUNTIME" == false ]] || return 1
         [[ -s "$E2E_BROWSER_RUNTIME_CONTEXT/build/index.html" ]] || return 1
         [[ -s "$E2E_BROWSER_RUNTIME_CONTEXT/nginx.conf" ]] || return 1
@@ -51,6 +53,7 @@ for failure in none host backend runtime; do
     [[ "$failure" != backend ]] || FAIL_BACKEND=true
     [[ "$failure" != runtime ]] || FAIL_RUNTIME=true
     rm -f "$TEST_ROOT/backend-finished" "$TEST_ROOT/runtime-built"
+    rm -f "$E2E_ARTIFACT_DIR/docker-buildx-bake-runtime.log"
     status=0
     build_host_browser_images 2> "$TEST_ROOT/build-stderr" || status=$?
     [[ -f "$TEST_ROOT/backend-finished" ]] # Both failures still reap the backend.
@@ -62,6 +65,12 @@ for failure in none host backend runtime; do
     fi
     if [[ "$failure" == backend ]]; then
         grep -Fq 'backend diagnostic marker' "$TEST_ROOT/build-stderr"
+    fi
+    if [[ "$failure" == none || "$failure" == runtime ]]; then
+        grep -Fq 'runtime stdout diagnostic marker' "$E2E_ARTIFACT_DIR/docker-buildx-bake-runtime.log"
+        grep -Fq 'runtime stderr diagnostic marker' "$E2E_ARTIFACT_DIR/docker-buildx-bake-runtime.log"
+    else
+        [[ ! -e "$E2E_ARTIFACT_DIR/docker-buildx-bake-runtime.log" ]]
     fi
 done
 
@@ -83,10 +92,15 @@ trap 'exit 143' TERM
 git() { echo tested-checkout-sha; }
 worker() {
     python3 - "$TEST_ROOT/$1-pids" <<'PY'
-import json, os, pathlib, subprocess, sys
+import json, os, pathlib, signal, subprocess, sys
 child = subprocess.Popen(['sleep', '60'])
+def respawn_child(_signal, _frame):
+    replacement = subprocess.Popen(['sleep', '60'])
+    pathlib.Path(sys.argv[1] + '.respawn').write_text(str(replacement.pid))
+signal.signal(signal.SIGCHLD, respawn_child)
 pathlib.Path(sys.argv[1]).write_text(json.dumps([os.getpid(), child.pid]))
-child.wait()
+while True:
+    signal.pause()
 PY
 }
 bunx() {
@@ -94,7 +108,14 @@ bunx() {
     worker host
 }
 docker() { worker backend; }
-build_host_browser_images
+# Make the child-exit/parent-termination race deterministic: an unfrozen parent
+# has time to react to SIGCHLD and spawn replacement work before it is stopped.
+kill() {
+    builtin kill "$@" || return
+    [[ "$1" != -TERM ]] || sleep 0.1
+}
+# Test the actual outer timing wrapper, including its parent-shell cleanup state.
+e2e_timed image_preparation build_host_browser_images
 SH
 export SOURCE_ROOT TEST_ROOT REPO_ROOT APP_DIR BAKE_FILE E2E_ARTIFACT_DIR
 python3 - <<'PY'
@@ -109,7 +130,7 @@ def stopped(pid):
     state = subprocess.run(['ps', '-o', 'stat=', '-p', str(pid)], capture_output=True, text=True).stdout.strip()
     return not state or state.startswith('Z')
 for sig, code in [(signal.SIGTERM, 143), (signal.SIGINT, 130)]:
-    for name in ['host-pids', 'backend-pids', 'context']:
+    for name in ['host-pids', 'backend-pids', 'context', 'host-pids.respawn', 'backend-pids.respawn']:
         (root / name).unlink(missing_ok=True)
     with (root / 'cancel.log').open('w') as output:
         job = subprocess.Popen(['bash', str(root / 'cancel-build.sh')], stdout=output, stderr=output, start_new_session=True)
@@ -122,6 +143,8 @@ for sig, code in [(signal.SIGTERM, 143), (signal.SIGINT, 130)]:
             assert job.wait(timeout=5) == code
             assert not context.exists(), 'Cancelled build left its staged context behind'
             wait_for(lambda: all(stopped(pid) for pid in pids))
+            assert not (root / 'host-pids.respawn').exists(), 'Host parent forked replacement work during cleanup'
+            assert not (root / 'backend-pids.respawn').exists(), 'Backend parent forked replacement work during cleanup'
         finally:
             # Fixture-only session: never leave a test process behind on failure.
             try:

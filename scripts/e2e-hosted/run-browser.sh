@@ -59,11 +59,14 @@ build_images() {
 # BEGIN hosted browser build helpers
 stop_browser_build() {
     local pid="${1:?build PID required}" child
-    # e2e_timed runs in a subshell; stop its Docker/Bun descendants as well.
+    # Background timing jobs own Docker/Bun descendants. Freeze each parent
+    # before enumerating children so it cannot fork replacements during shutdown.
+    kill -STOP "$pid" 2>/dev/null || return 0
     while read -r child; do
         [[ -z "$child" ]] || stop_browser_build "$child"
     done < <(pgrep -P "$pid" || true)
     kill -TERM "$pid" 2>/dev/null || true
+    kill -CONT "$pid" 2>/dev/null || true
 }
 
 cleanup_browser_build() {
@@ -98,6 +101,11 @@ build_host_browser() {
     cp "$REPO_ROOT/scripts/e2e-hosted/Dockerfile.browser-runtime" "$E2E_BROWSER_RUNTIME_CONTEXT/Dockerfile" || return
 }
 
+build_browser_runtime_image() {
+    docker buildx bake --file "$BAKE_FILE" hosted-browser-app --load --progress=plain \
+        2>&1 | tee "$E2E_ARTIFACT_DIR/docker-buildx-bake-runtime.log"
+}
+
 build_host_browser_images() {
     cd "$REPO_ROOT" || return
     mkdir -p "$REPO_ROOT/node_modules/.cache" || return
@@ -121,8 +129,7 @@ build_host_browser_images() {
     fi
     BROWSER_BUILD_BACKEND_PID=""
     if [[ "$status" -eq 0 ]]; then
-        e2e_timed browser_runtime_image docker buildx bake --file "$BAKE_FILE" hosted-browser-app \
-            --load --progress=plain &
+        e2e_timed browser_runtime_image build_browser_runtime_image &
         BROWSER_BUILD_HOST_PID=$!
         wait "$BROWSER_BUILD_HOST_PID" || status=1
         BROWSER_BUILD_HOST_PID=""
@@ -201,6 +208,7 @@ run_accessibility() {
 
 e2e_snapshot startup
 if [[ "${E2E_HOST_BROWSER_BUILD:-false}" == true ]]; then
+    # e2e_timed invokes this function in the current shell: ownership reaches EXIT.
     e2e_timed image_preparation build_host_browser_images
 else
     e2e_timed docker_buildx_bake build_images
