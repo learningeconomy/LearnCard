@@ -1,0 +1,1026 @@
+[
+    {
+        "variant": "baseline-first",
+        "run_id": 37919834437,
+        "url": "https://github.com/learningeconomy/LearnCard/actions/runs/37919834437",
+        "status": "completed",
+        "conclusion": "success",
+        "tested_sha": "77e5b0681f5567caa446da57a1746d148ffde27a",
+        "workflow_seconds": 1100,
+        "jobs": [
+            {
+                "name": "Playwright E2E",
+                "duration_seconds": 1085.0,
+                "phases": {
+                    "diagnostics_startup": 2,
+                    "docker_buildx_bake": 435,
+                    "diagnostics_after-image-build": 26,
+                    "compose_start": 25,
+                    "host_dependency_build": 73,
+                    "playwright_runner_prepare": 28,
+                    "diagnostics_stack-running": 10,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 0,
+                    "playwright": 161,
+                    "accessibility": 173,
+                    "diagnostics_before-cleanup": 21,
+                    "stack_teardown": 32,
+                    "diagnostics_after-cleanup": 6
+                },
+                "cache_steps_seconds": {},
+                "browser_stats": {
+                    "startTime": "2026-10-09T10:59:54.308Z",
+                    "duration": 160086.967,
+                    "expected": 7,
+                    "skipped": 0,
+                    "unexpected": 0,
+                    "flaky": 0
+                },
+                "a11y_stats": {
+                    "startTime": "2026-10-09T11:02:35.068Z",
+                    "duration": 172758.288,
+                    "expected": 3,
+                    "skipped": 0,
+                    "unexpected": 0,
+                    "flaky": 0
+                },
+                "retries": 0
+            },
+            {
+                "name": "tests/e2e (2)",
+                "duration_seconds": 603.0,
+                "phases": {
+                    "diagnostics_startup": 2,
+                    "docker_buildx_bake": 88,
+                    "diagnostics_after-image-build": 3,
+                    "service_compose_start": 36,
+                    "diagnostics_service-stack-running": 13,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 0,
+                    "service_e2e": 336,
+                    "diagnostics_after-service-suite": 9,
+                    "diagnostics_before-cleanup": 7,
+                    "stack_teardown": 21,
+                    "diagnostics_after-cleanup": 3
+                },
+                "cache_steps_seconds": {},
+                "tests_passed": 294,
+                "tests_skipped": 7
+            },
+            {
+                "name": "tests/e2e (1)",
+                "duration_seconds": 638.0,
+                "phases": {
+                    "diagnostics_startup": 2,
+                    "docker_buildx_bake": 90,
+                    "diagnostics_after-image-build": 3,
+                    "service_compose_start": 34,
+                    "diagnostics_service-stack-running": 17,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 0,
+                    "service_e2e": 380,
+                    "diagnostics_after-service-suite": 9,
+                    "diagnostics_before-cleanup": 9,
+                    "stack_teardown": 21,
+                    "diagnostics_after-cleanup": 3
+                },
+                "cache_steps_seconds": {},
+                "tests_passed": 142,
+                "tests_skipped": 1
+            },
+            {
+                "name": "tests/e2e (3)",
+                "duration_seconds": 778.0,
+                "phases": {
+                    "diagnostics_startup": 2,
+                    "docker_buildx_bake": 91,
+                    "diagnostics_after-image-build": 3,
+                    "service_compose_start": 34,
+                    "diagnostics_service-stack-running": 16,
+                    "service_readiness": 1,
+                    "cloud_did_resolution": 0,
+                    "service_e2e": 509,
+                    "diagnostics_after-service-suite": 11,
+                    "diagnostics_before-cleanup": 8,
+                    "stack_teardown": 22,
+                    "diagnostics_after-cleanup": 3
+                },
+                "cache_steps_seconds": {},
+                "tests_passed": 291,
+                "tests_skipped": 5
+            }
+        ]
+    },
+    {
+        "variant": "baseline-repeat",
+        "run_id": 37921317388,
+        "url": "https://github.com/learningeconomy/LearnCard/actions/runs/37921317388",
+        "status": "completed",
+        "conclusion": "success",
+        "tested_sha": "77e5b0681f5567caa446da57a1746d148ffde27a",
+        "workflow_seconds": 1246,
+        "jobs": [
+            {
+                "name": "tests/e2e (3)",
+                "duration_seconds": 754.0,
+                "phases": {
+                    "diagnostics_startup": 2,
+                    "docker_buildx_bake": 91,
+                    "diagnostics_after-image-build": 2,
+                    "service_compose_start": 29,
+                    "diagnostics_service-stack-running": 15,
+                    "service_readiness": 1,
+                    "cloud_did_resolution": 0,
+                    "service_e2e": 488,
+                    "diagnostics_after-service-suite": 9,
+                    "diagnostics_before-cleanup": 8,
+                    "stack_teardown": 22,
+                    "diagnostics_after-cleanup": 3
+                },
+                "cache_steps_seconds": {},
+                "tests_passed": 291,
+                "tests_skipped": 5
+            },
+            {
+                "name": "Playwright E2E",
+                "duration_seconds": 1228.0,
+                "phases": {
+                    "diagnostics_startup": 2,
+                    "docker_buildx_bake": 470,
+                    "diagnostics_after-image-build": 11,
+                    "compose_start": 27,
+                    "host_dependency_build": 116,
+                    "playwright_runner_prepare": 26,
+                    "diagnostics_stack-running": 11,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 0,
+                    "playwright": 206,
+                    "accessibility": 227,
+                    "diagnostics_before-cleanup": 14,
+                    "stack_teardown": 31,
+                    "diagnostics_after-cleanup": 6
+                },
+                "cache_steps_seconds": {},
+                "browser_stats": {
+                    "startTime": "2026-10-09T11:15:17.442Z",
+                    "duration": 205223.285,
+                    "expected": 7,
+                    "skipped": 0,
+                    "unexpected": 0,
+                    "flaky": 0
+                },
+                "a11y_stats": {
+                    "startTime": "2026-10-09T11:18:43.607Z",
+                    "duration": 225380.876,
+                    "expected": 3,
+                    "skipped": 0,
+                    "unexpected": 0,
+                    "flaky": 0
+                },
+                "retries": 0
+            },
+            {
+                "name": "tests/e2e (2)",
+                "duration_seconds": 571.0,
+                "phases": {
+                    "diagnostics_startup": 1,
+                    "docker_buildx_bake": 74,
+                    "diagnostics_after-image-build": 2,
+                    "service_compose_start": 36,
+                    "diagnostics_service-stack-running": 11,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 0,
+                    "service_e2e": 323,
+                    "diagnostics_after-service-suite": 7,
+                    "diagnostics_before-cleanup": 7,
+                    "stack_teardown": 22,
+                    "diagnostics_after-cleanup": 2
+                },
+                "cache_steps_seconds": {},
+                "tests_passed": 294,
+                "tests_skipped": 7
+            },
+            {
+                "name": "tests/e2e (1)",
+                "duration_seconds": 500.0,
+                "phases": {
+                    "diagnostics_startup": 2,
+                    "docker_buildx_bake": 79,
+                    "diagnostics_after-image-build": 2,
+                    "service_compose_start": 30,
+                    "diagnostics_service-stack-running": 12,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 0,
+                    "service_e2e": 255,
+                    "diagnostics_after-service-suite": 7,
+                    "diagnostics_before-cleanup": 6,
+                    "stack_teardown": 21,
+                    "diagnostics_after-cleanup": 2
+                },
+                "cache_steps_seconds": {},
+                "tests_passed": 142,
+                "tests_skipped": 1
+            }
+        ]
+    },
+    {
+        "variant": "host-first",
+        "run_id": 37920743428,
+        "url": "https://github.com/learningeconomy/LearnCard/actions/runs/37920743428",
+        "status": "completed",
+        "conclusion": "success",
+        "tested_sha": "edbbb348d948ad7559abdebeacce60dbbdfde62f",
+        "workflow_seconds": 749,
+        "jobs": [
+            {
+                "name": "Playwright E2E",
+                "duration_seconds": 715.0,
+                "phases": {
+                    "diagnostics_startup": 2,
+                    "backend_image_build": 97,
+                    "host_browser_build": 167,
+                    "browser_runtime_image": 6,
+                    "image_preparation": 173,
+                    "diagnostics_after-image-build": 2,
+                    "compose_start": 25,
+                    "playwright_runner_prepare": 33,
+                    "diagnostics_stack-running": 7,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 0,
+                    "playwright": 177,
+                    "accessibility": 173,
+                    "diagnostics_before-cleanup": 7,
+                    "stack_teardown": 32,
+                    "diagnostics_after-cleanup": 2
+                },
+                "cache_steps_seconds": {},
+                "browser_stats": {
+                    "startTime": "2026-10-09T11:02:41.091Z",
+                    "duration": 175800.077,
+                    "expected": 7,
+                    "skipped": 0,
+                    "unexpected": 0,
+                    "flaky": 0
+                },
+                "a11y_stats": {
+                    "startTime": "2026-10-09T11:05:37.532Z",
+                    "duration": 172592.421,
+                    "expected": 3,
+                    "skipped": 0,
+                    "unexpected": 0,
+                    "flaky": 0
+                },
+                "retries": 0
+            },
+            {
+                "name": "tests/e2e (1)",
+                "duration_seconds": 521.0,
+                "phases": {
+                    "diagnostics_startup": 1,
+                    "docker_buildx_bake": 75,
+                    "diagnostics_after-image-build": 2,
+                    "service_compose_start": 37,
+                    "diagnostics_service-stack-running": 8,
+                    "service_readiness": 1,
+                    "cloud_did_resolution": 0,
+                    "service_e2e": 283,
+                    "diagnostics_after-service-suite": 5,
+                    "diagnostics_before-cleanup": 4,
+                    "stack_teardown": 22,
+                    "diagnostics_after-cleanup": 1
+                },
+                "cache_steps_seconds": {},
+                "tests_passed": 142,
+                "tests_skipped": 1
+            },
+            {
+                "name": "tests/e2e (2)",
+                "duration_seconds": 664.0,
+                "phases": {
+                    "diagnostics_startup": 1,
+                    "docker_buildx_bake": 72,
+                    "diagnostics_after-image-build": 1,
+                    "service_compose_start": 28,
+                    "diagnostics_service-stack-running": 10,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 1,
+                    "service_e2e": 440,
+                    "diagnostics_after-service-suite": 6,
+                    "diagnostics_before-cleanup": 5,
+                    "stack_teardown": 21,
+                    "diagnostics_after-cleanup": 2
+                },
+                "cache_steps_seconds": {},
+                "tests_passed": 294,
+                "tests_skipped": 7
+            },
+            {
+                "name": "tests/e2e (3)",
+                "duration_seconds": 733.0,
+                "phases": {
+                    "diagnostics_startup": 2,
+                    "docker_buildx_bake": 82,
+                    "diagnostics_after-image-build": 2,
+                    "service_compose_start": 30,
+                    "diagnostics_service-stack-running": 16,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 0,
+                    "service_e2e": 489,
+                    "diagnostics_after-service-suite": 8,
+                    "diagnostics_before-cleanup": 9,
+                    "stack_teardown": 21,
+                    "diagnostics_after-cleanup": 3
+                },
+                "cache_steps_seconds": {},
+                "tests_passed": 291,
+                "tests_skipped": 5
+            }
+        ]
+    },
+    {
+        "variant": "host-repeat",
+        "run_id": 37921536939,
+        "url": "https://github.com/learningeconomy/LearnCard/actions/runs/37921536939",
+        "status": "completed",
+        "conclusion": "success",
+        "tested_sha": "edbbb348d948ad7559abdebeacce60dbbdfde62f",
+        "workflow_seconds": 734,
+        "jobs": [
+            {
+                "name": "Playwright E2E",
+                "duration_seconds": 718.0,
+                "phases": {
+                    "diagnostics_startup": 1,
+                    "backend_image_build": 94,
+                    "host_browser_build": 174,
+                    "browser_runtime_image": 6,
+                    "image_preparation": 180,
+                    "diagnostics_after-image-build": 2,
+                    "compose_start": 25,
+                    "playwright_runner_prepare": 32,
+                    "diagnostics_stack-running": 7,
+                    "service_readiness": 1,
+                    "cloud_did_resolution": 0,
+                    "playwright": 168,
+                    "accessibility": 179,
+                    "diagnostics_before-cleanup": 7,
+                    "stack_teardown": 32,
+                    "diagnostics_after-cleanup": 2
+                },
+                "cache_steps_seconds": {},
+                "browser_stats": {
+                    "startTime": "2026-10-09T11:10:32.735Z",
+                    "duration": 167359.99099999998,
+                    "expected": 7,
+                    "skipped": 0,
+                    "unexpected": 0,
+                    "flaky": 0
+                },
+                "a11y_stats": {
+                    "startTime": "2026-10-09T11:13:20.715Z",
+                    "duration": 178506.456,
+                    "expected": 3,
+                    "skipped": 0,
+                    "unexpected": 0,
+                    "flaky": 0
+                },
+                "retries": 0
+            },
+            {
+                "name": "tests/e2e (3)",
+                "duration_seconds": 617.0,
+                "phases": {
+                    "diagnostics_startup": 1,
+                    "docker_buildx_bake": 77,
+                    "diagnostics_after-image-build": 2,
+                    "service_compose_start": 36,
+                    "diagnostics_service-stack-running": 9,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 0,
+                    "service_e2e": 371,
+                    "diagnostics_after-service-suite": 5,
+                    "diagnostics_before-cleanup": 5,
+                    "stack_teardown": 21,
+                    "diagnostics_after-cleanup": 1
+                },
+                "cache_steps_seconds": {},
+                "tests_passed": 291,
+                "tests_skipped": 5
+            },
+            {
+                "name": "tests/e2e (2)",
+                "duration_seconds": 541.0,
+                "phases": {
+                    "diagnostics_startup": 1,
+                    "docker_buildx_bake": 70,
+                    "diagnostics_after-image-build": 2,
+                    "service_compose_start": 31,
+                    "diagnostics_service-stack-running": 12,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 0,
+                    "service_e2e": 315,
+                    "diagnostics_after-service-suite": 6,
+                    "diagnostics_before-cleanup": 6,
+                    "stack_teardown": 22,
+                    "diagnostics_after-cleanup": 3
+                },
+                "cache_steps_seconds": {},
+                "tests_passed": 294,
+                "tests_skipped": 7
+            },
+            {
+                "name": "tests/e2e (1)",
+                "duration_seconds": 604.0,
+                "phases": {
+                    "diagnostics_startup": 1,
+                    "docker_buildx_bake": 83,
+                    "diagnostics_after-image-build": 2,
+                    "service_compose_start": 30,
+                    "diagnostics_service-stack-running": 16,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 0,
+                    "service_e2e": 362,
+                    "diagnostics_after-service-suite": 9,
+                    "diagnostics_before-cleanup": 8,
+                    "stack_teardown": 21,
+                    "diagnostics_after-cleanup": 3
+                },
+                "cache_steps_seconds": {},
+                "tests_passed": 142,
+                "tests_skipped": 1
+            }
+        ]
+    },
+    {
+        "variant": "output-cache-prototype-cold",
+        "run_id": 37921426246,
+        "url": "https://github.com/learningeconomy/LearnCard/actions/runs/37921426246",
+        "status": "completed",
+        "conclusion": "success",
+        "tested_sha": "935ce4d739641b81c324af3ae45981b4ef30b18b",
+        "workflow_seconds": 1008,
+        "jobs": [
+            {
+                "name": "tests/e2e (3)",
+                "duration_seconds": 563.0,
+                "phases": {
+                    "diagnostics_startup": 2,
+                    "docker_buildx_bake": 73,
+                    "diagnostics_after-image-build": 2,
+                    "service_compose_start": 32,
+                    "diagnostics_service-stack-running": 11,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 0,
+                    "sdk_dependency_build": 75,
+                    "service_e2e": 320,
+                    "diagnostics_after-service-suite": 6,
+                    "diagnostics_before-cleanup": 6,
+                    "stack_teardown": 22,
+                    "diagnostics_after-cleanup": 2
+                },
+                "cache_steps_seconds": {
+                    "Prepare exact build caches": 3.0
+                },
+                "tests_passed": 291,
+                "tests_skipped": 5,
+                "sdk_key": "e2e-sdk-outputs-v1-324d7575dcb751a4ba55180ff2fda7ec06bf5ca6ba6f2356496227111a989a2f",
+                "sdk_projects": 44,
+                "sdk_output_directories": 45
+            },
+            {
+                "name": "Playwright E2E",
+                "duration_seconds": 991.0,
+                "phases": {
+                    "diagnostics_startup": 1,
+                    "backend_image_build": 124,
+                    "sdk_dependency_build": 161,
+                    "sdk_output_snapshot": 1,
+                    "spa_build": 110,
+                    "spa_output_snapshot": 0,
+                    "host_browser_build": 273,
+                    "browser_runtime_image": 5,
+                    "image_preparation": 278,
+                    "diagnostics_after-image-build": 4,
+                    "compose_start": 26,
+                    "playwright_runner_prepare": 33,
+                    "diagnostics_stack-running": 11,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 0,
+                    "playwright": 240,
+                    "accessibility": 262,
+                    "diagnostics_before-cleanup": 9,
+                    "stack_teardown": 32,
+                    "diagnostics_after-cleanup": 3
+                },
+                "cache_steps_seconds": {
+                    "Prepare exact build caches": 6.0,
+                    "Save verified SDK build snapshot": 4.0,
+                    "Save verified SPA build snapshot": 1.0
+                },
+                "browser_stats": {
+                    "startTime": "2026-10-09T11:11:19.500Z",
+                    "duration": 238707.97,
+                    "expected": 7,
+                    "skipped": 0,
+                    "unexpected": 0,
+                    "flaky": 0
+                },
+                "a11y_stats": {
+                    "startTime": "2026-10-09T11:15:19.181Z",
+                    "duration": 260761.427,
+                    "expected": 3,
+                    "skipped": 0,
+                    "unexpected": 0,
+                    "flaky": 0
+                },
+                "retries": 0,
+                "sdk_key": "e2e-sdk-outputs-v1-324d7575dcb751a4ba55180ff2fda7ec06bf5ca6ba6f2356496227111a989a2f",
+                "sdk_projects": 44,
+                "sdk_output_directories": 45,
+                "spa_key": "e2e-spa-outputs-v1-a3601cb5d98736f716398bbc1e13d4eee46b283f11f997ef7c29e580fe135d5e"
+            },
+            {
+                "name": "tests/e2e (2)",
+                "duration_seconds": 640.0,
+                "phases": {
+                    "diagnostics_startup": 2,
+                    "docker_buildx_bake": 82,
+                    "diagnostics_after-image-build": 3,
+                    "service_compose_start": 38,
+                    "diagnostics_service-stack-running": 12,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 1,
+                    "sdk_dependency_build": 97,
+                    "service_e2e": 376,
+                    "diagnostics_after-service-suite": 7,
+                    "diagnostics_before-cleanup": 7,
+                    "stack_teardown": 22,
+                    "diagnostics_after-cleanup": 2
+                },
+                "cache_steps_seconds": {
+                    "Prepare exact build caches": 4.0
+                },
+                "tests_passed": 294,
+                "tests_skipped": 7,
+                "sdk_key": "e2e-sdk-outputs-v1-324d7575dcb751a4ba55180ff2fda7ec06bf5ca6ba6f2356496227111a989a2f",
+                "sdk_projects": 44,
+                "sdk_output_directories": 45
+            },
+            {
+                "name": "tests/e2e (1)",
+                "duration_seconds": 663.0,
+                "phases": {
+                    "diagnostics_startup": 2,
+                    "docker_buildx_bake": 92,
+                    "diagnostics_after-image-build": 2,
+                    "service_compose_start": 36,
+                    "diagnostics_service-stack-running": 16,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 0,
+                    "sdk_dependency_build": 129,
+                    "service_e2e": 382,
+                    "diagnostics_after-service-suite": 9,
+                    "diagnostics_before-cleanup": 8,
+                    "stack_teardown": 22,
+                    "diagnostics_after-cleanup": 2
+                },
+                "cache_steps_seconds": {
+                    "Prepare exact build caches": 5.0
+                },
+                "tests_passed": 142,
+                "tests_skipped": 1,
+                "sdk_key": "e2e-sdk-outputs-v1-324d7575dcb751a4ba55180ff2fda7ec06bf5ca6ba6f2356496227111a989a2f",
+                "sdk_projects": 44,
+                "sdk_output_directories": 45
+            }
+        ]
+    },
+    {
+        "variant": "output-cache-final-cold",
+        "run_id": 37922619023,
+        "url": "https://github.com/learningeconomy/LearnCard/actions/runs/37922619023",
+        "status": "completed",
+        "conclusion": "success",
+        "tested_sha": "2393af5623b1f2f5642fd081b2bcf078624cc84f",
+        "workflow_seconds": 973,
+        "jobs": [
+            {
+                "name": "Playwright E2E",
+                "duration_seconds": 956.0,
+                "phases": {
+                    "diagnostics_startup": 2,
+                    "backend_image_build": 122,
+                    "sdk_dependency_build": 160,
+                    "sdk_output_snapshot": 1,
+                    "spa_build": 110,
+                    "spa_output_snapshot": 0,
+                    "host_browser_build": 271,
+                    "browser_runtime_image": 6,
+                    "image_preparation": 277,
+                    "diagnostics_after-image-build": 3,
+                    "compose_start": 26,
+                    "playwright_runner_prepare": 33,
+                    "diagnostics_stack-running": 10,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 1,
+                    "playwright": 222,
+                    "accessibility": 256,
+                    "diagnostics_before-cleanup": 9,
+                    "stack_teardown": 32,
+                    "diagnostics_after-cleanup": 3
+                },
+                "cache_steps_seconds": {
+                    "Prepare exact build caches": 6.0,
+                    "Save verified SDK build snapshot": 4.0,
+                    "Save verified SPA build snapshot": 1.0
+                },
+                "browser_stats": {
+                    "startTime": "2026-10-09T11:22:48.882Z",
+                    "duration": 221772.04299999998,
+                    "expected": 7,
+                    "skipped": 0,
+                    "unexpected": 0,
+                    "flaky": 0
+                },
+                "a11y_stats": {
+                    "startTime": "2026-10-09T11:26:31.593Z",
+                    "duration": 254920.099,
+                    "expected": 3,
+                    "skipped": 0,
+                    "unexpected": 0,
+                    "flaky": 0
+                },
+                "retries": 0,
+                "sdk_key": "e2e-sdk-outputs-v1-db85937204d7b708d582fe81fa852fdf17b6acec7981469926486cdac95c4d15",
+                "sdk_projects": 44,
+                "sdk_output_directories": 45,
+                "spa_key": "e2e-spa-outputs-v1-427217b9029c78fbc63e82021870222cc39514a6a01b7ea176d1d8850d21aea7"
+            },
+            {
+                "name": "tests/e2e (2)",
+                "duration_seconds": 731.0,
+                "phases": {
+                    "diagnostics_startup": 1,
+                    "docker_buildx_bake": 85,
+                    "diagnostics_after-image-build": 2,
+                    "service_compose_start": 36,
+                    "diagnostics_service-stack-running": 16,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 0,
+                    "sdk_dependency_build": 125,
+                    "service_e2e": 460,
+                    "diagnostics_after-service-suite": 9,
+                    "diagnostics_before-cleanup": 8,
+                    "stack_teardown": 21,
+                    "diagnostics_after-cleanup": 3
+                },
+                "cache_steps_seconds": {
+                    "Prepare exact build caches": 6.0
+                },
+                "tests_passed": 294,
+                "tests_skipped": 7,
+                "sdk_key": "e2e-sdk-outputs-v1-db85937204d7b708d582fe81fa852fdf17b6acec7981469926486cdac95c4d15",
+                "sdk_projects": 44,
+                "sdk_output_directories": 45
+            },
+            {
+                "name": "tests/e2e (1)",
+                "duration_seconds": 641.0,
+                "phases": {
+                    "diagnostics_startup": 2,
+                    "docker_buildx_bake": 81,
+                    "diagnostics_after-image-build": 3,
+                    "service_compose_start": 29,
+                    "diagnostics_service-stack-running": 16,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 0,
+                    "sdk_dependency_build": 119,
+                    "service_e2e": 379,
+                    "diagnostics_after-service-suite": 9,
+                    "diagnostics_before-cleanup": 8,
+                    "stack_teardown": 22,
+                    "diagnostics_after-cleanup": 3
+                },
+                "cache_steps_seconds": {
+                    "Prepare exact build caches": 5.0
+                },
+                "tests_passed": 142,
+                "tests_skipped": 1,
+                "sdk_key": "e2e-sdk-outputs-v1-db85937204d7b708d582fe81fa852fdf17b6acec7981469926486cdac95c4d15",
+                "sdk_projects": 44,
+                "sdk_output_directories": 45
+            },
+            {
+                "name": "tests/e2e (3)",
+                "duration_seconds": 751.0,
+                "phases": {
+                    "diagnostics_startup": 2,
+                    "docker_buildx_bake": 78,
+                    "diagnostics_after-image-build": 3,
+                    "service_compose_start": 28,
+                    "diagnostics_service-stack-running": 17,
+                    "service_readiness": 1,
+                    "cloud_did_resolution": 0,
+                    "sdk_dependency_build": 121,
+                    "service_e2e": 488,
+                    "diagnostics_after-service-suite": 9,
+                    "diagnostics_before-cleanup": 9,
+                    "stack_teardown": 21,
+                    "diagnostics_after-cleanup": 3
+                },
+                "cache_steps_seconds": {
+                    "Prepare exact build caches": 6.0
+                },
+                "tests_passed": 291,
+                "tests_skipped": 5,
+                "sdk_key": "e2e-sdk-outputs-v1-db85937204d7b708d582fe81fa852fdf17b6acec7981469926486cdac95c4d15",
+                "sdk_projects": 44,
+                "sdk_output_directories": 45
+            }
+        ]
+    },
+    {
+        "variant": "output-cache-warm-1",
+        "run_id": 37924365708,
+        "url": "https://github.com/learningeconomy/LearnCard/actions/runs/37924365708",
+        "status": "completed",
+        "conclusion": "success",
+        "tested_sha": "2393af5623b1f2f5642fd081b2bcf078624cc84f",
+        "workflow_seconds": 761,
+        "jobs": [
+            {
+                "name": "Playwright E2E",
+                "duration_seconds": 745.0,
+                "phases": {
+                    "diagnostics_startup": 2,
+                    "sdk_output_restore": 1,
+                    "spa_output_restore": 0,
+                    "host_browser_build": 2,
+                    "backend_image_build": 84,
+                    "browser_runtime_image": 4,
+                    "image_preparation": 89,
+                    "diagnostics_after-image-build": 2,
+                    "compose_start": 27,
+                    "playwright_runner_prepare": 33,
+                    "diagnostics_stack-running": 10,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 0,
+                    "playwright": 218,
+                    "accessibility": 233,
+                    "diagnostics_before-cleanup": 9,
+                    "stack_teardown": 33,
+                    "diagnostics_after-cleanup": 2
+                },
+                "cache_steps_seconds": {
+                    "Prepare exact build caches": 8.0,
+                    "Save verified SDK build snapshot": 0.0,
+                    "Save verified SPA build snapshot": 0.0
+                },
+                "browser_stats": {
+                    "startTime": "2026-10-09T11:36:46.541Z",
+                    "duration": 216379.915,
+                    "expected": 7,
+                    "skipped": 0,
+                    "unexpected": 0,
+                    "flaky": 0
+                },
+                "a11y_stats": {
+                    "startTime": "2026-10-09T11:40:23.997Z",
+                    "duration": 232197.629,
+                    "expected": 3,
+                    "skipped": 0,
+                    "unexpected": 0,
+                    "flaky": 0
+                },
+                "retries": 0,
+                "sdk_key": "e2e-sdk-outputs-v1-db85937204d7b708d582fe81fa852fdf17b6acec7981469926486cdac95c4d15",
+                "sdk_projects": 44,
+                "sdk_output_directories": 45,
+                "spa_key": "e2e-spa-outputs-v1-427217b9029c78fbc63e82021870222cc39514a6a01b7ea176d1d8850d21aea7"
+            },
+            {
+                "name": "tests/e2e (1)",
+                "duration_seconds": 459.0,
+                "phases": {
+                    "diagnostics_startup": 2,
+                    "docker_buildx_bake": 78,
+                    "diagnostics_after-image-build": 2,
+                    "service_compose_start": 31,
+                    "diagnostics_service-stack-running": 12,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 0,
+                    "sdk_output_restore": 1,
+                    "service_e2e": 212,
+                    "diagnostics_after-service-suite": 6,
+                    "diagnostics_before-cleanup": 7,
+                    "stack_teardown": 21,
+                    "diagnostics_after-cleanup": 2
+                },
+                "cache_steps_seconds": {
+                    "Prepare exact build caches": 5.0
+                },
+                "tests_passed": 142,
+                "tests_skipped": 1,
+                "sdk_key": "e2e-sdk-outputs-v1-db85937204d7b708d582fe81fa852fdf17b6acec7981469926486cdac95c4d15",
+                "sdk_projects": 44,
+                "sdk_output_directories": 45
+            },
+            {
+                "name": "tests/e2e (3)",
+                "duration_seconds": 697.0,
+                "phases": {
+                    "diagnostics_startup": 2,
+                    "docker_buildx_bake": 90,
+                    "diagnostics_after-image-build": 3,
+                    "service_compose_start": 36,
+                    "diagnostics_service-stack-running": 16,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 1,
+                    "sdk_output_restore": 1,
+                    "service_e2e": 394,
+                    "diagnostics_after-service-suite": 9,
+                    "diagnostics_before-cleanup": 8,
+                    "stack_teardown": 22,
+                    "diagnostics_after-cleanup": 2
+                },
+                "cache_steps_seconds": {
+                    "Prepare exact build caches": 9.0
+                },
+                "tests_passed": 291,
+                "tests_skipped": 5,
+                "sdk_key": "e2e-sdk-outputs-v1-db85937204d7b708d582fe81fa852fdf17b6acec7981469926486cdac95c4d15",
+                "sdk_projects": 44,
+                "sdk_output_directories": 45
+            },
+            {
+                "name": "tests/e2e (2)",
+                "duration_seconds": 586.0,
+                "phases": {
+                    "diagnostics_startup": 2,
+                    "docker_buildx_bake": 83,
+                    "diagnostics_after-image-build": 2,
+                    "service_compose_start": 30,
+                    "diagnostics_service-stack-running": 16,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 1,
+                    "sdk_output_restore": 1,
+                    "service_e2e": 331,
+                    "diagnostics_after-service-suite": 8,
+                    "diagnostics_before-cleanup": 8,
+                    "stack_teardown": 22,
+                    "diagnostics_after-cleanup": 3
+                },
+                "cache_steps_seconds": {
+                    "Prepare exact build caches": 6.0
+                },
+                "tests_passed": 294,
+                "tests_skipped": 7,
+                "sdk_key": "e2e-sdk-outputs-v1-db85937204d7b708d582fe81fa852fdf17b6acec7981469926486cdac95c4d15",
+                "sdk_projects": 44,
+                "sdk_output_directories": 45
+            }
+        ]
+    },
+    {
+        "variant": "output-cache-warm-2",
+        "run_id": 37924369806,
+        "url": "https://github.com/learningeconomy/LearnCard/actions/runs/37924369806",
+        "status": "completed",
+        "conclusion": "success",
+        "tested_sha": "2393af5623b1f2f5642fd081b2bcf078624cc84f",
+        "workflow_seconds": 860,
+        "jobs": [
+            {
+                "name": "Playwright E2E",
+                "duration_seconds": 842.0,
+                "phases": {
+                    "diagnostics_startup": 2,
+                    "sdk_output_restore": 1,
+                    "spa_output_restore": 0,
+                    "host_browser_build": 1,
+                    "backend_image_build": 121,
+                    "browser_runtime_image": 8,
+                    "image_preparation": 130,
+                    "diagnostics_after-image-build": 2,
+                    "compose_start": 41,
+                    "playwright_runner_prepare": 60,
+                    "diagnostics_stack-running": 9,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 0,
+                    "playwright": 197,
+                    "accessibility": 200,
+                    "diagnostics_before-cleanup": 8,
+                    "stack_teardown": 33,
+                    "diagnostics_after-cleanup": 2
+                },
+                "cache_steps_seconds": {
+                    "Prepare exact build caches": 10.0,
+                    "Save verified SDK build snapshot": 0.0,
+                    "Save verified SPA build snapshot": 0.0
+                },
+                "browser_stats": {
+                    "startTime": "2026-10-09T11:39:16.939Z",
+                    "duration": 195250.473,
+                    "expected": 7,
+                    "skipped": 0,
+                    "unexpected": 0,
+                    "flaky": 0
+                },
+                "a11y_stats": {
+                    "startTime": "2026-10-09T11:42:33.210Z",
+                    "duration": 199203.38999999998,
+                    "expected": 3,
+                    "skipped": 0,
+                    "unexpected": 0,
+                    "flaky": 0
+                },
+                "retries": 0,
+                "sdk_key": "e2e-sdk-outputs-v1-db85937204d7b708d582fe81fa852fdf17b6acec7981469926486cdac95c4d15",
+                "sdk_projects": 44,
+                "sdk_output_directories": 45,
+                "spa_key": "e2e-spa-outputs-v1-427217b9029c78fbc63e82021870222cc39514a6a01b7ea176d1d8850d21aea7"
+            },
+            {
+                "name": "tests/e2e (1)",
+                "duration_seconds": 565.0,
+                "phases": {
+                    "diagnostics_startup": 2,
+                    "docker_buildx_bake": 93,
+                    "diagnostics_after-image-build": 3,
+                    "service_compose_start": 36,
+                    "diagnostics_service-stack-running": 15,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 1,
+                    "sdk_output_restore": 1,
+                    "service_e2e": 267,
+                    "diagnostics_after-service-suite": 9,
+                    "diagnostics_before-cleanup": 8,
+                    "stack_teardown": 22,
+                    "diagnostics_after-cleanup": 2
+                },
+                "cache_steps_seconds": {
+                    "Prepare exact build caches": 8.0
+                },
+                "tests_passed": 142,
+                "tests_skipped": 1,
+                "sdk_key": "e2e-sdk-outputs-v1-db85937204d7b708d582fe81fa852fdf17b6acec7981469926486cdac95c4d15",
+                "sdk_projects": 44,
+                "sdk_output_directories": 45
+            },
+            {
+                "name": "tests/e2e (2)",
+                "duration_seconds": 608.0,
+                "phases": {
+                    "diagnostics_startup": 2,
+                    "docker_buildx_bake": 89,
+                    "diagnostics_after-image-build": 3,
+                    "service_compose_start": 31,
+                    "diagnostics_service-stack-running": 16,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 1,
+                    "sdk_output_restore": 1,
+                    "service_e2e": 321,
+                    "diagnostics_after-service-suite": 8,
+                    "diagnostics_before-cleanup": 8,
+                    "stack_teardown": 22,
+                    "diagnostics_after-cleanup": 2
+                },
+                "cache_steps_seconds": {
+                    "Prepare exact build caches": 8.0
+                },
+                "tests_passed": 294,
+                "tests_skipped": 7,
+                "sdk_key": "e2e-sdk-outputs-v1-db85937204d7b708d582fe81fa852fdf17b6acec7981469926486cdac95c4d15",
+                "sdk_projects": 44,
+                "sdk_output_directories": 45
+            },
+            {
+                "name": "tests/e2e (3)",
+                "duration_seconds": 672.0,
+                "phases": {
+                    "diagnostics_startup": 2,
+                    "docker_buildx_bake": 90,
+                    "diagnostics_after-image-build": 3,
+                    "service_compose_start": 32,
+                    "diagnostics_service-stack-running": 16,
+                    "service_readiness": 0,
+                    "cloud_did_resolution": 0,
+                    "sdk_output_restore": 2,
+                    "service_e2e": 383,
+                    "diagnostics_after-service-suite": 8,
+                    "diagnostics_before-cleanup": 8,
+                    "stack_teardown": 22,
+                    "diagnostics_after-cleanup": 3
+                },
+                "cache_steps_seconds": {
+                    "Prepare exact build caches": 8.0
+                },
+                "tests_passed": 291,
+                "tests_skipped": 5,
+                "sdk_key": "e2e-sdk-outputs-v1-db85937204d7b708d582fe81fa852fdf17b6acec7981469926486cdac95c4d15",
+                "sdk_projects": 44,
+                "sdk_output_directories": 45
+            }
+        ]
+    }
+]
