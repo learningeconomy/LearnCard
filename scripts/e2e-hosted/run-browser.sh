@@ -69,7 +69,8 @@ build_host_browser() {
 
 build_host_browser_images() {
     cd "$REPO_ROOT" || return
-    E2E_BROWSER_RUNTIME_CONTEXT=$(mktemp -d) || return
+    mkdir -p "$REPO_ROOT/node_modules/.cache" || return
+    E2E_BROWSER_RUNTIME_CONTEXT=$(mktemp -d "$REPO_ROOT/node_modules/.cache/e2e-browser-runtime.XXXXXX") || return
     export E2E_BROWSER_RUNTIME_CONTEXT
     # Reap both jobs even when one fails: e2e_timed disables errexit.
     e2e_timed backend_image_build docker buildx bake --file "$BAKE_FILE" hosted-browser-backend \
