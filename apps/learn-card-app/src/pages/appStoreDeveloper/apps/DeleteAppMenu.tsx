@@ -60,6 +60,7 @@ export const DeleteAppMenu: React.FC<DeleteAppMenuProps> = ({
                 listingId={listingId}
                 integrationId={integrationId}
                 displayName={displayName}
+                isDraft={mode === 'draft'}
                 onDismiss={() => closeModal()}
                 onDeleted={onDeleted}
             />,
@@ -99,7 +100,7 @@ export const DeleteAppMenu: React.FC<DeleteAppMenuProps> = ({
                         className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
                     >
                         <IonIcon icon={trashOutline} className="text-base" />
-                        Delete draft
+                        {mode === 'draft' ? 'Delete draft' : 'Delete app'}
                     </button>
                 </div>
             )}

@@ -38,7 +38,7 @@ vi.mock('../useDeveloperPortal', () => ({
     }),
 }));
 
-const renderSheet = (overrides?: { integrationId?: string | null }) => {
+const renderSheet = (overrides?: { integrationId?: string | null; isDraft?: boolean }) => {
     const onDismiss = vi.fn();
     const onDeleted = vi.fn();
     render(
@@ -46,6 +46,7 @@ const renderSheet = (overrides?: { integrationId?: string | null }) => {
             listingId="listing-1"
             integrationId={overrides?.integrationId ?? null}
             displayName="Quiz Quest"
+            isDraft={overrides?.isDraft}
             onDismiss={onDismiss}
             onDeleted={onDeleted}
         />
@@ -72,6 +73,12 @@ describe('DeleteAppConfirmSheet', () => {
                 "Its store details and test history will be removed. This can't be undone."
             )
         ).toBeInTheDocument();
+    });
+
+    it('labels the button for removed apps without calling them drafts', () => {
+        renderSheet({ isDraft: false });
+        expect(screen.getByRole('button', { name: 'Delete App' })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Delete Draft' })).not.toBeInTheDocument();
     });
 
     it('cancels without deleting anything', () => {

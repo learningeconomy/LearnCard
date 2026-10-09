@@ -25,6 +25,8 @@ export interface DeleteAppConfirmSheetProps {
     listingId: string;
     integrationId: string | null;
     displayName: string;
+    /** Removed apps were in the store, so they aren't called drafts. */
+    isDraft?: boolean;
     onDismiss: () => void;
     onDeleted?: () => void;
 }
@@ -33,6 +35,7 @@ export const DeleteAppConfirmSheet: React.FC<DeleteAppConfirmSheetProps> = ({
     listingId,
     integrationId,
     displayName,
+    isDraft = true,
     onDismiss,
     onDeleted,
 }) => {
@@ -126,7 +129,11 @@ export const DeleteAppConfirmSheet: React.FC<DeleteAppConfirmSheetProps> = ({
                     {deleteListing.isPending && (
                         <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     )}
-                    {deleteListing.isPending ? 'Deleting…' : 'Delete Draft'}
+                    {deleteListing.isPending
+                        ? 'Deleting…'
+                        : isDraft
+                          ? 'Delete Draft'
+                          : 'Delete App'}
                 </button>
             </div>
         </div>

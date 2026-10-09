@@ -67,6 +67,13 @@ describe('DeleteAppMenu', () => {
         expect(screen.getByRole('button', { name: 'More options' })).toBeInTheDocument();
     });
 
+    it('calls a removed app an app, not a draft', () => {
+        renderMenu('removed');
+        fireEvent.click(screen.getByRole('button', { name: 'More options' }));
+        expect(screen.getByRole('menuitem', { name: /Delete app/ })).toBeInTheDocument();
+        expect(screen.queryByRole('menuitem', { name: /Delete draft/ })).not.toBeInTheDocument();
+    });
+
     it('opens and closes the dropdown with a Delete draft item', () => {
         renderMenu('draft');
         const trigger = screen.getByRole('button', { name: 'More options' });
@@ -92,7 +99,7 @@ describe('DeleteAppMenu', () => {
     it('opens the confirm sheet via the modal system when Delete draft is clicked', () => {
         renderMenu('removed');
         fireEvent.click(screen.getByRole('button', { name: 'More options' }));
-        fireEvent.click(screen.getByRole('menuitem', { name: /Delete draft/ }));
+        fireEvent.click(screen.getByRole('menuitem', { name: /Delete app/ }));
 
         expect(mocks.newModal).toHaveBeenCalledTimes(1);
         const [component, , types] = mocks.newModal.mock.calls[0];
@@ -100,6 +107,7 @@ describe('DeleteAppMenu', () => {
             listingId: 'listing-1',
             integrationId: 'integration-1',
             displayName: 'Quiz Quest',
+            isDraft: false,
         });
         expect(types).toEqual({ desktop: 'center', mobile: 'bottom-sheet' });
     });
