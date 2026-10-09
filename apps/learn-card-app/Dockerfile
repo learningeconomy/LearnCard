@@ -11,6 +11,7 @@ WORKDIR /app
 RUN NX_DAEMON=false bunx nx run learn-card-app:docker-build
 
 # The browser stack needs only the compiled SPA, not the monorepo or build tools.
+# Keep this runtime in sync with scripts/e2e-hosted/Dockerfile.browser-runtime.
 FROM nginx:1.28-alpine AS runtime
 COPY apps/learn-card-app/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/apps/learn-card-app/build /usr/share/nginx/html
