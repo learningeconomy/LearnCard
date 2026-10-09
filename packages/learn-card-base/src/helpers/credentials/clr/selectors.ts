@@ -68,14 +68,21 @@ export const getClrLearnerName = (
     identifiers: ClrIdentifierModel[],
     subjectId?: ClrMappedValue<string>
 ): ClrMappedValue<string> | undefined => {
+    const readableIdentifiers = identifiers.filter(identifier => identifier.hashed?.value !== true);
     const valueOf = (identifier: ClrIdentifierModel) =>
-        identifier.identityHash ?? identifier.identifier;
+        identifier.identifier ?? identifier.identityHash;
     for (const kind of ['name', 'emailAddress', 'email']) {
-        const identifier = identifiers.find(
+        const identifier = readableIdentifiers.find(
             item => item.identityType?.value === kind || item.identifierType?.value === kind
         );
         const value = identifier && valueOf(identifier);
         if (value?.value) return value;
     }
-    return identifiers.map(valueOf).find(value => Boolean(value?.value)) ?? subjectId;
+    return readableIdentifiers.map(valueOf).find(value => Boolean(value?.value)) ?? subjectId;
 };
+
+/** Builds an occurrence lookup once for consumers rendering multiple canonical records. */
+export const createClrCanonicalRecordMap = (
+    model: ClrNormalizedModel
+): ReadonlyMap<string, ClrNormalizedRecord> =>
+    new Map(model.records.map(record => [record.id, record]));

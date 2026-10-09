@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import { createClrTranscriptDisplayModel, normalizeClrTranscriptDisplayModel } from './display';
 import { normalizeClrCredential } from './normalize';
-import { findClrRecordById, getLinkedCompetencies } from './relationships';
+import {
+    createClrRecordSelection,
+    findClrRecordByCanonicalId,
+    findClrRecordById,
+    getLinkedCompetencies,
+} from './relationships';
 import { resolveClrRecord } from './selectors';
 import { getResultDisplayValue } from './presentation';
 import type { ClrJsonObject } from './types';
@@ -155,6 +160,17 @@ describe('canonical CLR display adapter', () => {
         );
         expect(new Set(model.courses.map(course => course.sourceCredentialId)).size).toBe(2);
         expect(findClrRecordById(model, 'duplicate')).toBeUndefined();
+        const opened: string[] = [];
+        const navigator = createClrRecordSelection(model, selected =>
+            opened.push(selected.record.sourceCredentialId)
+        );
+        for (const course of model.courses) {
+            expect(findClrRecordByCanonicalId(model, course.sourceCredentialId)?.record).toBe(
+                course
+            );
+            navigator.selectRecord(course.sourceCredentialId);
+        }
+        expect(opened).toEqual(model.courses.map(course => course.sourceCredentialId));
         const uniqueId = model.courses[1].sourceCredentialId;
         expect(findClrRecordById(model, uniqueId)?.record).toBe(model.courses[1]);
     });
@@ -292,5 +308,25 @@ describe('mixed CLR relationship navigation', () => {
             resolution: 'unresolved',
         });
         expect(findClrRecordById(model, 'missing-record')).toBeUndefined();
+    });
+});
+
+describe('learner display identity', () => {
+    it('skips hashed names and identifiers while retaining clear identifiers and source data', () => {
+        const identifiers = [
+            { identityType: 'name', identityHash: 'hashed-name', hashed: true },
+            { identityType: 'name', identityHash: 'Supplied Name', hashed: false },
+        ];
+        const model = normalizeClrTranscriptDisplayModel({
+            type: ['ClrCredential'],
+            credentialSubject: { id: 'learner', identifier: identifiers },
+        });
+        expect(model.header.learnerName?.value).toBe('Supplied Name');
+        expect(model.canonical.collection.subjectIdentifiers).toHaveLength(2);
+        const hashedOnly = normalizeClrTranscriptDisplayModel({
+            type: ['ClrCredential'],
+            credentialSubject: { id: 'learner', identifier: [identifiers[0]] },
+        });
+        expect(hashedOnly.header.learnerName?.value).toBe('learner');
     });
 });

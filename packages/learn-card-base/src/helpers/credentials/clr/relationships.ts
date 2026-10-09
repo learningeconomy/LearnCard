@@ -177,7 +177,14 @@ export const findClrRecordById = (
 ): ClrNavigableRecord | undefined => {
     const resolved = resolveClrRecord(model.canonical, id);
     if (resolved.resolution !== 'resolved' || !resolved.record) return undefined;
-    id = resolved.record.id;
+    return findClrRecordByCanonicalId(model, resolved.record.id);
+};
+
+/** Resolves an internal occurrence ID without treating it as an external source alias. */
+export const findClrRecordByCanonicalId = (
+    model: ClrTranscriptDisplayModel,
+    id: string
+): ClrNavigableRecord | undefined => {
     const course = model.courses.find(record => record.sourceCredentialId === id);
     if (course) return { kind: 'course', record: course };
 
@@ -204,7 +211,8 @@ export const createClrRecordSelection = (
     onOpenRecord: (selected: ClrNavigableRecord) => void
 ): ClrRecordNavigator => {
     const selectRecord = (recordId: string): void => {
-        const selected = findClrRecordById(model, recordId);
+        const selected =
+            findClrRecordByCanonicalId(model, recordId) ?? findClrRecordById(model, recordId);
         if (selected) onOpenRecord(selected);
     };
 
