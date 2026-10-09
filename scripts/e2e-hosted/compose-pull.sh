@@ -3,19 +3,37 @@
 
 # Docker Hub intermittently answers manifest requests with 5xx or 429, and one failed
 # pull while starting the stack fails the whole suite. Pull registry images first, with
-# backoff. Locally built (bake) images already exist, so `--policy missing` and
-# `--ignore-buildable` skip them. Run from the compose project directory.
+# backoff. Only images of services without a `build` section that are not already on
+# the runner are pulled: `docker compose pull --policy missing` cannot be used because
+# Compose always re-pulls `:latest`, which would fetch the bake-built
+# `learncard-monorepo-local` from Docker Hub. Run from the compose project directory.
+e2e_compose_registry_images() {
+    local image
+    docker compose config --format json |
+        jq -r '.services[] | select(.build == null) | .image // empty' |
+        sort -u |
+        while IFS= read -r image; do
+            docker image inspect "$image" >/dev/null 2>&1 || printf '%s\n' "$image"
+        done
+}
+
 e2e_pull_compose_images() {
-    local attempt max_attempts=4
-    for ((attempt = 1; attempt <= max_attempts; attempt++)); do
-        if docker compose pull --policy missing --ignore-buildable --quiet; then
-            return 0
+    local attempt image max_attempts=4
+    local -a pending=() failed=()
+    while IFS= read -r image; do pending+=("$image"); done < <(e2e_compose_registry_images)
+    for ((attempt = 1; ${#pending[@]} > 0; attempt++)); do
+        failed=()
+        for image in "${pending[@]}"; do
+            docker pull --quiet "$image" >/dev/null || failed+=("$image")
+        done
+        ((${#failed[@]} == 0)) && return 0
+        if ((attempt == max_attempts)); then
+            echo "Image pull failed after ${max_attempts} attempts: ${failed[*]}" >&2
+            return 1
         fi
-        if ((attempt < max_attempts)); then
-            echo "::warning title=Image pull retry::docker compose pull failed (attempt ${attempt}/${max_attempts}); retrying in $((attempt * 15))s" >&2
-            sleep $((attempt * 15))
-        fi
+        echo "::warning title=Image pull retry::${failed[*]} (attempt ${attempt}/${max_attempts}); retrying in $((attempt * 15))s" >&2
+        sleep $((attempt * 15))
+        pending=("${failed[@]}")
     done
-    echo "docker compose pull failed after ${max_attempts} attempts" >&2
-    return 1
+    return 0
 }
