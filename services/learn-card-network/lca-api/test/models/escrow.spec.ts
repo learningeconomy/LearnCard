@@ -1,6 +1,8 @@
 import { randomUUID } from 'crypto';
 import { beforeAll, afterAll, beforeEach, describe, it, expect } from 'vitest';
 import { client } from '@mongo';
+import { EscrowEnvelopeValidator } from '@models';
+import vectors from '../../../../../packages/sss-key-manager/src/__fixtures__/escrow-vectors.json';
 import {
     type EscrowHold,
     createUserKeysIndexes,
@@ -36,19 +38,13 @@ import {
 } from '@models';
 
 const provider: AuthProviderMapping = { type: 'firebase', id: 'escrow-model-test' };
+const firstVector = vectors.blobs[0];
+if (!firstVector) throw new Error('escrow-vectors.json has no blobs');
 const blob: Omit<EscrowBlob, 'enrollmentEpoch' | 'blobHash'> = {
-    envelope: {
-        version: 1,
-        algorithm: 'P-256-HKDF-SHA256-AES-256-GCM',
-        keyId: 'test',
-        ephemeralPublicKey: 'key',
-        salt: 'salt',
-        iv: 'iv',
-        ciphertext: '$literal-data',
-    },
-    enclaveKeyId: 'test',
+    envelope: EscrowEnvelopeValidator.parse(firstVector.envelope),
+    enclaveKeyId: firstVector.envelope.keyId,
     enclaveMode: 'software',
-    measurements: {},
+    measurements: { pcr0: '$literal-data' },
     shareVersion: 1,
     createdAt: new Date(),
 };
@@ -195,14 +191,14 @@ describe('escrow model invariants', () => {
         const first = await setEscrowBlobByAuthProvider(provider, blob, 1);
         expect(first?.escrowBlob?.enrollmentEpoch).toBe(1);
         expect(first?.escrowBlob?.blobHash).toBe(
-            'a531b47276c2837a51306766f654de4ee8b4e7114c1960eeb993b6260f0c8ea9'
+            '8090217ef11060bfa380c4a4b26d76a64811216176ecb60749652fabf3b09425'
         );
         const results = await Promise.all([
             setEscrowBlobByAuthProvider(provider, blob, 1),
             setEscrowBlobByAuthProvider(provider, blob, 1),
         ]);
         expect(results.map(result => result?.escrowBlob?.enrollmentEpoch).sort()).toEqual([2, 3]);
-        expect(results[0]?.escrowBlob?.envelope.ciphertext).toBe('$literal-data');
+        expect(results[0]?.escrowBlob?.measurements.pcr0).toBe('$literal-data');
         await expect(
             setEscrowBlobByAuthProvider(
                 provider,
@@ -236,7 +232,7 @@ describe('escrow model invariants', () => {
             await setEscrowBlobByAuthProvider(provider, { ...blob, shareVersion: 2 }, 2)
         ).toBeNull();
     });
-    it('rewraps a previous-key blob onto the current key (P9.3): epoch+1, same version, escrowPin untouched', async () => {
+    it('rewraps a previous-key blob onto the current key (P9.3): same epoch and version, escrowPin untouched', async () => {
         const stored = await setEscrowBlobByAuthProvider(provider, blob, 1, {
             salt: Buffer.alloc(16).toString('base64'),
         });
@@ -245,7 +241,7 @@ describe('escrow model invariants', () => {
         const newEnvelope: EscrowBlob['envelope'] = {
             ...blob.envelope,
             keyId: 'current',
-            ciphertext: '$rewrapped-data',
+            ciphertext: Buffer.alloc(32, 1).toString('base64'),
         };
         const rewrapped = await rewrapEscrowBlobByAuthProvider(
             provider,
@@ -264,7 +260,7 @@ describe('escrow model invariants', () => {
             enclaveMode: 'software',
             measurements: {},
             shareVersion: oldBlob.shareVersion,
-            enrollmentEpoch: oldBlob.enrollmentEpoch + 1,
+            enrollmentEpoch: oldBlob.enrollmentEpoch,
             blobHash: expect.stringMatching(/^[0-9a-f]{64}$/),
             createdAt: expect.any(Date),
         });
@@ -297,35 +293,44 @@ describe('escrow model invariants', () => {
                 { ...blob.envelope, keyId: 'current', ciphertext },
                 { enclaveKeyId: 'current', enclaveMode: 'software', measurements: {} }
             );
-        const [first, second] = await Promise.all([attempt('$race-a'), attempt('$race-b')]);
+        const [first, second] = await Promise.all([
+            attempt(Buffer.alloc(32, 2).toString('base64')),
+            attempt(Buffer.alloc(32, 3).toString('base64')),
+        ]);
         expect([first, second].filter(result => result !== null)).toHaveLength(1);
         // A concurrent re-enrollment (a NEW escrowBlob, different from oldBlob)
         // between read and write also wins the race against a stale rewrap.
         const reenrolled = await setEscrowBlobByAuthProvider(provider, blob, 1);
-        expect(reenrolled?.escrowBlob?.envelope.keyId).toBe('test');
+        expect(reenrolled?.escrowBlob?.envelope.keyId).toBe(blob.enclaveKeyId);
         expect(
             await rewrapEscrowBlobByAuthProvider(
                 provider,
                 oldBlob,
                 oldPin,
-                { ...blob.envelope, keyId: 'current', ciphertext: '$stale' },
+                {
+                    ...blob.envelope,
+                    keyId: 'current',
+                    ciphertext: Buffer.alloc(32, 4).toString('base64'),
+                },
                 { enclaveKeyId: 'current', enclaveMode: 'software', measurements: {} }
             )
         ).toBeNull();
     });
     it('findUserKeysWithEscrowBlobKeyId: matches given keyIds, excludes opted-out accounts', async () => {
-        await setEscrowBlobByAuthProvider(provider, blob, 1);
+        const stored = await setEscrowBlobByAuthProvider(provider, blob, 1);
         expect(
-            (await findUserKeysWithEscrowBlobKeyId(['test'], 10)).map(u => u.authProviders[0]?.id)
+            (await findUserKeysWithEscrowBlobKeyId([blob.enclaveKeyId], 10)).map(
+                u => u.authProviders[0]?.id
+            )
         ).toContain(provider.id);
         expect(await findUserKeysWithEscrowBlobKeyId(['nonexistent-key'], 10)).toEqual([]);
         await clearEscrowByAuthProvider(provider, { optOut: true });
         await getUserKeysCollection().updateOne(
             { 'authProviders.id': provider.id },
-            { $set: { escrowBlob: blob } }
+            { $set: { escrowBlob: stored!.escrowBlob! } }
         );
         expect(
-            (await findUserKeysWithEscrowBlobKeyId(['test'], 10)).some(
+            (await findUserKeysWithEscrowBlobKeyId([blob.enclaveKeyId], 10)).some(
                 u => u.authProviders[0]?.id === provider.id
             )
         ).toBe(false);
@@ -436,7 +441,7 @@ describe('escrow model invariants', () => {
         let stored = await findEscrowHoldById(hold._id);
         expect(stored?.notifications).toHaveLength(1);
         expect(stored?.notifications[0]).toMatchObject({ kind: 'started' });
-        expect(stored?.notifications[0].sentAt).toBeInstanceOf(Date);
+        expect(stored?.notifications[0]?.sentAt).toBeInstanceOf(Date);
         expect(stored?.status).toBe('pending');
         await recordEscrowHoldNotification(hold._id, 'cancelled');
         stored = await findEscrowHoldById(hold._id);

@@ -109,7 +109,7 @@ afterAll(async () => {
 });
 
 describe('runEscrowBlobRewrap', () => {
-    it('migrates a previous-key blob onto the current key: keyId now current, epoch+1, version unchanged, escrowPin untouched', async () => {
+    it('migrates a previous-key blob onto the current key: keyId now current, epoch and version unchanged, escrowPin untouched', async () => {
         const provider = makeProvider();
         const oldBlob = await seedBlob(provider, 'previous', previousKeys.publicKey);
         await getUserKeysCollection().updateOne(
@@ -133,7 +133,7 @@ describe('runEscrowBlobRewrap', () => {
         expect(stored?.escrowBlob?.enclaveKeyId).toBe('current');
         expect(stored?.escrowBlob?.envelope.keyId).toBe('current');
         expect(stored?.escrowBlob?.shareVersion).toBe(1);
-        expect(stored?.escrowBlob?.enrollmentEpoch).toBe(oldBlob.enrollmentEpoch + 1);
+        expect(stored?.escrowBlob?.enrollmentEpoch).toBe(oldBlob.enrollmentEpoch);
         expect(stored?.escrowBlob?.blobHash).not.toBe(oldBlob.blobHash);
         expect(stored?.escrowPin?.failedAttempts).toBe(3);
         // Idempotent: nothing left to migrate on a second run.
