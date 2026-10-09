@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Page, type Response } from '@playwright/test';
 import { TEST_USER_SEED } from '../constants';
 
 /**
@@ -13,43 +13,47 @@ export const signInMockUser = async (
 ) => {
     const path = options.path === '/' ? '/wallet' : (options.path ?? '/wallet');
     const params = new URLSearchParams({ profileId: options.profileId, next: path });
-    await page.goto(`/developer/sign-in?${params}`, { waitUntil: 'domcontentloaded' });
-    await page.getByRole('textbox').fill(options.seed ?? TEST_USER_SEED);
+    const proceduresFor = (response: Response) =>
+        decodeURIComponent(new URL(response.url()).pathname).split('/trpc/')[1]?.split(',');
+    const isProfileResponse = (response: Response) =>
+        !!proceduresFor(response)?.includes('profile.getProfile');
+    let observedProfile: Response | undefined;
+    const observeProfile = (response: Response) => {
+        if (isProfileResponse(response)) observedProfile = response;
+    };
+    // Observe boot/cache-populating reads too. Start the timeout only after
+    // sign-in, rather than letting a cold Vite load exhaust it beforehand.
+    page.on('response', observeProfile);
+    try {
+        await page.goto(`/developer/sign-in?${params}`, { waitUntil: 'domcontentloaded' });
+        await page.getByRole('textbox').fill(options.seed ?? TEST_USER_SEED);
 
-    const destination = new URL(path, page.url());
-    const [profileResponse] = await Promise.all([
-        // Arm this after the sign-in page is ready, so a cold Vite load does
-        // not consume the profile timeout before authentication even starts.
-        page.waitForResponse(
-            response => {
-                const procedures = decodeURIComponent(new URL(response.url()).pathname)
-                    .split('/trpc/')[1]
-                    ?.split(',');
-                return !!procedures?.includes('profile.getProfile');
-            },
-            { timeout }
-        ),
-        page.waitForURL(
-            url =>
-                url.pathname === destination.pathname &&
-                url.search === destination.search &&
-                url.hash === destination.hash,
-            { timeout, waitUntil: 'domcontentloaded' }
-        ),
-        page.getByRole('button', { name: /^(Sign in|Sign out and switch)$/ }).click(),
-    ]);
+        const destination = new URL(path, page.url());
+        await Promise.all([
+            page.waitForURL(
+                url =>
+                    url.pathname === destination.pathname &&
+                    url.search === destination.search &&
+                    url.hash === destination.hash,
+                { timeout, waitUntil: 'domcontentloaded' }
+            ),
+            page.getByRole('button', { name: /^(Sign in|Sign out and switch)$/ }).click(),
+        ]);
+        const profileResponse =
+            observedProfile ?? (await page.waitForResponse(isProfileResponse, { timeout }));
 
-    // A successful HTTP response alone can contain null or a tRPC error. Verify
-    // the exact profile, including its position in a comma-joined batch.
-    expect(profileResponse.ok(), 'Mock profile lookup must succeed').toBe(true);
-    const procedures = decodeURIComponent(new URL(profileResponse.url()).pathname)
-        .split('/trpc/')[1]
-        .split(',');
-    const payload = await profileResponse.json();
-    const result = Array.isArray(payload)
-        ? payload[procedures.indexOf('profile.getProfile')]
-        : payload;
-    expect(result?.result?.data?.profileId, 'Mock login must return the requested profile').toBe(
-        options.profileId
-    );
+        // HTTP success can contain null or a tRPC error. Check the exact profile
+        // at its position in the comma-joined batch, not just the status code.
+        expect(profileResponse.ok(), 'Mock profile lookup must succeed').toBe(true);
+        const payload = await profileResponse.json();
+        const result = Array.isArray(payload)
+            ? payload[proceduresFor(profileResponse)!.indexOf('profile.getProfile')]
+            : payload;
+        expect(
+            result?.result?.data?.profileId,
+            'Mock login must return the requested profile'
+        ).toBe(options.profileId);
+    } finally {
+        page.off('response', observeProfile);
+    }
 };

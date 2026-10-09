@@ -9,7 +9,7 @@ const source = path.resolve(__dirname, '../../apps/learn-card-app/tests/mocks/au
 const exportsForTest = {};
 vm.runInNewContext(
     ts.transpileModule(fs.readFileSync(source, 'utf8'), {
-        compilerOptions: { module: ts.ModuleKind.CommonJS },
+        compilerOptions: { module: ts.ModuleKind.CommonJS, esModuleInterop: true },
     }).outputText,
     {
         exports: exportsForTest,
@@ -22,10 +22,10 @@ vm.runInNewContext(
 const { signInMockUser } = exportsForTest;
 const profileId = 'e2e-test-user-1';
 
-function fakePage({ payload, ok = true, missing = false } = {}) {
+function fakePage({ payload, ok = true, missing = false, early = false, late = false } = {}) {
     const navigations = [];
     let currentUrl = 'http://localhost:3010/';
-    let responseWait;
+    let listener;
     let urlWait;
     let submitted = false;
     let filledSeed;
@@ -37,21 +37,33 @@ function fakePage({ payload, ok = true, missing = false } = {}) {
     };
     const page = {
         goto: async (url, options) => {
+            assert.ok(listener, 'Observe profile responses before loading the app');
             assert.equal(options.waitUntil, 'domcontentloaded');
+            if (early) listener(response);
             navigations.push(url);
             currentUrl = new URL(url, currentUrl).href;
         },
         url: () => currentUrl,
+        on: (event, callback) => {
+            assert.equal(event, 'response');
+            listener = callback;
+        },
+        off: (event, callback) => {
+            assert.equal(event, 'response');
+            assert.equal(callback, listener);
+            listener = undefined;
+        },
         waitForResponse: (predicate, options) =>
             new Promise((resolve, reject) => {
-                assert.equal(submitted, false, 'Profile wait must be armed before submission');
+                assert.equal(submitted, true, 'Start the response timeout after sign-in');
                 assert.equal(options.timeout, 1234);
                 assert.equal(
                     predicate({ url: () => 'http://localhost:3010/tenant-config.json' }),
                     false
                 );
                 assert.equal(predicate(response), true, 'Encoded tRPC batches must match');
-                responseWait = { resolve, reject };
+                if (missing) reject(new Error('Profile response timed out'));
+                else resolve(response);
             }),
         waitForURL: (predicate, options) =>
             new Promise(resolve => {
@@ -67,20 +79,19 @@ function fakePage({ payload, ok = true, missing = false } = {}) {
             click: async () => {
                 assert.equal(role, 'button');
                 submitted = true;
-                assert.ok(responseWait);
+                assert.ok(listener);
                 assert.ok(urlWait);
                 const destination = new URL(currentUrl).searchParams.get('next');
                 assert.equal(urlWait.predicate(new URL(destination, currentUrl)), true);
                 urlWait.resolve();
-                if (missing) responseWait.reject(new Error('Profile response timed out'));
-                else responseWait.resolve(response);
+                if (!missing && !early && !late) listener(response);
             },
         }),
         locator: () => {
             throw new Error('Mock login must not probe the optional profile modal');
         },
     };
-    return { page, navigations, getSeed: () => filledSeed };
+    return { page, navigations, getSeed: () => filledSeed, hasListener: () => !!listener };
 }
 
 test('mock login verifies the requested profile and redirects without a second page load', async () => {
@@ -93,6 +104,7 @@ test('mock login verifies the requested profile and redirects without a second p
     assert.equal(url.searchParams.get('next'), destination);
     assert.equal(url.searchParams.get('profileId'), profileId);
     assert.equal(fixture.getSeed(), seed);
+    assert.equal(fixture.hasListener(), false);
 });
 
 test('mock login defaults to the wallet and test seed', async () => {
@@ -132,5 +144,72 @@ test('mock login propagates a missing-response timeout', async () => {
     await assert.rejects(
         signInMockUser(fixture.page, { profileId }, 1234),
         /Profile response timed out/
+    );
+});
+
+for (const timing of ['early', 'late']) {
+    test(`mock login handles ${timing} profile responses without polling for a modal`, async () => {
+        const fixture = fakePage({ [timing]: true });
+        await signInMockUser(fixture.page, { profileId }, 1234);
+        assert.equal(fixture.hasListener(), false);
+    });
+}
+
+test('default mock profile supports repeated batched boot reads and feature overrides', async () => {
+    const mocksDir = path.resolve(__dirname, '../../apps/learn-card-app/tests/mocks');
+    function load(file, dependencies) {
+        const exports = {};
+        vm.runInNewContext(
+            ts.transpileModule(fs.readFileSync(path.join(mocksDir, file), 'utf8'), {
+                compilerOptions: { module: ts.ModuleKind.CommonJS, esModuleInterop: true },
+            }).outputText,
+            {
+                exports,
+                URL,
+                __dirname: mocksDir,
+                process: { env: {} },
+                require: name => dependencies[name] ?? require(name),
+            }
+        );
+        return exports;
+    }
+    const trpc = load('trpc.ts', {});
+    const { installNetwork } = load('network.ts', {
+        './trpc': trpc,
+        '../constants': { TEST_USER_PROFILE_ID: profileId },
+    });
+    let routeHandler;
+    const mock = await installNetwork({
+        routeFromHAR: async () => {},
+        route: async (_pattern, handler) => {
+            routeHandler = handler;
+        },
+    });
+    let data;
+    const route = {
+        request: () => ({
+            headers: () => ({}),
+            method: () => 'POST',
+            url: () =>
+                'http://localhost:4000/trpc/profile.getProfile%2Cprofile.getProfile%2Cprofile.getProfile?batch=1',
+            postData: () => '{}',
+        }),
+        fulfill: async response => {
+            data = JSON.parse(response.body);
+        },
+        fallback: () => {
+            throw new Error('Boot reads must not fall through to the single-read HAR');
+        },
+    };
+    await routeHandler(route);
+    assert.deepEqual(
+        data.map(item => item.result.data.profileId),
+        [profileId, profileId, profileId]
+    );
+    mock.on('profile.getProfile', () => ({ profileId: 'override' }));
+    await routeHandler(route);
+    assert.deepEqual(
+        data.map(item => item.result.data.profileId),
+        ['override', 'override', 'override']
     );
 });

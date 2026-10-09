@@ -18,7 +18,7 @@ real issuance — that's a signing + multi-service backend flow that lives in th
 1. **HAR replay** (`har/issue.har.zip`) — serves the recorded auth/boot handshake and all
    backend reads on `localhost:4000/4100/5100` (tRPC, `/api`, `/keys`, and non-tRPC calls
    like did:web resolution) verbatim. Recorded once against real docker; refreshable.
-2. **A typed tRPC mock** (`trpc.ts`) layered on top — installed but empty by default; a
+2. **A typed tRPC mock** (`trpc.ts`) layered on top — serves the default test-user profile with batch-aware responses; a
    test can register per-procedure overrides on the returned mock (`mock.on(...)`).
 
 On replay, any backend call that isn't in the HAR (and isn't overridden) is **aborted**
