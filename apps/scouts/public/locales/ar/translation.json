@@ -137,6 +137,8 @@
         "neutralMode": "الوضع المحايد"
     },
     "scanner": {
+        "incompatibleTitle": "رمز QR غير مدعوم",
+        "incompatible": "رمز QR الذي مسحته غير متوافق.",
         "title": "مسح رمز QR",
         "description": "وجّه الكاميرا نحو رمز QR",
         "frameLabel": "ضع رمز QR داخل الإطار",
