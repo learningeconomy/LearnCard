@@ -59,6 +59,15 @@ export const EN_DEFAULTS: Record<string, string> = {
     'boostFooter.accept': 'Accept',
 };
 
+/** Canonicalizes a BCP-47 locale and uses English for malformed input. */
+export const normalizeLocale = (value: string): string => {
+    try {
+        return Intl.getCanonicalLocales(value)[0] ?? 'en';
+    } catch {
+        return 'en';
+    }
+};
+
 /**
  * The user's active language as a plain BCP-47 string, read from the same
  * localStorage key the app's i18n writes (`i18n.language`). For non-React call
@@ -70,11 +79,7 @@ export const getActiveLocale = (): string => {
         if (typeof localStorage !== 'undefined') {
             const raw = localStorage.getItem('i18n.language');
             if (raw) {
-                // Strip anything that isn't a valid BCP-47 character (alphanumeric +
-                // hyphen) before this value is sent to the backend. A crafted
-                // localStorage entry — e.g. via XSS — must not be able to alter
-                // request parameters. An all-invalid value collapses to 'en'.
-                return raw.replace(/[^a-zA-Z0-9-]/g, '') || 'en';
+                return normalizeLocale(raw);
             }
         }
     } catch {
@@ -84,7 +89,7 @@ export const getActiveLocale = (): string => {
     try {
         const liveLocale =
             typeof document !== 'undefined' ? document.documentElement?.lang : undefined;
-        if (liveLocale) return liveLocale.replace(/[^a-zA-Z0-9-]/g, '') || 'en';
+        if (liveLocale) return normalizeLocale(liveLocale);
     } catch {
         // document may be unavailable (native/SSR) — default to English.
     }

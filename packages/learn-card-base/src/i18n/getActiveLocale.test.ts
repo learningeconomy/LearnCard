@@ -37,18 +37,34 @@ describe('getActiveLocale', () => {
         expect(getActiveLocale()).toBe('fr');
     });
 
-    it('strips characters that could inject extra URL query params', () => {
+    it('rejects a locale containing extra URL query params', () => {
         // The value is interpolated into `&locale=...` request URLs; a crafted
         // localStorage entry must not be able to smuggle in `&did=...` etc.
         store['i18n.language'] = 'en&did=attacker';
         const result = getActiveLocale();
         expect(result).not.toContain('&');
         expect(result).not.toContain('=');
-        expect(result).toBe('endidattacker');
+        expect(result).toBe('en');
     });
 
     it('falls back to en for an all-invalid value', () => {
         store['i18n.language'] = '%%%';
+        expect(getActiveLocale()).toBe('en');
+    });
+
+    it.each(['en--US', '-en', 'en-', 'en_US', '%%%'])(
+        'rejects malformed stored locale %s',
+        locale => {
+            store['i18n.language'] = locale;
+            expect(getActiveLocale()).toBe('en');
+        }
+    );
+
+    it('canonicalizes regional tags and validates document locales', () => {
+        store['i18n.language'] = 'ES-mx';
+        expect(getActiveLocale()).toBe('es-MX');
+        delete store['i18n.language'];
+        vi.stubGlobal('document', { documentElement: { lang: 'en--US' } });
         expect(getActiveLocale()).toBe('en');
     });
 
