@@ -107,6 +107,27 @@ afterAll(async () => {
 });
 
 describe('runEscrowHoldReminders', () => {
+    it('bounds cancellation retries and gives unattempted cancellations priority', async () => {
+        const now = new Date();
+        const holds = await Promise.all(
+            Array.from({ length: 4 }, () => seed(new Date(now.getTime() + 7 * 24 * HOUR)))
+        );
+        for (const hold of holds) await cancelEscrowHold(hold._id, 'did');
+        // These legacy test records lack ciphertext: fail closed, but still rotate
+        // the bounded queue rather than retrying the same first three forever.
+        await runEscrowHoldReminders({ now, limit: 200 });
+        const firstRun = await Promise.all(holds.map(hold => findEscrowHoldById(hold._id)));
+        expect(firstRun.map(hold => hold?.enclaveCancelAttempts).sort()).toEqual([0, 1, 1, 1]);
+        const unattempted = firstRun.find(hold => hold?.enclaveCancelAttempts === 0)!;
+        await runEscrowHoldReminders({ now, limit: 1 });
+        expect((await findEscrowHoldById(unattempted._id))?.enclaveCancelAttempts).toBe(1);
+        for (const hold of holds) {
+            const stored = await findEscrowHoldById(hold._id);
+            expect(stored?.enclaveCancelPendingAt).toBeInstanceOf(Date);
+            expect(stored?.enclaveCancelConfirmedAt).toBeUndefined();
+        }
+    });
+
     it('budgets both queues and moves failed starts behind unattempted holds', async () => {
         const now = new Date();
         const starts = await Promise.all(

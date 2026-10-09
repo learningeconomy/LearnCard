@@ -51,6 +51,7 @@ import {
     type EnclaveAttestation,
 } from '../src/services/escrow-enclave';
 import { getClient, getUser } from './helpers/getClient';
+import { runEscrowHoldReminders } from '../src/jobs/escrowHoldReminders';
 
 const makeMockToken = (email: string, uid: string): string =>
     `header.${Buffer.from(JSON.stringify({ sub: uid, email })).toString('base64url')}.signature`;
@@ -231,7 +232,11 @@ describe('A6 escrow recovery', () => {
                 clientEphemeralPublicKey: recipient.publicKey,
                 expectedDid: did,
             };
-            if (kind === 'did') await owner().escrow.cancelRecovery(auth);
+            if (kind === 'did')
+                expect(await owner().escrow.cancelRecovery(auth)).toEqual({
+                    success: true,
+                    cancelled: true,
+                });
             else if (kind === 'remove') await owner().escrow.remove({ ...auth, optOut: false });
             else {
                 const token = generateEscrowCancelToken();
@@ -245,9 +250,117 @@ describe('A6 escrow recovery', () => {
             }
             expect(cancel).toHaveBeenCalledExactlyOnceWith(expectedCancel);
             expect(statusAtEnclaveCall).toBe('cancelled');
-            expect((await findEscrowHoldById(started.holdId))?.status).toBe('cancelled');
+            expect(await findEscrowHoldById(started.holdId)).toMatchObject({
+                status: 'cancelled',
+                enclaveCancelPendingAt: expect.any(Date),
+                enclaveCancelAttempts: 1,
+            });
+            expect(
+                (await findEscrowHoldById(started.holdId))?.enclaveCancelConfirmedAt
+            ).toBeUndefined();
+            if (kind === 'remove') {
+                envelope = await encryptEscrowBlob(
+                    { recoveryShare: shares.recoveryShare, did, shareVersion: 1 },
+                    enclaveKeys.publicKey,
+                    keyId
+                );
+                await enroll();
+            }
+            const create = vi.spyOn(getEscrowEnclave(), 'createHold');
+            await expect(start()).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' });
+            expect(create).not.toHaveBeenCalled();
+            await runEscrowHoldReminders();
+            expect(await findEscrowHoldById(started.holdId)).toMatchObject({
+                status: 'cancelled',
+                enclaveCancelConfirmedAt: expect.any(Date),
+                enclaveCancelAttempts: 2,
+            });
+            expect(
+                (await findEscrowHoldById(started.holdId))?.enclaveCancelPendingAt
+            ).toBeUndefined();
+            expect(cancel).toHaveBeenCalledTimes(2);
+            expect(cancel).toHaveBeenLastCalledWith(expectedCancel);
+            await runEscrowHoldReminders();
+            expect(cancel).toHaveBeenCalledTimes(2);
+            await expect(start()).resolves.toMatchObject({ status: 'pending' });
         }
     );
+    it.each([23, -1])(
+        'keeps unavailable cancellation pending and alarms at %s hours before release',
+        async hours => {
+            await enroll();
+            const started = await start();
+            const now = new Date();
+            await getEscrowHoldsCollection().updateOne(
+                { _id: started.holdId },
+                {
+                    $set: { releaseAfter: new Date(now.getTime() + hours * 60 * 60_000) },
+                }
+            );
+            const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+            vi.spyOn(getEscrowEnclave(), 'cancelHold').mockRejectedValue(
+                new EscrowUnavailableError()
+            );
+            await expect(owner().escrow.cancelRecovery(auth)).resolves.toEqual({
+                success: true,
+                cancelled: true,
+            });
+            log.mockClear();
+            await runEscrowHoldReminders({ now });
+            expect(await findEscrowHoldById(started.holdId)).toMatchObject({
+                enclaveCancelPendingAt: expect.any(Date),
+                enclaveCancelAttempts: 2,
+            });
+            expect(
+                (await findEscrowHoldById(started.holdId))?.enclaveCancelConfirmedAt
+            ).toBeUndefined();
+            expect(log).toHaveBeenCalledWith(
+                '[escrow-cancellation]',
+                'Escrow enclave cancellation unconfirmed within 24h of release or overdue'
+            );
+            expect(JSON.stringify(log.mock.calls)).not.toContain(authProvider.id);
+            expect(JSON.stringify(log.mock.calls)).not.toContain(envelope.ciphertext);
+        }
+    );
+
+    it('does not mistake a policy or terminal refusal for confirmed cancellation', async () => {
+        await enroll();
+        const started = await start();
+        vi.spyOn(getEscrowEnclave(), 'cancelHold').mockRejectedValue(new EscrowPolicyError());
+        await owner().escrow.cancelRecovery(auth);
+        await runEscrowHoldReminders();
+        expect(
+            (await findEscrowHoldById(started.holdId))?.enclaveCancelConfirmedAt
+        ).toBeUndefined();
+        await expect(start()).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' });
+    });
+
+    it('refuses a replacement enclave hold when superseded cancellation is unavailable', async () => {
+        await enroll();
+        const started = await start();
+        await getEscrowHoldsCollection().updateOne(
+            { _id: started.holdId },
+            {
+                $set: { requestedAt: new Date(Date.now() - 2 * 24 * 60 * 60_000) },
+            }
+        );
+        const create = vi.spyOn(getEscrowEnclave(), 'createHold');
+        vi.spyOn(getEscrowEnclave(), 'cancelHold').mockRejectedValue(new EscrowUnavailableError());
+        await expect(
+            getClient().escrow.startRecovery({
+                ...auth,
+                clientEphemeralPublicKey: recipient.publicKey,
+                restart: true,
+            })
+        ).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' });
+        expect(create).not.toHaveBeenCalled();
+        expect(await findEscrowHoldById(started.holdId)).toMatchObject({
+            status: 'cancelled',
+            cancelReason: 'superseded',
+            enclaveCancelPendingAt: expect.any(Date),
+        });
+    });
+
     it('P4.2 rejects legacy release records but still permits cancelling them', async () => {
         setDuration(1);
         await enroll();
@@ -1020,6 +1133,35 @@ describe('escrow PIN release', () => {
         });
     const completePin = (hold: Parameters<typeof resume>[0], proof = pinProof) =>
         getClient().escrow.completeRecovery({ ...resume(hold), pinProof: proof });
+
+    it('durably revokes a PIN-locked hold before allowing another recovery hold', async () => {
+        await enrollPin();
+        const started = await startPin();
+        await getUserKeysCollection().updateOne(
+            { 'authProviders.id': authProvider.id },
+            {
+                $set: { 'escrowPin.failedAttempts': 9, 'escrowPin.verifiedFailedAttempts': 9 },
+            }
+        );
+        vi.spyOn(getEscrowEnclave(), 'cancelHold').mockRejectedValueOnce(
+            new EscrowUnavailableError()
+        );
+        await expect(completePin(started, wrongProof)).rejects.toMatchObject({
+            code: 'TOO_MANY_REQUESTS',
+        });
+        expect(await findEscrowHoldById(started.holdId)).toMatchObject({
+            status: 'cancelled',
+            cancelReason: 'pin-locked',
+            enclaveCancelPendingAt: expect.any(Date),
+            enclaveCancelAttempts: 1,
+        });
+        await expect(start()).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' });
+        await runEscrowHoldReminders();
+        expect((await findEscrowHoldById(started.holdId))?.enclaveCancelConfirmedAt).toBeInstanceOf(
+            Date
+        );
+        await expect(start()).resolves.toMatchObject({ status: 'pending' });
+    });
 
     it.each([
         'success',
@@ -2081,6 +2223,12 @@ describe('P6.1 escrow enclave-mode staleness', () => {
     describe('attestation cache (P6.1 fix round 1 — login must never wait on the enclave)', () => {
         const hangingEnclave: EscrowEnclave = {
             getAttestation: () => new Promise(() => {}),
+            carryPinVerifier: () => {
+                throw new Error('not used in this test');
+            },
+            rewrapEscrowBlob: () => {
+                throw new Error('not used in this test');
+            },
             verifyEscrowBlob: () => {
                 throw new Error('not used in this test');
             },
@@ -2147,6 +2295,12 @@ describe('P6.1 escrow enclave-mode staleness', () => {
         it('enforcement still refuses when the enclave is unreachable against a cold cache (never treats failure as fresh)', async () => {
             await enroll();
             __setEscrowEnclaveForTests({
+                carryPinVerifier: () => {
+                    throw new Error('not used in this test');
+                },
+                rewrapEscrowBlob: () => {
+                    throw new Error('not used in this test');
+                },
                 getAttestation: async () => {
                     throw new EscrowUnavailableError();
                 },

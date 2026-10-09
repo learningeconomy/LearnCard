@@ -40,7 +40,11 @@ budget across holds for that enrollment.
 New holds store the full opaque SignedHoldRecord before returning to callers;
 release and cancellation forward that record rather than unsigned host fields.
 Legacy Mongo rows without a record can still be cancelled locally, but cannot
-release. Enclave cancellation is best-effort after the local cancellation commits.
+release. Local cancellation atomically queues durable enclave revocation. The hourly
+reminders job retries failures; only success confirms revocation. Unconfirmed
+cancellations block new holds for the account and alarm within 24 hours of release
+or while overdue. See `services/escrow-enclave-app/SECURITY.md` for the eventual
+consistency, ambiguous terminal-error, and BLOCKER-ENROLLMENT limitations.
 
 The real Nitro enclave application **implements `carryPinVerifier`** (P8.1/P8.2)
 with the same contract described here:

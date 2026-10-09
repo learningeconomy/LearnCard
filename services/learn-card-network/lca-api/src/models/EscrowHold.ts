@@ -3,7 +3,11 @@ import { z } from 'zod';
 import type { Collection } from 'mongodb';
 import mongodb from '@mongo';
 import { environment } from '@environment';
-import { AuthProviderMappingValidator, type AuthProviderMapping } from './UserKey';
+import {
+    AuthProviderMappingValidator,
+    EscrowEnvelopeValidator,
+    type AuthProviderMapping,
+} from './UserKey';
 
 export const ESCROW_HOLDS_COLLECTION = 'escrowholds';
 export const ESCROW_HOLD_STALE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
@@ -46,6 +50,11 @@ export const EscrowHoldValidator = z.object({
     releasePolicy: z.enum(['hold', 'pin']).default('hold'),
     cancelReason: z.enum(['pin-mismatch', 'pin-locked', 'superseded', 'release-failed']).optional(),
     cancelledAt: z.date().optional(),
+    enclaveCancelPendingAt: z.date().optional(),
+    enclaveCancelConfirmedAt: z.date().optional(),
+    enclaveCancelAttempts: z.number().int().nonnegative().optional(),
+    // Retain ciphertext for revocation even after account removal or re-enrollment.
+    enclaveEnvelope: EscrowEnvelopeValidator.optional(),
     cancelledBy: z.enum(['did', 'system', 'link']).optional(),
     completedAt: z.date().optional(),
     clientEphemeralPublicKey: z.string().min(1).max(512),
@@ -95,6 +104,9 @@ export type CreateEscrowHoldInput = Omit<
     | 'completedAt'
     | 'cancelReason'
     | 'cancelTokenUsedAt'
+    | 'enclaveCancelPendingAt'
+    | 'enclaveCancelConfirmedAt'
+    | 'enclaveCancelAttempts'
 >;
 
 export const getEscrowHoldsCollection = (): Collection<EscrowHold> =>
@@ -160,6 +172,14 @@ export const createEscrowHoldsIndexes = async (): Promise<void> => {
         { status: 1, releaseAfter: 1 },
         { name: 'pending_escrow_hold_reminder_lookup' }
     );
+    await collection.createIndex(
+        { status: 1, enclaveCancelConfirmedAt: 1, enclaveCancelAttempts: 1, releaseAfter: 1 },
+        { name: 'escrow_enclave_cancel_retry_lookup' }
+    );
+    await collection.createIndex(
+        { primaryDid: 1, status: 1, enclaveCancelConfirmedAt: 1 },
+        { name: 'escrow_enclave_cancel_identity_lookup' }
+    );
 };
 
 export const createEscrowHold = async (input: CreateEscrowHoldInput): Promise<EscrowHold> => {
@@ -193,6 +213,68 @@ export const findPendingEscrowHoldByAuthProvider = async (
     });
 export const findEscrowHoldById = async (id: string): Promise<EscrowHold | null> =>
     getEscrowHoldsCollection().findOne({ _id: id });
+/** Fail closed across linked providers and enrollment changes until revocation is confirmed. */
+export const hasUnconfirmedEscrowCancellation = async (primaryDid: string): Promise<boolean> =>
+    (await getEscrowHoldsCollection().countDocuments(
+        {
+            primaryDid,
+            status: 'cancelled',
+            enclaveCancelPendingAt: { $exists: true },
+            enclaveCancelConfirmedAt: { $exists: false },
+        },
+        { limit: 1 }
+    )) > 0;
+
+export const findEscrowHoldsPendingEnclaveCancellation = async (
+    limit: number
+): Promise<EscrowHold[]> =>
+    getEscrowHoldsCollection()
+        .find({
+            status: 'cancelled',
+            enclaveCancelPendingAt: { $exists: true },
+            enclaveCancelConfirmedAt: { $exists: false },
+        })
+        .sort({ enclaveCancelAttempts: 1, releaseAfter: 1 })
+        .limit(limit)
+        .toArray();
+
+export const countEscrowCancellationsNearRelease = async (now: Date): Promise<number> =>
+    getEscrowHoldsCollection().countDocuments({
+        status: 'cancelled',
+        enclaveCancelPendingAt: { $exists: true },
+        enclaveCancelConfirmedAt: { $exists: false },
+        releaseAfter: { $lte: new Date(now.getTime() + ESCROW_HOLD_REMINDER_WINDOW_MS) },
+    });
+
+export const recordEscrowEnclaveCancelAttempt = async (id: string): Promise<boolean> => {
+    const result = await getEscrowHoldsCollection().updateOne(
+        {
+            _id: id,
+            status: 'cancelled',
+            enclaveCancelPendingAt: { $exists: true },
+            enclaveCancelConfirmedAt: { $exists: false },
+        },
+        { $inc: { enclaveCancelAttempts: 1 }, $set: { updatedAt: new Date() } }
+    );
+    return result.modifiedCount > 0;
+};
+
+export const confirmEscrowEnclaveCancellation = async (id: string): Promise<void> => {
+    const now = new Date();
+    await getEscrowHoldsCollection().updateOne(
+        {
+            _id: id,
+            status: 'cancelled',
+            enclaveCancelPendingAt: { $exists: true },
+            enclaveCancelConfirmedAt: { $exists: false },
+        },
+        {
+            $set: { enclaveCancelConfirmedAt: now, updatedAt: now },
+            $unset: { enclaveCancelPendingAt: '', enclaveEnvelope: '' },
+        }
+    );
+};
+
 export const cancelEscrowHold = async (
     id: string,
     cancelledBy: 'did' | 'system',
@@ -206,6 +288,8 @@ export const cancelEscrowHold = async (
                 status: 'cancelled',
                 cancelledBy,
                 cancelledAt: now,
+                enclaveCancelPendingAt: now,
+                enclaveCancelAttempts: 0,
                 updatedAt: now,
                 ...(cancelReason ? { cancelReason } : {}),
             },
@@ -237,6 +321,8 @@ export const cancelEscrowHoldByCancelToken = async (
                 status: 'cancelled',
                 cancelledBy: 'link',
                 cancelledAt: now,
+                enclaveCancelPendingAt: now,
+                enclaveCancelAttempts: 0,
                 cancelTokenUsedAt: now,
                 updatedAt: now,
             },
@@ -298,6 +384,8 @@ export const markClaimedEscrowHoldFailed = async (
                 cancelledBy: 'system',
                 cancelReason: reason,
                 cancelledAt: now,
+                enclaveCancelPendingAt: now,
+                enclaveCancelAttempts: 0,
                 updatedAt: now,
             },
         }

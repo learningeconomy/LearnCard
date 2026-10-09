@@ -140,6 +140,35 @@ cannot verify mixed-key chains. Recycle monitor execution environments on update
 - **Monitor Alarms:** The independent ledger monitor (`services/escrow-ledger-monitor/`) runs every 15 minutes. It alarms on DynamoDB/S3 divergence, invalid signatures, or unexpected `MODIFY`/`REMOVE` events on the append-only ledger.
 - **Kill Switch:** If tampering is suspected, operators must manually set `ESCROW_RELEASE_KILL_SWITCH=true` in the `lca-api` environment and redeploy. This refuses starting and completing recovery; cancellation and notifications keep working. The monitor does not auto-flip this switch to prevent denial-of-service attacks. (`services/escrow-ledger-monitor/README.md`, `services/learn-card-network/lca-api/src/routes/escrow.ts`)
 
+### Cancellation durability and response
+
+Cancellation is **API-enforced immediately** once Mongo atomically changes the hold
+to `cancelled` and records `enclaveCancelPendingAt`. The API preserves a successful
+user cancellation response even when the enclave is unavailable. New recovery holds
+for the same account identity are refused while any prior cancellation is unconfirmed,
+including across linked providers, release policies, and re-enrollment.
+
+Enclave revocation is **durable and retried, but eventually consistent**, not an
+instant revocation guarantee against a compromised host. New holds retain their
+encrypted source envelope so removal or replacement cannot erase retry material.
+The existing hourly `escrowHoldReminders` job retries a bounded, attempt-ordered
+batch; successful replies set `enclaveCancelConfirmedAt` and remove the pending
+marker and retained envelope. Failures remain pending. Sanitized console/Sentry
+error-level alerts fire when cancellation is still pending within 24 hours of
+`releaseAfter`, or already overdue, including backlog outside the retry batch.
+Operators must investigate these alerts before release, and use the manual API
+kill switch where appropriate; it does not stop a host bypassing the API.
+
+No current wire error uniquely proves an already-cancelled or unknown hold is safe.
+Policy, blob, unavailable, time, ledger and transport errors therefore never confirm
+revocation. A lost successful reply can leave a terminal hold pending for operator
+reconciliation; retries do not weaken that boundary. Legacy rows missing the signed
+record or matching ciphertext also stay pending rather than inventing confirmation.
+**BLOCKER-ENROLLMENT remains:** Nitro cancellation fails closed with `Unavailable`
+and remains pending until the independent enrollment authority lands. Suppressed
+delivery, unavailable authority, and D3 rollback mean bounded revocation latency is
+not guaranteed by this API queue.
+
 ## Open Items / Launch Blockers
 
 - **BLOCKER-TIME — all three sources verify; operational review remains:** Three operator-published keys are compiled in: Cloudflare, int08h and Tanner Ryan. All three verify live from the staging host (2026-10-06, image `vc3b4711b`). Cloudflare's draft-08 replies omit the `NONC` echo; the parser now accepts that (the nonce is bound by the signed Merkle `ROOT`) and still rejects a present-but-wrong echo, covered by a real captured response. Before launch obtain Tanner's requested high-volume infrastructure approval and review public-service availability/rate limits. No Netnod Roughtime endpoint/key could be established from its official pages, so none is guessed. Signed processing-time/delayed-delivery limitations remain unchanged. ([Design Decisions](#design-decisions) D2)

@@ -1,6 +1,8 @@
 import { resolveTenantFromRequest, type ResolvedTenant } from '@learncard/email-templates';
 import {
     expireStaleEscrowHolds,
+    findEscrowHoldsPendingEnclaveCancellation,
+    countEscrowCancellationsNearRelease,
     findEscrowHoldsDueForReminder,
     claimEscrowHoldForReminder,
     findUserKeyByAuthProvider,
@@ -8,6 +10,11 @@ import {
     releaseEscrowReminderClaim,
     recordEscrowStartNotificationAttempt,
 } from '@models';
+import { environment } from '@environment';
+import {
+    cancelHoldInEnclave,
+    logEscrowCancellationPending,
+} from '../services/escrow-enclave/cancellation';
 import { isEscrowEnabled, notifyEscrowHoldEvent } from '../services/escrow-enclave';
 
 // Two queues of ten 3-second deliveries leave half the 120-second Lambda
@@ -77,9 +84,12 @@ export const runEscrowHoldReminders = async (
     options: RunEscrowHoldRemindersOptions = {}
 ): Promise<EscrowHoldReminderResult> => {
     const empty: EscrowHoldReminderResult = { reminded: 0, expired: 0, failed: 0 };
-    if (!isEscrowEnabled()) return empty;
-
     const now = options.now ?? new Date();
+    if (!isEscrowEnabled()) {
+        // Disabling recovery must not silence outstanding revocation alarms.
+        if (await countEscrowCancellationsNearRelease(now)) logEscrowCancellationPending(true);
+        return empty;
+    }
     const limit = Math.max(
         1,
         Math.min(options.limit ?? DEFAULT_REMINDER_BATCH_LIMIT, DEFAULT_REMINDER_BATCH_LIMIT)
@@ -91,6 +101,27 @@ export const runEscrowHoldReminders = async (
 
     let reminded = 0;
     let failed = 0;
+
+    // Budget at most 30s of enclave calls beside the two 30s delivery queues.
+    // Attempts ordering ensures a repeatedly unavailable cancellation cannot starve others.
+    const cancelLimit = Math.min(
+        limit,
+        3,
+        Math.max(1, Math.floor(30_000 / environment.ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS))
+    );
+    for (const hold of await findEscrowHoldsPendingEnclaveCancellation(cancelLimit)) {
+        try {
+            const userKey = hold.enclaveEnvelope
+                ? undefined
+                : await findUserKeyByAuthProvider(hold.authProvider.type, hold.authProvider.id);
+            if (!(await cancelHoldInEnclave(hold, userKey, now))) failed += 1;
+        } catch (error) {
+            failed += 1;
+            logJobError(hold._id, error);
+        }
+    }
+    // Check the whole backlog, not only this run's bounded retry batch.
+    if (await countEscrowCancellationsNearRelease(now)) logEscrowCancellationPending(true);
 
     // A hold is inserted with this marker before the route attempts delivery,
     // so Lambda freezes/timeouts cannot lose the security-critical start email.
