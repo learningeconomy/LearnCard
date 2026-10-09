@@ -593,7 +593,7 @@ run "put_key_policy_mfa_deny_targets_root_only" {
   assert {
     condition = length([
       for s in jsondecode(data.aws_iam_policy_document.escrow_kms_key_policy.json).Statement : s
-      if s.Sid == "DenyRootPutKeyPolicyWithoutMFA" && s.Effect == "Deny" && s.Action == "kms:PutKeyPolicy" && try(s.Condition.StringEquals["aws:PrincipalArn"], "") == one([for r in jsondecode(data.aws_iam_policy_document.escrow_kms_key_policy.json).Statement : r.Principal.AWS if r.Sid == "RootAccountBreakGlassAdministration"]) && endswith(s.Condition.StringEquals["aws:PrincipalArn"], ":root") && try(s.Condition.BoolIfExists["aws:MultiFactorAuthPresent"], "") == "false"
+      if try(s.Sid, "") == "DenyRootPutKeyPolicyWithoutMFA" && try(s.Effect, "") == "Deny" && try(s.Action, "") == "kms:PutKeyPolicy" && try(s.Condition.StringEquals["aws:PrincipalArn"], "") == one([for r in jsondecode(data.aws_iam_policy_document.escrow_kms_key_policy.json).Statement : try(r.Principal.AWS, "") if try(r.Sid, "") == "RootAccountBreakGlassAdministration"]) && endswith(try(s.Condition.StringEquals["aws:PrincipalArn"], ""), ":root") && try(s.Condition.BoolIfExists["aws:MultiFactorAuthPresent"], "") == "false"
     ]) == 1
     error_message = "DenyRootPutKeyPolicyWithoutMFA must deny kms:PutKeyPolicy only to the root user without MFA"
   }
@@ -601,7 +601,7 @@ run "put_key_policy_mfa_deny_targets_root_only" {
   assert {
     condition = length([
       for s in jsondecode(data.aws_iam_policy_document.escrow_kms_key_policy.json).Statement : s
-      if s.Effect == "Deny" && contains(flatten([s.Action]), "kms:PutKeyPolicy") && !can(s.Condition.StringEquals["aws:PrincipalArn"])
+      if try(s.Effect, "") == "Deny" && contains(flatten([try(s.Action, [])]), "kms:PutKeyPolicy") && !can(s.Condition.StringEquals["aws:PrincipalArn"])
     ]) == 0
     error_message = "No PutKeyPolicy deny may apply to every principal: it would lock escrow-kms-admin out of the key"
   }
@@ -616,17 +616,17 @@ run "no_statement_delegates_key_administration_to_iam" {
   assert {
     condition = alltrue([
       for s in jsondecode(data.aws_iam_policy_document.escrow_kms_key_policy.json).Statement :
-      try(s.Condition.StringEquals["aws:PrincipalArn"], "") == s.Principal.AWS
-      if s.Effect == "Allow" && endswith(try(tostring(s.Principal.AWS), ""), ":root")
+      try(s.Condition.StringEquals["aws:PrincipalArn"], "") == try(s.Principal.AWS, "")
+      if try(s.Effect, "") == "Allow" && endswith(try(tostring(s.Principal.AWS), ""), ":root")
     ])
     error_message = "Every Allow naming the account root must be restricted to the root user with aws:PrincipalArn"
   }
 
   assert {
     condition = toset(flatten([
-      for s in jsondecode(data.aws_iam_policy_document.escrow_kms_key_policy.json).Statement : [s.Principal.AWS]
-      if s.Effect == "Allow" && contains(flatten([s.Action]), "kms:PutKeyPolicy")
-    ])) == toset([one([for s in jsondecode(data.aws_iam_policy_document.escrow_kms_key_policy.json).Statement : s.Principal.AWS if s.Sid == "RootAccountBreakGlassAdministration"]), "arn:aws:iam::123456789012:role/escrow-kms-admin"])
+      for s in jsondecode(data.aws_iam_policy_document.escrow_kms_key_policy.json).Statement : [try(s.Principal.AWS, "")]
+      if try(s.Effect, "") == "Allow" && contains(flatten([try(s.Action, [])]), "kms:PutKeyPolicy")
+    ])) == toset([one([for s in jsondecode(data.aws_iam_policy_document.escrow_kms_key_policy.json).Statement : try(s.Principal.AWS, "") if try(s.Sid, "") == "RootAccountBreakGlassAdministration"]), "arn:aws:iam::123456789012:role/escrow-kms-admin"])
     error_message = "Only the root user and escrow-kms-admin may be granted kms:PutKeyPolicy"
   }
 }
@@ -654,7 +654,7 @@ run "steady_state_host_cannot_write_sealed_keys" {
   assert {
     condition = !anytrue([
       for s in jsondecode(data.aws_iam_policy_document.enclave_host_permissions.json).Statement :
-      contains(flatten([s.Action]), "s3:PutObject") && anytrue([for r in flatten([s.Resource]) : strcontains(r, "sealed-keys")])
+      contains(flatten([try(s.Action, [])]), "s3:PutObject") && anytrue([for r in flatten([try(s.Resource, [])]) : strcontains(r, "sealed-keys")])
     ])
     error_message = "With first boot disabled the host role must hold no PutObject on sealed-keys/"
   }
@@ -666,7 +666,7 @@ run "host_cannot_read_other_ssm_parameters" {
   assert {
     condition = anytrue([
       for s in jsondecode(data.aws_iam_policy_document.enclave_host_permissions.json).Statement :
-      s.Effect == "Deny" && contains(flatten([s.Action]), "ssm:GetParameters") && length(flatten([s.NotResource])) == 3
+      try(s.Effect, "") == "Deny" && contains(flatten([try(s.Action, [])]), "ssm:GetParameters") && length(flatten([try(s.NotResource, [])])) == 3
     ])
     error_message = "The host role must explicitly deny SSM parameter reads outside its three host parameters"
   }
