@@ -542,14 +542,15 @@ describe('chat session startup', () => {
         expect(JSON.parse(socket.sent[0]!)).toMatchObject({ locale: 'es' });
     });
 
-    it('sanitizes a tampered locale before it reaches the backend', async () => {
+    it('falls back to English for a tampered locale in the socket URL and payload', async () => {
         localStorage.setItem('i18n.language', 'es"&evil=1');
 
         const start = startTopic('Algebra');
         const socket = await openLatestSocket();
         await start;
 
-        expect(JSON.parse(socket.sent[0]!)).toMatchObject({ locale: 'esevil1' });
+        expect(new URL(socket.url).searchParams.get('locale')).toBe('en');
+        expect(JSON.parse(socket.sent[0]!)).toMatchObject({ locale: 'en' });
         expect(socket.url).not.toContain('evil=1');
     });
 
