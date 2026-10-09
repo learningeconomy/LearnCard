@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
 
 import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
 import type {
@@ -35,7 +36,13 @@ const IdentifierRows = ({ identifiers }: { identifiers: ClrIdentifierModel[] }) 
             return (
                 <DetailRow
                     key={identifier.sourcePath}
-                    label={`${label || 'Identifier'}${hashed ? ' (hashed)' : ''}`}
+                    label={
+                        hashed
+                            ? m['clrTranscript.details.hashedIdentifier']({
+                                  label: label || m['clrTranscript.details.identifier'](),
+                              })
+                            : label || m['clrTranscript.details.identifier']()
+                    }
                 >
                     {value}
                 </DetailRow>
@@ -49,25 +56,25 @@ export const ClrRecordDetails = ({ record }: { record?: ClrNormalizedRecord }) =
     if (!record) return null;
 
     const profiles = [
-        { label: 'Issued by', profile: record.provenance.issuer },
-        { label: 'Assessed by', profile: record.provenance.assessor },
-        { label: 'Achievement created by', profile: record.provenance.creator },
+        { label: m['clrTranscript.details.issuedBy'](), profile: record.provenance.issuer },
+        { label: m['clrTranscript.details.assessedBy'](), profile: record.provenance.assessor },
+        { label: m['clrTranscript.details.createdBy'](), profile: record.provenance.creator },
     ].filter(({ profile }) => profile?.name?.value || profile?.id?.value || profile?.url?.value);
     const dates = [
-        { label: 'Activity started', date: record.dates.activityStart },
-        { label: 'Activity ended', date: record.dates.activityEnd },
-        { label: 'Awarded', date: record.dates.awarded },
-        { label: 'Valid from', date: record.dates.validFrom },
-        { label: 'Valid until', date: record.dates.validUntil },
+        { label: m['clrTranscript.details.activityStarted'](), date: record.dates.activityStart },
+        { label: m['clrTranscript.details.activityEnded'](), date: record.dates.activityEnd },
+        { label: m['clrTranscript.details.awarded'](), date: record.dates.awarded },
+        { label: m['clrTranscript.details.validFrom'](), date: record.dates.validFrom },
+        { label: m['clrTranscript.details.validUntil'](), date: record.dates.validUntil },
     ].filter(({ date }) => date?.value);
     const metadata = [
-        { label: 'Field of study', field: record.fieldOfStudy },
-        { label: 'Specialization', field: record.specialization },
-        { label: 'Language', field: record.language },
-        { label: 'Version', field: record.version },
-        { label: 'Role', field: record.role },
-        { label: 'Learner narrative', field: record.narrative },
-        { label: 'License number', field: record.licenseNumber },
+        { label: m['clrTranscript.details.fieldOfStudy'](), field: record.fieldOfStudy },
+        { label: m['clrTranscript.details.specialization'](), field: record.specialization },
+        { label: m['clrTranscript.details.language'](), field: record.language },
+        { label: m['clrTranscript.details.version'](), field: record.version },
+        { label: m['clrTranscript.details.role'](), field: record.role },
+        { label: m['clrTranscript.details.narrative'](), field: record.narrative },
+        { label: m['clrTranscript.details.licenseNumber'](), field: record.licenseNumber },
     ].filter(({ field }) => field?.value);
     const achievementIdentifiers = record.achievementIdentifiers.filter(
         identifier => identifier.identifier?.value || identifier.identityHash?.value
@@ -128,7 +135,9 @@ export const ClrRecordDetails = ({ record }: { record?: ClrNormalizedRecord }) =
             )}
             {hasCriteria && (
                 <section className="space-y-2">
-                    <h3 className="text-base font-semibold text-grayscale-900">Criteria</h3>
+                    <h3 className="text-base font-semibold text-grayscale-900">
+                        {m['clrTranscript.details.criteria']()}
+                    </h3>
                     {criteria?.narrative?.value && (
                         <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-grayscale-600">
                             {criteria.narrative.value}
@@ -141,11 +150,13 @@ export const ClrRecordDetails = ({ record }: { record?: ClrNormalizedRecord }) =
                             rel="noopener noreferrer"
                             className="text-sm text-grayscale-700 underline underline-offset-2 focus-visible:outline-emerald-600"
                         >
-                            View criteria
+                            {m['clrTranscript.details.viewCriteria']()}
                         </a>
                     ) : criteria?.id?.value ? (
                         <dl>
-                            <DetailRow label="Criteria reference">{criteria.id.value}</DetailRow>
+                            <DetailRow label={m['clrTranscript.details.criteriaReference']()}>
+                                {criteria.id.value}
+                            </DetailRow>
                         </dl>
                     ) : null}
                 </section>
@@ -153,7 +164,7 @@ export const ClrRecordDetails = ({ record }: { record?: ClrNormalizedRecord }) =
             {hasAdditional && (
                 <details className="group">
                     <summary className="cursor-pointer rounded-[20px] text-sm font-semibold text-grayscale-900 focus-visible:outline-emerald-600">
-                        Additional details
+                        {m['clrTranscript.details.additionalDetails']()}
                     </summary>
                     <div className="mt-4 space-y-4">
                         <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -163,7 +174,7 @@ export const ClrRecordDetails = ({ record }: { record?: ClrNormalizedRecord }) =
                                 </DetailRow>
                             ))}
                             {record.tags.length > 0 && (
-                                <DetailRow label="Tags">
+                                <DetailRow label={m['clrTranscript.details.tags']()}>
                                     <span className="flex flex-wrap gap-2">
                                         {record.tags.map(tag => (
                                             <span
@@ -177,18 +188,20 @@ export const ClrRecordDetails = ({ record }: { record?: ClrNormalizedRecord }) =
                                 </DetailRow>
                             )}
                             {record.achievementId?.value && (
-                                <DetailRow label="Achievement ID">
+                                <DetailRow label={m['clrTranscript.details.achievementId']()}>
                                     {record.achievementId.value}
                                 </DetailRow>
                             )}
                             {record.subjectId?.value && (
-                                <DetailRow label="Learner ID">{record.subjectId.value}</DetailRow>
+                                <DetailRow label={m['clrTranscript.details.learnerId']()}>
+                                    {record.subjectId.value}
+                                </DetailRow>
                             )}
                         </dl>
                         {achievementIdentifiers.length > 0 && (
                             <section className="space-y-2">
                                 <h4 className="text-sm font-semibold text-grayscale-900">
-                                    Achievement identifiers
+                                    {m['clrTranscript.details.achievementIdentifiers']()}
                                 </h4>
                                 <IdentifierRows identifiers={achievementIdentifiers} />
                             </section>
@@ -196,7 +209,7 @@ export const ClrRecordDetails = ({ record }: { record?: ClrNormalizedRecord }) =
                         {subjectIdentifiers.length > 0 && (
                             <section className="space-y-2">
                                 <h4 className="text-sm font-semibold text-grayscale-900">
-                                    Learner identifiers
+                                    {m['clrTranscript.details.learnerIdentifiers']()}
                                 </h4>
                                 <IdentifierRows identifiers={subjectIdentifiers} />
                             </section>

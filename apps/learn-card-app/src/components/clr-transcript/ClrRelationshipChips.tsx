@@ -13,8 +13,14 @@ const ClrRelationshipChips: React.FC<{
     if (relationships.length === 0) return null;
 
     return (
-        <div className="flex flex-wrap gap-2" aria-label="Related records">
+        <div
+            className="flex flex-wrap gap-2"
+            aria-label={m['clrTranscript.relationships.relatedRecords']()}
+        >
             {relationships.map(relationship => {
+                const label = m[`clrTranscript.relationships.${relationship.kind}`]({
+                    name: relationship.relatedRecordName,
+                });
                 const isNavigable = relationship.navigable && onSelectRecord !== undefined;
 
                 return (
@@ -29,14 +35,17 @@ const ClrRelationshipChips: React.FC<{
                                 type="button"
                                 className="inline-flex items-center gap-1.5 py-1.5 pl-3 pr-1 text-left text-xs font-medium hover:text-grayscale-900"
                                 onClick={() => onSelectRecord(relationship.relatedRecordId)}
-                                aria-label={`Open ${relationship.relatedRecordName}: ${relationship.label}`}
+                                aria-label={m['clrTranscript.relationships.openRecord']({
+                                    name: relationship.relatedRecordName,
+                                    label,
+                                })}
                             >
-                                <span>{relationship.label}</span>
+                                <span>{label}</span>
                                 <ChevronRight className="h-3.5 w-3.5" />
                             </button>
                         ) : (
                             <span className="py-1.5 pl-3 pr-2 text-xs font-medium">
-                                {relationship.label}
+                                {label}
                                 {relationship.resolution &&
                                     relationship.resolution !== 'resolved' && (
                                         <span className="ml-1 text-grayscale-500">
@@ -52,7 +61,7 @@ const ClrRelationshipChips: React.FC<{
                             </span>
                         )}
                         <div className="pr-1.5">
-                            <ClrSourceInfo field={relationship.source} label={relationship.label} />
+                            <ClrSourceInfo field={relationship.source} label={label} />
                         </div>
                     </div>
                 );

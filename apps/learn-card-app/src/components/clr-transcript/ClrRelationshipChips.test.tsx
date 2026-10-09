@@ -6,6 +6,7 @@ import { clrAchievementIdAssociations } from '../../../../../packages/credential
 import { normalizeClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 import ClrRelationshipChips from './ClrRelationshipChips';
+import * as m from '../../paraglide/messages.js';
 import { setLocale } from '../../paraglide/runtime.js';
 
 const model = normalizeClrTranscriptDisplayModel(
@@ -120,4 +121,51 @@ describe('ClrRelationshipChips', () => {
         expect(screen.getByText('(Target ambiguous)')).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /^Open / })).not.toBeInTheDocument();
     });
+});
+
+describe('localized relationship kinds', () => {
+    it.each(['es', 'fr', 'ar'] as const)(
+        'translates every relationship and action in %s using the same model',
+        locale => {
+            const source = Object.values(model.relationships).flat()[0];
+            const kinds = [
+                'parent',
+                'child',
+                'prerequisite',
+                'unlock',
+                'peer',
+                'equivalent',
+                'supersededBy',
+                'replacement',
+                'related',
+            ] as const;
+            const relationships = kinds.map(kind => ({
+                ...source,
+                kind,
+                relatedRecordName: 'Supplied record',
+                relatedRecordId: kind,
+                navigable: true,
+                resolution: 'resolved' as const,
+            }));
+            const select = vi.fn();
+            const view = render(
+                <ClrRelationshipChips relationships={relationships} onSelectRecord={select} />
+            );
+            setLocale(locale, { reload: false });
+            view.rerender(
+                <ClrRelationshipChips relationships={relationships} onSelectRecord={select} />
+            );
+            for (const kind of kinds) {
+                const label = m[`clrTranscript.relationships.${kind}`]({ name: 'Supplied record' });
+                const button = screen.getByRole('button', {
+                    name: m['clrTranscript.relationships.openRecord']({
+                        name: 'Supplied record',
+                        label,
+                    }),
+                });
+                fireEvent.click(button);
+                expect(select).toHaveBeenLastCalledWith(kind);
+            }
+        }
+    );
 });
