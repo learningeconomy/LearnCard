@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyStageConfig, resolveStageDefaults } from './stageConfig';
+import { applyStageConfig, resolveStageDefaults, stageKey } from './stageConfig';
 
 describe('resolveStageDefaults', () => {
     it('overlays the selected stage on top of base', () => {
@@ -76,5 +76,42 @@ describe('applyStageConfig', () => {
         const env: Record<string, string | undefined> = {};
         applyStageConfig({ base: { A: '' }, stages: { dev: { A: '' } }, stage: 'dev', env });
         expect(env).toEqual({});
+    });
+});
+
+describe('tenant selection', () => {
+    const stages = {
+        dev: { DOMAIN_NAME: 'staging.learncard' },
+        'scouts.dev': { DOMAIN_NAME: 'staging.scouts' },
+    };
+
+    it('keys the default tenant by stage and other tenants by tenant.stage', () => {
+        expect(stageKey('dev')).toBe('dev');
+        expect(stageKey('dev', 'learncard')).toBe('dev');
+        expect(stageKey('dev', 'scouts')).toBe('scouts.dev');
+    });
+
+    it('selects the tenant file from the option or CONFIG_TENANT', () => {
+        expect(resolveStageDefaults({ stages, stage: 'dev', tenant: 'scouts', env: {} })).toEqual({
+            DOMAIN_NAME: 'staging.scouts',
+        });
+        expect(
+            resolveStageDefaults({ stages, stage: 'dev', env: { CONFIG_TENANT: 'scouts' } })
+        ).toEqual({ DOMAIN_NAME: 'staging.scouts' });
+        expect(resolveStageDefaults({ stages, stage: 'dev', env: {} })).toEqual({
+            DOMAIN_NAME: 'staging.learncard',
+        });
+    });
+
+    it('fails closed for a named tenant without a stage file', () => {
+        expect(() =>
+            resolveStageDefaults({ stages, stage: 'production', tenant: 'scouts', env: {} })
+        ).toThrow('config.scouts.production.json');
+    });
+
+    it('keeps an unknown default-tenant stage on base config only', () => {
+        expect(
+            resolveStageDefaults({ base: { A: 'a' }, stages, stage: 'preview', env: {} })
+        ).toEqual({ A: 'a' });
     });
 });

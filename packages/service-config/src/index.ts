@@ -9,6 +9,8 @@ export {
 export {
     applyStageConfig,
     resolveStageDefaults,
+    stageKey,
+    DEFAULT_TENANT,
     type StageEnv,
     type StageMap,
     type ApplyStageConfigOptions,

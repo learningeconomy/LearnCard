@@ -20,7 +20,6 @@ const API_SECRETS = [
     'ESCROW_RELAY_URL',
     'ESCROW_RELAY_AUTH_TOKEN',
     'ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON',
-    'ESCROW_ENCLAVE_MODE',
     'KEYCLOAK_JWKS_URL_OVERRIDES',
 ];
 
@@ -28,6 +27,8 @@ const API_SECRETS = [
 // No stage-file values are forwarded from the deployment environment.
 exports.provider = ({ options = {} } = {}) => ({
     LAMBDA_STAGE: options.stage || 'dev',
+    // Non-secret product selector for the shared stage files (config.<tenant>.<stage>.json).
+    CONFIG_TENANT: process.env.CONFIG_TENANT || 'learncard',
     PORT: String(options.httpPort || '3000'),
     SA_SEED_KMS_KEY_ARN: { 'Fn::GetAtt': ['SigningAuthoritySeedKey', 'Arn'] },
     REDIS_HOST: { 'Fn::GetAtt': ['ElasticCacheCluster', 'RedisEndpoint.Address'] },
@@ -37,7 +38,13 @@ exports.provider = ({ options = {} } = {}) => ({
 
 // API/migration and the default-role didWeb/swagger functions get the bundle pointer.
 // Reading the bundle does not grant the default role signing-authority KMS access.
-exports.api = () => functionEnvironment({ always: ['RUNTIME_SECRETS_ID'], fallback: API_SECRETS });
+// ESCROW_ENCLAVE_MODE is a non-secret toggle: forward it in bundle mode too, so enabling
+// RUNTIME_SECRETS_ID can never silently disable escrow.
+exports.api = () =>
+    functionEnvironment({
+        always: ['RUNTIME_SECRETS_ID', 'ESCROW_ENCLAVE_MODE'],
+        fallback: API_SECRETS,
+    });
 
 // OIDC has its own signing-key secret and cannot read the runtime bundle.
 exports.oidc = () => pickNonEmpty(['OIDC_CLIENT_SECRET', 'OIDC_REDIRECT_URIS']);

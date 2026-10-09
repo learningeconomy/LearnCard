@@ -193,8 +193,9 @@ jobs:
               run: |
                   LC_STAGING='{"name":"LearnCard Staging","brain_env":"learn-cloud-network-api-staging","cloud_env":"learn-cloud-storage-api-staging","lca_api_env":"learn-card-app-api-staging"}'
                   LC_PRODUCTION='{"name":"LearnCard Production","brain_env":"learn-cloud-network-api-production","cloud_env":"learn-cloud-storage-api-production","lca_api_env":"learn-card-app-api-production"}'
-                  SCOUTS_STAGING='{"name":"ScoutPass Staging","brain_env":"scout-network-api-staging","cloud_env":"scout-storage-api-staging","lca_api_env":"scout-app-api-staging"}'
-                  SCOUTS_PRODUCTION='{"name":"ScoutPass Production","brain_env":"scout-network-api-production","cloud_env":"scout-storage-api-production","lca_api_env":"scout-app-api-production"}'
+                  # tenant selects the services' config.<tenant>.<stage>.json; LearnCard is the default.
+                  SCOUTS_STAGING='{"tenant":"scouts","name":"ScoutPass Staging","brain_env":"scout-network-api-staging","cloud_env":"scout-storage-api-staging","lca_api_env":"scout-app-api-staging"}'
+                  SCOUTS_PRODUCTION='{"tenant":"scouts","name":"ScoutPass Production","brain_env":"scout-network-api-production","cloud_env":"scout-storage-api-production","lca_api_env":"scout-app-api-production"}'
 
                   # Frontend legs mirror the service matrix, one Netlify site per GitHub
                   # Environment. capgo=false on ALL staging legs (automatic and manual): the
@@ -500,6 +501,7 @@ jobs:
                   # OIDC_EXPECTED_AUDIENCE, CREDENTIAL_REFRESH_ENABLED / _NOTIFICATION_WINDOW_HOURS,
                   # SKILL_EMBEDDING_GOOGLE_MODEL) is checked in under config/, not passed here.
                   RUNTIME_SECRETS_ID: ${{ vars.RUNTIME_SECRETS_ID }}
+                  CONFIG_TENANT: ${{ matrix.tenant || 'learncard' }}
                   # Credential fallbacks: used only when RUNTIME_SECRETS_ID is unset.
                   CREDENTIAL_REFRESH_DIGEST_SECRET: ${{ secrets.CREDENTIAL_REFRESH_DIGEST_SECRET }}
                   # LC-2189: private request fingerprint key, stable across Brain deploys.
@@ -620,6 +622,7 @@ jobs:
                   # SHARE_CONTENT_AUDIENCE / _SERVICE_DIDS / _VERIFICATION_METHODS /
                   # _NAMESPACE_BINDINGS) is checked in under config/, not passed here.
                   RUNTIME_SECRETS_ID: ${{ vars.RUNTIME_SECRETS_ID }}
+                  CONFIG_TENANT: ${{ matrix.tenant || 'learncard' }}
                   # Credential fallbacks: used only when RUNTIME_SECRETS_ID is unset.
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
                   LEARN_CLOUD_MONGO_URI: ${{ secrets.LEARN_CLOUD_MONGO_URI }}
@@ -725,6 +728,7 @@ jobs:
                   # supplies the credentials below and serverless.function-env.cjs omits the
                   # GitHub fallbacks. Non-secret per-stage config is checked in, not passed here.
                   RUNTIME_SECRETS_ID: ${{ vars.RUNTIME_SECRETS_ID }}
+                  CONFIG_TENANT: ${{ matrix.tenant || 'learncard' }}
                   # Credential fallbacks: used only when RUNTIME_SECRETS_ID is unset.
                   SEED: ${{ secrets.SEED }}
                   MONGO_URI: ${{ secrets.MONGO_URI }}

@@ -5,6 +5,8 @@ export interface BootstrapLambdaOptions<App> extends LoadRuntimeSecretsOptions {
     base?: StageEnv;
     stages?: StageMap;
     stage?: string;
+    /** Defaults to `CONFIG_TENANT`; see ApplyStageConfigOptions.tenant. */
+    tenant?: string;
     importApp: () => Promise<App>;
 }
 

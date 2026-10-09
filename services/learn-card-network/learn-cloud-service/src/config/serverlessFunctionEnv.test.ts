@@ -22,6 +22,7 @@ describe('learn-cloud-service serverless function environments', () => {
     it('omits all credential fallbacks in bundle mode', () => {
         vi.stubEnv('RUNTIME_SECRETS_ID', 'learn-cloud-service/dev/runtime-secrets');
         expect(Object.keys(functions.provider()).sort()).toEqual([
+            'CONFIG_TENANT',
             'LAMBDA_STAGE',
             'PORT',
             'REDIS_HOST',

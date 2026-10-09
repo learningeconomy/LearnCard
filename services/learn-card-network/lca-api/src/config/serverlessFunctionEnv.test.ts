@@ -24,12 +24,29 @@ describe('lca-api serverless function environments', () => {
         vi.stubEnv('RUNTIME_SECRETS_ID', 'lca-api/dev/runtime-secrets');
         expect(functions.api()).toEqual({ RUNTIME_SECRETS_ID: 'lca-api/dev/runtime-secrets' });
         expect(Object.keys(functions.provider()).sort()).toEqual([
+            'CONFIG_TENANT',
             'LAMBDA_STAGE',
             'PORT',
             'REDIS_HOST',
             'REDIS_PORT',
             'SA_SEED_KMS_KEY_ARN',
         ]);
+    });
+
+    it('keeps the non-secret escrow toggle in bundle mode', () => {
+        vi.stubEnv('RUNTIME_SECRETS_ID', 'lca-api/dev/runtime-secrets');
+        vi.stubEnv('ESCROW_ENCLAVE_MODE', 'software');
+        vi.stubEnv('ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON', '{"k":"secret"}');
+        expect(functions.api()).toEqual({
+            RUNTIME_SECRETS_ID: 'lca-api/dev/runtime-secrets',
+            ESCROW_ENCLAVE_MODE: 'software',
+        });
+    });
+
+    it('bakes the tenant selector into every function, defaulting to learncard', () => {
+        expect(functions.provider().CONFIG_TENANT).toBe('learncard');
+        vi.stubEnv('CONFIG_TENANT', 'scouts');
+        expect(functions.provider().CONFIG_TENANT).toBe('scouts');
     });
 
     it('retains the existing provider and API credentials only in fallback mode', () => {

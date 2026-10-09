@@ -36,6 +36,26 @@ The active stage is chosen in order:
 An unknown or unrecognized stage never falls back to another stage's file — it
 uses the base config only.
 
+### Tenant selection
+
+LearnCard and ScoutPass deploy the same three services with the same stage names
+(`dev`, `production`), so the stage alone cannot pick a file. `CONFIG_TENANT`
+names the product (default `learncard`):
+
+| `CONFIG_TENANT`     | Stage file                          |
+| ------------------- | ----------------------------------- |
+| `learncard` / unset | `config/config.<stage>.json`        |
+| `scouts`            | `config/config.scouts.<stage>.json` |
+
+The deploy workflow bakes it into every function from the matrix leg's `tenant`
+(ScoutPass legs set `scouts`). A named tenant **fails closed**: a missing
+`config.<tenant>.<stage>.json` stops startup instead of loading LearnCard's or the
+base settings. ScoutPass files were generated from the live ScoutPass Lambdas;
+ScoutPass production keeps `SA_SEED_ALLOW_LEGACY_READ=true` /
+`SA_SEED_ENCRYPT_WRITES=false` until its seed migration is confirmed complete.
+To add a tenant, add its stage files to each service and register them in
+`src/config/stageConfig.ts`.
+
 ### What belongs where
 
 | Kind                              | Lives in                                                  |

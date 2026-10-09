@@ -22,6 +22,8 @@ const PROVIDER_SECRETS = [
 // from checked-in stage config at cold start, never forwarded here.
 exports.provider = ({ options = {}, env = process.env } = {}) => ({
     LAMBDA_STAGE: options.stage || 'dev',
+    // Non-secret product selector for the shared stage files (config.<tenant>.<stage>.json).
+    CONFIG_TENANT: env.CONFIG_TENANT || 'learncard',
     PORT: String(options.httpPort || '3000'),
     REDIS_HOST: { 'Fn::GetAtt': ['ElasticCacheCluster', 'RedisEndpoint.Address'] },
     REDIS_PORT: { 'Fn::GetAtt': ['ElasticCacheCluster', 'RedisEndpoint.Port'] },
