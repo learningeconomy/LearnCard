@@ -188,7 +188,25 @@ PRs receive no AWS credentials: they validate the Terraform roots, run offline
 checks, and build the image without pushing. Credentialed plans run only from
 main, in the drift workflow and inside protected deploy jobs. Drift plan roles
 cover network and service, never the realm root or its state. Realm operations
-use the private runner. Plan files and raw diagnostics are never uploaded.
+use the private runner. Plan files are never uploaded. Failed plan/image-deploy apply raw logs
+are uploaded only to the private state bucket, never to GitHub artifacts or output.
+
+### Private failure diagnostics
+
+Failed plans (including drift checks) and image-deploy applies preserve raw logs at
+`s3://<state-bucket>/keycloak/<env>/diagnostics/<run-id>-<attempt>/{plan,apply}.log`.
+Only that location is printed; upload failure does not hide the deployment failure.
+Operators read these potentially sensitive logs using an allowlisted **state-bucket
+administrator role**, not the plan/deploy roles. Uploads use AES256 SSE-S3, matching
+the bucket encryption (not KMS). Current logs expire after 30 days; noncurrent
+versions expire 30 days after becoming noncurrent, and expired delete markers are
+cleaned up. Plan files remain local and are not uploaded.
+
+**Human bootstrap apply required in each account:** deploy and plan roles gain only
+`s3:PutObject` on `keycloak/<env>/diagnostics/*`, requiring AES256 encryption.
+The plan role needs this write-only exception because nightly drift uses
+`terraform-plan.sh`; it gains no diagnostic reads or service mutations. Apply the
+IAM and lifecycle changes before relying on uploads; CI cannot apply bootstrap.
 
 ### Promotion and manual operations
 
@@ -274,9 +292,24 @@ network/service provisioning remains the human runbook's responsibility.
 
 The S3 `deployment.json` journal is marked pending **before** mutation. An incomplete
 journal blocks later deployments, even if an old metadata object remains. Do not
-blindly rerun or mark it complete. After a failed recreate the pipeline attempts to
-stop tasks and leave scaling suspended; a killed runner or AWS outage can prevent
+blindly rerun or mark it complete. A recreate failure **before the new-image scale-up
+request** restores the captured task definition (re-registering it with its tags if
+Terraform deregistered it), original desired count and autoscaling state, then waits
+for stability. The journal becomes `rolled_back`, retaining the failed candidate SHA;
+this still blocks retries. Failed restoration falls back to stopped/suspended.
+Recovery disables circuit-breaker rollback until the old task definition and image
+are verified, and has a ten-minute wall-clock budget with a separate fallback reserve.
+Recreate refuses older release configurations that still enable Terraform's waiter;
+use a reviewed release with script-owned gating rather than overriding this guard.
+After scale-up is attempted, migration is possible: cleanup stops tasks and leaves
+scaling suspended, without image rollback. A killed runner or AWS outage can prevent
 cleanup, so an operator must verify capacity, autoscaling and task revisions.
+
+To reconcile `rolled_back`, verify the running image/source SHA, service health and
+scaling, reconcile Terraform's partially applied state/configuration and matching
+compatibility metadata, then write `keycloak/<env>/compat/deployment.json` back to
+`{"status":"complete","image":"<actual running digest>","sha":"<actual source SHA>","strategy":"recreate"}`.
+Do not reuse the failed candidate SHA just because it is in the rollback journal.
 
 For a rolling-compatible rollback, redeploy the previous retained digest through
 manual service apply (set the optional image override), or production promotion.
