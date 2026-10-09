@@ -18,3 +18,5 @@ App captures are additive: submitting a manifest merges it into the latest versi
 Practice mode gets a redesigned look: frosted-glass notices with clear icons and plain-language copy (at most three on screen, one on phones), and a "Practice mode" panel that lists the LearnCard features your app uses in plain words with a one-tap Publish button. Both follow the system light/dark setting and respect reduced motion.
 
 Practice mode now remembers a separate identity for each app, so apps sharing a local address publish separately. Start over from the panel or with `resetPracticeMode()` to clear just that app's practice history. App icons are picked more accurately and can travel with the publish link as a small image, with a size limit to keep links manageable.
+
+Calling `requestConsent()` without saying what you need now shows an amber "Choose what to ask for" notice in practice mode, and the panel marks it "Not set up yet", instead of pretending it will work when published. The publish page opens the consent setup pre-filled from what your app uses, reloads the preview once it's enabled, and checks with you before submitting without it.

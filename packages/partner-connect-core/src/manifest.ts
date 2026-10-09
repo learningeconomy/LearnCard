@@ -204,6 +204,9 @@ export const applyCapturedAction = (
             break;
         case 'REQUEST_CONSENT': {
             next.permissions = addUnique(next.permissions, 'request_consent');
+            if ((payload as { contractUri?: unknown } | undefined)?.contractUri) {
+                next.usedConsentContract = true;
+            }
             const scopes = (payload as { scopes?: unknown } | undefined)?.scopes;
             if (scopes && typeof scopes === 'object' && !Array.isArray(scopes)) {
                 try {
@@ -342,4 +345,27 @@ export const mergeCapturedManifests = <M extends MergeableManifest>(base: M, nex
     lastUpdatedAt: isMoreRecent(base.lastUpdatedAt, next.lastUpdatedAt)
         ? base.lastUpdatedAt
         : next.lastUpdatedAt,
+});
+
+/**
+ * True when an app asks for permission but never said what for, so LearnCard
+ * has nothing to show the learner until the developer chooses it.
+ */
+export const needsConsentSetup = (manifest: CapturedAppManifest): boolean =>
+    manifest.permissions.includes('request_consent') &&
+    manifest.consentRequests.length === 0 &&
+    !manifest.usedConsentContract;
+
+/**
+ * A sensible starting point for the consent designer, based on what the app
+ * was seen doing. Developers can change any of it.
+ */
+export const suggestConsentScopes = (manifest: CapturedAppManifest): ConsentRequest => ({
+    read: {
+        credentialCategories: manifest.usedLearnerContext
+            ? ['Achievement', 'Skill', 'Learning History']
+            : ['Achievement'],
+        personalFields: ['name'],
+    },
+    reason: 'Personalize your experience',
 });

@@ -2684,6 +2684,7 @@ export const AppManifestValidator = z
         permissions: z.array(z.string()).default([]),
         templates: z.array(CapturedTemplateRecordValidator).default([]),
         consentRequests: z.array(CapturedConsentRecordValidator).default([]),
+        usedConsentContract: z.boolean().optional(),
         featuresLaunched: z.array(z.string()).default([]),
         counterKeys: z.array(z.string()).default([]),
         usedLearnerContext: z.boolean(),

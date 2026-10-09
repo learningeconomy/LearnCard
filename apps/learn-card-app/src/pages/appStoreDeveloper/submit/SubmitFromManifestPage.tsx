@@ -39,6 +39,8 @@ import { useWallet } from 'learn-card-base';
 import {
     normalizeConsentRequest,
     canonicalConsentScopeString,
+    needsConsentSetup,
+    suggestConsentScopes,
 } from '@learncard/partner-connect-core';
 import type { ConsentRequest } from '@learncard/partner-connect-core';
 import { ConsentDesignerCard } from './ConsentDesignerCard';
@@ -300,7 +302,10 @@ const SubmitManifest: React.FC = () => {
     const [integrationHints, setIntegrationHints] = useState<IntegrationHint[]>([]);
     const [copiedHint, setCopiedHint] = useState<string | null>(null);
     const [contractUri, setContractUri] = useState<string | null>(null);
-    const [showConsentDesigner, setShowConsentDesigner] = useState(false);
+    const [showConsentDesigner, setShowConsentDesigner] = useState(true);
+    const [previewReloadKey, setPreviewReloadKey] = useState(0);
+    const [showConsentWarning, setShowConsentWarning] = useState(false);
+    const consentSetupRef = useRef<HTMLDivElement>(null);
     const [currentLaunchConfig, setCurrentLaunchConfig] = useState<PreviewLaunchConfig | null>(
         null
     );
@@ -835,6 +840,9 @@ const SubmitManifest: React.FC = () => {
         setDesignerConsentScopes(scopes);
         sessionStorage.setItem('lc-submit-designer-key', newKey);
         sessionStorage.setItem('lc-submit-designer-scopes', JSON.stringify(scopes));
+        dismissHint('consent-not-configured');
+        setShowConsentWarning(false);
+        setPreviewReloadKey(key => key + 1);
     };
 
     useEffect(() => {
@@ -1137,7 +1145,7 @@ const SubmitManifest: React.FC = () => {
         element?.focus({ preventScroll: true });
     };
 
-    const handleSubmit = async () => {
+    const handleSubmit = async ({ allowUnsetConsent = false } = {}) => {
         if (!manifest || isSubmitting) return;
         setFormError(null);
 
@@ -1153,6 +1161,17 @@ const SubmitManifest: React.FC = () => {
             focusField('productionUrl');
             return;
         }
+
+        if (
+            !allowUnsetConsent &&
+            needsConsentSetup(manifest) &&
+            !contractUri &&
+            !designerConsentScopes
+        ) {
+            setShowConsentWarning(true);
+            return;
+        }
+        setShowConsentWarning(false);
 
         isSubmittingRef.current = true;
         setIsSubmitting(true);
@@ -1484,10 +1503,11 @@ const SubmitManifest: React.FC = () => {
         );
     }
 
+    const consentUnset = needsConsentSetup(manifest) && !contractUri && !designerConsentScopes;
     const showConsentSetup =
-        manifest.permissions.includes('request_consent') &&
-        (manifest.consentRequests.length === 0 || Boolean(designerConsentScopes)) &&
+        (consentUnset || Boolean(designerConsentScopes)) &&
         !integrationHints.some(h => h.type === 'consent-not-configured');
+    const suggestedConsentScopes = suggestConsentScopes(manifest);
 
     const saveStatusText: Record<SaveState, string> = {
         idle: '',
@@ -1855,7 +1875,7 @@ const SubmitManifest: React.FC = () => {
             </fieldset>
 
             {(integrationHints.length > 0 || showConsentSetup) && (
-                <div className="mb-6 space-y-3">
+                <div ref={consentSetupRef} className="mb-6 space-y-3 scroll-mt-6">
                     {integrationHints.map(hint => {
                         if (hint.type === 'consent-not-configured') {
                             return (
@@ -1865,6 +1885,7 @@ const SubmitManifest: React.FC = () => {
                                     onEnable={handleEnableConsent}
                                     onDismiss={() => dismissHint(hint.type)}
                                     enabledScopes={designerConsentScopes}
+                                    suggestedScopes={suggestedConsentScopes}
                                 />
                             );
                         }
@@ -1938,6 +1959,7 @@ const SubmitManifest: React.FC = () => {
                                         sessionStorage.removeItem('lc-submit-designer-scopes');
                                     }}
                                     enabledScopes={designerConsentScopes}
+                                    suggestedScopes={suggestedConsentScopes}
                                 />
                             ) : (
                                 <div className="bg-white rounded-[20px] border border-grayscale-200 p-5 flex items-center justify-between gap-4">
@@ -2116,6 +2138,51 @@ const SubmitManifest: React.FC = () => {
                 </div>
             )}
 
+            {showConsentWarning && consentUnset && (
+                <div
+                    role="alert"
+                    className="mt-6 p-4 bg-amber-50 border border-amber-100 rounded-2xl animate-fade-in-up"
+                >
+                    <div className="flex items-start gap-2.5">
+                        <IonIcon
+                            icon={alertCircleOutline}
+                            className="text-amber-500 text-lg mt-0.5 shrink-0"
+                        />
+                        <div className="min-w-0">
+                            <p className="text-sm font-semibold text-amber-900">
+                                Your app asks for permission, but hasn't said what for
+                            </p>
+                            <p className="text-sm text-amber-800 leading-relaxed mt-0.5">
+                                Learners will see an error when it asks. It takes one tap to set up.
+                            </p>
+                            <div className="flex flex-wrap gap-2 mt-3">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowConsentDesigner(true);
+                                        setShowConsentWarning(false);
+                                        consentSetupRef.current?.scrollIntoView({
+                                            behavior: 'smooth',
+                                            block: 'start',
+                                        });
+                                    }}
+                                    className="py-2.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                                >
+                                    Set Up Consent
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleSubmit({ allowUnsetConsent: true })}
+                                    className="py-2.5 px-4 rounded-[20px] border border-amber-200 text-amber-900 font-medium text-sm hover:bg-amber-100 transition-colors"
+                                >
+                                    Submit Anyway
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div
                 className="sticky bottom-0 z-10 -mx-1 mt-6 px-1 pt-3 bg-gradient-to-t from-white via-white to-white/0"
                 style={{ paddingBottom: 'calc(1rem + var(--ion-safe-area-bottom, 0px))' }}
@@ -2164,7 +2231,7 @@ const SubmitManifest: React.FC = () => {
                     ) : (
                         <button
                             type="button"
-                            onClick={handleSubmit}
+                            onClick={() => handleSubmit()}
                             disabled={
                                 isSubmitting ||
                                 (listingMode === 'live' &&
@@ -2264,7 +2331,7 @@ const SubmitManifest: React.FC = () => {
                             className={`absolute inset-0 ${rightPaneTab === 'try' ? '' : 'hidden'}`}
                         >
                             <EmbedIframeModal
-                                key={previewAddress}
+                                key={`${previewAddress}#${previewReloadKey}`}
                                 embedUrl={previewAddress}
                                 appId={previewListingId || undefined}
                                 appName={appName || 'Preview App'}

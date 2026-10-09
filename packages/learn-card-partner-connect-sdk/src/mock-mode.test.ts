@@ -1659,11 +1659,51 @@ describe('mock UI', () => {
         lc.destroy();
     });
 
-    it('renders a positive-tone toast for requestConsent', async () => {
+    it('renders a positive-tone toast for requestConsent with scopes', async () => {
         const lc = createPartnerConnect({ mockOptions: { ui: true } });
-        await lc.requestConsent();
+        await lc.requestConsent({ read: { credentialCategories: ['Achievement'] } });
         await flush();
         expect(document.querySelector('.lc-mock-toast--positive')).not.toBeNull();
+    });
+
+    it('warns when requestConsent never says what it needs', async () => {
+        const namespace = 'consent-setup';
+        const lc = createPartnerConnect({
+            mock: true,
+            mockOptions: { ui: true, namespace, appId: namespace, publishPrompt: false },
+        });
+        localStorage.setItem(`${namespace}:manifest-hud-collapsed:${namespace}`, 'false');
+
+        await lc.requestConsent();
+        await flush();
+
+        const warning = document.querySelector('.lc-mock-toast--warning');
+        expect(warning?.textContent).toContain('Choose what to ask for');
+        expect(document.querySelector('.lc-mock-toast--positive')).toBeNull();
+        expect(document.querySelector('.lc-mock-hud-card')?.textContent).toContain(
+            'Not set up yet'
+        );
+        expect(document.querySelector('.lc-mock-hud-setup-dot')).not.toBeNull();
+
+        await lc.requestConsent({ read: { credentialCategories: ['Achievement'] } });
+        await flush();
+        expect(document.querySelector('.lc-mock-hud-card')?.textContent).not.toContain(
+            'Not set up yet'
+        );
+
+        lc.destroy();
+    });
+
+    it('treats an existing consent contract as set up', async () => {
+        const namespace = 'consent-contract';
+        const lc = createPartnerConnect({
+            mock: true,
+            mockOptions: { ui: true, namespace, appId: namespace, publishPrompt: false },
+        });
+        await lc.requestConsent('lc:contract:1');
+        await flush();
+        expect(document.querySelector('.lc-mock-toast--warning')).toBeNull();
+        lc.destroy();
     });
 
     it('surfaces a toast for every mocked action (not just console)', async () => {

@@ -3,6 +3,8 @@ import {
     decodeManifestFromUrl,
     createEmptyCapturedManifest,
     applyCapturedAction,
+    needsConsentSetup,
+    suggestConsentScopes,
 } from '../manifest';
 import type { CapturedAppManifest } from '../types';
 
@@ -99,5 +101,32 @@ describe('manifest', () => {
         expect(next.consentRequests).toHaveLength(1);
         expect(next.consentRequests[0].scopes.read.personalFields).toContain('name');
         expect(next.consentRequests[0].reason).toBe('Test reason');
+    });
+
+    it('flags consent requests that never said what they need', () => {
+        const blank = createEmptyCapturedManifest('https://example.com');
+        const asked = applyCapturedAction(blank, { action: 'REQUEST_CONSENT' });
+        expect(needsConsentSetup(asked)).toBe(true);
+
+        const scoped = applyCapturedAction(blank, {
+            action: 'REQUEST_CONSENT',
+            payload: { scopes: { read: { credentialCategories: ['Achievement'] } } },
+        });
+        expect(needsConsentSetup(scoped)).toBe(false);
+
+        const contract = applyCapturedAction(blank, {
+            action: 'REQUEST_CONSENT',
+            payload: { contractUri: 'lc:contract:1' },
+        });
+        expect(needsConsentSetup(contract)).toBe(false);
+        expect(needsConsentSetup(blank)).toBe(false);
+    });
+
+    it('suggests broader read access for apps that personalize with the profile', () => {
+        const blank = createEmptyCapturedManifest('https://example.com');
+        expect(suggestConsentScopes(blank).read?.credentialCategories).toEqual(['Achievement']);
+        const personal = applyCapturedAction(blank, { action: 'REQUEST_LEARNER_CONTEXT' });
+        expect(suggestConsentScopes(personal).read?.credentialCategories).toContain('Skill');
+        expect(suggestConsentScopes(personal).read?.personalFields).toEqual(['name']);
     });
 });

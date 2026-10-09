@@ -16,6 +16,7 @@ import {
     canonicalJsonString,
     compileInlineTemplate,
     encodeManifestForUrl,
+    needsConsentSetup,
     normalizeConsentRequest,
     renderCompiledTemplate,
     validateInlineTemplate,
@@ -96,7 +97,7 @@ interface TemplateQuery {
     boostUri?: unknown;
 }
 
-type ToastTone = 'default' | 'positive' | 'publish';
+type ToastTone = 'default' | 'positive' | 'publish' | 'warning';
 
 /** A toast body is a list of plain strings and bold (`{ b }`) segments. */
 type ToastSegment = string | { b: string };
@@ -155,6 +156,7 @@ interface HudFeature {
     icon: IconName;
     label: string;
     detail?: string;
+    needsSetup?: boolean;
 }
 
 const MAX_VISIBLE_TOASTS = 3;
@@ -268,6 +270,9 @@ const MOCK_STYLES = `
 }
 .lc-mock-tile svg { width: 18px; height: 18px; }
 .lc-mock-toast--positive .lc-mock-tile { background: linear-gradient(180deg, #34D399 0%, #059669 100%); }
+.lc-mock-toast--warning .lc-mock-tile { background: linear-gradient(180deg, #FBBF24 0%, #D97706 100%); }
+.lc-mock-hud-row-detail.is-setup { color: #B45309; font-weight: 500; }
+.lc-mock-hud-setup-dot { width: 8px; height: 8px; margin: 0 4px; border-radius: 999px; background: #F59E0B; flex: none; }
 
 .lc-mock-content { flex: 1; min-width: 0; }
 .lc-mock-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; font-size: 11.5px; font-weight: 600; color: var(--lc-ink-3); }
@@ -537,20 +542,11 @@ const readRenderedCredentialName = (credential: Record<string, unknown>): string
 
 const buildConsentScopeToastSegments = (payload: unknown): ToastSegment[] => {
     const scopes = (payload as { scopes?: unknown } | undefined)?.scopes;
-    const contractUri = (payload as { contractUri?: unknown } | undefined)?.contractUri;
 
     if (!scopes || typeof scopes !== 'object' || Array.isArray(scopes)) {
-        const parts: ToastSegment[] = [
+        return [
             'In LearnCard, the learner would review this request. Approved automatically here.',
         ];
-        if (!contractUri) {
-            parts.push(
-                '\nTip: say what you need — ',
-                { b: "requestConsent({ read: { credentialCategories: ['Achievement'] } })" },
-                ' — and it works when published with no extra setup.'
-            );
-        }
-        return parts;
     }
 
     const normalized = normalizeConsentRequest(scopes as ConsentRequest);
@@ -2073,7 +2069,12 @@ export class MockHost {
             }
 
             if (permission === 'request_consent') {
-                feature.detail = this.formatConsentSummary(manifest);
+                if (needsConsentSetup(manifest)) {
+                    feature.detail = 'Not set up yet';
+                    feature.needsSetup = true;
+                } else {
+                    feature.detail = this.formatConsentSummary(manifest);
+                }
             }
 
             if (permission === 'launch_feature' && manifest.featuresLaunched.length > 0) {
@@ -2301,15 +2302,25 @@ export class MockHost {
             const text = createEl('div', 'lc-mock-hud-row-text');
             text.appendChild(createEl('div', 'lc-mock-hud-row-label', feature.label));
             if (feature.detail) {
-                const detail = createEl('div', 'lc-mock-hud-row-detail', feature.detail);
-                detail.title = feature.detail;
+                const detail = createEl(
+                    'div',
+                    `lc-mock-hud-row-detail${feature.needsSetup ? ' is-setup' : ''}`,
+                    feature.detail
+                );
+                detail.title = feature.needsSetup
+                    ? 'You can choose what to ask for when you publish.'
+                    : feature.detail;
                 text.appendChild(detail);
             }
 
-            const check = createEl('span', 'lc-mock-hud-check');
-            check.appendChild(createIcon('check'));
+            const status = createEl(
+                'span',
+                feature.needsSetup ? 'lc-mock-hud-setup-dot' : 'lc-mock-hud-check'
+            );
+            if (feature.needsSetup) status.setAttribute('aria-label', 'Needs setup');
+            else status.appendChild(createIcon('check'));
 
-            row.append(glyph, text, check);
+            row.append(glyph, text, status);
             list.appendChild(row);
         }
         card.appendChild(list);
@@ -2595,10 +2606,25 @@ export class MockHost {
     }
 
     private showConsentToast(payload: unknown, redirectIgnored: boolean): void {
-        const segments = buildConsentScopeToastSegments(payload);
-        if (redirectIgnored) segments.push(' Redirect skipped in practice.');
+        const scopes = (payload as { scopes?: unknown } | undefined)?.scopes;
+        const contractUri = (payload as { contractUri?: unknown } | undefined)?.contractUri;
 
-        this.toast({ icon: 'shield', tone: 'positive', segments });
+        if (!scopes && !contractUri) {
+            this.toast({
+                icon: 'shield',
+                tone: 'warning',
+                ttl: 8000,
+                title: 'Choose what to ask for',
+                segments: [
+                    'Approved here, but once published LearnCard needs to know what to ask the learner. You can choose it when you publish, or say it in code: ',
+                    { b: "requestConsent({ read: { credentialCategories: ['Achievement'] } })" },
+                ],
+            });
+        } else {
+            const segments = buildConsentScopeToastSegments(payload);
+            if (redirectIgnored) segments.push(' Redirect skipped in practice.');
+            this.toast({ icon: 'shield', tone: 'positive', segments });
+        }
 
         if (redirectIgnored) {
             this.note(

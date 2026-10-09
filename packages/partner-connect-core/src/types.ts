@@ -295,6 +295,8 @@ export interface CapturedAppManifest {
     templates: CapturedTemplateRecord[];
     /** Distinct consent scope sets requested. */
     consentRequests: CapturedConsentRecord[];
+    /** True once requestConsent was called with an existing contractUri. */
+    usedConsentContract?: boolean;
     /** Distinct feature paths passed to launchFeature. */
     featuresLaunched: string[];
     /** Distinct counter keys used. */

@@ -21,6 +21,7 @@ interface ConsentDesignerCardProps {
     onEnable: (scopes: ConsentRequest) => Promise<void>;
     onDismiss: () => void;
     enabledScopes?: ConsentRequest | null;
+    suggestedScopes?: ConsentRequest;
 }
 
 const CATEGORY_DESCRIPTIONS: Record<WalletCategory, string> = {
@@ -51,17 +52,20 @@ export const ConsentDesignerCard: React.FC<ConsentDesignerCardProps> = ({
     onEnable,
     onDismiss,
     enabledScopes,
+    suggestedScopes,
 }) => {
+    const initialScopes = enabledScopes ?? suggestedScopes;
+    const isSuggested = !enabledScopes && Boolean(suggestedScopes);
     const [readCategories, setReadCategories] = useState<Set<WalletCategory>>(
-        new Set(enabledScopes?.read?.credentialCategories || [])
+        new Set(initialScopes?.read?.credentialCategories || [])
     );
     const [readFields, setReadFields] = useState<Set<PersonalField>>(
-        new Set(enabledScopes?.read?.personalFields || [])
+        new Set(initialScopes?.read?.personalFields || [])
     );
     const [writeCategories, setWriteCategories] = useState<Set<WalletCategory>>(
-        new Set(enabledScopes?.write?.credentialCategories || [])
+        new Set(initialScopes?.write?.credentialCategories || [])
     );
-    const [reason, setReason] = useState(enabledScopes?.reason || '');
+    const [reason, setReason] = useState(initialScopes?.reason || '');
 
     const [isEnabling, setIsEnabling] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -113,7 +117,11 @@ export const ConsentDesignerCard: React.FC<ConsentDesignerCardProps> = ({
             await onEnable(request);
             setIsSuccess(true);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to enable consent');
+            setError(
+                err instanceof Error && /network|fetch/i.test(err.message)
+                    ? 'Connection issue. Please check your internet and try again.'
+                    : 'Something went wrong. Please try again.'
+            );
         } finally {
             setIsEnabling(false);
         }
@@ -170,7 +178,8 @@ export const ConsentDesignerCard: React.FC<ConsentDesignerCardProps> = ({
                             Consent is ready
                         </h4>
                         <p className="text-sm text-emerald-700">
-                            Your app's requestConsent() now just works. Try it in the preview →
+                            Your app can now ask learners for permission. We reloaded the preview so
+                            you can try it.
                         </p>
                     </div>
                 </div>
@@ -254,7 +263,9 @@ export const ConsentDesignerCard: React.FC<ConsentDesignerCardProps> = ({
     return (
         <div className="bg-white border border-grayscale-300 rounded-2xl p-5 relative animate-fade-in-up shadow-sm">
             <button
+                type="button"
                 onClick={onDismiss}
+                aria-label="Dismiss"
                 className="absolute top-3 right-3 p-1 text-grayscale-400 hover:text-grayscale-600 hover:bg-grayscale-100 rounded-full transition-colors"
             >
                 <IonIcon icon={closeOutline} className="w-4 h-4" />
@@ -267,8 +278,14 @@ export const ConsentDesignerCard: React.FC<ConsentDesignerCardProps> = ({
                         Set up consent
                     </h4>
                     <p className="text-sm text-grayscale-600">
-                        Choose what {appName || 'your app'} can ask for. No code changes needed.
+                        {appName || 'Your app'} asks learners for permission. Choose what it can ask
+                        for — no code changes needed.
                     </p>
+                    {isSuggested && (
+                        <p className="text-xs text-grayscale-500 mt-1.5">
+                            We picked these based on what your app uses. Change anything you like.
+                        </p>
+                    )}
                 </div>
             </div>
 
@@ -384,7 +401,7 @@ export const ConsentDesignerCard: React.FC<ConsentDesignerCardProps> = ({
                                 Setting up...
                             </>
                         ) : (
-                            'Enable consent'
+                            'Enable Consent'
                         )}
                     </button>
                 </div>
