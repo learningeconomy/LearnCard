@@ -2,7 +2,7 @@ import { expect, test } from './fixtures/mocked-test';
 import type { Page } from '@playwright/test';
 import { TEST_USER_PROFILE_ID } from './constants';
 import { installNetwork } from './mocks/network';
-import { waitForAuthenticatedState } from './test.helpers';
+import { signInMockUser } from './mocks/auth';
 
 const HARNESS_PATH = '/recovery-prompt-harness.html';
 const prompt = (page: Page) => page.getByTestId('dashboard-recovery-prompt');
@@ -129,7 +129,7 @@ test.describe('Dashboard recovery prompt @mocked', () => {
 
     test('does not render the recovery prompt on LaunchPad', async ({ page }) => {
         await installNetwork(page);
-        await waitForAuthenticatedState(page, {
+        await signInMockUser(page, {
             path: '/launchpad/browse?tab=All',
             profileId: TEST_USER_PROFILE_ID,
         });

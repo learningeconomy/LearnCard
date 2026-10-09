@@ -7,7 +7,7 @@ import { TEST_USER_PROFILE_ID, TEST_USER_SEED } from './constants';
 import { installNetwork } from './mocks/network';
 import type { BrainOutputs } from './mocks/trpc';
 import { mockLaunchDarkly } from './route.helpers';
-import { waitForAuthenticatedState } from './test.helpers';
+import { signInMockUser } from './mocks/auth';
 
 const contractUri =
     'lc:network:localhost%3A4000/trpc:contract:79672d1a-fe7c-5715-95db-27586e529934';
@@ -232,7 +232,7 @@ test.describe('Sample persona @mocked', () => {
             removedSharedUris: 0,
         }));
 
-        await waitForAuthenticatedState(page, {
+        await signInMockUser(page, {
             path: '/wallet',
             profileId: TEST_USER_PROFILE_ID,
         });

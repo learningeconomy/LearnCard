@@ -36,14 +36,14 @@ the describe title are how the mock config discovers it):
 ```ts
 import { test, expect } from './fixtures/mocked-test';
 import { installNetwork } from './mocks/network';
-import { waitForAuthenticatedState } from './test.helpers';
+import { signInMockUser } from './mocks/auth';
 import { TEST_USER_PROFILE_ID } from './constants';
 
 test.describe('My feature @mocked', () => {
     test.beforeEach(async ({ page }) => {
         // MUST run before any navigation so boot calls are served.
         await installNetwork(page);
-        await waitForAuthenticatedState(page, {
+        await signInMockUser(page, {
             path: '/my-page',
             profileId: TEST_USER_PROFILE_ID,
         });
@@ -54,6 +54,12 @@ test.describe('My feature @mocked', () => {
     });
 });
 ```
+
+`signInMockUser` requires the mocked profile lookup to return the requested `profileId`.
+It waits for that response and the authenticated redirect, rather than probing for an
+optional profile-setup modal. The `next` redirect lands directly on the requested page
+without a second full app load. Missing profiles and failed lookups fail the test.
+Real-backend tests keep using `waitForAuthenticatedState` and its onboarding fallback.
 
 Run it: `pnpm test-mock` (or `pnpm exec nx run learn-card-app:test-mock`). Stop docker
 first to prove it's truly offline.

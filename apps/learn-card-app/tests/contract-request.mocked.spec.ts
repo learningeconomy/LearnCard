@@ -3,7 +3,7 @@ import { test, expect } from './fixtures/mocked-test';
 import { installNetwork, ABORT } from './mocks/network';
 import type { BrainOutputs, CloudOutputs } from './mocks/trpc';
 import { mockLaunchDarkly } from './route.helpers';
-import { waitForAuthenticatedState } from './test.helpers';
+import { signInMockUser } from './mocks/auth';
 import { TEST_USER_PROFILE_ID } from './constants';
 import { randomUUID } from 'node:crypto';
 import type { Page } from '@playwright/test';
@@ -210,7 +210,7 @@ const setup = async (
             : [],
     }));
     mock.on('contracts.getConsentFlowCredentials', () => ({ hasMore: false, records: [] }));
-    await waitForAuthenticatedState(
+    await signInMockUser(
         page,
         {
             path: '/wallet',

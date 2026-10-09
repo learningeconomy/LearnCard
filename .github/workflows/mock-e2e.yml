@@ -38,7 +38,7 @@ jobs:
               run: bunx playwright install --with-deps firefox
 
             - name: Run affected mocked E2E
-              run: bunx nx affected --target=test-mock --base=origin/main --head=HEAD
+              run: bunx nx affected --target=test-mock --base=origin/main --head=HEAD --output-style=stream
 
             - name: Upload Playwright report
               if: always()
