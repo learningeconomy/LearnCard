@@ -14,6 +14,51 @@ vi.mock('../components/LaunchConfigStep', () => ({
 const value = { type: 'DIRECT_LINK' as const, configJson: '{"url":"https://quiz.app"}' };
 
 describe('LaunchSettingsSection', () => {
+    it("remembers each type's settings when switching back", () => {
+        const onChange = vi.fn();
+        const { rerender } = render(
+            <LaunchSettingsSection
+                value={value}
+                onChange={onChange}
+                managedByApp={false}
+                open
+                onOpenChange={vi.fn()}
+            />
+        );
+        fireEvent.click(screen.getByRole('button', { name: /AI tutor/ }));
+        rerender(
+            <LaunchSettingsSection
+                value={{ type: 'AI_TUTOR', configJson: '{}' }}
+                onChange={onChange}
+                managedByApp={false}
+                open
+                onOpenChange={vi.fn()}
+            />
+        );
+        fireEvent.click(screen.getByRole('button', { name: /Opens in a new tab/ }));
+        expect(onChange).toHaveBeenLastCalledWith(value);
+    });
+
+    it('warns before changing how an app built with the SDK opens', () => {
+        render(
+            <LaunchSettingsSection
+                value={{ type: 'EMBEDDED_IFRAME', configJson: '{"url":"https://a.app"}' }}
+                onChange={vi.fn()}
+                managedByApp
+                open
+                onOpenChange={vi.fn()}
+            />
+        );
+        fireEvent.click(screen.getByRole('button', { name: /Change how it opens/ }));
+        expect(screen.getByText(/will stop signing in/)).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Keep It' }));
+        expect(screen.queryByRole('button', { name: /AI tutor/ })).toBeNull();
+
+        fireEvent.click(screen.getByRole('button', { name: /Change how it opens/ }));
+        fireEvent.click(screen.getByRole('button', { name: 'Change Anyway' }));
+        expect(screen.getByRole('button', { name: /AI tutor/ })).toBeInTheDocument();
+    });
+
     it('summarizes how the app opens and changes type', () => {
         const onChange = vi.fn();
         const { rerender } = render(

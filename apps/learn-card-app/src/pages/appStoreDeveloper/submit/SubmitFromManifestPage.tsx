@@ -45,6 +45,7 @@ import { ConsentDesignerCard } from './ConsentDesignerCard';
 import { findReusableListing } from './listingReuse';
 import { ListingStatusBanner } from './ListingStatusBanner';
 import { AppStatusView } from './AppStatusView';
+import { displayHost } from './testAddress';
 import { getAppStatusPath } from '../apps/myApps';
 import { EMBED_APP_GUIDE, findIntegrationForApp, getAppIntegrationRepair } from './appIntegration';
 import { getListingMode, isListingLocked, withPendingChanges } from './listingLifecycle';
@@ -1972,6 +1973,10 @@ export const SubmitFromManifestPage: React.FC = () => {
                     </div>
                     {isLive && rightPaneTab === 'try' && (
                         <div className="flex items-center gap-3">
+                            <span className="hidden lg:inline text-xs text-grayscale-500 truncate max-w-[180px]">
+                                Previewing{' '}
+                                <span className="font-medium">{displayHost(manifest.appUrl)}</span>
+                            </span>
                             <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                 Watching

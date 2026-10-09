@@ -18,6 +18,7 @@ import { DEFAULT_APP_ICON_URL } from './constants';
 import { getAppStatusPath } from '../apps/myApps';
 import { useDeveloperPortalContext } from '../DeveloperPortalContext';
 import { LaunchSettingsSection } from './LaunchSettingsSection';
+import { AppPreviewPane } from './AppPreviewPane';
 import type { LaunchSettings } from './LaunchSettingsSection';
 import { getLaunchSettingsError, parseLaunchConfig } from './launchSettings';
 import { ListingStatusBanner } from './ListingStatusBanner';
@@ -47,7 +48,8 @@ export const EditListingPage: React.FC = () => {
     const history = useHistory();
     const { integrationId, listingId } = useParams<{ integrationId: string; listingId: string }>();
     const { initWallet } = useWallet();
-    const { useUpdateListing, useSubmitForReview } = useDeveloperPortal();
+    const { useUpdateListing, useSubmitForReview, useManifestVersions } = useDeveloperPortal();
+    const { data: manifestVersions } = useManifestVersions(integrationId);
     const { mutateAsync: saveListing } = useUpdateListing();
     const { mutateAsync: submitListingForReview } = useSubmitForReview();
     const { isDesktop } = useDeviceTypeByWidth();
@@ -80,12 +82,15 @@ export const EditListingPage: React.FC = () => {
     const launchRef = useRef<HTMLDivElement>(null);
 
     const { integrations } = useDeveloperPortalContext();
-    const managedByApp = Boolean(
-        (
-            integrations.find(integration => integration.id === integrationId)?.guideState as
-                Record<string, unknown> | undefined
-        )?.publishedFromAppUrl
-    );
+    // Apps published from their own code have recorded versions of what they use.
+    const managedByApp =
+        (manifestVersions?.records.length ?? 0) > 0 ||
+        Boolean(
+            (
+                integrations.find(integration => integration.id === integrationId)?.guideState as
+                    Record<string, unknown> | undefined
+            )?.publishedFromAppUrl
+        );
 
     const iconRef = useRef<HTMLDivElement>(null);
     const nameRef = useRef<HTMLInputElement>(null);
@@ -363,6 +368,7 @@ export const EditListingPage: React.FC = () => {
 
                                 {launch && (
                                     <LaunchSettingsSection
+                                        key={managedByApp ? 'managed' : 'manual'}
                                         value={launch}
                                         onChange={updateLaunch}
                                         managedByApp={managedByApp}
@@ -454,11 +460,20 @@ export const EditListingPage: React.FC = () => {
 
                     {isDesktop && (
                         <div className="w-1/2 max-w-2xl shrink-0 bg-grayscale-10 border-l border-grayscale-200">
-                            <div className="sticky top-0 h-[calc(100vh-80px)] overflow-y-auto p-6">
-                                <p className="text-xs font-medium text-grayscale-500 mb-3 text-center">
-                                    How it looks in the store
-                                </p>
-                                {preview}
+                            <div className="sticky top-0 h-[calc(100vh-80px)] p-6">
+                                <AppPreviewPane
+                                    listingId={listingId}
+                                    appName={data.name || 'Your app'}
+                                    liveAddress={
+                                        launch?.type === 'EMBEDDED_IFRAME'
+                                            ? parseLaunchConfig(launch.configJson).url || null
+                                            : null
+                                    }
+                                    launchConfig={
+                                        launch ? parseLaunchConfig(launch.configJson) : {}
+                                    }
+                                    storePreview={preview}
+                                />
                             </div>
                         </div>
                     )}
