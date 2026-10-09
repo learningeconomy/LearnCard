@@ -92,7 +92,7 @@
         "jspdf": "4.2.1",
         "jszip": "^3.10.1",
         "jwt-decode": "^3.1.2",
-        "katex": "^0.16.22",
+        "katex": "^0.19.0",
         "launchdarkly-react-client-sdk": "^3.1.1",
         "localforage": "^1.9.0",
         "lodash": "^4.17.21",
@@ -259,7 +259,7 @@
         "vite": "^6.4.3",
         "vite-plugin-svgr": "^3.3.0",
         "vite-tsconfig-paths": "4.2.3",
-        "vitest": "4.1.11",
+        "vitest": "5.0.3",
         "wait-on": "6.0.1"
     },
     "description": "An Ionic project"
