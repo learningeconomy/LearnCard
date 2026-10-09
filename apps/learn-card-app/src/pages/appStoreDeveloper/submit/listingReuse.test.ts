@@ -46,11 +46,10 @@ describe('findReusableListing', () => {
         expect(findReusableListing(listings, context)?.listing_id).toBe('preview');
     });
 
-    it('reuses a draft left by an older publish flow instead of creating another', () => {
+    it('does not reuse an arbitrary embedded draft', () => {
         const listings = [listing('legacy-1'), listing('legacy-2')];
 
-        expect(findReusableListing(listings, context)?.listing_id).toBe('legacy-1');
-        expect(findReusableListing(listings, context)?.listing_id).toBe('legacy-1');
+        expect(findReusableListing(listings, context)).toBeUndefined();
     });
 
     it('ignores submitted listings and other app types when nothing was stored', () => {
@@ -65,6 +64,6 @@ describe('findReusableListing', () => {
     it('ignores a stored listing that no longer exists', () => {
         expect(
             findReusableListing([listing('a')], { ...context, storedListingId: 'gone' })?.listing_id
-        ).toBe('a');
+        ).toBeUndefined();
     });
 });

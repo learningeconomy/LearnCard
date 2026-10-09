@@ -9,18 +9,34 @@ type IntegrationLike = Pick<LCNIntegration, 'id' | 'name'> &
 const readAppUrl = (integration: IntegrationLike): unknown =>
     (integration.guideState as Record<string, unknown> | undefined)?.[APP_URL_KEY];
 
-/**
- * Finds the project a publish link belongs to. Projects remember the app address they
- * were published from; older ones were named after the app's host.
- */
+/** Address matches are hints, not proof of app identity. */
+export const getAppMatch = (
+    integration: IntegrationLike,
+    appKey?: string,
+    listingName?: string,
+    suggestedName?: string
+): 'reuse' | 'confirm' | 'exclude' => {
+    const publishedKey = integration.guideState?.publishedAppKey;
+    if (publishedKey) return publishedKey === appKey ? 'reuse' : 'exclude';
+    return !appKey && listingName !== undefined && listingName === suggestedName
+        ? 'reuse'
+        : 'confirm';
+};
+
+/** Find a key match first, otherwise an unclaimed address-level candidate. */
 export const findIntegrationForApp = <T extends IntegrationLike>(
     integrations: T[] | undefined,
-    appUrl: string
+    appUrl: string,
+    appKey?: string
 ): T | undefined => {
-    const host = new URL(appUrl).host;
     return (
-        integrations?.find(integration => readAppUrl(integration) === appUrl) ??
-        integrations?.find(integration => integration.name === host)
+        (appKey
+            ? integrations?.find(integration => integration.guideState?.publishedAppKey === appKey)
+            : undefined) ??
+        integrations?.find(
+            integration =>
+                !integration.guideState?.publishedAppKey && readAppUrl(integration) === appUrl
+        )
     );
 };
 
@@ -30,7 +46,7 @@ export const findIntegrationForApp = <T extends IntegrationLike>(
  */
 export const getAppIntegrationRepair = (
     integration: IntegrationLike,
-    { appUrl, appName }: { appUrl: string; appName: string }
+    { appUrl, appName, appKey }: { appUrl: string; appName: string; appKey?: string }
 ): LCNIntegrationUpdateType | null => {
     const host = new URL(appUrl).host;
     const name = appName.trim();
@@ -38,8 +54,15 @@ export const getAppIntegrationRepair = (
 
     if (name && integration.name === host) updates.name = name;
     if (integration.guideType !== EMBED_APP_GUIDE) updates.guideType = EMBED_APP_GUIDE;
-    if (readAppUrl(integration) !== appUrl) {
-        updates.guideState = { ...(integration.guideState ?? {}), [APP_URL_KEY]: appUrl };
+    if (
+        readAppUrl(integration) !== appUrl ||
+        (appKey && integration.guideState?.publishedAppKey !== appKey)
+    ) {
+        updates.guideState = {
+            ...(integration.guideState ?? {}),
+            [APP_URL_KEY]: appUrl,
+            ...(appKey ? { publishedAppKey: appKey } : {}),
+        };
     }
 
     return Object.keys(updates).length > 0 ? updates : null;

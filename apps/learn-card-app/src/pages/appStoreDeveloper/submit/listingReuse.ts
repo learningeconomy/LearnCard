@@ -28,8 +28,8 @@ const readConfig = (listing: ListingRecord): { devPreviewKey?: unknown; url?: un
 /**
  * Picks the listing this publish link should keep working on, so re-opening a link
  * never creates another listing for the same app. In order: the listing this browser
- * last used, a preview draft made for this app, then any embedded-app draft already
- * on the app (drafts left by older publish flows carry no preview marker).
+ * last used, then a preview draft made for this app. Project identity must be
+ * resolved by the caller before using this helper.
  */
 export const findReusableListing = <T extends ListingRecord>(
     listings: T[],
@@ -55,5 +55,5 @@ export const findReusableListing = <T extends ListingRecord>(
     });
     if (previewDraft) return previewDraft;
 
-    return drafts.find(listing => listing.launch_type === 'EMBEDDED_IFRAME');
+    return undefined;
 };

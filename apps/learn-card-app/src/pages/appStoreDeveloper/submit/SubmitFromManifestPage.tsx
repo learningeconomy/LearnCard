@@ -33,7 +33,7 @@ import {
     decodeManifestFromUrl,
     isAppBuilderPreviewHost,
 } from '@learncard/partner-connect-core';
-import type { CapturedAppManifest } from '@learncard/partner-connect-core';
+import type { CapturedAppManifest as SDKCapturedAppManifest } from '@learncard/partner-connect-core';
 import type { IntegrationHint } from '../../../hooks/post-message/useLearnCardPostMessage.handlers';
 import { useWallet } from 'learn-card-base';
 import {
@@ -48,7 +48,12 @@ import { AppStatusView } from './AppStatusView';
 import { TestAddressBar } from './TestAddressBar';
 import { useTestAddress } from './useTestAddress';
 import { getAppStatusPath } from '../apps/myApps';
-import { EMBED_APP_GUIDE, findIntegrationForApp, getAppIntegrationRepair } from './appIntegration';
+import {
+    EMBED_APP_GUIDE,
+    findIntegrationForApp,
+    getAppIntegrationRepair,
+    getAppMatch,
+} from './appIntegration';
 import { getListingMode, isListingLocked, withPendingChanges } from './listingLifecycle';
 import { ListingDetailsFields, StandOutSection } from './ListingEditor';
 import { StoreListingPreview } from './StoreListingPreview';
@@ -64,6 +69,12 @@ import {
 import type { ListingData, ListingDetails } from './listingForm';
 import { getFirstMissingField, getProductionUrlError } from './listingValidation';
 import type { ListingField } from './listingValidation';
+
+// Older installed SDK declarations may predate these optional capture fields.
+type CapturedAppManifest = SDKCapturedAppManifest & {
+    appKey?: string;
+    suggestedIconDataUrl?: string;
+};
 
 interface PreviewLaunchConfig {
     url: string;
@@ -93,14 +104,12 @@ interface StoredProvision {
     listingId?: string;
 }
 
-// Provisioning is remembered per captured appUrl (origin + pathname) — the only part of
-// the manifest that is stable as the app evolves. Keying by name/title would make every
-// retitled capture look like a brand new app and silently drop the change diff.
-const getProvisionKey = (appUrl: string): string => `partner-preview:${appUrl}`;
+const getProvisionKey = (appUrl: string, appKey?: string): string =>
+    `partner-preview:${appUrl}${appKey ? `#${appKey}` : ''}`;
 
-const readStoredProvision = (appUrl: string): StoredProvision | null => {
+const readStoredProvision = (appUrl: string, appKey?: string): StoredProvision | null => {
     try {
-        const raw = localStorage.getItem(getProvisionKey(appUrl));
+        const raw = localStorage.getItem(getProvisionKey(appUrl, appKey));
         if (!raw) return null;
         const parsed = JSON.parse(raw) as StoredProvision;
         return typeof parsed?.integrationId === 'string' ? parsed : null;
@@ -109,13 +118,15 @@ const readStoredProvision = (appUrl: string): StoredProvision | null => {
     }
 };
 
-const storeProvision = (appUrl: string, provision: StoredProvision): void => {
+const storeProvision = (appUrl: string, provision: StoredProvision, appKey?: string): void => {
     try {
-        localStorage.setItem(getProvisionKey(appUrl), JSON.stringify(provision));
+        localStorage.setItem(getProvisionKey(appUrl, appKey), JSON.stringify(provision));
     } catch {
-        // Storage unavailable — the diff check falls back to the host-name lookup.
+        // Storage unavailable — project identity remains available on the server.
     }
 };
+
+const serverManifest = ({ suggestedIconDataUrl: _icon, ...rest }: CapturedAppManifest) => rest;
 
 // Mirrors ALLOWED_IMAGE_DOMAINS in brain-service app-store routes — captured favicons
 // from arbitrary sites will be rejected server-side, so filter them client-side too.
@@ -180,6 +191,11 @@ const AUTOSAVE_DELAY_MS = 800;
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
 export const SubmitFromManifestPage: React.FC = () => {
+    const location = useLocation();
+    return <SubmitManifest key={location.search} />;
+};
+
+const SubmitManifest: React.FC = () => {
     const history = useHistory();
     const location = useLocation();
     const [manifest, setManifest] = useState<CapturedAppManifest | null>(null);
@@ -194,6 +210,19 @@ export const SubmitFromManifestPage: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showMissingHint, setShowMissingHint] = useState(false);
     const [isRestoring, setIsRestoring] = useState(true);
+    const [reuseCandidate, setReuseCandidate] = useState<{
+        integrationId: string;
+        listing: AppStoreListing;
+    } | null>(null);
+    const [isChoosing, setIsChoosing] = useState(false);
+    const decisionKey = `lc-submit-choice:${new URLSearchParams(location.search).get('manifest') ?? ''}`;
+    const rememberChoice = (choice: StoredProvision | 'new') => {
+        try {
+            sessionStorage.setItem(decisionKey, JSON.stringify(choice));
+        } catch (e) {
+            log.debug('listing.choice-storage.failed', e);
+        }
+    };
     const [isEditing, setIsEditing] = useState(false);
     const [celebrate, setCelebrate] = useState(false);
     const [ownedListing, setOwnedListing] = useState<AppStoreListing | null>(null);
@@ -320,13 +349,18 @@ export const SubmitFromManifestPage: React.FC = () => {
     const updateIntegration = useUpdateIntegration();
 
     // Projects made by publish links are named after the app and use the app dashboard.
-    const repairAppIntegration = async (integrationId: string, displayName: string) => {
+    const repairAppIntegration = async (
+        integrationId: string,
+        displayName: string,
+        required = false
+    ) => {
         const integration = integrations?.find(i => i.id === integrationId);
         if (!integration || !manifest) return;
 
         const updates = getAppIntegrationRepair(integration, {
             appUrl: manifest.appUrl,
             appName: displayName,
+            appKey: manifest.appKey,
         });
         if (!updates) return;
 
@@ -334,29 +368,25 @@ export const SubmitFromManifestPage: React.FC = () => {
             await updateIntegration.mutateAsync({ id: integrationId, updates });
         } catch (e) {
             log.warn('integration.repair.failed', e, { integrationId });
+            if (required) throw e;
         }
     };
 
     useEffect(() => {
-        if (!manifest || diffApplied) return;
+        if (!manifest || diffApplied || isRestoring || reuseCandidate || !previewIntegrationId)
+            return;
 
         const checkManifest = async () => {
             const { appUrl } = manifest;
             try {
                 const host = new URL(appUrl).host;
-                const stored = readStoredProvision(appUrl);
-                // The host-name lookup only finds integrations this flow created; the
-                // stored record is what survives a title change or an integration the
-                // developer created (or renamed) elsewhere.
-                const integrationId =
-                    stored?.integrationId ?? findIntegrationForApp(integrations, appUrl)?.id;
+                const integrationId = previewIntegrationId;
 
                 log.debug('manifest.diff-check.start', {
                     appUrl,
                     host,
-                    hasStoredProvision: Boolean(stored),
                     integrationId: integrationId ?? null,
-                    storedListingId: stored?.listingId ?? null,
+                    storedListingId: previewListingId,
                 });
 
                 if (!integrationId) return;
@@ -367,7 +397,10 @@ export const SubmitFromManifestPage: React.FC = () => {
                     return;
                 }
 
-                const result = await wallet.invoke.submitAppManifest(integrationId, manifest);
+                const result = await wallet.invoke.submitAppManifest(
+                    integrationId,
+                    serverManifest(manifest)
+                );
 
                 log.debug('manifest.diff-check.result', {
                     integrationId,
@@ -388,7 +421,7 @@ export const SubmitFromManifestPage: React.FC = () => {
                         await wallet.invoke.applyManifestVersion(
                             integrationId,
                             result.version,
-                            stored?.listingId
+                            previewListingId ?? undefined
                         );
                         log.debug('manifest.diff-check.baseline-applied', {
                             integrationId,
@@ -409,7 +442,14 @@ export const SubmitFromManifestPage: React.FC = () => {
         };
 
         checkManifest();
-    }, [manifest, integrations, diffApplied]);
+    }, [
+        manifest,
+        previewIntegrationId,
+        previewListingId,
+        diffApplied,
+        isRestoring,
+        reuseCandidate,
+    ]);
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -420,7 +460,7 @@ export const SubmitFromManifestPage: React.FC = () => {
         }
 
         try {
-            const decoded = decodeManifestFromUrl(manifestParam);
+            const decoded: CapturedAppManifest = decodeManifestFromUrl(manifestParam);
             if (decoded.manifestVersion !== 1) {
                 throw new Error('Unsupported manifest version.');
             }
@@ -476,7 +516,7 @@ export const SubmitFromManifestPage: React.FC = () => {
             } else {
                 applyDecodedManifest();
             }
-            const suggestedIcon = decoded.suggestedIconUrl;
+            const suggestedIcon = decoded.suggestedIconDataUrl || decoded.suggestedIconUrl;
             if (isAllowedIconUrl(suggestedIcon)) {
                 setUploadedIconUrl(suggestedIcon);
                 setDisplayIconUrl(suggestedIcon);
@@ -503,14 +543,20 @@ export const SubmitFromManifestPage: React.FC = () => {
     useEffect(() => {
         if (
             manifest &&
-            manifest.suggestedIconUrl &&
-            !isAllowedIconUrl(manifest.suggestedIconUrl) &&
-            !uploadedIconUrl
+            !isRestoring &&
+            !reuseCandidate &&
+            (manifest.suggestedIconDataUrl || manifest.suggestedIconUrl) &&
+            (!uploadedIconUrl || uploadedIconUrl === DEFAULT_APP_ICON_URL) &&
+            (!ownedListing ||
+                withPendingChanges(ownedListing).icon_url === DEFAULT_APP_ICON_URL ||
+                !withPendingChanges(ownedListing).icon_url)
         ) {
             let isMounted = true;
             const importIcon = async () => {
                 try {
-                    const url = await uploadImageFromUrl(manifest.suggestedIconUrl!);
+                    const url = await uploadImageFromUrl(
+                        (manifest.suggestedIconDataUrl || manifest.suggestedIconUrl)!
+                    );
                     if (url && isMounted) {
                         setIsIconImported(true);
                         setTimeout(() => {
@@ -526,9 +572,10 @@ export const SubmitFromManifestPage: React.FC = () => {
                 isMounted = false;
             };
         }
-    }, [manifest?.suggestedIconUrl]);
+    }, [manifest?.suggestedIconDataUrl, manifest?.suggestedIconUrl, isRestoring, reuseCandidate]);
 
     const ensureProvisioned = async (): Promise<ProvisionedPreview> => {
+        if (isRestoring || reuseCandidate) throw new Error('Choose which app to publish first.');
         if (provisioningPromiseRef.current) return provisioningPromiseRef.current;
 
         const provision = async (): Promise<ProvisionedPreview> => {
@@ -540,7 +587,9 @@ export const SubmitFromManifestPage: React.FC = () => {
             const previewKey = getPreviewDraftKey(manifest);
             const displayName = appName || manifest.suggestedName || 'Preview App';
 
-            const storedProvision = readStoredProvision(previewUrl);
+            const storedProvision = previewIntegrationId
+                ? readStoredProvision(previewUrl, manifest.appKey)
+                : null;
 
             const createAppIntegration = async (): Promise<string> => {
                 const wallet = await initWallet();
@@ -552,20 +601,25 @@ export const SubmitFromManifestPage: React.FC = () => {
                 if (!createdId) throw new Error("We couldn't set up your app. Please try again.");
                 await updateIntegration.mutateAsync({
                     id: createdId,
-                    updates: { guideState: { publishedFromAppUrl: previewUrl } },
+                    updates: {
+                        guideState: {
+                            publishedFromAppUrl: previewUrl,
+                            ...(manifest.appKey ? { publishedAppKey: manifest.appKey } : {}),
+                        },
+                    },
                 });
                 setPreviewIntegrationId(createdId);
                 return createdId;
             };
 
-            const integrationId =
-                previewIntegrationId ||
-                storedProvision?.integrationId ||
-                findIntegrationForApp(integrations, previewUrl)?.id ||
-                (await createAppIntegration());
+            const integrationId = previewIntegrationId || (await createAppIntegration());
 
             if (previewListingId) {
-                storeProvision(previewUrl, { integrationId, listingId: previewListingId });
+                storeProvision(
+                    previewUrl,
+                    { integrationId, listingId: previewListingId },
+                    manifest.appKey
+                );
                 return { integrationId, listingId: previewListingId };
             }
 
@@ -635,10 +689,14 @@ export const SubmitFromManifestPage: React.FC = () => {
                 setCurrentLaunchConfig(launchConfig);
             }
 
-            storeProvision(previewUrl, { integrationId, listingId });
+            storeProvision(previewUrl, { integrationId, listingId }, manifest.appKey);
+            rememberChoice({ integrationId, listingId });
 
             if (wallet?.invoke?.submitAppManifest && wallet?.invoke?.applyManifestVersion) {
-                const result = await wallet.invoke.submitAppManifest(integrationId, manifest);
+                const result = await wallet.invoke.submitAppManifest(
+                    integrationId,
+                    serverManifest(manifest)
+                );
                 log.debug('manifest.provision.submitted', {
                     integrationId,
                     listingId,
@@ -871,16 +929,39 @@ export const SubmitFromManifestPage: React.FC = () => {
     // A previous visit may already have a listing for this app: bring it back, and point
     // preview/apply at it instead of creating another listing.
     useEffect(() => {
-        if (!manifest || restoredAppUrlRef.current === manifest.appUrl) return;
-        restoredAppUrlRef.current = manifest.appUrl;
+        if (!manifest || isLoadingIntegrations || restoredAppUrlRef.current === decisionKey) return;
+        restoredAppUrlRef.current = decisionKey;
+        setIsRestoring(true);
 
         let cancelled = false;
         const restore = async () => {
             try {
-                const stored = readStoredProvision(manifest.appUrl);
-                const integrationId =
-                    stored?.integrationId ??
-                    findIntegrationForApp(integrations, manifest.appUrl)?.id;
+                let choice: StoredProvision | 'new' | null = null;
+                try {
+                    choice = JSON.parse(sessionStorage.getItem(decisionKey) ?? 'null');
+                } catch {
+                    /* Ignore unavailable or malformed session memory. */
+                }
+                if (choice === 'new') return;
+                const stored =
+                    choice ??
+                    readStoredProvision(manifest.appUrl, manifest.appKey) ??
+                    readStoredProvision(manifest.appUrl);
+                const matched = findIntegrationForApp(
+                    integrations,
+                    manifest.appUrl,
+                    manifest.appKey
+                );
+                const remembered = integrations?.find(
+                    i =>
+                        i.id === stored?.integrationId &&
+                        getAppMatch(i, manifest.appKey) !== 'exclude'
+                );
+                const integration =
+                    matched?.guideState?.publishedAppKey === manifest.appKey && manifest.appKey
+                        ? matched
+                        : (remembered ?? matched);
+                const integrationId = integration?.id;
                 if (!integrationId) return;
 
                 const wallet = await initWallet();
@@ -888,18 +969,46 @@ export const SubmitFromManifestPage: React.FC = () => {
                     limit: 100,
                 });
                 const displayName = manifest.suggestedName || 'Preview App';
-                const listing = findReusableListing<AppStoreListing>(records, {
-                    storedListingId: stored?.listingId,
-                    previewKey: getPreviewDraftKey(manifest),
-                    previewUrl: manifest.appUrl,
-                    displayName,
-                });
-                if (cancelled || !listing) return;
+                const listing =
+                    findReusableListing<AppStoreListing>(records, {
+                        storedListingId:
+                            stored?.integrationId === integrationId ? stored.listingId : undefined,
+                        previewKey: getPreviewDraftKey(manifest),
+                        previewUrl: manifest.appUrl,
+                        displayName,
+                    }) ?? records[0];
+                if (cancelled) return;
+                if (!listing) {
+                    if (getAppMatch(integration, manifest.appKey) === 'reuse') {
+                        setPreviewIntegrationId(integrationId);
+                    }
+                    return;
+                }
+
+                if (
+                    !(
+                        choice?.integrationId === integrationId &&
+                        choice.listingId === listing.listing_id
+                    ) &&
+                    getAppMatch(
+                        integration,
+                        manifest.appKey,
+                        listing.display_name,
+                        manifest.suggestedName
+                    ) === 'confirm'
+                ) {
+                    setReuseCandidate({ integrationId, listing });
+                    return;
+                }
 
                 setPreviewIntegrationId(integrationId);
                 setPreviewListingId(listing.listing_id);
                 setOwnedListing(listing);
-                storeProvision(manifest.appUrl, { integrationId, listingId: listing.listing_id });
+                storeProvision(
+                    manifest.appUrl,
+                    { integrationId, listingId: listing.listing_id },
+                    manifest.appKey
+                );
 
                 if (!hasEditedListingRef.current) populateFromListing(listing);
                 await repairAppIntegration(
@@ -920,7 +1029,29 @@ export const SubmitFromManifestPage: React.FC = () => {
         };
         // Runs once per app: capture updates change `manifest` but not which listing to restore.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [manifest?.appUrl]);
+    }, [manifest?.appUrl, manifest?.appKey, isLoadingIntegrations, decisionKey]);
+
+    const confirmReuse = async () => {
+        if (!reuseCandidate || !manifest) return;
+        setIsChoosing(true);
+        try {
+            const { integrationId, listing } = reuseCandidate;
+            await repairAppIntegration(integrationId, listing.display_name, true);
+            const provision = { integrationId, listingId: listing.listing_id };
+            storeProvision(manifest.appUrl, provision, manifest.appKey);
+            rememberChoice(provision);
+            setPreviewIntegrationId(integrationId);
+            setPreviewListingId(listing.listing_id);
+            setOwnedListing(listing);
+            populateFromListing(listing);
+            setReuseCandidate(null);
+        } catch (e) {
+            log.warn('listing.confirm.failed', e);
+            setFormError('Something went wrong. Please try again.');
+        } finally {
+            setIsChoosing(false);
+        }
+    };
 
     const changeListingStatus = async (action: 'withdraw' | 'discard') => {
         if (!previewListingId) return;
@@ -952,7 +1083,8 @@ export const SubmitFromManifestPage: React.FC = () => {
     };
 
     useEffect(() => {
-        if (!manifest || !hasEditedListingRef.current || isLocked) return;
+        if (!manifest || !hasEditedListingRef.current || isLocked || isRestoring || reuseCandidate)
+            return;
 
         const timer = setTimeout(async () => {
             if (isSubmittingRef.current) return;
@@ -1028,7 +1160,7 @@ export const SubmitFromManifestPage: React.FC = () => {
                 await submitForReview.mutateAsync(listingId);
             }
 
-            storeProvision(manifest.appUrl, { integrationId, listingId });
+            storeProvision(manifest.appUrl, { integrationId, listingId }, manifest.appKey);
             [
                 SESSION_MANIFEST_KEY,
                 SESSION_MANIFEST_SOURCE_KEY,
@@ -1203,6 +1335,64 @@ export const SubmitFromManifestPage: React.FC = () => {
                     <div className="flex justify-center items-center h-full">
                         <IonSpinner name="crescent" />
                     </div>
+                </IonContent>
+            </IonPage>
+        );
+    }
+
+    if (reuseCandidate) {
+        const name = reuseCandidate.listing.display_name;
+        return (
+            <IonPage>
+                <AppStoreHeader />
+                <IonContent>
+                    <section className="m-6 mx-auto max-w-md rounded-[20px] bg-white p-8 font-poppins space-y-5">
+                        <IonIcon
+                            icon={alertCircleOutline}
+                            aria-hidden="true"
+                            className="text-grayscale-600 text-2xl"
+                        />
+                        <h1 className="text-xl font-semibold text-grayscale-900">
+                            Is this &quot;{name}&quot;?
+                        </h1>
+                        <p className="text-sm text-grayscale-600 leading-relaxed">
+                            You published it from this same address before.
+                        </p>
+                        {formError && (
+                            <p
+                                role="alert"
+                                className="p-3 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-700"
+                            >
+                                {formError}
+                            </p>
+                        )}
+                        <button
+                            type="button"
+                            disabled={isChoosing}
+                            onClick={confirmReuse}
+                            className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40"
+                        >
+                            {isChoosing ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <IonSpinner name="crescent" />
+                                    Updating...
+                                </span>
+                            ) : (
+                                `Update ${name}`
+                            )}
+                        </button>
+                        <button
+                            type="button"
+                            disabled={isChoosing}
+                            onClick={() => {
+                                rememberChoice('new');
+                                setReuseCandidate(null);
+                            }}
+                            className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40"
+                        >
+                            Publish as a new app
+                        </button>
+                    </section>
                 </IonContent>
             </IonPage>
         );
