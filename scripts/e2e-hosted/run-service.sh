@@ -29,6 +29,8 @@ trap collect_service_artifacts EXIT
 # ordering dependency and can be split across runners with separate stacks.
 run_service_suite() {
     cd "$REPO_ROOT"
+    # These host SDK prerequisites use the same Sentry plugins as the browser.
+    export SENTRY_BUILD_TELEMETRY=false
     local vitest_args=''
     local -a dependency_args=()
     if [[ "${E2E_SDK_BUILD_CACHE:-false}" == true ]]; then

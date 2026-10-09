@@ -22,6 +22,7 @@ bunx() {
     return "$BUILD_STATUS"
 }
 env() {
+    [[ "$*" == *'SENTRY_BUILD_TELEMETRY=false'* ]] || return 1
     [[ "$*" == *'SENTRY_RELEASE=exact-sdk-input-key'* ]] || return 1
     while [[ "$1" == *=* ]]; do shift; done
     "$@"

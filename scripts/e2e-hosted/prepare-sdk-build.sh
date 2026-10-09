@@ -14,7 +14,7 @@ prepare_sdk_build() {
     projects=$(node "$cache_script" projects "$E2E_SDK_SPEC") || return
     release=$(node "$cache_script" release "$E2E_SDK_SPEC") || return
     node "$cache_script" clean "$E2E_SDK_SPEC" || return
-    e2e_timed sdk_dependency_build env SENTRY_RELEASE="$release" SKIP_DIDKIT_NAPI=1 NX_DAEMON=false \
+    e2e_timed sdk_dependency_build env SENTRY_RELEASE="$release" SENTRY_BUILD_TELEMETRY=false SKIP_DIDKIT_NAPI=1 NX_DAEMON=false \
         bunx nx run-many -t build -p "$projects" --verbose --skip-nx-cache || return
     if [[ "${E2E_SDK_CACHE_WRITER:-false}" == true ]]; then
         e2e_timed sdk_output_snapshot node "$cache_script" snapshot "$E2E_SDK_SPEC" "$E2E_SDK_CACHE_DIR" || return

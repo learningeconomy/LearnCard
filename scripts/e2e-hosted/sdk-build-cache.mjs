@@ -185,6 +185,7 @@ const specification = workspace => {
         roots,
         environment,
         skipDidkitNapi: '1',
+        buildTelemetry: false,
         node: process.version,
         bun: execFileSync('bun', ['--version']).toString().trim(),
         nx: JSON.parse(fs.readFileSync(path.join(workspace, 'node_modules/nx/package.json')))
