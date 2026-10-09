@@ -19,6 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
 from openapi_client.models.contracts_update_consented_contract_terms_request_terms import ContractsUpdateConsentedContractTermsRequestTerms
 from typing import Optional, Set
 from typing_extensions import Self
@@ -32,7 +33,8 @@ class ContractsUpdateConsentedContractTermsRequest(BaseModel):
     terms: ContractsUpdateConsentedContractTermsRequestTerms
     expires_at: Optional[StrictStr] = Field(default=None, alias="expiresAt")
     one_time: Optional[StrictBool] = Field(default=None, alias="oneTime")
-    __properties: ClassVar[List[str]] = ["uri", "terms", "expiresAt", "oneTime"]
+    audience_version: Optional[Annotated[int, Field(le=9007199254740991, strict=True, ge=0)]] = Field(default=None, alias="audienceVersion")
+    __properties: ClassVar[List[str]] = ["uri", "terms", "expiresAt", "oneTime", "audienceVersion"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -106,7 +108,8 @@ class ContractsUpdateConsentedContractTermsRequest(BaseModel):
             "uri": obj.get("uri"),
             "terms": ContractsUpdateConsentedContractTermsRequestTerms.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
             "expiresAt": obj.get("expiresAt"),
-            "oneTime": obj.get("oneTime")
+            "oneTime": obj.get("oneTime"),
+            "audienceVersion": obj.get("audienceVersion")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

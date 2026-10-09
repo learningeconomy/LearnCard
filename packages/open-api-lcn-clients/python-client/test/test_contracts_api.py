@@ -33,6 +33,13 @@ class TestContractsApi(unittest.TestCase):
         """
         pass
 
+    def test_contracts_add_contract_recipient(self) -> None:
+        """Test case for contracts_add_contract_recipient
+
+        Add a data recipient before first consent
+        """
+        pass
+
     def test_contracts_cancel_contract_request(self) -> None:
         """Test case for contracts_cancel_contract_request
 
@@ -65,6 +72,13 @@ class TestContractsApi(unittest.TestCase):
         """Test case for contracts_delete_credential_from_all_contracts
 
         Delete credential references from all consent terms
+        """
+        pass
+
+    def test_contracts_deny_contract_request(self) -> None:
+        """Test case for contracts_deny_contract_request
+
+        Deny a pending contract request as its target
         """
         pass
 
@@ -180,6 +194,13 @@ class TestContractsApi(unittest.TestCase):
         """
         pass
 
+    def test_contracts_remove_contract_recipient(self) -> None:
+        """Test case for contracts_remove_contract_recipient
+
+        Remove a data recipient
+        """
+        pass
+
     def test_contracts_send_ai_insight_share_request(self) -> None:
         """Test case for contracts_send_ai_insight_share_request
 
@@ -191,6 +212,13 @@ class TestContractsApi(unittest.TestCase):
         """Test case for contracts_send_ai_insights_contract_request
 
         AI Insights, consent flow notifcation request
+        """
+        pass
+
+    def test_contracts_send_contract_request(self) -> None:
+        """Test case for contracts_send_contract_request
+
+        Send an attributed contract request
         """
         pass
 

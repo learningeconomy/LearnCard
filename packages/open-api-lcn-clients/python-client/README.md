@@ -202,11 +202,13 @@ All URIs are relative to _/api_
 | _ContactMethodsApi_    | [**contact_methods_verify_contact_method**](docs/ContactMethodsApi.md#contact_methods_verify_contact_method)                                          | **POST** /profile/contact-methods/verify                                 | Verify Contact Method                                                        |
 | _ContactMethodsApi_    | [**contact_methods_verify_with_credential**](docs/ContactMethodsApi.md#contact_methods_verify_with_credential)                                        | **POST** /profile/contact-methods/verify-with-credential                 | Verify Contact Method With Credential                                        |
 | _ContractsApi_         | [**contracts_add_auto_boosts_to_contract**](docs/ContractsApi.md#contracts_add_auto_boosts_to_contract)                                               | **POST** /consent-flow-contracts/autoboosts/add                          | Add autoboosts to a contract                                                 |
+| _ContractsApi_         | [**contracts_add_contract_recipient**](docs/ContractsApi.md#contracts_add_contract_recipient)                                                         | **POST** /consent-flow-contract/recipient/add                            | Add a data recipient before first consent                                    |
 | _ContractsApi_         | [**contracts_cancel_contract_request**](docs/ContractsApi.md#contracts_cancel_contract_request)                                                       | **POST** /consent-flow-contracts/cancel-request                          | Cancels/removes a contract request                                           |
 | _ContractsApi_         | [**contracts_consent_to_contract**](docs/ContractsApi.md#contracts_consent_to_contract)                                                               | **POST** /consent-flow-contract/consent                                  | Consent To Contract                                                          |
 | _ContractsApi_         | [**contracts_create_consent_flow_contract**](docs/ContractsApi.md#contracts_create_consent_flow_contract)                                             | **POST** /consent-flow-contract                                          | Create Consent Flow Contract                                                 |
 | _ContractsApi_         | [**contracts_delete_consent_flow_contract**](docs/ContractsApi.md#contracts_delete_consent_flow_contract)                                             | **DELETE** /consent-flow-contract                                        | Delete a Consent Flow Contract                                               |
 | _ContractsApi_         | [**contracts_delete_credential_from_all_contracts**](docs/ContractsApi.md#contracts_delete_credential_from_all_contracts)                             | **POST** /consent-flow-contract/consent/prune-deleted-uris               | Delete credential references from all consent terms                          |
+| _ContractsApi_         | [**contracts_deny_contract_request**](docs/ContractsApi.md#contracts_deny_contract_request)                                                           | **POST** /consent-flow-contracts/deny-request                            | Deny a pending contract request as its target                                |
 | _ContractsApi_         | [**contracts_forward_contract_request_to_profile**](docs/ContractsApi.md#contracts_forward_contract_request_to_profile)                               | **POST** /consent-flow-contracts/forward-request-to-profile              | Forward a contract request                                                   |
 | _ContractsApi_         | [**contracts_get_all_contract_requests_for_profile**](docs/ContractsApi.md#contracts_get_all_contract_requests_for_profile)                           | **GET** /consent-flow-contracts/all-requests-for-profile                 | Get all contract requests for a target profile                               |
 | _ContractsApi_         | [**contracts_get_all_credentials_for_terms**](docs/ContractsApi.md#contracts_get_all_credentials_for_terms)                                           | **POST** /consent-flow-contracts/credentials                             | Get all credentials written to any terms                                     |
@@ -223,8 +225,10 @@ All URIs are relative to _/api_
 | _ContractsApi_         | [**contracts_get_terms_transaction_history**](docs/ContractsApi.md#contracts_get_terms_transaction_history)                                           | **POST** /consent-flow-contract/consent/history                          | Gets Transaction History                                                     |
 | _ContractsApi_         | [**contracts_mark_contract_request_as_seen**](docs/ContractsApi.md#contracts_mark_contract_request_as_seen)                                           | **POST** /consent-flow-contracts/mark-request-as-seen                    | Marks a contract request as seen                                             |
 | _ContractsApi_         | [**contracts_remove_auto_boosts_from_contract**](docs/ContractsApi.md#contracts_remove_auto_boosts_from_contract)                                     | **POST** /consent-flow-contracts/autoboosts/remove                       | Remove autoboosts from a contract                                            |
+| _ContractsApi_         | [**contracts_remove_contract_recipient**](docs/ContractsApi.md#contracts_remove_contract_recipient)                                                   | **POST** /consent-flow-contract/recipient/remove                         | Remove a data recipient                                                      |
 | _ContractsApi_         | [**contracts_send_ai_insight_share_request**](docs/ContractsApi.md#contracts_send_ai_insight_share_request)                                           | **POST** /consent-flow-contracts/ai-insights/share-request               | AI Insights, consent flow share-notifcation request                          |
 | _ContractsApi_         | [**contracts_send_ai_insights_contract_request**](docs/ContractsApi.md#contracts_send_ai_insights_contract_request)                                   | **POST** /consent-flow-contracts/ai-insights/request                     | AI Insights, consent flow notifcation request                                |
+| _ContractsApi_         | [**contracts_send_contract_request**](docs/ContractsApi.md#contracts_send_contract_request)                                                           | **POST** /consent-flow-contracts/request                                 | Send an attributed contract request                                          |
 | _ContractsApi_         | [**contracts_sync_credentials_to_contract**](docs/ContractsApi.md#contracts_sync_credentials_to_contract)                                             | **POST** /consent-flow-contract/sync                                     | Sync credentials to a contract                                               |
 | _ContractsApi_         | [**contracts_update_consented_contract_terms**](docs/ContractsApi.md#contracts_update_consented_contract_terms)                                       | **POST** /consent-flow-contract/consent/update                           | Updates Contract Terms                                                       |
 | _ContractsApi_         | [**contracts_verify_consent**](docs/ContractsApi.md#contracts_verify_consent)                                                                         | **GET** /consent-flow-contract/verify                                    | Verifies that a profile has consented to a contract                          |
@@ -691,6 +695,7 @@ All URIs are relative to _/api_
 - [ContactMethodsVerifyWithCredentialRequest](docs/ContactMethodsVerifyWithCredentialRequest.md)
 - [ContractsAddAutoBoostsToContractRequest](docs/ContractsAddAutoBoostsToContractRequest.md)
 - [ContractsAddAutoBoostsToContractRequestAutoboostsInner](docs/ContractsAddAutoBoostsToContractRequestAutoboostsInner.md)
+- [ContractsAddContractRecipientRequest](docs/ContractsAddContractRecipientRequest.md)
 - [ContractsCancelContractRequestRequest](docs/ContractsCancelContractRequestRequest.md)
 - [ContractsConsentToContract200Response](docs/ContractsConsentToContract200Response.md)
 - [ContractsConsentToContractRequest](docs/ContractsConsentToContractRequest.md)
@@ -712,6 +717,7 @@ All URIs are relative to _/api_
 - [ContractsCreateConsentFlowContractRequestContractWriteCredentials](docs/ContractsCreateConsentFlowContractRequestContractWriteCredentials.md)
 - [ContractsDeleteCredentialFromAllContracts200Response](docs/ContractsDeleteCredentialFromAllContracts200Response.md)
 - [ContractsDeleteCredentialFromAllContractsRequest](docs/ContractsDeleteCredentialFromAllContractsRequest.md)
+- [ContractsDenyContractRequestRequest](docs/ContractsDenyContractRequestRequest.md)
 - [ContractsForwardContractRequestToProfileRequest](docs/ContractsForwardContractRequestToProfileRequest.md)
 - [ContractsGetAllContractRequestsForProfile200ResponseInner](docs/ContractsGetAllContractRequestsForProfile200ResponseInner.md)
 - [ContractsGetAllContractRequestsForProfile200ResponseInnerContract](docs/ContractsGetAllContractRequestsForProfile200ResponseInnerContract.md)
@@ -777,8 +783,10 @@ All URIs are relative to _/api_
 - [ContractsGetTermsTransactionHistoryRequestQueryTermsReadCredentials](docs/ContractsGetTermsTransactionHistoryRequestQueryTermsReadCredentials.md)
 - [ContractsMarkContractRequestAsSeenRequest](docs/ContractsMarkContractRequestAsSeenRequest.md)
 - [ContractsRemoveAutoBoostsFromContractRequest](docs/ContractsRemoveAutoBoostsFromContractRequest.md)
+- [ContractsRemoveContractRecipientRequest](docs/ContractsRemoveContractRecipientRequest.md)
 - [ContractsSendAiInsightShareRequestRequest](docs/ContractsSendAiInsightShareRequestRequest.md)
 - [ContractsSendAiInsightsContractRequestRequest](docs/ContractsSendAiInsightsContractRequestRequest.md)
+- [ContractsSendContractRequestRequest](docs/ContractsSendContractRequestRequest.md)
 - [ContractsSyncCredentialsToContractRequest](docs/ContractsSyncCredentialsToContractRequest.md)
 - [ContractsUpdateConsentedContractTermsRequest](docs/ContractsUpdateConsentedContractTermsRequest.md)
 - [ContractsUpdateConsentedContractTermsRequestTerms](docs/ContractsUpdateConsentedContractTermsRequestTerms.md)
@@ -799,6 +807,8 @@ All URIs are relative to _/api_
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadPersonalValue](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadPersonalValue.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWriteCredentials](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWriteCredentials.md)
+- [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractRecipientsInner](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractRecipientsInner.md)
+- [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerReferral](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerReferral.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsRead](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsRead.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentials](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentials.md)
@@ -807,6 +817,7 @@ All URIs are relative to _/api_
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWriteCredentials](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWriteCredentials.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInner](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInner.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerGuardianApproval](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerGuardianApproval.md)
+- [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTerms](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTerms.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead.md)
 - [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentials](docs/CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentials.md)

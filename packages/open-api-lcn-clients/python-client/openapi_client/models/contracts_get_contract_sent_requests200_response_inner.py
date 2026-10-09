@@ -19,6 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
 from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of3 import BoostGetBoostRecipients200ResponseInnerToAnyOf3
 from typing import Optional, Set
 from typing_extensions import Self
@@ -28,11 +29,16 @@ class ContractsGetContractSentRequests200ResponseInner(BaseModel):
     """
     ContractsGetContractSentRequests200ResponseInner
     """ # noqa: E501
+    request_id: Optional[StrictStr] = Field(default=None, alias="requestId")
+    requested_by: Optional[StrictStr] = Field(default=None, alias="requestedBy")
+    external_reference_id: Optional[Annotated[str, Field(strict=True, max_length=256)]] = Field(default=None, alias="externalReferenceId")
+    requested_at: Optional[StrictStr] = Field(default=None, alias="requestedAt")
+    message: Optional[Annotated[str, Field(strict=True, max_length=500)]] = None
     profile: BoostGetBoostRecipients200ResponseInnerToAnyOf3
     status: Optional[StrictStr]
     read_status: Optional[StrictStr] = Field(default=None, alias="readStatus")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["profile", "status", "readStatus"]
+    __properties: ClassVar[List[str]] = ["requestId", "requestedBy", "externalReferenceId", "requestedAt", "message", "profile", "status", "readStatus"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -40,8 +46,8 @@ class ContractsGetContractSentRequests200ResponseInner(BaseModel):
         if value is None:
             return value
 
-        if value not in set(['pending', 'accepted', 'denied']):
-            raise ValueError("must be one of enum values ('pending', 'accepted', 'denied')")
+        if value not in set(['pending', 'accepted', 'denied', 'cancelled']):
+            raise ValueError("must be one of enum values ('pending', 'accepted', 'denied', 'cancelled')")
         return value
 
     @field_validator('read_status')
@@ -103,6 +109,26 @@ class ContractsGetContractSentRequests200ResponseInner(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
+        # set to None if request_id (nullable) is None
+        # and model_fields_set contains the field
+        if self.request_id is None and "request_id" in self.model_fields_set:
+            _dict['requestId'] = None
+
+        # set to None if requested_by (nullable) is None
+        # and model_fields_set contains the field
+        if self.requested_by is None and "requested_by" in self.model_fields_set:
+            _dict['requestedBy'] = None
+
+        # set to None if requested_at (nullable) is None
+        # and model_fields_set contains the field
+        if self.requested_at is None and "requested_at" in self.model_fields_set:
+            _dict['requestedAt'] = None
+
+        # set to None if message (nullable) is None
+        # and model_fields_set contains the field
+        if self.message is None and "message" in self.model_fields_set:
+            _dict['message'] = None
+
         # set to None if status (nullable) is None
         # and model_fields_set contains the field
         if self.status is None and "status" in self.model_fields_set:
@@ -125,6 +151,11 @@ class ContractsGetContractSentRequests200ResponseInner(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
+            "requestId": obj.get("requestId"),
+            "requestedBy": obj.get("requestedBy"),
+            "externalReferenceId": obj.get("externalReferenceId"),
+            "requestedAt": obj.get("requestedAt"),
+            "message": obj.get("message"),
             "profile": BoostGetBoostRecipients200ResponseInnerToAnyOf3.from_dict(obj["profile"]) if obj.get("profile") is not None else None,
             "status": obj.get("status"),
             "readStatus": obj.get("readStatus")

@@ -68,6 +68,9 @@ class TestContractsCreateConsentFlowContractRequest(unittest.TestCase):
                     ],
                 writers = [
                     ''
+                    ],
+                recipients = [
+                    ''
                     ]
             )
         else:

@@ -19,7 +19,9 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
 from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of3 import BoostGetBoostRecipients200ResponseInnerToAnyOf3
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_contract_recipients_inner import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractRecipientsInner
 from openapi_client.models.storage_resolve200_response_any_of_any_of1 import StorageResolve200ResponseAnyOfAnyOf1
 from typing import Optional, Set
 from typing_extensions import Self
@@ -45,8 +47,10 @@ class ContractsGetConsentFlowContract200Response(BaseModel):
     expires_at: Optional[StrictStr] = Field(default=None, alias="expiresAt")
     auto_boosts: Optional[List[StrictStr]] = Field(default=None, alias="autoBoosts")
     writers: Optional[List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]] = None
+    recipients: Optional[List[CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractRecipientsInner]] = None
+    audience_version: Optional[Annotated[int, Field(le=9007199254740991, strict=True, ge=0)]] = Field(default=None, alias="audienceVersion")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["contract", "owner", "name", "subtitle", "description", "reasonForAccessing", "image", "uri", "needsGuardianConsent", "redirectUrl", "frontDoorBoostUri", "createdAt", "updatedAt", "expiresAt", "autoBoosts", "writers"]
+    __properties: ClassVar[List[str]] = ["contract", "owner", "name", "subtitle", "description", "reasonForAccessing", "image", "uri", "needsGuardianConsent", "redirectUrl", "frontDoorBoostUri", "createdAt", "updatedAt", "expiresAt", "autoBoosts", "writers", "recipients", "audienceVersion"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -101,6 +105,12 @@ class ContractsGetConsentFlowContract200Response(BaseModel):
             for _item_writers in self.writers:
                 _items.append(_item_writers.to_dict() if _item_writers is not None else None)
             _dict['writers'] = _items
+        # override the default output from pydantic by calling `to_dict()` of each item in recipients (list)
+        _items = []
+        if self.recipients:
+            for _item_recipients in self.recipients:
+                _items.append(_item_recipients.to_dict() if _item_recipients is not None else None)
+            _dict['recipients'] = _items
         # puts key-value pairs in additional_properties in the top level
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
@@ -193,7 +203,9 @@ class ContractsGetConsentFlowContract200Response(BaseModel):
             "updatedAt": obj.get("updatedAt"),
             "expiresAt": obj.get("expiresAt"),
             "autoBoosts": obj.get("autoBoosts"),
-            "writers": [BoostGetBoostRecipients200ResponseInnerToAnyOf3.from_dict(_item) for _item in obj["writers"]] if obj.get("writers") is not None else None
+            "writers": [BoostGetBoostRecipients200ResponseInnerToAnyOf3.from_dict(_item) for _item in obj["writers"]] if obj.get("writers") is not None else None,
+            "recipients": [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractRecipientsInner.from_dict(_item) for _item in obj["recipients"]] if obj.get("recipients") is not None else None,
+            "audienceVersion": obj.get("audienceVersion")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
