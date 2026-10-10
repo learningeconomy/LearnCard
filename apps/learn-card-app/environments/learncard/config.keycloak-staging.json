@@ -1,5 +1,6 @@
 {
     "_comment": "Opt-in Keycloak staging. Stage overlays merge directly over config.json, not config.staging.json.",
+    "stage": "staging",
     "domain": "staging.learncard.ai",
     "apis": {
         "brainService": "https://staging.network.learncard.com/trpc",

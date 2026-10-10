@@ -129,36 +129,17 @@ provider:
     timeout: 29
     stage: ${opt:stage, "dev"}
     region: ${opt:region, "us-east-1"}
-    environment:
-        LAMBDA_STAGE: ${opt:stage, "dev"}
-        SEED: ${env:SEED, ''}
-        SA_SEED_KMS_KEY_ARN:
-            Fn::GetAtt: [SigningAuthoritySeedKey, Arn]
-        # First deployment upgrades readers only. Enable writes after every reader is compatible.
-        SA_SEED_ENCRYPT_WRITES: ${param:saSeedEncryptWrites, env:SA_SEED_ENCRYPT_WRITES, 'false'}
-        SA_SEED_ALLOW_LEGACY_READ: ${param:saSeedAllowLegacyRead, env:SA_SEED_ALLOW_LEGACY_READ, 'true'}
-        DOMAIN_NAME: ${env:DOMAIN_NAME, ''}
-        OPENAI_API_KEY: ${env:OPENAI_API_KEY, ''}
-        METABASE_SECRET_KEY: ${env:METABASE_SECRET_KEY, ''}
-        POSTMARK_SERVER_TOKEN: ${env:POSTMARK_SERVER_TOKEN, ''}
-        POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS: ${env:POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS, ''}
-        POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS: ${env:POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS, ''}
-        POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS: ${env:POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS, ''}
-        POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS: ${env:POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS, ''}
-        POSTMARK_FROM_EMAIL: ${env:POSTMARK_FROM_EMAIL, ''}
-        POSTMARK_BRAND_NAME: ${env:POSTMARK_BRAND_NAME, ''}
-        PORT: ${opt:httpPort, "3000"}
-        MONGO_URI: ${env:MONGO_URI, ''}
-        MONGO_DB_NAME: ${env:MONGO_DB_NAME, ''}
-        AUTHORIZED_DIDS: ${env:AUTHORIZED_DIDS, ''}
-        SCOUTS_SSO_CLIENT_SECRET: ${env:SCOUTS_SSO_CLIENT_SECRET, ''}
-        LEARN_CLOUD_URL: ${env:LEARN_CLOUD_URL, ''}
-        SENTRY_DSN: ${env:SENTRY_DSN, ''}
-        SENTRY_ENV: ${env:SENTRY_ENV, ''}
-        REDIS_HOST:
-            'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Address]
-        REDIS_PORT:
-            'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Port]
+    # Bundle mode emits only infra; fallback mode retains the existing GitHub secrets.
+    environment: ${file(./serverless.function-env.cjs):provider}
+    # Only didWeb/swagger use this generated role. Explicit function roles do not inherit it.
+    # Bundle access must not grant cryptographic use of the hosted signing-authority KMS key.
+    iam:
+        role:
+            statements:
+                - Effect: Allow
+                  Action: secretsmanager:GetSecretValue
+                  Resource:
+                      Fn::Sub: arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:lca-api/${sls:stage}/runtime-secrets-*
     tracing:
         apiGateway: true
         lambda: true
@@ -197,6 +178,7 @@ functions:
 
     didWeb:
         handler: lambda.didWebHandler
+        environment: ${file(./serverless.function-env.cjs):api}
         vpc:
             securityGroupIds:
                 - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
@@ -209,7 +191,7 @@ functions:
             cors: true
 
     oidc:
-        handler: lambda.oidcHandler
+        handler: oidcLambda.handler
         # Only this function may read the private signing key (see OidcExecutionRole).
         role: OidcExecutionRole
         environment: ${file(./serverless.function-env.cjs):oidc}
@@ -228,6 +210,9 @@ functions:
         timeout: 900
         reservedConcurrency: 1
         dependsOn: [SigningAuthoritySeedKeyPolicy]
+        # Shares the SigningAuthority role, so it reads the runtime bundle when present and
+        # falls back to the same credentials as trpc/api otherwise (it needs SEED + Mongo).
+        environment: ${file(./serverless.function-env.cjs):api}
         # IAM invoke only: intentionally no events, schedule, or function URL.
         vpc:
             securityGroupIds:
@@ -237,6 +222,12 @@ functions:
 
     swagger:
         handler: lambda.swaggerUiHandler
+        environment: ${file(./serverless.function-env.cjs):api}
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
         package:
             patterns:
                 - src/swagger-ui/**
@@ -244,7 +235,44 @@ functions:
             - httpApi: GET /docs
             - httpApi: GET /docs/{trpc+}
 
+    # Always deployed (no per-stage conditional: `schedule.enabled` needs a
+    # literal boolean, not an interpolated ESCROW_ENCLAVE_MODE env string);
+    # the handler itself no-ops when escrow is disabled for this stage/tenant.
+    escrowHoldReminders:
+        handler: lambda.escrowHoldRemindersHandler
+        timeout: 120
+        environment: ${file(./serverless.function-env.cjs):escrow}
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - schedule: rate(1 hour)
+
+    # Same always-deployed/no-op-when-disabled shape as escrowHoldReminders
+    # above; a bounded batch each run, so an hourly rate is generous relative
+    # to how quickly a key rotation's previous-key backlog should drain.
+    escrowBlobRewrap:
+        handler: lambda.escrowBlobRewrapHandler
+        timeout: 120
+        environment: ${file(./serverless.function-env.cjs):escrow}
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - schedule: rate(1 hour)
+
 resources:
+    # Escrow enclave over PrivateLink: created only when the stage sets
+    # ESCROW_ENCLAVE_ENDPOINT_SERVICE_NAME (the enclave account's endpoint
+    # service). TLS trust for the hostname is pinned in enclaveTrustAnchors.ts.
+    Conditions:
+        EscrowEnclavePrivateLink:
+            Fn::Not:
+                - Fn::Equals: ['${env:ESCROW_ENCLAVE_ENDPOINT_SERVICE_NAME, ""}', '']
     Outputs:
         SigningAuthoritySeedKeyArn:
             Value:
@@ -388,6 +416,67 @@ resources:
             Type: AWS::EC2::VPC
             Properties:
                 CidrBlock: '10.0.0.0/16'
+                # A private hosted zone needs DNS hostnames; left at the default elsewhere.
+                EnableDnsHostnames:
+                    Fn::If: [EscrowEnclavePrivateLink, true, Ref: AWS::NoValue]
+        EscrowEnclaveEndpointSecurityGroup:
+            Type: AWS::EC2::SecurityGroup
+            Condition: EscrowEnclavePrivateLink
+            Properties:
+                GroupDescription: Escrow enclave PrivateLink endpoint, 8443 from lca-api only
+                VpcId:
+                    Ref: VPC
+                SecurityGroupIngress:
+                    - IpProtocol: tcp
+                      FromPort: 8443
+                      ToPort: 8443
+                      SourceSecurityGroupId:
+                          Ref: ServerlessSecurityGroup
+        EscrowEnclaveEndpoint:
+            Type: AWS::EC2::VPCEndpoint
+            Condition: EscrowEnclavePrivateLink
+            Properties:
+                VpcEndpointType: Interface
+                ServiceName: ${env:ESCROW_ENCLAVE_ENDPOINT_SERVICE_NAME, ''}
+                VpcId:
+                    Ref: VPC
+                SubnetIds:
+                    - Ref: PrivateSubnetA
+                SecurityGroupIds:
+                    - Ref: EscrowEnclaveEndpointSecurityGroup
+                PrivateDnsEnabled: false
+        EscrowEnclaveHostedZone:
+            Type: AWS::Route53::HostedZone
+            Condition: EscrowEnclavePrivateLink
+            Properties:
+                Name: ${env:ESCROW_ENCLAVE_HOSTNAME, ''}
+                VPCs:
+                    - VPCId:
+                          Ref: VPC
+                      VPCRegion: ${self:provider.region}
+        EscrowEnclaveDnsRecord:
+            Type: AWS::Route53::RecordSet
+            Condition: EscrowEnclavePrivateLink
+            Properties:
+                HostedZoneId:
+                    Ref: EscrowEnclaveHostedZone
+                Name: ${env:ESCROW_ENCLAVE_HOSTNAME, ''}
+                Type: A
+                # DnsEntries[0] is "<hosted zone id>:<regional endpoint DNS name>".
+                AliasTarget:
+                    HostedZoneId:
+                        Fn::Select:
+                            - 0
+                            - Fn::Split:
+                                  - ':'
+                                  - Fn::Select: [0, Fn::GetAtt: [EscrowEnclaveEndpoint, DnsEntries]]
+                    DNSName:
+                        Fn::Select:
+                            - 1
+                            - Fn::Split:
+                                  - ':'
+                                  - Fn::Select: [0, Fn::GetAtt: [EscrowEnclaveEndpoint, DnsEntries]]
+                    EvaluateTargetHealth: false
         IP:
             Type: AWS::EC2::EIP
             Properties:

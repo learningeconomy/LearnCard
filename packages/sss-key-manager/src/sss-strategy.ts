@@ -1054,6 +1054,10 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
     } | null = null;
 
     let escrowEnrollmentInFlight: Promise<EscrowEnrollmentResult> | undefined;
+    // A stale-blob repair is attempted at most once per strategy instance
+    // (i.e. once per app session); a failed attempt is logged and left for
+    // the next session rather than retried on every subsequent call.
+    let staleEscrowReenrollAttempted = false;
 
     // Material from a rotation whose escrow POST failed. Retained in memory so a
     // retry within this session re-posts instead of burning another share version.
@@ -1143,11 +1147,16 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
     const fetchVerifiedEnclaveKey = async (): Promise<{ publicKey: string; keyId: string }> => {
         if (!config.escrow?.enabled) throw new Error('Escrow enrollment is disabled');
-        const { attestation } = await escrowRequest<{ attestation: unknown }>('/attestation', {
-            method: 'GET',
-            headers: buildHeaders('', undefined, tenantId),
-        });
-        return verifyEnclaveAttestation(attestation, config.escrow.attestation);
+        const nonce = crypto.getRandomValues(new Uint8Array(32));
+        const nonceHex = Array.from(nonce, byte => byte.toString(16).padStart(2, '0')).join('');
+        const { attestation } = await escrowRequest<{ attestation: unknown }>(
+            `/attestation?nonce=${nonceHex}`,
+            {
+                method: 'GET',
+                headers: buildHeaders('', undefined, tenantId),
+            }
+        );
+        return verifyEnclaveAttestation(attestation, config.escrow.attestation, nonce);
     };
 
     const enrollEscrow = async (
@@ -1231,9 +1240,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         }
         const status = await self.fetchServerKeyStatus(params.token, params.providerType);
         if (status.escrowOptedOut) return { enrolled: false, reason: 'opted-out' };
-        if (
-            !forceRotate &&
-            pin === undefined &&
+        const currentlyEnrolled =
             status.shareVersion !== null &&
             status.recoveryMethods.some(
                 method =>
@@ -1242,87 +1249,113 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     (Boolean(method.confirmedAt) ||
                         ('confirmationStatus' in method &&
                             method.confirmationStatus === 'confirmed'))
-            )
-        )
+            );
+        // A confirmed enrollment whose sealed blob no longer matches the active
+        // enclave (P6 mode migration/rollback, or a rotated enclave key) still
+        // needs the same rotation a missing enrollment would get — but only one
+        // automatic attempt per session, so a still-unreachable enclave doesn't
+        // retry on every ensureEscrowEnrollment call within the same session.
+        const repairingStaleBlob =
+            pin === undefined &&
+            !forceRotate &&
+            currentlyEnrolled &&
+            !!status.escrowStale &&
+            !staleEscrowReenrollAttempted;
+        if (!forceRotate && pin === undefined && currentlyEnrolled && !repairingStaleBlob)
             // Automatic repair preserves current enrollment regardless of PIN status.
             // The enclave can carry an existing verifier when shares rotate.
             return { enrolled: true, changed: false };
+        if (repairingStaleBlob) staleEscrowReenrollAttempted = true;
         if (!status.primaryDid) throw new Error('Cannot enroll escrow without a primary DID');
         if (!params.signDidAuthVp) {
             throw new Error('DID proof signing is required for escrow enrollment');
         }
-        if (
-            !forceRotate &&
-            pin === undefined &&
-            unenrolledRotation &&
-            unenrolledRotation.shareVersion === status.shareVersion &&
-            unenrolledRotation.primaryDid === status.primaryDid
-        ) {
-            const retry = unenrolledRotation;
+        try {
+            if (
+                !forceRotate &&
+                pin === undefined &&
+                unenrolledRotation &&
+                unenrolledRotation.shareVersion === status.shareVersion &&
+                unenrolledRotation.primaryDid === status.primaryDid
+            ) {
+                const retry = unenrolledRotation;
+                await enrollEscrow(
+                    params.token,
+                    params.providerType,
+                    params.privateKey,
+                    retry.primaryDid,
+                    retry.shares,
+                    retry.shareVersion,
+                    params.signDidAuthVp,
+                    undefined,
+                    undefined,
+                    retry.clearPin
+                );
+                unenrolledRotation = undefined;
+                return { enrolled: true, changed: true, shareVersion: retry.shareVersion };
+            }
+            // Verify the enclave before rotating: a bad attestation must not burn
+            // a share version (and, repeated, the retained auth-share history).
+            const verifiedKey = await fetchVerifiedEnclaveKey();
+            const pinSalt = pin !== undefined ? generatePinSalt() : undefined;
+            const pinMaterial =
+                pin !== undefined && pinSalt !== undefined
+                    ? { pinSalt, pinVerifier: await derivePinProof(pin, pinSalt) }
+                    : undefined;
+            const storageId = activeStorageId;
+            const primaryDid = status.primaryDid;
+            const { shares, shareVersion } = await withShareUpdateLock(storage, storageId, () =>
+                persistSharesWithoutLock(
+                    params.privateKey,
+                    serverUrl,
+                    params.token,
+                    params.providerType,
+                    primaryDid,
+                    storage,
+                    storageId,
+                    undefined,
+                    params.signDidAuthVp,
+                    tenantId
+                )
+            );
+            lastEmailShare = shares.emailShare;
+            lastShareVersion = shareVersion;
+            lastServerSnapshot = {
+                currentVersion: shareVersion,
+                resolvedVersion: shareVersion,
+                authShare: shares.authShare,
+                primaryDid: status.primaryDid,
+            };
+            unenrolledRotation = pinMaterial
+                ? undefined
+                : { shares, shareVersion, primaryDid: status.primaryDid, clearPin: forceRotate };
             await enrollEscrow(
                 params.token,
                 params.providerType,
                 params.privateKey,
-                retry.primaryDid,
-                retry.shares,
-                retry.shareVersion,
+                status.primaryDid,
+                shares,
+                shareVersion,
                 params.signDidAuthVp,
-                undefined,
-                undefined,
-                retry.clearPin
+                verifiedKey,
+                pinMaterial,
+                forceRotate
             );
             unenrolledRotation = undefined;
-            return { enrolled: true, changed: true, shareVersion: retry.shareVersion };
+            return { enrolled: true, changed: true, shareVersion };
+        } catch (err) {
+            // A background repair the caller never asked for must not surface as
+            // a hard failure (mirrors tryEnrollEscrow's existing swallow-and-report
+            // shape); an explicit not-yet-enrolled/PIN/forced rotation still throws.
+            if (!repairingStaleBlob) throw err;
+            try {
+                if (config.onEscrowError) config.onEscrowError(err);
+                else console.warn('SSS: escrow enrollment failed');
+            } catch {
+                console.warn('SSS: escrow error reporting failed');
+            }
+            return { enrolled: true, changed: false };
         }
-        // Verify the enclave before rotating: a bad attestation must not burn
-        // a share version (and, repeated, the retained auth-share history).
-        const verifiedKey = await fetchVerifiedEnclaveKey();
-        const pinSalt = pin !== undefined ? generatePinSalt() : undefined;
-        const pinMaterial =
-            pin !== undefined && pinSalt !== undefined
-                ? { pinSalt, pinVerifier: await derivePinProof(pin, pinSalt) }
-                : undefined;
-        const storageId = activeStorageId;
-        const primaryDid = status.primaryDid;
-        const { shares, shareVersion } = await withShareUpdateLock(storage, storageId, () =>
-            persistSharesWithoutLock(
-                params.privateKey,
-                serverUrl,
-                params.token,
-                params.providerType,
-                primaryDid,
-                storage,
-                storageId,
-                undefined,
-                params.signDidAuthVp,
-                tenantId
-            )
-        );
-        lastEmailShare = shares.emailShare;
-        lastShareVersion = shareVersion;
-        lastServerSnapshot = {
-            currentVersion: shareVersion,
-            resolvedVersion: shareVersion,
-            authShare: shares.authShare,
-            primaryDid: status.primaryDid,
-        };
-        unenrolledRotation = pinMaterial
-            ? undefined
-            : { shares, shareVersion, primaryDid: status.primaryDid, clearPin: forceRotate };
-        await enrollEscrow(
-            params.token,
-            params.providerType,
-            params.privateKey,
-            status.primaryDid,
-            shares,
-            shareVersion,
-            params.signDidAuthVp,
-            verifiedKey,
-            pinMaterial,
-            forceRotate
-        );
-        unenrolledRotation = undefined;
-        return { enrolled: true, changed: true, shareVersion };
     };
 
     const recordPromotion =
@@ -1740,6 +1773,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 maskedRecoveryEmail: data.maskedRecoveryEmail ?? null,
                 escrowOptedOut: data.escrowOptedOut === true,
                 escrowPin: data.escrowPin,
+                escrowStale: data.escrowStale,
                 sssActivationState: data.sssActivationState ?? 'active',
             };
         },
@@ -1810,19 +1844,25 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             if (!config.escrow?.enabled) return { state: 'disabled' };
             const status = await this.fetchServerKeyStatus(params.token, params.providerType);
             if (status.escrowOptedOut) return { state: 'opted-out', escrowPin: status.escrowPin };
-            const state =
+            const confirmedEscrow = status.recoveryMethods.filter(
+                method =>
+                    method.type === 'escrow' &&
+                    (Boolean(method.confirmedAt) ||
+                        ('confirmationStatus' in method &&
+                            method.confirmationStatus === 'confirmed'))
+            );
+            const enrolled =
                 status.shareVersion !== null &&
-                status.recoveryMethods.some(
-                    method =>
-                        method.type === 'escrow' &&
-                        method.shareVersion === status.shareVersion &&
-                        (Boolean(method.confirmedAt) ||
-                            ('confirmationStatus' in method &&
-                                method.confirmationStatus === 'confirmed'))
-                )
-                    ? 'enrolled'
-                    : 'not-enrolled';
-            return { state, escrowPin: status.escrowPin };
+                confirmedEscrow.some(method => method.shareVersion === status.shareVersion);
+            // Previously enrolled accounts must bypass the new-enrollment rollout
+            // even when a rotation succeeded but resealing the escrow blob failed.
+            if (confirmedEscrow.length > 0 && (!enrolled || status.escrowStale))
+                return {
+                    state: 'stale',
+                    escrowPin: status.escrowPin,
+                    staleReason: status.escrowStale,
+                };
+            return { state: enrolled ? 'enrolled' : 'not-enrolled', escrowPin: status.escrowPin };
         },
 
         async disableEscrowRecovery(params): Promise<void> {
@@ -1878,7 +1918,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             const result = await withRotationLock(() =>
                 ensureEscrowEnrollmentUnguarded(this, { ...params, options: { pin } }, storage)
             );
-            if (!result.enrolled) {
+            if (!result.enrolled || !result.changed) {
                 throw new Error('Automatic recovery is not available for this account.');
             }
         },
@@ -1888,7 +1928,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             const result = await withRotationLock(() =>
                 ensureEscrowEnrollmentUnguarded(this, params, storage, true)
             );
-            if (!result.enrolled) {
+            if (!result.enrolled || !result.changed) {
                 throw new Error('Automatic recovery is not available for this account.');
             }
         },

@@ -193,8 +193,9 @@ jobs:
               run: |
                   LC_STAGING='{"name":"LearnCard Staging","brain_env":"learn-cloud-network-api-staging","cloud_env":"learn-cloud-storage-api-staging","lca_api_env":"learn-card-app-api-staging"}'
                   LC_PRODUCTION='{"name":"LearnCard Production","brain_env":"learn-cloud-network-api-production","cloud_env":"learn-cloud-storage-api-production","lca_api_env":"learn-card-app-api-production"}'
-                  SCOUTS_STAGING='{"name":"ScoutPass Staging","brain_env":"scout-network-api-staging","cloud_env":"scout-storage-api-staging","lca_api_env":"scout-app-api-staging"}'
-                  SCOUTS_PRODUCTION='{"name":"ScoutPass Production","brain_env":"scout-network-api-production","cloud_env":"scout-storage-api-production","lca_api_env":"scout-app-api-production"}'
+                  # tenant selects the services' config.<tenant>.<stage>.json; LearnCard is the default.
+                  SCOUTS_STAGING='{"tenant":"scouts","name":"ScoutPass Staging","brain_env":"scout-network-api-staging","cloud_env":"scout-storage-api-staging","lca_api_env":"scout-app-api-staging"}'
+                  SCOUTS_PRODUCTION='{"tenant":"scouts","name":"ScoutPass Production","brain_env":"scout-network-api-production","cloud_env":"scout-storage-api-production","lca_api_env":"scout-app-api-production"}'
 
                   # Frontend legs mirror the service matrix, one Netlify site per GitHub
                   # Environment. capgo=false on ALL staging legs (automatic and manual): the
@@ -451,18 +452,26 @@ jobs:
 
             - name: Validate credential refresh configuration
               env:
-                  CREDENTIAL_REFRESH_ENABLED: ${{ vars.CREDENTIAL_REFRESH_ENABLED || 'false' }}
+                  SERVERLESS_STAGE: ${{ vars.SERVERLESS_STAGE }}
+                  CONFIG_TENANT: ${{ matrix.tenant || 'learncard' }}
+                  RUNTIME_SECRETS_ID: ${{ vars.RUNTIME_SECRETS_ID }}
                   CREDENTIAL_REFRESH_DIGEST_SECRET: ${{ secrets.CREDENTIAL_REFRESH_DIGEST_SECRET }}
               run: |
-                  if [[ "$CREDENTIAL_REFRESH_ENABLED" == "true" && -z "$CREDENTIAL_REFRESH_DIGEST_SECRET" ]]; then
+                  # Bundle contents are validated at runtime; only validate GitHub fallbacks here.
+                  if [[ -n "$RUNTIME_SECRETS_ID" ]]; then exit 0; fi
+                  # Same tenant/stage file the runtime loads; a missing tenant file fails closed.
+                  enabled=$(node -e 'const stage = process.env.SERVERLESS_STAGE; const tenant = process.env.CONFIG_TENANT || "learncard"; if (!["dev", "production"].includes(stage)) process.exit(1); const file = tenant === "learncard" ? stage : `${tenant}.${stage}`; process.stdout.write(String(require(`./services/learn-card-network/brain-service/config/config.${file}.json`).CREDENTIAL_REFRESH_ENABLED ?? ""));')
+                  if [[ "$enabled" == "true" && -z "$CREDENTIAL_REFRESH_DIGEST_SECRET" ]]; then
                     echo "::error::CREDENTIAL_REFRESH_DIGEST_SECRET must be configured when credential refresh is enabled."
                     exit 1
                   fi
 
             - name: Validate share-link request hash secret
               env:
+                  RUNTIME_SECRETS_ID: ${{ vars.RUNTIME_SECRETS_ID }}
                   SHARE_LINK_REQUEST_HASH_SECRET: ${{ secrets.SHARE_LINK_REQUEST_HASH_SECRET }}
               run: |
+                  if [[ -n "$RUNTIME_SECRETS_ID" ]]; then exit 0; fi
                   # Disabled share-link environments do not need this secret.
                   if [[ -n "$SHARE_LINK_REQUEST_HASH_SECRET" ]]; then
                     secret_bytes=$(printf '%s' "$SHARE_LINK_REQUEST_HASH_SECRET" | wc -c | tr -d '[:space:]')
@@ -480,56 +489,48 @@ jobs:
                   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
                   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
                   AWS_DEFAULT_REGION: us-east-1
-                  CLIENT_APP_DOMAIN_NAME: ${{ vars.CLIENT_APP_DOMAIN_NAME }}
-                  POSTMARK_FROM_EMAIL: ${{ vars.POSTMARK_FROM_EMAIL }}
                   SERVERLESS_CACHE_INSTANCE_SIZE: ${{ vars.SERVERLESS_CACHE_INSTANCE_SIZE }}
                   SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
                   SERVERLESS_DOMAIN_NAME: ${{ vars.SERVERLESS_DOMAIN_NAME }}
                   SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
                   SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
                   APP_STORE_ADMIN_PROFILE_IDS: ${{ vars.APP_STORE_ADMIN_PROFILE_IDS }}
-                  CREDENTIAL_REFRESH_ENABLED: ${{ vars.CREDENTIAL_REFRESH_ENABLED || 'false' }}
+                  # Optional per-stage runtime-secrets bundle id. When set, the bundle
+                  # supplies the credentials below and serverless.function-env.cjs omits the
+                  # GitHub fallbacks. Non-secret per-stage config (DOMAIN_NAME, SENTRY_ENV,
+                  # POSTMARK_FROM_EMAIL, MESSAGEBIRD_ORIGINATOR, CLIENT_APP_DOMAIN_NAME,
+                  # the SHARE_LINK_MAINTENANCE_* trust/maintenance values, OIDC_TRUSTED_ISSUERS,
+                  # OIDC_EXPECTED_AUDIENCE, CREDENTIAL_REFRESH_ENABLED / _NOTIFICATION_WINDOW_HOURS,
+                  # SKILL_EMBEDDING_GOOGLE_MODEL) is checked in under config/, not passed here.
+                  RUNTIME_SECRETS_ID: ${{ vars.RUNTIME_SECRETS_ID }}
+                  CONFIG_TENANT: ${{ matrix.tenant || 'learncard' }}
+                  # Credential fallbacks: used only when RUNTIME_SECRETS_ID is unset.
                   CREDENTIAL_REFRESH_DIGEST_SECRET: ${{ secrets.CREDENTIAL_REFRESH_DIGEST_SECRET }}
-                  CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS: ${{ vars.CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS || '24' }}
-                  # LC-2187: public service trust configuration, provisioned per environment.
-                  SHARE_LINK_MAINTENANCE_NAMESPACE: ${{ vars.SHARE_LINK_MAINTENANCE_NAMESPACE }}
-                  SHARE_LINK_MAINTENANCE_ORIGIN: ${{ vars.SHARE_LINK_MAINTENANCE_ORIGIN }}
-                  SHARE_LINK_MAINTENANCE_AUDIENCE: ${{ vars.SHARE_LINK_MAINTENANCE_AUDIENCE }}
-                  SHARE_LINK_MAINTENANCE_ALLOW_INSECURE_LOOPBACK: 'false'
                   # LC-2189: private request fingerprint key, stable across Brain deploys.
                   SHARE_LINK_REQUEST_HASH_SECRET: ${{ secrets.SHARE_LINK_REQUEST_HASH_SECRET }}
                   SEED: ${{ secrets.SEED }}
-                  DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
                   NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${{ secrets.NOTIFICATIONS_SERVICE_WEBHOOK_URL }}
                   NEO4J_URI: ${{ secrets.NEO4J_URI }}
                   NEO4J_USERNAME: ${{ secrets.NEO4J_USERNAME }}
                   NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
                   POSTMARK_API_KEY: ${{ secrets.POSTMARK_API_KEY }}
                   MESSAGEBIRD_AUTH_TOKEN: ${{ secrets.MESSAGEBIRD_AUTH_TOKEN }}
-                  MESSAGEBIRD_ORIGINATOR: ${{ secrets.MESSAGEBIRD_ORIGINATOR }}
                   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-                  SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
-                  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-                  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-                  SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
                   SMART_RESUME_CLIENT_ID: ${{ secrets.SMART_RESUME_CLIENT_ID }}
                   SMART_RESUME_ACCESS_KEY: ${{ secrets.SMART_RESUME_ACCESS_KEY }}
                   SMART_RESUME_CONTRACT_URI: ${{ secrets.SMART_RESUME_CONTRACT_URI }}
                   LOGIN_PROVIDER_DID: ${{ secrets.LOGIN_PROVIDER_DID }}
                   SKILL_EMBEDDING_GOOGLE_API_KEY: ${{ secrets.SKILL_EMBEDDING_GOOGLE_API_KEY }}
-                  SKILL_EMBEDDING_GOOGLE_MODEL: ${{ secrets.SKILL_EMBEDDING_GOOGLE_MODEL }}
-                  SKILL_EMBEDDING_BATCH_SIZE: ${{ secrets.SKILL_EMBEDDING_BATCH_SIZE }}
-                  SKILL_EMBEDDING_BACKFILL_ON_STARTUP: ${{ secrets.SKILL_EMBEDDING_BACKFILL_ON_STARTUP }}
-                  SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS: ${{ secrets.SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS }}
-                  SKILL_EMBEDDING_BACKFILL_PAGE_SIZE: ${{ secrets.SKILL_EMBEDDING_BACKFILL_PAGE_SIZE }}
-                  SKILL_EMBEDDING_BACKFILL_BATCH_SIZE: ${{ secrets.SKILL_EMBEDDING_BACKFILL_BATCH_SIZE }}
-                  OIDC_TRUSTED_ISSUERS: ${{ vars.OIDC_TRUSTED_ISSUERS }}
-                  OIDC_EXPECTED_AUDIENCE: ${{ vars.OIDC_EXPECTED_AUDIENCE }}
-                  # LC-1644 perf bench backend telemetry (admin-only). POSTHOG_HOST is a var (non-secret),
-                  # POSTHOG_API_KEY is a secret. GIT_SHA is the deploy commit for tagging events.
+                  SKILLS_PROVIDER_API_KEY: ${{ secrets.SKILLS_PROVIDER_API_KEY }}
+                  TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+                  TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+                  # Backend telemetry credentials and deploy metadata; tuning uses schema defaults.
                   POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
-                  POSTHOG_HOST: ${{ vars.POSTHOG_HOST }}
                   GIT_SHA: ${{ github.sha }}
+                  # Build-time only (Sentry sourcemap upload); not Lambda runtime env.
+                  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+                  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+                  SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
 
     deploy-learn-cloud:
         name: Deploy LearnCloud (${{ matrix.name }})
@@ -612,20 +613,22 @@ jobs:
                   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
                   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
                   AWS_DEFAULT_REGION: us-east-1
-                  SERVER_URL: ${{ vars.SERVER_URL }}
                   SERVERLESS_CACHE_INSTANCE_SIZE: ${{ vars.SERVERLESS_CACHE_INSTANCE_SIZE }}
                   SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
                   SERVERLESS_DOMAIN_NAME: ${{ vars.SERVERLESS_DOMAIN_NAME }}
                   SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
                   SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
+                  # Optional per-stage runtime-secrets bundle id. When set, the bundle
+                  # supplies the credentials below and serverless.function-env.cjs omits the
+                  # GitHub fallbacks. Non-secret per-stage config (SERVER_URL, SENTRY_ENV,
+                  # SHARE_CONTENT_AUDIENCE / _SERVICE_DIDS / _VERIFICATION_METHODS /
+                  # _NAMESPACE_BINDINGS) is checked in under config/, not passed here.
+                  RUNTIME_SECRETS_ID: ${{ vars.RUNTIME_SECRETS_ID }}
+                  CONFIG_TENANT: ${{ matrix.tenant || 'learncard' }}
+                  # Credential fallbacks: used only when RUNTIME_SECRETS_ID is unset.
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
                   LEARN_CLOUD_MONGO_URI: ${{ secrets.LEARN_CLOUD_MONGO_URI }}
                   LEARN_CLOUD_MONGO_DB_NAME: ${{ secrets.LEARN_CLOUD_MONGO_DB_NAME }}
-                  # LC-2187: must match this environment's Brain service configuration.
-                  SHARE_CONTENT_AUDIENCE: ${{ vars.SHARE_CONTENT_AUDIENCE }}
-                  SHARE_CONTENT_SERVICE_DIDS: ${{ vars.SHARE_CONTENT_SERVICE_DIDS }}
-                  SHARE_CONTENT_VERIFICATION_METHODS: ${{ vars.SHARE_CONTENT_VERIFICATION_METHODS }}
-                  SHARE_CONTENT_NAMESPACE_BINDINGS: ${{ vars.SHARE_CONTENT_NAMESPACE_BINDINGS }}
                   XAPI_ENDPOINT: ${{ secrets.XAPI_ENDPOINT }}
                   XAPI_USERNAME: ${{ secrets.XAPI_USERNAME }}
                   XAPI_PASSWORD: ${{ secrets.XAPI_PASSWORD }}
@@ -633,7 +636,7 @@ jobs:
                   RSA_PUBLIC_KEY: ${{ secrets.RSA_PUBLIC_KEY }}
                   JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
                   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-                  SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
+                  # Build-time only (Sentry sourcemap upload); not Lambda runtime env.
                   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
                   SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
                   SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
@@ -723,47 +726,40 @@ jobs:
                   SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
                   SERVERLESS_DOMAIN_NAME: ${{ vars.SERVERLESS_DOMAIN_NAME }}
                   SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
-                  DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
-                  SEED: ${{ secrets.SEED }}
-                  METABASE_SECRET_KEY: ${{ secrets.METABASE_SECRET_KEY }}
-                  POSTMARK_SERVER_TOKEN: ${{ secrets.POSTMARK_SERVER_TOKEN }}
-                  POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS: ${{ vars.POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS }}
-                  POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS: ${{ vars.POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS }}
-                  POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS: ${{ vars.POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS }}
-                  POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS: ${{ vars.POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS }}
-                  POSTMARK_FROM_EMAIL: ${{ secrets.POSTMARK_FROM_EMAIL }}
-                  POSTMARK_BRAND_NAME: ${{ secrets.POSTMARK_BRAND_NAME }}
-                  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-                  AUTHORIZED_DIDS: ${{ secrets.AUTHORIZED_DIDS }}
-                  GOOGLE_APPLICATION_CREDENTIAL: ${{ secrets.GOOGLE_APPLICATION_CREDENTIAL }}
+                  # Optional per-stage runtime-secrets bundle id. When set, the bundle
+                  # supplies the credentials below and serverless.function-env.cjs omits the
+                  # GitHub fallbacks. Non-secret per-stage config is checked in, not passed here.
                   RUNTIME_SECRETS_ID: ${{ vars.RUNTIME_SECRETS_ID }}
-                  KEYCLOAK_ISSUERS: ${{ vars.KEYCLOAK_ISSUERS }}
-                  KEYCLOAK_AUDIENCES: ${{ vars.KEYCLOAK_AUDIENCES }}
-                  KEYCLOAK_JWKS_URL_OVERRIDES: ${{ vars.KEYCLOAK_JWKS_URL_OVERRIDES }}
-                  OIDC_ISSUER: ${{ vars.OIDC_ISSUER }}
-                  OIDC_SIGNING_KEY_SECRET_ID: ${{ vars.OIDC_SIGNING_KEY_SECRET_ID }}
-                  OIDC_CLIENT_ID: ${{ vars.OIDC_CLIENT_ID }}
-                  OIDC_CLIENT_SECRET: ${{ secrets.OIDC_CLIENT_SECRET }}
-                  OIDC_REDIRECT_URIS: ${{ vars.OIDC_REDIRECT_URIS }}
-                  GOOGLE_OAUTH_CLIENT_IDS: ${{ vars.GOOGLE_OAUTH_CLIENT_IDS }}
-                  APPLE_OAUTH_CLIENT_IDS: ${{ vars.APPLE_OAUTH_CLIENT_IDS }}
+                  CONFIG_TENANT: ${{ matrix.tenant || 'learncard' }}
+                  # Credential fallbacks: used only when RUNTIME_SECRETS_ID is unset.
+                  SEED: ${{ secrets.SEED }}
                   MONGO_URI: ${{ secrets.MONGO_URI }}
                   MONGO_DB_NAME: ${{ secrets.MONGO_DB_NAME }}
+                  AUTHORIZED_DIDS: ${{ secrets.AUTHORIZED_DIDS }}
+                  METABASE_SECRET_KEY: ${{ secrets.METABASE_SECRET_KEY }}
+                  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+                  POSTMARK_SERVER_TOKEN: ${{ secrets.POSTMARK_SERVER_TOKEN }}
                   SCOUTS_SSO_CLIENT_SECRET: ${{ secrets.SCOUTS_SSO_CLIENT_SECRET }}
-                  # Compatibility first; advance these per environment using the seed-encryption runbook.
-                  SA_SEED_ENCRYPT_WRITES: ${{ vars.SA_SEED_ENCRYPT_WRITES || 'false' }}
-                  SA_SEED_ALLOW_LEGACY_READ: ${{ vars.SA_SEED_ALLOW_LEGACY_READ || 'true' }}
+                  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+                  GOOGLE_APPLICATION_CREDENTIAL: ${{ secrets.GOOGLE_APPLICATION_CREDENTIAL }}
                   LEARN_CLOUD_URL: ${{ secrets.LEARN_CLOUD_URL }}
-                  # Escrow recovery stays off unless the environment sets ESCROW_ENCLAVE_MODE.
-                  ESCROW_ENCLAVE_MODE: ${{ vars.ESCROW_ENCLAVE_MODE }}
-                  ESCROW_ENCLAVE_ACTIVE_KEY_ID: ${{ vars.ESCROW_ENCLAVE_ACTIVE_KEY_ID }}
-                  ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON: ${{ secrets.ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON }}
-                  ESCROW_HOLD_DURATION_MS: ${{ vars.ESCROW_HOLD_DURATION_MS }}
-                  ESCROW_HOLD_RESTART_MIN_AGE_MS: ${{ vars.ESCROW_HOLD_RESTART_MIN_AGE_MS }}
                   ESCROW_RELAY_URL: ${{ vars.ESCROW_RELAY_URL }}
                   ESCROW_RELAY_AUTH_TOKEN: ${{ secrets.ESCROW_RELAY_AUTH_TOKEN }}
-                  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-                  SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
+                  ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON: ${{ secrets.ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON }}
+                  ESCROW_ENCLAVE_REMOTE_URL: ${{ vars.ESCROW_ENCLAVE_REMOTE_URL }}
+                  ESCROW_ENCLAVE_REMOTE_TOKEN: ${{ secrets.ESCROW_ENCLAVE_REMOTE_TOKEN }}
+                  # Non-secret operator toggles, forwarded in bundle mode too: escrow stays off
+                  # unless ESCROW_ENCLAVE_MODE is set; the kill switch halts releases immediately.
+                  ESCROW_ENCLAVE_MODE: ${{ vars.ESCROW_ENCLAVE_MODE }}
+                  ESCROW_RELEASE_KILL_SWITCH: ${{ vars.ESCROW_RELEASE_KILL_SWITCH }}
+                  # Deploy-time only (serverless.yml PrivateLink resources); empty = none created.
+                  ESCROW_ENCLAVE_ENDPOINT_SERVICE_NAME: ${{ vars.ESCROW_ENCLAVE_ENDPOINT_SERVICE_NAME }}
+                  ESCROW_ENCLAVE_HOSTNAME: ${{ vars.ESCROW_ENCLAVE_HOSTNAME }}
+                  # OIDC exception: the broker secret and redirect list reach the oidc function
+                  # directly because OidcExecutionRole cannot read the runtime-secrets bundle.
+                  OIDC_CLIENT_SECRET: ${{ secrets.OIDC_CLIENT_SECRET }}
+                  OIDC_REDIRECT_URIS: ${{ vars.OIDC_REDIRECT_URIS }}
+                  # Build-time only (Sentry sourcemap upload, Maps key); not Lambda runtime env.
                   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
                   SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
                   SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}

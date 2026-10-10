@@ -2144,6 +2144,36 @@
             "invalidCode": "El código es incorrecto o venció. Solicita uno nuevo e inténtalo otra vez.",
             "invalidRecoveryMethod": "Ese método no pudo verificar tu cuenta. Prueba otro método."
         },
+        "cancel": {
+            "invalidLink": {
+                "title": "Este enlace no es válido",
+                "body": "Abre el último correo que te enviamos o inicia sesión para revisar tu cuenta.",
+                "signIn": "Iniciar sesión"
+            },
+            "confirm": {
+                "title": "¿Cancelar la recuperación de tu cuenta?",
+                "body": "Alguien solicitó recuperar tu cuenta. Si no fuiste tú, cancela la solicitud ahora.",
+                "cancelBtn": "Cancelar recuperación",
+                "notNowBtn": "Ahora no",
+                "cancelling": "Cancelando..."
+            },
+            "success": {
+                "title": "Recuperación cancelada. Tu cuenta está a salvo.",
+                "body": "Te recomendamos iniciar sesión y revisar tus opciones de recuperación.",
+                "doneBtn": "Abrir LearnCard"
+            },
+            "expired": {
+                "title": "El enlace ha caducado",
+                "body": "Este enlace ha caducado o ya se ha usado. Si aún hay una recuperación en curso, inicia sesión para cancelarla.",
+                "signInBtn": "Iniciar sesión"
+            },
+            "error": {
+                "network": "Hay un problema de conexión. Revisa tu conexión a internet e inténtalo de nuevo.",
+                "tooMany": "Demasiados intentos. Espera un minuto e inténtalo de nuevo.",
+                "generic": "Algo salió mal. Inténtalo de nuevo.",
+                "tryAgainBtn": "Intentar de nuevo"
+            }
+        },
         "automatic": {
             "restoreWait": "Restaurar tras una espera de 7 días"
         },
