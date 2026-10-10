@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.90.39
+
+### Patch Changes
+
+- [#1648](https://github.com/learningeconomy/LearnCard/pull/1648) [`5a4ac5697efd3993f78182aa8563d7ebbc0cba8a`](https://github.com/learningeconomy/LearnCard/commit/5a4ac5697efd3993f78182aa8563d7ebbc0cba8a) Thanks [@gerardopar](https://github.com/gerardopar)! - fix(LC-2237): adopt Capacitor iOS scene lifecycle
+
+- [#1632](https://github.com/learningeconomy/LearnCard/pull/1632) [`6209da80c52ac056a7644dab14669192740c9dad`](https://github.com/learningeconomy/LearnCard/commit/6209da80c52ac056a7644dab14669192740c9dad) Thanks [@goblincore](https://github.com/goblincore)! - Add explicit consent contract data recipients and audience version acknowledgements. Enforce current consent status, expiry, category sharing, and recipient membership on consented data reads. Recipient additions freeze after first consent; removals immediately revoke API access and invalidate stale consent/update/sync acknowledgements.
+
+    Update existing app consent paths to review the current data audience, encrypt for all recipients, and cache copies by the full audience. Background synchronization reloads recipients and acknowledges the current version.
+
+- [#1643](https://github.com/learningeconomy/LearnCard/pull/1643) [`c2c1d4617459f4b255ab27e4e1f4fa410782a317`](https://github.com/learningeconomy/LearnCard/commit/c2c1d4617459f4b255ab27e4e1f4fa410782a317) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-2208] Clean up prod console noise
+
+- [#1683](https://github.com/learningeconomy/LearnCard/pull/1683) [`3ed6051cbb83f04f15792ed7d4d94ccbf1ceecef`](https://github.com/learningeconomy/LearnCard/commit/3ed6051cbb83f04f15792ed7d4d94ccbf1ceecef) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: [LC-2243] - Fix unresponsive QR code scanner (QRCode)
+
+- Updated dependencies [[`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5)]:
+    - @learncard/sss-key-manager@0.2.1
+    - @learncard/helpers@1.6.2
+    - @learncard/lca-api-plugin@2.0.8
+    - @learncard/react@2.12.9
+
 ## 1.90.38
 
 ### Patch Changes

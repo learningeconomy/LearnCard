@@ -1,6 +1,6 @@
 {
     "name": "@learncard/service-config",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "private": true,
     "description": "Shared runtime configuration helpers for LearnCard services (runtime secrets, per-stage config, Lambda bootstrap)",
     "main": "src/index.ts",

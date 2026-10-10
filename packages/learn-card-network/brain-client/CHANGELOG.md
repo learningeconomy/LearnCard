@@ -1,5 +1,22 @@
 # @learncard/network-brain-client
 
+## 2.5.59
+
+### Patch Changes
+
+- [#1632](https://github.com/learningeconomy/LearnCard/pull/1632) [`6209da80c52ac056a7644dab14669192740c9dad`](https://github.com/learningeconomy/LearnCard/commit/6209da80c52ac056a7644dab14669192740c9dad) Thanks [@goblincore](https://github.com/goblincore)! - Add explicit consent contract data recipients and audience version acknowledgements. Enforce current consent status, expiry, category sharing, and recipient membership on consented data reads. Recipient additions freeze after first consent; removals immediately revoke API access and invalidate stale consent/update/sync acknowledgements.
+
+    Update existing app consent paths to review the current data audience, encrypt for all recipients, and cache copies by the full audience. Background synchronization reloads recipients and acknowledges the current version.
+
+- [#1634](https://github.com/learningeconomy/LearnCard/pull/1634) [`5890451789b18afee45dc5ecbab3fa30aa90f085`](https://github.com/learningeconomy/LearnCard/commit/5890451789b18afee45dc5ecbab3fa30aa90f085) Thanks [@goblincore](https://github.com/goblincore)! - Add attributed generic contract requests, target-only denial, retained cancellation history, and optional referral identity on consent history and exports. Preserve legacy AI request payloads and owner-only consent behavior.
+
+    Persist correlated notification intents with consent mutations and retry via a leased Lambda/Docker worker. Fan out to the owner and current data recipients; give a requester outside that audience only a minimal decision. Recheck audience membership and current consent permissions before delivery, including queued notifications, and expose stable event and delivery IDs for downstream deduplication.
+
+    Keep app request hooks and legacy AI component props aligned with the shared request status type, including retained generic cancellations.
+
+- Updated dependencies [[`7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2`](https://github.com/learningeconomy/LearnCard/commit/7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2), [`6209da80c52ac056a7644dab14669192740c9dad`](https://github.com/learningeconomy/LearnCard/commit/6209da80c52ac056a7644dab14669192740c9dad), [`5890451789b18afee45dc5ecbab3fa30aa90f085`](https://github.com/learningeconomy/LearnCard/commit/5890451789b18afee45dc5ecbab3fa30aa90f085), [`a55332b1652567bc7f3d60064a446365c134cf24`](https://github.com/learningeconomy/LearnCard/commit/a55332b1652567bc7f3d60064a446365c134cf24), [`37a3db8ff98a35c8e9e140569a693c9e0ed00165`](https://github.com/learningeconomy/LearnCard/commit/37a3db8ff98a35c8e9e140569a693c9e0ed00165), [`ec321885908bab179acac7fec910bf61c42deb5f`](https://github.com/learningeconomy/LearnCard/commit/ec321885908bab179acac7fec910bf61c42deb5f), [`7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2`](https://github.com/learningeconomy/LearnCard/commit/7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2), [`37a3db8ff98a35c8e9e140569a693c9e0ed00165`](https://github.com/learningeconomy/LearnCard/commit/37a3db8ff98a35c8e9e140569a693c9e0ed00165)]:
+    - @learncard/network-brain-service@3.20.0
+
 ## 2.5.58
 
 ### Patch Changes

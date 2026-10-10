@@ -1,5 +1,15 @@
 # @learncard/create-http-bridge
 
+## 1.1.259
+
+### Patch Changes
+
+- [#1645](https://github.com/learningeconomy/LearnCard/pull/1645) [`590adf48867d6c6fd504e66a11c9827d5102122d`](https://github.com/learningeconomy/LearnCard/commit/590adf48867d6c6fd504e66a11c9827d5102122d) Thanks [@github-actions](https://github.com/apps/github-actions)! - Update DIDKit WASM from didkit 543de99bb356 and ssi 6d71e5f46e59, including the HTTP bridge artifact and integrity pin.
+
+- Updated dependencies [[`6209da80c52ac056a7644dab14669192740c9dad`](https://github.com/learningeconomy/LearnCard/commit/6209da80c52ac056a7644dab14669192740c9dad), [`5890451789b18afee45dc5ecbab3fa30aa90f085`](https://github.com/learningeconomy/LearnCard/commit/5890451789b18afee45dc5ecbab3fa30aa90f085), [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5), [`8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba`](https://github.com/learningeconomy/LearnCard/commit/8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba), [`c78c982f9f4911f1ca2973380f19d80db775e012`](https://github.com/learningeconomy/LearnCard/commit/c78c982f9f4911f1ca2973380f19d80db775e012)]:
+    - @learncard/types@5.23.0
+    - @learncard/init@2.5.2
+
 ## 1.1.258
 
 ### Patch Changes

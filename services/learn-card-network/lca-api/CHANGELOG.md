@@ -1,5 +1,46 @@
 # @welibraryos/lca-api-service
 
+## 1.5.0
+
+### Minor Changes
+
+- [#1589](https://github.com/learningeconomy/LearnCard/pull/1589) [`599f048b082d2ee64775f7a0ef972e171b8c2a8a`](https://github.com/learningeconomy/LearnCard/commit/599f048b082d2ee64775f7a0ef972e171b8c2a8a) Thanks [@Custard7](https://github.com/Custard7)! - Add Keycloak token verification (`verifyKeycloakToken`) using `jose`: exact issuer allowlist, `aud`/`azp` client allowlist, ID/Bearer token-type check, and required `email_verified` / `phone_number_verified` claims. Configured with `KEYCLOAK_ISSUERS`, `KEYCLOAK_AUDIENCES`, and optional `KEYCLOAK_JWKS_URL_OVERRIDES`. Disabled (rejects all tokens) until issuers are configured.
+
+- [#1592](https://github.com/learningeconomy/LearnCard/pull/1592) [`1f1ff54118a5d08c97f57696ca45671f0ee982b8`](https://github.com/learningeconomy/LearnCard/commit/1f1ff54118a5d08c97f57696ca45671f0ee982b8) Thanks [@Custard7](https://github.com/Custard7)! - Add the lca-api OIDC identity provider with RS256 signing, permanent UUID subjects,
+  single-use login tickets, authorization codes and opaque access tokens. The
+  `auth.requestLoginTicket` and `auth.requestSocialLoginTicket` routes verify email
+  codes or native Google/Apple proofs. Keycloak brokers the redirect flow without
+  an additional login form. Includes Docker/Lambda wiring, a development broker
+  fixture and protocol tests. Phone OTP and full live broker round-trip CI remain deferred.
+
+### Patch Changes
+
+- [#1621](https://github.com/learningeconomy/LearnCard/pull/1621) [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5) Thanks [@Custard7](https://github.com/Custard7)! - Add remote enclave backend, hold notifications, cancel links, reminders, and kill switch for escrow recovery.
+
+- [#1679](https://github.com/learningeconomy/LearnCard/pull/1679) [`77e5b0681f5567caa446da57a1746d148ffde27a`](https://github.com/learningeconomy/LearnCard/commit/77e5b0681f5567caa446da57a1746d148ffde27a) Thanks [@Custard7](https://github.com/Custard7)! - Catch module-load index creation failures so a Mongo connect that outlives a frozen Lambda invocation no longer crashes the next request (seen as a 500 on `/oidc/authorize` during Keycloak sign-in).
+
+- [#1670](https://github.com/learningeconomy/LearnCard/pull/1670) [`7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2`](https://github.com/learningeconomy/LearnCard/commit/7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2) Thanks [@Custard7](https://github.com/Custard7)! - Honor CONFIG_STAGE in serverless-offline without implicitly applying a deployed stage's configuration during local startup.
+
+- [#1662](https://github.com/learningeconomy/LearnCard/pull/1662) [`aef0f8cfdef94170104d2179fb04759c8dae7162`](https://github.com/learningeconomy/LearnCard/commit/aef0f8cfdef94170104d2179fb04759c8dae7162) Thanks [@Custard7](https://github.com/Custard7)! - Load deployed OIDC signing keys from Secrets Manager with retryable per-process caching instead of storing private JWKs in Lambda environment variables.
+
+- [#1670](https://github.com/learningeconomy/LearnCard/pull/1670) [`7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2`](https://github.com/learningeconomy/LearnCard/commit/7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2) Thanks [@Custard7](https://github.com/Custard7)! - Document the layered backend configuration model: schema defaults, checked-in non-secret per-stage config files, the Lambda runtime AWS secrets bundle, and real environment variables, plus the Infisical → AWS sync and per-stage cutover.
+
+- [#1670](https://github.com/learningeconomy/LearnCard/pull/1670) [`7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2`](https://github.com/learningeconomy/LearnCard/commit/7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2) Thanks [@Custard7](https://github.com/Custard7)! - Select backend stage files by tenant as well as stage. `CONFIG_TENANT=scouts` loads `config.scouts.<stage>.json` (generated from the live ScoutPass Lambdas), so ScoutPass deployments no longer inherit LearnCard domains, trust settings or seed-encryption flags; a named tenant without a stage file fails closed. `ESCROW_ENCLAVE_MODE` is now forwarded in runtime-secrets bundle mode too.
+
+- [#1664](https://github.com/learningeconomy/LearnCard/pull/1664) [`4a237f41ea4ab0d3bd69f2066039518fdec20984`](https://github.com/learningeconomy/LearnCard/commit/4a237f41ea4ab0d3bd69f2066039518fdec20984) Thanks [@Custard7](https://github.com/Custard7)! - Load optional per-stage runtime secrets before Lambda initialization and scope authentication environment settings by function to avoid Lambda's 4KB limit. Preserve the Firebase environment fallback for stages without a bundle.
+
+- Updated dependencies [[`6209da80c52ac056a7644dab14669192740c9dad`](https://github.com/learningeconomy/LearnCard/commit/6209da80c52ac056a7644dab14669192740c9dad), [`5890451789b18afee45dc5ecbab3fa30aa90f085`](https://github.com/learningeconomy/LearnCard/commit/5890451789b18afee45dc5ecbab3fa30aa90f085), [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5), [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5), [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5), [`8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba`](https://github.com/learningeconomy/LearnCard/commit/8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba), [`7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2`](https://github.com/learningeconomy/LearnCard/commit/7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2), [`c78c982f9f4911f1ca2973380f19d80db775e012`](https://github.com/learningeconomy/LearnCard/commit/c78c982f9f4911f1ca2973380f19d80db775e012), [`590adf48867d6c6fd504e66a11c9827d5102122d`](https://github.com/learningeconomy/LearnCard/commit/590adf48867d6c6fd504e66a11c9827d5102122d)]:
+    - @learncard/types@5.23.0
+    - @learncard/email-templates@1.2.1
+    - @learncard/sss-key-manager@0.2.1
+    - @learncard/service-config@0.1.1
+    - @learncard/didkit-plugin@1.10.3
+    - @learncard/core@9.4.38
+    - @learncard/helpers@1.6.2
+    - @learncard/init@2.5.2
+    - @learncard/did-web-plugin@1.1.38
+    - @learncard/didkit-plugin-node@0.3.3
+
 ## 1.4.0
 
 ### Minor Changes
