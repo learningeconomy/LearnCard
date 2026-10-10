@@ -75,6 +75,7 @@
         "@learncard/email-templates": "workspace:*",
         "@learncard/helpers": "workspace:*",
         "@learncard/learn-card-plugin": "workspace:*",
+        "@learncard/partner-connect-core": "workspace:*",
         "@learncard/service-config": "workspace:*",
         "@learncard/types": "workspace:*",
         "@learncard/vc-plugin": "workspace:*",

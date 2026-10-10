@@ -27,6 +27,8 @@ interface LaunchConfigStepProps {
     onChange: (data: Partial<AppStoreListingCreate>) => void;
     errors: Record<string, string>;
     onPreview?: () => void;
+    /** Only the fields: no heading, help card, or config preview (used inside the listing editor). */
+    fieldsOnly?: boolean;
 }
 
 export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
@@ -34,6 +36,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
     onChange,
     errors,
     onPreview,
+    fieldsOnly = false,
 }) => {
     const [selectedContract, setSelectedContract] = useState<ConsentFlowContractDetails | null>(
         null
@@ -275,7 +278,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                     </div>
                 );
 
-            case 'CONSENT_REDIRECT':
+            case 'CONSENT_REDIRECT': {
                 const readCategories =
                     selectedContract?.contract?.read?.credentials?.categories || {};
                 const writeCategories =
@@ -418,6 +421,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                         )}
                     </div>
                 );
+            }
 
             case 'SERVER_HEADLESS':
                 return (
@@ -546,6 +550,8 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                 return null;
         }
     };
+
+    if (fieldsOnly) return <div className="space-y-5">{renderConfigFields()}</div>;
 
     return (
         <div className="space-y-6">

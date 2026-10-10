@@ -8071,9 +8071,9 @@
                     "description": "Mettez en place un flux de consentement pour envoyer et accéder aux données et credentials de l'utilisateur avec son autorisation."
                 },
                 "courseCatalog": {
-                    "title": "Connecter le catalogue de cours",
-                    "subtitle": "Intégration LMS d'entreprise",
-                    "description": "Configuration guidée complète pour les partenaires LMS. Configurez les webhooks, créez des modèles de credentials, mappez vos données et passez en production avec une émission automatique de credentials."
+                    "title": "Émettre depuis un catalogue de cours",
+                    "subtitle": "Transformez un tableur de cours en certifications",
+                    "description": "Importez votre liste de cours, obtenez un modèle de certification pour chacun, puis décernez-les aux apprenants lorsqu’ils terminent."
                 },
                 "verifyCredentials": {
                     "title": "Vérifier des credentials",
@@ -8235,7 +8235,8 @@
             "filterAll": "Toutes",
             "filterListed": "Publiées",
             "filterDraft": "Brouillon",
-            "filterArchived": "Archivées"
+            "filterArchived": "Archivées",
+            "filterUpdates": "Mises à jour"
         },
         "listing": {
             "submittedBy": "Soumis par :",
@@ -8302,6 +8303,23 @@
                 "standardDesc": "Visibilité normale dans la recherche et la navigation",
                 "demoted": "Rétrogradé",
                 "demotedDesc": "Visibilité réduite dans les annonces"
+            },
+            "update": {
+                "title": "Mise à jour en attente de vérification",
+                "description": "Ces modifications ne seront publiées que si vous les approuvez.",
+                "draftNote": "Le développeur modifie encore une mise à jour.",
+                "capabilities": "Modifie aussi ce que l'app peut faire (version {{version}}).",
+                "approve": "Approuver la mise à jour",
+                "reject": "Refuser la mise à jour",
+                "fieldName": "Nom",
+                "fieldTagline": "Slogan",
+                "fieldDescription": "Description",
+                "fieldIcon": "Icône",
+                "fieldScreenshots": "Captures d'écran",
+                "fieldHighlights": "Points forts",
+                "fieldLinks": "Liens et contact",
+                "fieldLaunch": "Où l'app s'exécute",
+                "fieldOther": "Autres détails"
             }
         }
     },

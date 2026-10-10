@@ -79,28 +79,32 @@ try {
 
 The SDK only does real work when it's embedded inside LearnCard — that's what answers its requests. Run your app on its own (local dev, a preview deploy, tests) and there's nothing to answer. Standalone calls that aren't mocked reject immediately with `LC_NOT_EMBEDDED` (instead of hanging until the request timeout), plus a one-time console hint.
 
-Mock mode fixes this automatically in local development. Whenever no LearnCard host is present and your app runs on a local dev host (`localhost`, `127.0.0.1`, `[::1]`, `*.localhost`, `*.local`), the SDK stands in for LearnCard so your app stays fully usable:
+Mock mode fixes this automatically in local development and AI app builders. Whenever no LearnCard host is present and your app runs on a local dev host (`localhost`, `127.0.0.1`, `[::1]`, `*.localhost`, `*.local`) or in the editor preview of Lovable, Bolt, v0, or Replit, the SDK stands in for LearnCard so your app stays fully usable:
 
-- **Every method shows a branded toast** describing what would happen once embedded — e.g. `sendCredential` → _"✅ In LearnCard, the user would receive **[name]** here"_, `incrementCounter` → _"Counter **coins** → **10**"_, `launchFeature` → _"Would open **/wallet**"_. Strong, visible feedback for every call.
-- `requestConsent(...)` grants automatically and shows a "mock consent" toast; counters (`incrementCounter` / `getCounter` / `getCounters`) save to the browser and survive reloads.
-- Identical or polled calls coalesce into one toast with a ×N counter, so nothing spams the screen.
+- **Every method shows a short notice** describing what would happen once embedded — e.g. `sendCredential` → _"In LearnCard, the learner would receive **[name]**."_, `incrementCounter` → _"Counter **coins** → **10**."_, `launchFeature` → _"In LearnCard, this would open **/wallet**."_ Strong, visible feedback for every call. At most three show at once (one on phones).
+- A **Practice mode** pill in the bottom-left corner expands into a plain-language list of the LearnCard features your app uses, with a **Publish app** button and a copy-link button.
+
+Captures include a stable `appKey` saved per app title, or the exact `mockOptions.appId` you provide, so apps sharing an address remain distinct. Use **Start over** in the expanded panel (with confirmation) or call `learnCard.resetPracticeMode()` to clear only this app's captures, practice credentials, and counters. The next capture gets a new generated identity; explicit `appId` values stay unchanged. The method is safe with the UI disabled and does nothing outside mock mode. Icon capture prefers Apple touch icons, large favicons, and same-origin web app manifest icons before `/favicon.ico`, and tries to include a small rasterized image. Long publish links omit the embedded image.
+
+- `requestConsent(...)` grants automatically and the notice spells out what the learner would be asked to share; counters (`incrementCounter` / `getCounter` / `getCounters`) save to the browser and survive reloads.
+- Identical or polled calls coalesce into one notice with a ×N counter, so nothing spams the screen.
 - `requestIdentity`, notifications, learner context, and sync status return sensible placeholder data.
 - Everything is also logged to the console with a `[LearnCard SDK · MOCK]` prefix.
 
 No flags, no separate build in local dev. Your app is demo-able locally and behaves exactly the same against the real host once embedded.
 
 {% hint style="warning" %}
-**`'auto'` never mocks on production or remote preview origins.** A real user opening your app's URL directly must never receive a fabricated identity or auto-granted consent. For remote deploy previews (Netlify, Lovable, Vercel, …) that should demo standalone anywhere but use the real host once embedded, opt in with `mock: 'standalone'`. For CI and tests that should always mock, use `mock: true`.
+**`'auto'` never mocks on a published app.** App-builder previews are recognized by the editor framing your app (e.g. `lovable.dev`) or by a preview-only address; published addresses such as `*.lovable.app`, `*.vercel.app`, `*.replit.app`, or your own domain never mock, because a real user opening your app's URL directly must never receive a fabricated identity or auto-granted consent. For other deploy previews (Netlify, Vercel, …) that should demo standalone anywhere but use the real host once embedded, opt in with `mock: 'standalone'`. For CI and tests that should always mock, use `mock: true`.
 {% endhint %}
 
-| `mock`             | Standalone, local dev | Standalone, remote origin     | Embedded in LearnCard |
-| ------------------ | --------------------- | ----------------------------- | --------------------- |
-| `'auto'` (default) | mock                  | fail fast (`LC_NOT_EMBEDDED`) | real host             |
-| `'standalone'`     | mock                  | mock                          | real host             |
-| `true`             | mock                  | mock                          | mock                  |
-| `false`            | fail fast             | fail fast                     | real host             |
+| `mock`             | Local dev or app-builder preview | Standalone, other origin      | Embedded in LearnCard |
+| ------------------ | -------------------------------- | ----------------------------- | --------------------- |
+| `'auto'` (default) | mock                             | fail fast (`LC_NOT_EMBEDDED`) | real host             |
+| `'standalone'`     | mock                             | mock                          | real host             |
+| `true`             | mock                             | mock                          | mock                  |
+| `false`            | fail fast                        | fail fast                     | real host             |
 
-If your app is embedded in something that isn't LearnCard (a cross-origin Storybook canvas, a preview shell), calls don't hang: the SDK mocks on local dev hosts and otherwise rejects fast with `LC_NOT_EMBEDDED`. When the parent can't be identified (Firefox, or a same-origin localhost wrapper), a one-time side-effect-free presence probe decides — the SDK only mocks if no host answers within `hostProbeTimeout` (default 1500 ms).
+If your app is embedded in something that isn't LearnCard (a cross-origin Storybook canvas, a preview shell), calls don't hang: the SDK mocks in local dev and app-builder previews and otherwise rejects fast with `LC_NOT_EMBEDDED`. When the parent can't be identified (Firefox, or a same-origin localhost wrapper), a one-time side-effect-free presence probe decides — the SDK only mocks if no host answers within `hostProbeTimeout` (default 1500 ms).
 
 Every mocked call shows a labeled toast and a `[LearnCard SDK · MOCK]` console log, so it's clear the SDK is simulating rather than talking to a real host. For a production build meant to run only inside LearnCard, set `mock: false` — standalone calls then reject immediately with `LC_NOT_EMBEDDED`.
 

@@ -110,6 +110,9 @@ const GuardianAccountApprovalPage = lazyWithRetry(
     () => import('./pages/interactions/GuardianAccountApprovalPage')
 );
 const DeveloperSignInPage = lazyWithRetry(() => import('./pages/developer/DeveloperSignInPage'));
+const PublishSignInGate = lazyWithRetry(
+    () => import('./pages/appStoreDeveloper/submit/PublishSignInGate')
+);
 const FamilyPage = lazyWithRetry(() => import('./pages/familyPage/FamilyPage'));
 const AuthHandoff = lazyWithRetry(() => import('./pages/auth/AuthHandoff'));
 
@@ -177,6 +180,13 @@ const PrivateRoute = ({ component: Component, ...rest }) => {
     );
 };
 
+// Publish links arrive from app builders, often before the developer has an account.
+const PublishFromManifestRoute: React.FC = () => {
+    const isLoggedIn = useIsLoggedIn();
+
+    return isLoggedIn ? <DeveloperPortalRoutes /> : <PublishSignInGate />;
+};
+
 export const Routes: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation<{ background: any }>();
@@ -240,6 +250,12 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/launchpad/browse" component={LaunchPad} />
                         <PrivateRoute exact path="/apps/:appId" component={EmbedAppFullScreen} />
                         <SentryRoute exact path="/app/:listingId" component={AppListingPage} />
+
+                        <SentryRoute
+                            exact
+                            path="/app-store/developer/submit"
+                            component={PublishFromManifestRoute}
+                        />
 
                         {/* App Store Developer Portal - all routes wrapped in context provider */}
                         <PrivateRoute

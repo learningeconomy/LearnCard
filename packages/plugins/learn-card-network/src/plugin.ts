@@ -3113,6 +3113,24 @@ export async function getLearnCardNetworkPlugin(
                 return client.appStore.unsubmitForReview.mutate({ listingId });
             },
 
+            submitAppStoreListingUpdate: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.submitListingUpdate.mutate({ listingId });
+            },
+
+            withdrawAppStoreListingUpdate: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.withdrawListingUpdate.mutate({ listingId });
+            },
+
+            discardAppStoreListingUpdate: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.discardListingUpdate.mutate({ listingId });
+            },
+
             getListingsForIntegration: async (_learnCard, integrationId, options = {}) => {
                 await ensureUser();
 
@@ -3126,6 +3144,39 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.appStore.countListingsForIntegration.query({ integrationId });
+            },
+
+            submitAppManifest: async (_learnCard, integrationId, manifest) => {
+                await ensureUser();
+                return client.appStore.submitAppManifest.mutate({ integrationId, manifest });
+            },
+
+            getManifestVersions: async (_learnCard, integrationId, options) => {
+                await ensureUser();
+                return client.appStore.getManifestVersions.query({ integrationId, ...options });
+            },
+
+            getManifestVersion: async (_learnCard, integrationId, version) => {
+                await ensureUser();
+                return client.appStore.getManifestVersion.query({ integrationId, version });
+            },
+
+            getManifestDiff: async (_learnCard, integrationId, toVersion, fromVersion) => {
+                await ensureUser();
+                return client.appStore.getManifestDiff.query({
+                    integrationId,
+                    toVersion,
+                    fromVersion,
+                });
+            },
+
+            applyManifestVersion: async (_learnCard, integrationId, version, listingId) => {
+                await ensureUser();
+                return client.appStore.applyManifestVersion.mutate({
+                    integrationId,
+                    version,
+                    listingId,
+                });
             },
 
             browseAppStore: async (_learnCard, options) => {
@@ -3205,6 +3256,12 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.appStore.adminGetAllListings.query(options);
+            },
+
+            adminReviewListingUpdate: async (_learnCard, listingId, approve) => {
+                await ensureUser();
+
+                return client.appStore.adminReviewListingUpdate.mutate({ listingId, approve });
             },
 
             // App Store Boost Management

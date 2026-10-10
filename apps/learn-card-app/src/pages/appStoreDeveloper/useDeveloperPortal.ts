@@ -112,7 +112,8 @@ export const useDeveloperPortal = () => {
             log.error('Failed to register app signing authority', error);
             // Registration/association failures are critical - they prevent credential issuance
             throw new Error(
-                'Failed to register app signing authority - credential issuance will not work'
+                'Failed to register app signing authority - credential issuance will not work',
+                { cause: error }
             );
         }
     };
@@ -213,6 +214,36 @@ export const useDeveloperPortal = () => {
     // ========== Listing Hooks ==========
 
     // Query for listings belonging to an integration
+    // Every app the developer has made, across all their projects.
+    const useMyApps = (integrations: LCNIntegration[] | undefined) => {
+        const integrationIds = (integrations ?? []).map(integration => integration.id);
+
+        return useQuery({
+            queryKey: ['developer', 'listings', 'all', integrationIds],
+            queryFn: async (): Promise<
+                Array<{ integrationId: string; listing: AppStoreListing }>
+            > => {
+                const wallet = await initWallet();
+                const perIntegration = await Promise.all(
+                    integrationIds.map(async integrationId => {
+                        const result = await wallet.invoke.getListingsForIntegration(
+                            integrationId,
+                            { limit: 100 }
+                        );
+                        return result.records.map((listing: AppStoreListing) => ({
+                            integrationId,
+                            listing,
+                        }));
+                    })
+                );
+
+                return perIntegration.flat();
+            },
+            enabled: integrations !== undefined,
+            staleTime: 1000 * 60,
+        });
+    };
+
     const useListingsForIntegration = (integrationId: string | null) => {
         return useQuery({
             queryKey: ['developer', 'listings', integrationId],
@@ -354,6 +385,99 @@ export const useDeveloperPortal = () => {
         });
     };
 
+    const useListingUpdateAction = (
+        action: (
+            wallet: Awaited<ReturnType<typeof initWallet>>,
+            listingId: string
+        ) => Promise<boolean>
+    ) =>
+        useMutation({
+            mutationFn: async (listingId: string): Promise<boolean> =>
+                action(await initWallet(), listingId),
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ['developer', 'listings'] });
+                queryClient.invalidateQueries({ queryKey: ['developer', 'listing'] });
+            },
+        });
+
+    // Changes to a live app are held for review; these move that held update along.
+    const useSubmitListingUpdate = () =>
+        useListingUpdateAction((wallet, id) => wallet.invoke.submitAppStoreListingUpdate(id));
+    const useWithdrawListingUpdate = () =>
+        useListingUpdateAction((wallet, id) => wallet.invoke.withdrawAppStoreListingUpdate(id));
+    const useDiscardListingUpdate = () =>
+        useListingUpdateAction((wallet, id) => wallet.invoke.discardAppStoreListingUpdate(id));
+
+    // ========== Manifest Hooks ==========
+
+    const useManifestVersions = (integrationId: string | null) => {
+        return useQuery({
+            queryKey: ['developer', 'manifest-versions', integrationId],
+            queryFn: async () => {
+                if (!integrationId) return null;
+                const wallet = await initWallet();
+                return wallet.invoke.getManifestVersions(integrationId, { limit: 100 });
+            },
+            enabled: !!integrationId,
+        });
+    };
+
+    const useManifestVersion = (integrationId: string | null, version: number | null) => {
+        return useQuery({
+            queryKey: ['developer', 'manifest-version', integrationId, version],
+            queryFn: async () => {
+                if (!integrationId || version === null) return null;
+                const wallet = await initWallet();
+                return wallet.invoke.getManifestVersion(integrationId, version);
+            },
+            enabled: !!integrationId && version !== null,
+        });
+    };
+
+    const useManifestDiff = (
+        integrationId: string | null,
+        toVersion: number | null,
+        fromVersion?: number
+    ) => {
+        return useQuery({
+            queryKey: ['developer', 'manifest-diff', integrationId, toVersion, fromVersion],
+            queryFn: async () => {
+                if (!integrationId || toVersion === null) return null;
+                const wallet = await initWallet();
+                return wallet.invoke.getManifestDiff(integrationId, toVersion, fromVersion);
+            },
+            enabled: !!integrationId && toVersion !== null,
+        });
+    };
+
+    const useApplyManifestVersion = () => {
+        return useMutation({
+            mutationFn: async ({
+                integrationId,
+                version,
+                listingId,
+            }: {
+                integrationId: string;
+                version: number;
+                listingId?: string;
+            }) => {
+                const wallet = await initWallet();
+                return wallet.invoke.applyManifestVersion(integrationId, version, listingId);
+            },
+            onSuccess: (_, { integrationId }) => {
+                queryClient.invalidateQueries({
+                    queryKey: ['developer', 'manifest-versions', integrationId],
+                });
+                queryClient.invalidateQueries({
+                    queryKey: ['developer', 'manifest-version', integrationId],
+                });
+                queryClient.invalidateQueries({
+                    queryKey: ['developer', 'listings', integrationId],
+                });
+            },
+        });
+    };
+
     // ========== Admin Hooks ==========
 
     // Query for checking if user is admin
@@ -374,14 +498,15 @@ export const useDeveloperPortal = () => {
     };
 
     // Query for all listings (admin only)
-    const useAdminListings = (status?: AppListingStatus) => {
+    const useAdminListings = (status?: AppListingStatus, pendingUpdatesOnly = false) => {
         return useQuery({
-            queryKey: ['admin', 'listings', status],
+            queryKey: ['admin', 'listings', status, pendingUpdatesOnly],
             queryFn: async (): Promise<AppStoreListing[]> => {
                 const wallet = await initWallet();
                 const result = await wallet.invoke.adminGetAllListings({
                     limit: 100,
                     status,
+                    ...(pendingUpdatesOnly ? { pendingUpdatesOnly } : {}),
                 });
 
                 return result.records;
@@ -403,6 +528,25 @@ export const useDeveloperPortal = () => {
                 const wallet = await initWallet();
 
                 return wallet.invoke.adminUpdateListingStatus(listingId, status);
+            },
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ['admin', 'listings'] });
+            },
+        });
+    };
+
+    const useAdminReviewUpdate = () => {
+        return useMutation({
+            mutationFn: async ({
+                listingId,
+                approve,
+            }: {
+                listingId: string;
+                approve: boolean;
+            }): Promise<boolean> => {
+                const wallet = await initWallet();
+
+                return wallet.invoke.adminReviewListingUpdate(listingId, approve);
             },
             onSuccess: () => {
                 queryClient.invalidateQueries({ queryKey: ['admin', 'listings'] });
@@ -493,18 +637,29 @@ export const useDeveloperPortal = () => {
 
         // Listing hooks
         useListingsForIntegration,
+        useMyApps,
         useListing,
         useCreateListing,
         useUpdateListing,
         useDeleteListing,
         useSubmitForReview,
         useUnsubmitForReview,
+        useSubmitListingUpdate,
+        useWithdrawListingUpdate,
+        useDiscardListingUpdate,
+
+        // Manifest hooks
+        useManifestVersions,
+        useManifestVersion,
+        useManifestDiff,
+        useApplyManifestVersion,
 
         // Admin hooks
         useIsAdmin,
         useAdminListings,
         useAdminUpdateStatus,
         useAdminUpdatePromotion,
+        useAdminReviewUpdate,
 
         // App DID upgrade
         useUpgradeAppToAppDid,

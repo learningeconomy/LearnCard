@@ -8071,9 +8071,9 @@
                     "description": "Configura un flujo de consentimiento para enviar y acceder a datos de usuario y credenciales con su permiso."
                 },
                 "courseCatalog": {
-                    "title": "Conectar catálogo de cursos",
-                    "subtitle": "Integración LMS empresarial",
-                    "description": "Configuración guiada completa para socios LMS. Configura webhooks, crea plantillas de credenciales, mapea tus datos y publica con emisión automática de credenciales."
+                    "title": "Emitir desde un catálogo de cursos",
+                    "subtitle": "Convierte una hoja de cursos en credenciales",
+                    "description": "Sube tu lista de cursos, obtén un diseño de credencial para cada uno y otórgalos a los estudiantes cuando terminen."
                 },
                 "verifyCredentials": {
                     "title": "Verificar credenciales",
@@ -8235,7 +8235,8 @@
             "filterAll": "Todas",
             "filterListed": "Publicadas",
             "filterDraft": "Borrador",
-            "filterArchived": "Archivadas"
+            "filterArchived": "Archivadas",
+            "filterUpdates": "Actualizaciones"
         },
         "listing": {
             "submittedBy": "Enviado por:",
@@ -8302,6 +8303,23 @@
                 "standardDesc": "Visibilidad normal en búsqueda y navegación",
                 "demoted": "Degradado",
                 "demotedDesc": "Visibilidad reducida en los listados"
+            },
+            "update": {
+                "title": "Actualización pendiente de revisión",
+                "description": "Estos cambios solo se publican si los apruebas.",
+                "draftNote": "El desarrollador todavía está editando una actualización.",
+                "capabilities": "También cambia lo que puede hacer la app (versión {{version}}).",
+                "approve": "Aprobar actualización",
+                "reject": "Rechazar actualización",
+                "fieldName": "Nombre",
+                "fieldTagline": "Eslogan",
+                "fieldDescription": "Descripción",
+                "fieldIcon": "Icono",
+                "fieldScreenshots": "Capturas de pantalla",
+                "fieldHighlights": "Destacados",
+                "fieldLinks": "Enlaces y contacto",
+                "fieldLaunch": "Dónde se ejecuta la app",
+                "fieldOther": "Otros detalles"
             }
         }
     },

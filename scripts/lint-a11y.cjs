@@ -4,7 +4,7 @@ const { ESLint } = require('eslint');
 const ROOT_DIR = path.resolve(__dirname, '..');
 const APP_SOURCE_PATTERN = 'apps/learn-card-app/src/**/*.{ts,tsx}';
 const BASE_SOURCE_PATTERN = 'packages/learn-card-base/src/**/*.{ts,tsx}';
-const A11Y_WARNING_BASELINE = 327;
+const A11Y_WARNING_BASELINE = 312;
 const A11Y_RULE_PREFIX = 'jsx-a11y/';
 
 // Lint the LearnCard app and shared component library by default. Passing

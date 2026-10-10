@@ -96,6 +96,26 @@ export const associateBoostWithListing = async (
     return true;
 };
 
+export const associateConsentContractWithListing = async (
+    listingId: string,
+    contractId: string,
+    scopeHash: string
+): Promise<boolean> => {
+    await AppStoreListing.relateTo({
+        alias: 'hasConsentContract',
+        where: {
+            source: { listing_id: listingId },
+            target: { id: contractId },
+        },
+        properties: {
+            scopeHash,
+            createdAt: new Date().toISOString(),
+        },
+    });
+
+    return true;
+};
+
 export const associateListingWithSigningAuthority = async (
     listingId: string,
     signingAuthorityEndpoint: string,

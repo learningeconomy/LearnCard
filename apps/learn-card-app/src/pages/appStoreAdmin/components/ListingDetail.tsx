@@ -32,6 +32,7 @@ import {
 } from '../../appStoreDeveloper/types';
 
 import { ListingActions } from './ListingActions';
+import { PendingUpdatePanel } from './PendingUpdatePanel';
 import { PromotionMenu } from './PromotionMenu';
 import { ConsentContractPreview } from './ConsentContractPreview';
 import * as m from '../../../paraglide/messages.js';
@@ -43,6 +44,7 @@ interface ListingDetailProps {
     onPromotionChange: (listingId: string, level: PromotionLevel) => Promise<void>;
     isUpdating: boolean;
     onBack: () => void;
+    onReviewUpdate: (listingId: string, approve: boolean) => Promise<void>;
 }
 
 export const ListingDetail: React.FC<ListingDetailProps> = ({
@@ -51,6 +53,7 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
     onPromotionChange,
     isUpdating,
     onBack,
+    onReviewUpdate,
 }) => {
     const { newModal } = useModal();
     const history = useHistory();
@@ -121,7 +124,9 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
     let parsedConfig: Record<string, unknown> = {};
     try {
         parsedConfig = JSON.parse(listing.launch_config_json);
-    } catch {}
+    } catch {
+        // Unreadable launch details just leave the config section empty.
+    }
 
     const permissions = Array.isArray(parsedConfig.permissions)
         ? (parsedConfig.permissions as AppPermission[])
@@ -510,6 +515,14 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                     />
                 )}
             </div>
+
+            {listing.pending_update && (
+                <PendingUpdatePanel
+                    listingId={listing.listing_id}
+                    update={listing.pending_update}
+                    onReview={onReviewUpdate}
+                />
+            )}
 
             {/* Action Buttons */}
             <ListingActions

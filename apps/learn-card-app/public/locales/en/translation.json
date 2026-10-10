@@ -8122,9 +8122,9 @@
                     "description": "Set up a consent flow to send and access user data and credentials with their permission."
                 },
                 "courseCatalog": {
-                    "title": "Connect Course Catalog",
-                    "subtitle": "Enterprise LMS integration",
-                    "description": "Full guided setup for LMS partners. Configure webhooks, build credential templates, map your data, and go live with automatic credential issuance."
+                    "title": "Issue from a Course Catalog",
+                    "subtitle": "Turn a spreadsheet of courses into credentials",
+                    "description": "Upload your list of courses, get a credential design for each one, then award them to learners as they finish."
                 },
                 "verifyCredentials": {
                     "title": "Verify Credentials",
@@ -8286,7 +8286,8 @@
             "filterAll": "All",
             "filterListed": "Listed",
             "filterDraft": "Draft",
-            "filterArchived": "Archived"
+            "filterArchived": "Archived",
+            "filterUpdates": "Updates"
         },
         "listing": {
             "submittedBy": "Submitted by:",
@@ -8353,6 +8354,23 @@
                 "standardDesc": "Normal visibility in search and browse",
                 "demoted": "Demoted",
                 "demotedDesc": "Reduced visibility in listings"
+            },
+            "update": {
+                "title": "Update waiting for review",
+                "description": "These changes go live only if you approve them.",
+                "draftNote": "The developer is still editing an update.",
+                "capabilities": "Also changes what the app can do (version {{version}}).",
+                "approve": "Approve Update",
+                "reject": "Reject Update",
+                "fieldName": "Name",
+                "fieldTagline": "Tagline",
+                "fieldDescription": "Description",
+                "fieldIcon": "Icon",
+                "fieldScreenshots": "Screenshots",
+                "fieldHighlights": "Highlights",
+                "fieldLinks": "Links and contact",
+                "fieldLaunch": "Where the app runs",
+                "fieldOther": "Other details"
             }
         }
     },

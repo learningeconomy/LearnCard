@@ -3,11 +3,13 @@ import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
 import { neogma } from '@instance';
 
 import { Profile, ProfileInstance } from './Profile';
+import type { AppManifestVersion, AppManifestVersionInstance } from './AppManifestVersion';
 import { FlatIntegrationType } from 'types/integration';
 
 export type IntegrationRelationships = {
     createdBy: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     publishesListing: ModelRelatedNodesI<any, any>;
+    hasManifestVersion: ModelRelatedNodesI<typeof AppManifestVersion, AppManifestVersionInstance>;
 };
 
 export type IntegrationInstance = NeogmaInstance<FlatIntegrationType, IntegrationRelationships>;

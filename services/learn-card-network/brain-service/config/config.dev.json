@@ -24,5 +24,6 @@
     "SHARE_LINK_MAINTENANCE_ORIGIN": "https://staging.cloud.learncard.com",
     "SHARE_LINK_MAINTENANCE_RECOVERY_LIMIT": "25",
     "SHARE_LINK_MAINTENANCE_REQUEST_TIMEOUT_MS": "10000",
+    "SIGNING_AUTHORITY_ENDPOINT": "https://staging.api.learncard.app/api",
     "SKILL_EMBEDDING_GOOGLE_MODEL": "gemini-embedding-001"
 }
