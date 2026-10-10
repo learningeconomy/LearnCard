@@ -1,5 +1,75 @@
 # Changelog
 
+## 1.100.0
+
+### Minor Changes
+
+- [#1637](https://github.com/learningeconomy/LearnCard/pull/1637) [`ec321885908bab179acac7fec910bf61c42deb5f`](https://github.com/learningeconomy/LearnCard/commit/ec321885908bab179acac7fec910bf61c42deb5f) Thanks [@goblincore](https://github.com/goblincore)! - Add gated referral invitations with attributed cards, audience and permission review, confirmed decline, and pending invitation recovery after alert dismissal. Require both tenant configuration and the enableContractRequests rollout flag; preserve existing AI and owner-only consent flows. Localize the experience in English, Spanish, French, and Arabic.
+
+    Show receiving organizations in consent and connected-app details and recheck current referral state before consent submission. Include a signed HTTP outcome acceptance lab and integration walkthrough.
+
+    Keep the receiving organizations visible in detailed privacy settings and connected-app access editing, while preserving the existing owner-only layout.
+
+    Bind referral acceptance to the reviewed request ID under the contract lock, reject expired contracts on consent/re-consent, and keep invitation conflicts in the review screen. Stop polling terminal invitations, localize permission summaries, retry failed dismissals, and support host-reachable webhook capture from Docker.
+
+    Document the complete referral, auto-boost, outcome, claim, synchronization and webhook lifecycle. Add tested integrator snippets for recipient contracts, signing authority setup, scoped runtime tokens and polling recovery, including the client activity required for live sharing.
+
+    Refine referral cards and review panels with compact typography, grouped audience and permission details, accessible actions, and lighter privacy settings. Keep invitation and consent behavior unchanged.
+
+### Patch Changes
+
+- [#1644](https://github.com/learningeconomy/LearnCard/pull/1644) [`37a3db8ff98a35c8e9e140569a693c9e0ed00165`](https://github.com/learningeconomy/LearnCard/commit/37a3db8ff98a35c8e9e140569a693c9e0ed00165) Thanks [@smurflo2](https://github.com/smurflo2)! - Keep an open profile sidebar in sync with the selected account. After a successful parent switch, close the PIN dialog and its account picker by their own modal tokens. Cancellation leaves the picker open; a failed switch leaves the selected account and both dialogs unchanged.
+
+- [#1648](https://github.com/learningeconomy/LearnCard/pull/1648) [`5a4ac5697efd3993f78182aa8563d7ebbc0cba8a`](https://github.com/learningeconomy/LearnCard/commit/5a4ac5697efd3993f78182aa8563d7ebbc0cba8a) Thanks [@gerardopar](https://github.com/gerardopar)! - fix(LC-2237): adopt Capacitor iOS scene lifecycle
+
+- [#1644](https://github.com/learningeconomy/LearnCard/pull/1644) [`37a3db8ff98a35c8e9e140569a693c9e0ed00165`](https://github.com/learningeconomy/LearnCard/commit/37a3db8ff98a35c8e9e140569a693c9e0ed00165) Thanks [@smurflo2](https://github.com/smurflo2)! - Use the family credential's name and image in child account creation and the family chooser, supporting both direct credentials and legacy CertifiedBoostCredential wrappers. Keep the outer Family Boost URI for selection and account creation.
+
+- [#1644](https://github.com/learningeconomy/LearnCard/pull/1644) [`37a3db8ff98a35c8e9e140569a693c9e0ed00165`](https://github.com/learningeconomy/LearnCard/commit/37a3db8ff98a35c8e9e140569a693c9e0ed00165) Thanks [@smurflo2](https://github.com/smurflo2)! - Fix the child account creation form crashing when displaying the tenant's branding.
+
+- [#1632](https://github.com/learningeconomy/LearnCard/pull/1632) [`6209da80c52ac056a7644dab14669192740c9dad`](https://github.com/learningeconomy/LearnCard/commit/6209da80c52ac056a7644dab14669192740c9dad) Thanks [@goblincore](https://github.com/goblincore)! - Add explicit consent contract data recipients and audience version acknowledgements. Enforce current consent status, expiry, category sharing, and recipient membership on consented data reads. Recipient additions freeze after first consent; removals immediately revoke API access and invalidate stale consent/update/sync acknowledgements.
+
+    Update existing app consent paths to review the current data audience, encrypt for all recipients, and cache copies by the full audience. Background synchronization reloads recipients and acknowledges the current version.
+
+- [#1644](https://github.com/learningeconomy/LearnCard/pull/1644) [`37a3db8ff98a35c8e9e140569a693c9e0ed00165`](https://github.com/learningeconomy/LearnCard/commit/37a3db8ff98a35c8e9e140569a693c9e0ed00165) Thanks [@smurflo2](https://github.com/smurflo2)! - Show the active network profile's image on the consent screen, falling back to the local account image when no network image is available.
+
+- [#1634](https://github.com/learningeconomy/LearnCard/pull/1634) [`5890451789b18afee45dc5ecbab3fa30aa90f085`](https://github.com/learningeconomy/LearnCard/commit/5890451789b18afee45dc5ecbab3fa30aa90f085) Thanks [@goblincore](https://github.com/goblincore)! - Add attributed generic contract requests, target-only denial, retained cancellation history, and optional referral identity on consent history and exports. Preserve legacy AI request payloads and owner-only consent behavior.
+
+    Persist correlated notification intents with consent mutations and retry via a leased Lambda/Docker worker. Fan out to the owner and current data recipients; give a requester outside that audience only a minimal decision. Recheck audience membership and current consent permissions before delivery, including queued notifications, and expose stable event and delivery IDs for downstream deduplication.
+
+    Keep app request hooks and legacy AI component props aligned with the shared request status type, including retained generic cancellations.
+
+- [#1677](https://github.com/learningeconomy/LearnCard/pull/1677) [`7dfd16104fa148e6a651dd613f81f4946a63853d`](https://github.com/learningeconomy/LearnCard/commit/7dfd16104fa148e6a651dd613f81f4946a63853d) Thanks [@Custard7](https://github.com/Custard7)! - Serve the deploy's build stage from `/__tenant-config`. A web deploy built with `STAGE=keycloak-staging` now resolves to that overlay on staging.learncard.ai instead of the hostname-derived `staging` overlay, so the edge config and the baked config agree. The keycloak-staging overlay now matches staging apart from auth (notifications endpoint, staging sample personas, escrow settings).
+
+- [#1643](https://github.com/learningeconomy/LearnCard/pull/1643) [`c2c1d4617459f4b255ab27e4e1f4fa410782a317`](https://github.com/learningeconomy/LearnCard/commit/c2c1d4617459f4b255ab27e4e1f4fa410782a317) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-2208] Clean up prod console noise
+
+- [#1621](https://github.com/learningeconomy/LearnCard/pull/1621) [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5) Thanks [@Custard7](https://github.com/Custard7)! - Add a page for cancelling an account recovery from the email link.
+
+- [#1644](https://github.com/learningeconomy/LearnCard/pull/1644) [`37a3db8ff98a35c8e9e140569a693c9e0ed00165`](https://github.com/learningeconomy/LearnCard/commit/37a3db8ff98a35c8e9e140569a693c9e0ed00165) Thanks [@smurflo2](https://github.com/smurflo2)! - Show the selected child's family name and photo on both consent sign-in and post-guardian-PIN confirmation screens, including children whose public network profile has no name or image. Keep network profile details preferred when present and wait for the selected account's identity before enabling consent.
+
+    Isolate consent identity caching from available-profile lists and scope it to the parent account. Block approval-only actions if a parent PIN is missing, and ignore cached parent identities that belong to a different account.
+
+- [#1644](https://github.com/learningeconomy/LearnCard/pull/1644) [`37a3db8ff98a35c8e9e140569a693c9e0ed00165`](https://github.com/learningeconomy/LearnCard/commit/37a3db8ff98a35c8e9e140569a693c9e0ed00165) Thanks [@smurflo2](https://github.com/smurflo2)! - Show "New Organization" when the profile picker opens organization creation directly. Keep "New Child or Organization" when both creation options are available.
+
+- [#1640](https://github.com/learningeconomy/LearnCard/pull/1640) [`9a969d221544687e252a005b1d31425b41723417`](https://github.com/learningeconomy/LearnCard/commit/9a969d221544687e252a005b1d31425b41723417) Thanks [@goblincore](https://github.com/goblincore)! - fix: prevent AI Insights Privacy & Data modal crash
+
+- [#1644](https://github.com/learningeconomy/LearnCard/pull/1644) [`37a3db8ff98a35c8e9e140569a693c9e0ed00165`](https://github.com/learningeconomy/LearnCard/commit/37a3db8ff98a35c8e9e140569a693c9e0ed00165) Thanks [@smurflo2](https://github.com/smurflo2)! - Enable share-link view tracking for persisted service profiles without requiring a date of birth, including managed organizations. Apply the exemption during creation and transactional view-receipt checks, and show eligible service-profile view statistics in Privacy & Data. Keep child and personal-account age protections, link expiry behavior, and other privacy gates unchanged.
+
+    Preserve the 30-day default expiry for managed service profiles with adult birthdates. Refresh older resolved service tracking restrictions on an explicit owner edit only after a locked service-classification check, preserving stored expiry and the eligibility limits of replayed or recovered reservations.
+
+- [#1644](https://github.com/learningeconomy/LearnCard/pull/1644) [`37a3db8ff98a35c8e9e140569a693c9e0ed00165`](https://github.com/learningeconomy/LearnCard/commit/37a3db8ff98a35c8e9e140569a693c9e0ed00165) Thanks [@smurflo2](https://github.com/smurflo2)! - Show the switched account's local image in the LearnCard sidebar when its network profile has no image. Keep explicit profile previews separate from the signed-in account.
+
+- [#1688](https://github.com/learningeconomy/LearnCard/pull/1688) [`4f329036c6385bc8f3e19b0d288645f82036c463`](https://github.com/learningeconomy/LearnCard/commit/4f329036c6385bc8f3e19b0d288645f82036c463) Thanks [@Custard7](https://github.com/Custard7)! - Stage overlays now declare their deploy stage (`local`, `staging` or `production`). Named overlays such as `keycloak-staging` build again, and the edge-served config reports the correct `stage` on staging and local instead of defaulting to `production`.
+
+- Updated dependencies [[`23c30e68ca4fc5feb70ab3a5660aae71e486d63e`](https://github.com/learningeconomy/LearnCard/commit/23c30e68ca4fc5feb70ab3a5660aae71e486d63e), [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5)]:
+    - @learncard/credential-library@2.1.0
+    - @learncard/sss-key-manager@0.2.1
+    - @learncard/helpers@1.6.2
+    - @learncard/lca-api-plugin@2.0.8
+    - @learncard/ler-rs-plugin@0.1.29
+    - @learncard/open-badge-v2-plugin@1.1.39
+    - @learncard/render-method-plugin@10.0.0
+    - @learncard/react@2.12.9
+
 ## 1.99.0
 
 ### Minor Changes
