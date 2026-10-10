@@ -122,6 +122,28 @@ const parseArgs = (): {
     return { tenant, stage, useLocalAi };
 };
 
+const isDeployStage = (value: unknown): value is Stage =>
+    typeof value === 'string' && (KNOWN_STAGES as readonly string[]).includes(value);
+
+const resolveDeployStage = (
+    overlayName: string | undefined,
+    overlay: Record<string, unknown>
+): Stage => {
+    if (overlay.stage !== undefined) {
+        if (isDeployStage(overlay.stage)) return overlay.stage;
+        log.error(
+            `❌ config.${overlayName}.json declares "stage": ${JSON.stringify(overlay.stage)}; expected one of ${KNOWN_STAGES.join(', ')}.`
+        );
+        process.exit(1);
+    }
+    if (!overlayName) return 'production';
+    if (isDeployStage(overlayName)) return overlayName;
+    log.error(
+        `❌ --stage ${overlayName}: config.${overlayName}.json must declare "stage" (one of ${KNOWN_STAGES.join(', ')}).`
+    );
+    process.exit(1);
+};
+
 const { tenant: tenantArg, stage: stageArg, useLocalAi } = parseArgs();
 
 // ---------------------------------------------------------------------------
@@ -278,7 +300,9 @@ merged['_localAi'] = useLocalAi;
 // `_stage` debug metadata above: this one is a typed TenantConfig field that runtime code
 // (e.g. the escrow software-enclave guard in authConfig.ts) can read to distinguish a
 // staging deploy from production, since both build in Vite "production" mode.
-merged['stage'] = stageArg ?? 'production';
+// Overlay names are free-form (e.g. keycloak-staging), so the overlay declares which
+// deploy stage it is; the edge function serves the same declaration via the same merge.
+merged['stage'] = resolveDeployStage(stageArg, stageOverrides);
 
 // ---------------------------------------------------------------------------
 // 3. Validate against the Zod schema
