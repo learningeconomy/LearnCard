@@ -4,12 +4,27 @@ The LearnCard Application API (`lca-api`) is the tRPC service backing client-sid
 
 ## Build & Development Commands
 
-### Runtime secrets (backend config model, step 1)
+### Backend configuration model
+
+Configuration resolves in layers, lowest to highest precedence:
+
+1. Schema defaults (`src/config/environment.ts` Zod `.default()`s).
+2. Checked-in **non-secret** base config `config/config.json`.
+3. Checked-in **non-secret** per-stage config `config/config.<stage>.json`.
+4. Runtime AWS secrets bundle (Lambda only).
+5. Real environment variables (always win). Empty strings are unset.
+
+The stage is `LAMBDA_STAGE` on Lambda, else `CONFIG_STAGE`; an unknown stage uses
+the base `config/config.json` only (no per-stage file). The config stage files are
+**public by design** — put only non-secret config in them. Credentials,
+authorization allowlists (`AUTHORIZED_DIDS`), and internal service endpoints are
+**secrets** and belong in the runtime bundle or local env, never the stage files.
 
 For Lambda `trpc`/`api`, set the deploy environment variable `RUNTIME_SECRETS_ID` to
 `lca-api/<stage>/runtime-secrets` (or its ARN in the Lambda account/region). Provision
 the secret before enabling the variable. Its SecretString is a flat JSON object of
-UPPER_SNAKE_CASE environment names to string values, initially:
+UPPER_SNAKE_CASE environment names to string values, including **all** required
+runtime credentials. For example, Firebase is encoded as a string:
 
 ```json
 { "GOOGLE_APPLICATION_CREDENTIAL": "{\"type\":\"service_account\",\"...\":\"...\"}" }
@@ -17,23 +32,35 @@ UPPER_SNAKE_CASE environment names to string values, initially:
 
 The Firebase JSON is a **string inside the bundle**, not a nested object. No secret
 values belong in checked-in files. `lambda.ts` loads and validates the bundle once
-before importing `lambdaApp.ts` (or `oidcLambdaApp.ts` for the `oidc` function) and the
-environment schema. `oidcLambdaApp.ts` must stay free of Mongo, models and DIDKit: a Mongo
-connect left pending when an idle sandbox freezes crashes the next request after thaw. Non-empty explicit env
-values win; empty strings are unset. Failures stop startup with a sanitized error
-and can retry. Redeploy/recycle functions after rotating the bundle.
+before importing `lambdaApp.ts` and the environment schema. Non-empty explicit env
+values win; empty strings are unset. Failed secret loads stop startup with a
+sanitized error and can retry; failed application imports remain memoized until
+the process is recycled. Redeploy/recycle functions after rotating the bundle.
 
 When the id is absent, no AWS lookup occurs. Deploys retain the GitHub
-`GOOGLE_APPLICATION_CREDENTIAL` secret as a function-level fallback; keep that input
+runtime secrets as environment fallbacks; keep those inputs
 until every stage has a bundle. Self-hosters, Docker, local development and CI keep
-using plain environment variables. Only `trpc`/`api` receive the bundle id; OIDC gets
+using plain environment variables — copy `config/config.example.json` to a stage
+file (register its static import in `src/config/stageConfig.ts` and rebuild) or
+just supply a `.env`. `trpc`, `api`, and `seedMigration` use
+`SigningAuthorityExecutionRole`. `didWeb` and `swagger` use the generated default
+role, with only a scoped runtime-bundle read grant in addition to Serverless's
+execution permissions, not signing-authority KMS access. All five receive the
+bundle id and run in the service VPC. Explicit function roles do not inherit the
+default role's grants. OIDC has an isolated
+`oidcLambda.ts` → `oidcLambdaApp.ts` import path and focused OIDC/cache schemas,
+so it never imports the API schema requiring seed and Mongo credentials. Keep that path free of Mongo, models and DIDKit:
+a Mongo connect left pending when an idle sandbox freezes crashes the next request after thaw. OIDC gets
 its broker settings and keeps its separate signing-key secret and IAM role.
-Keycloak token audiences are enforced by the verifier, not the shared schema,
-because the OIDC broker only needs issuers for redirect discovery.
+`OIDC_CLIENT_SECRET` stays a GitHub-environment secret on the OIDC function and is
+**never** placed in the runtime bundle; that function makes no AWS Secrets Manager
+calls for it. Preserve the existing issuer/audience validation.
 
-Next steps: **2** checked-in per-stage non-secret config; **3** Infisical → AWS
-secret sync; **4** brain-service and learn-cloud adoption. The pure parse/merge
-helpers can move into a shared package then; this step introduces none.
+The Infisical → AWS sync and per-stage cutover are documented in the repo-root
+[environment-variables.md](../../../environment-variables.md#infisical--aws-secrets-sync).
+The shared `@learncard/service-config` package owns parsing, merging, runtime
+loading, stage application and Lambda bootstrap. Brain-service and LearnCloud
+adoption remains a separate task.
 
 - Build: `bun run build`
 - Dev: `bun run dev` — watches and rebuilds

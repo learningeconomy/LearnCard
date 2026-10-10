@@ -7,6 +7,9 @@ export default createVitestConfig(nodePreset, {
             'test/query.helpers.spec.ts',
             'test/xapi.helpers.spec.ts',
             'test/share-content-auth.spec.ts',
+            'src/config/stageConfig.test.ts',
+            'src/config/serverlessFunctionEnv.test.ts',
+            '*Lambda.test.ts',
         ],
     },
 });

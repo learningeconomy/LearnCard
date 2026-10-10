@@ -4,7 +4,7 @@
  */
 import { describe, expect, test } from 'bun:test';
 import { spawnSync } from 'child_process';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 
 import { getStageFromHostname, selectStage } from '../netlify/edge-functions/shared/stage';
@@ -78,16 +78,57 @@ describe('generate-edge-tenant-configs', () => {
         );
         const config = resolveTenantConfig('staging.learncard.ai') as {
             domain: string;
+            stage: string;
             auth: { provider: string; keyDerivation: string };
         };
 
         expect(config.domain).toBe('staging.learncard.ai');
+        expect(config.stage).toBe('staging');
         expect(config.auth.provider).toBe('keycloak');
         expect(config.auth.keyDerivation).toBe('sss');
-        expect((resolveTenantConfig('alpha.vetpass.app') as { tenantId: string }).tenantId).toBe(
-            'vetpass'
-        );
+        const vetpassAlpha = resolveTenantConfig('alpha.vetpass.app') as {
+            tenantId: string;
+            stage: string;
+        };
+        expect(vetpassAlpha.tenantId).toBe('vetpass');
+        expect(vetpassAlpha.stage).toBe('staging');
 
         expect(generate().status).toBe(0);
+    });
+
+    test('bundles each overlay with its declared deploy stage', () => {
+        expect(generate().status).toBe(0);
+        const { tenants } = JSON.parse(readFileSync(GENERATED, 'utf-8'));
+        const learncard = tenants.learncard;
+
+        // The edge resolver deep-merges these overlays onto base, so the served config carries them.
+        expect(learncard.stages.staging.stage).toBe('staging');
+        expect(learncard.stages['keycloak-staging'].stage).toBe('staging');
+        expect(learncard.stages.local.stage).toBe('local');
+        // Production carries no overlay; the client schema defaults `stage` to 'production'.
+        expect(learncard.base.stage).toBeUndefined();
+    });
+});
+
+// Every overlay must name its deploy stage: prepare-native-config rejects free-form overlay
+// names (e.g. keycloak-staging) that don't, and the edge serves the same declaration.
+describe('stage overlays', () => {
+    test('declare a valid deploy stage', () => {
+        const envRoot = join(APP_ROOT, 'environments');
+        const invalid: string[] = [];
+        let checked = 0;
+        for (const tenant of readdirSync(envRoot)) {
+            if (!existsSync(join(envRoot, tenant, 'config.json'))) continue;
+            for (const file of readdirSync(join(envRoot, tenant))) {
+                if (!/^config\..+\.json$/.test(file)) continue;
+                checked++;
+                const { stage } = JSON.parse(readFileSync(join(envRoot, tenant, file), 'utf-8'));
+                if (!['local', 'staging', 'production'].includes(stage)) {
+                    invalid.push(`${tenant}/${file}: ${JSON.stringify(stage)}`);
+                }
+            }
+        }
+        expect(checked).toBeGreaterThan(0);
+        expect(invalid).toEqual([]);
     });
 });

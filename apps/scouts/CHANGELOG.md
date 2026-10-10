@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.90.38
+
+### Patch Changes
+
+- Bump the ScoutPass release version to avoid reusing an existing CapGo bundle.
+
 ## 1.90.37
 
 ### Patch Changes

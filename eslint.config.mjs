@@ -193,13 +193,37 @@ export default tseslint.config(
             'services/learn-card-network/{brain-service,lca-api,learn-cloud-service}/src/**/*.{ts,tsx}',
             'services/learn-card-network/{brain-service,lca-api,learn-cloud-service}/lambda.ts',
             'services/learn-card-network/lca-api/lambdaApp.ts',
+            'services/learn-card-network/brain-service/lambdaApp.ts',
+            'services/learn-card-network/brain-service/*LambdaApp.ts',
+            'services/learn-card-network/learn-cloud-service/lambdaApp.ts',
+            'services/learn-card-network/learn-cloud-service/*LambdaApp.ts',
             'services/learn-card-network/{brain-service,lca-api,learn-cloud-service}/*Lambda.ts',
         ],
         ignores: [
             '**/*.{test,spec}.{ts,tsx}',
             '**/config/environment.ts',
-            // This bootstrap populates env before the validating module can be imported.
-            'services/learn-card-network/lca-api/src/config/runtimeSecrets.ts',
+            // Focused environment modules for the OIDC and cache boot paths. Like the full
+            // environment module, these validate process.env at import; they exist so the OIDC
+            // Lambda and cache can boot without the full schema's required SEED/MONGO.
+            'services/learn-card-network/lca-api/src/config/oidcEnvironment.ts',
+            'services/learn-card-network/lca-api/src/config/cacheEnvironment.ts',
+            // These bootstraps read the stage selector and apply non-secret stage config into
+            // env before the validating module can be imported. Only the pre-schema stage read
+            // lives here; all other values still flow through the validated environment module.
+            'services/learn-card-network/lca-api/lambda.ts',
+            'services/learn-card-network/lca-api/oidcLambda.ts',
+            'services/learn-card-network/lca-api/seedMigrationLambda.ts',
+            'services/learn-card-network/lca-api/src/config/applyDockerStageConfig.ts',
+            'services/learn-card-network/brain-service/lambda.ts',
+            'services/learn-card-network/brain-service/didWebLambda.ts',
+            'services/learn-card-network/brain-service/contractEventsLambda.ts',
+            'services/learn-card-network/brain-service/shareLinkMaintenanceLambda.ts',
+            'services/learn-card-network/brain-service/src/config/applyDockerStageConfig.ts',
+            'services/learn-card-network/learn-cloud-service/lambda.ts',
+            'services/learn-card-network/learn-cloud-service/didWebLambda.ts',
+            'services/learn-card-network/learn-cloud-service/oidcLambda.ts',
+            'services/learn-card-network/learn-cloud-service/xApiLambda.ts',
+            'services/learn-card-network/learn-cloud-service/src/config/applyDockerStageConfig.ts',
         ],
         rules: {
             'no-restricted-syntax': [
