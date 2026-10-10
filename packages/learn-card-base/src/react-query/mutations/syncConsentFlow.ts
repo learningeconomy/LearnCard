@@ -247,6 +247,9 @@ export const useSyncConsentContractsMutation = () => {
                 } catch {}
             }
         },
+        // Sync may update terms before a later operation fails. Mark cached consent
+        // records stale on settlement so active and imperative consumers stay current.
+        onSettled: () => queryClient.invalidateQueries({ queryKey: ['useConsentedContracts'] }),
     });
 };
 
