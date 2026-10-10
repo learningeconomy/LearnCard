@@ -18,7 +18,7 @@ real issuance — that's a signing + multi-service backend flow that lives in th
 1. **HAR replay** (`har/issue.har.zip`) — serves the recorded auth/boot handshake and all
    backend reads on `localhost:4000/4100/5100` (tRPC, `/api`, `/keys`, and non-tRPC calls
    like did:web resolution) verbatim. Recorded once against real docker; refreshable.
-2. **A typed tRPC mock** (`trpc.ts`) layered on top — installed but empty by default; a
+2. **A typed tRPC mock** (`trpc.ts`) layered on top — serves the default test-user profile with batch-aware responses; a
    test can register per-procedure overrides on the returned mock (`mock.on(...)`).
 
 On replay, any backend call that isn't in the HAR (and isn't overridden) is **aborted**
@@ -36,14 +36,14 @@ the describe title are how the mock config discovers it):
 ```ts
 import { test, expect } from './fixtures/mocked-test';
 import { installNetwork } from './mocks/network';
-import { waitForAuthenticatedState } from './test.helpers';
+import { signInMockUser } from './mocks/auth';
 import { TEST_USER_PROFILE_ID } from './constants';
 
 test.describe('My feature @mocked', () => {
     test.beforeEach(async ({ page }) => {
         // MUST run before any navigation so boot calls are served.
         await installNetwork(page);
-        await waitForAuthenticatedState(page, {
+        await signInMockUser(page, {
             path: '/my-page',
             profileId: TEST_USER_PROFILE_ID,
         });
@@ -54,6 +54,12 @@ test.describe('My feature @mocked', () => {
     });
 });
 ```
+
+`signInMockUser` requires the mocked profile lookup to return the requested `profileId`.
+It waits for that response and the authenticated redirect, rather than probing for an
+optional profile-setup modal. The `next` redirect lands directly on the requested page
+without a second full app load. Missing profiles and failed lookups fail the test.
+Real-backend tests keep using `waitForAuthenticatedState` and its onboarding fallback.
 
 Run it: `pnpm test-mock` (or `pnpm exec nx run learn-card-app:test-mock`). Stop docker
 first to prove it's truly offline.

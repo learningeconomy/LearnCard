@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures/mocked-test';
 import type { Page } from '@playwright/test';
 import { installNetwork } from './mocks/network';
-import { waitForAuthenticatedState } from './test.helpers';
+import { signInMockUser } from './mocks/auth';
 import { TEST_USER_PROFILE_ID } from './constants';
 
 const NAME_PLACEHOLDER = 'e.g. Web Development Fundamentals';
@@ -22,7 +22,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
     test.beforeEach(async ({ page }) => {
         // Install the mocked backend BEFORE any navigation so boot calls are served.
         await installNetwork(page);
-        await waitForAuthenticatedState(page, {
+        await signInMockUser(page, {
             path: '/issue',
             profileId: TEST_USER_PROFILE_ID,
         });
