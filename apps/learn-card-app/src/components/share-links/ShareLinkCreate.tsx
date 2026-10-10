@@ -1,13 +1,9 @@
+import { ShareCredentialPicker } from './ShareCredentialPicker';
 import { downloadSharePdf } from './sharePdf';
-import { ShareCategoryFilter } from './ShareCategoryFilter';
-import './ShareLinkCreate.css';
-import { ShareSearchEmpty } from './ShareSearchEmpty';
 import { ShareCredentialsIllustration } from './ShareCredentialsIllustration';
-import { ShareCredentialThumbnail } from './ShareCredentialThumbnail';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import {
-    searchOutline,
     arrowBackOutline,
     arrowForwardOutline,
     checkmarkOutline,
@@ -22,10 +18,8 @@ import {
 import type { ShareLink, ShareRecoveryPlaintext, VC } from '@learncard/types';
 import { QRCodeSVG } from 'qrcode.react';
 import { Clipboard } from '@capacitor/clipboard';
-import { useWallet, type CredentialCategoryEnum } from 'learn-card-base';
-import useTheme from '../../theme/hooks/useTheme';
+import { useWallet } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
-import { ShareCredentialMetadata } from './ShareCredentialMetadata';
 import { isShareLinkError } from 'learn-card-base/helpers/share-links';
 import { environment } from '../../config/environment';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
@@ -106,7 +100,6 @@ export const ShareLinkCreate = ({
             setSavingQr(false);
         }
     };
-    const { getThemedCategory } = useTheme();
     const [categoryFilter, setCategoryFilter] = useState('');
     const [selectedOnly, setSelectedOnly] = useState(false);
     const searchInput = useRef<HTMLInputElement>(null);
@@ -587,185 +580,42 @@ export const ShareLinkCreate = ({
                     )}
                     {step === 'choose' && (
                         <>
-                            <div hidden={selectedOnly} className="space-y-4">
-                                <div>
-                                    <label
-                                        htmlFor="share-credential-search"
-                                        className="block text-xs font-medium text-grayscale-700 mb-2"
-                                    >
-                                        {m['shareLinks.search']()}
-                                    </label>
-                                    <div className="relative flex items-stretch gap-2">
-                                        <div className="group flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-grayscale-300 bg-grayscale-10 px-3 transition-colors hover:border-grayscale-400 focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-500">
-                                            <IonIcon
-                                                aria-hidden="true"
-                                                icon={searchOutline}
-                                                className="h-5 w-5 shrink-0 text-grayscale-400 transition-colors group-focus-within:text-emerald-600"
-                                            />
-                                            <input
-                                                ref={searchInput}
-                                                id="share-credential-search"
-                                                className="w-full min-w-0 py-3 bg-transparent text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
-                                                placeholder={m['shareLinks.searchPlaceholder']()}
-                                                value={search}
-                                                onChange={event => setSearch(event.target.value)}
-                                                type="search"
-                                            />
-                                            {search && (
-                                                <button
-                                                    type="button"
-                                                    aria-label={m['shareLinks.clearSearch']()}
-                                                    onClick={() => {
-                                                        setSearch('');
-                                                        setSettledSearch('');
-                                                        searchInput.current?.focus();
-                                                    }}
-                                                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-grayscale-600 hover:bg-grayscale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                                                >
-                                                    <IonIcon
-                                                        aria-hidden="true"
-                                                        icon={closeOutline}
-                                                        className="h-4 w-4"
-                                                    />
-                                                </button>
-                                            )}
-                                        </div>
-                                        <ShareCategoryFilter
-                                            value={categoryFilter}
-                                            onChange={setCategoryFilter}
-                                            categories={categories}
-                                        />
-                                    </div>
-                                </div>
-                                {categoryFilter && (
-                                    <p className="text-xs text-grayscale-600">
-                                        {m['shareLinks.categoryFilter']()}:{' '}
-                                        {getThemedCategory(categoryFilter as CredentialCategoryEnum)
-                                            ?.category?.labels.plural || categoryFilter}
-                                    </p>
-                                )}
-                            </div>
-                            <div className="rounded-2xl bg-grayscale-100 p-4 space-y-3">
-                                <div className="flex justify-between items-start gap-3 text-xs text-grayscale-600">
-                                    <div>
-                                        <p className="font-medium text-grayscale-900">
-                                            {m['shareLinks.selected']({
-                                                count: String(selected.length),
-                                            })}
-                                        </p>
-                                        {selectedCategoryCount > 0 && (
-                                            <p className="mt-1">
-                                                {selectedCategoryCount === 1
-                                                    ? m['shareLinks.oneCategory']()
-                                                    : m['shareLinks.categoryCount']({
-                                                          count: String(selectedCategoryCount),
-                                                      })}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <span className="shrink-0">{m['shareLinks.limit']()}</span>
-                                </div>
-                                {selected.length > 0 && (
-                                    <div className="flex flex-wrap items-center gap-3">
-                                        <button
-                                            type="button"
-                                            aria-pressed={selectedOnly}
-                                            onClick={() => setSelectedOnly(current => !current)}
-                                            className="rounded-[20px] bg-white px-4 py-2 text-xs font-medium text-grayscale-900 hover:bg-emerald-50 focus-visible:ring-2 focus-visible:ring-emerald-500"
-                                        >
-                                            {selectedOnly
-                                                ? m['shareLinks.browseAll']()
-                                                : m['shareLinks.viewSelected']()}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                invalidateDraft();
-                                                setSelected([]);
-                                                setSelectedOnly(false);
-                                            }}
-                                            className="rounded-[20px] px-3 py-2 text-xs font-medium text-grayscale-600 hover:bg-white focus-visible:ring-2 focus-visible:ring-emerald-500"
-                                        >
-                                            {m['shareLinks.deselectAll']()}
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                            <p role="status" className="min-h-5 text-xs text-grayscale-500">
-                                {searchPending
-                                    ? m['shareLinks.searchUpdating']()
-                                    : !indexReady
-                                      ? m['shareLinks.loading']()
-                                      : null}
-                            </p>
-                            <div
-                                aria-busy={searchPending}
-                                className={`space-y-3 motion-safe:transition-opacity motion-safe:duration-200 ${searchPending ? 'opacity-60' : 'opacity-100'}`}
-                            >
-                                {filtered.map(choice => {
-                                    const text = credentialText(choice.credential);
-                                    const checked = selected.includes(choice.uri);
-                                    return (
-                                        <label
-                                            key={choice.uri}
-                                            className={`flex items-center gap-4 p-4 rounded-[20px] border cursor-pointer transition-colors ${checked ? 'border-emerald-600 bg-emerald-50' : 'border-grayscale-200 hover:bg-grayscale-10'}`}
-                                        >
-                                            <ShareCredentialThumbnail
-                                                credential={choice.credential}
-                                                category={choice.category}
-                                            />
-                                            <span className="flex-1 min-w-0">
-                                                <span className="block text-sm font-medium break-words">
-                                                    {text.name ||
-                                                        choice.title ||
-                                                        m['shareLinks.credential']()}
-                                                </span>
-                                                {choice.credential ? (
-                                                    <ShareCredentialMetadata
-                                                        credential={choice.credential}
-                                                        category={choice.category}
-                                                    />
-                                                ) : (
-                                                    <span className="block mt-1 text-xs text-grayscale-600">
-                                                        {failedReads.has(choice.uri)
-                                                            ? m['shareLinks.loadFailed']()
-                                                            : m['shareLinks.loading']()}
-                                                    </span>
-                                                )}
-                                            </span>
-                                            <input
-                                                type="checkbox"
-                                                className="w-5 h-5 accent-emerald-600 shrink-0"
-                                                checked={checked}
-                                                disabled={
-                                                    !choice.credential ||
-                                                    (!checked && selected.length >= 50)
-                                                }
-                                                onChange={() => {
-                                                    invalidateDraft();
-                                                    setSelected(current =>
-                                                        checked
-                                                            ? current.filter(
-                                                                  uri => uri !== choice.uri
-                                                              )
-                                                            : [...current, choice.uri]
-                                                    );
-                                                }}
-                                            />
-                                        </label>
+                            <ShareCredentialPicker
+                                filtered={filtered}
+                                selected={selected}
+                                onToggle={uri => {
+                                    invalidateDraft();
+                                    setSelected(current =>
+                                        current.includes(uri)
+                                            ? current.filter(item => item !== uri)
+                                            : [...current, uri]
                                     );
-                                })}
-                            </div>
-                            {!filtered.length && !loading && !searchPending && (
-                                <ShareSearchEmpty
-                                    searching={Boolean(settledSearch)}
-                                    onClear={() => {
-                                        setSearch('');
-                                        setSettledSearch('');
-                                        searchInput.current?.focus();
-                                    }}
-                                />
-                            )}
+                                }}
+                                onDeselectAll={() => {
+                                    invalidateDraft();
+                                    setSelected([]);
+                                    setSelectedOnly(false);
+                                }}
+                                selectedOnly={selectedOnly}
+                                setSelectedOnly={setSelectedOnly}
+                                selectedCategoryCount={selectedCategoryCount}
+                                selectionLimit={50}
+                                search={search}
+                                setSearch={setSearch}
+                                onClearSearch={() => {
+                                    setSearch('');
+                                    setSettledSearch('');
+                                }}
+                                searchInput={searchInput}
+                                settledSearch={settledSearch}
+                                searchPending={searchPending}
+                                categoryFilter={categoryFilter}
+                                setCategoryFilter={setCategoryFilter}
+                                categories={categories}
+                                indexReady={indexReady}
+                                loading={loading}
+                                failedReads={failedReads}
+                            />
                             {filtered.some(
                                 choice => !choice.credential && failedReads.has(choice.uri)
                             ) && (

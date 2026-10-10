@@ -808,18 +808,22 @@ test.describe('Credential lifecycle accessibility', () => {
                 );
             }
             await assertNoHighImpactViolations(recipientPage, testInfo, 'claim-success');
-            const skipConnectionButton = recipientPage.getByRole('button', {
-                name: 'Skip for Now',
+            // The connection nudge is presented asynchronously after claiming.
+            // Resolve it before navigating: the wallet can briefly be accessible
+            // before the nudge opens and hides its category tiles from axe/roles.
+            const connectionPrompt = recipientPage.getByRole('dialog', {
+                name: /^Connect with .+\?$/i,
             });
+            await expect(connectionPrompt).toBeVisible({ timeout: 30_000 });
+            const skipConnectionButton = connectionPrompt.getByRole('button', {
+                name: 'Skip for Now',
+                exact: true,
+            });
+            await activateWithKeyboard(recipientPage, skipConnectionButton, 'Enter');
+            await expect(connectionPrompt).toBeHidden({ timeout: 30_000 });
 
             await recipientPage.goto('/wallet');
             const badgesCategory = recipientPage.getByRole('button', { name: /Badges/i });
-            await expect(badgesCategory.or(skipConnectionButton).first()).toBeVisible({
-                timeout: 30_000,
-            });
-            if (await skipConnectionButton.isVisible()) {
-                await activateWithKeyboard(recipientPage, skipConnectionButton, 'Enter');
-            }
             await expect(badgesCategory).toBeVisible({ timeout: 30_000 });
             await activateWithKeyboard(recipientPage, badgesCategory, 'Space');
             await recipientPage.waitForURL(/\/socialBadges/, { timeout: 30_000 });

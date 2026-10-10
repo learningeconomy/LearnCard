@@ -1,3 +1,15 @@
+import { useVerifierHistoryEligibility } from '../../helpers/verifier-history/useEligibility';
+import {
+    beginVerifierDisclosure,
+    type HistoryContext,
+    historyOrigin,
+    visibleCredentialTitles,
+} from '../../helpers/verifier-history/history';
+import {
+    captureHistoryContext,
+    captureHistoryAccount,
+} from '../../helpers/verifier-history/account';
+import * as m from '../../paraglide/messages.js';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
@@ -11,6 +23,8 @@ import {
     type VerifierDisplayInfo,
     useIsLoggedIn,
     useWallet,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import {
     sanitizeCounterparty,
@@ -106,8 +120,9 @@ type Phase =
     | { kind: 'submitting'; clientInfo: ClientInfo }
     | {
           kind: 'finished';
+          accountChanged?: boolean;
           submitted: SubmitPresentationResult;
-          clientInfo: ClientInfo;
+          clientInfo?: ClientInfo;
           /**
            * The W3C VCs the user just shared. Empty when the picked
            * candidates were SD-JWT VCs / mDLs we can't render with the
@@ -150,6 +165,8 @@ const Oid4vpExchange: React.FC = () => {
     const params = queryString.parse(search);
     const isLoggedIn = useIsLoggedIn();
     const { initWallet } = useWallet();
+    const historyEligible = useVerifierHistoryEligibility();
+    const { presentToast } = useToast();
 
     const requestUri = singleParam(params.request);
 
@@ -209,7 +226,7 @@ const Oid4vpExchange: React.FC = () => {
                     pool,
                 });
             } catch (error) {
-                log.error('OID4VP: failed to resolve request', error);
+                log.error('OID4VP: failed to resolve request');
                 // No `clientInfo` here — we failed before resolving the
                 // request, so we don't yet know who the verifier was.
                 // The error screen falls back to a clean kind-themed
@@ -232,12 +249,14 @@ const Oid4vpExchange: React.FC = () => {
             // network round-trip.
             const clientInfo = extractClientInfo(currentPhase.request);
 
+            const isSelectedAccount = captureHistoryAccount();
+            let context: HistoryContext | undefined;
             try {
                 setPhase({ kind: 'submitting', clientInfo });
 
-                const wallet = (await initWallet()) as unknown as {
-                    invoke: WalletOidcVpInvoke;
-                };
+                const wallet = await initWallet();
+                if (!isSelectedAccount()) throw new Error('Account changed. Please try again.');
+                context = captureHistoryContext(wallet, historyEligible);
 
                 const chosen = buildChosenList(
                     currentPhase.selection,
@@ -251,6 +270,17 @@ const Oid4vpExchange: React.FC = () => {
                     );
                 }
 
+                const disclosure = await beginVerifierDisclosure(context, {
+                    protocol: 'oid4vp',
+                    titles: visibleCredentialTitles(chosen.map(c => c.candidate.credential)),
+                    label: clientInfo.display?.name,
+                    origin: historyOrigin(clientInfo.clientId),
+                    purpose:
+                        currentPhase.request.presentation_definition?.purpose ??
+                        currentPhase.request.presentation_definition?.input_descriptors?.find(
+                            d => d.purpose
+                        )?.purpose,
+                });
                 const sharedClaimsBreakdown: SharedClaimsEntry[] = [];
                 const invoke = wallet.invoke as unknown as SdJwtAwareInvoke;
                 if (typeof invoke.parseSdJwtVc === 'function') {
@@ -301,11 +331,13 @@ const Oid4vpExchange: React.FC = () => {
                                     });
                                 }
                             } catch (e) {
-                                console.error('Failed to parse SD-JWT for breakdown', e);
+                                log.warn('Failed to parse SD-JWT for breakdown');
                             }
                         }
                     }
                 }
+
+                if (!context.isCurrent()) throw new Error('Account changed. Please try again.');
 
                 const result: Awaited<ReturnType<WalletOidcVpInvoke['presentCredentials']>> =
                     await resilientPresentCredentials({
@@ -316,6 +348,26 @@ const Oid4vpExchange: React.FC = () => {
                         chosen,
                         callbacks: resilience.callbacks,
                     });
+
+                void disclosure.finish('sent').then(recordingResult => {
+                    if (recordingResult === 'unavailable' && disclosure.isCurrent())
+                        presentToast(m['verifierHistory.saveFailed'](), {
+                            type: ToastTypeEnum.Error,
+                        });
+                });
+                if (!context.isCurrent()) {
+                    // Transport completed: report success without previous-account previews
+                    // or a verifier redirect; never offer a retry of this disclosure.
+                    setPhase({
+                        kind: 'finished',
+                        submitted: result.submitted,
+                        clientInfo: undefined,
+                        sharedCredentials: [],
+                        sharedClaimsBreakdown: [],
+                        accountChanged: true,
+                    });
+                    return;
+                }
 
                 // Pull the W3C VCs out of the picked candidates so the
                 // finished screen can render them as `BoostEarnedCard`s.
@@ -334,7 +386,7 @@ const Oid4vpExchange: React.FC = () => {
                     sharedClaimsBreakdown,
                 });
             } catch (error) {
-                log.error('OID4VP: presentation failed', error);
+                log.error('OID4VP: presentation failed');
                 // Carry `clientInfo` through to the error phase so the
                 // failure screen still renders the branded `VerifierHeader`
                 // — the user keeps brand context even when the share fails.
@@ -342,16 +394,21 @@ const Oid4vpExchange: React.FC = () => {
                     kind: 'error',
                     error,
                     clientInfo,
-                    retryConsent: {
-                        request: currentPhase.request,
-                        selection: currentPhase.selection,
-                        dcqlSelection: currentPhase.dcqlSelection,
-                        pool: currentPhase.pool,
-                    },
+                    // Never offer old-account credentials as a retry on a different account.
+                    ...(isSelectedAccount() && (!context || context.isCurrent())
+                        ? {
+                              retryConsent: {
+                                  request: currentPhase.request,
+                                  selection: currentPhase.selection,
+                                  dcqlSelection: currentPhase.dcqlSelection,
+                                  pool: currentPhase.pool,
+                              },
+                          }
+                        : {}),
                 });
             }
         },
-        [phase, initWallet, resilience]
+        [phase, initWallet, resilience, presentToast, historyEligible]
     );
 
     const handleCancel = useCallback(() => {
@@ -427,10 +484,13 @@ const Oid4vpExchange: React.FC = () => {
 
                 {phase.kind === 'finished' && (
                     <RequestFinished
-                        redirectUri={phase.submitted.redirectUri}
-                        clientId={phase.clientInfo.clientId}
-                        clientIdScheme={phase.clientInfo.clientIdScheme}
-                        clientDisplay={phase.clientInfo.display}
+                        redirectUri={phase.accountChanged ? undefined : phase.submitted.redirectUri}
+                        summary={
+                            phase.accountChanged ? m['verifierHistory.accountChanged']() : undefined
+                        }
+                        clientId={phase.clientInfo?.clientId}
+                        clientIdScheme={phase.clientInfo?.clientIdScheme}
+                        clientDisplay={phase.clientInfo?.display}
                         sharedCredentials={phase.sharedCredentials}
                         sharedClaimsBreakdown={phase.sharedClaimsBreakdown}
                         onDone={() => history.push('/')}

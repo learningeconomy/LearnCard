@@ -1756,7 +1756,6 @@
         "previewCredentials": "Preview {{count}} Credentials"
     },
     "consentFlow": {
-        "reviewChanged": "The sharing details changed. Review them before connecting again.",
         "guardianApprovalRequired": "Ask a current account manager to approve this connection, then try again.",
         "acceptAndSync": "Accept & Sync",
         "accepted": "Accepted",
@@ -1877,6 +1876,7 @@
             "email": "email",
             "profilePicture": "profile picture"
         },
+        "reviewChanged": "The sharing details changed. Review them before connecting again.",
         "retryPublication": "Your sharing choices are saved. Try again to finish sending them."
     },
     "recovery": {
@@ -3621,12 +3621,6 @@
         "skillsHub": "Skills Hub"
     },
     "base": {
-        "consentAudience": {
-            "title": "Review who receives your data",
-            "description": "Your selected information will be available to everyone listed below.",
-            "confirm": "Confirm Sharing",
-            "cancel": "Cancel"
-        },
         "verification": {
             "selfIssued": "Self Issued",
             "trustedIssuer": "Trusted Issuer",
@@ -3662,6 +3656,12 @@
                 "revoked": "Revoked",
                 "suspended": "Suspended"
             }
+        },
+        "consentAudience": {
+            "title": "Review who receives your data",
+            "description": "Your selected information will be available to everyone listed below.",
+            "confirm": "Confirm Sharing",
+            "cancel": "Cancel"
         }
     },
     "sdk": {
@@ -9411,6 +9411,46 @@
         "saveError": "Could not save these credentials. Please try again.",
         "signInToSave": "Sign in to save",
         "saveHint": "Keep this signed collection with your received items."
+    },
+    "verifierSelection": {
+        "hint": "Choose the credentials you want to send to this application.",
+        "review": "Review"
+    },
+    "verifierHistory": {
+        "viewCredentials": "View credentials shared with {{verifier}}",
+        "credentialsCount": "Credentials ({{count}})",
+        "credentialsList": "Recorded credential names",
+        "viewAll": "View all {{count}}",
+        "preview": "Showing {{shown}} of {{total}} entries",
+        "page": "Page {{page}} of {{total}}",
+        "previous": "Previous",
+        "next": "Next",
+        "saveFailed": "History could not be updated. You don’t need to send your information again.",
+        "title": "Shared with verifiers",
+        "description": "Private history of information you chose to send to other applications.",
+        "managedUnavailable": "History is unavailable for managed accounts.",
+        "loading": "Updating history…",
+        "open": "Open private history",
+        "record": "Keep private history",
+        "retention": "Keep up to 500 entries from the last 90 days. Older entries are removed when you connect.",
+        "limits": "Titles do not describe every claim sent. Deleting history cannot retract information already sent. Turning recording off keeps earlier history.",
+        "cleanupPending": "Some records could not be read or removed. Clear history to remove them.",
+        "refresh": "Refresh",
+        "clear": "Clear history",
+        "empty": "No recorded disclosures.",
+        "unknownVerifier": "Requesting application",
+        "sent": "Sent; acceptance unknown",
+        "handedOff": "Handed to the application; delivery unconfirmed",
+        "credential": "Credential",
+        "delete": "Delete entry",
+        "deleteLabel": "Delete entry for {{verifier}}",
+        "loadFailed": "History could not be loaded or updated. Check your connection and try again.",
+        "retry": "Retry history",
+        "clearTitle": "Clear private history?",
+        "clearBody": "This permanently deletes all private history entries. Your credentials and information already sent stay unchanged.",
+        "clearConsent": "Recording stays as set when settings can be read; otherwise it turns off.",
+        "clearRecovery": "Some history could not be loaded. Clearing also removes unreadable entries.",
+        "accountChanged": "Sending completed, but your account changed. Return to the requesting application to continue."
     },
     "contractRequests": {
         "label": "Connect",

@@ -1756,7 +1756,6 @@
         "previewCredentials": "Vista previa de {{count}} credenciales"
     },
     "consentFlow": {
-        "reviewChanged": "Los detalles de acceso cambiaron. Revísalos antes de volver a conectar.",
         "guardianApprovalRequired": "Pide a un administrador actual de la cuenta que apruebe esta conexión y vuelve a intentarlo.",
         "title": "Consentimiento",
         "acceptAndSync": "Aceptar y sincronizar",
@@ -1877,6 +1876,7 @@
             "email": "correo electrónico",
             "profilePicture": "foto de perfil"
         },
+        "reviewChanged": "Los detalles de acceso cambiaron. Revísalos antes de volver a conectar.",
         "retryPublication": "Tus opciones para compartir están guardadas. Inténtalo de nuevo para terminar de enviarlas."
     },
     "recovery": {
@@ -3570,12 +3570,6 @@
         "skillsHub": "Centro de habilidades"
     },
     "base": {
-        "consentAudience": {
-            "title": "Revisa quién recibe tus datos",
-            "description": "La información que elijas estará disponible para todas las personas que aparecen a continuación.",
-            "confirm": "Confirmar uso compartido",
-            "cancel": "Cancelar"
-        },
         "verification": {
             "selfIssued": "Autoemitido",
             "trustedIssuer": "Emisor de confianza",
@@ -3611,6 +3605,12 @@
                 "revoked": "Revocada",
                 "suspended": "Suspendida"
             }
+        },
+        "consentAudience": {
+            "title": "Revisa quién recibe tus datos",
+            "description": "La información que elijas estará disponible para todas las personas que aparecen a continuación.",
+            "confirm": "Confirmar uso compartido",
+            "cancel": "Cancelar"
         }
     },
     "sdk": {
@@ -9360,6 +9360,46 @@
         "saveError": "No se pudieron guardar estas credenciales. Inténtalo de nuevo.",
         "signInToSave": "Inicia sesión para guardar",
         "saveHint": "Guarda esta colección firmada con tus elementos recibidos."
+    },
+    "verifierSelection": {
+        "hint": "Elige las credenciales que quieres enviar a esta aplicación.",
+        "review": "Revisar"
+    },
+    "verifierHistory": {
+        "viewCredentials": "Ver credenciales compartidas con {{verifier}}",
+        "credentialsCount": "Credenciales ({{count}})",
+        "credentialsList": "Nombres de credenciales registrados",
+        "viewAll": "Ver los {{count}}",
+        "preview": "Se muestran {{shown}} de {{total}} entradas",
+        "page": "Página {{page}} de {{total}}",
+        "previous": "Anterior",
+        "next": "Siguiente",
+        "saveFailed": "No se pudo actualizar el historial. No necesitas enviar tu información de nuevo.",
+        "title": "Compartido con verificadores",
+        "description": "Historial privado de la información que decidiste enviar a otras aplicaciones.",
+        "managedUnavailable": "El historial no está disponible para cuentas administradas.",
+        "loading": "Actualizando el historial…",
+        "open": "Abrir historial privado",
+        "record": "Guardar historial privado",
+        "retention": "Guarda hasta 500 entradas de los últimos 90 días. Las entradas antiguas se eliminan al conectarte.",
+        "limits": "Los títulos no describen todos los datos enviados. Eliminar el historial no retira la información enviada. Desactivar el registro conserva el historial anterior.",
+        "cleanupPending": "No se pudieron leer o eliminar algunos registros. Borra el historial para eliminarlos.",
+        "refresh": "Actualizar",
+        "clear": "Borrar historial",
+        "empty": "No hay envíos registrados.",
+        "unknownVerifier": "Aplicación solicitante",
+        "sent": "Enviado; aceptación desconocida",
+        "handedOff": "Entregado a la aplicación; recepción sin confirmar",
+        "credential": "Credencial",
+        "delete": "Eliminar entrada",
+        "deleteLabel": "Eliminar entrada de {{verifier}}",
+        "loadFailed": "No se pudo cargar o actualizar el historial. Comprueba tu conexión e inténtalo de nuevo.",
+        "retry": "Reintentar historial",
+        "clearTitle": "¿Borrar el historial privado?",
+        "clearBody": "Se eliminarán permanentemente todas las entradas del historial privado. Tus credenciales y la información ya enviada no cambian.",
+        "clearConsent": "La opción de registro se mantiene si se puede leer la configuración; de lo contrario, se desactiva.",
+        "clearRecovery": "No se pudo cargar parte del historial. Al borrarlo, también se eliminan las entradas ilegibles.",
+        "accountChanged": "El envío terminó, pero cambiaste de cuenta. Vuelve a la aplicación que lo solicitó para continuar."
     },
     "contractRequests": {
         "label": "Conectar",
