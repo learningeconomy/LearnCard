@@ -95,6 +95,8 @@ export const toShareLinkRecord = (props: Record<string, unknown>): ShareLinkReco
     ownerProfileId: asString(props.ownerProfileId),
     version: asNumber(props.version, 1),
     contentVersion: asNumber(props.contentVersion, 1),
+    attachmentId: asNullableString(props.attachmentId),
+    attachmentChunkCount: asNullableNumber(props.attachmentChunkCount),
     generation: asNumber(props.generation, 1),
     status: isOneOf(props.status, SHARE_LINK_STATUSES) ? props.status : 'pending',
     contentState: isOneOf(props.contentState, SHARE_CONTENT_STATES)
@@ -136,6 +138,8 @@ export const toShareLinkReservationRecord = (
     operationId: asString(props.operationId),
     objectRef: asNullableString(props.objectRef),
     contentVersion: asNullableNumber(props.contentVersion),
+    attachmentId: asNullableString(props.attachmentId),
+    attachmentChunkCount: asNullableNumber(props.attachmentChunkCount),
     baseVersion: asNumber(props.baseVersion, 1),
     baseContentVersion: asNumber(props.baseContentVersion, 1),
     contentHash: asNullableString(props.contentHash),

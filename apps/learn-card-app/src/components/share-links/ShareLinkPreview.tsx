@@ -4,7 +4,7 @@ import { ShareCredentialMetadata } from './ShareCredentialMetadata';
 import React from 'react';
 import { IonIcon } from '@ionic/react';
 import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
-import type { SharePayload } from '@learncard/types';
+import type { SharePayload, VC } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 import { credentialText, type ProofState } from './shareLinkFlow';
 
@@ -37,6 +37,12 @@ export interface ShareLinkPreviewProps {
     /** Overrides the default "N credentials selected" summary (e.g. for received collections). */
     countLabel?: string;
     className?: string;
+    /** Optional local-only credential surface (for an exact protected resume PDF). */
+    renderCredential?: (
+        credential: VC,
+        index: number,
+        proof?: ProofState
+    ) => React.ReactNode | undefined;
 }
 
 export const proofLabel = (state: ProofState): string =>
@@ -85,6 +91,7 @@ export const ShareLinkPreview = ({
     showExpiry = true,
     countLabel,
     className = '',
+    renderCredential,
 }: ShareLinkPreviewProps) => (
     <div className={`space-y-5 ${className}`} data-testid="share-link-preview">
         {heading && (
@@ -182,6 +189,13 @@ export const ShareLinkPreview = ({
         <div className="space-y-4">
             {payload.selection.map(({ credentialIndex }) => {
                 const credential = payload.presentation.verifiableCredential[credentialIndex];
+                const custom = renderCredential?.(
+                    credential,
+                    credentialIndex,
+                    proofs?.[credentialIndex]
+                );
+                if (custom !== undefined)
+                    return <React.Fragment key={credentialIndex}>{custom}</React.Fragment>;
                 const text = credentialText(credential);
                 const endorsements = payload.endorsements.filter(
                     item => item.targetCredentialIndex === credentialIndex

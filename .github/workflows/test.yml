@@ -107,6 +107,19 @@ jobs:
             - name: Lint CloudFormation template
               run: pipx run cfn-lint services/learn-card-network/ai-agent/infra/aws/template.yml
 
+    share-link-security:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
+                  fetch-depth: 0
+            - uses: ./.github/actions/setup
+            - name: Test share lifecycle and attachment publication races with Neo4j
+              working-directory: services/learn-card-network/brain-service
+              run: bunx vitest run --config vitest.share-links-neo4j.config.ts
+
     inbox-security:
         runs-on: ubuntu-latest
         timeout-minutes: 20

@@ -69,10 +69,7 @@ const normalizeSnapshot = (snapshot: Partial<ResumeBuilderSnapshot>): ResumeBuil
 });
 
 const normalizeComparableText = (value?: string): string =>
-    (value ?? '')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .toLowerCase();
+    (value ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
 
 const getSourceCredentialDescription = (vc: VC | null): string | undefined => {
     if (!vc) return undefined;
@@ -181,9 +178,7 @@ const firstVerificationUri = (item: unknown): string | undefined => {
     return undefined;
 };
 
-export const getEmbeddedVerificationCredentialsByIdFromLerVc = (
-    vc: VC
-): Record<string, VC> => {
+export const getEmbeddedVerificationCredentialsByIdFromLerVc = (vc: VC): Record<string, VC> => {
     const credentialSubject = asRecord(vc.credentialSubject);
     const items = [
         ...(Array.isArray(credentialSubject?.employmentHistories)
@@ -299,7 +294,8 @@ export const buildResumeBuilderSnapshotFromLerVc = async (
                     ? person.social.find(entry => asString(asRecord(entry)?.name) === 'LinkedIn')
                     : undefined,
                 [['uri']]
-            ) || '',
+            ) ||
+            '',
         thumbnail: '',
     };
 
@@ -311,8 +307,8 @@ export const buildResumeBuilderSnapshotFromLerVc = async (
     const employmentHistories = Array.isArray(credentialSubject?.employmentHistories)
         ? credentialSubject.employmentHistories
         : Array.isArray(credentialSubject?.workHistory)
-        ? credentialSubject.workHistory
-        : [];
+          ? credentialSubject.workHistory
+          : [];
     for (const item of employmentHistories) {
         const uri = firstVerificationUri(item);
         if (!uri) continue;
@@ -320,9 +316,8 @@ export const buildResumeBuilderSnapshotFromLerVc = async (
         const sourceVc = embeddedVerification ?? (await readCredential(uri));
         const sourceCredentialDescription = getSourceCredentialDescription(sourceVc);
 
-        const positionHistory = Array.isArray(asRecord(item)?.positionHistories)
-            ? asRecord(item)?.positionHistories?.[0]
-            : undefined;
+        const positionHistories = asRecord(item)?.positionHistories;
+        const positionHistory = Array.isArray(positionHistories) ? positionHistories[0] : undefined;
         const description = asString(asRecord(item)?.narrative);
 
         pushEntry(
@@ -345,8 +340,8 @@ export const buildResumeBuilderSnapshotFromLerVc = async (
     const educationAndLearnings = Array.isArray(credentialSubject?.educationAndLearnings)
         ? credentialSubject.educationAndLearnings
         : Array.isArray(credentialSubject?.educationHistory)
-        ? credentialSubject.educationHistory
-        : [];
+          ? credentialSubject.educationHistory
+          : [];
     for (const item of educationAndLearnings) {
         const uri = firstVerificationUri(item);
         if (!uri) continue;
@@ -442,13 +437,13 @@ export const buildResumeHydrationState = async (
     const snapshot = storedSnapshot
         ? normalizeSnapshot(storedSnapshot as Partial<ResumeBuilderSnapshot>)
         : resume.vc
-        ? await buildResumeBuilderSnapshotFromLerVc(resume.vc, fileName, async uri => {
-              if (uri in embeddedCredentialsById) return embeddedCredentialsById[uri] ?? null;
-              return readCredential(uri);
-          })
-        : normalizeSnapshot({
-              documentSetup: { showQRCode: true, fileName },
-          });
+          ? await buildResumeBuilderSnapshotFromLerVc(resume.vc, fileName, async uri => {
+                if (uri in embeddedCredentialsById) return embeddedCredentialsById[uri] ?? null;
+                return readCredential(uri);
+            })
+          : normalizeSnapshot({
+                documentSetup: { showQRCode: true, fileName },
+            });
 
     return {
         activeResume: {
@@ -456,14 +451,20 @@ export const buildResumeHydrationState = async (
             uri: resume.record.uri ?? null,
             lerRecordId: resume.lerRecordId,
             generatedAt:
-                (typeof resume.record.generatedAt === 'string' && resume.record.generatedAt) || null,
+                (typeof resume.record.generatedAt === 'string' && resume.record.generatedAt) ||
+                null,
             fileName,
+            ...(typeof resume.record.shareId === 'string'
+                ? { shareId: resume.record.shareId }
+                : {}),
         },
         snapshot,
     };
 };
 
-export const getResumeDisplaySummary = (resume: ExistingResume): {
+export const getResumeDisplaySummary = (
+    resume: ExistingResume
+): {
     title: string;
     subtitle: string;
     credentialCount: number;

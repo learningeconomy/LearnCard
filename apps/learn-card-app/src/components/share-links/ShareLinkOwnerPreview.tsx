@@ -8,6 +8,9 @@ import { decryptSharePayload, validateShareManifest } from 'learn-card-base/help
 import * as m from '../../paraglide/messages.js';
 import { readShareRecovery, shareWallet } from './shareLinkFlow';
 import { ShareLinkPreview } from './ShareLinkPreview';
+import { ProtectedResumePreview } from './ProtectedResumePreview';
+import { hasProtectedResumePdf } from '../../helpers/resume-publishing/protectedPdf';
+import { enterSharePrivacy } from './sharePrivacy';
 
 type ShareLinkOwnerPreviewProps = {
     share: ShareLink;
@@ -15,6 +18,7 @@ type ShareLinkOwnerPreviewProps = {
 };
 
 export const ShareLinkOwnerPreview = ({ share, onDismiss }: ShareLinkOwnerPreviewProps) => {
+    enterSharePrivacy();
     const { initWallet } = useWallet();
     const initWalletRef = useRef(initWallet);
     initWalletRef.current = initWallet;
@@ -73,7 +77,10 @@ export const ShareLinkOwnerPreview = ({ share, onDismiss }: ShareLinkOwnerPrevie
     }, [attempt, share.contentVersion, share.id, share.selectedCount]);
 
     return (
-        <div className="flex h-full min-h-0 flex-col bg-grayscale-100 font-poppins">
+        <div
+            className="sentry-block ph-no-capture flex h-full min-h-0 flex-col bg-grayscale-100 font-poppins"
+            data-feedback-exclude
+        >
             <header className="flex shrink-0 items-center justify-between gap-4 border-b border-grayscale-200 bg-white px-5 py-4 md:px-8">
                 <div className="min-w-0">
                     <p className="text-xs font-medium uppercase tracking-wide text-grayscale-500">
@@ -129,6 +136,11 @@ export const ShareLinkOwnerPreview = ({ share, onDismiss }: ShareLinkOwnerPrevie
                     {!loading && payload && (
                         <ShareLinkPreview
                             payload={payload}
+                            renderCredential={credential =>
+                                hasProtectedResumePdf(credential) ? (
+                                    <ProtectedResumePreview credential={credential} />
+                                ) : undefined
+                            }
                             title={share.title}
                             note={share.note}
                             sharerName={payload.sharer.displayName}

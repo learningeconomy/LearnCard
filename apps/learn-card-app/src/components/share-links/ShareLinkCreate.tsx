@@ -38,6 +38,7 @@ import {
     mapWithConcurrency,
     prepareShare,
     prepareShareUpdate,
+    prepareShareMetadataUpdate,
     readShareRecovery,
     resolveExpiryIso,
     shareLinkOrigin,
@@ -50,6 +51,9 @@ import {
     type ShareWallet,
 } from './shareLinkFlow';
 import { ShareLinkPreview } from './ShareLinkPreview';
+import { ProtectedResumePreview } from './ProtectedResumePreview';
+import { enterSharePrivacy } from './sharePrivacy';
+import { hasProtectedResumePdf } from '../../helpers/resume-publishing/protectedPdf';
 
 export const primary =
     'px-5 py-3 rounded-[20px] bg-grayscale-900 text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-emerald-500';
@@ -91,6 +95,8 @@ export const ShareLinkCreate = ({
     initialSelectedUri,
 }: ShareLinkCreateProps) => {
     const { initWallet } = useWallet();
+    const assetEdit = Boolean(editShare?.attachmentId);
+    if (assetEdit) enterSharePrivacy();
     const qrExport = useRef<HTMLDivElement>(null);
     const [savingQr, setSavingQr] = useState(false);
     const [qrError, setQrError] = useState(false);
@@ -125,7 +131,9 @@ export const ShareLinkCreate = ({
     const [failedReads, setFailedReads] = useState(new Set<string>());
     const readQueue = useRef(Promise.resolve());
     const [loading, setLoading] = useState(false);
-    const [step, setStep] = useState<'choose' | 'details' | 'preview' | 'done'>('choose');
+    const [step, setStep] = useState<'choose' | 'details' | 'preview' | 'done'>(
+        assetEdit ? 'details' : 'choose'
+    );
     const [search, setSearch] = useState('');
     const [settledSearch, setSettledSearch] = useState('');
     const searchPending = search.trim() !== settledSearch;
@@ -136,6 +144,7 @@ export const ShareLinkCreate = ({
     const [title, setTitle] = useState(editShare?.title ?? '');
     const [note, setNote] = useState(editShare?.note ?? '');
     const [error, setError] = useState(false);
+    const [resumeOnly, setResumeOnly] = useState(false);
     const [tooLarge, setTooLarge] = useState(false);
     const [unsupportedBase, setUnsupportedBase] = useState(false);
     const [pending, setPending] = useState(false);
@@ -163,12 +172,21 @@ export const ShareLinkCreate = ({
         busy.current = true;
         setLoading(true);
         setError(false);
+        setResumeOnly(false);
         try {
             const wallet = shareWallet(await walletRef.current());
             const editRows: CredentialChoice[] = [];
             if (editShare) {
                 const recovery = await readShareRecovery(wallet, editShare);
                 editRecovery.current = recovery;
+                if (assetEdit) {
+                    if (alive.current) {
+                        setSelected(recovery.selection.map(item => item.ref));
+                        setIndexReady(true);
+                        setStep('details');
+                    }
+                    return;
+                }
                 const refs = [...recovery.selection]
                     .sort((a, b) => a.order - b.order)
                     .map(item => item.ref);
@@ -255,6 +273,7 @@ export const ShareLinkCreate = ({
         busy.current = true;
         setLoading(true);
         setError(false);
+        setResumeOnly(false);
         setTooLarge(false);
         try {
             const wallet = shareWallet(await walletRef.current());
@@ -306,43 +325,62 @@ export const ShareLinkCreate = ({
         busy.current = true;
         setLoading(true);
         setError(false);
+        setResumeOnly(false);
         setTooLarge(false);
         setUnsupportedBase(false);
         try {
             if (!guardBase()) return;
             const wallet = shareWallet(await walletRef.current());
-            prepared.current = editShare
-                ? await prepareShareUpdate(
-                      wallet,
-                      editShare,
-                      editRecovery.current ?? (await readShareRecovery(wallet, editShare)),
-                      selected,
-                      title,
-                      note,
-                      {
-                          ...(passcodeEnabled
-                              ? passcode
-                                  ? { passcode }
-                                  : {}
-                              : { passcode: null }),
-                          notifyOnView,
-                      }
-                  )
-                : await prepareShare(
-                      wallet,
-                      selected,
-                      title,
-                      note,
-                      resolveExpiryIso(expiryChoice),
-                      {
-                          ...(passcodeEnabled ? { passcode } : {}),
-                          notifyOnView,
-                      }
-                  );
+            prepared.current =
+                editShare && assetEdit
+                    ? await prepareShareMetadataUpdate(
+                          wallet,
+                          editShare,
+                          editRecovery.current ?? (await readShareRecovery(wallet, editShare)),
+                          title,
+                          note,
+                          {
+                              ...(passcodeEnabled
+                                  ? passcode
+                                      ? { passcode }
+                                      : {}
+                                  : { passcode: null }),
+                              notifyOnView,
+                          }
+                      )
+                    : editShare
+                      ? await prepareShareUpdate(
+                            wallet,
+                            editShare,
+                            editRecovery.current ?? (await readShareRecovery(wallet, editShare)),
+                            selected,
+                            title,
+                            note,
+                            {
+                                ...(passcodeEnabled
+                                    ? passcode
+                                        ? { passcode }
+                                        : {}
+                                    : { passcode: null }),
+                                notifyOnView,
+                            }
+                        )
+                      : await prepareShare(
+                            wallet,
+                            selected,
+                            title,
+                            note,
+                            resolveExpiryIso(expiryChoice),
+                            {
+                                ...(passcodeEnabled ? { passcode } : {}),
+                                notifyOnView,
+                            }
+                        );
             if (!alive.current) return;
             setStep('preview');
         } catch (cause) {
             if (alive.current) {
+                setResumeOnly(cause instanceof Error && cause.message === 'managed-resume');
                 setError(true);
                 setTooLarge(
                     isShareLinkError(cause) &&
@@ -415,6 +453,7 @@ export const ShareLinkCreate = ({
         busy.current = true;
         setLoading(true);
         setError(false);
+        setResumeOnly(false);
         setTooLarge(false);
         setPending(false);
         try {
@@ -443,6 +482,7 @@ export const ShareLinkCreate = ({
     const copy = async () => {
         setLoading(true);
         setError(false);
+        setResumeOnly(false);
         try {
             await Clipboard.write({ string: link });
             setCopied(true);
@@ -580,9 +620,11 @@ export const ShareLinkCreate = ({
                         <p role="alert" className="p-4 rounded-2xl bg-red-50 text-red-700 text-sm">
                             {unsupportedBase
                                 ? m['shareLinks.unsupportedBase']()
-                                : tooLarge
-                                  ? m['shareLinks.tooLarge']()
-                                  : m['shareLinks.error']()}
+                                : resumeOnly
+                                  ? m['resumePublishing.publishInBuilder']()
+                                  : tooLarge
+                                    ? m['shareLinks.tooLarge']()
+                                    : m['shareLinks.error']()}
                         </p>
                     )}
                     {step === 'choose' && (
@@ -800,6 +842,11 @@ export const ShareLinkCreate = ({
                     )}
                     {step === 'details' && (
                         <div className="space-y-5">
+                            {assetEdit && (
+                                <p className="rounded-[20px] border border-grayscale-200 bg-grayscale-100 p-4 text-sm text-grayscale-700">
+                                    {m['resumePublishing.manageContent']()}
+                                </p>
+                            )}
                             <div className="p-4 rounded-2xl bg-grayscale-100 text-sm">
                                 <p>
                                     {m['shareLinks.selected']({ count: String(selected.length) })}
@@ -1023,13 +1070,18 @@ export const ShareLinkCreate = ({
                         <div className="space-y-5">
                             <ShareLinkPreview
                                 heading={m['shareLinks.previewHeading']()}
-                                title={prepared.current.input.title}
-                                note={prepared.current.input.note}
+                                title={prepared.current.input.title ?? editShare?.title ?? title}
+                                note={prepared.current.input.note ?? undefined}
                                 sharerName={prepared.current.payload.sharer.displayName}
                                 expiresAt={
                                     editShare?.expiresAt ?? prepared.current.input.expiresAt ?? null
                                 }
                                 payload={prepared.current.payload}
+                                renderCredential={credential =>
+                                    hasProtectedResumePdf(credential) ? (
+                                        <ProtectedResumePreview credential={credential} />
+                                    ) : undefined
+                                }
                             />
                             <p className="text-xs text-grayscale-600 leading-relaxed">
                                 {m['shareLinks.privacyHint']()}
@@ -1132,13 +1184,14 @@ export const ShareLinkCreate = ({
             </div>
             <footer className="border-t border-grayscale-100 px-6 py-5">
                 <div className="max-w-2xl mx-auto flex justify-between gap-3">
-                    {step === 'details' ? (
+                    {step === 'details' && !assetEdit ? (
                         <button
                             disabled={loading}
                             className={`${secondary} inline-flex items-center justify-center gap-2`}
                             onClick={() => {
                                 setStep('choose');
                                 setError(false);
+                                setResumeOnly(false);
                                 setUnsupportedBase(false);
                             }}
                         >
@@ -1159,6 +1212,7 @@ export const ShareLinkCreate = ({
                                 setPending(false);
                                 setStep('details');
                                 setError(false);
+                                setResumeOnly(false);
                             }}
                         >
                             <IonIcon
@@ -1178,6 +1232,7 @@ export const ShareLinkCreate = ({
                             onClick={() => {
                                 setStep('details');
                                 setError(false);
+                                setResumeOnly(false);
                             }}
                         >
                             {m['shareLinks.continue']()}{' '}

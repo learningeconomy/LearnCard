@@ -10,6 +10,9 @@ import {
     ShareEnvelopeValidator,
     ShareLinkPublicContentViewValidator,
     ShareLinkPublicStateValidator,
+    GetShareLinkAttachmentChunkInputValidator,
+    ShareLinkAttachmentChunkOutputValidator,
+    ShareLinkAttachmentChunkEnvelopeValidator,
 } from '@learncard/types';
 import { LCNNotificationTypeEnumValidator } from '@learncard/types';
 
@@ -32,6 +35,11 @@ import type {
     ShareViewEligibilitySource,
 } from '@accesslayer/share-link';
 import type { ShareLinkRecord } from '../models/ShareLink';
+import { shareAttachmentTuple } from '@accesslayer/share-link/attachment';
+import {
+    mintShareAttachmentAccessToken,
+    verifyShareAttachmentAccessToken,
+} from '@helpers/share-link-attachment-access';
 
 /**
  * LC-2187 public (anonymous) share-link API: resolve, guarded content and
@@ -65,6 +73,11 @@ export type PublicShareLinkRouterDependencies = {
             namespace: string;
             ownerProfileId: string;
         }) => Promise<
+            { ok: true; value: ShareContentContentProjection } | { ok: false; error: string }
+        >;
+        fetchAttachmentChunk?: (
+            input: import('@helpers/share-content-client/types').ShareContentTuple
+        ) => Promise<
             { ok: true; value: ShareContentContentProjection } | { ok: false; error: string }
         >;
     };
@@ -219,6 +232,161 @@ export const createPublicShareLinksRouter = (
     };
 
     return t.router({
+        attachmentChunk: openRouteWithoutInputCapture
+            .meta({
+                openapi: openapi(
+                    'POST',
+                    '/public/share-links/attachment-chunk',
+                    'Fetch guarded encrypted attachment chunk'
+                ),
+            })
+            .input(GetShareLinkAttachmentChunkInputValidator)
+            .output(ShareLinkAttachmentChunkOutputValidator)
+            .mutation(async ({ ctx, input }) => {
+                const dependencies = await resolve();
+                if (!dependencies.repository.fetchAttachmentChunk) notFound();
+                try {
+                    await dependencies.enforceRateLimit({
+                        key: rateLimitKey('attachment', dependencies.namespace, ctx.sourceIp),
+                        limit: 240,
+                        windowSeconds: 60,
+                        description: 'public share-link attachment',
+                    });
+                } catch (error) {
+                    if (error instanceof TRPCError && error.code === 'TOO_MANY_REQUESTS')
+                        throw new TRPCError({
+                            code: 'TOO_MANY_REQUESTS',
+                            message: 'try again later',
+                        });
+                    throw new TRPCError({
+                        code: 'SERVICE_UNAVAILABLE',
+                        message: 'share-link content is unavailable',
+                    });
+                }
+                const read = async (): Promise<ShareLinkRecord> => {
+                    let record: ShareLinkRecord | null;
+                    try {
+                        record = await dependencies.repository.getShareLink({
+                            shareId: input.id,
+                            namespace: dependencies.namespace,
+                        });
+                    } catch {
+                        throw new TRPCError({
+                            code: 'SERVICE_UNAVAILABLE',
+                            message: 'share-link content is unavailable',
+                        });
+                    }
+                    const state = classifyPublicShare(record, dependencies.now());
+                    if (
+                        state.state !== 'active' ||
+                        state.record.namespace !== dependencies.namespace ||
+                        state.record.contentVersion !== input.contentVersion ||
+                        state.record.attachmentId !== input.attachmentId ||
+                        !state.record.attachmentChunkCount ||
+                        input.chunkIndex >= state.record.attachmentChunkCount
+                    )
+                        notFound();
+                    return state.record;
+                };
+                const first = await read();
+                const grantAccepted =
+                    input.accessToken &&
+                    verifyShareAttachmentAccessToken(
+                        input.accessToken,
+                        first,
+                        dependencies.namespace,
+                        ctx.sourceIp,
+                        dependencies.now()
+                    );
+                const access = grantAccepted
+                    ? 'accepted'
+                    : await passcodeAccepted(first, input.passcode, dependencies, ctx.sourceIp);
+                if (access === 'try_later')
+                    throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'try again later' });
+                if (access !== 'accepted')
+                    throw new TRPCError({
+                        code: 'UNAUTHORIZED',
+                        message: 'share-link passcode required',
+                    });
+                const tuple = shareAttachmentTuple(
+                    {
+                        namespace: dependencies.namespace,
+                        ownerProfileId: first.ownerProfileId,
+                        shareId: first.id,
+                        contentVersion: first.contentVersion,
+                        attachmentId: input.attachmentId,
+                        chunkCount: first.attachmentChunkCount!,
+                    },
+                    input.chunkIndex
+                );
+                let fetched;
+                try {
+                    fetched = await dependencies.repository.fetchAttachmentChunk(tuple);
+                } catch {
+                    throw new TRPCError({
+                        code: 'SERVICE_UNAVAILABLE',
+                        message: 'share-link content is unavailable',
+                    });
+                }
+                if (!fetched.ok) {
+                    if (fetched.error === 'NOT_FOUND' || fetched.error === 'CONFLICT') notFound();
+                    throw new TRPCError({
+                        code: 'SERVICE_UNAVAILABLE',
+                        message: 'share-link content is unavailable',
+                    });
+                }
+                if (
+                    Object.entries(tuple).some(
+                        ([key, value]) => fetched.value[key as keyof typeof fetched.value] !== value
+                    )
+                )
+                    notFound();
+                const final = await read();
+                if (
+                    final.version !== first.version ||
+                    final.ownerProfileId !== first.ownerProfileId ||
+                    final.activeObjectRef !== first.activeObjectRef ||
+                    final.passcodeHash !== first.passcodeHash
+                )
+                    notFound();
+                if (
+                    grantAccepted &&
+                    !verifyShareAttachmentAccessToken(
+                        input.accessToken!,
+                        final,
+                        dependencies.namespace,
+                        ctx.sourceIp,
+                        dependencies.now()
+                    )
+                ) {
+                    throw new TRPCError({
+                        code: 'UNAUTHORIZED',
+                        message: 'share-link passcode required',
+                    });
+                }
+                const envelope = ShareLinkAttachmentChunkEnvelopeValidator.safeParse(
+                    fetched.value.envelope
+                );
+                if (!envelope.success) notFound();
+                return {
+                    id: input.id,
+                    contentVersion: input.contentVersion,
+                    attachmentId: input.attachmentId,
+                    chunkIndex: input.chunkIndex,
+                    envelope: envelope.data,
+                    ...(final.passcodeHash
+                        ? {
+                              // Renew only after the chunk and its current policy pass every check.
+                              accessToken: mintShareAttachmentAccessToken(
+                                  final,
+                                  dependencies.namespace,
+                                  ctx.sourceIp,
+                                  dependencies.now()
+                              ),
+                          }
+                        : {}),
+                };
+            }),
         resolve: openRouteWithoutInputCapture
             .meta({
                 openapi: openapi('POST', PUBLIC_RESOLVE_PATH, 'Resolve public share metadata'),
@@ -735,6 +903,7 @@ const buildProductionDependencies = async (
     return {
         namespace: config.namespace,
         repository: {
+            fetchAttachmentChunk: input => client.get(input),
             getShareLink: input => getShareLink(input),
             fetchContent: async input => {
                 const result = await coordinator.fetchShareContent(input.shareId, {

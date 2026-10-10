@@ -17,6 +17,8 @@ import {
     type ShareLinkOwnerCommitOutput,
     type ShareLinkOwnerContentOutput,
     type ShareLinkOwnerStatusOutput,
+    type GetShareLinkAttachmentChunkInput,
+    type ShareLinkAttachmentChunkOutput,
     type ShareLinkOperationKeyInput,
     type ShareLinkPublicState,
     type ShareLinkPublicContentView,
@@ -30,11 +32,17 @@ import {
     buildShareManifest,
     buildShareRecovery,
     encryptSharePayload,
+    decryptSharePayload,
     encryptShareRecovery,
     generateShareContentKey,
     generateShareLinkId,
     validateShareManifest,
 } from 'learn-card-base/helpers/share-links';
+
+import {
+    getProtectedResumePdf,
+    hasProtectedResumePdf,
+} from '../../helpers/resume-publishing/protectedPdf';
 
 /** Narrow boundary shared by browser adapters and tests; no app-wide wallet store coupling. */
 export interface ShareWallet {
@@ -73,6 +81,9 @@ export interface ShareWallet {
         ): Promise<ShareLinkOwnerStatusOutput>;
         resolveShareLink(id: string, passcode?: string): Promise<ShareLinkPublicState>;
         getShareLinkContent(id: string, passcode?: string): Promise<ShareLinkPublicContentView>;
+        getShareLinkAttachmentChunk(
+            input: GetShareLinkAttachmentChunkInput
+        ): Promise<ShareLinkAttachmentChunkOutput>;
         acknowledgeShareLinkView(receipt: string): Promise<{ ok: true }>;
         sendPresentation(
             profileId: string,
@@ -279,6 +290,18 @@ const prepareEncryptedRevision = async (
         wallet,
         options.refs
     );
+    // This UI guard prevents accidental reuse of a version-bound resume. Server
+    // committed attachment bindings and authenticated encryption enforce access.
+    for (const credential of credentials) {
+        if (!hasProtectedResumePdf(credential)) continue;
+        const attachment = getProtectedResumePdf(credential);
+        if (
+            !attachment ||
+            attachment.shareId !== options.id ||
+            attachment.contentVersion !== options.contentVersion
+        )
+            throw new Error('managed-resume');
+    }
     const ownerDid = wallet.id.did();
     // A v1 presentation context conflicts with nested v2 protected terms.
     // A v2 presentation can contain both original v1 and v2 credentials.
@@ -361,12 +384,17 @@ export const prepareShare = async (
     title: string,
     note: string,
     expiresAt?: string | null,
-    options: { passcode?: string; notifyOnView?: boolean } = {}
+    options: {
+        passcode?: string;
+        notifyOnView?: boolean;
+        identity?: { id: string; key: string };
+        attachment?: { id: string; chunkCount: number };
+    } = {}
 ): Promise<PreparedShare> => {
     const profile = await wallet.invoke.getProfile();
     if (!profile) throw new Error('profile');
-    const id = generateShareLinkId();
-    const key = generateShareContentKey();
+    const id = options.identity?.id ?? generateShareLinkId();
+    const key = options.identity?.key ?? generateShareContentKey();
     const createdAt = new Date().toISOString();
     const revision = await prepareEncryptedRevision(wallet, {
         id,
@@ -384,6 +412,7 @@ export const prepareShare = async (
         ...(expiresAt !== undefined ? { expiresAt } : {}),
         ...(options.passcode ? { passcode: options.passcode } : {}),
         notifyOnView: options.notifyOnView ?? false,
+        ...(options.attachment ? { attachment: options.attachment } : {}),
         selectedCount: refs.length,
         contentVersion: 1,
         envelope: revision.envelope,
@@ -402,7 +431,9 @@ export const prepareShareUpdate = async (
     refs: string[],
     title: string,
     note: string,
-    protection: Pick<UpdateShareLinkInput, 'passcode' | 'notifyOnView'> = {}
+    protection: Pick<UpdateShareLinkInput, 'passcode' | 'notifyOnView'> & {
+        attachment?: { id: string; chunkCount: number };
+    } = {}
 ): Promise<PreparedShareUpdate> => {
     if (share.status !== 'active' || recovery.shareId !== share.id) throw new Error('inactive');
     if (recovery.latest.contentVersion !== share.contentVersion) throw new Error('stale');
@@ -424,6 +455,7 @@ export const prepareShareUpdate = async (
         note: note.trim() || null,
         ...(protection.passcode !== undefined ? { passcode: protection.passcode } : {}),
         ...(protection.notifyOnView !== undefined ? { notifyOnView: protection.notifyOnView } : {}),
+        ...(protection.attachment ? { attachment: protection.attachment } : {}),
         contentVersion,
         selectedCount: refs.length,
         envelope: revision.envelope,
@@ -437,6 +469,55 @@ export const prepareShareUpdate = async (
         ownerDid: revision.ownerDid,
         payload: revision.payload,
     };
+};
+
+/** Keep managed attachment bindings intact when changing only link settings. */
+export const prepareShareMetadataUpdate = async (
+    wallet: ShareWallet,
+    share: ShareLink,
+    recovery: ShareRecoveryPlaintext,
+    title: string,
+    note: string,
+    protection: Pick<UpdateShareLinkInput, 'passcode' | 'notifyOnView'> = {}
+): Promise<PreparedShareUpdate> => {
+    if (
+        share.status !== 'active' ||
+        recovery.shareId !== share.id ||
+        recovery.latest.contentVersion !== share.contentVersion
+    )
+        throw new Error('stale');
+    const ownerDid = wallet.id.did();
+    const profile = await wallet.invoke.getProfile();
+    if (!profile || profile.profileId !== recovery.ownerProfileId) throw new Error('profile');
+    const content = await wallet.invoke.getShareLinkOwnerContent(share.id);
+    if (content.id !== share.id || content.contentVersion !== share.contentVersion)
+        throw new Error('stale');
+    const plaintext = await decryptSharePayload({
+        shareId: share.id,
+        contentVersion: share.contentVersion,
+        key: recovery.latest.key,
+        envelope: content.envelope,
+    });
+    const result = validateShareManifest(plaintext, {
+        shareId: share.id,
+        contentVersion: share.contentVersion,
+    });
+    if (
+        !result.ok ||
+        result.manifest.selection.length !== share.selectedCount ||
+        wallet.id.did() !== ownerDid
+    )
+        throw new Error('manifest');
+    const input = UpdateShareLinkInputValidator.parse({
+        id: share.id,
+        expectedVersion: share.version,
+        clientRequestId: crypto.randomUUID(),
+        title: title.trim(),
+        note: note.trim() || null,
+        ...(protection.passcode !== undefined ? { passcode: protection.passcode } : {}),
+        ...(protection.notifyOnView !== undefined ? { notifyOnView: protection.notifyOnView } : {}),
+    });
+    return { input, key: recovery.latest.key, ownerDid, payload: result.manifest };
 };
 
 /**

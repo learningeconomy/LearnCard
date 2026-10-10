@@ -39,6 +39,12 @@ import { ProofBadge, ShareLinkPreview } from './ShareLinkPreview';
 import { downloadSharePdf } from './sharePdf';
 import { downloadSharePresentation } from './shareDownload';
 import { enterSharePrivacy } from './sharePrivacy';
+import { ProtectedResumePreview } from './ProtectedResumePreview';
+import { readProtectedResumeChunk } from './protectedResumeReader';
+import {
+    hasProtectedResumePdf,
+    downloadProtectedResumePdf,
+} from '../../helpers/resume-publishing/protectedPdf';
 
 type Ready = {
     payload: SharePayload;
@@ -55,6 +61,7 @@ type ViewState =
     | 'not_found'
     | 'error'
     | 'corrupt'
+    | 'updated'
     | 'ready';
 
 const secondaryButton =
@@ -79,6 +86,7 @@ const isRateLimited = (error: unknown): boolean =>
     (error as { data?: { code?: string } }).data?.code === 'TOO_MANY_REQUESTS';
 
 const ShareLinkViewerContent = ({ id }: { id: string }) => {
+    enterSharePrivacy();
     const location = useLocation();
     const history = useHistory();
     const { hash } = location;
@@ -97,13 +105,127 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
     const [copyState, setCopyState] = useState<'idle' | 'copying' | 'copied'>('idle');
     const [downloading, setDownloading] = useState(false);
     const [pdfDownloading, setPdfDownloading] = useState(false);
-    const [actionError, setActionError] = useState<'copy' | 'download'>();
+    const [actionError, setActionError] = useState<'copy' | 'download' | 'try_later'>();
     const [passcode, setPasscode] = useState('');
     const [submittedPasscode, setSubmittedPasscode] = useState<string>();
     const [passcodeError, setPasscodeError] = useState(false);
     const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
     const visible = useRef<HTMLDivElement>(null);
     const acknowledged = useRef(new Set<string>());
+    const currentReady = useRef(ready);
+    currentReady.current = ready;
+    const protectedResume = ready?.payload.selection
+        .map(
+            ({ credentialIndex }) =>
+                ready.payload.presentation.verifiableCredential[credentialIndex]
+        )
+        .find(credential => hasProtectedResumePdf(credential));
+
+    const invalidate = useCallback((next: ViewState) => {
+        currentReady.current = undefined;
+        setReady(undefined);
+        setProofs([]);
+        setHolder('checking');
+        setState(next);
+    }, []);
+
+    // Re-authorize cached plaintext before a deliberate download. Metadata and
+    // the content snapshot must both still describe the version we decrypted.
+    const ensureCurrent = useCallback(
+        async (checkContent = true): Promise<boolean> => {
+            const snapshot = currentReady.current;
+            if (!snapshot) return false;
+            const expired = () =>
+                snapshot.metadata.expiresAt !== null &&
+                Date.parse(snapshot.metadata.expiresAt) <= Date.now();
+            if (expired()) {
+                invalidate('expired');
+                return false;
+            }
+            try {
+                const wallet = shareWallet(await getBespokeLearnCard('a'));
+                const metadata = await wallet.invoke.resolveShareLink(id, submittedPasscode);
+                if (currentReady.current !== snapshot) return false;
+                if (metadata.state !== 'active') {
+                    invalidate(metadata.state);
+                    return false;
+                }
+                if (metadata.contentVersion !== snapshot.metadata.contentVersion) {
+                    invalidate('updated');
+                    return false;
+                }
+                if (checkContent) {
+                    const content = await wallet.invoke.getShareLinkContent(id, submittedPasscode);
+                    if (currentReady.current !== snapshot) return false;
+                    if (
+                        content.id !== id ||
+                        content.contentVersion !== snapshot.metadata.contentVersion
+                    ) {
+                        invalidate('updated');
+                        return false;
+                    }
+                }
+                if (
+                    expired() ||
+                    (metadata.expiresAt !== null && Date.parse(metadata.expiresAt) <= Date.now())
+                ) {
+                    invalidate('expired');
+                    return false;
+                }
+                return currentReady.current === snapshot;
+            } catch (error) {
+                if (currentReady.current === snapshot)
+                    invalidate(
+                        isRateLimited(error)
+                            ? 'try_later'
+                            : isPasscodeRejection(error)
+                              ? 'passcode_required'
+                              : 'error'
+                    );
+                return false;
+            }
+        },
+        [id, submittedPasscode, invalidate]
+    );
+
+    const fetchProtectedChunk = useCallback(
+        async (request: Parameters<typeof readProtectedResumeChunk>[0]) => {
+            const snapshot = currentReady.current;
+            if (
+                !snapshot ||
+                request.id !== id ||
+                request.contentVersion !== snapshot.metadata.contentVersion
+            )
+                throw new Error('Resume unavailable');
+            const chunk = await readProtectedResumeChunk(request, submittedPasscode);
+            if (currentReady.current !== snapshot) throw new Error('Resume unavailable');
+            return chunk;
+        },
+        [id, submittedPasscode]
+    );
+
+    useEffect(() => {
+        if (!ready || state !== 'ready') return;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const scheduleExpiry = () => {
+            if (ready.metadata.expiresAt === null) return;
+            const remaining = Date.parse(ready.metadata.expiresAt) - Date.now();
+            if (remaining <= 0) {
+                invalidate('expired');
+                return;
+            }
+            timer = setTimeout(scheduleExpiry, Math.min(remaining, 2147483647));
+        };
+        scheduleExpiry();
+        const checkVisible = () => {
+            if (document.visibilityState === 'visible') void ensureCurrent(false);
+        };
+        document.addEventListener('visibilitychange', checkVisible);
+        return () => {
+            if (timer) clearTimeout(timer);
+            document.removeEventListener('visibilitychange', checkVisible);
+        };
+    }, [ready, state, ensureCurrent, invalidate]);
 
     useEffect(() => {
         enterSharePrivacy();
@@ -111,6 +233,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
         // One budget bounds the holder proof plus every credential/endorsement
         // check; cancelling on unmount/retry stops any further checks.
         let budget: ReturnType<typeof createVerificationBudget> | undefined;
+        currentReady.current = undefined;
         setReady(undefined);
         setState('loading');
         setProofs([]);
@@ -321,14 +444,15 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
         }
     };
 
-    const download = () => {
+    const download = async () => {
         if (!ready || downloading) return;
         setDownloading(true);
         setActionError(undefined);
         try {
+            if (!(await ensureCurrent())) return;
             downloadSharePresentation(ready.payload, ready.metadata.title);
-        } catch {
-            setActionError('download');
+        } catch (error) {
+            setActionError(isRateLimited(error) ? 'try_later' : 'download');
         } finally {
             setDownloading(false);
         }
@@ -339,9 +463,18 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
         setPdfDownloading(true);
         setActionError(undefined);
         try {
-            await downloadSharePdf(visible.current, ready.metadata.title);
-        } catch {
-            setActionError('download');
+            if (protectedResume) {
+                await downloadProtectedResumePdf(
+                    protectedResume,
+                    ready.metadata.title,
+                    () => ensureCurrent(false),
+                    fetchProtectedChunk
+                );
+            } else {
+                await downloadSharePdf(visible.current, ready.metadata.title);
+            }
+        } catch (error) {
+            setActionError(isRateLimited(error) ? 'try_later' : 'download');
         } finally {
             setPdfDownloading(false);
         }
@@ -445,6 +578,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
         not_found: [m['shareLinks.notFound'](), m['shareLinks.askNew']()],
         error: [m['shareLinks.connection'](), m['shareLinks.error']()],
         corrupt: [m['shareLinks.corrupt'](), m['shareLinks.incompleteHint']()],
+        updated: [m['resumePublishing.updated'](), m['resumePublishing.updatedHint']()],
         ready: ['', ''],
     }[state];
     return (
@@ -588,6 +722,20 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                         expiresAt={ready.metadata.expiresAt}
                                         proofs={proofRecord}
                                         showOriginal
+                                        renderCredential={(credential, _index, proof) =>
+                                            hasProtectedResumePdf(credential) ? (
+                                                <ProtectedResumePreview
+                                                    credential={credential}
+                                                    onDownload={downloadPdf}
+                                                    downloading={pdfDownloading}
+                                                    proof={
+                                                        proof ? (
+                                                            <ProofBadge state={proof} />
+                                                        ) : undefined
+                                                    }
+                                                />
+                                            ) : undefined
+                                        }
                                         summaryExtra={
                                             <>
                                                 <section
@@ -709,7 +857,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                             type="button"
                                                             className={secondaryButton}
                                                             disabled={downloading}
-                                                            onClick={download}
+                                                            onClick={() => void download()}
                                                         >
                                                             <IonIcon icon={downloadOutline} />
                                                             {downloading
@@ -772,7 +920,11 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                             <IonIcon icon={downloadOutline} />
                                                             {pdfDownloading
                                                                 ? m['shareLinks.preparingPdf']()
-                                                                : m['shareLinks.downloadPdf']()}
+                                                                : protectedResume
+                                                                  ? m[
+                                                                        'resumePublishing.downloadExact'
+                                                                    ]()
+                                                                  : m['shareLinks.downloadPdf']()}
                                                         </button>
                                                     </div>
                                                     {actionError && (
@@ -780,9 +932,11 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                             role="alert"
                                                             className="text-sm text-red-700"
                                                         >
-                                                            {actionError === 'copy'
-                                                                ? m['shareLinks.copyError']()
-                                                                : m['shareLinks.downloadError']()}
+                                                            {actionError === 'try_later'
+                                                                ? m['shareLinks.tryLaterHint']()
+                                                                : actionError === 'copy'
+                                                                  ? m['shareLinks.copyError']()
+                                                                  : m['shareLinks.downloadError']()}
                                                         </p>
                                                     )}
                                                 </section>
@@ -791,7 +945,9 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                     />
                                 </div>
                                 <p className="text-center text-xs text-grayscale-500 px-4 leading-relaxed">
-                                    {m['shareLinks.recipientHint']()}
+                                    {protectedResume
+                                        ? m['resumePublishing.limits']()
+                                        : m['shareLinks.recipientHint']()}
                                 </p>
                             </>
                         )}

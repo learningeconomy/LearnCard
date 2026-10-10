@@ -17,6 +17,7 @@ import type {
 type MaintenanceClient = Pick<ShareContentClient, 'stat' | 'delete'>;
 
 type ResolvedRunnerDependencies = {
+    expireAttachmentStages?: typeof import('../../accesslayer/share-link/attachment').expireShareAttachmentStages;
     recoveryRepository: RecoveryRunnerDependencies['repository'];
     cleanupRepository: CleanupRunnerDependencies['repository'];
     pruneReceipts: (input: PruneShareViewReceiptsInput) => Promise<number>;
@@ -58,6 +59,7 @@ export type CreateShareLinkMaintenanceRuntimeOptions = {
         recoveryRepository: RecoveryRunnerDependencies['repository'];
         cleanupRepository: CleanupRunnerDependencies['repository'];
         pruneReceipts: ResolvedRunnerDependencies['pruneReceipts'];
+        expireAttachmentStages?: ResolvedRunnerDependencies['expireAttachmentStages'];
     }>;
 };
 
@@ -245,6 +247,7 @@ export const createShareLinkMaintenanceRuntime = (
                 recoveryRepository: setup.dependencies.recoveryRepository,
                 cleanupRepository: setup.dependencies.cleanupRepository,
                 pruneReceipts: setup.dependencies.pruneReceipts,
+                expireAttachmentStages: setup.dependencies.expireAttachmentStages,
                 client: setup.dependencies.client,
                 logger,
                 monotonicNow: options.monotonicNow,
@@ -297,6 +300,7 @@ const buildRuntimeRepositories = async (
     recoveryRepository: RecoveryRunnerDependencies['repository'];
     cleanupRepository: CleanupRunnerDependencies['repository'];
     pruneReceipts: ResolvedRunnerDependencies['pruneReceipts'];
+    expireAttachmentStages?: ResolvedRunnerDependencies['expireAttachmentStages'];
 }> => {
     const runtimeModule = await import('../share-link-coordinator/runtime');
 
@@ -325,6 +329,8 @@ const buildRuntimeRepositories = async (
         recoveryRepository: recoveryDependencies.repository,
         cleanupRepository: cleanupDependencies.repository,
         pruneReceipts: pruneShareViewReceipts,
+        expireAttachmentStages: (await import('../../accesslayer/share-link/attachment'))
+            .expireShareAttachmentStages,
     };
 };
 
