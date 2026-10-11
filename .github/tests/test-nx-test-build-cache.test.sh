@@ -22,7 +22,12 @@ abort 'cache-disabled runs must execute ordinary dependencies' unless job.fetch(
 prepare = job.fetch('steps').find { |step| step['id'] == 'build-cache' }
 abort 'only manual dispatch may disable caching' unless prepare.fetch('if') == "${{ github.event_name != 'workflow_dispatch' || inputs.use_build_cache }}"
 tests = job.fetch('steps').find { |step| step['name'] == 'Run tests' }
-abort 'keep existing retry budget' unless tests.fetch('with').values_at('timeout_minutes', 'max_attempts') == [10, 3]
+timeout = inputs.fetch('test_timeout_minutes')
+attempts = inputs.fetch('test_attempts')
+abort 'manual timeout must default to ten and only allow ten or twenty minutes' unless timeout.values_at('type', 'default', 'options') == ['choice', '10', ['10', '20']]
+abort 'manual retries must default to three and allow one clean attempt' unless attempts.values_at('type', 'default', 'options') == ['choice', '3', ['1', '3']]
+abort 'only manual dispatch may override the ten-minute limit' unless tests.fetch('with').fetch('timeout_minutes') == "${{ github.event_name == 'workflow_dispatch' && inputs.test_timeout_minutes || '10' }}"
+abort 'only manual dispatch may override three attempts' unless tests.fetch('with').fetch('max_attempts') == "${{ github.event_name == 'workflow_dispatch' && inputs.test_attempts || '3' }}"
 abort 'retry must run the actual cache-aware test runner' unless tests.fetch('with').fetch('command') == 'bash scripts/run-nx-tests-with-build-cache.sh'
 publisher = job.fetch('steps').find { |step| step['uses'] == 'actions/cache/save@v6' }
 abort 'publish only a verified snapshot after tests pass' unless publisher.fetch('if').include?('success()') && publisher.fetch('if').include?("steps.snapshot.outputs.ready == 'true'")

@@ -190,3 +190,10 @@ For an ordinary-graph baseline, dispatch the same revision and `base` with
 This bypasses snapshot preparation/restoration/publication and executes tests
 with their normal build dependencies. PR and merge-queue runs keep caching
 enabled. Record retries separately from first-attempt timings.
+
+Use `test_timeout_minutes=20` and `test_attempts=1` for **all** matched baseline,
+cold, and warm measurements. The longer per-attempt limit lets a cold build
+finish; a single attempt prevents retries from mixing a cold build and an
+in-job warm restore into one timing. Failed samples remain failures and are
+reported separately. Manual runs default to ten minutes and three attempts;
+PR and merge-queue runs retain those limits regardless of manual inputs.
