@@ -36,7 +36,8 @@ provider:
     stage: ${opt:stage, "dev"}
     region: ${opt:region, "us-east-1"}
     environment:
-        LAMBDA_STAGE: ${opt:stage, "dev"}
+        # serverless-offline sets AWS_LAMBDA_FUNCTION_NAME; stage config stays opt-in locally.
+        LAMBDA_STAGE: ${env:CONFIG_STAGE, ''}
         SEED: ${env:SEED}
         SA_SEED_LOCAL_KEK: ${env:SA_SEED_LOCAL_KEK, ''}
         SA_SEED_ENCRYPT_WRITES: ${env:SA_SEED_ENCRYPT_WRITES, 'false'}

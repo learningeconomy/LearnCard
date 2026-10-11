@@ -24,7 +24,7 @@ const { env, entries, sendSecret } = vi.hoisted(() => ({
     },
     entries: new Map<string, { value: string; expires: number }>(),
 }));
-vi.mock('@environment', () => ({ environment: env }));
+vi.mock('@config/oidcEnvironment', () => ({ environment: env }));
 vi.mock('@aws-sdk/client-secrets-manager', async importOriginal => {
     const actual = await importOriginal<typeof import('@aws-sdk/client-secrets-manager')>();
     return {

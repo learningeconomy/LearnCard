@@ -8,6 +8,7 @@ BAKE_FILE="$REPO_ROOT/scripts/e2e-hosted/docker-bake.hcl"
 
 source "$REPO_ROOT/scripts/e2e-hosted/metrics.sh"
 source "$REPO_ROOT/scripts/e2e-hosted/prepare-sdk-build.sh"
+source "$REPO_ROOT/scripts/e2e-hosted/compose-pull.sh"
 e2e_metrics_init service
 
 collect_service_artifacts() {
@@ -54,6 +55,7 @@ build_service_images() {
 
 start_service_stack() {
     cd "$SERVICE_DIR"
+    e2e_pull_compose_images || return 1
     docker compose up -d --no-build \
         2>&1 | tee "$E2E_ARTIFACT_DIR/docker-compose-start.log"
 }

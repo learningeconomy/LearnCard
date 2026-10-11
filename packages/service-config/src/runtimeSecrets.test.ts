@@ -15,6 +15,7 @@ beforeEach(() => {
     vi.resetModules();
     send.mockReset();
     destroy.mockReset();
+    vi.stubEnv('AWS_LAMBDA_FUNCTION_NAME', 'lca-api-dev-api');
     vi.stubEnv('RUNTIME_SECRETS_ID', 'lca-api/dev/runtime-secrets');
     vi.stubEnv('RUNTIME_TEST_VALUE', '');
 });
@@ -28,6 +29,15 @@ describe('runtime secrets', () => {
         expect(send).not.toHaveBeenCalled();
     });
 
+    it('does nothing outside AWS Lambda even with an id present', async () => {
+        vi.stubEnv('AWS_LAMBDA_FUNCTION_NAME', undefined);
+        send.mockResolvedValue({ SecretString: '{"RUNTIME_TEST_VALUE":"secret"}' });
+        const { loadRuntimeSecrets } = await import('./runtimeSecrets');
+        await loadRuntimeSecrets();
+        expect(send).not.toHaveBeenCalled();
+        expect(process.env.RUNTIME_TEST_VALUE).toBe('');
+    });
+
     it('fetches once for concurrent and subsequent calls and merges before resolving', async () => {
         send.mockResolvedValue({ SecretString: '{"RUNTIME_TEST_VALUE":"secret"}' });
         const { loadRuntimeSecrets } = await import('./runtimeSecrets');
@@ -37,6 +47,30 @@ describe('runtime secrets', () => {
         expect(send).toHaveBeenCalledTimes(1);
         expect(send.mock.calls[0]?.[0].input).toEqual({ SecretId: 'lca-api/dev/runtime-secrets' });
         expect(destroy).toHaveBeenCalledTimes(1);
+    });
+
+    it('reads the bundle id from a custom secretIdEnv', async () => {
+        vi.stubEnv('RUNTIME_SECRETS_ID', '');
+        vi.stubEnv('CUSTOM_SECRETS_ID', 'brain/dev/runtime-secrets');
+        send.mockResolvedValue({ SecretString: '{"RUNTIME_TEST_VALUE":"custom"}' });
+        const { loadRuntimeSecrets } = await import('./runtimeSecrets');
+        await loadRuntimeSecrets({ secretIdEnv: 'CUSTOM_SECRETS_ID' });
+        expect(process.env.RUNTIME_TEST_VALUE).toBe('custom');
+        expect(send.mock.calls[0]?.[0].input).toEqual({ SecretId: 'brain/dev/runtime-secrets' });
+    });
+
+    it('memoizes per secret id so distinct ids each fetch once', async () => {
+        send.mockResolvedValueOnce({ SecretString: '{"RUNTIME_TEST_VALUE":"first"}' });
+        send.mockResolvedValueOnce({ SecretString: '{"OTHER_VALUE":"second"}' });
+        vi.stubEnv('OTHER_VALUE', '');
+        const { loadRuntimeSecrets } = await import('./runtimeSecrets');
+        await loadRuntimeSecrets();
+        vi.stubEnv('RUNTIME_SECRETS_ID', 'lca-api/prod/runtime-secrets');
+        await loadRuntimeSecrets();
+        await loadRuntimeSecrets();
+        expect(process.env.RUNTIME_TEST_VALUE).toBe('first');
+        expect(process.env.OTHER_VALUE).toBe('second');
+        expect(send).toHaveBeenCalledTimes(2);
     });
 
     it('preserves nonempty overrides, replaces empty values, and keeps the merge pure', async () => {
