@@ -42,11 +42,9 @@ describe('Vite environment definitions', () => {
 
             expect(processEnvDefinitions).toEqual([]);
             expect(JSON.stringify(definitions)).not.toContain(sentinel);
-            const newsProxy = config.server?.proxy?.['/api/scout-news'];
-            if (!newsProxy || typeof newsProxy === 'string')
-                throw new Error('Missing news dev proxy');
-            expect(newsProxy.target).toBe('https://www.scout.org');
-            expect(newsProxy.rewrite?.('/api/scout-news')).toBe('/api/news');
+            expect(config.plugins).toEqual(
+                expect.arrayContaining([expect.objectContaining({ name: 'scouts-news-endpoint' })])
+            );
         } finally {
             if (previousAwsAccessKeyId === undefined) delete process.env.AWS_ACCESS_KEY_ID;
             else process.env.AWS_ACCESS_KEY_ID = previousAwsAccessKeyId;

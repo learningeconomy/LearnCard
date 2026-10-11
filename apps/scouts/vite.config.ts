@@ -14,6 +14,7 @@ import type { Plugin as EsbuildPlugin } from 'esbuild';
 
 import { findDuplicateMessageImports } from './scripts/check-i18n-imports.mjs';
 import { paraglideMissingKeyOnWarn } from './paraglideOnWarn';
+import { scoutNewsDevServer } from './scripts/scoutNewsDevServer';
 import { parseScoutsEnvironment } from './src/config/buildEnvironment';
 import { deepMerge } from '../../packages/learn-card-base/src/config/deepMerge';
 import productionTenantConfig from './environments/scoutpass/config.json';
@@ -92,6 +93,7 @@ export default defineConfig(({ mode, command }) => {
     return {
         cacheDir,
         plugins: [
+            scoutNewsDevServer(),
             i18nImportGuard(),
             react(),
             svgr(),
@@ -161,11 +163,6 @@ export default defineConfig(({ mode, command }) => {
         server: {
             port: 3000,
             proxy: {
-                '/api/scout-news': {
-                    target: 'https://www.scout.org',
-                    changeOrigin: true,
-                    rewrite: () => '/api/news',
-                },
                 // Proxy SSS key-manager API requests to the lca-api Docker service.
                 // Used when VITE_SSS_SERVER_URL is set to '/lca-api' (e.g. in docker-start)
                 // to avoid CORS issues during local development.

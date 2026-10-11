@@ -4,7 +4,7 @@
 
 The endpoint is a Netlify edge function deployed with the frontend. `deploy.yml` already copies this directory into its deploy staging folder and checks that the edge bundle exists. No new secret or backend deployment is required.
 
-Web uses `/api/scout-news` on the current host, including staging and deploy previews. Native uses `https://<resolved tenant domain>/api/scout-news`; production is `pass.scout.org`, staging is `staging.pass.scout.org`. Public CORS responses support both `capacitor://localhost` (iOS) and `https://localhost` (Android). Local Vite development proxies the same route directly to Scout.org.
+Web uses `/api/scout-news` on the current host, including staging and deploy previews. Native uses `https://<resolved tenant domain>/api/scout-news`; production is `pass.scout.org`, staging is `staging.pass.scout.org`. Public CORS responses support both `capacitor://localhost` (iOS) and `https://localhost` (Android). Local Vite development and preview servers run the same endpoint handler, including query rejection, validation, timeout, and CORS.
 
 Successful responses have a five-minute browser/CDN cache lifetime and a one-hour CDN stale-while-revalidate window. `cache: 'manual'` is also required for Netlify edge caching. The client considers fetched news fresh for five minutes, retries failures once, and fetches immediately on first mount despite its bundled initial data. Upstream requests time out after eight seconds; failures return uncached JSON errors with CORS headers, and the UI keeps its bundled-news fallback.
 
@@ -26,4 +26,4 @@ References: [edge function usage](https://docs.netlify.com/build/edge-functions/
 4. Block the endpoint or go offline and verify that bundled articles still render.
 5. Repeat with target `scouts` and `https://pass.scout.org/api/scout-news` after staging validation. Existing native installs need the new CapGo bundle to activate; publishing a native store binary is optional for this web-code change.
 
-Local tests cover endpoint errors, timeout, CORS/cache headers, client caching, first-mount refresh, production/staging native URL selection, and rendered fallback. Live Netlify cache behavior and actual device OTA activation require deployment QA.
+Local tests cover endpoint errors, malformed upstream pagers without caching, the bundled pagination contract, timeout, CORS/cache headers, actual development/preview HTTP behavior, client caching, first-mount refresh, production/staging native URL selection, and rendered fallback. Live Netlify cache behavior and actual device OTA activation require deployment QA.

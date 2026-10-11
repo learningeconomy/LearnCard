@@ -9,6 +9,13 @@ import fallback from '../src/components/scout-news/scoutnewsdefault.json';
 afterEach(() => vi.unstubAllGlobals());
 
 describe('Scout news client', () => {
+    it('bundles valid pagination even before queryFn validation runs', () => {
+        const { initialData } = scoutNewsQueryOptions('/api/scout-news');
+        expect(initialData.data.length).toBeGreaterThan(0);
+        expect(Number.isFinite(initialData.pager.pages)).toBe(true);
+        expect(Number.isFinite(initialData.pager.current_page)).toBe(true);
+    });
+
     it.each(['pass.scout.org', 'staging.pass.scout.org'])(
         'uses the current web origin and the configured HTTPS native domain %s',
         domain => {
@@ -54,6 +61,7 @@ describe('Scout news client', () => {
         new Response('<html>SPA fallback</html>'),
         new Response(JSON.stringify({ contents: JSON.stringify(fallback) })),
         new Response(JSON.stringify({ ...fallback, data: [{ title: 'Malformed news' }] })),
+        new Response(JSON.stringify({ ...fallback, pager: {} })),
     ])('retains bundled fallback and exposes an error on unsuccessful fetches', async response => {
         vi.stubGlobal(
             'fetch',

@@ -89,4 +89,23 @@ describe('Scout news edge endpoint', () => {
         expect((await pending).status).toBe(504);
         expect(vi.getTimerCount()).toBe(0);
     });
+
+    it.each([
+        undefined,
+        null,
+        {},
+        { pages: '35', current_page: 0 },
+        { pages: 35, current_page: '0' },
+        { pages: Infinity, current_page: 0 },
+    ])('does not cache an upstream response with invalid pager %j', async pager => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockResolvedValue(new Response(JSON.stringify({ ...news, pager })))
+        );
+        const response = await handler(new Request('https://pass.scout.org/api/scout-news'));
+        expect(response.status).toBe(502);
+        expect(await response.json()).toEqual({ error: 'Invalid Scout news response' });
+        expect(response.headers.get('Cache-Control')).toBe('no-store');
+        expect(response.headers.has('Netlify-CDN-Cache-Control')).toBe(false);
+    });
 });

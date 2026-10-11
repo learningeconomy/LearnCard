@@ -35,7 +35,11 @@ export default async (request: Request): Promise<Response> => {
         if (!upstream.ok) return errorResponse(502, 'Scout news is unavailable');
 
         const news = await upstream.json();
-        if (!Array.isArray(news?.data) || !news?.pager) {
+        if (
+            !Array.isArray(news?.data) ||
+            !Number.isFinite(news?.pager?.pages) ||
+            !Number.isFinite(news?.pager?.current_page)
+        ) {
             return errorResponse(502, 'Invalid Scout news response');
         }
 

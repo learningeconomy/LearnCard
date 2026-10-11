@@ -17,6 +17,9 @@ export type ScoutNewsQueryResult = {
     pager: { pages: number; current_page: number };
 };
 
+// Keep bundled initial data subject to the same pagination type contract.
+const scoutNewsFallback: ScoutNewsQueryResult = ScoutNewsDefaultData;
+
 export const getScoutNewsEndpoint = (isNative: boolean, tenantDomain: string): string =>
     isNative ? `https://${tenantDomain}/api/scout-news` : '/api/scout-news';
 
@@ -46,7 +49,7 @@ export const scoutNewsQueryOptions = (endpoint: string) => ({
     },
     staleTime: 5 * 60 * 1000,
     retry: 1,
-    initialData: ScoutNewsDefaultData,
+    initialData: scoutNewsFallback,
     // Bundled fallback is immediately stale, so the first visit fetches live news.
     initialDataUpdatedAt: 0,
 });
