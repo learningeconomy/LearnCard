@@ -982,7 +982,7 @@ jobs:
                   if [[ "$PROJECT_NAME" == "scouts" ]]; then
                     # OTA versions advance independently of package/store versions.
                     # CapGo skips occupied names, including previously deleted bundles.
-                    VERSION_ARGS=(--auto-bump patch --auto-set-bundle)
+                    VERSION_ARGS=(--auto-bump patch --auto-set-bundle --capacitor-config capacitor.config.ts)
                   fi
 
                   bunx --package @capgo/cli@8.50.3 capgo bundle upload \
@@ -991,7 +991,6 @@ jobs:
                     --path "${{ github.workspace }}/${{ steps.vars.outputs.build_path }}" \
                     --channel ${{ steps.capgo-channel.outputs.channel }} \
                     "${VERSION_ARGS[@]}" \
-                    --capacitor-config capacitor.config.ts \
                     --package-json package.json \
                     --node-modules "${{ github.workspace }}/node_modules"
 
