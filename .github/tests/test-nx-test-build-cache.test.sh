@@ -14,7 +14,13 @@ File.write("#{temporary}/fallback.sh", fallback.fetch('run'))
 restore = steps.find { |step| step['id'] == 'restore' }
 abort 'restore needs valid keys' unless restore.fetch('if').include?("steps.key.outcome == 'success'")
 abort 'restore failure must allow tests' unless restore['continue-on-error'] == true
-job = YAML.load_file("#{root}/.github/workflows/test.yml").fetch('jobs').fetch('Test')
+workflow = YAML.load_file("#{root}/.github/workflows/test.yml")
+inputs = workflow.fetch('on', workflow[true]).fetch('workflow_dispatch').fetch('inputs')
+abort 'manual measurements default to caching' unless inputs.fetch('use_build_cache').values_at('type', 'default') == ['boolean', true]
+job = workflow.fetch('jobs').fetch('Test')
+abort 'cache-disabled runs must execute ordinary dependencies' unless job.fetch('env').fetch('NX_TEST_BUILD_CACHE') == 'false'
+prepare = job.fetch('steps').find { |step| step['id'] == 'build-cache' }
+abort 'only manual dispatch may disable caching' unless prepare.fetch('if') == "${{ github.event_name != 'workflow_dispatch' || inputs.use_build_cache }}"
 tests = job.fetch('steps').find { |step| step['name'] == 'Run tests' }
 abort 'keep existing retry budget' unless tests.fetch('with').values_at('timeout_minutes', 'max_attempts') == [10, 3]
 abort 'retry must run the actual cache-aware test runner' unless tests.fetch('with').fetch('command') == 'bash scripts/run-nx-tests-with-build-cache.sh'

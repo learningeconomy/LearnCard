@@ -15,6 +15,10 @@ on:
                 description: 'Nx comparison base (optional, for cold/warm cache measurements)'
                 required: false
                 default: 'origin/main'
+            use_build_cache:
+                description: 'Use verified build snapshots (disable for an uncached comparison)'
+                type: boolean
+                default: true
             run_ec2_fallback:
                 description: 'Include the manual EC2 E2E fallback (disable for cache measurements)'
                 type: boolean
@@ -26,6 +30,7 @@ jobs:
         environment: ci-tests
         env:
             NX_TEST_BASE: ${{ github.event.inputs.base || 'origin/main' }}
+            NX_TEST_BUILD_CACHE: 'false'
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v7
@@ -54,6 +59,7 @@ jobs:
 
             - name: Prepare verified test prerequisite cache
               id: build-cache
+              if: ${{ github.event_name != 'workflow_dispatch' || inputs.use_build_cache }}
               uses: ./.github/actions/nx-test-build-cache
 
             - name: Run tests

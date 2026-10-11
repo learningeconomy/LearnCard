@@ -184,3 +184,9 @@ the second run restores builds without a `run-many -t build` invocation. Compare
 complete job times, not only build preparation. The earlier hosted E2E timings
 do not establish a Test Runner speedup. No trusted main cache producer is added;
 cross-branch/merge-queue reuse still needs that decision and measurement.
+
+For an ordinary-graph baseline, dispatch the same revision and `base` with
+`use_build_cache=false`. Keep `run_ec2_fallback=false` for all measured runs.
+This bypasses snapshot preparation/restoration/publication and executes tests
+with their normal build dependencies. PR and merge-queue runs keep caching
+enabled. Record retries separately from first-attempt timings.
