@@ -126,20 +126,74 @@ export const buildOutputs = tasks => {
     return { projects, roots };
 };
 
-const specification = workspace => {
+// Cache ordinary builds; rerun the existing independent AI runtime preflight.
+// Other test-to-test/codegen dependencies retain Nx's normal scheduling through
+// the uncached fallback instead of being silently dropped.
+export const testBuildOutputs = graph => {
+    const tasks = graph.tasks;
+    const dependencies = graph.dependencies;
+    const runtimePreflight = 'ai-agent-service:test:runtime-did-auth';
+    if (!tasks || !dependencies) throw new Error('Missing affected task graph');
+    for (const task of Object.values(tasks)) {
+        if (!Array.isArray(dependencies[task.id]))
+            throw new Error(`Missing dependency list: ${task.id}`);
+        if (
+            (!['build', 'test'].includes(task.target.target) && task.id !== runtimePreflight) ||
+            task.continuous
+        )
+            throw new Error(`Unaudited test prerequisite: ${task.id}`);
+        if (
+            task.id === runtimePreflight &&
+            ((dependencies[task.id] ?? []).length || task.target.configuration)
+        )
+            throw new Error('AI runtime preflight is no longer independent');
+        for (const dependency of dependencies[task.id] ?? []) {
+            if (
+                tasks[dependency]?.target.target !== 'build' &&
+                !(task.id === 'ai-agent-service:test' && dependency === runtimePreflight)
+            )
+                throw new Error(`Unaudited test dependency: ${dependency}`);
+        }
+        if (task.target.target === 'build') {
+            if (
+                task.target.configuration ||
+                Object.keys(task.overrides ?? {}).some(
+                    key => key !== '__overrides_unparsed__' || task.overrides[key].length
+                )
+            )
+                throw new Error(`Configured build requires a separate contract: ${task.id}`);
+            if (!task.outputs?.length) throw new Error(`Missing build outputs: ${task.id}`);
+        }
+    }
+    const builds = Object.fromEntries(
+        Object.entries(tasks).filter(([, task]) => task.target.target === 'build')
+    );
+    const outputs = buildOutputs(builds);
+    if (!outputs.projects.length) throw new Error('No build prerequisites to cache');
+    return { ...outputs, preflights: tasks[runtimePreflight] ? [runtimePreflight] : [] };
+};
+
+const specification = (workspace, testRunner = false) => {
     if (process.env.BUILD_DIDKIT_NAPI)
         throw new Error('Native DIDKit caching requires a separate output contract');
     const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'e2e-sdk-graph-'));
     const tasks = {};
+    let testGraph;
     try {
-        for (const target of rootTargets) {
+        for (const target of testRunner ? ['affected-tests'] : rootTargets) {
             const graphFile = path.join(directory, `${target.split(':')[0]}.json`);
             execFileSync(
                 process.execPath,
                 [
                     path.join(workspace, 'node_modules/nx/dist/bin/nx.js'),
-                    'run',
-                    target,
+                    ...(testRunner
+                        ? [
+                              'affected',
+                              '--target=test',
+                              `--base=${process.env.NX_TEST_BASE || 'origin/main'}`,
+                              '--head=HEAD',
+                          ]
+                        : ['run', target]),
                     `--graph=${graphFile}`,
                 ],
                 {
@@ -148,12 +202,16 @@ const specification = workspace => {
                     stdio: 'pipe',
                 }
             );
-            Object.assign(tasks, JSON.parse(fs.readFileSync(graphFile)).tasks.tasks);
+            const graph = JSON.parse(fs.readFileSync(graphFile)).tasks;
+            Object.assign(tasks, graph.tasks);
+            if (testRunner) testGraph = graph;
         }
     } finally {
         fs.rmSync(directory, { recursive: true, force: true });
     }
-    const { projects, roots } = buildOutputs(tasks);
+    const { projects, roots, preflights } = testRunner
+        ? testBuildOutputs(testGraph)
+        : buildOutputs(tasks);
     const files = execFileSync('git', ['ls-files', '-z'], { cwd: workspace })
         .toString()
         .split('\0')
@@ -184,7 +242,7 @@ const specification = workspace => {
         projects,
         roots,
         environment,
-        skipDidkitNapi: '1',
+        skipDidkitNapi: testRunner ? process.env.SKIP_DIDKIT_NAPI || '' : '1',
         buildTelemetry: false,
         node: process.version,
         bun: execFileSync('bun', ['--version']).toString().trim(),
@@ -198,14 +256,35 @@ const specification = workspace => {
                 ? fs.readFileSync('/etc/os-release', 'utf8')
                 : os.release(),
         libc: process.report.getReport().header.glibcVersionRuntime || '',
+        ...(testRunner
+            ? {
+                  scope: 'nx-test-runner',
+                  builds: Object.values(tasks)
+                      .filter(task => task.target.target === 'build')
+                      .sort((a, b) => a.id.localeCompare(b.id)),
+              }
+            : {}),
     };
-    return { key: inputKey(workspace, files, configuration), projects, roots };
+    return {
+        key: inputKey(
+            workspace,
+            files,
+            configuration,
+            testRunner ? 'nx-test-builds-v1' : 'e2e-sdk-outputs-v2'
+        ),
+        projects,
+        roots,
+        ...(testRunner ? { preflights } : {}),
+    };
 };
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (
+    process.argv[1] &&
+    fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url))
+) {
     const [command, specFile, cache] = process.argv.slice(2);
-    if (command === 'key') {
-        const spec = specification(process.cwd());
+    if (command === 'key' || command === 'key-test') {
+        const spec = specification(process.cwd(), command === 'key-test');
         fs.writeFileSync(specFile, canonical(spec));
         console.log(spec.key);
     } else if (command === 'key-spa') {
@@ -257,6 +336,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     } else {
         const spec = JSON.parse(fs.readFileSync(specFile));
         if (command === 'projects') console.log(spec.projects.join(','));
+        else if (command === 'preflights') console.log((spec.preflights ?? []).join('\n'));
         else if (command === 'release') console.log(spec.key);
         else if (command === 'clean') {
             for (const root of spec.roots)

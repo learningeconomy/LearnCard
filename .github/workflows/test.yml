@@ -11,11 +11,21 @@ on:
                 description: 'Branch to test'
                 required: true
                 default: 'changeset-release/main'
+            base:
+                description: 'Nx comparison base (optional, for cold/warm cache measurements)'
+                required: false
+                default: 'origin/main'
+            run_ec2_fallback:
+                description: 'Include the manual EC2 E2E fallback (disable for cache measurements)'
+                type: boolean
+                default: true
 
 jobs:
     Test:
         runs-on: ubuntu-latest
         environment: ci-tests
+        env:
+            NX_TEST_BASE: ${{ github.event.inputs.base || 'origin/main' }}
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v7
@@ -42,15 +52,35 @@ jobs:
                   username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
                   token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
 
+            - name: Prepare verified test prerequisite cache
+              id: build-cache
+              uses: ./.github/actions/nx-test-build-cache
+
             - name: Run tests
               uses: nick-fields/retry@v2
               with:
                   timeout_minutes: 10
                   max_attempts: 3
-                  command: bunx nx affected --target=test --base=origin/main --head=HEAD
+                  command: bash scripts/run-nx-tests-with-build-cache.sh
               env:
                   SEED: ${{ secrets.SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
+
+            - name: Check build snapshot publication readiness
+              id: snapshot
+              if: ${{ success() && env.NX_TEST_BUILD_CACHE == 'true' && steps.build-cache.outputs.hit != 'true' }}
+              run: |
+                  if [[ -f "$NX_TEST_BUILD_CACHE_DIR/ready" ]]; then
+                    echo 'ready=true' >> "$GITHUB_OUTPUT"
+                  fi
+
+            - name: Save verified test prerequisite snapshot
+              if: ${{ success() && steps.snapshot.outputs.ready == 'true' }}
+              uses: actions/cache/save@v6
+              continue-on-error: true
+              with:
+                  path: ${{ runner.temp }}/nx-test-build-cache
+                  key: ${{ steps.build-cache.outputs.key }}
 
     ai-agent:
         name: AI Agent CI
@@ -128,7 +158,7 @@ jobs:
     # Remove after one sprint of stable GitHub-hosted E2E operation.
     e2e-tests:
         name: EC2 E2E fallback (manual)
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' && inputs.run_ec2_fallback
         concurrency:
             group: learncard-e2e-ec2
             cancel-in-progress: false

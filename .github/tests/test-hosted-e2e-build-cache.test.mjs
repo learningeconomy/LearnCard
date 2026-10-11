@@ -9,6 +9,7 @@ import {
     inputKey,
     restore,
     snapshot,
+    testBuildOutputs,
 } from '../../scripts/e2e-hosted/sdk-build-cache.mjs';
 
 const fixture = t => {
@@ -32,6 +33,98 @@ test('restores complete output and executable permissions, removing stale files'
     assert.equal(fs.readFileSync(path.join(workspace, output, 'sdk.js'), 'utf8'), 'compiled');
     assert.equal(fs.statSync(path.join(workspace, output, 'sdk.js')).mode & 0o777, 0o755);
     assert.equal(fs.existsSync(path.join(workspace, output, 'removed.js')), false);
+});
+
+test('test prerequisite plan caches builds and preserves the independent runtime preflight', () => {
+    const graph = {
+        tasks: {
+            'types:build': {
+                id: 'types:build',
+                target: { project: 'types', target: 'build' },
+                outputs: ['packages/types/dist'],
+            },
+            'scouts:test': {
+                id: 'scouts:test',
+                target: { project: 'scouts', target: 'test' },
+                outputs: [],
+            },
+            'ai-agent-service:test': {
+                id: 'ai-agent-service:test',
+                target: { project: 'ai-agent-service', target: 'test' },
+                outputs: [],
+            },
+            'ai-agent-service:test:runtime-did-auth': {
+                id: 'ai-agent-service:test:runtime-did-auth',
+                target: { project: 'ai-agent-service', target: 'test:runtime-did-auth' },
+                outputs: [],
+            },
+        },
+        dependencies: {
+            'types:build': [],
+            'scouts:test': ['types:build'],
+            'ai-agent-service:test': ['ai-agent-service:test:runtime-did-auth'],
+            'ai-agent-service:test:runtime-did-auth': [],
+        },
+    };
+    assert.deepEqual(testBuildOutputs(graph), {
+        projects: ['types'],
+        roots: ['packages/types/dist'],
+        preflights: ['ai-agent-service:test:runtime-did-auth'],
+    });
+    const changed = structuredClone(graph);
+    changed.dependencies['ai-agent-service:test:runtime-did-auth'] = ['types:build'];
+    assert.throws(() => testBuildOutputs(changed), /no longer independent/);
+    changed.dependencies['ai-agent-service:test:runtime-did-auth'] = [];
+    changed.dependencies['scouts:test'] = ['ai-agent-service:test'];
+    assert.throws(() => testBuildOutputs(changed), /Unaudited test dependency/);
+});
+
+test('test prerequisite plan refuses unaudited outputs, configurations, and dependency targets', () => {
+    const base = {
+        tasks: {
+            'types:build': {
+                id: 'types:build',
+                target: { project: 'types', target: 'build' },
+                outputs: ['packages/types/dist'],
+            },
+            'scouts:test': { id: 'scouts:test', target: { project: 'scouts', target: 'test' } },
+        },
+        dependencies: { 'types:build': [], 'scouts:test': ['types:build'] },
+    };
+    for (const mutate of [
+        g => {
+            g.tasks['types:build'].outputs = [];
+        },
+        g => {
+            g.tasks['types:build'].outputs = ['apps/scouts/build'];
+        },
+        g => {
+            g.tasks['types:build'].target.configuration = 'production';
+        },
+        g => {
+            g.tasks['types:build'].overrides = { custom: true };
+        },
+        g => {
+            g.tasks['types:build'].continuous = true;
+        },
+        g => {
+            g.dependencies['scouts:test'] = ['missing'];
+        },
+        g => {
+            delete g.dependencies['types:build'];
+        },
+        g => {
+            g.tasks['types:build'].target.target = 'codegen';
+        },
+    ]) {
+        const graph = structuredClone(base);
+        mutate(graph);
+        assert.throws(() => testBuildOutputs(graph));
+    }
+    assert.throws(
+        () => testBuildOutputs({ tasks: {}, dependencies: {} }),
+        /No build prerequisites/
+    );
 });
 
 test('rejects corrupt, missing, extra, linked, and identity-mismatched outputs before replacement', t => {

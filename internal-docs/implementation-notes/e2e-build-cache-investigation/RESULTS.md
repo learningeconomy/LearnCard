@@ -2,7 +2,7 @@
 
 Building the browser app once on the host reduced the two measured workflow times from 18m20s / 20m46s to 12m29s / 12m14s. Exact SDK and SPA output caches also worked: both warm repeats restored verified outputs and passed every suite. Their build preparation took 1m29s / 2m10s, but whole workflows took 12m41s / 14m20s. Adopt the host-build change first; evaluate the cache layer separately with a trusted main-branch producer before expecting reuse on future merge-queue refs.
 
-Draft implementations: [host build #1680](https://github.com/learningeconomy/LearnCard/pull/1680), [stacked output cache #1681](https://github.com/learningeconomy/LearnCard/pull/1681). Neither has been merged. [hosted-results.json](./hosted-results.json) contains collected job, phase, key, and test metrics; [invalidation-experiment.json](./invalidation-experiment.json) records local input-mutation probes.
+Draft implementations: [host build #1680](https://github.com/learningeconomy/LearnCard/pull/1680), [stacked output cache #1681](https://github.com/learningeconomy/LearnCard/pull/1681). The host-build PR #1680 merged on October 9; #1681 remains an open cache experiment. [hosted-results.json](./hosted-results.json) contains collected job, phase, key, and test metrics; [invalidation-experiment.json](./invalidation-experiment.json) records local input-mutation probes.
 
 ## Hosted measurements
 
@@ -62,3 +62,11 @@ Repository-contract CI now runs `.github/tests/*.test.mjs` via `node --test`. Th
 2. Keep #1681 experimental until the team chooses a trusted main-branch producer. [GitHub cache branch restrictions](https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching#restrictions-for-accessing-a-cache) mean these same-branch warm repeats do not prove that future PR or merge-queue refs can reuse their caches. No main warmer is included.
 3. Measure main-produced SDK reuse on a frontend-only PR and a merge-queue ref before claiming cross-branch savings. Expect a fresh SPA build on a new SHA. The conservative SDK key can also miss on unrelated package/service changes; narrowing it requires a transitive-input audit.
 4. Retain both cold fallback and full-suite gates. The reported performance samples are small and runner timings vary; they support the measured build-stage improvement, not a guarantee that every E2E workflow will finish in twelve minutes.
+
+## Nx Test Runner extension — October 11, 2026
+
+The cache experiment now also covers the Test Runner job in `test.yml`. It derives compiled prerequisites from the affected-test task graph, snapshots before tests execute, and reruns affected tests plus the existing independent AI runtime DID-auth preflight on every attempt. Native/configured/unaudited prerequisites or invalid snapshots retain the ordinary Nx dependency graph. Successful build snapshots can serve retry attempts; only a green full test step permits GitHub publication.
+
+The real Nx 23.2.1 full affected graph used for local planning validation contained 43 builds, 44 output directories, 56 test targets, and the AI runtime preflight. Sixteen Node cache/runner contracts and the repository shell/CJS contracts pass locally. Real key probes confirm repeat stability, invalidation after SDK-source or `NODE_ENV` changes, and reuse after a frontend-only source change. These are correctness checks, not hosted wall-time measurements. Existing E2E samples above do not establish a Test Runner speedup.
+
+The manual Test Runner inputs permit a fixed comparison `base` and `run_ec2_fallback=false` for hosted cache measurements. Keep the same workflow revision, tested revision, base, and affected-test set for cold/warm comparisons. A trusted main cache producer remains a separate adoption decision; this extension does not remove GitHub's branch-scoping limits.
