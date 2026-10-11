@@ -991,6 +991,7 @@ jobs:
                     --path "${{ github.workspace }}/${{ steps.vars.outputs.build_path }}" \
                     --channel ${{ steps.capgo-channel.outputs.channel }} \
                     "${VERSION_ARGS[@]}" \
+                    --capacitor-config capacitor.config.ts \
                     --package-json package.json \
                     --node-modules "${{ github.workspace }}/node_modules"
 
@@ -1000,6 +1001,10 @@ jobs:
                     # Capacitor config; use it rather than relinking the package version.
                     VERSION=$(bun -e "const version = (await import('./capacitor.config.ts')).default.plugins?.CapacitorUpdater?.version; if (!version) throw new Error('CapGo did not save the selected bundle version'); console.log(version)")
                   fi
+                  if [[ -z "$VERSION" ]]; then
+                    echo "::error::No CapGo bundle version resolved; aborting."
+                    exit 1
+                  fi
                   echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
             - name: Set CapGo Channel
@@ -1007,10 +1012,15 @@ jobs:
               working-directory: apps/${{ steps.vars.outputs.project_name }}
               env:
                   CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
+                  BUNDLE_VERSION: ${{ steps.capgo-upload.outputs.version }}
               run: |
+                  if [[ -z "$BUNDLE_VERSION" ]]; then
+                    echo "::error::No CapGo bundle version received; aborting channel assignment."
+                    exit 1
+                  fi
                   bunx --package @capgo/cli@8.50.3 capgo channel set ${{ steps.capgo-channel.outputs.channel }} \
                     -s default \
-                    -b ${{ steps.capgo-upload.outputs.version }} \
+                    -b "$BUNDLE_VERSION" \
                     --self-assign \
                     ${{ steps.vars.outputs.capgo_id }}
 
