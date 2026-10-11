@@ -1,10 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 describe('Vite environment definitions', () => {
-    it('never serializes the build runner environment', async () => {
+    const sentinel = 'must-not-reach-the-browser';
+    let definitions: Record<string, unknown>;
+
+    // Cold Vite/plugin imports can exceed the default 5s test timeout on busy CI runners.
+    // Give only setup more time; keep the security assertions at the normal test timeout.
+    beforeAll(async () => {
         const previousAwsAccessKeyId = process.env.AWS_ACCESS_KEY_ID;
         const previousWeb3AuthClientId = process.env.VITE_WEB3AUTH_CLIENT_ID;
-        const sentinel = 'must-not-reach-the-browser';
 
         try {
             process.env.AWS_ACCESS_KEY_ID = sentinel;
@@ -15,13 +19,7 @@ describe('Vite environment definitions', () => {
             if (typeof viteConfig !== 'function') throw new Error('Expected a Vite config factory');
 
             const config = await viteConfig({ command: 'build', mode: 'production' });
-            const definitions = config.define ?? {};
-            const processEnvDefinitions = Object.keys(definitions).filter(key =>
-                key.startsWith('process.env')
-            );
-
-            expect(processEnvDefinitions).toEqual([]);
-            expect(JSON.stringify(definitions)).not.toContain(sentinel);
+            definitions = config.define ?? {};
         } finally {
             if (previousAwsAccessKeyId === undefined) delete process.env.AWS_ACCESS_KEY_ID;
             else process.env.AWS_ACCESS_KEY_ID = previousAwsAccessKeyId;
@@ -29,5 +27,14 @@ describe('Vite environment definitions', () => {
             if (previousWeb3AuthClientId === undefined) delete process.env.VITE_WEB3AUTH_CLIENT_ID;
             else process.env.VITE_WEB3AUTH_CLIENT_ID = previousWeb3AuthClientId;
         }
+    }, 30_000);
+
+    it('never serializes the build runner environment', () => {
+        const processEnvDefinitions = Object.keys(definitions).filter(key =>
+            key.startsWith('process.env')
+        );
+
+        expect(processEnvDefinitions).toEqual([]);
+        expect(JSON.stringify(definitions)).not.toContain(sentinel);
     });
 });
