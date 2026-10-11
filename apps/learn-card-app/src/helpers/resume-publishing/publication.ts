@@ -498,7 +498,7 @@ export const publishManagedResume = async (options: {
             try {
                 attempt.rejected = true;
                 await saveAttempt(wallet, key, attempt, isCurrent);
-                cleanupWarning = await discardPendingResumeAttempt(wallet, isCurrent);
+                cleanupWarning = !(await discardPendingResumeAttempt(wallet, isCurrent));
                 persisted = false;
                 committedStarted = false;
                 stagedUri = undefined;
@@ -562,7 +562,11 @@ export const readPendingResumeAddress = async (
     return pending ? { id: pending.prepared.input.id, key: pending.prepared.key } : undefined;
 };
 
-/** Explicit discard requires an authoritative abandoned operation or a definite rejected first request. */
+/**
+ * Returns true once the checkpoint is cleared, including when it is already absent.
+ * Explicit discard requires an authoritative abandoned operation or a definite rejected first request;
+ * unavailable proof or incomplete cleanup rejects and preserves the checkpoint for retry.
+ */
 export const discardPendingResumeAttempt = async (
     wallet: ResumePublicationWallet,
     isCurrent: () => boolean
@@ -571,7 +575,7 @@ export const discardPendingResumeAttempt = async (
     const owner = wallet.id.did();
     const key = await checkpointKey(owner);
     const pending = await loadAttempt(wallet, key, isCurrent);
-    if (!pending) return false;
+    if (!pending) return true;
     if (pending.committed) throw new ResumePublicationError('pending');
     if (!pending.rejected && pending.phase !== 'prepared' && pending.phase !== 'discarding') {
         if (!pending.operation) throw new ResumePublicationError('pending');
@@ -621,5 +625,5 @@ export const discardPendingResumeAttempt = async (
     }
     await deleteResumeCheckpoint(key);
     assertCurrent(isCurrent);
-    return false;
+    return true;
 };

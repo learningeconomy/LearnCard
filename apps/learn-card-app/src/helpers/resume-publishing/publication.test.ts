@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { IDBFactory } from 'fake-indexeddb';
+import { IDBFactory, IDBObjectStore } from 'fake-indexeddb';
 import { readResumeCheckpoint } from './checkpoint';
 import { ProtectedPdfError } from './protectedPdf';
 import type { ShareLink, ShareEnvelope, VC } from '@learncard/types';
@@ -7,6 +7,7 @@ import type { ResumeBuilderSnapshot } from '../../stores/resumeBuilderStore';
 import {
     publishManagedResume,
     recoverResumeLink,
+    readPendingResumeAddress,
     discardPendingResumeAttempt,
     type ResumePublicationWallet,
 } from './publication';
@@ -275,7 +276,7 @@ describe('managed resume publication', () => {
         w.mocks.invoke.putShareLinkAttachmentChunk.mockRejectedValueOnce(new Error('offline'));
         await expect(publishManagedResume(opts)).rejects.toMatchObject({ code: 'pending' });
         w.mocks.invoke.getShareLink.mockResolvedValueOnce({ status: 'not_found', id } as never);
-        await discardPendingResumeAttempt(w.value, () => true);
+        await expect(discardPendingResumeAttempt(w.value, () => true)).resolves.toBe(true);
         expect(w.mocks.invoke.deleteShareLinkAttachmentChunks).toHaveBeenCalledWith({
             id,
             contentVersion: 1,
@@ -284,6 +285,10 @@ describe('managed resume publication', () => {
         });
         expect(w.mocks.store.LearnCloud.delete).toHaveBeenCalledWith('lc:encrypted');
         expect(w.mocks.invoke.createShareLink).not.toHaveBeenCalled();
+        await expect(readPendingResumeAddress(w.value, () => true)).resolves.toBeUndefined();
+        await expect(discardPendingResumeAttempt(w.value, () => true)).resolves.toBe(true);
+        expect(w.mocks.invoke.deleteShareLinkAttachmentChunks).toHaveBeenCalledOnce();
+        expect(w.mocks.store.LearnCloud.delete).toHaveBeenCalledOnce();
         const nextDraft = {
             ...snapshot,
             personalDetails: { name: 'new draft' },
@@ -310,6 +315,7 @@ describe('managed resume publication', () => {
         w.mocks.invoke.getShareLink.mockResolvedValueOnce({ status: 'not_found', id } as never);
         await expect(publishManagedResume(options(w.value))).rejects.toMatchObject({
             code: 'failed',
+            cleanupWarning: false,
         });
         expect(w.mocks.store.LearnCloud.delete).toHaveBeenCalledWith('lc:encrypted');
         await publishManagedResume(options(w.value));
@@ -439,34 +445,81 @@ describe('managed resume publication', () => {
         expect(opts.build).toHaveBeenCalledTimes(2);
         expect(w.mocks.invoke.createShareLink).toHaveBeenCalledTimes(2);
     });
-    it('never resumes cancelled attempts when encrypted staging cleanup fails', async () => {
+    it('treats an absent checkpoint as already cleared without remote cleanup', async () => {
         const w = wallet();
-        const attachment = { id: 'cccccccc-cccc-4ccc-accc-cccccccccccc', chunkCount: 1 };
-        prepare.create.mockResolvedValue({ ...prepared, input: { ...prepared.input, attachment } });
-        const opts = {
-            ...options(w.value),
-            build: vi.fn(async () => ({
-                lerVc: vc,
-                pdfUrl: 'urn:learncard:resume-pdf:' + attachment.id,
-                attachment,
-                chunks: [envelope],
-            })),
-        };
-        w.mocks.invoke.putShareLinkAttachmentChunk.mockRejectedValueOnce(new Error('offline'));
-        await expect(publishManagedResume(opts)).rejects.toMatchObject({
-            code: 'pending',
-            canDiscard: true,
-        });
-        w.mocks.invoke.getShareLink.mockResolvedValue({ status: 'not_found', id } as never);
-        w.mocks.store.LearnCloud.delete.mockResolvedValueOnce(false);
-        await expect(discardPendingResumeAttempt(w.value, () => true)).rejects.toMatchObject({
-            code: 'failed',
-            cleanupWarning: true,
-        });
-        await expect(publishManagedResume(opts)).rejects.toMatchObject({ code: 'failed' });
-        expect(w.mocks.invoke.createShareLink).not.toHaveBeenCalled();
-        expect(opts.build).toHaveBeenCalledTimes(1);
+        await expect(discardPendingResumeAttempt(w.value, () => true)).resolves.toBe(true);
+        expect(w.mocks.invoke.getShareLink).not.toHaveBeenCalled();
+        expect(w.mocks.invoke.deleteShareLinkAttachmentChunks).not.toHaveBeenCalled();
+        expect(w.mocks.store.LearnCloud.delete).not.toHaveBeenCalled();
     });
+    it.each(['chunks-false', 'chunks-reject', 'cloud-false', 'cloud-reject', 'checkpoint'])(
+        'retains cancellation and permits retry after %s cleanup failure',
+        async failure => {
+            const w = wallet();
+            const attachment = { id: 'cccccccc-cccc-4ccc-accc-cccccccccccc', chunkCount: 1 };
+            prepare.create.mockResolvedValue({
+                ...prepared,
+                input: { ...prepared.input, attachment },
+            });
+            const opts = {
+                ...options(w.value),
+                build: vi.fn(async () => ({
+                    lerVc: vc,
+                    pdfUrl: 'urn:learncard:resume-pdf:' + attachment.id,
+                    attachment,
+                    chunks: [envelope],
+                })),
+            };
+            w.mocks.invoke.putShareLinkAttachmentChunk.mockRejectedValueOnce(new Error('offline'));
+            await expect(publishManagedResume(opts)).rejects.toMatchObject({
+                code: 'pending',
+                canDiscard: true,
+            });
+            w.mocks.invoke.getShareLink.mockResolvedValue({ status: 'not_found', id } as never);
+            let checkpointDelete: ReturnType<typeof vi.spyOn> | undefined;
+            if (failure === 'chunks-false')
+                w.mocks.invoke.deleteShareLinkAttachmentChunks.mockResolvedValueOnce({ ok: false });
+            if (failure === 'chunks-reject')
+                w.mocks.invoke.deleteShareLinkAttachmentChunks.mockRejectedValueOnce(
+                    new Error('offline')
+                );
+            if (failure === 'cloud-false')
+                w.mocks.store.LearnCloud.delete.mockResolvedValueOnce(false);
+            if (failure === 'cloud-reject')
+                w.mocks.store.LearnCloud.delete.mockRejectedValueOnce(new Error('offline'));
+            if (failure === 'checkpoint')
+                checkpointDelete = vi
+                    .spyOn(IDBObjectStore.prototype, 'delete')
+                    .mockImplementationOnce(() => {
+                        throw new Error('checkpoint unavailable');
+                    });
+            try {
+                const result = discardPendingResumeAttempt(w.value, () => true);
+                if (failure.endsWith('-false'))
+                    await expect(result).rejects.toMatchObject({
+                        code: 'failed',
+                        cleanupWarning: true,
+                        canDiscard: true,
+                    });
+                else await expect(result).rejects.toThrow();
+            } finally {
+                checkpointDelete?.mockRestore();
+            }
+            await expect(readPendingResumeAddress(w.value, () => true)).resolves.toEqual({
+                id,
+                key,
+            });
+            if (failure.startsWith('chunks'))
+                expect(w.mocks.store.LearnCloud.delete).not.toHaveBeenCalled();
+            const failedAttempt = [...checkpointPayloads.values()].at(-1);
+            expect(failedAttempt).toMatchObject({ phase: 'discarding' });
+            await expect(publishManagedResume(opts)).rejects.toMatchObject({ code: 'failed' });
+            expect(w.mocks.invoke.createShareLink).not.toHaveBeenCalled();
+            expect(opts.build).toHaveBeenCalledTimes(1);
+            await expect(readPendingResumeAddress(w.value, () => true)).resolves.toBeUndefined();
+            await expect(discardPendingResumeAttempt(w.value, () => true)).resolves.toBe(true);
+        }
+    );
     it.each(['active', 'stopped', 'pending'] as const)(
         'keeps committed %s projections when recovery references the staged credential',
         async status => {
