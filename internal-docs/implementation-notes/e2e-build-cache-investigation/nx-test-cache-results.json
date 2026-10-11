@@ -1,0 +1,3065 @@
+{
+    "schema_version": 1,
+    "measured_on": "2026-10-11",
+    "plan": {
+        "tested_sha": "b752b7f1ad9c285864a8fe53decc7d7960e39a5e",
+        "base": "8d2fc4ab8826604730023ce8e7ae3356f36554eb",
+        "timeout_minutes": 20,
+        "max_attempts": 1,
+        "workflow_ref": "codex/e2e-build-cache-investigation",
+        "run_ec2_fallback": false,
+        "baseline_use_build_cache": false,
+        "cold_and_warm_use_build_cache": true
+    },
+    "measurement_scope": "GitHub-hosted Test job start-to-completion; excludes queue and separate inbox-security/AI Agent jobs. Phase times use timestamped Nx graph boundaries; baseline test phase includes prerequisite builds.",
+    "cache": {
+        "key": "nx-test-builds-v1-12133b9f5552802e8b5f54b01e63d459dd679e4ae5cd5405dad9ed9ceb8ee3fb",
+        "output_directories": 44,
+        "build_projects": 43,
+        "files": 2930,
+        "raw_bytes": 511287000,
+        "compressed_bytes": 96463136,
+        "ref": "refs/heads/codex/e2e-build-cache-investigation"
+    },
+    "summary": {
+        "baseline_mean_job_seconds": 825.0,
+        "baseline_mean_test_step_seconds": 746.5,
+        "warm_mean_job_seconds": 716.5,
+        "warm_mean_test_step_seconds": 637.0,
+        "observed_mean_job_reduction_seconds": 108.5,
+        "observed_mean_job_reduction_percent": 13.15,
+        "observed_mean_test_step_reduction_seconds": 109.5,
+        "causal_cache_only_speedup_established": false
+    },
+    "limitations": [
+        "Two passing baselines, one cold, two passing warm samples; no statistical or guaranteed speedup claim.",
+        "Cache-enabled scheduling builds prerequisites as a separate union, then runs tests without dependencies. Baseline lets Nx schedule builds and tests together; this may lose overlap on other workloads.",
+        "Cache-enabled builds normalize SENTRY_RELEASE and disable optional SENTRY_BUILD_TELEMETRY. Baselines retain ordinary environment policy; timings compare implementations, not cache reuse alone.",
+        "Dependency download caches were available in all samples. Cache-off here means only this compiled-output snapshot is off.",
+        "Tests, Rust compilation inside test commands, and runtime DID-auth preflight remain uncached.",
+        "Warm test phases were slower than cold; cold vs warm wall time does not establish an isolated reuse speedup.",
+        "Same-branch exact hits do not prove future PR/merge-queue reuse; no trusted main producer was added.",
+        "Earlier E2E warm preparation improved but backend/setup/test variability prevented a whole-workflow advantage over host-only."
+    ],
+    "samples": [
+        {
+            "mode": "baseline-20",
+            "run_id": 38166370345,
+            "cohort": "matched-20-minute",
+            "timeout_minutes": 20,
+            "max_attempts": 1,
+            "head_sha": "b752b7f1ad9c285864a8fe53decc7d7960e39a5e",
+            "base": "8d2fc4ab8826604730023ce8e7ae3356f36554eb",
+            "event": "workflow_dispatch",
+            "status": "completed",
+            "conclusion": "success",
+            "job_id": 114549665114,
+            "job_conclusion": "success",
+            "job_seconds": 817.0,
+            "steps": [
+                {
+                    "name": "Set up job",
+                    "conclusion": "success",
+                    "seconds": 1.0
+                },
+                {
+                    "name": "Checkout Repo",
+                    "conclusion": "success",
+                    "seconds": 14.0
+                },
+                {
+                    "name": "Fetch main for NX comparison",
+                    "conclusion": "success",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Use Composite Setup Action",
+                    "conclusion": "success",
+                    "seconds": 41.0
+                },
+                {
+                    "name": "Install pinned Rust toolchain",
+                    "conclusion": "success",
+                    "seconds": 10.0
+                },
+                {
+                    "name": "Authenticate Docker Hub pulls",
+                    "conclusion": "success",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Prepare verified test prerequisite cache",
+                    "conclusion": "skipped",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Run tests",
+                    "conclusion": "success",
+                    "seconds": 747.0
+                },
+                {
+                    "name": "Check build snapshot publication readiness",
+                    "conclusion": "skipped",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Save verified test prerequisite snapshot",
+                    "conclusion": "skipped",
+                    "seconds": 0.0
+                }
+            ],
+            "retry_warnings": [],
+            "cache_keys": [],
+            "verified_restore_count": 0,
+            "snapshot_messages": [],
+            "graph_summaries": [
+                "Running target test for 56 projects and 44 tasks they depend on:",
+                "Successfully ran target test for 56 projects and 44 tasks they depend on"
+            ],
+            "cache_hit_messages": [
+                "Cache hit for: bun-gmoqYqdUbaYsI0KujeXt7Zg/p0I=",
+                "Cache restored successfully",
+                "Cache hit for: Linux-bun-43b3b5af7b9001cd283a0f8e062d40168f414dec32e8c9700770d48231209c32",
+                "Cache restored successfully",
+                "Cache restored from key: Linux-bun-43b3b5af7b9001cd283a0f8e062d40168f414dec32e8c9700770d48231209c32",
+                "Cache hit occurred on the primary key Linux-bun-43b3b5af7b9001cd283a0f8e062d40168f414dec32e8c9700770d48231209c32, not saving cache."
+            ],
+            "failures": [],
+            "test_totals": [
+                "Tests  29 passed (29)",
+                "Tests  54 passed (54)",
+                "Tests  7 passed (7)",
+                "Tests  344 passed (344)",
+                "Tests  136 passed (136)",
+                "Tests  10 passed (10)",
+                "Tests  95 passed (95)",
+                "Tests  553 passed | 1 skipped (554)",
+                "Tests  89 passed (89)",
+                "Tests  41 passed (41)",
+                "Tests  90 passed (90)",
+                "Tests  139 passed (139)",
+                "Tests  613 passed (613)",
+                "Tests  9 passed (9)",
+                "Tests  7 passed (7)",
+                "Tests  350 passed (350)",
+                "Tests  333 passed (333)",
+                "Tests  6 passed (6)",
+                "Tests  55 passed | 11 skipped (66)",
+                "Tests  7 passed (7)",
+                "Tests  103 passed | 6 skipped (109)",
+                "Tests  5 passed | 1 skipped (6)",
+                "Tests  63 passed (63)",
+                "Tests  12 passed (12)",
+                "Tests  516 passed | 19 skipped (535)",
+                "Tests  9 passed (9)",
+                "Tests for VCThumbnail Full View > Checks VCThumbnail renders with props",
+                "Tests for MiniVCThumbnail > Checks MiniVCThumbnail renders with props",
+                "Tests for CircleIcon > Renders important props",
+                "Tests  290 passed (290)",
+                "Tests  104 passed (104)",
+                "Tests  1320 passed (1320)",
+                "Tests  5 passed (5)",
+                "Tests  4 passed (4)",
+                "Tests  4 passed (4)",
+                "Tests  297 passed | 2 skipped (299)",
+                "Tests  15 passed (15)",
+                "Tests  271 passed (271)",
+                "Tests  2878 passed | 4 skipped (2882)"
+            ],
+            "runtime_preflight_passed": true,
+            "vitest_counts": {
+                "types": {
+                    "passed": 29
+                },
+                "service-config": {
+                    "passed": 54
+                },
+                "embed-sdk": {
+                    "passed": 7
+                },
+                "email-templates": {
+                    "passed": 344
+                },
+                "helpers": {
+                    "passed": 136
+                },
+                "core": {
+                    "passed": 10
+                },
+                "partner-connect-sdk": {
+                    "passed": 95
+                },
+                "sss-key-manager": {
+                    "passed": 553,
+                    "skipped": 1
+                },
+                "vc-plugin": {
+                    "passed": 89
+                },
+                "learn-card-plugin": {
+                    "passed": 41
+                },
+                "sd-jwt-vc-plugin": {
+                    "passed": 90
+                },
+                "learn-cloud-service": {
+                    "passed": 139
+                },
+                "openid4vc-plugin": {
+                    "passed": 613
+                },
+                "learn-cloud-client": {
+                    "passed": 9
+                },
+                "network-brain-client": {
+                    "passed": 7
+                },
+                "network-brain-service": {
+                    "passed": 350
+                },
+                "credential-library": {
+                    "passed": 333
+                },
+                "learn-cloud-plugin": {
+                    "passed": 6
+                },
+                "init": {
+                    "passed": 55,
+                    "skipped": 11
+                },
+                "lca-api-client": {
+                    "passed": 7
+                },
+                "network-plugin": {
+                    "passed": 103,
+                    "skipped": 6
+                },
+                "lca-api-plugin": {
+                    "passed": 5,
+                    "skipped": 1
+                },
+                "render-method-plugin": {
+                    "passed": 63
+                },
+                "linked-claims-plugin": {
+                    "passed": 12
+                },
+                "lca-api-service": {
+                    "passed": 516,
+                    "skipped": 19
+                },
+                "holder-continuity": {
+                    "passed": 9
+                },
+                "cli": {
+                    "passed": 290
+                },
+                "react": {
+                    "passed": 104
+                },
+                "learn-card-base": {
+                    "passed": 1320
+                },
+                "@learncard/escrow-relay-service": {
+                    "passed": 5
+                },
+                "claimable-boosts-plugin": {
+                    "passed": 4
+                },
+                "vc-api-service": {
+                    "passed": 4
+                },
+                "ai-agent-service": {
+                    "passed": 297,
+                    "skipped": 2
+                },
+                "@learncard/credential-viewer": {
+                    "passed": 15
+                },
+                "scouts": {
+                    "passed": 271
+                },
+                "learn-card-app": {
+                    "passed": 2878,
+                    "skipped": 4
+                }
+            },
+            "rust_counts": {
+                "escrow-enclave-host": {
+                    "passed": 31,
+                    "failed": 0,
+                    "ignored": 0
+                },
+                "escrow-ledger-monitor": {
+                    "passed": 14,
+                    "failed": 0,
+                    "ignored": 0
+                },
+                "escrow-enclave-app": {
+                    "passed": 93,
+                    "failed": 0,
+                    "ignored": 1
+                }
+            },
+            "affected_projects": [
+                "@learncard/credential-viewer",
+                "@learncard/escrow-relay-service",
+                "ai-agent-service",
+                "ceramic-plugin",
+                "chapi-plugin",
+                "claimable-boosts-plugin",
+                "cli",
+                "core",
+                "credential-library",
+                "crypto-plugin",
+                "did-web-plugin",
+                "didkey-plugin",
+                "didkit-plugin",
+                "didkit-plugin-node",
+                "dynamic-loader-plugin",
+                "email-templates",
+                "embed-sdk",
+                "encryption-plugin",
+                "escrow-enclave-app",
+                "escrow-enclave-host",
+                "escrow-ledger-monitor",
+                "ethereum-plugin",
+                "expiration-plugin",
+                "helpers",
+                "holder-continuity",
+                "idx-plugin",
+                "init",
+                "lca-api-client",
+                "lca-api-plugin",
+                "lca-api-service",
+                "learn-card-app",
+                "learn-card-base",
+                "learn-card-plugin",
+                "learn-cloud-client",
+                "learn-cloud-plugin",
+                "learn-cloud-service",
+                "ler-rs-plugin",
+                "linked-claims-plugin",
+                "network-brain-client",
+                "network-brain-service",
+                "network-plugin",
+                "open-badge-v2-plugin",
+                "openid4vc-plugin",
+                "partner-connect-sdk",
+                "react",
+                "render-method-plugin",
+                "scouts",
+                "sd-jwt-vc-plugin",
+                "service-config",
+                "sss-key-manager",
+                "types",
+                "vc-api-plugin",
+                "vc-api-service",
+                "vc-plugin",
+                "vc-templates-plugin",
+                "vpqr-plugin"
+            ],
+            "phase_seconds": {
+                "tests": 743.716
+            },
+            "run_url": "https://github.com/learningeconomy/LearnCard/actions/runs/38166370345",
+            "job_url": "https://github.com/learningeconomy/LearnCard/actions/runs/38166370345/job/114549665114",
+            "test_step_seconds": 747.0,
+            "dependency_setup_seconds": 41.0,
+            "cache_prepare_seconds": 0.0,
+            "learn_card_app_vitest_duration_seconds": 174.3,
+            "exact_build_cache_hit": false
+        },
+        {
+            "mode": "cold-20",
+            "run_id": 38166372866,
+            "cohort": "matched-20-minute",
+            "timeout_minutes": 20,
+            "max_attempts": 1,
+            "head_sha": "b752b7f1ad9c285864a8fe53decc7d7960e39a5e",
+            "base": "8d2fc4ab8826604730023ce8e7ae3356f36554eb",
+            "event": "workflow_dispatch",
+            "status": "completed",
+            "conclusion": "success",
+            "job_id": 114549672380,
+            "job_conclusion": "success",
+            "job_seconds": 584.0,
+            "steps": [
+                {
+                    "name": "Set up job",
+                    "conclusion": "success",
+                    "seconds": 1.0
+                },
+                {
+                    "name": "Checkout Repo",
+                    "conclusion": "success",
+                    "seconds": 13.0
+                },
+                {
+                    "name": "Fetch main for NX comparison",
+                    "conclusion": "success",
+                    "seconds": 1.0
+                },
+                {
+                    "name": "Use Composite Setup Action",
+                    "conclusion": "success",
+                    "seconds": 55.0
+                },
+                {
+                    "name": "Install pinned Rust toolchain",
+                    "conclusion": "success",
+                    "seconds": 9.0
+                },
+                {
+                    "name": "Authenticate Docker Hub pulls",
+                    "conclusion": "success",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Prepare verified test prerequisite cache",
+                    "conclusion": "success",
+                    "seconds": 3.0
+                },
+                {
+                    "name": "Run tests",
+                    "conclusion": "success",
+                    "seconds": 495.0
+                },
+                {
+                    "name": "Check build snapshot publication readiness",
+                    "conclusion": "success",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Save verified test prerequisite snapshot",
+                    "conclusion": "success",
+                    "seconds": 3.0
+                }
+            ],
+            "retry_warnings": [],
+            "cache_keys": [
+                "nx-test-builds-v1-12133b9f5552802e8b5f54b01e63d459dd679e4ae5cd5405dad9ed9ceb8ee3fb"
+            ],
+            "verified_restore_count": 0,
+            "snapshot_messages": ["Snapshot: 2930 files, 511287000 bytes"],
+            "graph_summaries": [
+                "Running target build for 43 projects:",
+                "Successfully ran target build for 43 projects",
+                "Successfully ran target test:runtime-did-auth for project ai-agent-service",
+                "Running target test for 56 projects:",
+                "Successfully ran target test for 56 projects"
+            ],
+            "cache_hit_messages": [
+                "Cache hit for: bun-gmoqYqdUbaYsI0KujeXt7Zg/p0I=",
+                "Cache restored successfully",
+                "Cache hit for: Linux-bun-43b3b5af7b9001cd283a0f8e062d40168f414dec32e8c9700770d48231209c32",
+                "Cache restored successfully",
+                "Cache restored from key: Linux-bun-43b3b5af7b9001cd283a0f8e062d40168f414dec32e8c9700770d48231209c32",
+                "Cache not found for input keys: nx-test-builds-v1-12133b9f5552802e8b5f54b01e63d459dd679e4ae5cd5405dad9ed9ceb8ee3fb",
+                "Cache saved with key: nx-test-builds-v1-12133b9f5552802e8b5f54b01e63d459dd679e4ae5cd5405dad9ed9ceb8ee3fb",
+                "Cache hit occurred on the primary key Linux-bun-43b3b5af7b9001cd283a0f8e062d40168f414dec32e8c9700770d48231209c32, not saving cache."
+            ],
+            "failures": [],
+            "test_totals": [
+                "Tests  29 passed (29)",
+                "Tests  10 passed (10)",
+                "Tests  136 passed (136)",
+                "Tests  89 passed (89)",
+                "Tests  41 passed (41)",
+                "Tests  54 passed (54)",
+                "Tests  90 passed (90)",
+                "Tests  344 passed (344)",
+                "Tests  139 passed (139)",
+                "Tests  333 passed (333)",
+                "Tests  613 passed (613)",
+                "Tests  9 passed (9)",
+                "Tests  7 passed (7)",
+                "Tests  6 passed (6)",
+                "Tests  350 passed (350)",
+                "Tests  103 passed | 6 skipped (109)",
+                "Tests  55 passed | 11 skipped (66)",
+                "Tests  7 passed (7)",
+                "Tests  5 passed | 1 skipped (6)",
+                "Tests  95 passed (95)",
+                "Tests  63 passed (63)",
+                "Tests  553 passed | 1 skipped (554)",
+                "Tests  12 passed (12)",
+                "Tests  516 passed | 19 skipped (535)",
+                "Tests  9 passed (9)",
+                "Tests  7 passed (7)",
+                "Tests for VCThumbnail Full View > Checks VCThumbnail renders with props",
+                "Tests for MiniVCThumbnail > Checks MiniVCThumbnail renders with props",
+                "Tests for CircleIcon > Renders important props",
+                "Tests  290 passed (290)",
+                "Tests  104 passed (104)",
+                "Tests  297 passed | 2 skipped (299)",
+                "Tests  1320 passed (1320)",
+                "Tests  15 passed (15)",
+                "Tests  4 passed (4)",
+                "Tests  4 passed (4)",
+                "Tests  5 passed (5)",
+                "Tests  271 passed (271)",
+                "Tests  2878 passed | 4 skipped (2882)"
+            ],
+            "runtime_preflight_passed": true,
+            "vitest_counts": {
+                "types": {
+                    "passed": 29
+                },
+                "core": {
+                    "passed": 10
+                },
+                "helpers": {
+                    "passed": 136
+                },
+                "vc-plugin": {
+                    "passed": 89
+                },
+                "learn-card-plugin": {
+                    "passed": 41
+                },
+                "service-config": {
+                    "passed": 54
+                },
+                "sd-jwt-vc-plugin": {
+                    "passed": 90
+                },
+                "email-templates": {
+                    "passed": 344
+                },
+                "learn-cloud-service": {
+                    "passed": 139
+                },
+                "credential-library": {
+                    "passed": 333
+                },
+                "openid4vc-plugin": {
+                    "passed": 613
+                },
+                "learn-cloud-client": {
+                    "passed": 9
+                },
+                "network-brain-client": {
+                    "passed": 7
+                },
+                "learn-cloud-plugin": {
+                    "passed": 6
+                },
+                "network-brain-service": {
+                    "passed": 350
+                },
+                "network-plugin": {
+                    "passed": 103,
+                    "skipped": 6
+                },
+                "init": {
+                    "passed": 55,
+                    "skipped": 11
+                },
+                "lca-api-client": {
+                    "passed": 7
+                },
+                "lca-api-plugin": {
+                    "passed": 5,
+                    "skipped": 1
+                },
+                "partner-connect-sdk": {
+                    "passed": 95
+                },
+                "render-method-plugin": {
+                    "passed": 63
+                },
+                "sss-key-manager": {
+                    "passed": 553,
+                    "skipped": 1
+                },
+                "linked-claims-plugin": {
+                    "passed": 12
+                },
+                "lca-api-service": {
+                    "passed": 516,
+                    "skipped": 19
+                },
+                "holder-continuity": {
+                    "passed": 9
+                },
+                "embed-sdk": {
+                    "passed": 7
+                },
+                "cli": {
+                    "passed": 290
+                },
+                "react": {
+                    "passed": 104
+                },
+                "ai-agent-service": {
+                    "passed": 297,
+                    "skipped": 2
+                },
+                "learn-card-base": {
+                    "passed": 1320
+                },
+                "@learncard/credential-viewer": {
+                    "passed": 15
+                },
+                "vc-api-service": {
+                    "passed": 4
+                },
+                "claimable-boosts-plugin": {
+                    "passed": 4
+                },
+                "@learncard/escrow-relay-service": {
+                    "passed": 5
+                },
+                "scouts": {
+                    "passed": 271
+                },
+                "learn-card-app": {
+                    "passed": 2878,
+                    "skipped": 4
+                }
+            },
+            "rust_counts": {
+                "escrow-enclave-host": {
+                    "passed": 31,
+                    "failed": 0,
+                    "ignored": 0
+                },
+                "escrow-ledger-monitor": {
+                    "passed": 14,
+                    "failed": 0,
+                    "ignored": 0
+                },
+                "escrow-enclave-app": {
+                    "passed": 93,
+                    "failed": 0,
+                    "ignored": 1
+                }
+            },
+            "affected_projects": [
+                "@learncard/credential-viewer",
+                "@learncard/escrow-relay-service",
+                "ai-agent-service",
+                "ceramic-plugin",
+                "chapi-plugin",
+                "claimable-boosts-plugin",
+                "cli",
+                "core",
+                "credential-library",
+                "crypto-plugin",
+                "did-web-plugin",
+                "didkey-plugin",
+                "didkit-plugin",
+                "didkit-plugin-node",
+                "dynamic-loader-plugin",
+                "email-templates",
+                "embed-sdk",
+                "encryption-plugin",
+                "escrow-enclave-app",
+                "escrow-enclave-host",
+                "escrow-ledger-monitor",
+                "ethereum-plugin",
+                "expiration-plugin",
+                "helpers",
+                "holder-continuity",
+                "idx-plugin",
+                "init",
+                "lca-api-client",
+                "lca-api-plugin",
+                "lca-api-service",
+                "learn-card-app",
+                "learn-card-base",
+                "learn-card-plugin",
+                "learn-cloud-client",
+                "learn-cloud-plugin",
+                "learn-cloud-service",
+                "ler-rs-plugin",
+                "linked-claims-plugin",
+                "network-brain-client",
+                "network-brain-service",
+                "network-plugin",
+                "open-badge-v2-plugin",
+                "openid4vc-plugin",
+                "partner-connect-sdk",
+                "react",
+                "render-method-plugin",
+                "scouts",
+                "sd-jwt-vc-plugin",
+                "service-config",
+                "sss-key-manager",
+                "types",
+                "vc-api-plugin",
+                "vc-api-service",
+                "vc-plugin",
+                "vc-templates-plugin",
+                "vpqr-plugin"
+            ],
+            "phase_seconds": {
+                "builds": 83.828,
+                "tests": 406.214
+            },
+            "run_url": "https://github.com/learningeconomy/LearnCard/actions/runs/38166372866",
+            "job_url": "https://github.com/learningeconomy/LearnCard/actions/runs/38166372866/job/114549672380",
+            "test_step_seconds": 495.0,
+            "dependency_setup_seconds": 55.0,
+            "cache_prepare_seconds": 3.0,
+            "learn_card_app_vitest_duration_seconds": 247.44,
+            "exact_build_cache_hit": false
+        },
+        {
+            "mode": "baseline-20-2",
+            "run_id": 38166448401,
+            "cohort": "matched-20-minute",
+            "timeout_minutes": 20,
+            "max_attempts": 1,
+            "head_sha": "b752b7f1ad9c285864a8fe53decc7d7960e39a5e",
+            "base": "8d2fc4ab8826604730023ce8e7ae3356f36554eb",
+            "event": "workflow_dispatch",
+            "status": "completed",
+            "conclusion": "success",
+            "job_id": 114549890968,
+            "job_conclusion": "success",
+            "job_seconds": 833.0,
+            "steps": [
+                {
+                    "name": "Set up job",
+                    "conclusion": "success",
+                    "seconds": 1.0
+                },
+                {
+                    "name": "Checkout Repo",
+                    "conclusion": "success",
+                    "seconds": 20.0
+                },
+                {
+                    "name": "Fetch main for NX comparison",
+                    "conclusion": "success",
+                    "seconds": 1.0
+                },
+                {
+                    "name": "Use Composite Setup Action",
+                    "conclusion": "success",
+                    "seconds": 47.0
+                },
+                {
+                    "name": "Install pinned Rust toolchain",
+                    "conclusion": "success",
+                    "seconds": 11.0
+                },
+                {
+                    "name": "Authenticate Docker Hub pulls",
+                    "conclusion": "success",
+                    "seconds": 1.0
+                },
+                {
+                    "name": "Prepare verified test prerequisite cache",
+                    "conclusion": "skipped",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Run tests",
+                    "conclusion": "success",
+                    "seconds": 746.0
+                },
+                {
+                    "name": "Check build snapshot publication readiness",
+                    "conclusion": "skipped",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Save verified test prerequisite snapshot",
+                    "conclusion": "skipped",
+                    "seconds": 0.0
+                }
+            ],
+            "retry_warnings": [],
+            "cache_keys": [],
+            "verified_restore_count": 0,
+            "snapshot_messages": [],
+            "graph_summaries": [
+                "Running target test for 56 projects and 44 tasks they depend on:",
+                "Successfully ran target test for 56 projects and 44 tasks they depend on"
+            ],
+            "cache_hit_messages": [
+                "Cache hit for: bun-gmoqYqdUbaYsI0KujeXt7Zg/p0I=",
+                "Cache restored successfully",
+                "Cache hit for: Linux-bun-43b3b5af7b9001cd283a0f8e062d40168f414dec32e8c9700770d48231209c32",
+                "Cache restored successfully",
+                "Cache restored from key: Linux-bun-43b3b5af7b9001cd283a0f8e062d40168f414dec32e8c9700770d48231209c32",
+                "Cache hit occurred on the primary key Linux-bun-43b3b5af7b9001cd283a0f8e062d40168f414dec32e8c9700770d48231209c32, not saving cache."
+            ],
+            "failures": [],
+            "test_totals": [
+                "Tests  29 passed (29)",
+                "Tests  54 passed (54)",
+                "Tests  7 passed (7)",
+                "Tests  344 passed (344)",
+                "Tests  136 passed (136)",
+                "Tests  10 passed (10)",
+                "Tests  95 passed (95)",
+                "Tests  553 passed | 1 skipped (554)",
+                "Tests  89 passed (89)",
+                "Tests  41 passed (41)",
+                "Tests  90 passed (90)",
+                "Tests  139 passed (139)",
+                "Tests  613 passed (613)",
+                "Tests  9 passed (9)",
+                "Tests  7 passed (7)",
+                "Tests  350 passed (350)",
+                "Tests  333 passed (333)",
+                "Tests  6 passed (6)",
+                "Tests  55 passed | 11 skipped (66)",
+                "Tests  7 passed (7)",
+                "Tests  103 passed | 6 skipped (109)",
+                "Tests  5 passed | 1 skipped (6)",
+                "Tests  63 passed (63)",
+                "Tests  12 passed (12)",
+                "Tests  516 passed | 19 skipped (535)",
+                "Tests  9 passed (9)",
+                "Tests for VCThumbnail Full View > Checks VCThumbnail renders with props",
+                "Tests for MiniVCThumbnail > Checks MiniVCThumbnail renders with props",
+                "Tests for CircleIcon > Renders important props",
+                "Tests  290 passed (290)",
+                "Tests  104 passed (104)",
+                "Tests  1320 passed (1320)",
+                "Tests  5 passed (5)",
+                "Tests  4 passed (4)",
+                "Tests  4 passed (4)",
+                "Tests  297 passed | 2 skipped (299)",
+                "Tests  15 passed (15)",
+                "Tests  271 passed (271)",
+                "Tests  2878 passed | 4 skipped (2882)"
+            ],
+            "runtime_preflight_passed": true,
+            "vitest_counts": {
+                "types": {
+                    "passed": 29
+                },
+                "service-config": {
+                    "passed": 54
+                },
+                "embed-sdk": {
+                    "passed": 7
+                },
+                "email-templates": {
+                    "passed": 344
+                },
+                "helpers": {
+                    "passed": 136
+                },
+                "core": {
+                    "passed": 10
+                },
+                "partner-connect-sdk": {
+                    "passed": 95
+                },
+                "sss-key-manager": {
+                    "passed": 553,
+                    "skipped": 1
+                },
+                "vc-plugin": {
+                    "passed": 89
+                },
+                "learn-card-plugin": {
+                    "passed": 41
+                },
+                "sd-jwt-vc-plugin": {
+                    "passed": 90
+                },
+                "learn-cloud-service": {
+                    "passed": 139
+                },
+                "openid4vc-plugin": {
+                    "passed": 613
+                },
+                "learn-cloud-client": {
+                    "passed": 9
+                },
+                "network-brain-client": {
+                    "passed": 7
+                },
+                "network-brain-service": {
+                    "passed": 350
+                },
+                "credential-library": {
+                    "passed": 333
+                },
+                "learn-cloud-plugin": {
+                    "passed": 6
+                },
+                "init": {
+                    "passed": 55,
+                    "skipped": 11
+                },
+                "lca-api-client": {
+                    "passed": 7
+                },
+                "network-plugin": {
+                    "passed": 103,
+                    "skipped": 6
+                },
+                "lca-api-plugin": {
+                    "passed": 5,
+                    "skipped": 1
+                },
+                "render-method-plugin": {
+                    "passed": 63
+                },
+                "linked-claims-plugin": {
+                    "passed": 12
+                },
+                "lca-api-service": {
+                    "passed": 516,
+                    "skipped": 19
+                },
+                "holder-continuity": {
+                    "passed": 9
+                },
+                "cli": {
+                    "passed": 290
+                },
+                "react": {
+                    "passed": 104
+                },
+                "learn-card-base": {
+                    "passed": 1320
+                },
+                "@learncard/escrow-relay-service": {
+                    "passed": 5
+                },
+                "claimable-boosts-plugin": {
+                    "passed": 4
+                },
+                "vc-api-service": {
+                    "passed": 4
+                },
+                "ai-agent-service": {
+                    "passed": 297,
+                    "skipped": 2
+                },
+                "@learncard/credential-viewer": {
+                    "passed": 15
+                },
+                "scouts": {
+                    "passed": 271
+                },
+                "learn-card-app": {
+                    "passed": 2878,
+                    "skipped": 4
+                }
+            },
+            "rust_counts": {
+                "escrow-enclave-host": {
+                    "passed": 31,
+                    "failed": 0,
+                    "ignored": 0
+                },
+                "escrow-ledger-monitor": {
+                    "passed": 14,
+                    "failed": 0,
+                    "ignored": 0
+                },
+                "escrow-enclave-app": {
+                    "passed": 93,
+                    "failed": 0,
+                    "ignored": 1
+                }
+            },
+            "affected_projects": [
+                "@learncard/credential-viewer",
+                "@learncard/escrow-relay-service",
+                "ai-agent-service",
+                "ceramic-plugin",
+                "chapi-plugin",
+                "claimable-boosts-plugin",
+                "cli",
+                "core",
+                "credential-library",
+                "crypto-plugin",
+                "did-web-plugin",
+                "didkey-plugin",
+                "didkit-plugin",
+                "didkit-plugin-node",
+                "dynamic-loader-plugin",
+                "email-templates",
+                "embed-sdk",
+                "encryption-plugin",
+                "escrow-enclave-app",
+                "escrow-enclave-host",
+                "escrow-ledger-monitor",
+                "ethereum-plugin",
+                "expiration-plugin",
+                "helpers",
+                "holder-continuity",
+                "idx-plugin",
+                "init",
+                "lca-api-client",
+                "lca-api-plugin",
+                "lca-api-service",
+                "learn-card-app",
+                "learn-card-base",
+                "learn-card-plugin",
+                "learn-cloud-client",
+                "learn-cloud-plugin",
+                "learn-cloud-service",
+                "ler-rs-plugin",
+                "linked-claims-plugin",
+                "network-brain-client",
+                "network-brain-service",
+                "network-plugin",
+                "open-badge-v2-plugin",
+                "openid4vc-plugin",
+                "partner-connect-sdk",
+                "react",
+                "render-method-plugin",
+                "scouts",
+                "sd-jwt-vc-plugin",
+                "service-config",
+                "sss-key-manager",
+                "types",
+                "vc-api-plugin",
+                "vc-api-service",
+                "vc-plugin",
+                "vc-templates-plugin",
+                "vpqr-plugin"
+            ],
+            "phase_seconds": {
+                "tests": 744.444
+            },
+            "run_url": "https://github.com/learningeconomy/LearnCard/actions/runs/38166448401",
+            "job_url": "https://github.com/learningeconomy/LearnCard/actions/runs/38166448401/job/114549890968",
+            "test_step_seconds": 746.0,
+            "dependency_setup_seconds": 47.0,
+            "cache_prepare_seconds": 0.0,
+            "learn_card_app_vitest_duration_seconds": 172.15,
+            "exact_build_cache_hit": false
+        },
+        {
+            "mode": "warm-20-1",
+            "run_id": 38167373453,
+            "cohort": "matched-20-minute",
+            "timeout_minutes": 20,
+            "max_attempts": 1,
+            "head_sha": "b752b7f1ad9c285864a8fe53decc7d7960e39a5e",
+            "base": "8d2fc4ab8826604730023ce8e7ae3356f36554eb",
+            "event": "workflow_dispatch",
+            "status": "completed",
+            "conclusion": "success",
+            "job_id": 114552628932,
+            "job_conclusion": "success",
+            "job_seconds": 729.0,
+            "steps": [
+                {
+                    "name": "Set up job",
+                    "conclusion": "success",
+                    "seconds": 1.0
+                },
+                {
+                    "name": "Checkout Repo",
+                    "conclusion": "success",
+                    "seconds": 15.0
+                },
+                {
+                    "name": "Fetch main for NX comparison",
+                    "conclusion": "success",
+                    "seconds": 1.0
+                },
+                {
+                    "name": "Use Composite Setup Action",
+                    "conclusion": "success",
+                    "seconds": 45.0
+                },
+                {
+                    "name": "Install pinned Rust toolchain",
+                    "conclusion": "success",
+                    "seconds": 11.0
+                },
+                {
+                    "name": "Authenticate Docker Hub pulls",
+                    "conclusion": "success",
+                    "seconds": 1.0
+                },
+                {
+                    "name": "Prepare verified test prerequisite cache",
+                    "conclusion": "success",
+                    "seconds": 6.0
+                },
+                {
+                    "name": "Run tests",
+                    "conclusion": "success",
+                    "seconds": 643.0
+                },
+                {
+                    "name": "Check build snapshot publication readiness",
+                    "conclusion": "skipped",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Save verified test prerequisite snapshot",
+                    "conclusion": "skipped",
+                    "seconds": 0.0
+                }
+            ],
+            "retry_warnings": [],
+            "cache_keys": [
+                "nx-test-builds-v1-12133b9f5552802e8b5f54b01e63d459dd679e4ae5cd5405dad9ed9ceb8ee3fb"
+            ],
+            "verified_restore_count": 1,
+            "snapshot_messages": [],
+            "graph_summaries": [
+                "Successfully ran target test:runtime-did-auth for project ai-agent-service",
+                "Running target test for 56 projects:",
+                "Successfully ran target test for 56 projects"
+            ],
+            "cache_hit_messages": [
+                "Cache hit for: bun-gmoqYqdUbaYsI0KujeXt7Zg/p0I=",
+                "Cache restored successfully",
+                "Cache hit for: Linux-bun-43b3b5af7b9001cd283a0f8e062d40168f414dec32e8c9700770d48231209c32",
+                "Cache restored successfully",
+                "Cache restored from key: Linux-bun-43b3b5af7b9001cd283a0f8e062d40168f414dec32e8c9700770d48231209c32",
+                "Cache hit for: nx-test-builds-v1-12133b9f5552802e8b5f54b01e63d459dd679e4ae5cd5405dad9ed9ceb8ee3fb",
+                "Cache restored successfully",
+                "Cache restored from key: nx-test-builds-v1-12133b9f5552802e8b5f54b01e63d459dd679e4ae5cd5405dad9ed9ceb8ee3fb",
+                "Cache hit occurred on the primary key Linux-bun-43b3b5af7b9001cd283a0f8e062d40168f414dec32e8c9700770d48231209c32, not saving cache."
+            ],
+            "failures": [],
+            "test_totals": [
+                "Tests  29 passed (29)",
+                "Tests  10 passed (10)",
+                "Tests  136 passed (136)",
+                "Tests  89 passed (89)",
+                "Tests  41 passed (41)",
+                "Tests  54 passed (54)",
+                "Tests  90 passed (90)",
+                "Tests  344 passed (344)",
+                "Tests  139 passed (139)",
+                "Tests  333 passed (333)",
+                "Tests  613 passed (613)",
+                "Tests  9 passed (9)",
+                "Tests  7 passed (7)",
+                "Tests  6 passed (6)",
+                "Tests  350 passed (350)",
+                "Tests  55 passed | 11 skipped (66)",
+                "Tests  103 passed | 6 skipped (109)",
+                "Tests  7 passed (7)",
+                "Tests  5 passed | 1 skipped (6)",
+                "Tests  95 passed (95)",
+                "Tests  63 passed (63)",
+                "Tests  553 passed | 1 skipped (554)",
+                "Tests  12 passed (12)",
+                "Tests  516 passed | 19 skipped (535)",
+                "Tests  9 passed (9)",
+                "Tests  7 passed (7)",
+                "Tests for VCThumbnail Full View > Checks VCThumbnail renders with props",
+                "Tests for MiniVCThumbnail > Checks MiniVCThumbnail renders with props",
+                "Tests for CircleIcon > Renders important props",
+                "Tests  290 passed (290)",
+                "Tests  104 passed (104)",
+                "Tests  1320 passed (1320)",
+                "Tests  297 passed | 2 skipped (299)",
+                "Tests  15 passed (15)",
+                "Tests  4 passed (4)",
+                "Tests  4 passed (4)",
+                "Tests  5 passed (5)",
+                "Tests  271 passed (271)",
+                "Tests  2878 passed | 4 skipped (2882)"
+            ],
+            "runtime_preflight_passed": true,
+            "vitest_counts": {
+                "types": {
+                    "passed": 29
+                },
+                "core": {
+                    "passed": 10
+                },
+                "helpers": {
+                    "passed": 136
+                },
+                "vc-plugin": {
+                    "passed": 89
+                },
+                "learn-card-plugin": {
+                    "passed": 41
+                },
+                "service-config": {
+                    "passed": 54
+                },
+                "sd-jwt-vc-plugin": {
+                    "passed": 90
+                },
+                "email-templates": {
+                    "passed": 344
+                },
+                "learn-cloud-service": {
+                    "passed": 139
+                },
+                "credential-library": {
+                    "passed": 333
+                },
+                "openid4vc-plugin": {
+                    "passed": 613
+                },
+                "learn-cloud-client": {
+                    "passed": 9
+                },
+                "network-brain-client": {
+                    "passed": 7
+                },
+                "learn-cloud-plugin": {
+                    "passed": 6
+                },
+                "network-brain-service": {
+                    "passed": 350
+                },
+                "init": {
+                    "passed": 55,
+                    "skipped": 11
+                },
+                "network-plugin": {
+                    "passed": 103,
+                    "skipped": 6
+                },
+                "lca-api-client": {
+                    "passed": 7
+                },
+                "lca-api-plugin": {
+                    "passed": 5,
+                    "skipped": 1
+                },
+                "partner-connect-sdk": {
+                    "passed": 95
+                },
+                "render-method-plugin": {
+                    "passed": 63
+                },
+                "sss-key-manager": {
+                    "passed": 553,
+                    "skipped": 1
+                },
+                "linked-claims-plugin": {
+                    "passed": 12
+                },
+                "lca-api-service": {
+                    "passed": 516,
+                    "skipped": 19
+                },
+                "holder-continuity": {
+                    "passed": 9
+                },
+                "embed-sdk": {
+                    "passed": 7
+                },
+                "cli": {
+                    "passed": 290
+                },
+                "react": {
+                    "passed": 104
+                },
+                "learn-card-base": {
+                    "passed": 1320
+                },
+                "ai-agent-service": {
+                    "passed": 297,
+                    "skipped": 2
+                },
+                "@learncard/credential-viewer": {
+                    "passed": 15
+                },
+                "vc-api-service": {
+                    "passed": 4
+                },
+                "claimable-boosts-plugin": {
+                    "passed": 4
+                },
+                "@learncard/escrow-relay-service": {
+                    "passed": 5
+                },
+                "scouts": {
+                    "passed": 271
+                },
+                "learn-card-app": {
+                    "passed": 2878,
+                    "skipped": 4
+                }
+            },
+            "rust_counts": {
+                "escrow-enclave-host": {
+                    "passed": 31,
+                    "failed": 0,
+                    "ignored": 0
+                },
+                "escrow-ledger-monitor": {
+                    "passed": 14,
+                    "failed": 0,
+                    "ignored": 0
+                },
+                "escrow-enclave-app": {
+                    "passed": 93,
+                    "failed": 0,
+                    "ignored": 1
+                }
+            },
+            "affected_projects": [
+                "@learncard/credential-viewer",
+                "@learncard/escrow-relay-service",
+                "ai-agent-service",
+                "ceramic-plugin",
+                "chapi-plugin",
+                "claimable-boosts-plugin",
+                "cli",
+                "core",
+                "credential-library",
+                "crypto-plugin",
+                "did-web-plugin",
+                "didkey-plugin",
+                "didkit-plugin",
+                "didkit-plugin-node",
+                "dynamic-loader-plugin",
+                "email-templates",
+                "embed-sdk",
+                "encryption-plugin",
+                "escrow-enclave-app",
+                "escrow-enclave-host",
+                "escrow-ledger-monitor",
+                "ethereum-plugin",
+                "expiration-plugin",
+                "helpers",
+                "holder-continuity",
+                "idx-plugin",
+                "init",
+                "lca-api-client",
+                "lca-api-plugin",
+                "lca-api-service",
+                "learn-card-app",
+                "learn-card-base",
+                "learn-card-plugin",
+                "learn-cloud-client",
+                "learn-cloud-plugin",
+                "learn-cloud-service",
+                "ler-rs-plugin",
+                "linked-claims-plugin",
+                "network-brain-client",
+                "network-brain-service",
+                "network-plugin",
+                "open-badge-v2-plugin",
+                "openid4vc-plugin",
+                "partner-connect-sdk",
+                "react",
+                "render-method-plugin",
+                "scouts",
+                "sd-jwt-vc-plugin",
+                "service-config",
+                "sss-key-manager",
+                "types",
+                "vc-api-plugin",
+                "vc-api-service",
+                "vc-plugin",
+                "vc-templates-plugin",
+                "vpqr-plugin"
+            ],
+            "phase_seconds": {
+                "tests": 637.26
+            },
+            "run_url": "https://github.com/learningeconomy/LearnCard/actions/runs/38167373453",
+            "job_url": "https://github.com/learningeconomy/LearnCard/actions/runs/38167373453/job/114552628932",
+            "test_step_seconds": 643.0,
+            "dependency_setup_seconds": 45.0,
+            "cache_prepare_seconds": 6.0,
+            "learn_card_app_vitest_duration_seconds": 370.57,
+            "runner_start_to_verified_restore_seconds": 1.041,
+            "exact_build_cache_hit": true
+        },
+        {
+            "mode": "warm-20-2",
+            "run_id": 38167375500,
+            "cohort": "matched-20-minute",
+            "timeout_minutes": 20,
+            "max_attempts": 1,
+            "head_sha": "b752b7f1ad9c285864a8fe53decc7d7960e39a5e",
+            "base": "8d2fc4ab8826604730023ce8e7ae3356f36554eb",
+            "event": "workflow_dispatch",
+            "status": "completed",
+            "conclusion": "success",
+            "job_id": 114552634662,
+            "job_conclusion": "success",
+            "job_seconds": 704.0,
+            "steps": [
+                {
+                    "name": "Set up job",
+                    "conclusion": "success",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Checkout Repo",
+                    "conclusion": "success",
+                    "seconds": 14.0
+                },
+                {
+                    "name": "Fetch main for NX comparison",
+                    "conclusion": "success",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Use Composite Setup Action",
+                    "conclusion": "success",
+                    "seconds": 40.0
+                },
+                {
+                    "name": "Install pinned Rust toolchain",
+                    "conclusion": "success",
+                    "seconds": 11.0
+                },
+                {
+                    "name": "Authenticate Docker Hub pulls",
+                    "conclusion": "success",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Prepare verified test prerequisite cache",
+                    "conclusion": "success",
+                    "seconds": 5.0
+                },
+                {
+                    "name": "Run tests",
+                    "conclusion": "success",
+                    "seconds": 631.0
+                },
+                {
+                    "name": "Check build snapshot publication readiness",
+                    "conclusion": "skipped",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Save verified test prerequisite snapshot",
+                    "conclusion": "skipped",
+                    "seconds": 0.0
+                }
+            ],
+            "retry_warnings": [],
+            "cache_keys": [
+                "nx-test-builds-v1-12133b9f5552802e8b5f54b01e63d459dd679e4ae5cd5405dad9ed9ceb8ee3fb"
+            ],
+            "verified_restore_count": 1,
+            "snapshot_messages": [],
+            "graph_summaries": [
+                "Successfully ran target test:runtime-did-auth for project ai-agent-service",
+                "Running target test for 56 projects:",
+                "Successfully ran target test for 56 projects"
+            ],
+            "cache_hit_messages": [
+                "Cache hit for: bun-gmoqYqdUbaYsI0KujeXt7Zg/p0I=",
+                "Cache restored successfully",
+                "Cache hit for: Linux-bun-43b3b5af7b9001cd283a0f8e062d40168f414dec32e8c9700770d48231209c32",
+                "Cache restored successfully",
+                "Cache restored from key: Linux-bun-43b3b5af7b9001cd283a0f8e062d40168f414dec32e8c9700770d48231209c32",
+                "Cache hit for: nx-test-builds-v1-12133b9f5552802e8b5f54b01e63d459dd679e4ae5cd5405dad9ed9ceb8ee3fb",
+                "Cache restored successfully",
+                "Cache restored from key: nx-test-builds-v1-12133b9f5552802e8b5f54b01e63d459dd679e4ae5cd5405dad9ed9ceb8ee3fb",
+                "Cache hit occurred on the primary key Linux-bun-43b3b5af7b9001cd283a0f8e062d40168f414dec32e8c9700770d48231209c32, not saving cache."
+            ],
+            "failures": [],
+            "test_totals": [
+                "Tests  29 passed (29)",
+                "Tests  10 passed (10)",
+                "Tests  136 passed (136)",
+                "Tests  89 passed (89)",
+                "Tests  41 passed (41)",
+                "Tests  54 passed (54)",
+                "Tests  90 passed (90)",
+                "Tests  344 passed (344)",
+                "Tests  139 passed (139)",
+                "Tests  333 passed (333)",
+                "Tests  9 passed (9)",
+                "Tests  613 passed (613)",
+                "Tests  7 passed (7)",
+                "Tests  6 passed (6)",
+                "Tests  350 passed (350)",
+                "Tests  55 passed | 11 skipped (66)",
+                "Tests  103 passed | 6 skipped (109)",
+                "Tests  7 passed (7)",
+                "Tests  5 passed | 1 skipped (6)",
+                "Tests  95 passed (95)",
+                "Tests  63 passed (63)",
+                "Tests  553 passed | 1 skipped (554)",
+                "Tests  12 passed (12)",
+                "Tests  516 passed | 19 skipped (535)",
+                "Tests  9 passed (9)",
+                "Tests  7 passed (7)",
+                "Tests for VCThumbnail Full View > Checks VCThumbnail renders with props",
+                "Tests for MiniVCThumbnail > Checks MiniVCThumbnail renders with props",
+                "Tests  290 passed (290)",
+                "Tests for CircleIcon > Renders important props",
+                "Tests  104 passed (104)",
+                "Tests  1320 passed (1320)",
+                "Tests  297 passed | 2 skipped (299)",
+                "Tests  15 passed (15)",
+                "Tests  4 passed (4)",
+                "Tests  4 passed (4)",
+                "Tests  5 passed (5)",
+                "Tests  271 passed (271)",
+                "Tests  2878 passed | 4 skipped (2882)"
+            ],
+            "runtime_preflight_passed": true,
+            "vitest_counts": {
+                "types": {
+                    "passed": 29
+                },
+                "core": {
+                    "passed": 10
+                },
+                "helpers": {
+                    "passed": 136
+                },
+                "vc-plugin": {
+                    "passed": 89
+                },
+                "learn-card-plugin": {
+                    "passed": 41
+                },
+                "service-config": {
+                    "passed": 54
+                },
+                "sd-jwt-vc-plugin": {
+                    "passed": 90
+                },
+                "email-templates": {
+                    "passed": 344
+                },
+                "learn-cloud-service": {
+                    "passed": 139
+                },
+                "credential-library": {
+                    "passed": 333
+                },
+                "learn-cloud-client": {
+                    "passed": 9
+                },
+                "openid4vc-plugin": {
+                    "passed": 613
+                },
+                "network-brain-client": {
+                    "passed": 7
+                },
+                "learn-cloud-plugin": {
+                    "passed": 6
+                },
+                "network-brain-service": {
+                    "passed": 350
+                },
+                "init": {
+                    "passed": 55,
+                    "skipped": 11
+                },
+                "network-plugin": {
+                    "passed": 103,
+                    "skipped": 6
+                },
+                "lca-api-client": {
+                    "passed": 7
+                },
+                "lca-api-plugin": {
+                    "passed": 5,
+                    "skipped": 1
+                },
+                "partner-connect-sdk": {
+                    "passed": 95
+                },
+                "render-method-plugin": {
+                    "passed": 63
+                },
+                "sss-key-manager": {
+                    "passed": 553,
+                    "skipped": 1
+                },
+                "linked-claims-plugin": {
+                    "passed": 12
+                },
+                "lca-api-service": {
+                    "passed": 516,
+                    "skipped": 19
+                },
+                "holder-continuity": {
+                    "passed": 9
+                },
+                "embed-sdk": {
+                    "passed": 7
+                },
+                "cli": {
+                    "passed": 290
+                },
+                "react": {
+                    "passed": 104
+                },
+                "learn-card-base": {
+                    "passed": 1320
+                },
+                "ai-agent-service": {
+                    "passed": 297,
+                    "skipped": 2
+                },
+                "@learncard/credential-viewer": {
+                    "passed": 15
+                },
+                "vc-api-service": {
+                    "passed": 4
+                },
+                "claimable-boosts-plugin": {
+                    "passed": 4
+                },
+                "@learncard/escrow-relay-service": {
+                    "passed": 5
+                },
+                "scouts": {
+                    "passed": 271
+                },
+                "learn-card-app": {
+                    "passed": 2878,
+                    "skipped": 4
+                }
+            },
+            "rust_counts": {
+                "escrow-enclave-host": {
+                    "passed": 31,
+                    "failed": 0,
+                    "ignored": 0
+                },
+                "escrow-ledger-monitor": {
+                    "passed": 14,
+                    "failed": 0,
+                    "ignored": 0
+                },
+                "escrow-enclave-app": {
+                    "passed": 93,
+                    "failed": 0,
+                    "ignored": 1
+                }
+            },
+            "affected_projects": [
+                "@learncard/credential-viewer",
+                "@learncard/escrow-relay-service",
+                "ai-agent-service",
+                "ceramic-plugin",
+                "chapi-plugin",
+                "claimable-boosts-plugin",
+                "cli",
+                "core",
+                "credential-library",
+                "crypto-plugin",
+                "did-web-plugin",
+                "didkey-plugin",
+                "didkit-plugin",
+                "didkit-plugin-node",
+                "dynamic-loader-plugin",
+                "email-templates",
+                "embed-sdk",
+                "encryption-plugin",
+                "escrow-enclave-app",
+                "escrow-enclave-host",
+                "escrow-ledger-monitor",
+                "ethereum-plugin",
+                "expiration-plugin",
+                "helpers",
+                "holder-continuity",
+                "idx-plugin",
+                "init",
+                "lca-api-client",
+                "lca-api-plugin",
+                "lca-api-service",
+                "learn-card-app",
+                "learn-card-base",
+                "learn-card-plugin",
+                "learn-cloud-client",
+                "learn-cloud-plugin",
+                "learn-cloud-service",
+                "ler-rs-plugin",
+                "linked-claims-plugin",
+                "network-brain-client",
+                "network-brain-service",
+                "network-plugin",
+                "open-badge-v2-plugin",
+                "openid4vc-plugin",
+                "partner-connect-sdk",
+                "react",
+                "render-method-plugin",
+                "scouts",
+                "sd-jwt-vc-plugin",
+                "service-config",
+                "sss-key-manager",
+                "types",
+                "vc-api-plugin",
+                "vc-api-service",
+                "vc-plugin",
+                "vc-templates-plugin",
+                "vpqr-plugin"
+            ],
+            "phase_seconds": {
+                "tests": 625.527
+            },
+            "run_url": "https://github.com/learningeconomy/LearnCard/actions/runs/38167375500",
+            "job_url": "https://github.com/learningeconomy/LearnCard/actions/runs/38167375500/job/114552634662",
+            "test_step_seconds": 631.0,
+            "dependency_setup_seconds": 40.0,
+            "cache_prepare_seconds": 5.0,
+            "learn_card_app_vitest_duration_seconds": 366.0,
+            "runner_start_to_verified_restore_seconds": 1.08,
+            "exact_build_cache_hit": true
+        }
+    ],
+    "excluded_diagnostics": [
+        {
+            "mode": "pilot",
+            "run_id": 38164582419,
+            "cohort": "diagnostic-10-minute",
+            "timeout_minutes": 10,
+            "max_attempts": 3,
+            "exclusion_reason": "Superseded by matched 20-minute single-attempt measurements; intentionally cancelled if still running.",
+            "head_sha": "b7295aa6f0981c33335c5344b493807e91692161",
+            "base": "8d2fc4ab8826604730023ce8e7ae3356f36554eb",
+            "event": "workflow_dispatch",
+            "status": "completed",
+            "conclusion": "cancelled",
+            "job_id": 114544377196,
+            "job_conclusion": "cancelled",
+            "job_seconds": 722.0,
+            "steps": [
+                {
+                    "name": "Set up job",
+                    "conclusion": "success",
+                    "seconds": 2.0
+                },
+                {
+                    "name": "Checkout Repo",
+                    "conclusion": "success",
+                    "seconds": 14.0
+                },
+                {
+                    "name": "Fetch main for NX comparison",
+                    "conclusion": "success",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Use Composite Setup Action",
+                    "conclusion": "success",
+                    "seconds": 39.0
+                },
+                {
+                    "name": "Install pinned Rust toolchain",
+                    "conclusion": "success",
+                    "seconds": 11.0
+                },
+                {
+                    "name": "Authenticate Docker Hub pulls",
+                    "conclusion": "success",
+                    "seconds": 2.0
+                },
+                {
+                    "name": "Prepare verified test prerequisite cache",
+                    "conclusion": "success",
+                    "seconds": 4.0
+                },
+                {
+                    "name": "Run tests",
+                    "conclusion": "cancelled",
+                    "seconds": 647.0
+                },
+                {
+                    "name": "Check build snapshot publication readiness",
+                    "conclusion": "skipped",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Save verified test prerequisite snapshot",
+                    "conclusion": "skipped",
+                    "seconds": 0.0
+                }
+            ],
+            "retry_warnings": ["Attempt 1 failed. Reason: Timeout of 600000ms hit"],
+            "cache_keys": [
+                "nx-test-builds-v1-eac8b49e5cd074f9ebcbeb60c5ae360648794b382c04bff76cb5810e509e2dfa"
+            ],
+            "verified_restore_count": 1,
+            "snapshot_messages": ["Snapshot: 2930 files, 511287000 bytes"],
+            "graph_summaries": [
+                "Running target build for 43 projects:",
+                "Successfully ran target build for 43 projects",
+                "Successfully ran target test:runtime-did-auth for project ai-agent-service",
+                "Running target test for 56 projects:",
+                "Running target test for 56 projects did not complete",
+                "Successfully ran target test:runtime-did-auth for project ai-agent-service",
+                "Running target test for 56 projects:"
+            ],
+            "cache_hit_messages": [
+                "Cache hit for: bun-gmoqYqdUbaYsI0KujeXt7Zg/p0I=",
+                "Cache restored successfully",
+                "Cache hit for: Linux-bun-43b3b5af7b9001cd283a0f8e062d40168f414dec32e8c9700770d48231209c32",
+                "Cache restored successfully",
+                "Cache restored from key: Linux-bun-43b3b5af7b9001cd283a0f8e062d40168f414dec32e8c9700770d48231209c32",
+                "Cache not found for input keys: nx-test-builds-v1-eac8b49e5cd074f9ebcbeb60c5ae360648794b382c04bff76cb5810e509e2dfa"
+            ],
+            "failures": ["Timeout of 600000ms hit"],
+            "test_totals": [
+                "Tests  29 passed (29)",
+                "Tests  10 passed (10)",
+                "Tests  136 passed (136)",
+                "Tests  89 passed (89)",
+                "Tests  41 passed (41)",
+                "Tests  54 passed (54)",
+                "Tests  90 passed (90)",
+                "Tests  344 passed (344)",
+                "Tests  139 passed (139)",
+                "Tests  333 passed (333)",
+                "Tests  9 passed (9)",
+                "Tests  613 passed (613)",
+                "Tests  7 passed (7)",
+                "Tests  6 passed (6)",
+                "Tests  350 passed (350)",
+                "Tests  103 passed | 6 skipped (109)",
+                "Tests  55 passed | 11 skipped (66)",
+                "Tests  7 passed (7)",
+                "Tests  5 passed | 1 skipped (6)",
+                "Tests  95 passed (95)",
+                "Tests  63 passed (63)",
+                "Tests  553 passed | 1 skipped (554)",
+                "Tests  12 passed (12)",
+                "Tests  516 passed | 19 skipped (535)",
+                "Tests  9 passed (9)",
+                "Tests  7 passed (7)",
+                "Tests for VCThumbnail Full View > Checks VCThumbnail renders with props",
+                "Tests for MiniVCThumbnail > Checks MiniVCThumbnail renders with props",
+                "Tests for CircleIcon > Renders important props",
+                "Tests  290 passed (290)",
+                "Tests  104 passed (104)",
+                "Tests  1320 passed (1320)",
+                "Tests  297 passed | 2 skipped (299)",
+                "Tests  15 passed (15)",
+                "Tests  4 passed (4)",
+                "Tests  4 passed (4)",
+                "Tests  5 passed (5)",
+                "Tests  271 passed (271)",
+                "Tests  29 passed (29)",
+                "Tests  10 passed (10)",
+                "Tests  136 passed (136)",
+                "Tests  89 passed (89)",
+                "Tests  41 passed (41)",
+                "Tests  54 passed (54)",
+                "Tests  90 passed (90)",
+                "Tests  344 passed (344)",
+                "Tests  333 passed (333)",
+                "Tests  613 passed (613)",
+                "Tests  139 passed (139)",
+                "Tests  7 passed (7)",
+                "Tests  9 passed (9)"
+            ],
+            "runtime_preflight_passed": true,
+            "vitest_counts": {
+                "types": {
+                    "passed": 29
+                },
+                "core": {
+                    "passed": 10
+                },
+                "helpers": {
+                    "passed": 136
+                },
+                "vc-plugin": {
+                    "passed": 89
+                },
+                "learn-card-plugin": {
+                    "passed": 41
+                },
+                "service-config": {
+                    "passed": 54
+                },
+                "sd-jwt-vc-plugin": {
+                    "passed": 90
+                },
+                "email-templates": {
+                    "passed": 344
+                },
+                "learn-cloud-service": {
+                    "passed": 139
+                },
+                "credential-library": {
+                    "passed": 333
+                },
+                "learn-cloud-client": {
+                    "passed": 9
+                },
+                "openid4vc-plugin": {
+                    "passed": 613
+                },
+                "network-brain-client": {
+                    "passed": 7
+                },
+                "learn-cloud-plugin": {
+                    "passed": 6
+                },
+                "network-brain-service": {
+                    "passed": 350
+                },
+                "network-plugin": {
+                    "passed": 103,
+                    "skipped": 6
+                },
+                "init": {
+                    "passed": 55,
+                    "skipped": 11
+                },
+                "lca-api-client": {
+                    "passed": 7
+                },
+                "lca-api-plugin": {
+                    "passed": 5,
+                    "skipped": 1
+                },
+                "partner-connect-sdk": {
+                    "passed": 95
+                },
+                "render-method-plugin": {
+                    "passed": 63
+                },
+                "sss-key-manager": {
+                    "passed": 553,
+                    "skipped": 1
+                },
+                "linked-claims-plugin": {
+                    "passed": 12
+                },
+                "lca-api-service": {
+                    "passed": 516,
+                    "skipped": 19
+                },
+                "holder-continuity": {
+                    "passed": 9
+                },
+                "embed-sdk": {
+                    "passed": 7
+                },
+                "cli": {
+                    "passed": 290
+                },
+                "react": {
+                    "passed": 104
+                },
+                "learn-card-base": {
+                    "passed": 1320
+                },
+                "ai-agent-service": {
+                    "passed": 297,
+                    "skipped": 2
+                },
+                "@learncard/credential-viewer": {
+                    "passed": 15
+                },
+                "vc-api-service": {
+                    "passed": 4
+                },
+                "claimable-boosts-plugin": {
+                    "passed": 4
+                },
+                "@learncard/escrow-relay-service": {
+                    "passed": 5
+                },
+                "scouts": {
+                    "passed": 271
+                }
+            },
+            "rust_counts": {
+                "escrow-enclave-host": {
+                    "passed": 31,
+                    "failed": 0,
+                    "ignored": 0
+                },
+                "escrow-ledger-monitor": {
+                    "passed": 14,
+                    "failed": 0,
+                    "ignored": 0
+                }
+            },
+            "affected_projects": [
+                "@learncard/credential-viewer",
+                "@learncard/escrow-relay-service",
+                "ai-agent-service",
+                "ceramic-plugin",
+                "chapi-plugin",
+                "claimable-boosts-plugin",
+                "cli",
+                "core",
+                "credential-library",
+                "crypto-plugin",
+                "did-web-plugin",
+                "didkey-plugin",
+                "didkit-plugin",
+                "didkit-plugin-node",
+                "dynamic-loader-plugin",
+                "email-templates",
+                "embed-sdk",
+                "encryption-plugin",
+                "escrow-enclave-app",
+                "escrow-enclave-host",
+                "escrow-ledger-monitor",
+                "ethereum-plugin",
+                "expiration-plugin",
+                "helpers",
+                "holder-continuity",
+                "idx-plugin",
+                "init",
+                "lca-api-client",
+                "lca-api-plugin",
+                "lca-api-service",
+                "learn-card-app",
+                "learn-card-base",
+                "learn-card-plugin",
+                "learn-cloud-client",
+                "learn-cloud-plugin",
+                "learn-cloud-service",
+                "ler-rs-plugin",
+                "linked-claims-plugin",
+                "network-brain-client",
+                "network-brain-service",
+                "network-plugin",
+                "open-badge-v2-plugin",
+                "openid4vc-plugin",
+                "partner-connect-sdk",
+                "react",
+                "render-method-plugin",
+                "scouts",
+                "sd-jwt-vc-plugin",
+                "service-config",
+                "sss-key-manager",
+                "types",
+                "vc-api-plugin",
+                "vc-api-service",
+                "vc-plugin",
+                "vc-templates-plugin",
+                "vpqr-plugin"
+            ],
+            "phase_seconds": {
+                "builds": 122.231
+            }
+        },
+        {
+            "mode": "baseline",
+            "run_id": 38165027593,
+            "cohort": "diagnostic-10-minute",
+            "timeout_minutes": 10,
+            "max_attempts": 3,
+            "exclusion_reason": "Superseded by matched 20-minute single-attempt measurements; intentionally cancelled if still running.",
+            "head_sha": "7a65ed983836042813f62c9c7563f97052a0ca6a",
+            "base": "8d2fc4ab8826604730023ce8e7ae3356f36554eb",
+            "event": "workflow_dispatch",
+            "status": "completed",
+            "conclusion": "cancelled",
+            "job_id": 114545693463,
+            "job_conclusion": "cancelled",
+            "job_seconds": 1107.0,
+            "steps": [
+                {
+                    "name": "Set up job",
+                    "conclusion": "success",
+                    "seconds": 1.0
+                },
+                {
+                    "name": "Checkout Repo",
+                    "conclusion": "success",
+                    "seconds": 14.0
+                },
+                {
+                    "name": "Fetch main for NX comparison",
+                    "conclusion": "success",
+                    "seconds": 1.0
+                },
+                {
+                    "name": "Use Composite Setup Action",
+                    "conclusion": "success",
+                    "seconds": 41.0
+                },
+                {
+                    "name": "Install pinned Rust toolchain",
+                    "conclusion": "success",
+                    "seconds": 10.0
+                },
+                {
+                    "name": "Authenticate Docker Hub pulls",
+                    "conclusion": "success",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Prepare verified test prerequisite cache",
+                    "conclusion": "skipped",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Run tests",
+                    "conclusion": "cancelled",
+                    "seconds": 1036.0
+                },
+                {
+                    "name": "Check build snapshot publication readiness",
+                    "conclusion": "skipped",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Save verified test prerequisite snapshot",
+                    "conclusion": "skipped",
+                    "seconds": 0.0
+                }
+            ],
+            "retry_warnings": ["Attempt 1 failed. Reason: Timeout of 600000ms hit"],
+            "cache_keys": [],
+            "verified_restore_count": 0,
+            "snapshot_messages": [],
+            "graph_summaries": [
+                "Running target test for 56 projects and 44 tasks they depend on:",
+                "Running target test for 56 projects and 44 tasks they depend on failed",
+                "Running target test for 56 projects and 44 tasks they depend on:"
+            ],
+            "cache_hit_messages": [
+                "Cache hit for: bun-gmoqYqdUbaYsI0KujeXt7Zg/p0I=",
+                "Cache restored successfully",
+                "Cache hit for: Linux-bun-43b3b5af7b9001cd283a0f8e062d40168f414dec32e8c9700770d48231209c32",
+                "Cache restored successfully",
+                "Cache restored from key: Linux-bun-43b3b5af7b9001cd283a0f8e062d40168f414dec32e8c9700770d48231209c32"
+            ],
+            "failures": [
+                "FAIL  src/config/__tests__/escrowRollout.test.ts > isEscrowRolloutEnabledFor > is roughly uniform across 10k synthetic ids at 25%",
+                "Error: Test timed out in 5000ms.",
+                "Error: Test timed out in 5000ms.%0AIf this is a long-running test, pass a timeout value as the last argument or configure it globally with \"testTimeout\".%0A \u276f src/config/__tests__/escrowRollout.test.ts:57:5%0A%0A",
+                "Timeout of 600000ms hit"
+            ],
+            "test_totals": [
+                "Tests  29 passed (29)",
+                "Tests  54 passed (54)",
+                "Tests  7 passed (7)",
+                "Tests  344 passed (344)",
+                "Tests  136 passed (136)",
+                "Tests  10 passed (10)",
+                "Tests  95 passed (95)",
+                "Tests  553 passed | 1 skipped (554)",
+                "Tests  89 passed (89)",
+                "Tests  41 passed (41)",
+                "Tests  90 passed (90)",
+                "Tests  139 passed (139)",
+                "Tests  613 passed (613)",
+                "Tests  9 passed (9)",
+                "Tests  7 passed (7)",
+                "Tests  350 passed (350)",
+                "Tests  333 passed (333)",
+                "Tests  6 passed (6)",
+                "Tests  55 passed | 11 skipped (66)",
+                "Tests  7 passed (7)",
+                "Tests  103 passed | 6 skipped (109)",
+                "Tests  5 passed | 1 skipped (6)",
+                "Tests  63 passed (63)",
+                "Tests  12 passed (12)",
+                "Tests  516 passed | 19 skipped (535)",
+                "Tests  9 passed (9)",
+                "Tests for VCThumbnail Full View > Checks VCThumbnail renders with props",
+                "Tests for MiniVCThumbnail > Checks MiniVCThumbnail renders with props",
+                "Tests  290 passed (290)",
+                "Tests for CircleIcon > Renders important props",
+                "Tests  104 passed (104)",
+                "Tests 1 \u23af\u23af\u23af\u23af\u23af\u23af\u23af",
+                "Tests  1 failed | 1319 passed (1320)",
+                "Tests  5 passed (5)",
+                "Tests  4 passed (4)",
+                "Tests  4 passed (4)",
+                "Tests  297 passed | 2 skipped (299)",
+                "Tests  15 passed (15)",
+                "Tests  271 passed (271)",
+                "Tests  29 passed (29)",
+                "Tests  54 passed (54)",
+                "Tests  7 passed (7)",
+                "Tests  344 passed (344)",
+                "Tests  136 passed (136)",
+                "Tests  10 passed (10)",
+                "Tests  95 passed (95)",
+                "Tests  553 passed | 1 skipped (554)",
+                "Tests  89 passed (89)",
+                "Tests  41 passed (41)",
+                "Tests  90 passed (90)",
+                "Tests  613 passed (613)",
+                "Tests  139 passed (139)",
+                "Tests  7 passed (7)",
+                "Tests  350 passed (350)",
+                "Tests  9 passed (9)",
+                "Tests  333 passed (333)",
+                "Tests  103 passed | 6 skipped (109)",
+                "Tests  6 passed (6)",
+                "Tests  7 passed (7)",
+                "Tests  55 passed | 11 skipped (66)",
+                "Tests  63 passed (63)",
+                "Tests  5 passed | 1 skipped (6)",
+                "Tests  12 passed (12)",
+                "Tests  516 passed | 19 skipped (535)",
+                "Tests  9 passed (9)",
+                "Tests for CircleIcon > Renders important props",
+                "Tests for MiniVCThumbnail > Checks MiniVCThumbnail renders with props",
+                "Tests for VCThumbnail Full View > Checks VCThumbnail renders with props",
+                "Tests  290 passed (290)",
+                "Tests  104 passed (104)",
+                "Tests  1320 passed (1320)",
+                "Tests  271 passed (271)",
+                "Tests  297 passed | 2 skipped (299)",
+                "Tests  5 passed (5)",
+                "Tests  15 passed (15)",
+                "Tests  4 passed (4)",
+                "Tests  4 passed (4)"
+            ],
+            "runtime_preflight_passed": true,
+            "vitest_counts": {
+                "types": {
+                    "passed": 29
+                },
+                "service-config": {
+                    "passed": 54
+                },
+                "embed-sdk": {
+                    "passed": 7
+                },
+                "email-templates": {
+                    "passed": 344
+                },
+                "helpers": {
+                    "passed": 136
+                },
+                "core": {
+                    "passed": 10
+                },
+                "partner-connect-sdk": {
+                    "passed": 95
+                },
+                "sss-key-manager": {
+                    "passed": 553,
+                    "skipped": 1
+                },
+                "vc-plugin": {
+                    "passed": 89
+                },
+                "learn-card-plugin": {
+                    "passed": 41
+                },
+                "sd-jwt-vc-plugin": {
+                    "passed": 90
+                },
+                "learn-cloud-service": {
+                    "passed": 139
+                },
+                "openid4vc-plugin": {
+                    "passed": 613
+                },
+                "learn-cloud-client": {
+                    "passed": 9
+                },
+                "network-brain-client": {
+                    "passed": 7
+                },
+                "network-brain-service": {
+                    "passed": 350
+                },
+                "credential-library": {
+                    "passed": 333
+                },
+                "learn-cloud-plugin": {
+                    "passed": 6
+                },
+                "init": {
+                    "passed": 55,
+                    "skipped": 11
+                },
+                "lca-api-client": {
+                    "passed": 7
+                },
+                "network-plugin": {
+                    "passed": 103,
+                    "skipped": 6
+                },
+                "lca-api-plugin": {
+                    "passed": 5,
+                    "skipped": 1
+                },
+                "render-method-plugin": {
+                    "passed": 63
+                },
+                "linked-claims-plugin": {
+                    "passed": 12
+                },
+                "lca-api-service": {
+                    "passed": 516,
+                    "skipped": 19
+                },
+                "holder-continuity": {
+                    "passed": 9
+                },
+                "cli": {
+                    "passed": 290
+                },
+                "react": {
+                    "passed": 104
+                },
+                "learn-card-base": {
+                    "passed": 1320
+                },
+                "@learncard/escrow-relay-service": {
+                    "passed": 5
+                },
+                "claimable-boosts-plugin": {
+                    "passed": 4
+                },
+                "vc-api-service": {
+                    "passed": 4
+                },
+                "ai-agent-service": {
+                    "passed": 297,
+                    "skipped": 2
+                },
+                "@learncard/credential-viewer": {
+                    "passed": 15
+                },
+                "scouts": {
+                    "passed": 271
+                }
+            },
+            "rust_counts": {
+                "escrow-enclave-host": {
+                    "passed": 53,
+                    "failed": 0,
+                    "ignored": 0
+                },
+                "escrow-ledger-monitor": {
+                    "passed": 28,
+                    "failed": 0,
+                    "ignored": 0
+                },
+                "escrow-enclave-app": {
+                    "passed": 93,
+                    "failed": 0,
+                    "ignored": 1
+                }
+            },
+            "affected_projects": [
+                "@learncard/credential-viewer",
+                "@learncard/escrow-relay-service",
+                "ai-agent-service",
+                "ceramic-plugin",
+                "chapi-plugin",
+                "claimable-boosts-plugin",
+                "cli",
+                "core",
+                "credential-library",
+                "crypto-plugin",
+                "did-web-plugin",
+                "didkey-plugin",
+                "didkit-plugin",
+                "didkit-plugin-node",
+                "dynamic-loader-plugin",
+                "email-templates",
+                "embed-sdk",
+                "encryption-plugin",
+                "escrow-enclave-app",
+                "escrow-enclave-host",
+                "escrow-ledger-monitor",
+                "ethereum-plugin",
+                "expiration-plugin",
+                "helpers",
+                "holder-continuity",
+                "idx-plugin",
+                "init",
+                "lca-api-client",
+                "lca-api-plugin",
+                "lca-api-service",
+                "learn-card-app",
+                "learn-card-base",
+                "learn-card-plugin",
+                "learn-cloud-client",
+                "learn-cloud-plugin",
+                "learn-cloud-service",
+                "ler-rs-plugin",
+                "linked-claims-plugin",
+                "network-brain-client",
+                "network-brain-service",
+                "network-plugin",
+                "open-badge-v2-plugin",
+                "openid4vc-plugin",
+                "partner-connect-sdk",
+                "react",
+                "render-method-plugin",
+                "scouts",
+                "sd-jwt-vc-plugin",
+                "service-config",
+                "sss-key-manager",
+                "types",
+                "vc-api-plugin",
+                "vc-api-service",
+                "vc-plugin",
+                "vc-templates-plugin",
+                "vpqr-plugin"
+            ],
+            "phase_seconds": {}
+        },
+        {
+            "mode": "cold",
+            "run_id": 38165029588,
+            "cohort": "diagnostic-10-minute",
+            "timeout_minutes": 10,
+            "max_attempts": 3,
+            "exclusion_reason": "Superseded by matched 20-minute single-attempt measurements; intentionally cancelled if still running.",
+            "head_sha": "7a65ed983836042813f62c9c7563f97052a0ca6a",
+            "base": "8d2fc4ab8826604730023ce8e7ae3356f36554eb",
+            "event": "workflow_dispatch",
+            "status": "completed",
+            "conclusion": "cancelled",
+            "job_id": 114545700508,
+            "job_conclusion": "cancelled",
+            "job_seconds": 1106.0,
+            "steps": [
+                {
+                    "name": "Set up job",
+                    "conclusion": "success",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Checkout Repo",
+                    "conclusion": "success",
+                    "seconds": 15.0
+                },
+                {
+                    "name": "Fetch main for NX comparison",
+                    "conclusion": "success",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Use Composite Setup Action",
+                    "conclusion": "success",
+                    "seconds": 50.0
+                },
+                {
+                    "name": "Install pinned Rust toolchain",
+                    "conclusion": "success",
+                    "seconds": 11.0
+                },
+                {
+                    "name": "Authenticate Docker Hub pulls",
+                    "conclusion": "success",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Prepare verified test prerequisite cache",
+                    "conclusion": "success",
+                    "seconds": 4.0
+                },
+                {
+                    "name": "Run tests",
+                    "conclusion": "cancelled",
+                    "seconds": 1023.0
+                },
+                {
+                    "name": "Check build snapshot publication readiness",
+                    "conclusion": "skipped",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Save verified test prerequisite snapshot",
+                    "conclusion": "skipped",
+                    "seconds": 0.0
+                }
+            ],
+            "retry_warnings": ["Attempt 1 failed. Reason: Timeout of 600000ms hit"],
+            "cache_keys": [
+                "nx-test-builds-v1-5b0e7e306d62ca0801f6080d33c514144a808ba3a3a3dd81e2a226a58b7b2281"
+            ],
+            "verified_restore_count": 1,
+            "snapshot_messages": ["Snapshot: 2934 files, 511287963 bytes"],
+            "graph_summaries": [
+                "Running target build for 43 projects:",
+                "Successfully ran target build for 43 projects",
+                "Successfully ran target test:runtime-did-auth for project ai-agent-service",
+                "Running target test for 56 projects:",
+                "Running target test for 56 projects failed",
+                "Successfully ran target test:runtime-did-auth for project ai-agent-service",
+                "Running target test for 56 projects:"
+            ],
+            "cache_hit_messages": [
+                "Cache hit for: bun-gmoqYqdUbaYsI0KujeXt7Zg/p0I=",
+                "Cache restored successfully",
+                "Cache hit for: Linux-bun-43b3b5af7b9001cd283a0f8e062d40168f414dec32e8c9700770d48231209c32",
+                "Cache restored successfully",
+                "Cache restored from key: Linux-bun-43b3b5af7b9001cd283a0f8e062d40168f414dec32e8c9700770d48231209c32",
+                "Cache not found for input keys: nx-test-builds-v1-5b0e7e306d62ca0801f6080d33c514144a808ba3a3a3dd81e2a226a58b7b2281"
+            ],
+            "failures": ["Timeout of 600000ms hit"],
+            "test_totals": [
+                "Tests  10 passed (10)",
+                "Tests  29 passed (29)",
+                "Tests  136 passed (136)",
+                "Tests  89 passed (89)",
+                "Tests  41 passed (41)",
+                "Tests  54 passed (54)",
+                "Tests  90 passed (90)",
+                "Tests  344 passed (344)",
+                "Tests  139 passed (139)",
+                "Tests  333 passed (333)",
+                "Tests  613 passed (613)",
+                "Tests  9 passed (9)",
+                "Tests  7 passed (7)",
+                "Tests  6 passed (6)",
+                "Tests  350 passed (350)",
+                "Tests  55 passed | 11 skipped (66)",
+                "Tests  103 passed | 6 skipped (109)",
+                "Tests  7 passed (7)",
+                "Tests  5 passed | 1 skipped (6)",
+                "Tests  95 passed (95)",
+                "Tests  63 passed (63)",
+                "Tests  553 passed | 1 skipped (554)",
+                "Tests  12 passed (12)",
+                "Tests  516 passed | 19 skipped (535)",
+                "Tests  9 passed (9)",
+                "Tests  7 passed (7)",
+                "Tests for VCThumbnail Full View > Checks VCThumbnail renders with props",
+                "Tests for MiniVCThumbnail > Checks MiniVCThumbnail renders with props",
+                "Tests for CircleIcon > Renders important props",
+                "Tests  290 passed (290)",
+                "Tests  104 passed (104)",
+                "Tests  1320 passed (1320)",
+                "Tests  297 passed | 2 skipped (299)",
+                "Tests  15 passed (15)",
+                "Tests  4 passed (4)",
+                "Tests  4 passed (4)",
+                "Tests  5 passed (5)",
+                "Tests  271 passed (271)",
+                "Tests  29 passed (29)",
+                "Tests  10 passed (10)",
+                "Tests  136 passed (136)",
+                "Tests  89 passed (89)",
+                "Tests  41 passed (41)",
+                "Tests  54 passed (54)",
+                "Tests  90 passed (90)",
+                "Tests  344 passed (344)",
+                "Tests  333 passed (333)",
+                "Tests  613 passed (613)",
+                "Tests  139 passed (139)",
+                "Tests  7 passed (7)",
+                "Tests  9 passed (9)",
+                "Tests  350 passed (350)",
+                "Tests  6 passed (6)",
+                "Tests  103 passed | 6 skipped (109)",
+                "Tests  55 passed | 11 skipped (66)",
+                "Tests  7 passed (7)",
+                "Tests  5 passed | 1 skipped (6)",
+                "Tests  95 passed (95)",
+                "Tests  516 passed | 19 skipped (535)",
+                "Tests  63 passed (63)",
+                "Tests  553 passed | 1 skipped (554)",
+                "Tests  12 passed (12)",
+                "Tests  9 passed (9)",
+                "Tests  7 passed (7)",
+                "Tests for VCThumbnail Full View > Checks VCThumbnail renders with props",
+                "Tests for CircleIcon > Renders important props",
+                "Tests for MiniVCThumbnail > Checks MiniVCThumbnail renders with props",
+                "Tests  290 passed (290)",
+                "Tests  104 passed (104)",
+                "Tests  1320 passed (1320)",
+                "Tests  271 passed (271)",
+                "Tests  297 passed | 2 skipped (299)",
+                "Tests  15 passed (15)",
+                "Tests  5 passed (5)",
+                "Tests  4 passed (4)",
+                "Tests  4 passed (4)"
+            ],
+            "runtime_preflight_passed": true,
+            "vitest_counts": {
+                "core": {
+                    "passed": 10
+                },
+                "types": {
+                    "passed": 29
+                },
+                "helpers": {
+                    "passed": 136
+                },
+                "vc-plugin": {
+                    "passed": 89
+                },
+                "learn-card-plugin": {
+                    "passed": 41
+                },
+                "service-config": {
+                    "passed": 54
+                },
+                "sd-jwt-vc-plugin": {
+                    "passed": 90
+                },
+                "email-templates": {
+                    "passed": 344
+                },
+                "learn-cloud-service": {
+                    "passed": 139
+                },
+                "credential-library": {
+                    "passed": 333
+                },
+                "openid4vc-plugin": {
+                    "passed": 613
+                },
+                "learn-cloud-client": {
+                    "passed": 9
+                },
+                "network-brain-client": {
+                    "passed": 7
+                },
+                "learn-cloud-plugin": {
+                    "passed": 6
+                },
+                "network-brain-service": {
+                    "passed": 350
+                },
+                "init": {
+                    "passed": 55,
+                    "skipped": 11
+                },
+                "network-plugin": {
+                    "passed": 103,
+                    "skipped": 6
+                },
+                "lca-api-client": {
+                    "passed": 7
+                },
+                "lca-api-plugin": {
+                    "passed": 5,
+                    "skipped": 1
+                },
+                "partner-connect-sdk": {
+                    "passed": 95
+                },
+                "render-method-plugin": {
+                    "passed": 63
+                },
+                "sss-key-manager": {
+                    "passed": 553,
+                    "skipped": 1
+                },
+                "linked-claims-plugin": {
+                    "passed": 12
+                },
+                "lca-api-service": {
+                    "passed": 516,
+                    "skipped": 19
+                },
+                "holder-continuity": {
+                    "passed": 9
+                },
+                "embed-sdk": {
+                    "passed": 7
+                },
+                "cli": {
+                    "passed": 290
+                },
+                "react": {
+                    "passed": 104
+                },
+                "learn-card-base": {
+                    "passed": 1320
+                },
+                "ai-agent-service": {
+                    "passed": 297,
+                    "skipped": 2
+                },
+                "@learncard/credential-viewer": {
+                    "passed": 15
+                },
+                "vc-api-service": {
+                    "passed": 4
+                },
+                "claimable-boosts-plugin": {
+                    "passed": 4
+                },
+                "@learncard/escrow-relay-service": {
+                    "passed": 5
+                },
+                "scouts": {
+                    "passed": 271
+                }
+            },
+            "rust_counts": {
+                "escrow-enclave-host": {
+                    "passed": 62,
+                    "failed": 0,
+                    "ignored": 0
+                },
+                "escrow-ledger-monitor": {
+                    "passed": 14,
+                    "failed": 0,
+                    "ignored": 0
+                },
+                "escrow-enclave-app": {
+                    "passed": 93,
+                    "failed": 0,
+                    "ignored": 1
+                }
+            },
+            "affected_projects": [
+                "@learncard/credential-viewer",
+                "@learncard/escrow-relay-service",
+                "ai-agent-service",
+                "ceramic-plugin",
+                "chapi-plugin",
+                "claimable-boosts-plugin",
+                "cli",
+                "core",
+                "credential-library",
+                "crypto-plugin",
+                "did-web-plugin",
+                "didkey-plugin",
+                "didkit-plugin",
+                "didkit-plugin-node",
+                "dynamic-loader-plugin",
+                "email-templates",
+                "embed-sdk",
+                "encryption-plugin",
+                "escrow-enclave-app",
+                "escrow-enclave-host",
+                "escrow-ledger-monitor",
+                "ethereum-plugin",
+                "expiration-plugin",
+                "helpers",
+                "holder-continuity",
+                "idx-plugin",
+                "init",
+                "lca-api-client",
+                "lca-api-plugin",
+                "lca-api-service",
+                "learn-card-app",
+                "learn-card-base",
+                "learn-card-plugin",
+                "learn-cloud-client",
+                "learn-cloud-plugin",
+                "learn-cloud-service",
+                "ler-rs-plugin",
+                "linked-claims-plugin",
+                "network-brain-client",
+                "network-brain-service",
+                "network-plugin",
+                "open-badge-v2-plugin",
+                "openid4vc-plugin",
+                "partner-connect-sdk",
+                "react",
+                "render-method-plugin",
+                "scouts",
+                "sd-jwt-vc-plugin",
+                "service-config",
+                "sss-key-manager",
+                "types",
+                "vc-api-plugin",
+                "vc-api-service",
+                "vc-plugin",
+                "vc-templates-plugin",
+                "vpqr-plugin"
+            ],
+            "phase_seconds": {
+                "builds": 136.137
+            }
+        },
+        {
+            "mode": "baseline-2",
+            "run_id": 38165590322,
+            "cohort": "diagnostic-10-minute",
+            "timeout_minutes": 10,
+            "max_attempts": 3,
+            "exclusion_reason": "Superseded by matched 20-minute single-attempt measurements; intentionally cancelled if still running.",
+            "head_sha": "7a65ed983836042813f62c9c7563f97052a0ca6a",
+            "base": "8d2fc4ab8826604730023ce8e7ae3356f36554eb",
+            "event": "workflow_dispatch",
+            "status": "completed",
+            "conclusion": "cancelled",
+            "job_id": 114547371628,
+            "job_conclusion": "cancelled",
+            "job_seconds": 627.0,
+            "steps": [
+                {
+                    "name": "Set up job",
+                    "conclusion": "success",
+                    "seconds": 1.0
+                },
+                {
+                    "name": "Checkout Repo",
+                    "conclusion": "success",
+                    "seconds": 15.0
+                },
+                {
+                    "name": "Fetch main for NX comparison",
+                    "conclusion": "success",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Use Composite Setup Action",
+                    "conclusion": "success",
+                    "seconds": 48.0
+                },
+                {
+                    "name": "Install pinned Rust toolchain",
+                    "conclusion": "success",
+                    "seconds": 11.0
+                },
+                {
+                    "name": "Authenticate Docker Hub pulls",
+                    "conclusion": "success",
+                    "seconds": 1.0
+                },
+                {
+                    "name": "Prepare verified test prerequisite cache",
+                    "conclusion": "skipped",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Run tests",
+                    "conclusion": "cancelled",
+                    "seconds": 548.0
+                },
+                {
+                    "name": "Check build snapshot publication readiness",
+                    "conclusion": "skipped",
+                    "seconds": 0.0
+                },
+                {
+                    "name": "Save verified test prerequisite snapshot",
+                    "conclusion": "skipped",
+                    "seconds": 0.0
+                }
+            ],
+            "retry_warnings": [],
+            "cache_keys": [],
+            "verified_restore_count": 0,
+            "snapshot_messages": [],
+            "graph_summaries": ["Running target test for 56 projects and 44 tasks they depend on:"],
+            "cache_hit_messages": [
+                "Cache hit for: bun-gmoqYqdUbaYsI0KujeXt7Zg/p0I=",
+                "Cache restored successfully",
+                "Cache hit for: Linux-bun-43b3b5af7b9001cd283a0f8e062d40168f414dec32e8c9700770d48231209c32",
+                "Cache restored successfully",
+                "Cache restored from key: Linux-bun-43b3b5af7b9001cd283a0f8e062d40168f414dec32e8c9700770d48231209c32"
+            ],
+            "failures": [],
+            "test_totals": [
+                "Tests  29 passed (29)",
+                "Tests  54 passed (54)",
+                "Tests  7 passed (7)",
+                "Tests  344 passed (344)",
+                "Tests  136 passed (136)",
+                "Tests  10 passed (10)",
+                "Tests  95 passed (95)",
+                "Tests  553 passed | 1 skipped (554)",
+                "Tests  89 passed (89)",
+                "Tests  41 passed (41)",
+                "Tests  90 passed (90)",
+                "Tests  139 passed (139)",
+                "Tests  613 passed (613)",
+                "Tests  9 passed (9)",
+                "Tests  7 passed (7)",
+                "Tests  350 passed (350)",
+                "Tests  333 passed (333)",
+                "Tests  6 passed (6)",
+                "Tests  55 passed | 11 skipped (66)",
+                "Tests  7 passed (7)",
+                "Tests  103 passed | 6 skipped (109)",
+                "Tests  5 passed | 1 skipped (6)",
+                "Tests  63 passed (63)",
+                "Tests  12 passed (12)",
+                "Tests  516 passed | 19 skipped (535)",
+                "Tests  9 passed (9)",
+                "Tests for VCThumbnail Full View > Checks VCThumbnail renders with props",
+                "Tests for MiniVCThumbnail > Checks MiniVCThumbnail renders with props",
+                "Tests  290 passed (290)",
+                "Tests for CircleIcon > Renders important props",
+                "Tests  104 passed (104)",
+                "Tests  1320 passed (1320)",
+                "Tests  297 passed | 2 skipped (299)",
+                "Tests  4 passed (4)",
+                "Tests  4 passed (4)",
+                "Tests  5 passed (5)",
+                "Tests  15 passed (15)"
+            ],
+            "runtime_preflight_passed": true,
+            "vitest_counts": {
+                "types": {
+                    "passed": 29
+                },
+                "service-config": {
+                    "passed": 54
+                },
+                "embed-sdk": {
+                    "passed": 7
+                },
+                "email-templates": {
+                    "passed": 344
+                },
+                "helpers": {
+                    "passed": 136
+                },
+                "core": {
+                    "passed": 10
+                },
+                "partner-connect-sdk": {
+                    "passed": 95
+                },
+                "sss-key-manager": {
+                    "passed": 553,
+                    "skipped": 1
+                },
+                "vc-plugin": {
+                    "passed": 89
+                },
+                "learn-card-plugin": {
+                    "passed": 41
+                },
+                "sd-jwt-vc-plugin": {
+                    "passed": 90
+                },
+                "learn-cloud-service": {
+                    "passed": 139
+                },
+                "openid4vc-plugin": {
+                    "passed": 613
+                },
+                "learn-cloud-client": {
+                    "passed": 9
+                },
+                "network-brain-client": {
+                    "passed": 7
+                },
+                "network-brain-service": {
+                    "passed": 350
+                },
+                "credential-library": {
+                    "passed": 333
+                },
+                "learn-cloud-plugin": {
+                    "passed": 6
+                },
+                "init": {
+                    "passed": 55,
+                    "skipped": 11
+                },
+                "lca-api-client": {
+                    "passed": 7
+                },
+                "network-plugin": {
+                    "passed": 103,
+                    "skipped": 6
+                },
+                "lca-api-plugin": {
+                    "passed": 5,
+                    "skipped": 1
+                },
+                "render-method-plugin": {
+                    "passed": 63
+                },
+                "linked-claims-plugin": {
+                    "passed": 12
+                },
+                "lca-api-service": {
+                    "passed": 516,
+                    "skipped": 19
+                },
+                "holder-continuity": {
+                    "passed": 9
+                },
+                "cli": {
+                    "passed": 290
+                },
+                "react": {
+                    "passed": 104
+                },
+                "learn-card-base": {
+                    "passed": 1320
+                },
+                "ai-agent-service": {
+                    "passed": 297,
+                    "skipped": 2
+                },
+                "claimable-boosts-plugin": {
+                    "passed": 4
+                },
+                "vc-api-service": {
+                    "passed": 4
+                },
+                "@learncard/escrow-relay-service": {
+                    "passed": 5
+                },
+                "@learncard/credential-viewer": {
+                    "passed": 15
+                }
+            },
+            "rust_counts": {
+                "escrow-enclave-host": {
+                    "passed": 29,
+                    "failed": 0,
+                    "ignored": 0
+                },
+                "escrow-ledger-monitor": {
+                    "passed": 14,
+                    "failed": 0,
+                    "ignored": 0
+                }
+            },
+            "affected_projects": [
+                "@learncard/credential-viewer",
+                "@learncard/escrow-relay-service",
+                "ai-agent-service",
+                "ceramic-plugin",
+                "chapi-plugin",
+                "claimable-boosts-plugin",
+                "cli",
+                "core",
+                "credential-library",
+                "crypto-plugin",
+                "did-web-plugin",
+                "didkey-plugin",
+                "didkit-plugin",
+                "didkit-plugin-node",
+                "dynamic-loader-plugin",
+                "email-templates",
+                "embed-sdk",
+                "encryption-plugin",
+                "escrow-enclave-app",
+                "escrow-enclave-host",
+                "escrow-ledger-monitor",
+                "ethereum-plugin",
+                "expiration-plugin",
+                "helpers",
+                "holder-continuity",
+                "idx-plugin",
+                "init",
+                "lca-api-client",
+                "lca-api-plugin",
+                "lca-api-service",
+                "learn-card-app",
+                "learn-card-base",
+                "learn-card-plugin",
+                "learn-cloud-client",
+                "learn-cloud-plugin",
+                "learn-cloud-service",
+                "ler-rs-plugin",
+                "linked-claims-plugin",
+                "network-brain-client",
+                "network-brain-service",
+                "network-plugin",
+                "open-badge-v2-plugin",
+                "openid4vc-plugin",
+                "partner-connect-sdk",
+                "react",
+                "render-method-plugin",
+                "scouts",
+                "sd-jwt-vc-plugin",
+                "service-config",
+                "sss-key-manager",
+                "types",
+                "vc-api-plugin",
+                "vc-api-service",
+                "vc-plugin",
+                "vc-templates-plugin",
+                "vpqr-plugin"
+            ],
+            "phase_seconds": {}
+        }
+    ]
+}

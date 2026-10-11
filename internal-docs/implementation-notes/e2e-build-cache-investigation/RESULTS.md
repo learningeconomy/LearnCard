@@ -70,3 +70,39 @@ The cache experiment now also covers the Test Runner job in `test.yml`. It deriv
 The real Nx 23.2.1 full affected graph used for local planning validation contained 43 builds, 44 output directories, 56 test targets, and the AI runtime preflight. Sixteen Node cache/runner contracts and the repository shell/CJS contracts pass locally. Real key probes confirm repeat stability, invalidation after SDK-source or `NODE_ENV` changes, and reuse after a frontend-only source change. These are correctness checks, not hosted wall-time measurements. Existing E2E samples above do not establish a Test Runner speedup.
 
 The manual Test Runner inputs permit a fixed comparison `base` and `run_ec2_fallback=false` for hosted cache measurements. Keep the same workflow revision, tested revision, base, and affected-test set for cold/warm comparisons. A trusted main cache producer remains a separate adoption decision; this extension does not remove GitHub's branch-scoping limits.
+
+## Hosted Nx Test Runner measurements — October 11, 2026
+
+All five matched samples passed on the first attempt. Both warm samples hit the exact published key, verified and restored all 44 output directories, and skipped the 43-project prerequisite build graph. Tests and the independent real AI runtime DID-auth preflight still executed. [nx-test-cache-results.json](./nx-test-cache-results.json) contains per-sample timings, counts, graph/restore evidence, and excluded diagnostics.
+
+Workflow ref: `codex/e2e-build-cache-investigation`; workflow/tested SHA: `b752b7f1ad9c285864a8fe53decc7d7960e39a5e`; fixed comparison base: `8d2fc4ab8826604730023ce8e7ae3356f36554eb`. Every manual run used twenty minutes, one attempt, and `run_ec2_fallback=false`. Only the baselines set `use_build_cache=false`. Normal PR/merge-group budgets remain ten minutes and three attempts. All samples had ordinary dependency download cache hits; “baseline” disables this compiled-output snapshot, not dependency caching.
+
+Dependency setup below is the complete composite setup step. Cache preparation includes key calculation, lookup and, for warm hits, download/unpack. The `Run tests` step includes prerequisite build/restore, preflight and tests. Test-job wall time includes checkout/setup/cache handling and cleanup, but excludes queue time and parallel jobs. It is not an end-to-end deployment or E2E workflow measurement.
+
+| Sample                                                                              | Dependency setup | Key/lookup/download | Run tests step | Whole Test job |
+| ----------------------------------------------------------------------------------- | ---------------: | ------------------: | -------------: | -------------: |
+| [Baseline 1](https://github.com/learningeconomy/LearnCard/actions/runs/38166370345) |              41s |                  0s |         12m27s |         13m37s |
+| [Cold](https://github.com/learningeconomy/LearnCard/actions/runs/38166372866)       |              55s |                  3s |          8m15s |          9m44s |
+| [Baseline 2](https://github.com/learningeconomy/LearnCard/actions/runs/38166448401) |              47s |                  0s |         12m26s |         13m53s |
+| [Warm 1](https://github.com/learningeconomy/LearnCard/actions/runs/38167373453)     |              45s |                  6s |         10m43s |         12m09s |
+| [Warm 2](https://github.com/learningeconomy/LearnCard/actions/runs/38167375500)     |              40s |                  5s |         10m31s |         11m44s |
+
+Mean Test-job duration was **13m45s baseline versus 11m56.5s warm**, an observed reduction of **1m48.5s (13.2%)**. Mean `Run tests` duration was 12m26.5s versus 10m37s, a reduction of 1m49.5s. These are two passing samples per group, not a guaranteed or statistically established improvement. The cold run was faster than both warm runs, so these measurements do not establish a cache-reuse-only wall-time saving.
+
+The cold prerequisite graph took 83.828 seconds; snapshotting took about one second. Its affected-test graph took 406.214 seconds. Warm runner startup through manifest verification/copy took 1.041 / 1.080 seconds, after the 6 / 5-second cache preparation steps; no prerequisite build graph ran. Warm affected-test graphs took 637.260 / 625.527 seconds. Baseline graph times were 743.716 / 744.444 seconds **including prerequisite builds** and cannot be compared directly with the cache-enabled test-only graph phases. Cold cache publication took three seconds.
+
+The snapshot contained **2,930 files, 511,287,000 raw bytes, and 96,463,136 compressed bytes** (96.5 MB / 92.0 MiB), under exact key `nx-test-builds-v1-12133b9f5552802e8b5f54b01e63d459dd679e4ae5cd5405dad9ed9ceb8ee3fb`. Both warm logs show the same exact key and successful verification of 44 directories. No test-result or Nx database cache is restored; the Nx footer can still report zero hits.
+
+All five samples selected the identical 56 affected test targets and produced identical per-project counts: 8,863 Vitest passes with 44 skips, plus 138 Rust passes with one ignored test. Other command/smoke targets also completed successfully. The runtime preflight independently returned `{"ok":true,"check":"did-auth-vp"}` every time. There were no retries, failed tests, or timeout truncation in this cohort. The separate inbox-security job also passed; AI Agent CI and EC2 fallback were skipped.
+
+### Interpretation and adoption limits
+
+This is a comparison of the proposed implementation with the ordinary Nx graph, not a controlled isolation of cache reuse. The cache-enabled path builds all prerequisites separately before tests and can lose Nx build/test overlap. It also normalizes SDK Sentry release identity and disables optional build telemetry; baselines retain the ordinary environment policy. The cold result demonstrates that scheduling/environment differences and runner variation already matter before reuse occurs.
+
+Tests dominated the warm runs: LearnCard app's reported Vitest duration was 370.57 / 366.00 seconds, versus 247.44 seconds cold and 174.30 / 172.15 seconds baseline. This is a test-phase timing difference, not evidence of a cache-integrity failure: project sets, counts, manifest verification and preflight all matched. Its cause was not isolated by this small cohort; do not attribute the whole difference to caching or claim that warming must beat cold. Rust compilation inside test commands and other test work remain uncached.
+
+The earlier hosted E2E experiment above likewise improved warm build preparation but did not prove a whole-workflow advantage over host-only builds because backend, setup and test timings varied. The new Test Runner samples support useful, correct prerequisite restoration and a modest observed warm-versus-baseline reduction. A trusted main producer and frontend-only PR/merge-queue measurements remain necessary before expecting cross-branch savings; this PR does not add that producer or enable Nx Cloud.
+
+### Superseded ten-minute diagnostics
+
+Runs [38164582419](https://github.com/learningeconomy/LearnCard/actions/runs/38164582419), [38165027593](https://github.com/learningeconomy/LearnCard/actions/runs/38165027593), [38165029588](https://github.com/learningeconomy/LearnCard/actions/runs/38165029588), and [38165590322](https://github.com/learningeconomy/LearnCard/actions/runs/38165590322) were deliberately cancelled when replaced with this twenty-minute, one-attempt cohort. They used earlier revisions and are excluded from all means above. The pilot built prerequisites in about 2m02s and snapshotted the same file/raw-byte totals, hit the ten-minute cap, then verified 44 directories on retry. The earlier baseline also logged an individual five-second test timeout. These establish diagnostic evidence and the need for a complete measurement window, not performance gains or completed test counts.
