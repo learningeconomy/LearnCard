@@ -816,6 +816,9 @@ jobs:
             fail-fast: false
             matrix: ${{ fromJSON(needs.determine-affected.outputs.frontend_deployment_matrix) }}
         environment: ${{ matrix.environment }}
+        concurrency:
+            group: deploy-frontend-${{ matrix.environment }}
+            cancel-in-progress: false
         steps:
             - name: Set Deployment Variables
               id: vars
@@ -967,27 +970,56 @@ jobs:
 
             # Deploy OTA update to CapGo
             - name: Upload to CapGo
+              id: capgo-upload
               if: matrix.capgo
               working-directory: apps/${{ steps.vars.outputs.project_name }}
+              env:
+                  CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
+                  PROJECT_NAME: ${{ steps.vars.outputs.project_name }}
+                  APP_VERSION: ${{ steps.app-version.outputs.version }}
               run: |
+                  VERSION_ARGS=(--bundle "$APP_VERSION")
+                  if [[ "$PROJECT_NAME" == "scouts" ]]; then
+                    # OTA versions advance independently of package/store versions.
+                    # CapGo skips occupied names, including previously deleted bundles.
+                    VERSION_ARGS=(--auto-bump patch --auto-set-bundle --capacitor-config capacitor.config.ts)
+                  fi
+
                   bunx --package @capgo/cli@8.50.3 capgo bundle upload \
                     ${{ steps.vars.outputs.capgo_id }} \
                     --delta \
-                    --apikey ${{ secrets.CAPGO_TOKEN }} \
                     --path "${{ github.workspace }}/${{ steps.vars.outputs.build_path }}" \
                     --channel ${{ steps.capgo-channel.outputs.channel }} \
-                    --bundle ${{ steps.app-version.outputs.version }} \
+                    "${VERSION_ARGS[@]}" \
                     --package-json package.json \
                     --node-modules "${{ github.workspace }}/node_modules"
+
+                  VERSION="$APP_VERSION"
+                  if [[ "$PROJECT_NAME" == "scouts" ]]; then
+                    # --auto-set-bundle saves the selected version in this runner's
+                    # Capacitor config; use it rather than relinking the package version.
+                    VERSION=$(bun -e "const version = (await import('./capacitor.config.ts')).default.plugins?.CapacitorUpdater?.version; if (!version) throw new Error('CapGo did not save the selected bundle version'); console.log(version)")
+                  fi
+                  if [[ -z "$VERSION" ]]; then
+                    echo "::error::No CapGo bundle version resolved; aborting."
+                    exit 1
+                  fi
+                  echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
             - name: Set CapGo Channel
               if: matrix.capgo
               working-directory: apps/${{ steps.vars.outputs.project_name }}
+              env:
+                  CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
+                  BUNDLE_VERSION: ${{ steps.capgo-upload.outputs.version }}
               run: |
+                  if [[ -z "$BUNDLE_VERSION" ]]; then
+                    echo "::error::No CapGo bundle version received; aborting channel assignment."
+                    exit 1
+                  fi
                   bunx --package @capgo/cli@8.50.3 capgo channel set ${{ steps.capgo-channel.outputs.channel }} \
                     -s default \
-                    -a ${{ secrets.CAPGO_TOKEN }} \
-                    -b ${{ steps.app-version.outputs.version }} \
+                    -b "$BUNDLE_VERSION" \
                     --self-assign \
                     ${{ steps.vars.outputs.capgo_id }}
 
