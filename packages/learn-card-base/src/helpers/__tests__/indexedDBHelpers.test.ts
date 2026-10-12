@@ -1,8 +1,8 @@
 /**
  * Regression tests for clearAllIndexedDB.
  *
- * Ensures that logout cleanup never destroys the SSS device
- * share IndexedDB database ('lcb-sss-keys').
+ * Ensures logout preserves Firebase's open database infrastructure and device
+ * recovery storage while removing disposable app databases.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -52,18 +52,23 @@ beforeEach(() => {
 
 describe('clearAllIndexedDB', () => {
     it.each([undefined, { getPreservedStorageKeys: () => [] } as unknown as KeyDerivationStrategy])(
-        'preserves Firebase heartbeat telemetry while clearing sessions and app data (strategy: %s)',
+        'preserves Firebase databases while clearing app data (strategy: %s)',
         async strategy => {
-            mockDatabases(['firebase-heartbeat-database', 'firebaseLocalStorageDb', 'app-cache']);
+            mockDatabases([
+                'firebase-heartbeat-database',
+                'firebaseLocalStorageDb',
+                'firebase-installations-database',
+                'app-cache',
+            ]);
 
             await clearAllIndexedDB(strategy);
 
-            expect(deletedDBs).toEqual(['firebaseLocalStorageDb', 'app-cache']);
+            expect(deletedDBs).toEqual(['app-cache']);
         }
     );
 
     it('logs blocked cleanup without recording database identifiers', async () => {
-        const indexedDB = mockDatabases(['firebaseLocalStorageDb']);
+        const indexedDB = mockDatabases(['app-cache']);
 
         await clearAllIndexedDB();
         const request = indexedDB.deleteDatabase.mock.results[0]!.value as IDBOpenDBRequest;
@@ -71,7 +76,7 @@ describe('clearAllIndexedDB', () => {
 
         expect(logs.warn).toHaveBeenCalledWith(
             'IndexedDB logout cleanup blocked by an open connection',
-            { isFirebaseDatabase: true }
+            { isFirebaseDatabase: false }
         );
     });
 
