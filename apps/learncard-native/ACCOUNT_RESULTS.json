@@ -18,7 +18,7 @@
             "failed": 0
         },
         "domainTests": {
-            "passed": 7,
+            "passed": 10,
             "failed": 0
         },
         "bunBridgeTests": {
@@ -26,17 +26,30 @@
             "failed": 0
         },
         "nativeUIInteractions": {
-            "passed": 7,
-            "failed": 0,
-            "resultBundle": "artifacts/ui-20261012-141350-93352.xcresult",
-            "coverage": "Collection/Inbox/Apps/Home visible headings, scroll title/brand, claim, create/send, demo link review, native share sheet in dark mode, JavaScriptCore capabilities"
+            "uniqueChecksValidated": 10,
+            "suiteRun": {
+                "passed": 9,
+                "failed": 1,
+                "resultBundle": "artifacts/ui-20261012-144209-99362.xcresult"
+            },
+            "correctedSelectorTimingRerun": {
+                "passed": 1,
+                "failed": 0,
+                "resultBundle": "artifacts/ui-20261012-144716-99988.xcresult"
+            },
+            "correction": "Wait for updated selector label after native action sheet dismiss; initial immediate assertion was timing-sensitive."
         },
         "appProcessKeychainProbe": {
             "passed": 1,
             "failed": 0,
             "resultBundle": "artifacts/ui-20261012-132620-79084.xcresult"
         },
-        "repositoryLint": "passed; repository hook retained"
+        "repositoryLint": "passed; repository hook retained",
+        "bunProtocolAndTransportTests": {
+            "passed": 7,
+            "failed": 0,
+            "assertions": 31
+        }
     },
     "testHarnessCorrection": "Direct Keychain access from XCTest UI runner failed; replaced with a DEBUG-only app-process synthetic probe and reran successfully. Earlier result bundle contains that harness failure.",
     "limits": [
@@ -48,5 +61,10 @@
         "Native new-account setup",
         "Google/Apple providers",
         "Camera/deep links/presentations/share links"
-    ]
+    ],
+    "expandedFlows": {
+        "artworkUpload": "implemented; live upload unvalidated",
+        "managedTemplateDelivery": "implemented; live expanded delivery unvalidated",
+        "encryptedSharePublication": "implemented using current web contract; offline crypto/proof interop passes, live publication unvalidated"
+    }
 }

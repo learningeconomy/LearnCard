@@ -44,7 +44,7 @@ struct ShareCredentialsView: View {
                             Toggle("Require a passcode", isOn: $protect)
                             if protect { SecureField("8–64 characters", text: $passcode).textInputAutocapitalization(.never).autocorrectionDisabled() }
                         }
-                    }
+                    }.disabled(result?.pending == true)
                     Section {
                         Text(store.isLive ? "Shares the complete selected credentials and their public endorsements. Anyone with the link can view them. You can stop the link from LearnCard's web privacy settings." : "Shares sample text through iOS. Nothing is published online.")
                             .font(.subheadline).foregroundStyle(Palette.secondary)
