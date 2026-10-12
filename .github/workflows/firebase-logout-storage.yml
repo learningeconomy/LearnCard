@@ -9,6 +9,8 @@ on:
             - 'apps/scouts/tests/auth/**'
             - 'apps/scouts/src/firebase/**'
             - 'apps/learn-card-app/src/firebase/**'
+            - 'apps/scouts/src/providers/AuthCoordinatorProvider.tsx'
+            - 'apps/learn-card-app/src/providers/AuthCoordinatorProvider.tsx'
             - 'packages/learn-card-base/src/helpers/indexedDBHelpers.ts'
             - 'packages/learn-card-base/src/auth-adapters/**'
             - 'packages/learn-card-base/src/auth-coordinator/**'

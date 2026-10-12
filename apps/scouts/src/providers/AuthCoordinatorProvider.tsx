@@ -20,9 +20,6 @@ import React, {
 } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { BarcodeScanner, BarcodeFormat, LensFacing } from '@capacitor-mlkit/barcode-scanning';
-import { Web3Auth } from '@web3auth/single-factor-auth';
-import { CHAIN_NAMESPACES } from '@web3auth/base';
-import { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
 
 import type { LCNProfile } from '@learncard/types';
 
@@ -32,6 +29,7 @@ import {
     useAuthCoordinatorAutoSetup,
     useIdleAuthCleanup,
     createWeb3AuthStrategy,
+    deriveWeb3AuthKey,
     registerKeyDerivationFactory,
     resolveKeyDerivation,
     resolveAuthProvider,
@@ -630,6 +628,8 @@ const AuthSessionManager: React.FC<{
 
     // --- Web3Auth key extraction for migration ---
     const migrationKeyFetchedRef = useRef(false);
+    const migrationCoordinatorRef = useRef(coordinator);
+    migrationCoordinatorRef.current = coordinator;
 
     useEffect(() => {
         if (coordinator.state.status !== 'needs_migration' || migrationKeyFetchedRef.current)
@@ -638,127 +638,50 @@ const AuthSessionManager: React.FC<{
 
         migrationKeyFetchedRef.current = true;
 
-        const extractAndInject = async () => {
+        const extractAndInject = async (): Promise<void> => {
             try {
                 const w3a = authConfig.providerConfig.web3Auth ?? {};
-                const w3aClientId = (w3a.clientId as string) ?? '';
-                const w3aNetwork = (w3a.network as string) ?? '';
-                const w3aVerifierId = (w3a.verifierId as string) ?? '';
-                const w3aRpcTarget = (w3a.rpcTarget as string) ?? 'https://rpc.ankr.com/eth';
-
-                emitAuthDebugEvent(
-                    'web3auth:migration_key',
-                    'Extracting Web3Auth key for migration',
-                    {
-                        data: {
-                            clientId: w3aClientId ? `${w3aClientId.slice(0, 8)}...` : '(empty)',
-                            network: w3aNetwork || '(empty)',
-                            verifier: w3aVerifierId || '(empty)',
-                        },
-                    }
-                );
-
-                const privateKeyProvider = new EthereumPrivateKeyProvider({
-                    config: {
-                        chainConfig: {
-                            chainNamespace: CHAIN_NAMESPACES.EIP155,
-                            chainId: '0x1',
-                            rpcTarget: w3aRpcTarget,
-                            displayName: 'Ethereum Mainnet',
-                            blockExplorerUrl: 'https://etherscan.io/',
-                            ticker: 'ETH',
-                            tickerName: 'Ethereum',
-                        },
-                    },
-                });
-
-                const web3auth = new Web3Auth({
-                    clientId: w3aClientId,
-                    web3AuthNetwork: w3aNetwork as 'sapphire_mainnet' | 'sapphire_devnet',
-                    privateKeyProvider,
-                    usePnPKey: true,
-                });
-
-                emitAuthDebugEvent('web3auth:migration_key', 'Web3Auth SFA: calling init()...');
-                await web3auth.init();
-                emitAuthDebugEvent('web3auth:migration_key', 'Web3Auth SFA: init() complete');
-
-                const liveUser = await authProvider?.getCurrentUser();
-
-                if (!liveUser) {
-                    emitAuthError(
-                        'web3auth:migration_key',
-                        'No live Firebase user available — aborting extraction'
-                    );
-                    return;
-                }
-
-                const token = await authProvider?.getIdToken(false);
-
+                // Preserve each app's existing token refresh policy, including
+                // native token retrieval through the provider abstraction.
+                const token = await authProvider.getIdToken(false);
                 if (!token) {
-                    emitAuthError(
-                        'web3auth:migration_key',
-                        'No Firebase ID token available — aborting extraction'
-                    );
+                    emitAuthError('web3auth:migration_key', 'No sign-in session available');
                     return;
                 }
 
-                emitAuthDebugEvent('web3auth:migration_key', 'Web3Auth SFA: calling connect()...', {
-                    data: {
-                        verifier: w3aVerifierId,
-                        verifierId: liveUser.id,
-                        tokenLength: token.length,
+                emitAuthDebugEvent('web3auth:migration_key', 'Extracting account upgrade key');
+                const privateKey = await deriveWeb3AuthKey(
+                    {
+                        clientId: (w3a.clientId as string) ?? '',
+                        web3AuthNetwork: (w3a.network as string) ?? '',
+                        verifier: (w3a.verifierId as string) ?? '',
+                        usePnPKey: true,
+                        chainConfig: {
+                            rpcTarget: (w3a.rpcTarget as string) ?? 'https://rpc.ankr.com/eth',
+                        },
+                        isSessionCurrent: async uid => {
+                            const provider = resolveAuthProvider(getAuthConfig());
+                            if (!provider) return false;
+                            return (await provider.getCurrentUser())?.id === uid;
+                        },
                     },
-                });
-                await web3auth.connect({
-                    verifier: w3aVerifierId,
-                    verifierId: liveUser.id,
-                    idToken: token,
-                });
-                emitAuthDebugEvent('web3auth:migration_key', 'Web3Auth SFA: connect() complete');
-
-                const provider = web3auth.provider;
-
-                if (!provider) {
-                    emitAuthError(
-                        'web3auth:migration_key',
-                        'Web3Auth provider is null after connect — no key extracted'
-                    );
-                    return;
-                }
-
-                emitAuthDebugEvent(
-                    'web3auth:migration_key',
-                    'Requesting private key from Web3Auth provider...'
+                    token
                 );
-                const privateKey = (await provider.request({
-                    method: 'eth_private_key',
-                })) as string;
 
-                if (privateKey) {
-                    emitAuthSuccess(
-                        'web3auth:migration_key',
-                        'Web3Auth key extracted for migration'
-                    );
-                    coordinator.setMigrationData({ web3AuthKey: privateKey });
-                } else {
-                    emitAuthError(
-                        'web3auth:migration_key',
-                        'Web3Auth provider returned empty private key'
-                    );
-                }
-            } catch (e) {
-                const msg = e instanceof Error ? e.message : 'Unknown error';
-                emitAuthError(
-                    'web3auth:migration_key',
-                    `Failed to extract Web3Auth key: ${msg}`,
-                    e
-                );
+                // A sign-out or completed upgrade may occur while this tab waits.
+                const latestCoordinator = migrationCoordinatorRef.current;
+                if (latestCoordinator.state.status !== 'needs_migration') return;
+                emitAuthSuccess('web3auth:migration_key', 'Account upgrade key extracted');
+                latestCoordinator.setMigrationData({ web3AuthKey: privateKey });
+            } catch {
+                // Provider and Torus errors can embed credentials. Shared strategy
+                // diagnostics retain safe outcome metadata; never forward raw errors.
+                emitAuthError('web3auth:migration_key', 'Could not prepare account upgrade');
             }
         };
 
         extractAndInject();
-    }, [coordinator.state.status, authProvider, coordinator]);
+    }, [coordinator.state.status, authProvider, authConfig, coordinator]);
 
     useEffect(() => {
         if (coordinator.state.status !== 'needs_migration') {

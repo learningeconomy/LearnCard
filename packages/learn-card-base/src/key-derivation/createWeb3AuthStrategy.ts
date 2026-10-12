@@ -143,6 +143,16 @@ export const createWeb3AuthStrategy = (
         await web3auth.init();
         log.info('Web3Auth session checked', { restoredSession: web3auth.connected });
 
+        // A persisted session can outlive an account switch. Remove the wrong
+        // session under the same lock before connecting the current account.
+        if (web3auth.connected) {
+            const restoredUser = await web3auth.getUserInfo();
+            if (restoredUser.verifierId !== uid || restoredUser.verifier !== config.verifier) {
+                log.warn('Web3Auth restored session identity mismatch; reconnecting');
+                await web3auth.logout();
+            }
+        }
+
         // After init(), Web3Auth may have auto-restored a persisted session
         // (e.g. on Android app resume). Calling connect() when already
         // connected throws "Already connected", so skip it in that case.
@@ -330,4 +340,24 @@ export const createWeb3AuthStrategy = (
 
         getPreservedStorageKeys: () => [],
     };
+};
+
+/**
+ * Extract a legacy Web3Auth key for an account upgrade through the same
+ * coordination, identity checks and safe errors as ordinary Web3Auth sign-in.
+ */
+export const deriveWeb3AuthKey = async (
+    config: Web3AuthStrategyConfig,
+    idToken: string
+): Promise<string> => {
+    const strategy = createWeb3AuthStrategy(config);
+    try {
+        await strategy.fetchServerKeyStatus(idToken, 'firebase');
+    } catch {
+        // JSON parsing errors may include fragments of a malformed credential.
+        log.error('Web3Auth account upgrade credentials invalid');
+        throw new Error('We couldn’t finish signing you in. Please try again.');
+    }
+    // The Web3Auth strategy uses its cached credentials, not these share values.
+    return strategy.reconstructKey('web3auth', 'web3auth');
 };

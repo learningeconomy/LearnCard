@@ -57,7 +57,7 @@ test.afterAll(async () => {
     if (server) await new Promise<void>(resolveClosed => server.close(() => resolveClosed()));
 });
 
-test('one Firebase login completes account setup in every previously signed-out tab', async ({
+test('one Firebase login coordinates ordinary setup and legacy upgrade across signed-out tabs', async ({
     context,
 }) => {
     const encode = (value: unknown): string =>
@@ -89,8 +89,8 @@ test('one Firebase login completes account setup in every previously signed-out 
     });
     const tabs = await Promise.all(Array.from({ length: 4 }, () => context.newPage()));
     await Promise.all(
-        tabs.map(async tab => {
-            await tab.goto(origin);
+        tabs.map(async (tab, index) => {
+            await tab.goto(`${origin}${index % 2 ? '/?upgrade' : '/'}`);
             await tab.evaluate(() => window.web3AuthTabTest.ready());
             expect(await tab.evaluate(() => window.web3AuthTabTest.status)).toBe('idle');
         })
