@@ -1,0 +1,52 @@
+{
+    "date": "2026-10-12",
+    "environment": "staging network/cloud/SSS, shared Firebase learncard",
+    "nativeBundle": "org.learningeconomy.learncard.native.experiment",
+    "liveExistingAccount": {
+        "emailCodeSignIn": "passed",
+        "emailRecoveryKey": "passed; entered directly by user",
+        "serverPrimaryDidEquality": "passed",
+        "existingProfile": "passed",
+        "encryptedCollectionFirstPage": 30,
+        "incomingOffers": 3,
+        "keychainBackedRelaunch": "passed",
+        "realAccountMutations": "not validated"
+    },
+    "checks": {
+        "accountUnitTests": {
+            "passed": 5,
+            "failed": 0
+        },
+        "domainTests": {
+            "passed": 7,
+            "failed": 0
+        },
+        "bunBridgeTests": {
+            "passed": 4,
+            "failed": 0
+        },
+        "nativeUIInteractions": {
+            "passed": 7,
+            "failed": 0,
+            "resultBundle": "artifacts/ui-20261012-141350-93352.xcresult",
+            "coverage": "Collection/Inbox/Apps/Home visible headings, scroll title/brand, claim, create/send, demo link review, native share sheet in dark mode, JavaScriptCore capabilities"
+        },
+        "appProcessKeychainProbe": {
+            "passed": 1,
+            "failed": 0,
+            "resultBundle": "artifacts/ui-20261012-132620-79084.xcresult"
+        },
+        "repositoryLint": "passed; repository hook retained"
+    },
+    "testHarnessCorrection": "Direct Keychain access from XCTest UI runner failed; replaced with a DEBUG-only app-process synthetic probe and reran successfully. Earlier result bundle contains that harness failure.",
+    "limits": [
+        "Physical/minimum-iOS devices",
+        "Live refresh beyond fake-server tests",
+        "Real-account mutation/pagination/error paths",
+        "QR/passkey/escrow/legacy upgrade",
+        "Guardian/contact inbox/revocation",
+        "Native new-account setup",
+        "Google/Apple providers",
+        "Camera/deep links/presentations/share links"
+    ]
+}

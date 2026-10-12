@@ -1,0 +1,40 @@
+{
+    "name": "learncard-native",
+    "projectType": "application",
+    "sourceRoot": "apps/learncard-native/ios",
+    "tags": ["experimental", "platform:ios"],
+    "targets": {
+        "test-staging": {
+            "executor": "nx:run-commands",
+            "cache": false,
+            "options": { "command": "bash apps/learncard-native/scripts/test-staging.sh" }
+        },
+        "test-sdk": {
+            "executor": "nx:run-commands",
+            "cache": false,
+            "options": { "command": "bash apps/learncard-native/scripts/test-sdk.sh" }
+        },
+        "test-core": {
+            "executor": "nx:run-commands",
+            "cache": false,
+            "options": {
+                "command": "bash apps/learncard-native/scripts/test-core.sh"
+            }
+        },
+        "build-ios": {
+            "executor": "nx:run-commands",
+            "cache": false,
+            "options": { "command": "bash apps/learncard-native/scripts/build-ios.sh" }
+        },
+        "run-ios": {
+            "executor": "nx:run-commands",
+            "cache": false,
+            "options": { "command": "bash apps/learncard-native/scripts/run-ios.sh" }
+        },
+        "test-ios": {
+            "executor": "nx:run-commands",
+            "cache": false,
+            "options": { "command": "bash apps/learncard-native/scripts/test-ios.sh" }
+        }
+    }
+}

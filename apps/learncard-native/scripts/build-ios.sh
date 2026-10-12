@@ -1,0 +1,8 @@
+#!/bin/bash
+set -euo pipefail
+task_root="$(cd "$(dirname "$0")/.." && pwd)"
+bun --conditions=development "$task_root/scripts/prepare-account.ts"
+xcodebuild -project "$task_root/ios/LearnCardNative.xcodeproj" \
+    -scheme LearnCardNative -configuration Debug \
+    -destination 'generic/platform=iOS Simulator' \
+    -derivedDataPath "$task_root/ios/.derivedData" CODE_SIGN_IDENTITY=- build "$@"

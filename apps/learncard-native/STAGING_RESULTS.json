@@ -1,0 +1,47 @@
+{
+    "measuredAt": "2026-10-12T16:14:51.598Z",
+    "environment": "staging",
+    "endpoints": {
+        "network": "https://staging.network.learncard.com/trpc",
+        "cloud": "https://staging.cloud.learncard.com/trpc",
+        "account": "https://staging.api.learncard.app/api"
+    },
+    "identity": "two fresh private DID-authenticated profiles; no Firebase sign-in",
+    "nativeChecks": {
+        "payloadMatches": true,
+        "pendingCleared": true,
+        "resumedCollection": true,
+        "resumedPayload": true,
+        "accepted": true,
+        "pendingFound": true,
+        "collectionFound": true,
+        "receivedFound": true,
+        "indexed": true,
+        "proofVerified": true
+    },
+    "profileChecks": {
+        "signingDidMatches": true,
+        "profileDidMatches": true,
+        "existingProfileMatches": true
+    },
+    "currentSDK": {
+        "nativeSignatureVerified": true,
+        "nativePayloadUnchanged": true,
+        "nativeSendReceived": true,
+        "nativeIndexReadable": true,
+        "claimedPayloadUnchanged": true
+    },
+    "firebaseAccountRecoveryValidated": false,
+    "cleanup": "private profiles, sent credentials, and test collection index removed",
+    "nativeRuntime": {
+        "architecture": "arm64",
+        "deviceId": "ACD3802A-67BC-4C5F-98A4-7FFCF598AE9E",
+        "deviceName": "LearnCard Native Lab",
+        "modelName": "iPhone 17 Pro",
+        "osBuildNumber": "23E244",
+        "osVersion": "26.4",
+        "platform": "iOS Simulator"
+    },
+    "transport": "bundled WebKit SDK + restricted native URLSession; browser connect-src none",
+    "verificationScope": "credential signatures and payload equality; no Firebase/SSS server recovery or issuer trust/status coverage"
+}

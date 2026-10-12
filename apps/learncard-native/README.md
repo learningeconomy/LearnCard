@@ -1,0 +1,88 @@
+# LearnCard native client experiment
+
+An independent personal credential app: SwiftUI on iOS first, Kotlin and Jetpack Compose on Android after the credential and account contracts are proven. It focuses on collecting, receiving, creating, claiming, sending, and sharing credentials. The user approved fully native clients on October 12, 2026.
+
+The default app now connects to the approved staging test account through native Firebase email-code sign-in, the existing SSS recovery flow, and device-bound Keychain storage. Existing-account recovery, profile loading, the first 30 encrypted collection records, incoming offers, and relaunch have been confirmed live. See [account integration](ACCOUNT_INTEGRATION.md) for evidence and remaining cases.
+
+Run with `--demo` for **unsigned, in-memory sample content**. Samples reset on restart; sample sending records local activity and delivers no messages. The native redesign uses actual credential artwork, neutral light/dark canvases, colorful layered cards, round artwork windows, and reduced-motion-aware card transitions. The main destinations are Collection, Inbox, Apps, and Home. Apps currently links to the staging web store; native catalog and installation are the next phase. Home is a streamlined dashboard with arrivals, creation, and session activity.
+
+## Run on iOS
+
+Requires macOS, Xcode 16 or newer, its command-line tools, Python 3, and an installed iOS simulator runtime. Development currently targets iPhone on iOS 18 or later. The sample UI needs no CocoaPods, XcodeGen, backend, secrets, or signing team for simulator use. The SDK compatibility tests additionally require Bun and the existing monorepo JavaScript dependencies.
+
+From the repository root:
+
+```bash
+LC_NATIVE_TEST_EMAIL=your-test-login@example.com bash apps/learncard-native/scripts/run-ios.sh
+```
+
+The selected test email is saved only in ignored local build configuration and reused on later builds. A fresh checkout uses a non-deliverable placeholder until configured. No personal test email is committed. Run with `--demo` for sample mode.
+
+This creates or reuses a dedicated **LearnCard Native Lab** simulator, builds the app, installs **LearnCard Lab**, and opens it. Set `LC_NATIVE_SIMULATOR_ID` to use a particular installed simulator. The experiment has its own bundle identifier, `org.learningeconomy.learncard.native.experiment`.
+
+Open `ios/LearnCardNative.xcodeproj` in Xcode to edit or run interactively. For a physical device, select your own Apple development team under Signing and Capabilities; real-device verification is still required.
+
+```bash
+# Account security and domain tests, including sign-out races and claim/link validation
+bash apps/learncard-native/scripts/test-core.sh
+
+# Simulator build without launching
+bash apps/learncard-native/scripts/build-ios.sh
+
+# Native interaction tests and an iOS JavaScriptCore capability probe
+bash apps/learncard-native/scripts/test-ios.sh
+
+# SDK interoperability spike with independently verified iOS outputs
+bash apps/learncard-native/scripts/test-sdk.sh -quiet
+
+# Opt-in live staging exchange with fresh disposable test profiles and cleanup
+bash apps/learncard-native/scripts/test-staging.sh -quiet
+
+# Optional Nx entry points
+bunx nx run learncard-native:run-ios
+bunx nx run learncard-native:test-core
+bunx nx run learncard-native:test-ios
+```
+
+UI results are saved under `artifacts/` as `.xcresult` bundles. Derived data and test artifacts are ignored. Native targets are named `build-ios`, `test-core`, `test-ios`, `test-sdk`, and `test-staging` so repository-wide web builds and tests do not require Xcode on Linux.
+
+The staging runner creates two private test profiles, sends an encrypted credential, runs the native claim/index/send exchange, and checks the results with the current SDK. It removes its own test records and profiles on exit. Generated identity material stays in ignored local files; native initialization refuses setup older than 20 minutes. If cleanup fails, the runner retains `sdk-spike/generated/staging-state.json`; retry with `bun --conditions=development apps/learncard-native/sdk-spike/staging-account.ts cleanup`. The regular scheme skips the live test; `LearnCardNativeStaging` explicitly enables it.
+
+Staging network, LearnCloud, and account recovery endpoints are selected explicitly. Native sign-in uses the approved shared `learncard` Firebase project. The disposable staging exchange and the existing Firebase-backed account connection are separate validations; see [ACCOUNT_INTEGRATION.md](ACCOUNT_INTEGRATION.md).
+
+Try a sample claim link after launching with `--demo`:
+
+```bash
+xcrun simctl openurl booted 'learncard-native-demo://claim/first-aid'
+```
+
+Use a specific simulator ID instead of `booted` if several simulators are running. Real LearnCard links are intentionally rejected by this sample adapter.
+
+## Layout
+
+```text
+learncard-native/
+  PLAN.md                         Product direction, architecture, integration gates
+  project.json                    Optional Nx entry points
+  scripts/                        Build, run, test, deterministic project generation
+  ios/
+    LearnCardNative.xcodeproj/     Committed project and shared scheme
+    Info.plist                    Separate identity and demo URL scheme
+    Sources/                      SwiftUI features and presentation state
+    NativeCore/                   Domain package, platform SDK harness, and tests
+    UITests/                      XCTest interaction tests
+```
+
+SwiftUI talks to `CredentialService`: `LiveCredentialService` uses the account SDK host, while `DemoCredentialService` powers sample mode. The original signed credential is retained separately from the display model. Changing its presentation never mutates or reissues its contents.
+
+Adding Swift source files requires no project update because the project uses Xcode synchronized source groups. If project settings change, update `scripts/generate-project.py`, then run:
+
+```bash
+python3 apps/learncard-native/scripts/generate-project.py
+```
+
+See [the SDK spike results and account connection design](SDK_SPIKE.md) and [the product and implementation plan](PLAN.md) for the live-account integration sequence and Android follow-up.
+
+The learner-facing LearnCard App Store is planned after the current design pass. Store administration and developer publishing portals are excluded; see [PLAN.md](PLAN.md).
+
+The approved visual direction and implementation brief are saved in [design/BRIEF.md](design/BRIEF.md). Reproduce navigation artwork with `bun apps/learncard-native/scripts/prepare-branding.ts` from the repository root; React is used only for this asset-generation step, never the native UI.

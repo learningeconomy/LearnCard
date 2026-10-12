@@ -1,0 +1,156 @@
+{
+    "environment": {
+        "native": [
+            {
+                "architecture": "arm64",
+                "deviceId": "ACD3802A-67BC-4C5F-98A4-7FFCF598AE9E",
+                "deviceName": "LearnCard Native Lab",
+                "modelName": "iPhone 17 Pro",
+                "osBuildNumber": "23E244",
+                "osVersion": "26.4",
+                "platform": "iOS Simulator"
+            }
+        ],
+        "webBaseline": "Current repository TypeScript SDK source in Bun"
+    },
+    "publicTestIdentitiesOnly": true,
+    "credentials": [
+        {
+            "id": "vc-v1/basic",
+            "signatureVerified": true
+        },
+        {
+            "id": "vc-v2/basic",
+            "signatureVerified": true
+        },
+        {
+            "id": "vc-v2/with-evidence",
+            "signatureVerified": true
+        },
+        {
+            "id": "vc-v2/multiple-subjects",
+            "signatureVerified": true
+        },
+        {
+            "id": "obv3/minimal-badge",
+            "signatureVerified": true
+        },
+        {
+            "id": "obv3/full-badge",
+            "signatureVerified": true
+        },
+        {
+            "id": "boost/basic",
+            "signatureVerified": true
+        },
+        {
+            "id": "boost/with-skills",
+            "signatureVerified": true
+        },
+        {
+            "id": "clr/minimal",
+            "signatureVerified": true
+        },
+        {
+            "id": "clr/westbridge-full",
+            "signatureVerified": true
+        }
+    ],
+    "fullVerificationExceptions": [
+        {
+            "id": "clr/westbridge-full",
+            "errorKinds": [
+                "Unable to fetch status list credential",
+                "Unable to fetch credential schema"
+            ],
+            "sameWebAndNativeOutcome": true
+        }
+    ],
+    "webToNative": [
+        {
+            "id": "vc-v1/basic",
+            "proofVerified": true,
+            "tamperRejected": true,
+            "milliseconds": 27
+        },
+        {
+            "id": "vc-v2/basic",
+            "proofVerified": true,
+            "tamperRejected": true,
+            "milliseconds": 12
+        },
+        {
+            "id": "vc-v2/with-evidence",
+            "proofVerified": true,
+            "tamperRejected": true,
+            "milliseconds": 11
+        },
+        {
+            "id": "vc-v2/multiple-subjects",
+            "proofVerified": true,
+            "tamperRejected": true,
+            "milliseconds": 9
+        },
+        {
+            "id": "obv3/minimal-badge",
+            "proofVerified": true,
+            "tamperRejected": true,
+            "milliseconds": 19
+        },
+        {
+            "id": "obv3/full-badge",
+            "proofVerified": true,
+            "tamperRejected": true,
+            "milliseconds": 23
+        },
+        {
+            "id": "boost/basic",
+            "proofVerified": true,
+            "tamperRejected": true,
+            "milliseconds": 27
+        },
+        {
+            "id": "boost/with-skills",
+            "proofVerified": true,
+            "tamperRejected": true,
+            "milliseconds": 28
+        },
+        {
+            "id": "clr/minimal",
+            "proofVerified": true,
+            "tamperRejected": true,
+            "milliseconds": 18
+        },
+        {
+            "id": "clr/westbridge-full",
+            "proofVerified": true,
+            "tamperRejected": true,
+            "milliseconds": 535
+        }
+    ],
+    "dagJweBothDirections": true,
+    "wrongRecipientRejected": true,
+    "learnCloudIndexFieldsMatch": true,
+    "presentationBothDirections": true,
+    "didAuthJWTVerified": true,
+    "presentationWrongChallengeRejected": true,
+    "recovery": {
+        "deviceMatches": true,
+        "milliseconds": 283,
+        "passwordMatches": true,
+        "phraseMatches": true,
+        "wrongPasswordRejected": true
+    },
+    "qrTransferBothDirections": true,
+    "qrWrongRecipientRejected": true,
+    "initializationMilliseconds": 1091,
+    "bundle": {
+        "wasmBytes": 8840701,
+        "sdkBytes": 2157544,
+        "fixtureCount": 10,
+        "wasmSha256": "fe1d254186130480a3ae831fe1b17c58ea732adc39cad16f895aa58e03f1bd62",
+        "builtFrom": "current repository TypeScript source, conditions=development"
+    },
+    "recordedDate": "2026-10-12",
+    "scope": "Offline native SDK interoperability spike; public test identities; live accounts not connected"
+}
