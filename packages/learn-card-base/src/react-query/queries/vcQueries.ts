@@ -29,26 +29,25 @@ import { getOrFetchConsentedContracts } from 'learn-card-base/hooks/useConsented
 import { getOrFetchCredentialRecordForBoost } from 'learn-card-base/hooks/useGetCredentialRecordForBoost';
 import { useBackfillBoostUris } from 'learn-card-base/helpers/backfills';
 import { getLogger } from '../../logging/logger';
+import { walletStore } from '../../stores/walletStore';
+import { fetchResolvedCredential, resolvedCredentialQueryOptions } from './credentialResolution';
 const log = getLogger('vc-queries');
 
 // Global set to track processed credentials across all hook instances
 const globalProcessedCredentials = new Set<string>();
 
-const resolveCredential = async (uri: string, initWallet: () => Promise<BespokeLearnCard>) => {
-    const wallet = await initWallet();
-
-    return (wallet.read.get(uri) as Promise<VC | undefined>) ?? null;
+// Wait for the active account reader before using account-scoped cached data.
+const useCredentialReader = () => {
+    const wallet = walletStore.use.wallet();
+    const switchedDid = switchedProfileStore.use.switchedDid();
+    return switchedDid && wallet?.id.did() !== switchedDid ? null : wallet;
 };
 
-// Resolves a single credential given a valid uri string
 export const useGetResolvedCredential = (uri: string | undefined, enabled = true) => {
-    const { initWallet } = useWallet();
-
-    return useQuery<VC | undefined>({
-        queryKey: ['useGetResolvedCredential', uri!],
-        queryFn: async () => resolveCredential(uri!, initWallet),
-        staleTime: 1000 * 60 * 60 * 24 * 7,
-        enabled: enabled && Boolean(uri),
+    const wallet = useCredentialReader();
+    return useQuery({
+        ...resolvedCredentialQueryOptions(wallet, uri),
+        enabled: enabled && Boolean(wallet && uri),
     });
 };
 
@@ -56,48 +55,30 @@ export const getOrFetchResolvedCredential = async (
     uri: string,
     initWallet: () => Promise<BespokeLearnCard>,
     queryClient: QueryClient
-) => {
-    return queryClient.fetchQuery<VC | undefined>({
-        queryKey: ['useGetResolvedCredential', uri],
-        queryFn: async () => resolveCredential(uri, initWallet),
-        staleTime: 1000 * 60 * 60 * 24 * 7,
-    });
-};
+) => fetchResolvedCredential(queryClient, await initWallet(), uri);
 
 export const useResolveManyCredentials = (uris: string[] | undefined, enabled = true) => {
-    const { initWallet } = useWallet();
-
-    return useQuery<(VC | undefined)[]>({
-        queryKey: ['useResolveManyCredentials', uris],
+    const wallet = useCredentialReader();
+    const queryClient = useQueryClient();
+    return useQuery({
+        queryKey: ['useResolveManyCredentials', uris, wallet?.id.did() ?? ''],
         queryFn: async () => {
-            if (!uris) return [];
-            const wallet = await initWallet();
-            return Promise.all(uris.map(uri => wallet.read.get(uri) as Promise<VC | undefined>));
+            if (!wallet || !uris) return [];
+            return Promise.all(uris.map(uri => fetchResolvedCredential(queryClient, wallet, uri)));
         },
-        staleTime: 1000 * 60 * 60 * 24 * 7, // 1 week
-        enabled: enabled && Boolean(uris && uris.length > 0),
+        staleTime: 1000 * 60 * 60 * 24 * 7,
+        enabled: enabled && Boolean(wallet && uris?.length),
     });
 };
 
 export const useGetResolvedCredentials = (uris?: (string | undefined)[], enabled = true) => {
-    const { initWallet } = useWallet();
-
+    const wallet = useCredentialReader();
     return useQueries({
         queries:
             enabled && uris
                 ? uris.map(uri => ({
-                      queryKey: ['useGetResolvedCredentials', uri],
-                      staleTime: 1000 * 60 * 60 * 24 * 7,
-                      queryFn: async () => {
-                          try {
-                              const wallet = await initWallet();
-                              const vc = (await wallet.read.get(uri)) as VC | undefined;
-                              if (vc) return vc;
-                              return Promise.reject(new Error('unresolveable'));
-                          } catch (error) {
-                              return Promise.reject(error);
-                          }
-                      },
+                      ...resolvedCredentialQueryOptions(wallet, uri),
+                      enabled: Boolean(wallet && uri),
                   }))
                 : [],
     }).map((result, index) => ({ ...result, uri: uris?.[index] }));
@@ -365,6 +346,7 @@ export const useGetCredentials = (
     returnUri?: boolean
 ) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     const switchedDid = switchedProfileStore.use.switchedDid();
 
     return useQuery<VC[] | VC_WITH_URI[]>({
@@ -386,7 +368,10 @@ export const useGetCredentials = (
                 if (!returnUri) {
                     const resolvedCredentials = (
                         await Promise.all(
-                            credentialsList.map(async record => await wallet.read.get(record.uri))
+                            credentialsList.map(
+                                async record =>
+                                    await fetchResolvedCredential(queryClient, wallet, record.uri)
+                            )
                         )
                     ).filter(Boolean) as VC[];
 
@@ -401,7 +386,11 @@ export const useGetCredentials = (
                 const resolvedCredentials = (
                     await Promise.all(
                         credentialsList?.map(async record => {
-                            const vc = (await wallet.read.get(record?.uri)) as VC;
+                            const vc = (await fetchResolvedCredential(
+                                queryClient,
+                                wallet,
+                                record.uri
+                            )) as VC;
                             const uri = record?.uri;
 
                             return { vc, uri };
@@ -425,6 +414,7 @@ export const useGetCredentials = (
 // query for getting all creds to construct an aggregation of all skills
 export const useGetCredentialsForSkills = (enabled: boolean = true) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     const switchedDid = switchedProfileStore.use.switchedDid();
 
     return useQuery<VC[] | VC_WITH_URI[]>({
@@ -445,31 +435,31 @@ export const useGetCredentialsForSkills = (enabled: boolean = true) => {
                     skills,
                     selfAssignedSkills,
                 ] = await Promise.all([
-                    await wallet.index.LearnCloud.get({
+                    wallet.index.LearnCloud.get({
                         category: CredentialCategoryEnum.learningHistory,
                     }),
-                    await wallet.index.LearnCloud.get({
+                    wallet.index.LearnCloud.get({
                         category: CredentialCategoryEnum.socialBadge,
                     }),
-                    await wallet.index.LearnCloud.get({
+                    wallet.index.LearnCloud.get({
                         category: CredentialCategoryEnum.achievement,
                     }),
-                    await wallet.index.LearnCloud.get({
+                    wallet.index.LearnCloud.get({
                         category: CredentialCategoryEnum.accomplishment,
                     }),
-                    await wallet.index.LearnCloud.get({
+                    wallet.index.LearnCloud.get({
                         category: CredentialCategoryEnum.workHistory,
                     }),
-                    await wallet.index.LearnCloud.get({
+                    wallet.index.LearnCloud.get({
                         category: CredentialCategoryEnum.accommodation,
                     }),
-                    await wallet.index.LearnCloud.get({
+                    wallet.index.LearnCloud.get({
                         category: CredentialCategoryEnum.id,
                     }),
-                    await wallet.index.LearnCloud.get({
+                    wallet.index.LearnCloud.get({
                         category: CredentialCategoryEnum.skill,
                     }),
-                    await wallet.index.LearnCloud.get({
+                    wallet.index.LearnCloud.get({
                         category: CredentialCategoryEnum.selfAssignedSkills,
                     }),
                 ]);
@@ -490,7 +480,10 @@ export const useGetCredentialsForSkills = (enabled: boolean = true) => {
                 // resolve all creds
                 const resolvedCredentials = (
                     await Promise.all(
-                        credentialsList.map(async record => await wallet.read.get(record.uri))
+                        credentialsList.map(
+                            async record =>
+                                await fetchResolvedCredential(queryClient, wallet, record.uri)
+                        )
                     )
                 ).filter(Boolean) as VC[];
 
@@ -570,6 +563,7 @@ export const useGetCredentialsPaginated = (
     limit: number = 100
 ) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     const switchedDid = switchedProfileStore.use.switchedDid();
 
     return useQuery<VC[] | VC_WITH_URI[]>({
@@ -595,7 +589,8 @@ export const useGetCredentialsPaginated = (
                     const resolvedCredentials = (
                         await Promise.all(
                             credentialsList?.records?.map(
-                                async record => await wallet.read.get(record.uri)
+                                async record =>
+                                    await fetchResolvedCredential(queryClient, wallet, record.uri)
                             )
                         )
                     ).filter(Boolean) as VC[];
@@ -611,7 +606,11 @@ export const useGetCredentialsPaginated = (
                 const resolvedCredentials = (
                     await Promise.all(
                         credentialsList?.records?.map(async record => {
-                            const vc = (await wallet.read.get(record?.uri)) as VC;
+                            const vc = (await fetchResolvedCredential(
+                                queryClient,
+                                wallet,
+                                record.uri
+                            )) as VC;
                             const uri = record?.uri;
 
                             return { vc, uri };
@@ -709,7 +708,7 @@ async function fetchCredentials(
     const resolvedCredentials = await Promise.all(
         credentialsList.map(async record => {
             try {
-                const _vc = await wallet.read.get(record.uri);
+                const _vc = await fetchResolvedCredential(queryClient, wallet, record.uri);
                 const boost = await wallet.invoke.getBoost(_vc?.boostId);
                 const vc = credentialWithEditsHelper(_vc, boost);
                 return vc ? (returnUri ? { vc, uri: record.uri } : vc) : null;
@@ -768,6 +767,7 @@ export const useGetCurrentUserTroopIdsResolved = (
 // query to get all earned IDs
 export const useGetIDs = () => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     const switchedDid = switchedProfileStore.use.switchedDid();
 
     return useQuery<VC[] | VC_WITH_URI[]>({
@@ -804,7 +804,11 @@ export const useGetIDs = () => {
                 const resolvedCredentials = (
                     await Promise.all(
                         credentialsList.map(async record => {
-                            const resolvedVC = await wallet.read.get(record.uri);
+                            const resolvedVC = await fetchResolvedCredential(
+                                queryClient,
+                                wallet,
+                                record.uri
+                            );
                             return { ...resolvedVC, uri: record?.uri };
                         })
                     )
@@ -867,10 +871,7 @@ export const useSyncConsentFlow = (enabled = true) => {
             // maps raw categories to UI/contract display names, and falls back safely.
             const resolvedList = await Promise.all(
                 allRecords.map(async ({ credentialUri }) => {
-                    const vc = await queryClient.fetchQuery({
-                        queryKey: ['useGetResolvedCredential', credentialUri],
-                        queryFn: () => learnCard.read.get(credentialUri) as Promise<VC>,
-                    });
+                    const vc = await fetchResolvedCredential(queryClient, learnCard, credentialUri);
 
                     let category: CredentialCategory = 'Achievement';
                     try {
