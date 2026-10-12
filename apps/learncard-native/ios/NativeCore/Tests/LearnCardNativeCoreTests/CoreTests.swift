@@ -77,3 +77,34 @@ import Testing
     let url = try #require(URL(string: value))
     #expect(throws: ClientError.unsupportedLink) { try DemoClaimLink(url: url) }
 }
+
+@Test func createForSomeoneKeepsReusableCreationOutOfPersonalCollection() async throws {
+    let service = DemoCredentialService()
+    let before = await service.snapshot()
+    let result = try await service.create(draft: CredentialDraft(title: "A thoughtful teammate", summary: "For helping us learn.", kind: .achievement, recipient: "Alex Morgan"))
+    #expect(result.credentials.count == before.credentials.count)
+    #expect(result.activity.first?.title == "Sample send recorded")
+    let creations = try await service.creations()
+    #expect(creations.credentials.count == 1)
+    #expect(creations.credentials.first?.title == "A thoughtful teammate")
+}
+
+@Test func createForMyselfAddsPersonalCredentialAndReusableCreation() async throws {
+    let service = DemoCredentialService()
+    let artwork = URL(string: "https://cdn.filestackcontent.com/public-test-art")!
+    let result = try await service.create(draft: CredentialDraft(title: "Practice", summary: "Learning every day.", kind: .learning, artworkURL: artwork))
+    #expect(result.credentials.count == 4)
+    #expect(result.credentials.first?.artworkURL == artwork)
+    #expect(try await service.creations().credentials.count == 1)
+}
+
+@Test func sampleSharingIncludesOnlyExplicitSelectionsAndRejectsUnknownOrDuplicateIDs() async throws {
+    let service = DemoCredentialService()
+    let result = try await service.share(credentialIDs: ["design", "member"], title: "Samples", requestID: "sample-public-request", passcode: nil)
+    #expect(result.url == nil)
+    #expect(result.sampleText?.contains("Design for people") == true)
+    #expect(result.sampleText?.contains("A place to belong") == true)
+    #expect(result.sampleText?.contains("Community builder") == false)
+    await #expect(throws: ClientError.invalidDraft) { try await service.share(credentialIDs: ["design", "unknown"], title: "Samples", requestID: "request", passcode: nil) }
+    await #expect(throws: ClientError.invalidDraft) { try await service.share(credentialIDs: ["design", "design"], title: "Samples", requestID: "request", passcode: nil) }
+}

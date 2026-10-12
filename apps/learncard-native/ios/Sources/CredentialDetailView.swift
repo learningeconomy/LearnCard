@@ -6,6 +6,7 @@ struct CredentialDetailView: View {
     let store: AppStore
     let credential: Credential
     var isOffer = false
+    var isCreation = false
     @State private var showSend = false
 
     var body: some View {
@@ -28,7 +29,7 @@ struct CredentialDetailView: View {
                     metadata("From", value: credential.issuer)
                     metadata("Category", value: credential.kind.rawValue)
                     metadata("Date", value: credential.date.formatted(date: .abbreviated, time: .omitted))
-                    metadata("Status", value: credential.isSample ? "Sample · unsigned" : "Received credential")
+                    metadata("Status", value: isCreation ? "Reusable creation" : credential.isSample ? "Sample · unsigned" : credential.createdByMe ? "Issued by you · In your collection" : "In your collection")
                 }
                 Text(credential.isSample ? "Sample content for exploring the native app." : credential.verificationSummary ?? "Verification unavailable.")
                     .font(.caption).foregroundStyle(Palette.secondary)
@@ -37,10 +38,10 @@ struct CredentialDetailView: View {
                         Task { if await store.claim(credential) { dismiss() } }
                     }.accessibilityIdentifier("claim")
                 } else {
-                    if credential.createdByMe {
+                    if isCreation || credential.isSample && credential.createdByMe {
                         PrimaryButton(title: credential.isSample ? "Send Sample" : "Send Credential") { showSend = true }.accessibilityIdentifier("send")
                     }
-                    if credential.isSample || credential.signedPayload != nil {
+                    if !isCreation && (credential.isSample || credential.signedPayload != nil) {
                     ShareLink(item: credential.isSample ? credential.sampleShareText : credential.signedPayload ?? "") {
                         Label(credential.isSample ? "Share Sample" : "Export Credential", systemImage: "square.and.arrow.up")
                             .font(.body.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 54)

@@ -61,7 +61,7 @@ final class ExperimentUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--demo"]
         app.launch()
-        app.buttons["create"].tap()
+        app.buttons["create"].tap(); app.sheets.buttons["Create new"].tap()
         let title = app.textFields["draft-title"]
         XCTAssertTrue(title.waitForExistence(timeout: 5))
         title.tap()
@@ -70,6 +70,8 @@ final class ExperimentUITests: XCTestCase {
         summary.tap()
         summary.typeText("Thank you for helping the team learn.")
         app.swipeUp()
+        app.buttons["create-next"].tap()
+        app.buttons["create-next"].tap()
         app.buttons["create-confirm"].tap()
         XCTAssertTrue(app.alerts["Done"].waitForExistence(timeout: 5))
         app.alerts["Done"].buttons["Done"].tap()
@@ -82,6 +84,64 @@ final class ExperimentUITests: XCTestCase {
         app.alerts["Done"].buttons["Done"].tap()
         app.tabBars.buttons["Home"].tap()
         XCTAssertTrue(app.staticTexts["Sample send recorded"].exists)
+    }
+
+    @MainActor
+    func testPlusActionsAndMultipleCredentialSharing() {
+        let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
+        app.buttons["create"].tap()
+        let actions = app.sheets.firstMatch
+        XCTAssertTrue(actions.buttons["Create new"].exists)
+        XCTAssertTrue(actions.buttons["Send existing creation"].exists)
+        actions.buttons["Share credentials"].tap()
+        XCTAssertTrue(app.buttons["share-select-design"].waitForExistence(timeout: 5))
+        app.buttons["share-select-design"].tap(); app.buttons["share-select-community"].tap()
+        app.buttons["share-review"].tap()
+        app.buttons["share-confirm"].tap()
+        XCTAssertTrue(app.buttons["share-bundle"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Sample selection ready"].exists)
+        app.buttons["share-bundle"].tap()
+        let copy = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Copy")).firstMatch
+        XCTAssertTrue(copy.waitForExistence(timeout: 5), app.debugDescription)
+    }
+
+    @MainActor
+    func testCreationFormatAndCategoryUseActionSheets() {
+        let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
+        app.buttons["create"].tap(); app.sheets.buttons["Create new"].tap(); app.swipeUp()
+        app.buttons["draft-format"].tap()
+        let formatSheet = app.sheets.firstMatch
+        XCTAssertTrue(formatSheet.waitForExistence(timeout: 5), app.debugDescription)
+        formatSheet.buttons["Certificate"].tap()
+        XCTAssertTrue(app.buttons["draft-format"].waitForExistence(timeout: 5))
+        let formatUpdated = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "Certificate"), object: app.buttons["draft-format"])
+        XCTAssertEqual(XCTWaiter.wait(for: [formatUpdated], timeout: 5), .completed, app.debugDescription)
+        app.buttons["draft-category"].tap()
+        let categorySheet = app.sheets.firstMatch
+        XCTAssertTrue(categorySheet.waitForExistence(timeout: 5), app.debugDescription)
+        categorySheet.buttons["Learning"].tap()
+        let categoryUpdated = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "Learning"), object: app.buttons["draft-category"])
+        XCTAssertEqual(XCTWaiter.wait(for: [categoryUpdated], timeout: 5), .completed, app.debugDescription)
+    }
+
+    @MainActor
+    func testCreateForSomeoneKeepsTemplateSeparateFromCollection() {
+        let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
+        app.buttons["create"].tap(); app.sheets.buttons["Create new"].tap()
+        XCTAssertTrue(app.buttons["draft-artwork"].exists)
+        let title = app.textFields["draft-title"]; title.tap(); title.typeText("Native kindness badge")
+        let summary = app.descendants(matching: .any)["draft-summary"]; summary.tap(); summary.typeText("Recognizing a thoughtful teammate.")
+        app.swipeUp(); app.buttons["create-next"].tap()
+        app.buttons["recipient-other"].tap()
+        XCTAssertTrue(app.buttons["recipient-Alex Morgan"].waitForExistence(timeout: 5))
+        app.buttons["recipient-Alex Morgan"].tap()
+        app.buttons["create-next"].tap()
+        XCTAssertTrue(app.staticTexts["For Alex Morgan"].exists)
+        app.buttons["create-confirm"].tap()
+        XCTAssertTrue(app.alerts["Done"].waitForExistence(timeout: 5)); app.alerts["Done"].buttons["Done"].tap()
+        XCTAssertFalse(app.staticTexts["Native kindness badge"].exists)
+        app.tabBars.buttons["Home"].tap(); app.buttons["home-creations"].tap()
+        XCTAssertTrue(app.staticTexts["Native kindness badge"].waitForExistence(timeout: 5))
     }
 
     @MainActor

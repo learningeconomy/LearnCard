@@ -17,3 +17,7 @@ Reference input: `apps/learn-card-app/environments/learncard/assets/branding/bra
 - Standard neutral page backgrounds allow card color to carry the brand. Explicit headings avoid the observed blank large-title region on iOS 26.4.
 - Consumer Apps starts with a staging web-store link and an honest next-phase description. Native catalog/installation/consent is not yet wired.
 - Home uses current incoming counts and session-local activity, not fabricated progress statistics.
+
+## Follow-up corrections
+
+Latest issued now means newest issue date within loaded matching credentials; category controls its front color and both backing layers use other colors. Personal collection and reusable creations have distinct purposes. Create includes artwork and recipients, and selectors use action sheets. The plus presents Create new / Send existing creation / Share credentials. Share has an explicit multi-selection review and optional protection rather than silently exporting every loaded credential.

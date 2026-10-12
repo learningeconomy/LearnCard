@@ -71,8 +71,21 @@ public final class AccountRuntime: NSObject, WKNavigationDelegate {
     public func create(title: String, summary: String, kind: CredentialKind) async throws -> CollectionSnapshot {
         try await command("create", input: ["title": title, "summary": summary, "kind": kind.rawValue])
     }
+    public func create(draft: CredentialDraft) async throws -> CollectionSnapshot {
+        let input = try JSONSerialization.jsonObject(with: JSONEncoder().encode(draft)) as? [String: Any] ?? [:]
+        return try await command("createDraft", input: input)
+    }
+    public func creations(cursor: String? = nil) async throws -> CreationPage {
+        try await command("creations", input: cursor.map { ["cursor": $0] } ?? [:])
+    }
+    public func searchRecipients(_ query: String) async throws -> [AccountRecipient] { try await command("searchRecipients", input: ["query": query]) }
     public func send(_ uri: String, recipient: String) async throws -> CollectionSnapshot { try await command("send", input: ["uri": uri, "recipient": recipient]) }
     public func recipient(_ profileId: String) async throws -> AccountRecipient { try await command("recipient", input: ["profileId": profileId]) }
+    public func share(credentialIDs: [String], title: String, requestID: String, passcode: String?) async throws -> CredentialShare {
+        var input: [String: Any] = ["uris": credentialIDs, "title": title, "requestID": requestID]
+        if let passcode, !passcode.isEmpty { input["passcode"] = passcode }
+        return try await command("share", input: input)
+    }
     public func signOut(forget: Bool) async throws { let _: AccountState = try await command(forget ? "forget" : "signOut"); dispose() }
 
     public func dispose() {
@@ -139,7 +152,10 @@ public final class AccountRuntime: NSObject, WKNavigationDelegate {
     }
 }
 
-public struct AccountRecipient: Decodable, Sendable { public let id: String; public let name: String }
+public struct AccountRecipient: Decodable, Sendable, Identifiable, Hashable {
+    public let id: String; public let name: String
+    public init(id: String, name: String) { self.id = id; self.name = name }
+}
 
 @MainActor
 public final class LiveCredentialService: CredentialService {
@@ -149,6 +165,12 @@ public final class LiveCredentialService: CredentialService {
     public func loadMore() async throws -> CollectionSnapshot { try await runtime.snapshot(more: true) }
     public func claim(offerID: String) async throws -> CollectionSnapshot { try await runtime.claim(offerID) }
     public func create(title: String, summary: String, kind: CredentialKind) async throws -> CollectionSnapshot { try await runtime.create(title: title, summary: summary, kind: kind) }
+    public func create(draft: CredentialDraft) async throws -> CollectionSnapshot { try await runtime.create(draft: draft) }
+    public func creations(cursor: String? = nil) async throws -> CreationPage { try await runtime.creations(cursor: cursor) }
+    public func searchRecipients(_ query: String) async throws -> [AccountRecipient] { try await runtime.searchRecipients(query) }
     public func send(credentialID: String, recipient: String) async throws -> CollectionSnapshot { try await runtime.send(credentialID, recipient: recipient) }
     public func recipient(_ profileId: String) async throws -> AccountRecipient { try await runtime.recipient(profileId) }
+    public func share(credentialIDs: [String], title: String, requestID: String, passcode: String?) async throws -> CredentialShare {
+        try await runtime.share(credentialIDs: credentialIDs, title: title, requestID: requestID, passcode: passcode)
+    }
 }

@@ -79,7 +79,9 @@ struct CredentialArtwork: View {
 
     var body: some View {
         Group {
-            if let url = credential.artworkURL {
+            if let url = credential.artworkURL, url.isFileURL, let image = UIImage(contentsOfFile: url.path) {
+                Image(uiImage: image).resizable().scaledToFill().frame(width: size, height: size)
+            } else if let url = credential.artworkURL {
                 AsyncImage(url: url) { phase in
                     if let image = phase.image { image.resizable().scaledToFill().frame(width: size, height: size) }
                     else { fallback }
@@ -127,15 +129,15 @@ struct CredentialCard: View {
                         .frame(maxWidth: .infinity).padding(.vertical, 4)
                     identity(featured: false)
                     footer
-                }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
+                }.padding(16).frame(maxWidth: .infinity, minHeight: textSize.isAccessibilitySize ? 0 : 260, alignment: .topLeading)
             }
         }
-        .background(onWhiteSurface ? Palette.surface : featured ? Palette.cyanCard : Palette.categoryTint(credential.kind), in: RoundedRectangle(cornerRadius: 24))
+        .background(onWhiteSurface ? Palette.surface : Palette.categoryTint(credential.kind), in: RoundedRectangle(cornerRadius: 24))
         .background {
             if featured {
-                RoundedRectangle(cornerRadius: 24).fill(Palette.blueCard)
+                RoundedRectangle(cornerRadius: 24).fill(credential.kind == .membership ? Palette.pinkCard : Palette.blueCard)
                     .rotationEffect(.degrees(reduceMotion ? 0 : -3)).offset(x: -3, y: 8)
-                RoundedRectangle(cornerRadius: 24).fill(Palette.pinkCard)
+                RoundedRectangle(cornerRadius: 24).fill(credential.kind == .learning ? Palette.pinkCard : Palette.cyanCard)
                     .rotationEffect(.degrees(reduceMotion ? 0 : 2.5)).offset(x: 2, y: 13)
             }
         }
@@ -160,10 +162,10 @@ struct CredentialCard: View {
     private func identity(featured: Bool) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(credential.title).font(featured ? .title3.weight(.semibold) : .headline)
-                .foregroundStyle(cardText).lineLimit(textSize.isAccessibilitySize ? nil : featured ? 3 : 2, reservesSpace: !featured && !textSize.isAccessibilitySize)
+                .foregroundStyle(cardText).lineLimit(textSize.isAccessibilitySize ? nil : featured ? 3 : 2)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Text(credential.issuer).font(.caption).foregroundStyle(cardSecondary)
-                .lineLimit(textSize.isAccessibilitySize ? nil : 2, reservesSpace: !featured && !textSize.isAccessibilitySize)
+                .lineLimit(textSize.isAccessibilitySize ? nil : 2)
         }
     }
 }

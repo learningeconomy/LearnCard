@@ -1,3 +1,13 @@
+import {
+    prepareShare,
+    shareWallet,
+    classifySharePublication,
+    buildAppShareLinkUrl,
+    resolveExpiryIso,
+    type PreparedShare,
+} from '../../../apps/learn-card-app/src/components/share-links/shareLinkFlow';
+import type { ShareLinkOperationKeyInput } from '@learncard/types';
+import { buildNativeTemplate, type NativeCredentialDraft } from './credential-draft';
 import { initLearnCard } from '@learncard/init';
 import { createSSSStrategy } from '../../../packages/sss-key-manager/src/sss-strategy';
 import type { RecoveryInput } from '../../../packages/sss-key-manager/src/types';
@@ -170,7 +180,7 @@ const issuerLabel = async (value: unknown): Promise<string> => {
     }
     return profileId ? `@${profileId}` : 'Issuer details inside';
 };
-const display = async (record: Record<string, unknown>) => {
+const display = async (record: Record<string, unknown>, verify = true) => {
     if (!wallet) throw new Error('Sign in first');
     const uri = string(record.uri);
     let raw: Record<string, unknown> = {};
@@ -178,10 +188,12 @@ const display = async (record: Record<string, unknown>) => {
     try {
         raw = object(await wallet.read.get(uri));
         if (Object.keys(raw).length) {
-            const result = await wallet.invoke.verifyCredential(raw as never, {
-                checks: ['proof'],
-            });
-            proofChecked = result.errors.length === 0;
+            if (verify) {
+                const result = await wallet.invoke.verifyCredential(raw as never, {
+                    checks: ['proof'],
+                });
+                proofChecked = result.errors.length === 0;
+            }
             original.set(uri, raw);
         }
     } catch {
@@ -233,6 +245,24 @@ const snapshot = async (more = false) => {
     return { credentials: collection, offers, activity, hasMore };
 };
 
+// Session retry journal: retain a created template and completed delivery when later indexing/refresh fails.
+// A dropped network reply remains ambiguous; durable cross-launch delivery recovery is a later gate.
+const drafts = new Map<
+    string,
+    {
+        fingerprint: string;
+        uri: string;
+        credentialUri?: string;
+        indexed: boolean;
+        complete: boolean;
+    }
+>();
+const creationURIs = new Set<string>();
+const shares = new Map<
+    string,
+    { fingerprint: string; prepared: PreparedShare; operation?: ShareLinkOperationKeyInput }
+>();
+
 const commands = {
     initialize: async (input: { wasmBase64: string; user: NativeUser }) => {
         user = input.user;
@@ -257,6 +287,69 @@ const commands = {
                     createdAt: user.createdAt ? new Date(Number(user.createdAt)) : undefined,
                 }),
                 getProviderType: () => 'firebase',
+                share: async (input: {
+                    uris: string[];
+                    title: string;
+                    requestID: string;
+                    passcode?: string;
+                }) => {
+                    if (
+                        !wallet ||
+                        !input.requestID ||
+                        input.requestID.length > 100 ||
+                        !input.title.trim() ||
+                        input.title.length > 120 ||
+                        !Array.isArray(input.uris) ||
+                        !input.uris.length ||
+                        input.uris.length > 50 ||
+                        new Set(input.uris).size !== input.uris.length ||
+                        input.uris.some(uri => !collection.some(record => record.id === uri)) ||
+                        (input.passcode &&
+                            (input.passcode.length < 8 || input.passcode.length > 64))
+                    )
+                        throw new Error('Invalid sharing selection');
+                    const fingerprint = JSON.stringify(input);
+                    let saved = shares.get(input.requestID);
+                    if (saved && saved.fingerprint !== fingerprint)
+                        throw new Error('Sharing selection changed');
+                    const adapter = shareWallet(wallet);
+                    if (!saved) {
+                        saved = {
+                            fingerprint,
+                            prepared: await prepareShare(
+                                adapter,
+                                input.uris,
+                                input.title,
+                                '',
+                                resolveExpiryIso('30'),
+                                { passcode: input.passcode }
+                            ),
+                        };
+                        shares.set(input.requestID, saved);
+                    }
+                    let reply = saved.operation
+                        ? await wallet.invoke.retryShareLinkOperation(saved.operation)
+                        : await wallet.invoke.createShareLink(saved.prepared.input);
+                    let outcome = classifySharePublication(reply);
+                    if (outcome.status === 'abandoned') {
+                        saved.operation = undefined;
+                        reply = await wallet.invoke.createShareLink(saved.prepared.input);
+                        outcome = classifySharePublication(reply);
+                    }
+                    if (outcome.status === 'pending') {
+                        saved.operation = outcome.operation;
+                        return { pending: true };
+                    }
+                    if (outcome.status !== 'active') throw new Error('Sharing link unavailable');
+                    return {
+                        pending: false,
+                        url: buildAppShareLinkUrl(
+                            'https://staging.learncard.app',
+                            saved.prepared.input.id,
+                            saved.prepared.key
+                        ),
+                    };
+                },
                 signOut: async () => {
                     await native({ op: 'signOut' });
                 },
@@ -355,21 +448,110 @@ const commands = {
         });
         return snapshot();
     },
+    createDraft: async (input: NativeCredentialDraft) => {
+        if (!wallet) throw new Error('Sign in first');
+        const template = buildNativeTemplate(input, wallet.id.did(), myProfileName);
+        const recipient = input.recipient?.trim() || wallet.id.did();
+        if (input.recipient && !(await wallet.invoke.getProfile(recipient)))
+            throw new Error('Recipient unavailable');
+        const fingerprint = JSON.stringify(input);
+        let saved = drafts.get(input.requestID);
+        if (saved && saved.fingerprint !== fingerprint)
+            throw new Error('Draft changed during delivery');
+        const category =
+            input.kind === 'Learning'
+                ? 'Learning History'
+                : input.kind === 'Memberships'
+                  ? 'ID'
+                  : 'Achievement';
+        if (!saved) {
+            const uri = await wallet.invoke.createBoost(template as never, {
+                name: input.title.trim(),
+                category,
+            });
+            saved = { fingerprint, uri, indexed: false, complete: false };
+            drafts.set(input.requestID, saved);
+        }
+        if (!saved.credentialUri) {
+            const response = await wallet.invoke.send({
+                type: 'boost',
+                recipient,
+                templateUri: saved.uri,
+            });
+            saved.credentialUri = response.credentialUri;
+            if (!saved.credentialUri) throw new Error('Delivery incomplete');
+        }
+        if (!input.recipient && !saved.indexed) {
+            await wallet.invoke.acceptCredential(saved.credentialUri, { skipNotification: true });
+            const credential = await wallet.read.get(saved.credentialUri);
+            const indexedURI = await wallet.store.LearnCloud.uploadEncrypted(credential);
+            await wallet.index.LearnCloud.add({
+                id: saved.credentialUri,
+                uri: indexedURI,
+                title: input.title,
+                category,
+            });
+            saved.indexed = true;
+        }
+        if (!saved.complete) {
+            activity.unshift({
+                id: crypto.randomUUID(),
+                title: input.recipient ? 'Credential created and sent' : 'Created a credential',
+                detail: input.title,
+                symbol: input.recipient ? 'paperplane' : 'sparkles',
+                date: new Date().toISOString(),
+            });
+            saved.complete = true;
+        }
+        return snapshot();
+    },
+    creations: async (input: { cursor?: string }) => {
+        if (!wallet) throw new Error('Sign in first');
+        const page = await wallet.invoke.getPaginatedBoosts({
+            limit: 20,
+            cursor: input.cursor,
+            query: { status: { $in: ['LIVE', 'PROVISIONAL'] } },
+        });
+        const credentials = [];
+        for (const record of page.records) {
+            creationURIs.add(record.uri);
+            const item = await display(
+                {
+                    uri: record.uri,
+                    title: record.name,
+                    category: record.category,
+                },
+                false
+            );
+            credentials.push({
+                ...item,
+                date: record.created || '1970-01-01T00:00:00Z',
+                createdByMe: true,
+            });
+        }
+        return { credentials, hasMore: page.hasMore, cursor: page.cursor };
+    },
+    searchRecipients: async (input: { query: string }) => {
+        if (!wallet || input.query.trim().length < 2 || input.query.length > 100) return [];
+        const profiles = await wallet.invoke.searchProfiles(input.query.trim(), { limit: 15 });
+        return profiles.map(profile => ({
+            id: profile.profileId,
+            name: profile.displayName || profile.profileId,
+        }));
+    },
     recipient: async (input: { profileId: string }) => {
         const profile = await wallet?.invoke.getProfile(input.profileId);
         if (!profile) throw new Error('Recipient not found');
         return { id: profile.profileId, name: profile.displayName || profile.profileId };
     },
     send: async (input: { uri: string; recipient: string }) => {
-        const credential = original.get(input.uri);
-        if (
-            !wallet ||
-            !credential ||
-            (credential.issuer !== wallet.id.did() &&
-                object(credential.issuer).id !== wallet.id.did())
-        )
-            throw new Error('Sender authority missing');
-        await wallet.invoke.sendCredential(input.recipient, credential as never);
+        if (!wallet || !creationURIs.has(input.uri) || !input.recipient.trim())
+            throw new Error('Creation unavailable');
+        await wallet.invoke.send({
+            type: 'boost',
+            recipient: input.recipient,
+            templateUri: input.uri,
+        });
         activity.unshift({
             id: crypto.randomUUID(),
             title: 'Credential sent',
@@ -383,6 +565,9 @@ const commands = {
         await coordinator.logout();
         wallet = undefined;
         original.clear();
+        creationURIs.clear();
+        drafts.clear();
+        shares.clear();
         return { phase: 'idle', methods: [] };
     },
     forget: async () => {
@@ -390,6 +575,9 @@ const commands = {
         await coordinator.logout();
         wallet = undefined;
         original.clear();
+        creationURIs.clear();
+        drafts.clear();
+        shares.clear();
         return { phase: 'idle', methods: [] };
     },
 };

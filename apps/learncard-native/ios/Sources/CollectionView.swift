@@ -16,13 +16,14 @@ struct CollectionView: View {
         (store.snapshot?.credentials ?? []).filter {
             (kind == nil || $0.kind == kind) &&
             (search.isEmpty || "\($0.title) \($0.issuer) \($0.summary)".localizedCaseInsensitiveContains(search))
-        }
+        }.sorted { $0.date > $1.date }
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
                 PageHeading(title: "Collection")
+                Text("My credentials").font(.subheadline.weight(.medium)).foregroundStyle(Palette.secondary)
                 HStack(spacing: 10) {
                     Image(systemName: "magnifyingglass").foregroundStyle(Palette.secondary).accessibilityHidden(true)
                     TextField("Find a credential", text: $search).focused($searching)
@@ -51,10 +52,22 @@ struct CollectionView: View {
                     EmptyState(symbol: "rectangle.stack", title: "Your next achievement belongs here",
                                detail: search.isEmpty ? "Receive or create a credential to get started." : "Try another search or category.")
                 } else {
-                    if let first = credentials.first { link(first, featured: true) }
+                    if let first = credentials.first {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Text("Latest issued").font(.headline).foregroundStyle(Palette.ink)
+                                Spacer()
+                                if first.date.timeIntervalSince1970 > 0 {
+                                    Text(first.date, format: .dateTime.month(.abbreviated).day().year())
+                                        .font(.caption).foregroundStyle(Palette.secondary)
+                                }
+                            }
+                            link(first, featured: true)
+                        }
+                    }
                     if credentials.count > 1 {
                         HStack(alignment: .firstTextBaseline) {
-                            Text("Collected along the way").font(.headline).foregroundStyle(Palette.ink)
+                            Text("In this view").font(.headline).foregroundStyle(Palette.ink)
                             Spacer()
                             Text("\(credentials.count)\(store.snapshot?.hasMore == true ? "+" : "")")
                                 .font(.subheadline.monospacedDigit()).foregroundStyle(Palette.secondary)

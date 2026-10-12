@@ -86,3 +86,10 @@ See [the SDK spike results and account connection design](SDK_SPIKE.md) and [the
 The learner-facing LearnCard App Store is planned after the current design pass. Store administration and developer publishing portals are excluded; see [PLAN.md](PLAN.md).
 
 The approved visual direction and implementation brief are saved in [design/BRIEF.md](design/BRIEF.md). Reproduce navigation artwork with `bun apps/learncard-native/scripts/prepare-branding.ts` from the repository root; React is used only for this asset-generation step, never the native UI.
+
+The plus menu now provides Create new, Send existing creation, and Share credentials. Create includes artwork, format/category action sheets, criteria, recipient selection, and review. Home → Your creations holds reusable templates; Collection holds personal credentials. Sharing supports explicit single/multiple selection and reuses the web encrypted link contract. Demo sharing exports unsigned sample text and creates no online link. New live artwork upload, managed delivery, and share-link publication still require live end-to-end validation; see ACCOUNT_INTEGRATION.md.
+
+```bash
+# Draft signing, sharing protocol interoperability, and transport checks
+bun --conditions=development test apps/learncard-native/account-runtime/*.test.ts apps/learncard-native/sdk-spike/staging.test.ts
+```

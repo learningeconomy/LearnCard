@@ -1,3 +1,4 @@
+import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../../../packages/learn-card-base/src/config/tenantDefaults';
 import { build } from 'esbuild';
 import { readFile, writeFile, copyFile, mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -29,6 +30,7 @@ await writeFile(
         projectID: 'learncard',
         projectNumber: '776298253175',
         testEmail,
+        imageUploadAPIKey: (tenant.storage ?? DEFAULT_LEARNCARD_TENANT_CONFIG.storage).apiKey,
     })
 );
 await copyFile(

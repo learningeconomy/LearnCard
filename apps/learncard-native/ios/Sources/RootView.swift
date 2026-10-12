@@ -7,6 +7,9 @@ struct RootView: View {
     @State private var showReceive = false
     @State private var showCreate = false
     @State private var showAccount = false
+    @State private var showActions = false
+    @State private var showExisting = false
+    @State private var showShare = false
     @State private var offer: Credential?
     @State private var receivedOffer: Credential?
     @State private var selectedTab = 0
@@ -19,11 +22,17 @@ struct RootView: View {
                     .toolbar {
                         ToolbarItem(placement: .topBarLeading) { LearnCardBrand(compact: compactBrand) }
                         ToolbarItem(placement: .topBarTrailing) {
-                            Button { showCreate = true } label: {
+                            Button { showActions = true } label: {
                                 Image(systemName: "plus").font(.body.weight(.semibold))
                                     .foregroundStyle(Palette.selection).frame(width: 36, height: 36)
                                     .background(Palette.selection.opacity(0.1), in: Circle())
-                            }.accessibilityLabel("Create").accessibilityIdentifier("create")
+                            }.accessibilityLabel("Actions").accessibilityIdentifier("create")
+                            .confirmationDialog("What would you like to do?", isPresented: $showActions, titleVisibility: .visible) {
+                                Button("Create new") { showCreate = true }
+                                Button("Send existing creation") { showExisting = true }
+                                Button("Share credentials") { showShare = true }
+                                Button("Cancel", role: .cancel) {}
+                            }
                         }
                         ToolbarItem(placement: .topBarTrailing) {
                             Button("Account", systemImage: "person.crop.circle") { showAccount = true }
@@ -53,6 +62,11 @@ struct RootView: View {
             offer = receivedOffer
             receivedOffer = nil
         }) { ReceiveView(store: store, selectedOffer: $receivedOffer) }
+        .sheet(isPresented: $showExisting) {
+            NavigationStack { CreationsView(store: store, sendOnSelect: true)
+                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { showExisting = false } } } }
+        }
+        .sheet(isPresented: $showShare) { ShareCredentialsView(store: store) }
         .sheet(isPresented: $showCreate) { CreateView(store: store) }
         .sheet(isPresented: $showAccount) { AccountView(account: account) }
         .sheet(item: $offer) { CredentialDetailView(store: store, credential: $0, isOffer: true) }

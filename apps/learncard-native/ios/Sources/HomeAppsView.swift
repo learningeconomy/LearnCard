@@ -35,6 +35,18 @@ struct HomeView: View {
                             .foregroundStyle(Palette.cardInk).background(Palette.pinkCard, in: RoundedRectangle(cornerRadius: 24))
                     }.buttonStyle(CredentialPressStyle())
                 }.fixedSize(horizontal: false, vertical: true)
+                NavigationLink {
+                    CreationsView(store: store)
+                } label: {
+                    HStack(spacing: 14) {
+                        Image(systemName: "rectangle.stack.badge.plus").font(.title2).foregroundStyle(Palette.green)
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("Your creations").font(.headline).foregroundStyle(Palette.ink)
+                            Text("Credentials you can give again").font(.caption).foregroundStyle(Palette.secondary)
+                        }
+                        Spacer(); Image(systemName: "chevron.right").foregroundStyle(Palette.secondary)
+                    }.padding(20).background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
+                }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("home-creations")
                 if !store.isLive {
                     Button("Try a sample claim link", action: receive).accessibilityIdentifier("receive")
                         .font(.subheadline.weight(.medium)).foregroundStyle(Palette.green)

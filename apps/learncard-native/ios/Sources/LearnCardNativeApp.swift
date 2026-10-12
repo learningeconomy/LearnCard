@@ -57,10 +57,28 @@ final class AppStore {
         return success
     }
 
+    func create(draft: CredentialDraft) async -> Bool {
+        let success = await perform { try await self.service.create(draft: draft) }
+        if success { notice = draft.recipient == nil ? (isLive ? "Credential created and added to your collection." : "Sample created. Open it to try sending.") : (isLive ? "Credential created and sent." : "Sample send recorded. No message was delivered.") }
+        return success
+    }
+
+    func creations(cursor: String? = nil) async throws -> CreationPage { try await service.creations(cursor: cursor) }
+    func searchRecipients(_ query: String) async throws -> [AccountRecipient] {
+        if let live = service as? LiveCredentialService { return try await live.searchRecipients(query) }
+        return [AccountRecipient(id: "Alex Morgan", name: "Alex Morgan"), AccountRecipient(id: "Jordan Lee", name: "Jordan Lee")]
+    }
+
     func send(_ credential: Credential, to recipient: String) async -> Bool {
         let success = await perform { try await self.service.send(credentialID: credential.id, recipient: recipient) }
         if success { notice = isLive ? "Credential sent." : "Sample send recorded. No message was delivered." }
         return success
+    }
+
+    func share(credentialIDs: [String], title: String, requestID: String, passcode: String?) async throws -> CredentialShare {
+        guard !isBusy else { throw AccountError.unavailable }
+        isBusy = true; defer { isBusy = false }
+        return try await service.share(credentialIDs: credentialIDs, title: title, requestID: requestID, passcode: passcode)
     }
 
     func loadMore() async { _ = await perform { try await self.service.loadMore() } }
