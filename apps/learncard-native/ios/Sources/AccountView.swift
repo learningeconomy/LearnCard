@@ -33,9 +33,9 @@ struct AccountView: View {
                     }.background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
                     if let account {
                         VStack(spacing: 0) {
-                            Button { dismiss(); Task { await account.signOut(forget: false) } } label: { row("Sign out", symbol: "rectangle.portrait.and.arrow.right", tint: Palette.paper) }.disabled(account.busy)
+                            Button { dismiss(); Task { await account.signOut(forget: false) } } label: { row("Sign out", symbol: "rectangle.portrait.and.arrow.right", tint: Palette.paper) }.accessibilityIdentifier("account-sign-out")
                             divider
-                            Button { showForget = true } label: { row("Forget this device", symbol: "trash", tint: Palette.pinkCard, destructive: true) }.disabled(account.busy)
+                            Button { showForget = true } label: { row("Forget this device", symbol: "trash", tint: Palette.pinkCard, destructive: true) }.accessibilityIdentifier("account-forget-device")
                         }.background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
                     }
                     Text(account == nil ? "Sample mode" : "Staging account · Some settings open on web")

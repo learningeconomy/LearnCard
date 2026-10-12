@@ -1,6 +1,7 @@
 #!/bin/bash
 # Shared by run-ios and test-ios; creates a dedicated simulator for this experiment.
 lc_prepare_simulator() {
+    lc_native_name="${LC_NATIVE_SIMULATOR_NAME:-LearnCard Native Lab}"
     if [[ -n "${LC_NATIVE_SIMULATOR_ID:-}" ]]; then
         lc_native_device="$LC_NATIVE_SIMULATOR_ID"
     else
@@ -8,8 +9,8 @@ lc_prepare_simulator() {
 import json, sys
 devices = json.load(sys.stdin)["devices"]
 print(next((d["udid"] for group in devices.values() for d in group
-            if d.get("isAvailable") and d["name"] == "LearnCard Native Lab"), ""))
-')"
+            if d.get("isAvailable") and d["name"] == sys.argv[1]), ""))
+' "$lc_native_name")"
         if [[ -z "$lc_native_device" ]]; then
             lc_runtime="$(xcrun simctl list runtimes -j | python3 -c '
 import json, sys
@@ -28,7 +29,7 @@ for name in ("iPhone 17 Pro", "iPhone 16 Pro", "iPhone 15 Pro"):
         break
 else: sys.exit("Install an iPhone simulator device type in Xcode.")
 ')"
-            lc_native_device="$(xcrun simctl create 'LearnCard Native Lab' "$lc_device_type" "$lc_runtime")"
+            lc_native_device="$(xcrun simctl create "$lc_native_name" "$lc_device_type" "$lc_runtime")"
         fi
     fi
     lc_native_state="$(xcrun simctl list devices -j | python3 -c '

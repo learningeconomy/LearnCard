@@ -4,7 +4,8 @@ import LearnCardNativeSDK
 
 struct AccountRootView: View {
     @Environment(\.scenePhase) private var scenePhase
-    @State private var account = AccountController()
+    @State private var account: AccountController
+    init(account: AccountController = AccountController()) { _account = State(initialValue: account) }
     var body: some View {
         Group {
             if let store = account.store { RootView(store: store, account: account) }
@@ -15,8 +16,9 @@ struct AccountRootView: View {
             if ProcessInfo.processInfo.arguments.contains("--request-test-code"), account.phase == "signIn" { await account.sendCode() }
         }
         .onChange(of: scenePhase) { _, new in
+            // Lock synchronously, before SwiftUI replaces private account content.
             if new == .background { account.lock() }
-            else if new == .active, account.phase == "locked" { Task { await account.resume() } }
+            else { Task { await account.activityChanged(new == .active ? .active : .inactive) } }
         }
     }
 }
@@ -42,7 +44,7 @@ struct AccountSignInView: View {
                     Text("Staging test account").font(.caption).foregroundStyle(Palette.secondary)
                 }.listRowBackground(Color.clear)
                 if let error = account.error {
-                    Section { Label(error, systemImage: "exclamationmark.circle").foregroundStyle(Palette.ink) }
+                    Section { Label(error, systemImage: "exclamationmark.circle").foregroundStyle(Palette.ink).accessibilityIdentifier("account-error") }
                 }
                 if account.busy {
                     Section { HStack { ProgressView(); Text("Connecting your account…") }.accessibilityIdentifier("account-loading") }
@@ -109,13 +111,18 @@ struct AccountSignInView: View {
                     }
                 }
                 if account.user != nil {
-                    Section { Button("Sign Out") { Task { await account.signOut(forget: false) } }.disabled(account.busy) }
+                    Section { Button("Sign Out") { Task { await account.signOut(forget: false) } }.accessibilityIdentifier("account-sign-out") }
                 }
             }
             .foregroundStyle(Palette.ink)
             .navigationTitle("LearnCard")
             .navigationBarTitleDisplayMode(.inline)
             .scrollDismissesKeyboard(.interactively)
+        }
+        .onChange(of: account.phase) { _, phase in
+            if ["locked", "signIn", "ready"].contains(phase) {
+                code = ""; phrase = ""; emailShare = ""; password = ""; fileContents = ""; fileName = ""
+            }
         }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.json, .plainText]) { result in
             do {

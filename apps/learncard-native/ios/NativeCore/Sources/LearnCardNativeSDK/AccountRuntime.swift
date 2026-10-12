@@ -12,6 +12,13 @@ public struct AccountState: Decodable, Sendable {
     public let profileBio: String?
     public let signingDid: String?
     public let profileDid: String?
+    public init(phase: String, methods: [String] = [], error: String? = nil, profileName: String? = nil,
+                profileId: String? = nil, profileImage: URL? = nil, profileBio: String? = nil,
+                signingDid: String? = nil, profileDid: String? = nil) {
+        self.phase = phase; self.methods = methods; self.error = error; self.profileName = profileName
+        self.profileId = profileId; self.profileImage = profileImage; self.profileBio = profileBio
+        self.signingDid = signingDid; self.profileDid = profileDid
+    }
 }
 
 /// Bundled, windowless SDK host. Signing/recovery keys never appear in native command replies.

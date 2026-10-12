@@ -1,0 +1,45 @@
+name: Vesper checks
+
+on:
+    push:
+        branches: [codex/vesper-73]
+    pull_request:
+        types: [opened, synchronize, reopened]
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: vesper-checks-${{ github.head_ref || github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    native-regressions:
+        name: Native regression suite
+        if: github.event_name != 'pull_request' || github.head_ref == 'codex/vesper-73'
+        runs-on: macos-15
+        timeout-minutes: 45
+        env:
+            DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+        steps:
+            - uses: actions/checkout@v7
+            - uses: ./.github/actions/setup
+            - name: Record toolchain
+              run: |
+                  xcodebuild -version
+                  swift --version
+                  xcrun simctl list runtimes
+            - name: Domain, account, lifecycle, UI and SDK interoperability
+              run: bash apps/learncard-native/scripts/test-ci.sh
+            - name: Upload test results and screenshots
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: vesper-regression-results
+                  retention-days: 7
+                  if-no-files-found: warn
+                  path: |
+                      apps/learncard-native/artifacts/native-regressions-*.xcresult
+                      apps/learncard-native/artifacts/swift-core.log
+                      apps/learncard-native/artifacts/native-attachments-*

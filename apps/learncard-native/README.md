@@ -46,6 +46,8 @@ bunx nx run learncard-native:test-ios
 
 UI results are saved under `artifacts/` as `.xcresult` bundles. Derived data and test artifacts are ignored. Native targets are named `build-ios`, `test-core`, `test-ios`, `test-sdk`, and `test-staging` so repository-wide web builds and tests do not require Xcode on Linux.
 
+The branch now has automatic native CI, including account recovery, background/resume and sign-out regressions. See [TESTING.md](TESTING.md) for coverage, local commands, fixture isolation and failure artifacts.
+
 The staging runner creates two private test profiles, sends an encrypted credential, runs the native claim/index/send exchange, and checks the results with the current SDK. It removes its own test records and profiles on exit. Generated identity material stays in ignored local files; native initialization refuses setup older than 20 minutes. If cleanup fails, the runner retains `sdk-spike/generated/staging-state.json`; retry with `bun --conditions=development apps/learncard-native/sdk-spike/staging-account.ts cleanup`. The regular scheme skips the live test; `LearnCardNativeStaging` explicitly enables it.
 
 Staging network, LearnCloud, and account recovery endpoints are selected explicitly. Native sign-in uses the approved shared `learncard` Firebase project. The disposable staging exchange and the existing Firebase-backed account connection are separate validations; see [ACCOUNT_INTEGRATION.md](ACCOUNT_INTEGRATION.md).

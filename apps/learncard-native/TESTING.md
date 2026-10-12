@@ -1,0 +1,43 @@
+# Native regression checks
+
+The `Vesper checks` workflow runs on every push to `codex/vesper-73`, on pull requests from that branch, and on manual dispatch. Its check is **Native regression suite**. It uses macOS 15 and Xcode 26.3, selects an available iOS runtime, and creates/reuses a dedicated **LearnCard Native UI Checks** simulator. It does not change repository branch protection.
+
+The same suite can run locally:
+
+```bash
+bash apps/learncard-native/scripts/test-ci.sh
+```
+
+An explicit `LC_NATIVE_SIMULATOR_ID` overrides simulator selection; choose a test simulator, since UI checks install and relaunch the app. The suite forces the non-deliverable `native-test@example.invalid` build configuration. Reconfigure the test email before installing a later live-account build.
+
+## Coverage
+
+| Layer                    | What it catches                                                                                                                                                               | Boundary                                                                                                        |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Swift domain tests       | Duplicate claims, draft validation, personal collection versus reusable creations, share selection, malformed links                                                           | In-memory credential service                                                                                    |
+| Account security tests   | Firebase custom-token exchange, refresh, persisted session, stale sign-in response after logout, scoped Keychain storage, token forwarding                                    | Synthetic HTTP via URLProtocol; real native Keychain in disposable services                                     |
+| Account lifecycle tests  | Background → inactive → active, interruptions, late initialization/recovery replies, recovery retry/relaunch, sign-out priority, forgetting a locked account, cleanup failure | **Production account and collection controllers**, injected session/SDK hosts; deterministic continuation gates |
+| Account UI tests         | Actual Home/activate transitions, repeated resume, email recovery failure/retry, cleared recovery input, relaunch, sign-out, cancel/confirm Forget this device                | **Production SwiftUI account screens and controller**, DEBUG-only fake backend and per-test Keychain markers    |
+| iOS Keychain probe       | Device-only accessibility and isolated read/update/delete/relaunch behavior                                                                                                   | Runs inside the app process with synthetic values                                                               |
+| Existing UI tests        | Navigation/title rendering, creation/recipient/category flows, claim, selection/sharing, Account navigation, dark-mode share sheet                                            | Unsigned demo fixtures                                                                                          |
+| Bun protocol tests       | Web-compatible draft signing, encrypted selection/proof preservation, transport/redirect constraints                                                                          | Offline SDK fixtures                                                                                            |
+| iOS SDK interoperability | Credential signatures and tamper checks, encryption, recovery, presentations, transfer                                                                                        | Real bundled WASM/SDK on simulator, followed by independent verification with the web SDK                       |
+
+The account controller and collection store live in `ios/NativeCore/Sources/LearnCardNativeSDK/`. The app uses aliases to these same implementations. The fixture entry point changes backend boundaries only; it is excluded from Release builds. Continuation gates hold responses at known points so race assertions do not depend on arbitrary sleeps.
+
+Sign-out invalidates outstanding UI operations and disposes the key-bearing SDK before awaiting native token cleanup. Ordinary sign-out preserves device access for the next sign-in. Forget additionally deletes this verified account's primary/pending share and version slots, including when its SDK host has already been disposed. Account screens clear unsubmitted recovery/code fields on background and submitted recovery fields immediately.
+
+## Results and failures
+
+CI keeps `.xcresult` bundles, test attachments/screenshots, independent interoperability verification, and Swift logs for seven days, including failed runs. Download `vesper-regression-results` from the workflow run and open the `.xcresult` in Xcode. Generated SDK resources, Firebase configuration, device shares, and local identity/vector files are not uploaded.
+
+To run a focused regression locally:
+
+```bash
+bash apps/learncard-native/scripts/test-core.sh
+LC_NATIVE_SIMULATOR_NAME='LearnCard Native UI Checks' \
+  bash apps/learncard-native/scripts/test-ios.sh \
+  -only-testing:LearnCardNativeUITests/AccountLifecycleUITests
+```
+
+CI does not send verification email, recover a real account, send credentials to real recipients, or run the opt-in staging exchange. Live SSS/Firebase service availability, physical-device lock/unlock, revoked credentials, minimum-iOS compatibility, and real upload/send/share/profile mutations still need separate validation. UI screenshots are evidence for review, not pixel-diff snapshot assertions. Keep testing the existing account connection as backend contracts evolve.

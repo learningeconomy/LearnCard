@@ -5,6 +5,9 @@ public struct FirebaseUser: Codable, Sendable, Equatable {
     public let email: String
     public let displayName: String?
     public let createdAt: String?
+    public init(id: String, email: String, displayName: String? = nil, createdAt: String? = nil) {
+        self.id = id; self.email = email; self.displayName = displayName; self.createdAt = createdAt
+    }
 }
 
 private struct SavedSession: Codable, Sendable {
