@@ -78,6 +78,7 @@ export const useKnownDIDRegistry = (profileId?: string) => {
     return useQuery({
         queryKey: ['knownDidRegistry', profileId],
         staleTime: 60 * 60 * 1000,
+        gcTime: 60 * 60 * 1000,
         enabled: !!profileId,
         queryFn: async () => {
             if (!profileId) {
