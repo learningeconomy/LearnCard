@@ -228,7 +228,7 @@ export const createWeb3AuthStrategy = (
                 const tokenAlreadyUsed = /token is used|duplicate token/i.test(message);
                 log.error('Web3Auth account setup failed', {
                     setupAttemptId,
-                    tokenAlreadyUsed,
+                    replayedCredential: tokenAlreadyUsed,
                     restoredIdentityMismatch:
                         message === 'Web3Auth restored session identity mismatch',
                     crossTabLockAvailable: Boolean(locks),

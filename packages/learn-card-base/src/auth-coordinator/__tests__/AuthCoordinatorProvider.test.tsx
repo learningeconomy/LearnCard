@@ -321,12 +321,14 @@ describe('AuthCoordinatorProvider propagated sign-out', () => {
         const view = render(tree(authProvider));
         await waitFor(() => expect(context.isReady).toBe(true));
         expect(context.privateKey).toBe('cached-private-key');
+        expect(context.hasEndedAuthSession).toBe(false);
         const originalInitialize = context.initialize;
         const originalRetry = context.retry;
         view.rerender(tree(null));
         await waitFor(() => expect(context.state.status).toBe('idle'));
         expect(context.privateKey).toBeNull();
         expect(context.authSessionValid).toBe(false);
+        expect(context.hasEndedAuthSession).toBe(true);
         expect(readKey).toHaveBeenCalledOnce();
         await act(async () => {
             await originalInitialize();
@@ -341,6 +343,7 @@ describe('AuthCoordinatorProvider propagated sign-out', () => {
         view.rerender(tree({ ...authProvider }));
         await waitFor(() => expect(context.isReady).toBe(true));
         expect(readKey).toHaveBeenCalledTimes(2);
+        expect(context.hasEndedAuthSession).toBe(false);
         view.unmount();
     });
 

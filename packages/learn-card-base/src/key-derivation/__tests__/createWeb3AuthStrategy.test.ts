@@ -132,7 +132,7 @@ describe('Web3Auth account setup coordination', () => {
         expect(JSON.stringify(sdk.error.mock.calls)).not.toContain(token());
         expect(sdk.error).toHaveBeenCalledWith(
             'Web3Auth account setup failed',
-            expect.objectContaining({ tokenAlreadyUsed: true })
+            expect.objectContaining({ replayedCredential: true })
         );
         expect(await derive(strategy)).toBe('synthetic-private-key');
     });

@@ -53,6 +53,9 @@ export interface AuthCoordinatorContextValue {
     /** Whether the auth provider session (e.g. Firebase JWT) is currently valid */
     authSessionValid: boolean;
 
+    /** A previously confirmed session ended in this mounted tab (not anonymous startup). */
+    hasEndedAuthSession?: boolean;
+
     /** Declarative feature flags from the active key derivation strategy */
     capabilities: KeyDerivationCapabilities;
 
@@ -218,6 +221,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     // live account, losing the provider must instead end that account session.
     const observedAuthSessionRef = useRef(false);
     const sessionEndedRef = useRef(false);
+    const [hasEndedAuthSession, setHasEndedAuthSession] = useState(false);
     const [recoverySetupIdentity, setRecoverySetupIdentity] = useState<object>({});
     const recoverySetupIdentityRef = useRef(recoverySetupIdentity);
     const recoverySetupAccountRef = useRef<{
@@ -328,6 +332,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
 
         const handleStateChange = (newState: UnifiedAuthState) => {
             if (stale) return;
+            setHasEndedAuthSession(sessionEndedRef.current);
             if ('authUser' in newState && newState.authUser?.id) {
                 observedAuthSessionRef.current = true;
             }
@@ -645,6 +650,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             privateKey,
             did,
             authSessionValid,
+            hasEndedAuthSession,
             capabilities: keyDerivation.capabilities,
             keyDerivation,
             initialize,
@@ -690,6 +696,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             privateKey,
             did,
             authSessionValid,
+            hasEndedAuthSession,
             keyDerivation,
             initialize,
             setupNewKey,
