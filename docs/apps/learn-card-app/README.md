@@ -92,6 +92,19 @@ If history cannot be loaded, **Clear history** remains available to reset record
 
 If your account changes after an OID4VP send completes, the success screen says so and hides the earlier account’s details. It does not redirect to the verifier under the new account; return to the requesting application to finish its session.
 
+### Qualifications
+
+Qualifications has its own section after IDs in the wallet and navigation, even when it is empty. It contains professional licenses, certifications, and apprenticeship, journeyman, and master certificates.
+
+- Existing credentials in their original automatic category move to Qualifications in the background after the account opens; account access does not wait for this scan. Successful scans are remembered for that account and cloud service. Unavailable credentials retry on the next app session, not on every account operation. Saved manual overrides, explicit credential categories, and custom Boost categories stay unchanged. Older choices without a manual-choice marker are treated as automatic defaults.
+- Qualification credentials default to an orange certificate frame with Qualifications corner glyphs; explicit display settings and recognized achievement types take precedence.
+- Colorful matches the other section shades: orange-300 Passport tiles and selected tabs, orange-400 page headers, orange-200 page backgrounds, and orange-500 count badges with dark text. Actions keep darker orange for readable contrast. Neutral Mode uses white backgrounds for all Passport categories in tile and list views, and keeps the Colorful Solid Color Qualifications glyph in both layouts. Other icon placements retain their theme-specific artwork. Colorful has a dedicated empty-state illustration; Formal keeps its shared empty-state placeholder. Credential image fallbacks also use Qualifications artwork instead of the Achievements trophy.
+- Click **professional qualifications** on the Qualifications page to open **About Qualifications**, with Qualifications artwork and a short explanation of professional licenses, certifications, and apprenticeship, journeyman, or master certificates.
+- Certificate previews keep the issuer's details and seal inside the frame, above the category label.
+- Expiration dates remain visible. An expired qualification stays in the account and can still be opened or shared.
+- Identification documents, such as passports and driver's licenses, remain in IDs.
+- Resumes keep Achievements alongside Qualifications. Existing saved section order, hidden sections, dates, and edited descriptions remain intact when an older resume is opened.
+
 ### Self-Assigning Skills
 
 ```mermaid
