@@ -25,6 +25,8 @@ An explicit `LC_NATIVE_SIMULATOR_ID` overrides simulator selection; choose a tes
 
 The account controller and collection store live in `ios/NativeCore/Sources/LearnCardNativeSDK/`. The app uses aliases to these same implementations. The fixture entry point changes backend boundaries only; it is excluded from Release builds. Continuation gates hold responses at known points so race assertions do not depend on arbitrary sleeps.
 
+The command regression executes the actual browser account bundle in an isolated JavaScript realm. It checks every Swift command route, friendly invalid/signed-out replies, empty signed-out member searches, refusal of unknown/inherited method names, and absence of bridge requests. This caught sharing and profile-update handlers accidentally nested in the Firebase provider rather than the command dispatcher; both routes are now connected. Their real-account mutations still need live validation. CI also compiles Release to check the app with DEBUG fixtures excluded.
+
 Sign-out invalidates outstanding UI operations and disposes the key-bearing SDK before awaiting native token cleanup. Ordinary sign-out preserves device access for the next sign-in. Forget additionally deletes this verified account's primary/pending share and version slots, including when its SDK host has already been disposed. Account screens clear unsubmitted recovery/code fields on background and submitted recovery fields immediately.
 
 ## Results and failures

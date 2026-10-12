@@ -105,7 +105,7 @@ public final class NativeAccountController {
         runtime = host
         let state = try await host.initialize()
         try check(expected)
-        await apply(state)
+        try await apply(state)
     }
 
     public func recover(method: String, phrase: String, fileContents: String, password: String, emailShare: String) async {
@@ -115,12 +115,13 @@ public final class NativeAccountController {
             let state = try await runtime.recover(method: method, phrase: phrase, fileContents: fileContents, password: password, emailShare: emailShare)
             try self.check(expected)
             if state.error != nil { throw AccountError.recovery }
-            await self.apply(state)
+            try await self.apply(state)
         }
     }
 
-    private func apply(_ state: AccountState) async {
+    private func apply(_ state: AccountState) async throws {
         self.state = state; phase = state.phase
+        if state.error != nil { throw AccountError.recovery }
         if state.phase == "ready", let runtime {
             let store = NativeAppStore(service: runtime.credentialService, isLive: true)
             self.store = store

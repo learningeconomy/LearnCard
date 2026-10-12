@@ -289,94 +289,6 @@ const commands = {
                     createdAt: user.createdAt ? new Date(Number(user.createdAt)) : undefined,
                 }),
                 getProviderType: () => 'firebase',
-                share: async (input: {
-                    uris: string[];
-                    title: string;
-                    requestID: string;
-                    passcode?: string;
-                }) => {
-                    if (
-                        !wallet ||
-                        !input.requestID ||
-                        input.requestID.length > 100 ||
-                        !input.title.trim() ||
-                        input.title.length > 120 ||
-                        !Array.isArray(input.uris) ||
-                        !input.uris.length ||
-                        input.uris.length > 50 ||
-                        new Set(input.uris).size !== input.uris.length ||
-                        input.uris.some(uri => !collection.some(record => record.id === uri)) ||
-                        (input.passcode &&
-                            (input.passcode.length < 8 || input.passcode.length > 64))
-                    )
-                        throw new Error('Invalid sharing selection');
-                    const fingerprint = JSON.stringify(input);
-                    let saved = shares.get(input.requestID);
-                    if (saved && saved.fingerprint !== fingerprint)
-                        throw new Error('Sharing selection changed');
-                    const adapter = shareWallet(wallet);
-                    if (!saved) {
-                        saved = {
-                            fingerprint,
-                            prepared: await prepareShare(
-                                adapter,
-                                input.uris,
-                                input.title,
-                                '',
-                                resolveExpiryIso('30'),
-                                { passcode: input.passcode }
-                            ),
-                        };
-                        shares.set(input.requestID, saved);
-                    }
-                    let reply = saved.operation
-                        ? await wallet.invoke.retryShareLinkOperation(saved.operation)
-                        : await wallet.invoke.createShareLink(saved.prepared.input);
-                    let outcome = classifySharePublication(reply);
-                    if (outcome.status === 'abandoned') {
-                        saved.operation = undefined;
-                        reply = await wallet.invoke.createShareLink(saved.prepared.input);
-                        outcome = classifySharePublication(reply);
-                    }
-                    if (outcome.status === 'pending') {
-                        saved.operation = outcome.operation;
-                        return { pending: true };
-                    }
-                    if (outcome.status !== 'active') throw new Error('Sharing link unavailable');
-                    return {
-                        pending: false,
-                        url: buildAppShareLinkUrl(
-                            'https://staging.learncard.app',
-                            saved.prepared.input.id,
-                            saved.prepared.key
-                        ),
-                    };
-                },
-                updateProfile: async (input: { name: string; bio: string }) => {
-                    if (
-                        !wallet ||
-                        !input.name.trim() ||
-                        input.name.length > 100 ||
-                        input.bio.length > 500
-                    )
-                        throw new Error('Invalid profile');
-                    await wallet.invoke.updateProfile({
-                        displayName: input.name.trim(),
-                        bio: input.bio.trim(),
-                    });
-                    const profile = await wallet.invoke.getProfile();
-                    if (!profile) throw new Error('Profile unavailable');
-                    myProfileName = profile.displayName || user.email;
-                    return {
-                        phase: 'ready',
-                        methods: [],
-                        profileName: myProfileName,
-                        profileId: profile.profileId,
-                        profileImage: image(profile.image),
-                        profileBio: profile.bio,
-                        profileDid: wallet.id.did(),
-                    };
-                },
                 signOut: async () => {
                     await native({ op: 'signOut' });
                 },
@@ -587,6 +499,88 @@ const commands = {
             date: new Date().toISOString(),
         });
         return snapshot();
+    },
+    share: async (input: {
+        uris: string[];
+        title: string;
+        requestID: string;
+        passcode?: string;
+    }) => {
+        if (
+            !wallet ||
+            !input.requestID ||
+            input.requestID.length > 100 ||
+            !input.title.trim() ||
+            input.title.length > 120 ||
+            !Array.isArray(input.uris) ||
+            !input.uris.length ||
+            input.uris.length > 50 ||
+            new Set(input.uris).size !== input.uris.length ||
+            input.uris.some(uri => !collection.some(record => record.id === uri)) ||
+            (input.passcode && (input.passcode.length < 8 || input.passcode.length > 64))
+        )
+            throw new Error('Invalid sharing selection');
+        const fingerprint = JSON.stringify(input);
+        let saved = shares.get(input.requestID);
+        if (saved && saved.fingerprint !== fingerprint)
+            throw new Error('Sharing selection changed');
+        const adapter = shareWallet(wallet);
+        if (!saved) {
+            saved = {
+                fingerprint,
+                prepared: await prepareShare(
+                    adapter,
+                    input.uris,
+                    input.title,
+                    '',
+                    resolveExpiryIso('30'),
+                    { passcode: input.passcode }
+                ),
+            };
+            shares.set(input.requestID, saved);
+        }
+        let reply = saved.operation
+            ? await wallet.invoke.retryShareLinkOperation(saved.operation)
+            : await wallet.invoke.createShareLink(saved.prepared.input);
+        let outcome = classifySharePublication(reply);
+        if (outcome.status === 'abandoned') {
+            saved.operation = undefined;
+            reply = await wallet.invoke.createShareLink(saved.prepared.input);
+            outcome = classifySharePublication(reply);
+        }
+        if (outcome.status === 'pending') {
+            saved.operation = outcome.operation;
+            return { pending: true };
+        }
+        if (outcome.status !== 'active') throw new Error('Sharing link unavailable');
+        return {
+            pending: false,
+            url: buildAppShareLinkUrl(
+                'https://staging.learncard.app',
+                saved.prepared.input.id,
+                saved.prepared.key
+            ),
+        };
+    },
+    updateProfile: async (input: { name: string; bio: string }) => {
+        if (!wallet || !input.name.trim() || input.name.length > 100 || input.bio.length > 500)
+            throw new Error('Invalid profile');
+        await wallet.invoke.updateProfile({
+            displayName: input.name.trim(),
+            bio: input.bio.trim(),
+        });
+        const profile = await wallet.invoke.getProfile();
+        if (!profile) throw new Error('Profile unavailable');
+        myProfileName = profile.displayName || user.email;
+        return {
+            phase: 'ready',
+            methods: [],
+            profileName: myProfileName,
+            profileId: profile.profileId,
+            profileImage: image(profile.image),
+            profileBio: profile.bio,
+            profileDid: wallet.id.did(),
+        };
     },
     signOut: async () => {
         await coordinator.logout();

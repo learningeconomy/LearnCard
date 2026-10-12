@@ -58,12 +58,13 @@ import LearnCardNativeCore
     let credentialService: any CredentialService = DemoCredentialService()
     var initializeGate: Gate?
     var recoveryGate: Gate?
+    var initialState: AccountState?
     var disposed = false
     var recoveries = 0
     init(_ access: AccessStub) { self.access = access }
     func initialize() async throws -> AccountState {
         // Deliberately allow a late backend reply after dispose to test the controller guard.
-        let state = currentState()
+        let state = initialState ?? currentState()
         if let initializeGate { await initializeGate.wait() }
         return state
     }
@@ -87,17 +88,30 @@ import LearnCardNativeCore
     let access = AccessStub()
     var hosts: [HostStub] = []
     var nextInitializeGate: Gate?
+    var nextState: AccountState?
     func controller() -> NativeAccountController {
         NativeAccountController(session: session, makeHost: { user in
             XCTAssertEqual(user.id, self.session.fixtureUser.id)
             let host = HostStub(self.access)
             host.initializeGate = self.nextInitializeGate; self.nextInitializeGate = nil
+            host.initialState = self.nextState; self.nextState = nil
             self.hosts.append(host); return host
         }, forgetAccount: { id in self.access.forgets.append(id); self.access.remembered = false })
     }
 }
 
 @MainActor final class AccountLifecycleTests: XCTestCase {
+    func testInitialRecoveryErrorHasFriendlyFeedbackAndCanRecover() async {
+        let harness = Harness(), account = harness.controller()
+        harness.access.remembered = false
+        harness.nextState = AccountState(phase: "recovery", methods: ["email"], error: "synthetic-internal-error")
+        await account.resume()
+        XCTAssertEqual(account.phase, "recovery"); XCTAssertNil(account.store)
+        XCTAssertEqual(account.error, AccountError.recovery.errorDescription); XCTAssertFalse(account.busy)
+        await recover(account)
+        XCTAssertEqual(account.phase, "ready"); XCTAssertNil(account.error)
+    }
+
     func testBackgroundInactiveActiveReopensAccountAndCollection() async {
         let harness = Harness(), account = harness.controller()
         await account.resume()

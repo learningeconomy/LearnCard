@@ -59,7 +59,14 @@ import XCTest
         let dialog = app.sheets.firstMatch
         XCTAssertTrue(dialog.waitForExistence(timeout: 5))
         let cancel = app.buttons["Cancel"]
-        XCTAssertTrue(cancel.waitForExistence(timeout: 5)); cancel.tap()
+        if cancel.exists { cancel.tap() }
+        else {
+            // iOS 26's compact confirmation popover cancels through its outside region.
+            let outside = app.otherElements["PopoverDismissRegion"]
+            XCTAssertTrue(outside.waitForExistence(timeout: 5)); outside.tap()
+        }
+        let dismissed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: dialog)
+        XCTAssertEqual(XCTWaiter.wait(for: [dismissed], timeout: 5), .completed)
         XCTAssertTrue(app.buttons["account-sign-out"].exists)
         forget.tap()
         XCTAssertTrue(dialog.waitForExistence(timeout: 5)); dialog.buttons["Sign Out & Forget Device"].tap()

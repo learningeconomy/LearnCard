@@ -85,3 +85,13 @@ The Account sheet is opaque, grouped, and compact. It loads the network profile 
 Final chrome regression: all eleven native UI checks passed in `artifacts/ui-20261012-145753-2266.xcresult`, including custom tray/action popover, Account/security navigation, and the previously timing-sensitive format/category check. The current signed-in simulator was visually checked for the tray and category stack.
 
 Lifecycle correction after visual QA: resume saved access whenever the scene becomes active while the account is locked; iOS may pass through inactive between background and active. Locked/loading screens retain a Continue fallback when idle. The SDK host still disposes on background. Simulator build passes; real-device background/unlock remains a release check.
+
+## Account and lifecycle regression CI — October 12, 2026
+
+`Vesper checks` now runs the native suite automatically on `codex/vesper-73`. It covers the production account controller and SwiftUI account screens through disposable fake backend boundaries, alongside native Keychain/Firebase transport checks, domain/UI flows and real offline SDK interoperability. See [TESTING.md](TESTING.md) for exact coverage and commands. Live-account configuration, credentials and recovery material are excluded from CI; the staging mutation runner remains opt-in.
+
+Thirteen deterministic controller tests exercise background/inactive/active transitions, recovery failure/retry/relaunch, late initialization and recovery replies, priority sign-out, cleanup failure, and forgetting a locked account. Five account UI cases exercise actual Home/activate and relaunch transitions, recovery input clearing, and sign-out/forget confirmation. The existing domain, Keychain, demo UI and SDK checks remain in the suite, and Release is compiled with fixture entry points excluded.
+
+Sign-out previously went through the same busy gate as recovery and could be ignored. It now invalidates outstanding operations and closes the SDK immediately, then removes native session tokens. Forget also deletes scoped primary/pending share/version slots without requiring an active SDK host. Ordinary sign-out preserves remembered recovery access. Initialization recovery errors retain friendly feedback and recovery inputs are cleared on background.
+
+The additional bundled-command regression reproduced missing share/profile-update dispatch routes; their implementations had been nested under the Firebase auth adapter. Both were moved into the actual command dispatcher. This is a routing correction; it does not establish live publication or profile-update success. A confirmation test was corrected for iOS 26's outside-dismiss popover behavior; explicit Cancel remains supported where the system presents it.
