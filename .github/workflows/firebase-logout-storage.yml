@@ -11,6 +11,7 @@ on:
             - 'apps/learn-card-app/src/firebase/**'
             - 'packages/learn-card-base/src/helpers/indexedDBHelpers.ts'
             - 'packages/learn-card-base/src/auth-adapters/**'
+            - 'packages/learn-card-base/src/auth-coordinator/**'
             - 'packages/learn-card-base/src/key-derivation/**'
             - 'package.json'
             - 'apps/scouts/package.json'

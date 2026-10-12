@@ -362,6 +362,7 @@ const AuthSessionManager: React.FC<{
     const coordinator = useBaseAuthCoordinator();
     const { presentToast } = useToast();
     const signInAdapter = useSignInAdapter();
+    const queryClient = useQueryClient();
     const authConfig = getAuthConfig();
     const locale = useLocale();
 
@@ -778,6 +779,11 @@ const AuthSessionManager: React.FC<{
     });
 
     // --- Wallet initialization when coordinator reaches 'ready' ---
+    const walletAuthStateRef = useRef(coordinator.state);
+    useEffect(() => {
+        walletAuthStateRef.current = coordinator.state;
+    }, [coordinator.state]);
+
     useEffect(() => {
         if (coordinator.state.status !== 'ready' || walletInitRef.current) return;
 
@@ -785,12 +791,17 @@ const AuthSessionManager: React.FC<{
         if (showEmailLinkGate) return;
 
         const { privateKey, did } = coordinator.state;
+        const isStale = (): boolean => {
+            const latest = walletAuthStateRef.current;
+            return latest.status !== 'ready' || latest.privateKey !== privateKey;
+        };
 
         walletInitRef.current = true;
 
         const initializeWallet = async () => {
             try {
                 const newWallet = await getBespokeLearnCard(privateKey);
+                if (isStale()) return;
 
                 if (!newWallet) {
                     log.error('Failed to initialize wallet from private key');
@@ -810,6 +821,7 @@ const AuthSessionManager: React.FC<{
                     }
                 }
 
+                if (isStale()) return;
                 const authUser =
                     coordinator.state.status === 'ready' ? coordinator.state.authUser : undefined;
 
@@ -828,6 +840,7 @@ const AuthSessionManager: React.FC<{
                 } catch (e) {
                     log.warn('Push token sync failed', e);
                 }
+                if (isStale()) return;
 
                 setWallet(newWallet);
                 walletModeStore.set.mode('full');
@@ -906,8 +919,6 @@ const AuthSessionManager: React.FC<{
     // clean up this inconsistent state so the UI shows the login page.
     useEffect(() => {
         if (coordinator.state.status !== 'idle') return;
-        const authUser = authUserStore.get.currentUser();
-        if (!authUser?.id) return;
 
         const timer = setTimeout(() => {
             if (!signInAdapter.getCurrentUser()) {
@@ -918,11 +929,15 @@ const AuthSessionManager: React.FC<{
                 currentUserStore.set.currentUserIsLoggedIn(false);
                 walletStore.set.wallet(null);
                 walletModeStore.set.mode(null);
+                web3AuthStore.set.web3Auth(null);
+                web3AuthStore.set.provider(null);
+                unsetAuthToken();
+                queryClient.clear();
             }
         }, 1500);
 
         return () => clearTimeout(timer);
-    }, [coordinator.state.status]);
+    }, [coordinator.state.status, queryClient, signInAdapter]);
 
     // --- LCN profile fetching when wallet is available ---
     const fetchLCNProfile = useCallback(async () => {

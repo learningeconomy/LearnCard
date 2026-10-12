@@ -287,3 +287,105 @@ describe('AuthCoordinatorProvider cold startup', () => {
         expect(readKey).not.toHaveBeenCalled();
     });
 });
+
+describe('AuthCoordinatorProvider propagated sign-out', () => {
+    it('ends a confirmed session without restoring a cached key, and permits a later login', async () => {
+        const keyDerivation = createMockKeyDerivation();
+        const readKey = vi.fn().mockResolvedValue('cached-private-key');
+        const deriveDid = async () => 'did:key:cached';
+        const authProvider: AuthProvider = {
+            getIdToken: vi.fn().mockResolvedValue('token'),
+            getCurrentUser: vi.fn().mockResolvedValue({ id: 'user', providerType: 'firebase' }),
+            getProviderType: () => 'firebase',
+            signOut: vi.fn(),
+        };
+        let context!: AuthCoordinatorContextValue;
+        const Probe = () => {
+            const value = useAuthCoordinator();
+            React.useEffect(() => {
+                context = value;
+            }, [value]);
+            return <div data-testid="propagated-status">{value.state.status}</div>;
+        };
+        const tree = (provider: AuthProvider | null, onLogout?: () => Promise<void>) => (
+            <AuthCoordinatorProvider
+                keyDerivation={keyDerivation}
+                authProvider={provider}
+                getCachedPrivateKey={readKey}
+                didFromPrivateKey={deriveDid}
+                onLogout={onLogout}
+            >
+                <Probe />
+            </AuthCoordinatorProvider>
+        );
+        const view = render(tree(authProvider));
+        await waitFor(() => expect(context.isReady).toBe(true));
+        expect(context.privateKey).toBe('cached-private-key');
+        const originalInitialize = context.initialize;
+        const originalRetry = context.retry;
+        view.rerender(tree(null));
+        await waitFor(() => expect(context.state.status).toBe('idle'));
+        expect(context.privateKey).toBeNull();
+        expect(context.authSessionValid).toBe(false);
+        expect(readKey).toHaveBeenCalledOnce();
+        await act(async () => {
+            await originalInitialize();
+            await originalRetry();
+        });
+        expect(context.state.status).toBe('idle');
+        expect(readKey).toHaveBeenCalledOnce();
+        // Unrelated callback changes must not reopen the cached account.
+        view.rerender(tree(null, async () => undefined));
+        await waitFor(() => expect(context.state.status).toBe('idle'));
+        expect(readKey).toHaveBeenCalledOnce();
+        view.rerender(tree({ ...authProvider }));
+        await waitFor(() => expect(context.isReady).toBe(true));
+        expect(readKey).toHaveBeenCalledTimes(2);
+        view.unmount();
+    });
+
+    it('does not duplicate provider sign-out or app cleanup when a local logout removes auth', async () => {
+        const keyDerivation = createMockKeyDerivation();
+        const readKey = vi.fn().mockResolvedValue('cached-private-key');
+        const deriveDid = async () => 'did:key:cached';
+        const onLogout = vi.fn().mockResolvedValue(undefined);
+        let context!: AuthCoordinatorContextValue;
+        const Probe = () => {
+            const value = useAuthCoordinator();
+            React.useEffect(() => {
+                context = value;
+            }, [value]);
+            return null;
+        };
+        const authProvider: AuthProvider = {
+            getIdToken: vi.fn().mockResolvedValue('token'),
+            getCurrentUser: vi.fn().mockResolvedValue({ id: 'user', providerType: 'firebase' }),
+            getProviderType: () => 'firebase',
+            signOut: vi.fn(),
+        };
+        const tree = (provider: AuthProvider | null) => (
+            <AuthCoordinatorProvider
+                keyDerivation={keyDerivation}
+                authProvider={provider}
+                getCachedPrivateKey={readKey}
+                didFromPrivateKey={deriveDid}
+                onLogout={onLogout}
+            >
+                <Probe />
+            </AuthCoordinatorProvider>
+        );
+        const view = render(tree(authProvider));
+        await waitFor(() => expect(context.isReady).toBe(true));
+        vi.mocked(authProvider.signOut).mockImplementation(async () => {
+            view.rerender(tree(null));
+        });
+        await act(async () => {
+            await context.logout();
+        });
+        await waitFor(() => expect(context.state.status).toBe('idle'));
+        expect(authProvider.signOut).toHaveBeenCalledOnce();
+        expect(onLogout).toHaveBeenCalledOnce();
+        expect(readKey).toHaveBeenCalledOnce();
+        view.unmount();
+    });
+});

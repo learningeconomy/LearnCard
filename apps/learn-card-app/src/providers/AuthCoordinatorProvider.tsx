@@ -425,6 +425,7 @@ const AuthSessionManager: React.FC<{
     const coordinator = useBaseAuthCoordinator();
     const { presentToast } = useToast();
     const signInAdapter = useSignInAdapter();
+    const queryClient = useQueryClient();
     const authConfig = getAuthConfig();
 
     // --- Enriched state ---
@@ -1217,8 +1218,6 @@ const AuthSessionManager: React.FC<{
     // to leave 'idle' (via the private-key-first path) before we wipe stores.
     useEffect(() => {
         if (coordinator.state.status !== 'idle') return;
-        const authUser = authUserStore.get.currentUser();
-        if (!authUser?.id) return;
 
         const timer = setTimeout(() => {
             // Confirm the Firebase SDK truly has no active session
@@ -1229,11 +1228,16 @@ const AuthSessionManager: React.FC<{
                 currentUserStore.set.currentUserPK(null);
                 currentUserStore.set.currentUserIsLoggedIn(false);
                 walletStore.set.wallet(null);
+                walletModeStore.set.mode(null);
+                web3AuthStore.set.web3Auth(null);
+                web3AuthStore.set.provider(null);
+                unsetAuthToken();
+                queryClient.clear();
             }
         }, 1500);
 
         return () => clearTimeout(timer);
-    }, [coordinator.state.status]);
+    }, [coordinator.state.status, queryClient, signInAdapter]);
 
     // --- LCN profile fetching when wallet is available ---
     const fetchLCNProfile = useCallback(async () => {
