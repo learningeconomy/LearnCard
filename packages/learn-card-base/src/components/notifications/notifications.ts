@@ -9,6 +9,7 @@ import {
     WorkHistoryCategoryTypes,
     SocialBadgesCategoryTypes,
     MeritBadgesCategoryTypes,
+    QualificationsCategoryTypes,
 } from '../IssueVC/constants';
 import {
     getCategoryTypeFromCustomType,
@@ -25,6 +26,7 @@ export enum NotificationTypeEnum {
     Learning = 'learning',
     SocialBadge = 'socialBadge',
     MeritBadge = 'meritBadge',
+    Qualifications = 'qualifications',
 }
 
 // temporary helper, since all VCs are achievements atm
@@ -53,6 +55,11 @@ export const getNotificationType = (
     if (isCustomBoostType(achievementType)) {
         customTypeCategory = getCategoryTypeFromCustomType(achievementType);
     }
+    if (
+        QualificationsCategoryTypes.includes(achievementType) ||
+        customTypeCategory === BoostCategoryOptionsEnum.qualifications
+    )
+        return NotificationTypeEnum.Qualifications;
 
     if (
         AchievementCategoryTypes.includes(achievementType) ||

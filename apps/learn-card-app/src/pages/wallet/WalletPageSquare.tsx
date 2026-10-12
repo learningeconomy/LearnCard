@@ -4,6 +4,7 @@ import numeral from 'numeral';
 import * as m from '../../paraglide/messages.js';
 
 import DotIcon from 'learn-card-base/svgs/DotIcon';
+import { QualificationsIconSolidColor } from 'learn-card-base/svgs/wallet/QualificationsIcon';
 
 import { CredentialCategoryEnum } from 'learn-card-base';
 import { IonSkeletonText, IonSpinner } from '@ionic/react';
@@ -25,6 +26,7 @@ const CATEGORY_TITLE: Partial<Record<CredentialCategoryEnum, () => string>> = {
     [CredentialCategoryEnum.skill]: m['wallet.categories.skills'],
     [CredentialCategoryEnum.socialBadge]: m['wallet.categories.socialBadges'],
     [CredentialCategoryEnum.achievement]: m['wallet.categories.achievements'],
+    [CredentialCategoryEnum.qualifications]: m['wallet.categories.qualifications'],
     [CredentialCategoryEnum.learningHistory]: m['wallet.categories.studies'],
     [CredentialCategoryEnum.accomplishment]: m['wallet.categories.portfolio'],
     [CredentialCategoryEnum.accommodation]: m['wallet.categories.assistance'],
@@ -51,17 +53,26 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
     loading,
 }) => {
     const { categoryId: categoryType } = walletPageItem;
-    const { getThemedCategory, getStyleSet, colors: themeColors } = useTheme();
+    const { theme, getThemedCategory, getStyleSet, colors: themeColors } = useTheme();
     const { icons, colors } = getThemedCategory(categoryType);
 
-    const { IconWithShape, Icon } = icons;
+    const { IconWithShape: themedIconWithShape, Icon } = icons;
+    const IconWithShape =
+        theme.id === 'formal' && categoryType === CredentialCategoryEnum.qualifications
+            ? QualificationsIconSolidColor
+            : themedIconWithShape;
     const { primaryColor, secondaryColor, indicatorColor, borderColor } = colors;
 
     const passportCardBgColor = themeColors?.defaults?.passportCardBgColor;
     const passportCardTextColor = themeColors?.defaults?.passportCardTextColor;
+    // The section-standard orange-500 badge needs dark text for readable contrast.
+    const countTextColor =
+        theme.id === 'colorful' && categoryType === CredentialCategoryEnum.qualifications
+            ? 'text-grayscale-900'
+            : 'text-white';
 
     let metaData: React.ReactNode | null = (
-        <p className="text-white font-poppins font-semibold text-base">
+        <p className={`${countTextColor} font-poppins font-semibold text-base`}>
             {numeral(count).format('0a')}
         </p>
     );
@@ -141,7 +152,7 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
                                         name="crescent"
                                         role="status"
                                         aria-label={m['common.loading']()}
-                                        className="text-white h-5 w-5"
+                                        className={`${countTextColor} h-5 w-5`}
                                     />
                                 </div>
                             </div>
