@@ -1,0 +1,43 @@
+name: Prepare verified Nx test prerequisite cache
+description: Cache compiled prerequisites only; affected tests always execute.
+outputs:
+    key:
+        value: ${{ steps.key.outputs.key }}
+    hit:
+        value: ${{ steps.restore.outputs.cache-hit }}
+runs:
+    using: composite
+    steps:
+        - id: key
+          continue-on-error: true
+          shell: bash
+          env:
+              CACHE_TEMP: ${{ runner.temp }}
+          run: |
+              spec="$CACHE_TEMP/nx-test-build-spec.json"
+              key=$(node scripts/e2e-hosted/sdk-build-cache.mjs key-test "$spec")
+              [[ "$key" =~ ^nx-test-builds-v1-[a-f0-9]{64}$ ]]
+              echo "key=$key" >> "$GITHUB_OUTPUT"
+              {
+                echo 'NX_TEST_BUILD_CACHE=true'
+                echo "NX_TEST_BUILD_SPEC=$spec"
+                echo "NX_TEST_BUILD_CACHE_DIR=$CACHE_TEMP/nx-test-build-cache"
+              } >> "$GITHUB_ENV"
+
+        - if: ${{ steps.key.outcome == 'failure' }}
+          shell: bash
+          run: |
+              echo '::notice::No supported build snapshot available; using the ordinary Nx dependency graph.'
+              echo 'NX_TEST_BUILD_CACHE=false' >> "$GITHUB_ENV"
+
+        - id: restore
+          if: ${{ steps.key.outcome == 'success' }}
+          uses: actions/cache/restore@v6
+          continue-on-error: true
+          with:
+              path: ${{ runner.temp }}/nx-test-build-cache
+              key: ${{ steps.key.outputs.key }}
+
+        - shell: bash
+          run: |
+              echo "NX_TEST_BUILD_CACHE_HIT=${{ steps.restore.outcome == 'success' && steps.restore.outputs.cache-hit == 'true' }}" >> "$GITHUB_ENV"

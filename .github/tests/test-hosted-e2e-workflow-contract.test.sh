@@ -212,7 +212,9 @@ legacy = YAML.load_file(legacy_path, aliases: true)
 legacy_jobs = legacy.fetch('jobs')
 legacy_e2e = legacy_jobs.fetch('e2e-tests')
 abort 'legacy EC2 job must be labeled manual fallback' unless legacy_e2e.fetch('name') == 'EC2 E2E fallback (manual)'
-abort 'legacy EC2 job must not run for PR events' unless legacy_e2e.fetch('if') == "github.event_name == 'workflow_dispatch'"
+abort 'legacy EC2 job must be manual and explicitly enabled' unless legacy_e2e.fetch('if') == "github.event_name == 'workflow_dispatch' && inputs.run_ec2_fallback"
+legacy_inputs = legacy.fetch('on', legacy[true]).fetch('workflow_dispatch').fetch('inputs')
+abort 'keep existing manual EC2 default' unless legacy_inputs.fetch('run_ec2_fallback').values_at('type', 'default') == ['boolean', true]
 
 [browser_steps, service.fetch('steps')].each do |steps|
   preflight = steps.find { |step| step['name'] == 'Capture runner preflight' }

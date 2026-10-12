@@ -1,0 +1,39 @@
+{
+    "initial": {
+        "sdk": "e2e-sdk-outputs-v1-766a161f9bb79c6b59d2b54be3828bb9f5c6abb2f045a73cdb96947dd4e5d937",
+        "spa": "e2e-spa-outputs-v1-d9b5fea18a4beb8ea65373aebab49917706260a2b41c50a535b5f5db928cd291"
+    },
+    "results": [
+        {
+            "name": "dependency source",
+            "sdkChanged": true,
+            "spaChanged": true
+        },
+        {
+            "name": "compiler config",
+            "sdkChanged": true,
+            "spaChanged": true
+        },
+        {
+            "name": "lockfile",
+            "sdkChanged": true,
+            "spaChanged": true
+        },
+        {
+            "name": "Vite config",
+            "sdkChanged": false,
+            "spaChanged": true
+        },
+        {
+            "name": "VITE_APP_VERSION",
+            "sdkChanged": false,
+            "spaChanged": true
+        },
+        {
+            "name": "NODE_ENV",
+            "sdkChanged": true,
+            "spaChanged": true
+        }
+    ],
+    "restored": true
+}

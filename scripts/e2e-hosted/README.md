@@ -151,3 +151,49 @@ image. Both `bun` and its `bunx` link are checked during the build. This retains
 the cross-service localhost/DID workaround without copying the installed `/app`
 tree into a fresh runtime base. The hosted DID-resolution preflight and full
 service/browser suites verify compatibility.
+
+## Nx Test Runner build snapshots
+
+The `Test` job in `.github/workflows/test.yml` uses a separate exact-key GitHub
+Actions snapshot for its affected tests' build prerequisites. The graph determines
+which SDK/service builds are needed; it does not compile the larger hosted E2E
+union on a cold run. Keys include the build task plan, conservative SDK inputs,
+toolchain/OS/ABI, and build environment, using the existing verified snapshot
+format rather than Nx's machine-specific local database.
+
+Cold runs build those prerequisites and snapshot them before tests execute.
+Warm runs verify and restore the snapshot, then execute affected tests with
+`--skip-nx-cache`. The AI runtime DID authentication preflight also executes on
+every applicable attempt. Other unaudited dependency targets/configurations,
+native DIDKit builds, failed key preparation, and invalid snapshots retain the
+ordinary Nx dependency graph. Build and test failures still fail CI; snapshots
+are published only after all tests pass. A local build snapshot can serve retry
+attempts without reusing test results.
+
+The cache covers builds only, so Nx may still report zero task-result cache hits.
+Use the GitHub restore result and streamed build/test output to confirm reuse.
+It does not cover the separate `inbox-security` or AI Agent jobs, which keep their
+existing setup and test commands.
+
+For hosted cold/warm QA, dispatch `test.yml` twice with the workflow ref and
+`branch` input pointing to the same implementation revision. Choose a fixed
+`base` ancestor that selects the intended test projects (the default remains
+`origin/main`), and set `run_ec2_fallback=false` to keep the measurement on hosted
+runners. Confirm the affected test set is the same, both runs pass, and
+the second run restores builds without a `run-many -t build` invocation. Compare
+complete job times, not only build preparation. The earlier hosted E2E timings
+do not establish a Test Runner speedup. No trusted main cache producer is added;
+cross-branch/merge-queue reuse still needs that decision and measurement.
+
+For an ordinary-graph baseline, dispatch the same revision and `base` with
+`use_build_cache=false`. Keep `run_ec2_fallback=false` for all measured runs.
+This bypasses snapshot preparation/restoration/publication and executes tests
+with their normal build dependencies. PR and merge-queue runs keep caching
+enabled. Record retries separately from first-attempt timings.
+
+Use `test_timeout_minutes=20` and `test_attempts=1` for **all** matched baseline,
+cold, and warm measurements. The longer per-attempt limit lets a cold build
+finish; a single attempt prevents retries from mixing a cold build and an
+in-job warm restore into one timing. Failed samples remain failures and are
+reported separately. Manual runs default to ten minutes and three attempts;
+PR and merge-queue runs retain those limits regardless of manual inputs.

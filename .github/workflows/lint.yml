@@ -111,6 +111,7 @@ jobs:
                     echo "Running $contract"
                     node "$contract"
                   done
+                  node --test .github/tests/*.test.mjs
 
     NoJest:
         name: Reject active Jest usage
