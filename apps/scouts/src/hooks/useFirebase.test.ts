@@ -116,6 +116,31 @@ describe('Scouts sign-in adapter routing', () => {
         }
     );
 
+    it.each([undefined, 'SDK failure containing synthetic.oauth.credential'])(
+        'shows safe Google fallback copy for an unknown error with message %s',
+        async message => {
+            mocks.adapter.signInWithGoogle.mockRejectedValue({
+                code: 'auth/unknown-failure',
+                message,
+            });
+            mocks.adapter.getCurrentUser.mockReturnValue(null);
+
+            await useFirebase().googleLogin();
+
+            expect(mocks.modal).toHaveBeenCalledOnce();
+            expect(mocks.modal.mock.calls[0]?.[0].props.message).toBe(
+                'Sign-in failed. Please try again or use a different browser.'
+            );
+            expect(mocks.log.error).toHaveBeenCalledWith(
+                'Google sign-in failed',
+                expect.objectContaining({ authUserPresent: false })
+            );
+            expect(JSON.stringify(mocks.log.error.mock.calls)).not.toContain(
+                'synthetic.oauth.credential'
+            );
+        }
+    );
+
     it('keeps the original failure visible when reading auth state also fails', async () => {
         mocks.adapter.signInWithGoogle.mockRejectedValue({ code: 'auth/network-request-failed' });
         mocks.adapter.getCurrentUser.mockImplementation(() => {

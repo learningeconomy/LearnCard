@@ -16,6 +16,7 @@ import useFirebaseAnalytics from './useFirebaseAnalytics';
 import GoogleLoginHelpModal from '../components/auth/GoogleLoginHelpModal';
 
 const log = getLogger('use-firebase');
+// Unique within this document, including attempts from different hook instances.
 let googleSignInAttempt = 0;
 const authError = (error: unknown): { code?: string | number; message?: string } => {
     if (!error || typeof error !== 'object') return {};
@@ -119,8 +120,10 @@ export const useFirebase = () => {
                 );
             } else if (errorCode === 'auth/cancelled-popup-request') {
                 return;
-            } else if (errorMessage) {
-                presentGoogleHelpModal(errorMessage);
+            } else {
+                presentGoogleHelpModal(
+                    'Sign-in failed. Please try again or use a different browser.'
+                );
             }
         }
     };
