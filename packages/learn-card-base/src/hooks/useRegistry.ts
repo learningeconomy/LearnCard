@@ -88,12 +88,11 @@ export const useKnownDIDRegistry = (profileId?: string) => {
             const trustedRegistryClient = new RegistryClient();
             const untrustedRegistryClient = new RegistryClient();
 
-            const trustedResponse = await fetch(
-                'https://registries.learncard.com/known-did-registries.json'
-            );
-            const untrustedResponse = await fetch(
-                'https://registries.learncard.com/untrusted-did-registries.json'
-            );
+            // Fetch both registry catalogues in parallel
+            const [trustedResponse, untrustedResponse] = await Promise.all([
+                fetch('https://registries.learncard.com/known-did-registries.json'),
+                fetch('https://registries.learncard.com/untrusted-did-registries.json'),
+            ]);
 
             if (!trustedResponse.ok) {
                 throw new Error(`Failed to fetch known registries: ${trustedResponse.status}`);
@@ -104,14 +103,22 @@ export const useKnownDIDRegistry = (profileId?: string) => {
                 );
             }
 
-            const knownRegistries = await trustedResponse.json();
-            const unknownRegistries = await untrustedResponse.json();
+            const [knownRegistries, unknownRegistries] = await Promise.all([
+                trustedResponse.json(),
+                untrustedResponse.json(),
+            ]);
 
-            await trustedRegistryClient.use({ registries: knownRegistries });
-            await untrustedRegistryClient.use({ registries: unknownRegistries });
+            // Initialize both clients in parallel
+            await Promise.all([
+                trustedRegistryClient.use({ registries: knownRegistries }),
+                untrustedRegistryClient.use({ registries: unknownRegistries }),
+            ]);
 
-            const trustedResults = await trustedRegistryClient.lookupIssuersFor(profileId);
-            const untrustedResults = await untrustedRegistryClient.lookupIssuersFor(profileId);
+            // Lookup in both registries in parallel
+            const [trustedResults, untrustedResults] = await Promise.all([
+                trustedRegistryClient.lookupIssuersFor(profileId),
+                untrustedRegistryClient.lookupIssuersFor(profileId),
+            ]);
 
             if (trustedResults?.matchingIssuers.length > 0) {
                 return {
