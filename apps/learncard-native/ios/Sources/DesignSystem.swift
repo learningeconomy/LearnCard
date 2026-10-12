@@ -84,7 +84,8 @@ struct CredentialArtwork: View {
             } else if let url = credential.artworkURL {
                 AsyncImage(url: url) { phase in
                     if let image = phase.image { image.resizable().scaledToFill().frame(width: size, height: size) }
-                    else { fallback }
+                    else if phase.error != nil { fallback }
+                    else { ProgressView().controlSize(.small).tint(Palette.categoryAccent(credential.kind)).frame(width: size, height: size).background(Palette.paper, in: Circle()) }
                 }
             } else { fallback }
         }

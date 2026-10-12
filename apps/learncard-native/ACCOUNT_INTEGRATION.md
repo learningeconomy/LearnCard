@@ -75,3 +75,11 @@ The current SDK successfully signs/verifies the native builder template and encr
 Remaining parity: advanced web builder fields, evidence/skills/imports, multiple/email/phone recipients, claim links, native link-owner history/edit/stop, recipient link rendering, and cross-launch delivery/share retry recovery. Session journals reduce duplicate retry steps after successful replies; a dropped network response can still leave delivery ambiguous. Do not claim atomic or fully durable delivery.
 
 Latest validation: five account security tests, ten domain tests, and seven Bun protocol/transport tests (31 assertions) pass. The final ten-check UI suite had nine passes and one timing-sensitive selector-label assertion; adding a bounded wait for the updated value resolved the focused rerun. No app selection behavior changed for that harness repair. Result bundle paths are recorded in ACCOUNT_RESULTS.json.
+
+## Update 2026-10-12 — Native account and chrome refinement
+
+The signed-in simulator now shows the edge-to-edge bottom tray and matching light/dark outlined passport, tray, rocket, and timeline icons. The compact action popover retains the three working destinations. Inbox uses left-aligned 64px artwork instead of tall centered thumbnails; asynchronous artwork shows a native progress indicator until success or unavailable-art fallback.
+
+The Account sheet is opaque, grouped, and compact. It loads the network profile avatar/bio when available, offers native display-name/bio editing, and exposes exact web destinations for privacy/shared links and notifications. A native recovery/security overview explains device storage and sign-out/forget behavior, with a web recovery/export/deletion handoff. It does not expose private signing keys or pretend native recovery export/account deletion/push preferences are implemented. Native profile editing is implemented but live update validation is still outstanding. The signed-in Collection/tray appearance was visually inspected; demo interaction checks are separate.
+
+Final chrome regression: all eleven native UI checks passed in `artifacts/ui-20261012-145753-2266.xcresult`, including custom tray/action popover, Account/security navigation, and the previously timing-sensitive format/category check. The current signed-in simulator was visually checked for the tray and category stack.

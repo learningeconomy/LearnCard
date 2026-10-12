@@ -8,6 +8,7 @@ struct RootView: View {
     @State private var showCreate = false
     @State private var showAccount = false
     @State private var showActions = false
+    @State private var requestedAction: CollectionAction?
     @State private var showExisting = false
     @State private var showShare = false
     @State private var offer: Credential?
@@ -27,11 +28,19 @@ struct RootView: View {
                                     .foregroundStyle(Palette.selection).frame(width: 36, height: 36)
                                     .background(Palette.selection.opacity(0.1), in: Circle())
                             }.accessibilityLabel("Actions").accessibilityIdentifier("create")
-                            .confirmationDialog("What would you like to do?", isPresented: $showActions, titleVisibility: .visible) {
-                                Button("Create new") { showCreate = true }
-                                Button("Send existing creation") { showExisting = true }
-                                Button("Share credentials") { showShare = true }
-                                Button("Cancel", role: .cancel) {}
+                            .popover(isPresented: $showActions, arrowEdge: .top) {
+                                CollectionActionsMenu { action in requestedAction = action; showActions = false }
+                                    .presentationCompactAdaptation(.popover)
+                                    .presentationBackground(Palette.surface)
+                                    .onDisappear {
+                                        guard let action = requestedAction else { return }
+                                        requestedAction = nil
+                                        switch action {
+                                        case .create: showCreate = true
+                                        case .send: showExisting = true
+                                        case .share: showShare = true
+                                        }
+                                    }
                             }
                         }
                         ToolbarItem(placement: .topBarTrailing) {
@@ -57,6 +66,8 @@ struct RootView: View {
                 .tabItem { Label { Text("Home") } icon: { Image(selectedTab == 3 ? "HomeTabActive" : "HomeTab").renderingMode(.original) } }
                 .tag(3)
         }
+        .toolbar(.hidden, for: .tabBar)
+        .safeAreaInset(edge: .bottom, spacing: 0) { NativeTabTray(selection: $selectedTab, inboxCount: store.snapshot?.offers.count ?? 0) }
         .task { if store.snapshot == nil { await store.refresh() } }
         .sheet(isPresented: $showReceive, onDismiss: {
             offer = receivedOffer
@@ -94,31 +105,3 @@ struct RootView: View {
 
 }
 
-private struct AccountView: View {
-    @Environment(\.dismiss) private var dismiss
-    var account: AccountController?
-
-    var body: some View {
-        NavigationStack {
-            VStack(alignment: .leading, spacing: 24) {
-                Image(systemName: "person.crop.circle").font(.system(size: 52, weight: .light)).foregroundStyle(Palette.green)
-                Text(account?.state?.profileName ?? "A little room to explore.").font(.title.weight(.semibold)).foregroundStyle(Palette.ink)
-                Text(account?.email ?? "This experiment uses unsigned samples and resets when you restart.")
-                    .foregroundStyle(Palette.secondary)
-                if let account {
-                    Text("Connected to staging.").font(.subheadline).foregroundStyle(Palette.secondary)
-                    Button("Sign Out") { dismiss(); Task { await account.signOut(forget: false) } }.disabled(account.busy)
-                    Button("Sign Out and Forget This Device", role: .destructive) {
-                        dismiss(); Task { await account.signOut(forget: true) }
-                    }.disabled(account.busy)
-                }
-                Spacer()
-            }
-            .padding(24)
-            .navigationTitle(account == nil ? "About this experiment" : "Your account")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
-        }
-        .presentationDetents([.medium, .large])
-    }
-}

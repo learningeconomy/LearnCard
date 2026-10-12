@@ -14,9 +14,9 @@ struct AccountRootView: View {
             await account.resume()
             if ProcessInfo.processInfo.arguments.contains("--request-test-code"), account.phase == "signIn" { await account.sendCode() }
         }
-        .onChange(of: scenePhase) { old, new in
+        .onChange(of: scenePhase) { _, new in
             if new == .background { account.lock() }
-            else if new == .active, old == .background { Task { await account.resume() } }
+            else if new == .active, account.phase == "locked" { Task { await account.resume() } }
         }
     }
 }
@@ -37,7 +37,7 @@ struct AccountSignInView: View {
             Form {
                 Section {
                     LearnCardBrand().padding(.vertical, 12)
-                    Text(account.phase == "signIn" || account.phase == "code" ? "Your credentials, with you." : "Restore access on this iPhone.")
+                    Text(account.phase == "loading" || account.phase == "locked" ? "Your account, ready when you are." : account.phase == "signIn" || account.phase == "code" ? "Your credentials, with you." : "Restore access on this iPhone.")
                         .font(.title2.weight(.semibold))
                     Text("Staging test account").font(.caption).foregroundStyle(Palette.secondary)
                 }.listRowBackground(Color.clear)
@@ -49,7 +49,12 @@ struct AccountSignInView: View {
                 }
                 switch account.phase {
                 case "loading", "locked":
-                    EmptyView()
+                    if !account.busy {
+                        Section {
+                            PrimaryButton(title: "Continue", loading: account.busy) { Task { await account.resume() } }
+                                .accessibilityIdentifier("resume-saved-account")
+                        }
+                    }
                 case "signIn", "idle":
                     Section("Sign in") {
                         Text(account.email)

@@ -8,6 +8,8 @@ public struct AccountState: Decodable, Sendable {
     public let error: String?
     public let profileName: String?
     public let profileId: String?
+    public let profileImage: URL?
+    public let profileBio: String?
     public let signingDid: String?
     public let profileDid: String?
 }
@@ -85,6 +87,9 @@ public final class AccountRuntime: NSObject, WKNavigationDelegate {
         var input: [String: Any] = ["uris": credentialIDs, "title": title, "requestID": requestID]
         if let passcode, !passcode.isEmpty { input["passcode"] = passcode }
         return try await command("share", input: input)
+    }
+    public func updateProfile(name: String, bio: String) async throws -> AccountState {
+        try await command("updateProfile", input: ["name": name, "bio": bio])
     }
     public func signOut(forget: Bool) async throws { let _: AccountState = try await command(forget ? "forget" : "signOut"); dispose() }
 

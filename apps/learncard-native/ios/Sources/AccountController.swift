@@ -84,6 +84,19 @@ final class AccountController {
         } else if state.error != nil { throw AccountError.recovery }
     }
 
+    func updateProfile(name: String, bio: String) async -> Bool {
+        var saved = false
+        await perform {
+            let expected = self.generation
+            guard let runtime = self.runtime else { throw AccountError.unavailable }
+            let updated = try await runtime.updateProfile(name: name, bio: bio)
+            guard self.generation == expected else { throw AccountError.cancelled }
+            self.state = updated
+            saved = true
+        }
+        return saved
+    }
+
     func signOut(forget: Bool) async {
         await perform {
             let expected = self.generation

@@ -14,6 +14,39 @@
             "filename": "CollectionTab@3x.png",
             "idiom": "universal",
             "scale": "3x"
+        },
+        {
+            "filename": "CollectionTab-dark@1x.png",
+            "idiom": "universal",
+            "scale": "1x",
+            "appearances": [
+                {
+                    "appearance": "luminosity",
+                    "value": "dark"
+                }
+            ]
+        },
+        {
+            "filename": "CollectionTab-dark@2x.png",
+            "idiom": "universal",
+            "scale": "2x",
+            "appearances": [
+                {
+                    "appearance": "luminosity",
+                    "value": "dark"
+                }
+            ]
+        },
+        {
+            "filename": "CollectionTab-dark@3x.png",
+            "idiom": "universal",
+            "scale": "3x",
+            "appearances": [
+                {
+                    "appearance": "luminosity",
+                    "value": "dark"
+                }
+            ]
         }
     ],
     "info": {

@@ -121,6 +121,8 @@ const stateDTO = async (state: UnifiedAuthState) => {
         phase: 'ready',
         methods: [],
         profileName: myProfileName,
+        profileImage: image(profile.image),
+        profileBio: profile.bio,
         profileId: profile.profileId,
         signingDid: state.did,
         profileDid: wallet.id.did(),
@@ -348,6 +350,31 @@ const commands = {
                             saved.prepared.input.id,
                             saved.prepared.key
                         ),
+                    };
+                },
+                updateProfile: async (input: { name: string; bio: string }) => {
+                    if (
+                        !wallet ||
+                        !input.name.trim() ||
+                        input.name.length > 100 ||
+                        input.bio.length > 500
+                    )
+                        throw new Error('Invalid profile');
+                    await wallet.invoke.updateProfile({
+                        displayName: input.name.trim(),
+                        bio: input.bio.trim(),
+                    });
+                    const profile = await wallet.invoke.getProfile();
+                    if (!profile) throw new Error('Profile unavailable');
+                    myProfileName = profile.displayName || user.email;
+                    return {
+                        phase: 'ready',
+                        methods: [],
+                        profileName: myProfileName,
+                        profileId: profile.profileId,
+                        profileImage: image(profile.image),
+                        profileBio: profile.bio,
+                        profileDid: wallet.id.did(),
                     };
                 },
                 signOut: async () => {

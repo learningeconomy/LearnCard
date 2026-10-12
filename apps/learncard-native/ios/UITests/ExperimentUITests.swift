@@ -30,7 +30,7 @@ final class ExperimentUITests: XCTestCase {
         app.launchArguments = ["--demo"]
         app.launch()
         for title in ["Inbox", "Apps", "Home", "Collection"] {
-            app.tabBars.buttons[title].tap()
+            app.buttons["nav-\(title.lowercased())"].tap()
             let heading = app.staticTexts["page-title-\(title.lowercased())"]
             XCTAssertTrue(heading.waitForExistence(timeout: 5), app.debugDescription)
             XCTAssertTrue(heading.isHittable, app.debugDescription)
@@ -42,7 +42,7 @@ final class ExperimentUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--demo"]
         app.launch()
-        app.tabBars.buttons["Inbox"].tap()
+        app.buttons["nav-inbox"].tap()
         let offer = app.buttons["offer-first-aid"]
         XCTAssertTrue(offer.waitForExistence(timeout: 10))
         offer.tap()
@@ -50,9 +50,9 @@ final class ExperimentUITests: XCTestCase {
         XCTAssertTrue(app.alerts["Done"].waitForExistence(timeout: 5))
         app.alerts["Done"].buttons["Done"].tap()
         XCTAssertFalse(app.buttons["offer-first-aid"].exists)
-        app.tabBars.buttons["Collection"].tap()
+        app.buttons["nav-collection"].tap()
         XCTAssertTrue(app.buttons["credential-first-aid"].waitForExistence(timeout: 5))
-        app.tabBars.buttons["Home"].tap()
+        app.buttons["nav-home"].tap()
         XCTAssertTrue(app.staticTexts["Added to your collection"].exists)
     }
 
@@ -61,7 +61,7 @@ final class ExperimentUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--demo"]
         app.launch()
-        app.buttons["create"].tap(); app.sheets.buttons["Create new"].tap()
+        app.buttons["create"].tap(); app.buttons["Create new"].tap()
         let title = app.textFields["draft-title"]
         XCTAssertTrue(title.waitForExistence(timeout: 5))
         title.tap()
@@ -82,18 +82,28 @@ final class ExperimentUITests: XCTestCase {
         XCTAssertTrue(app.alerts["Done"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.alerts["Done"].staticTexts["Sample send recorded. No message was delivered."].exists)
         app.alerts["Done"].buttons["Done"].tap()
-        app.tabBars.buttons["Home"].tap()
+        app.buttons["nav-home"].tap()
         XCTAssertTrue(app.staticTexts["Sample send recorded"].exists)
+    }
+
+    @MainActor
+    func testTrayAndAccountSettings() {
+        let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
+        XCTAssertTrue(app.buttons["nav-apps"].waitForExistence(timeout: 5))
+        app.buttons["Account"].tap()
+        XCTAssertTrue(app.buttons["account-edit-profile"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["account-security"].exists)
+        app.buttons["account-security"].tap()
+        XCTAssertTrue(app.navigationBars["Recovery & security"].waitForExistence(timeout: 5))
     }
 
     @MainActor
     func testPlusActionsAndMultipleCredentialSharing() {
         let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
         app.buttons["create"].tap()
-        let actions = app.sheets.firstMatch
-        XCTAssertTrue(actions.buttons["Create new"].exists)
-        XCTAssertTrue(actions.buttons["Send existing creation"].exists)
-        actions.buttons["Share credentials"].tap()
+        XCTAssertTrue(app.buttons["Create new"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Send existing creation"].exists)
+        app.buttons["Share credentials"].tap()
         XCTAssertTrue(app.buttons["share-select-design"].waitForExistence(timeout: 5))
         app.buttons["share-select-design"].tap(); app.buttons["share-select-community"].tap()
         app.buttons["share-review"].tap()
@@ -108,7 +118,7 @@ final class ExperimentUITests: XCTestCase {
     @MainActor
     func testCreationFormatAndCategoryUseActionSheets() {
         let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
-        app.buttons["create"].tap(); app.sheets.buttons["Create new"].tap(); app.swipeUp()
+        app.buttons["create"].tap(); app.buttons["Create new"].tap(); app.swipeUp()
         app.buttons["draft-format"].tap()
         let formatSheet = app.sheets.firstMatch
         XCTAssertTrue(formatSheet.waitForExistence(timeout: 5), app.debugDescription)
@@ -127,7 +137,7 @@ final class ExperimentUITests: XCTestCase {
     @MainActor
     func testCreateForSomeoneKeepsTemplateSeparateFromCollection() {
         let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
-        app.buttons["create"].tap(); app.sheets.buttons["Create new"].tap()
+        app.buttons["create"].tap(); app.buttons["Create new"].tap()
         XCTAssertTrue(app.buttons["draft-artwork"].exists)
         let title = app.textFields["draft-title"]; title.tap(); title.typeText("Native kindness badge")
         let summary = app.descendants(matching: .any)["draft-summary"]; summary.tap(); summary.typeText("Recognizing a thoughtful teammate.")
@@ -140,7 +150,7 @@ final class ExperimentUITests: XCTestCase {
         app.buttons["create-confirm"].tap()
         XCTAssertTrue(app.alerts["Done"].waitForExistence(timeout: 5)); app.alerts["Done"].buttons["Done"].tap()
         XCTAssertFalse(app.staticTexts["Native kindness badge"].exists)
-        app.tabBars.buttons["Home"].tap(); app.buttons["home-creations"].tap()
+        app.buttons["nav-home"].tap(); app.buttons["home-creations"].tap()
         XCTAssertTrue(app.staticTexts["Native kindness badge"].waitForExistence(timeout: 5))
     }
 
@@ -149,14 +159,14 @@ final class ExperimentUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--demo"]
         app.launch()
-        app.tabBars.buttons["Home"].tap()
+        app.buttons["nav-home"].tap()
         app.buttons["receive"].tap()
         app.buttons["use-sample-link"].tap()
         app.buttons["review-link"].tap()
         XCTAssertTrue(app.buttons["claim"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Ready to help"].exists)
         app.buttons["Cancel"].tap()
-        app.tabBars.buttons["Inbox"].tap()
+        app.buttons["nav-inbox"].tap()
         XCTAssertTrue(app.buttons["offer-first-aid"].exists)
     }
 

@@ -26,18 +26,10 @@
             "failed": 0
         },
         "nativeUIInteractions": {
-            "uniqueChecksValidated": 10,
-            "suiteRun": {
-                "passed": 9,
-                "failed": 1,
-                "resultBundle": "artifacts/ui-20261012-144209-99362.xcresult"
-            },
-            "correctedSelectorTimingRerun": {
-                "passed": 1,
-                "failed": 0,
-                "resultBundle": "artifacts/ui-20261012-144716-99988.xcresult"
-            },
-            "correction": "Wait for updated selector label after native action sheet dismiss; initial immediate assertion was timing-sensitive."
+            "passed": 11,
+            "failed": 0,
+            "resultBundle": "artifacts/ui-20261012-145753-2266.xcresult",
+            "coverage": "Four-tab bottom tray, compact plus popover, account/security navigation, all titles/scrolling, create self and someone, format/category action sheets, claim, sample link review, multiple-credential native sharing, dark share sheet, JavaScriptCore capabilities"
         },
         "appProcessKeychainProbe": {
             "passed": 1,
@@ -65,6 +57,7 @@
     "expandedFlows": {
         "artworkUpload": "implemented; live upload unvalidated",
         "managedTemplateDelivery": "implemented; live expanded delivery unvalidated",
-        "encryptedSharePublication": "implemented using current web contract; offline crypto/proof interop passes, live publication unvalidated"
+        "encryptedSharePublication": "implemented using current web contract; offline crypto/proof interop passes, live publication unvalidated",
+        "nativeProfileEditing": "implemented; live network profile update unvalidated"
     }
 }
