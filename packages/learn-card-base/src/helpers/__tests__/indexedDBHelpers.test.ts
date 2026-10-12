@@ -10,6 +10,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { clearAllIndexedDB } from '../indexedDBHelpers';
 import type { KeyDerivationStrategy } from '../../auth-coordinator/types';
 
+const logs = vi.hoisted(() => ({ warn: vi.fn() }));
+vi.mock('../../logging/logger', () => ({
+    getLogger: () => ({ debug: vi.fn(), error: vi.fn(), warn: logs.warn }),
+}));
+
 // ---------------------------------------------------------------------------
 // Mock window.indexedDB
 // ---------------------------------------------------------------------------
@@ -33,10 +38,12 @@ const mockDatabases = (names: string[]) => {
     };
 
     (globalThis as Record<string, unknown>).window = { indexedDB: fakeIndexedDB };
+    return fakeIndexedDB;
 };
 
 beforeEach(() => {
     deletedDBs = [];
+    vi.clearAllMocks();
 });
 
 // ---------------------------------------------------------------------------
@@ -44,6 +51,30 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 
 describe('clearAllIndexedDB', () => {
+    it.each([undefined, { getPreservedStorageKeys: () => [] } as unknown as KeyDerivationStrategy])(
+        'preserves Firebase heartbeat telemetry while clearing sessions and app data (strategy: %s)',
+        async strategy => {
+            mockDatabases(['firebase-heartbeat-database', 'firebaseLocalStorageDb', 'app-cache']);
+
+            await clearAllIndexedDB(strategy);
+
+            expect(deletedDBs).toEqual(['firebaseLocalStorageDb', 'app-cache']);
+        }
+    );
+
+    it('logs blocked cleanup without recording database identifiers', async () => {
+        const indexedDB = mockDatabases(['firebaseLocalStorageDb']);
+
+        await clearAllIndexedDB();
+        const request = indexedDB.deleteDatabase.mock.results[0]!.value as IDBOpenDBRequest;
+        request.onblocked?.call(request, new Event('blocked') as IDBVersionChangeEvent);
+
+        expect(logs.warn).toHaveBeenCalledWith(
+            'IndexedDB logout cleanup blocked by an open connection',
+            { isFirebaseDatabase: true }
+        );
+    });
+
     it('should NOT delete lcb-sss-keys when no strategy is provided', async () => {
         mockDatabases(['lcb-sss-keys', 'app-cache', 'some-other-db']);
 
