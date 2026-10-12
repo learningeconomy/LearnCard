@@ -1,6 +1,25 @@
 import type { Page } from '@playwright/test';
 import path from 'path';
-import { createTrpcMock, type TrpcMock } from './trpc';
+import { createTrpcMock, type TrpcMock, type BrainOutputs } from './trpc';
+import { TEST_USER_PROFILE_ID } from '../constants';
+
+// Auth queries can be batched/repeated differently as pages mount. The HAR
+// records one profile read, so serve this boot response through the batch-aware
+// typed layer instead of depending on the recorded request's exact batch shape.
+const MOCK_USER_PROFILE = {
+    profileId: TEST_USER_PROFILE_ID,
+    displayName: 'User From Seed',
+    shortBio: '',
+    bio: '',
+    did: `did:web:localhost%3A4000:users:${TEST_USER_PROFILE_ID}`,
+    profileVisibility: 'public',
+    showEmail: false,
+    allowConnectionRequests: 'anyone',
+    isServiceProfile: false,
+    notificationsWebhook: 'http://localhost:5100/api/notifications/send',
+    role: '',
+    dob: '',
+} satisfies BrainOutputs['profile']['getProfile'];
 
 // A .zip HAR is a single self-contained artifact (manifest + response bodies).
 // A plain .har path would instead scatter each body into a hash-named file.
@@ -35,7 +54,10 @@ export const installNetwork = async (page: Page): Promise<TrpcMock> => {
     });
 
     const trpc = createTrpcMock(page);
-    if (!RECORDING) await trpc.install();
+    if (!RECORDING) {
+        trpc.on('profile.getProfile', () => MOCK_USER_PROFILE);
+        await trpc.install();
+    }
 
     // Opt-in diagnostics: `PWNETLOG=1` prints aborted backend calls + page errors
     // so a failing mocked flow reveals which request/exception is uncovered.

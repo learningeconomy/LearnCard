@@ -1,13 +1,13 @@
 import { test, expect } from './fixtures/mocked-test';
 import { installNetwork } from './mocks/network';
-import { waitForAuthenticatedState } from './test.helpers';
+import { signInMockUser } from './mocks/auth';
 import { TEST_USER_PROFILE_ID } from './constants';
 
 test.describe('My Skill Profile mobile form @mocked', () => {
     test.beforeEach(async ({ page }) => {
         await page.setViewportSize({ width: 390, height: 844 });
         await installNetwork(page);
-        await waitForAuthenticatedState(page, {
+        await signInMockUser(page, {
             path: '/ai/pathways',
             profileId: TEST_USER_PROFILE_ID,
         });
