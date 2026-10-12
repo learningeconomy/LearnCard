@@ -76,7 +76,8 @@ export const useTrustedAppsRegistry = (profileId?: string) => {
 
 export const useKnownDIDRegistry = (profileId?: string) => {
     return useQuery({
-        queryKey: [profileId],
+        queryKey: ['knownDidRegistry', profileId],
+        staleTime: 60 * 60 * 1000,
         queryFn: async () => {
             const trustedRegistryClient = new RegistryClient();
             const untrustedRegistryClient = new RegistryClient();
