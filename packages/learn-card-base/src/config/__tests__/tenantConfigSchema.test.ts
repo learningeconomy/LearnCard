@@ -1,9 +1,48 @@
 import { describe, it, expect } from 'vitest';
 
-import { tenantConfigSchema, parseTenantConfig } from '../tenantConfigSchema';
+import {
+    tenantConfigSchema,
+    tenantAuthConfigSchema,
+    parseTenantConfig,
+} from '../tenantConfigSchema';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../tenantDefaults';
 
 describe('tenantConfigSchema', () => {
+    it('accepts Keycloak with default scopes', () => {
+        const auth = tenantAuthConfigSchema.parse({
+            provider: 'keycloak',
+            sss: {},
+            keycloak: {
+                serverUrl: 'https://auth.example.org',
+                realm: 'learncard',
+                clientId: 'app',
+            },
+        });
+        expect(auth.keycloak?.scopes).toEqual(['openid', 'profile', 'email', 'phone']);
+    });
+
+    it('requires the Keycloak block for the Keycloak provider', () => {
+        const result = tenantAuthConfigSchema.safeParse({ provider: 'keycloak', sss: {} });
+        expect(result.success).toBe(false);
+        expect(result.error?.issues).toContainEqual(
+            expect.objectContaining({ path: ['keycloak'] })
+        );
+    });
+
+    it('preserves unknown Keycloak config keys', () => {
+        const auth = tenantAuthConfigSchema.parse({
+            provider: 'keycloak',
+            sss: {},
+            keycloak: {
+                serverUrl: 'https://auth.example.org',
+                realm: 'learncard',
+                clientId: 'app',
+                future: true,
+            },
+        });
+        expect(auth.keycloak?.future).toBe(true);
+    });
+
     it('validates the default config successfully', () => {
         const result = tenantConfigSchema.safeParse(DEFAULT_LEARNCARD_TENANT_CONFIG);
 
@@ -98,8 +137,49 @@ describe('tenantConfigSchema', () => {
         expect(result.branding.loginRedirectPath).toBe('/waitingsofa?loginCompleted=true');
         expect(result.features.aiFeatures).toBe(true);
         expect(result.features.analytics).toBe(true);
+        expect(result.features.escrowRolloutPercent).toBe(0);
+        expect(result.features.escrowRolloutAllowlist).toEqual([]);
         expect(result.observability.analyticsProvider).toBe('noop');
         expect(result.storage.provider).toBe('filestack');
+    });
+
+    it('accepts an explicit escrow rollout percent and allowlist', () => {
+        const allowlistHash = 'a'.repeat(64);
+        const result = tenantConfigSchema.parse({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            features: {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG.features,
+                escrowRolloutPercent: 25,
+                escrowRolloutAllowlist: [allowlistHash],
+            },
+        });
+
+        expect(result.features.escrowRolloutPercent).toBe(25);
+        expect(result.features.escrowRolloutAllowlist).toEqual([allowlistHash]);
+    });
+
+    it.each([-1, 101, 1.5])('rejects an out-of-range escrowRolloutPercent (%s)', percent => {
+        const result = tenantConfigSchema.safeParse({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            features: {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG.features,
+                escrowRolloutPercent: percent,
+            },
+        });
+
+        expect(result.success).toBe(false);
+    });
+
+    it('rejects escrowRolloutAllowlist entries that are not 64-char hex hashes', () => {
+        const result = tenantConfigSchema.safeParse({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            features: {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG.features,
+                escrowRolloutAllowlist: ['not-a-hash'],
+            },
+        });
+
+        expect(result.success).toBe(false);
     });
 
     it('validates sample persona contract configuration', () => {

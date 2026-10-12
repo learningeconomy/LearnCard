@@ -39,7 +39,8 @@ export const useConsentFlow = (
 
     const { mutateAsync: updateTermsMutation } = useUpdateTerms(
         consentedContract?.uri ?? '',
-        consentedContract?.contract?.owner.did ?? ''
+        consentedContract?.contract?.owner.did ?? '',
+        consentedContract?.contract?.uri
     );
     // isPending from useUpdateTerms isn't working, so we'll do it ourselves 😤
     const [updatingTerms, setUpdatingTerms] = useState(false);

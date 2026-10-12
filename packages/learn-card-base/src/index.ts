@@ -317,3 +317,5 @@ export * from './svgs/ScoutLogoAndText';
 export * from './svgs/Compass';
 export * from './logging/logger';
 export * from './logging/diagnosticLogBuffer';
+
+export { isAlreadyConsentedError, isConsentConflict } from './helpers/consentErrors';

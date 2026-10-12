@@ -22,6 +22,7 @@ from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.skills_add_skill_tag_request_tag import SkillsAddSkillTagRequestTag
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class SkillsAddSkillTagRequest(BaseModel):
     """
@@ -32,7 +33,8 @@ class SkillsAddSkillTagRequest(BaseModel):
     __properties: ClassVar[List[str]] = ["frameworkId", "tag"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -44,8 +46,7 @@ class SkillsAddSkillTagRequest(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -89,10 +90,12 @@ class SkillsAddSkillTagRequest(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "frameworkId": obj.get("frameworkId"),
             "tag": SkillsAddSkillTagRequestTag.from_dict(obj["tag"]) if obj.get("tag") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

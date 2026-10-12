@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import moment from 'moment';
 import { useHistory, useLocation } from 'react-router-dom';
+import { formatCredentialDate } from 'learn-card-base/helpers/credentialHelpers';
 import queryString from 'query-string';
 import { VC, VP } from '@learncard/types';
 import { IonContent, IonPage, useIonModal } from '@ionic/react';
@@ -66,7 +66,6 @@ import InboxClaimProfileGate from './InboxClaimProfileGate';
 
 import { AlertCircle, RefreshCw, Home, CheckCircle } from 'lucide-react';
 import LoggedOutRequest from './LoggedOutRequest';
-import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import * as m from '../../paraglide/messages.js';
 import {
     getClaimInteractionBoostUri,
@@ -166,10 +165,7 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
     const issuerName = isLCNetworkUrlIssuer ? data?.displayName : getIssuerNameNonBoost(boostVC);
     const issuerImage = isLCNetworkUrlIssuer ? data?.image : getIssuerImageNonBoost(boostVC);
 
-    const { createdAt } = getInfoFromCredential(boostVC, 'MMMM DD, YYYY', {
-        uppercaseDate: false,
-    });
-    const issueDate = moment(createdAt).format('MMM DD, YYYY');
+    const issueDate = formatCredentialDate(boostVC, 'MMM DD, YYYY');
 
     if (isLoggedIn) {
         return (

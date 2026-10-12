@@ -23,6 +23,12 @@
             "options": {
                 "script": "typecheck"
             }
+        },
+        "test": {
+            "executor": "nx:run-script",
+            "options": {
+                "script": "test"
+            }
         }
     }
 }

@@ -960,6 +960,47 @@ describe('Consent Flow Contracts', () => {
             expect(data.records[0]?.terms).toEqual(normalFullTerms);
         });
 
+        it('does not require guardian approval for managed service profiles, but does for managed children', async () => {
+            await Profile.relateTo({
+                alias: 'managedBy',
+                where: { source: { profileId: 'userb' }, target: { profileId: 'userc' } },
+            });
+
+            const managedChildData = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            expect(managedChildData.records[0]?.guardian.required).toBe(true);
+
+            await Profile.update({ isServiceProfile: true }, { where: { profileId: 'userb' } });
+            const serviceProfileData =
+                await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                    did: userBDid,
+                });
+            expect(serviceProfileData.records[0]?.guardian).toEqual({
+                required: false,
+                approved: false,
+            });
+        });
+
+        it('keeps guardian approval required for legacy service-flagged children', async () => {
+            await Profile.relateTo({
+                alias: 'managedBy',
+                where: { source: { profileId: 'userb' }, target: { profileId: 'userc' } },
+            });
+            await Profile.update(
+                { type: 'child', isServiceProfile: true },
+                { where: { profileId: 'userb' } }
+            );
+
+            const data = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            expect(data.records[0]?.guardian).toEqual({
+                required: true,
+                approved: false,
+            });
+        });
+
         it('should omit withdrawn consent before returning provider-facing data', async () => {
             const activeData = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
                 did: userBDid,
@@ -1162,6 +1203,17 @@ describe('Consent Flow Contracts', () => {
                 approved: true,
                 approval,
             });
+            await Profile.update({ isServiceProfile: true }, { where: { profileId: 'userb' } });
+            const serviceProfileWithApproval =
+                await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                    did: userBDid,
+                });
+            expect(serviceProfileWithApproval.records[0]?.guardian).toEqual({
+                required: true,
+                approved: true,
+                approval,
+            });
+
             const current = (await getContractTermsByUri(approved.records[0]!.termsUri))!;
             expect(current.terms.guardianApproval).toEqual(approval);
             const transactions = await getTransactionsForTerms(current.terms.id, { limit: 10 });
@@ -3343,7 +3395,7 @@ describe('Consent Flow Contracts', () => {
             contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: minimalContract,
                 name: 'a',
-                expiresAt: new Date(Date.UTC(2024, 3, 25)).toISOString(), // Set explicit expiration
+                expiresAt: '2999-01-01T00:00:00.000Z', // New consent uses Neo4j's real clock.
             });
             const { termsUri: _termsUri } =
                 await userB.clients.fullAuth.contracts.consentToContract({
@@ -3351,6 +3403,11 @@ describe('Consent Flow Contracts', () => {
                     terms: minimalTerms,
                 });
             termsUri = _termsUri;
+            // Verification's fake JS clock can still inspect an existing historical consent.
+            await ConsentFlowContract.update(
+                { expiresAt: new Date(Date.UTC(2024, 3, 25)).toISOString() },
+                { where: { id: contractUri.split(':').at(-1)! } }
+            );
         });
 
         afterAll(async () => {
@@ -3420,7 +3477,7 @@ describe('Consent Flow Contracts', () => {
                 {
                     contract: minimalContract,
                     name: 'b',
-                    expiresAt: new Date(2024, 4, 19).toISOString(),
+                    expiresAt: '2999-01-01T00:00:00.000Z',
                 }
             );
 
@@ -3428,6 +3485,10 @@ describe('Consent Flow Contracts', () => {
                 contractUri: newContractUri,
                 terms: minimalTerms,
             });
+            await ConsentFlowContract.update(
+                { expiresAt: new Date(2024, 4, 19).toISOString() },
+                { where: { id: newContractUri.split(':').at(-1)! } }
+            );
 
             expect(
                 await userA.clients.fullAuth.contracts.verifyConsent({

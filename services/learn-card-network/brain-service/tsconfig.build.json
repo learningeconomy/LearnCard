@@ -4,7 +4,7 @@
         "lib": ["es2022", "dom"],
         "types": ["node"],
         "noEmit": false,
-        "resolveJsonModule": false,
+        "resolveJsonModule": true,
         "rootDir": "src"
     },
     "exclude": ["./test/**/*"]

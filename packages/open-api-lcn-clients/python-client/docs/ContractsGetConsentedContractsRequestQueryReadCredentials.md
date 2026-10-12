@@ -1,13 +1,12 @@
 # ContractsGetConsentedContractsRequestQueryReadCredentials
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**share_all** | **bool** |  | [optional] 
-**sharing** | **bool** |  | [optional] 
-**categories** | [**Dict[str, ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue]**](ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue.md) |  | [optional] 
+| Name           | Type                                                                                                                                                                   | Description | Notes      |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **share_all**  | **bool**                                                                                                                                                               |             | [optional] |
+| **sharing**    | **bool**                                                                                                                                                               |             | [optional] |
+| **categories** | [**Dict[str, ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue]**](ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue.md) |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ contracts_get_consented_contracts_request_query_read_credentials_dict = contract
 # create an instance of ContractsGetConsentedContractsRequestQueryReadCredentials from a dict
 contracts_get_consented_contracts_request_query_read_credentials_from_dict = ContractsGetConsentedContractsRequestQueryReadCredentials.from_dict(contracts_get_consented_contracts_request_query_read_credentials_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

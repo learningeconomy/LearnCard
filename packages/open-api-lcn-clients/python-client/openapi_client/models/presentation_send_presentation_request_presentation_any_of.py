@@ -25,6 +25,7 @@ from openapi_client.models.boost_send_request_template_credential_any_of_proof i
 from openapi_client.models.presentation_send_presentation_request_presentation_any_of_verifiable_credential import PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class PresentationSendPresentationRequestPresentationAnyOf(BaseModel):
     """
@@ -40,7 +41,8 @@ class PresentationSendPresentationRequestPresentationAnyOf(BaseModel):
     __properties: ClassVar[List[str]] = ["@context", "id", "type", "verifiableCredential", "holder", "proof"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -52,8 +54,7 @@ class PresentationSendPresentationRequestPresentationAnyOf(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -84,8 +85,7 @@ class PresentationSendPresentationRequestPresentationAnyOf(BaseModel):
         _items = []
         if self.context:
             for _item_context in self.context:
-                if _item_context:
-                    _items.append(_item_context.to_dict())
+                _items.append(_item_context.to_dict() if _item_context is not None else None)
             _dict['@context'] = _items
         # override the default output from pydantic by calling `to_dict()` of type
         if self.type:
@@ -122,14 +122,16 @@ class PresentationSendPresentationRequestPresentationAnyOf(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
+        _values = {
             "@context": [BoostSendRequestTemplateCredentialAnyOfContextInner.from_dict(_item) for _item in obj["@context"]] if obj.get("@context") is not None else None,
             "id": obj.get("id"),
             "type": BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.from_dict(obj["type"]) if obj.get("type") is not None else None,
             "verifiableCredential": PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential.from_dict(obj["verifiableCredential"]) if obj.get("verifiableCredential") is not None else None,
             "holder": obj.get("holder"),
             "proof": BoostSendRequestTemplateCredentialAnyOfProof.from_dict(obj["proof"]) if obj.get("proof") is not None else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         # store additional fields in additional_properties
         for _key in obj.keys():
             if _key not in cls.__properties:

@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import _ from 'lodash-es';
 
 import { m } from '../../../paraglide/messages.js';
 
@@ -12,7 +11,6 @@ import {
     useGetCurrentLCNUser,
     useGetCurrentUserRole,
     useContractSentRequests,
-    useContract,
     useWallet,
 } from 'learn-card-base';
 import { useTheme } from '../../../theme/hooks/useTheme';
@@ -47,8 +45,6 @@ const LearnerInsights: React.FC = () => {
     const [contractUri, setContractUri] = useState<string>('');
     const [contract, setContract] = useState(null);
 
-    const { data: _contract } = useContract(contractUri, !Boolean(contract));
-
     const createContract = async () => {
         const wallet = await initWallet();
         if (!currentLCNUser || currentUserRole !== LearnCardRolesEnum.teacher || contractUri)
@@ -62,21 +58,16 @@ const LearnerInsights: React.FC = () => {
             await createAiInsightsService(
                 wallet,
                 existingTeacherContract.uri,
-                currentLCNUser?.profileId!,
-                currentLCNUser?.did!
+                currentLCNUser.profileId,
+                currentLCNUser.did
             );
             return;
         }
 
         const uri = await createTeacherStudentContract({
-            teacherProfile: currentLCNUser!,
+            teacherProfile: currentLCNUser,
         });
-        await createAiInsightsService(
-            wallet,
-            uri,
-            currentLCNUser?.profileId!,
-            currentLCNUser?.did!
-        );
+        await createAiInsightsService(wallet, uri, currentLCNUser.profileId, currentLCNUser.did);
 
         setContractUri(uri);
         refetchContracts();
@@ -136,14 +127,14 @@ const LearnerInsights: React.FC = () => {
             <div className="w-full flex flex-col gap-2">
                 {_requests.map(request => (
                     <AiInsightsUserCard
-                        key={request.profile.profileId}
+                        key={request.requestId ?? request.profile.profileId}
                         profile={request.profile}
                         mode={AiInsightsUserCardMode.View}
                         showOptions
                         status={request?.status}
                         readStatus={request?.readStatus}
+                        requestId={request.requestId}
                         contractUri={contractUri}
-                        contract={contract || _contract}
                     />
                 ))}
 

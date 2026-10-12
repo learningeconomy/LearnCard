@@ -19,21 +19,23 @@ import json
 
 from pydantic import BaseModel, ConfigDict
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_credentials import ContractsCreateConsentFlowContractRequestContractReadCredentials
-from openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_credentials_categories_value import ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue
+from openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_personal_value import ContractsCreateConsentFlowContractRequestContractReadPersonalValue
+from openapi_client.models.contracts_create_consent_flow_contract_request_contract_write_credentials import ContractsCreateConsentFlowContractRequestContractWriteCredentials
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsCreateConsentFlowContractRequestContractWrite(BaseModel):
     """
     ContractsCreateConsentFlowContractRequestContractWrite
     """ # noqa: E501
-    credentials: Optional[ContractsCreateConsentFlowContractRequestContractReadCredentials] = None
-    personal: Optional[Dict[str, ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue]] = None
+    credentials: Optional[ContractsCreateConsentFlowContractRequestContractWriteCredentials] = None
+    personal: Optional[Dict[str, ContractsCreateConsentFlowContractRequestContractReadPersonalValue]] = None
     __properties: ClassVar[List[str]] = ["credentials", "personal"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -45,8 +47,7 @@ class ContractsCreateConsentFlowContractRequestContractWrite(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -78,8 +79,7 @@ class ContractsCreateConsentFlowContractRequestContractWrite(BaseModel):
         _field_dict = {}
         if self.personal:
             for _key_personal in self.personal:
-                if self.personal[_key_personal]:
-                    _field_dict[_key_personal] = self.personal[_key_personal].to_dict()
+                _field_dict[_key_personal] = self.personal[_key_personal].to_dict() if self.personal[_key_personal] is not None else None
             _dict['personal'] = _field_dict
         return _dict
 
@@ -92,15 +92,17 @@ class ContractsCreateConsentFlowContractRequestContractWrite(BaseModel):
         if not isinstance(obj, dict):
             return cls.model_validate(obj)
 
-        _obj = cls.model_validate({
-            "credentials": ContractsCreateConsentFlowContractRequestContractReadCredentials.from_dict(obj["credentials"]) if obj.get("credentials") is not None else None,
+        _values = {
+            "credentials": ContractsCreateConsentFlowContractRequestContractWriteCredentials.from_dict(obj["credentials"]) if obj.get("credentials") is not None else None,
             "personal": dict(
-                (_k, ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue.from_dict(_v))
+                (_k, ContractsCreateConsentFlowContractRequestContractReadPersonalValue.from_dict(_v))
                 for _k, _v in obj["personal"].items()
             )
             if obj.get("personal") is not None
             else None
-        })
+        }
+        # Missing properties must remain unset; explicit nulls still participate in validation.
+        _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
         return _obj
 
 

@@ -1,3 +1,4 @@
+import type { ConsentFlowContractRequestStatus } from '@learncard/types';
 import React from 'react';
 
 import { m } from '../../../paraglide/messages.js';
@@ -28,7 +29,7 @@ import { useGlobalSkillFrameworks } from '../../../helpers/globalSkillFrameworks
 export const LearnerInsightsPreview: React.FC<{
     profile: LCNProfile;
     readStatus?: 'unseen' | 'seen' | null | undefined;
-    status?: 'pending' | 'accepted' | 'denied' | null | undefined;
+    status?: ConsentFlowContractRequestStatus | undefined;
 }> = ({ profile, readStatus, status }) => {
     const { closeModal } = useModal();
     const { getThemedCategoryColors } = useTheme();

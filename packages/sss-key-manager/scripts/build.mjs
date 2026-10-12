@@ -2,15 +2,18 @@ import path from 'path';
 import esbuild from 'esbuild';
 import { NodeResolvePlugin } from '@esbuild-plugins/node-resolve';
 
-const nodeResolveExternal = NodeResolvePlugin({
-    extensions: ['.ts', '.js', '.tsx', '.jsx', '.cjs', '.mjs'],
-    onResolved: resolved => {
-        if (resolved.includes('node_modules')) {
-            return { external: true };
-        }
-        return resolved;
-    },
-});
+const nodeResolveExternal = (bundleCborg = false) =>
+    NodeResolvePlugin({
+        extensions: ['.ts', '.js', '.tsx', '.jsx', '.cjs', '.mjs'],
+        onResolved: resolved => {
+            // cborg exposes only ESM; CommonJS consumers cannot require it directly.
+            if (bundleCborg && resolved.includes(`${path.sep}cborg${path.sep}`)) return resolved;
+            if (resolved.includes('node_modules')) {
+                return { external: true };
+            }
+            return resolved;
+        },
+    });
 
 const configurations = [
     {
@@ -18,7 +21,7 @@ const configurations = [
         bundle: true,
         sourcemap: 'external',
         tsconfig: 'tsconfig.json',
-        plugins: [nodeResolveExternal],
+        plugins: [nodeResolveExternal(true)],
         entryPoints: ['src/index.ts'],
         format: 'cjs',
         outfile: 'dist/sss-key-manager.cjs.development.js',
@@ -28,7 +31,7 @@ const configurations = [
         bundle: true,
         sourcemap: 'external',
         tsconfig: 'tsconfig.json',
-        plugins: [nodeResolveExternal],
+        plugins: [nodeResolveExternal(true)],
         entryPoints: ['src/index.ts'],
         minify: true,
         format: 'cjs',
@@ -39,7 +42,7 @@ const configurations = [
         bundle: true,
         sourcemap: 'external',
         tsconfig: 'tsconfig.json',
-        plugins: [nodeResolveExternal],
+        plugins: [nodeResolveExternal()],
         entryPoints: ['src/index.ts'],
         format: 'esm',
         outfile: 'dist/sss-key-manager.esm.js',
@@ -49,9 +52,7 @@ const configurations = [
 const isWatch = process.argv.includes('--watch');
 
 if (isWatch) {
-    const contexts = await Promise.all(
-        configurations.map(config => esbuild.context(config))
-    );
+    const contexts = await Promise.all(configurations.map(config => esbuild.context(config)));
     await Promise.all(contexts.map(ctx => ctx.watch()));
     console.log('👀 Watching for changes...');
 } else {

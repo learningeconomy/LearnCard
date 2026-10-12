@@ -48,7 +48,6 @@ class TestBoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement(un
                 var_in = [
                     ''
                     ],
-                regex = '',
                 var_or = [
                     null
                     ],

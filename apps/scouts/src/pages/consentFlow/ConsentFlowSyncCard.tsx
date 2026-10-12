@@ -14,6 +14,8 @@ import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 
 import {
+    isAlreadyConsentedError,
+    isConsentConflict,
     useModal,
     useToast,
     useWallet,
@@ -69,11 +71,14 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
 
     const [loading, setLoading] = useState(false);
 
-    const { data: contract } = useContract(contractUri);
+    const { data: contract, refetch: refetchContract } = useContract(
+        contractUri ?? _contractDetails?.uri
+    );
+    const [refreshedContract, setRefreshedContract] = useState<ConsentFlowContractDetails>();
 
-    const contractDetails = _contractDetails || contract;
+    const contractDetails = refreshedContract || _contractDetails || contract;
 
-    const currentUser = useCurrentUser()!!!!!!!!!;
+    const currentUser = useCurrentUser()!;
 
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
     const { mutateAsync: consentToContract, isPending } = useConsentToContract(
@@ -90,80 +95,20 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
         if (contractDetails?.contract) {
             setTerms(getMinimumTermsForContract(contractDetails.contract, currentUser));
         }
-    }, [JSON.stringify(contractDetails?.contract ?? '')]);
+    }, [JSON.stringify(contractDetails ?? '')]);
 
     const history = useHistory();
     const location = useLocation();
 
     const { returnTo } = queryString.parse(location.search);
 
-    const _returnTo = Array.isArray(returnTo) ? returnTo[0] ?? '' : returnTo ?? '';
+    const _returnTo = Array.isArray(returnTo) ? (returnTo[0] ?? '') : (returnTo ?? '');
 
     // state for handling - data share duration
     const [shareDuration, setShareDuration] = useState<{
         oneTimeShare: boolean;
         customDuration: string;
     }>({ oneTimeShare: false, customDuration: '' });
-
-    // Extract httpStatus from various possible error shapes (tRPC, fetch, stringified JSON, etc.)
-    const getHttpStatusFromError = (err: unknown): number | undefined => {
-        const asRecord = (val: unknown): Record<string, unknown> | null =>
-            val !== null && typeof val === 'object' ? (val as Record<string, unknown>) : null;
-
-        // Direct object shapes (e.g., TRPCClientError)
-        const rec = asRecord(err);
-        if (rec) {
-            const direct = rec['httpStatus'];
-            if (typeof direct === 'number') return direct;
-
-            const data = asRecord(rec['data']);
-            const dataStatus = data?.['httpStatus'];
-            if (typeof dataStatus === 'number') return dataStatus;
-
-            const shape = asRecord(rec['shape']);
-            const shapeData = asRecord(shape?.['data']);
-            const shapeStatus = shapeData?.['httpStatus'];
-            if (typeof shapeStatus === 'number') return shapeStatus;
-
-            const response = asRecord(rec['response']);
-            const responseStatus = response?.['status'];
-            if (typeof responseStatus === 'number') return responseStatus;
-        }
-
-        // Stringified JSON in error.message or error string
-        const msg = err instanceof Error ? err.message : String(err);
-        try {
-            const firstBrace = msg.indexOf('{');
-            const firstBracket = msg.indexOf('[');
-            const starts: number[] = [firstBrace, firstBracket].filter(i => i >= 0);
-            const start = starts.length ? Math.min(...starts) : -1;
-
-            if (start >= 0) {
-                const jsonText = msg.slice(start).trim();
-                const parsed: unknown = JSON.parse(jsonText);
-
-                if (Array.isArray(parsed)) {
-                    for (const item of parsed) {
-                        const itemRec = asRecord(item);
-                        const errorRec = asRecord(itemRec?.['error']);
-                        const dataRec = asRecord(errorRec?.['data']) ?? asRecord(itemRec?.['data']);
-                        const hs = dataRec?.['httpStatus'] ?? itemRec?.['httpStatus'];
-                        if (typeof hs === 'number') return hs as number;
-                    }
-                } else {
-                    const objRec = asRecord(parsed);
-                    const errorRec = asRecord(objRec?.['error']);
-                    const dataRec = asRecord(errorRec?.['data']) ?? asRecord(objRec?.['data']);
-                    const hs = dataRec?.['httpStatus'] ?? objRec?.['httpStatus'];
-                    if (typeof hs === 'number') return hs as number;
-                }
-            }
-        } catch {
-            // ignore JSON parse errors
-        }
-
-        return undefined;
-    };
 
     const handleAcceptContract = async () => {
         if (!contractDetails?.contract) return;
@@ -231,9 +176,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                 // history.push(`/launchpad?uri=${contractDetails.uri}`);
             }
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : String(err);
-            const httpStatus = getHttpStatusFromError(err);
-            if (httpStatus === 409 || msg.includes("You've already consented to this contract")) {
+            if (isAlreadyConsentedError(err)) {
                 const redirectUrl = contractDetails?.redirectUrl;
 
                 newModal(
@@ -287,6 +230,13 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                 );
 
                 // Prevent the unconditional navigation at the end of the function
+                return;
+            }
+
+            if (isConsentConflict(err)) {
+                const refreshed = await refetchContract();
+                if (refreshed.data) setRefreshedContract(refreshed.data);
+                presentToast(m['consentFlow.reviewChanged'](), { type: ToastTypeEnum.Error });
                 return;
             }
 

@@ -1,27 +1,31 @@
 # ProfileCreateProfileRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**profile_id** | **str** | Unique, URL-safe identifier for the profile. | 
-**display_name** | **str** | Human-readable display name for the profile. | [optional] [default to '']
-**short_bio** | **str** | Short bio for the profile. | [optional] [default to '']
-**bio** | **str** | Longer bio for the profile. | [optional] [default to '']
-**is_private** | **bool** | Whether the profile is private or not and shows up in search results. | [optional] 
-**email** | **str** | Contact email address for the profile. (deprecated) | [optional] 
-**image** | **str** | Profile image URL for the profile. | [optional] 
-**hero_image** | **str** | Hero image URL for the profile. | [optional] 
-**website_link** | **str** | Website link for the profile. | [optional] 
-**type** | **str** | Profile type: e.g. \&quot;person\&quot;, \&quot;organization\&quot;, \&quot;service\&quot;. | [optional] 
-**notifications_webhook** | **str** | URL to send notifications to. | [optional] 
-**display** | [**ProfileCreateProfileRequestDisplay**](ProfileCreateProfileRequestDisplay.md) |  | [optional] 
-**highlighted_credentials** | **List[str]** | Up to 5 unique boost URIs to highlight on the profile. | [optional] 
-**role** | **str** | Role of the profile: e.g. \&quot;teacher\&quot;, \&quot;student\&quot;. | [optional] [default to '']
-**dob** | **str** | Date of birth of the profile: e.g. \&quot;1990-01-01\&quot;. | [optional] [default to '']
-**country** | **str** | Country for the profile. | [optional] 
-**approved** | **bool** | Approval status for the profile. | [optional] 
+| Name                          | Type                                                                            | Description                                                                                                                                       | Notes                            |
+| ----------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| **profile_id**                | **str**                                                                         | Unique, URL-safe identifier for the profile.                                                                                                      |
+| **display_name**              | **str**                                                                         | Human-readable display name for the profile.                                                                                                      | [optional] [default to '']       |
+| **short_bio**                 | **str**                                                                         | Short bio for the profile.                                                                                                                        | [optional] [default to '']       |
+| **bio**                       | **str**                                                                         | Longer bio for the profile.                                                                                                                       | [optional] [default to '']       |
+| **is_private**                | **bool**                                                                        | Whether the profile is private or not and shows up in search results.                                                                             | [optional]                       |
+| **profile_visibility**        | **str**                                                                         | Profile visibility: &#39;public&#39;, &#39;connections_only&#39;, or &#39;private&#39;.                                                           | [optional] [default to 'public'] |
+| **show_email**                | **bool**                                                                        | Whether to show email to connections.                                                                                                             | [optional] [default to False]    |
+| **allow_connection_requests** | **str**                                                                         | Who can send connection requests: &#39;anyone&#39; or &#39;invite_only&#39;.                                                                      | [optional] [default to 'anyone'] |
+| **email**                     | **str**                                                                         | Contact email address for the profile. (deprecated)                                                                                               | [optional]                       |
+| **image**                     | **str**                                                                         | Profile image URL for the profile.                                                                                                                | [optional]                       |
+| **hero_image**                | **str**                                                                         | Hero image URL for the profile.                                                                                                                   | [optional]                       |
+| **website_link**              | **str**                                                                         | Website link for the profile.                                                                                                                     | [optional]                       |
+| **type**                      | **str**                                                                         | Profile type: e.g. \&quot;person\&quot;, \&quot;organization\&quot;, \&quot;service\&quot;.                                                       | [optional]                       |
+| **notifications_webhook**     | **str**                                                                         | URL to send notifications to.                                                                                                                     | [optional]                       |
+| **display**                   | [**ProfileCreateProfileRequestDisplay**](ProfileCreateProfileRequestDisplay.md) |                                                                                                                                                   | [optional]                       |
+| **highlighted_credentials**   | **List[str]**                                                                   | Up to 5 unique boost URIs to highlight on the profile.                                                                                            | [optional]                       |
+| **role**                      | **str**                                                                         | Role of the profile: e.g. \&quot;teacher\&quot;, \&quot;student\&quot;.                                                                           | [optional] [default to '']       |
+| **dob**                       | **str**                                                                         | Date of birth of the profile: e.g. \&quot;1990-01-01\&quot;.                                                                                      | [optional] [default to '']       |
+| **country**                   | **str**                                                                         | Country for the profile.                                                                                                                          | [optional]                       |
+| **locale**                    | **str**                                                                         | BCP-47 language tag (e.g. &#39;es&#39;, &#39;fr&#39;, &#39;ar&#39;) — the user&#39;s preferred language for server-sent notifications and emails. | [optional]                       |
+| **approved**                  | **bool**                                                                        | Approval status for the profile.                                                                                                                  | [optional]                       |
+| **auth_token**                | **str**                                                                         |                                                                                                                                                   | [optional]                       |
 
 ## Example
 
@@ -40,6 +44,5 @@ profile_create_profile_request_dict = profile_create_profile_request_instance.to
 # create an instance of ProfileCreateProfileRequest from a dict
 profile_create_profile_request_from_dict = ProfileCreateProfileRequest.from_dict(profile_create_profile_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

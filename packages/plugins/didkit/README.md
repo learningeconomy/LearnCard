@@ -159,6 +159,18 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 Please make sure to update tests as appropriate.
 
+### Vendored Rust dependency locks
+
+WASM builds use DIDKit's committed workspace lock at `lib/didkit/Cargo.lock` with
+`--locked`. DIDKit source updates must include a valid lock; LearnCard does not
+overlay or regenerate it. The native addon has its own lock at
+`../didkit-plugin-node/native/Cargo.lock`.
+
+Using DIDKit's lock adopts its dependency versions rather than LearnCard's former
+separate WASM graph. The committed WASM/glue pair and hosted URL are retained until
+the normal source-update workflow builds, tests, and publishes a matching artifact
+pair and updates the URL and bridge integrity pin.
+
 ## Who is Learning Economy Foundation?
 
 **[Learning Economy Foundation (LEF)](https://www.learningeconomy.io)** is a 501(c)(3) non-profit organization leveraging global standards and web3 protocols to bring quality skills and equal opportunity to every human on earth, and address the persistent inequities that exist around the globe in education and employment. We help you build the future of education and work with:

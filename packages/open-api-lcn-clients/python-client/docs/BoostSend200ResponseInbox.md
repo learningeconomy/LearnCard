@@ -4,11 +4,13 @@ Present when sent via email/phone (Universal Inbox)
 
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**issuance_id** | **str** |  | 
-**status** | **str** |  | 
-**claim_url** | **str** | Present when suppressDelivery&#x3D;true | [optional] 
+| Name                | Type                                                                        | Description                              | Notes      |
+| ------------------- | --------------------------------------------------------------------------- | ---------------------------------------- | ---------- |
+| **refresh**         | [**BoostSend200ResponseInboxRefresh**](BoostSend200ResponseInboxRefresh.md) |                                          | [optional] |
+| **issuance_id**     | **str**                                                                     |                                          |
+| **status**          | **str**                                                                     |                                          |
+| **claim_url**       | **str**                                                                     | Present when suppressDelivery&#x3D;true  | [optional] |
+| **guardian_status** | **str**                                                                     | Present when guardianEmail was specified | [optional] |
 
 ## Example
 
@@ -27,6 +29,5 @@ boost_send200_response_inbox_dict = boost_send200_response_inbox_instance.to_dic
 # create an instance of BoostSend200ResponseInbox from a dict
 boost_send200_response_inbox_from_dict = BoostSend200ResponseInbox.from_dict(boost_send200_response_inbox_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

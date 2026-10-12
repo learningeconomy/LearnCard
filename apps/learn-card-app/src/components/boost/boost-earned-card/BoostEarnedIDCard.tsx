@@ -51,7 +51,6 @@ import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { useLoadingLine } from 'apps/learn-card-app/src/stores/loadingStore';
 import useBoostMenu, { BoostMenuType } from '../hooks/useBoostMenu';
 import { LCR } from 'learn-card-base/types/credential-records';
-import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 
 type BoostEarnedIDCardProps = {
     credential?: VC;
@@ -273,12 +272,12 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
         newModal(<BoostPreview {...earnedBoostIdCardProps} />);
     };
 
-    const { createdAt } = getInfoFromCredential(cred, 'MMMM DD, YYYY', {
-        uppercaseDate: false,
-    });
-    const createdAtDate = new Date(getIssuanceDate(cred) ?? '');
+    const rawDateValue = getIssuanceDate(cred) || '';
+    const createdAtDate = new Date(rawDateValue);
     const issueDate = Number.isNaN(createdAtDate.getTime())
-        ? moment(createdAt).locale(getLocale()).format('MMMM DD YYYY')
+        ? rawDateValue
+            ? moment(rawDateValue).locale(getLocale()).format('MMMM DD YYYY')
+            : ''
         : new Intl.DateTimeFormat(getLocale(), {
               month: 'long',
               day: '2-digit',

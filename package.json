@@ -36,6 +36,7 @@
         "test:coverage": "nx run-many -t test:coverage --all",
         "test:ui": "nx run-many -t test:ui --all",
         "test:e2e": "nx run e2e:test:e2e",
+        "test:referrals": "bun scripts/check-contract-referrals.ts",
         "run-network-tests": "nx run network-brain-service:build && bun run --cwd services/learn-card-network/brain-service test",
         "test:lc-2079": "bun run --cwd packages/learn-card-base test -- src/helpers/aiErrors.test.ts src/stores/nanoStores/chatStore.test.ts && bun run --cwd apps/learn-card-app test:unit -- src/helpers/aiError.helpers.test.ts src/components/new-ai-session/AiSessionErrorHandler.test.tsx",
         "verify:lc-2079": "bun run test:lc-2079 && bunx nx build learn-card-app",
@@ -75,7 +76,7 @@
         "husky": "8.0.3",
         "lint-staged": "13.3.0",
         "node-gyp": "^12.2.0",
-        "nx": "22.7.7",
+        "nx": "23.2.1",
         "prettier": "^3.6.0",
         "prettier-plugin-astro": "^0.5.5",
         "publint": "^0.3.21",
@@ -169,7 +170,7 @@
         "esbuild@>=0.27.3 <0.28.1": "0.28.1",
         "webpack": "5.105.4"
     },
-    "packageManager": "bun@1.3.14",
+    "packageManager": "bun@1.4.2",
     "lint-staged": {
         "*.{ts,tsx,js,jsx,json,md,yml,yaml,css,html}": [
             "prettier --write",
@@ -177,7 +178,7 @@
         ]
     },
     "patchedDependencies": {
-        "capacitor-plugin-safe-area@5.0.0": "patches/capacitor-plugin-safe-area@5.0.0.patch",
+        "capacitor-plugin-safe-area@5.0.1": "patches/capacitor-plugin-safe-area@5.0.1.patch",
         "libsodium-wrappers@0.7.16": "patches/libsodium-wrappers@0.7.16.patch",
         "@capacitor-community/in-app-review@8.0.0": "patches/@capacitor-community%2Fin-app-review@8.0.0.patch"
     }

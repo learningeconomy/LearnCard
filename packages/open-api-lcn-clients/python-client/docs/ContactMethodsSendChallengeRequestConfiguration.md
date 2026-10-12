@@ -1,11 +1,10 @@
 # ContactMethodsSendChallengeRequestConfiguration
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**publishable_key** | **str** |  | 
+| Name                | Type    | Description | Notes |
+| ------------------- | ------- | ----------- | ----- |
+| **publishable_key** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ contact_methods_send_challenge_request_configuration_dict = contact_methods_send
 # create an instance of ContactMethodsSendChallengeRequestConfiguration from a dict
 contact_methods_send_challenge_request_configuration_from_dict = ContactMethodsSendChallengeRequestConfiguration.from_dict(contact_methods_send_challenge_request_configuration_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

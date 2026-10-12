@@ -1,3 +1,4 @@
+import type { ConsentFlowContractRequestStatus } from '@learncard/types';
 import React from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
@@ -36,7 +37,7 @@ export const RequestInsightsFromUserModal: React.FC<{
     contractUri: string;
     onSuccessCallback?: () => void;
     redirectToLink?: string;
-    requestStatus?: 'pending' | 'accepted' | 'denied' | null;
+    requestStatus?: ConsentFlowContractRequestStatus;
 }> = ({ profile, contractUri, onSuccessCallback, redirectToLink, requestStatus }) => {
     const { presentToast } = useToast();
     const { closeModal, closeAllModals } = useModal();
@@ -128,9 +129,9 @@ export const RequestInsightsFromUserModal: React.FC<{
                                 m={m['aiInsights.loginToRequestFrom']}
                                 values={{ name: profile?.displayName ?? '' }}
                                 components={[
-                                    <span className="font-semibold" />,
-                                    <span className="font-semibold" />,
-                                    <span className="font-semibold" />,
+                                    <span key="request-action" className="font-semibold" />,
+                                    <span key="requester-name" className="font-semibold" />,
+                                    <span key="target-name" className="font-semibold" />,
                                 ]}
                             />
                         </p>

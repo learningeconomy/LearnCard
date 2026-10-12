@@ -80,7 +80,8 @@ const PostConsentFlowSyncCard: React.FC<PostConsentFlowSyncCardProps> = ({
 
     const { mutateAsync: updateTerms, isPending: updatingTerms } = useUpdateTerms(
         consentedContract?.uri,
-        consentedContract?.contract?.owner.did ?? ''
+        consentedContract?.contract?.owner.did ?? '',
+        consentedContract?.contract?.uri
     );
     const { mutateAsync: consentToContract, isPending: consentingToContract } =
         useConsentToContract(
@@ -127,13 +128,12 @@ const PostConsentFlowSyncCard: React.FC<PostConsentFlowSyncCardProps> = ({
                         unsignedDelegateCredential
                     );
 
-                    const unsignedDidAuthVp = await wallet.invoke.newPresentation(
-                        delegateCredential
-                    );
+                    const unsignedDidAuthVp =
+                        await wallet.invoke.newPresentation(delegateCredential);
                     const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
                         proofPurpose: 'authentication',
                         proofFormat: 'jwt',
-                    })) as any as string;
+                    })) as unknown as string;
 
                     urlObj.searchParams.set('vp', vp);
                 }

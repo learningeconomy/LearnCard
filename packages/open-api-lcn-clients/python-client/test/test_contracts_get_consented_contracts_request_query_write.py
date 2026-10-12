@@ -35,7 +35,7 @@ class TestContractsGetConsentedContractsRequestQueryWrite(unittest.TestCase):
         model = ContractsGetConsentedContractsRequestQueryWrite()
         if include_optional:
             return ContractsGetConsentedContractsRequestQueryWrite(
-                credentials = openapi_client.models.contracts_get_consented_data_for_contract_request_query_credentials.contracts_getConsentedDataForContract_request_query_credentials(
+                credentials = openapi_client.models.contracts_get_consented_data_for_did_request_query_credentials.contracts_getConsentedDataForDid_request_query_credentials(
                     categories = {
                         'key' : True
                         }, ),

@@ -32,6 +32,17 @@ export class AuthSessionError extends Error {
 // Auth Provider
 // ---------------------------------------------------------------------------
 
+/** An action that the selected sign-in provider does not support. */
+export class UnsupportedSignInOperationError extends Error {
+    constructor(
+        public readonly operation: string,
+        public readonly providerType: string
+    ) {
+        super(`${operation} is not supported by ${providerType}`);
+        this.name = 'UnsupportedSignInOperationError';
+    }
+}
+
 /**
  * Auth provider identifier. Known values: 'firebase', 'supertokens', 'keycloak', 'oidc'.
  * Use any string to support custom auth providers without modifying this type.
@@ -288,10 +299,21 @@ export const EscrowPinStatusValidator = z.object({
 });
 export type EscrowPinStatus = z.infer<typeof EscrowPinStatusValidator>;
 
+/**
+ * Reason a stored escrow blob no longer matches the server's active enclave:
+ * `mode-mismatch` — blob was sealed for `software`/`nitro` but the server now
+ * runs the other backend (e.g. the P6 software→Nitro migration, or a rollback);
+ * `key-rotated` — blob's `enclaveKeyId` no longer matches the active
+ * attestation's key (e.g. a PCR/measurement rotation).
+ */
+export type EscrowBlobStaleReason = 'mode-mismatch' | 'key-rotated';
+
 /** Enrollment details for PIN-aware strategies. Legacy strategies may still return a string. */
 export interface EscrowEnrollmentState {
-    state: 'enrolled' | 'not-enrolled' | 'opted-out' | 'disabled';
+    state: 'enrolled' | 'not-enrolled' | 'opted-out' | 'disabled' | 'stale';
     escrowPin?: EscrowPinStatus;
+    /** Present only when `state === 'stale'`. */
+    staleReason?: EscrowBlobStaleReason;
 }
 
 /**
@@ -309,6 +331,7 @@ export interface ServerKeyStatus {
     maskedRecoveryEmail?: string | null;
     escrowOptedOut?: boolean;
     escrowPin?: EscrowPinStatus;
+    escrowStale?: EscrowBlobStaleReason;
     sssActivationState?: SssActivationState | null;
 }
 

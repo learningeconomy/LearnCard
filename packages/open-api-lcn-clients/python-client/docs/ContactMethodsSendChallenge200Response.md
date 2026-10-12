@@ -1,11 +1,10 @@
 # ContactMethodsSendChallenge200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**message** | **str** |  | 
+| Name        | Type    | Description | Notes |
+| ----------- | ------- | ----------- | ----- |
+| **message** | **str** |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ contact_methods_send_challenge200_response_dict = contact_methods_send_challenge
 # create an instance of ContactMethodsSendChallenge200Response from a dict
 contact_methods_send_challenge200_response_from_dict = ContactMethodsSendChallenge200Response.from_dict(contact_methods_send_challenge200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

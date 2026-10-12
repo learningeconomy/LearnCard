@@ -1,17 +1,16 @@
 # IntegrationsUpdateIntegrationRequestUpdates
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**name** | **str** |  | [optional] 
-**description** | **str** |  | [optional] 
-**whitelisted_domains** | [**List[IntegrationsAddIntegrationRequestWhitelistedDomainsInner]**](IntegrationsAddIntegrationRequestWhitelistedDomainsInner.md) |  | [optional] 
-**rotate_publishable_key** | **bool** |  | [optional] 
-**status** | **str** |  | [optional] 
-**guide_type** | **str** |  | [optional] 
-**guide_state** | **Dict[str, object]** |  | [optional] 
+| Name                       | Type                                                                                                                              | Description | Notes      |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **name**                   | **str**                                                                                                                           |             | [optional] |
+| **description**            | **str**                                                                                                                           |             | [optional] |
+| **whitelisted_domains**    | [**List[IntegrationsAddIntegrationRequestWhitelistedDomainsInner]**](IntegrationsAddIntegrationRequestWhitelistedDomainsInner.md) |             | [optional] |
+| **rotate_publishable_key** | **bool**                                                                                                                          |             | [optional] |
+| **status**                 | **str**                                                                                                                           |             | [optional] |
+| **guide_type**             | **str**                                                                                                                           |             | [optional] |
+| **guide_state**            | **Dict[str, Optional[object]]**                                                                                                   |             | [optional] |
 
 ## Example
 
@@ -30,6 +29,5 @@ integrations_update_integration_request_updates_dict = integrations_update_integ
 # create an instance of IntegrationsUpdateIntegrationRequestUpdates from a dict
 integrations_update_integration_request_updates_from_dict = IntegrationsUpdateIntegrationRequestUpdates.from_dict(integrations_update_integration_request_updates_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

@@ -1,10 +1,9 @@
 # ContractsGetTermsTransactionHistoryRequestQueryAction
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
 
 ## Example
 
@@ -23,6 +22,5 @@ contracts_get_terms_transaction_history_request_query_action_dict = contracts_ge
 # create an instance of ContractsGetTermsTransactionHistoryRequestQueryAction from a dict
 contracts_get_terms_transaction_history_request_query_action_from_dict = ContractsGetTermsTransactionHistoryRequestQueryAction.from_dict(contracts_get_terms_transaction_history_request_query_action_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

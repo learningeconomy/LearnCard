@@ -1,5 +1,6 @@
 import { environment } from '@environment';
 import { neogma } from '@instance';
+import { contractEventMaintenanceSchema } from '@helpers/contract-event-maintenance.helpers';
 
 import { Boost } from './Boost';
 import { Profile } from './Profile';
@@ -128,6 +129,9 @@ const shouldCreateIndices =
     environment.NODE_ENV === 'production' || !environment.NEO4J_SKIP_INDICES;
 
 const indexQueries = [
+    'CREATE CONSTRAINT consent_event_id IF NOT EXISTS FOR (e:ConsentFlowEvent) REQUIRE e.id IS UNIQUE',
+    'CREATE CONSTRAINT consent_delivery_id IF NOT EXISTS FOR (d:ConsentFlowEventDelivery) REQUIRE d.id IS UNIQUE',
+    ...contractEventMaintenanceSchema,
     'CREATE INDEX profileId_idx IF NOT EXISTS FOR (p:Profile) ON (p.profileId)',
     'CREATE INDEX profile_did_idx IF NOT EXISTS FOR (p:Profile) ON (p.did)',
     'CREATE TEXT INDEX profileId_text_idx IF NOT EXISTS FOR (n:Profile) ON (n.profileId)',

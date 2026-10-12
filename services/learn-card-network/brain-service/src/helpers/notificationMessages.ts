@@ -38,6 +38,10 @@ export type NotificationMessageKey =
     | 'appListingWithdrawn'
     | 'appListingApproved'
     | 'appListingRejected'
+    | 'contractRequestReceived'
+    | 'contractRequestAccepted'
+    | 'contractRequestDenied'
+    | 'contractRequestCancelled'
     | 'consentFlowViewRequest'
     | 'consentFlowInvite'
     | 'consentFlowShare'
@@ -148,6 +152,22 @@ const en: LocaleCatalog = {
     appListingRejected: {
         title: 'App Listing Needs Changes',
         body: '"{displayName}" was not approved. Please review and resubmit.',
+    },
+    contractRequestReceived: {
+        title: 'Connection request',
+        body: '{referrer} would like to connect you with {contractOwner}.',
+    },
+    contractRequestAccepted: {
+        title: 'Connection request accepted',
+        body: '{name} accepted the request.',
+    },
+    contractRequestDenied: {
+        title: 'Connection request declined',
+        body: '{name} declined the request.',
+    },
+    contractRequestCancelled: {
+        title: 'Connection request cancelled',
+        body: '{name} cancelled the request.',
     },
     consentFlowViewRequest: {
         title: 'AI Insights',
@@ -304,6 +324,22 @@ const es: LocaleCatalog = {
         title: 'La aplicación necesita cambios',
         body: '"{displayName}" no fue aprobada. Revísala y vuelve a enviarla.',
     },
+    contractRequestReceived: {
+        title: 'Solicitud de conexión',
+        body: '{referrer} quiere conectarte con {contractOwner}.',
+    },
+    contractRequestAccepted: {
+        title: 'Solicitud de conexión aceptada',
+        body: '{name} aceptó la solicitud.',
+    },
+    contractRequestDenied: {
+        title: 'Solicitud de conexión rechazada',
+        body: '{name} rechazó la solicitud.',
+    },
+    contractRequestCancelled: {
+        title: 'Solicitud de conexión cancelada',
+        body: '{name} canceló la solicitud.',
+    },
     consentFlowViewRequest: {
         title: 'AI Insights',
         body: '{name} ha solicitado ver tus análisis.',
@@ -458,6 +494,22 @@ const fr: LocaleCatalog = {
     appListingRejected: {
         title: "L'application nécessite des modifications",
         body: "« {displayName} » n'a pas été approuvée. Veuillez la réviser et la soumettre à nouveau.",
+    },
+    contractRequestReceived: {
+        title: 'Demande de connexion',
+        body: '{referrer} souhaite vous mettre en relation avec {contractOwner}.',
+    },
+    contractRequestAccepted: {
+        title: 'Demande de connexion acceptée',
+        body: '{name} a accepté la demande.',
+    },
+    contractRequestDenied: {
+        title: 'Demande de connexion refusée',
+        body: '{name} a refusé la demande.',
+    },
+    contractRequestCancelled: {
+        title: 'Demande de connexion annulée',
+        body: '{name} a annulé la demande.',
     },
     consentFlowViewRequest: {
         title: 'AI Insights',
@@ -614,6 +666,13 @@ const ar: LocaleCatalog = {
         title: 'التطبيق يحتاج إلى تعديلات',
         body: 'لم تتم الموافقة على "{displayName}". يرجى مراجعته وإعادة إرساله.',
     },
+    contractRequestReceived: {
+        title: 'طلب اتصال',
+        body: 'يريد {referrer} توصيلك بـ {contractOwner}.',
+    },
+    contractRequestAccepted: { title: 'تم قبول طلب الاتصال', body: 'قبل {name} الطلب.' },
+    contractRequestDenied: { title: 'تم رفض طلب الاتصال', body: 'رفض {name} الطلب.' },
+    contractRequestCancelled: { title: 'تم إلغاء طلب الاتصال', body: 'ألغى {name} الطلب.' },
     consentFlowViewRequest: {
         title: 'رؤى الذكاء الاصطناعي',
         body: 'طلب {name} الاطلاع على رؤاك.',

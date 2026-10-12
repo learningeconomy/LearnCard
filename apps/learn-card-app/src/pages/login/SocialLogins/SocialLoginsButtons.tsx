@@ -10,6 +10,8 @@ import EmailIcon from 'learn-card-base/svgs/EmailIcon';
 import { LoginTypesEnum } from 'learn-card-base/helpers/loginHelpers';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { SocialLoginTypes, useSignInAdapter } from 'learn-card-base';
+import { Capacitor } from '@capacitor/core';
+import { KeycloakSignInOverlay } from '../../../components/auth/KeycloakSignInOverlay';
 
 import useTheme from '../../../theme/hooks/useTheme';
 
@@ -41,7 +43,7 @@ export const SocialLoginsButtons: React.FC<{
     extraSocialLogins = [],
     showSocialLogins,
 }) => {
-    const { capabilities } = useSignInAdapter();
+    const { capabilities, providerType } = useSignInAdapter();
     const { colors, theme } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
     const loginBgColor =
@@ -49,6 +51,9 @@ export const SocialLoginsButtons: React.FC<{
     const socialLogins = useSocialLogins(branding);
     const socialLoginInFlightRef = useRef(false);
     const [activeSocialLogin, setActiveSocialLogin] = useState<SocialLoginTypes | null>(null);
+    const [keycloakOverlayPhase, setKeycloakOverlayPhase] = useState<
+        'signing-in' | 'setting-up' | null
+    >(null);
 
     const handleSocialLogin = async (socialLogin: SocialLoginOption): Promise<void> => {
         if (socialLoginInFlightRef.current) return;
@@ -57,14 +62,27 @@ export const SocialLoginsButtons: React.FC<{
         setActiveSocialLogin(socialLogin.type);
         let keepLoadingUntilNavigation = false;
 
+        if (providerType === 'keycloak' && Capacitor.isNativePlatform()) {
+            setKeycloakOverlayPhase('signing-in');
+        }
+
         try {
             keepLoadingUntilNavigation = (await socialLogin.onClick()) === true;
+            if (
+                keepLoadingUntilNavigation &&
+                providerType === 'keycloak' &&
+                Capacitor.isNativePlatform()
+            ) {
+                setKeycloakOverlayPhase('setting-up');
+            }
         } catch {
             // Provider handlers own error feedback; this component only owns loading state.
+            setKeycloakOverlayPhase(null);
         } finally {
             if (!keepLoadingUntilNavigation) {
                 socialLoginInFlightRef.current = false;
                 setActiveSocialLogin(null);
+                setKeycloakOverlayPhase(null);
             }
         }
     };
@@ -93,82 +111,85 @@ export const SocialLoginsButtons: React.FC<{
             : capabilities.phoneOtp;
 
     return (
-        <IonRow className="w-full flex items-center justify-center social-logins-container">
-            <div className="w-full flex items-center justify-center">
-                <div className="w-full pl-[12px] pr-[12px] items-center justify-center flex flex-col max-w-[500px]">
-                    <div className="w-full flex items-center justify-center gap-[20px]">
-                        {_socialLogins.map(socialLogin => {
-                            const socialLoginStyles =
-                                socialLogin.type === SocialLoginTypes.apple
-                                    ? 'px-[14px]'
-                                    : 'px-[12px]';
-                            const isActiveSocialLogin = activeSocialLogin === socialLogin.type;
-                            const providerLabel = getSocialLoginProviderLabel(
-                                socialLogin.type,
-                                socialLogin.alt
-                            );
+        <>
+            {keycloakOverlayPhase && <KeycloakSignInOverlay phase={keycloakOverlayPhase} />}
+            <IonRow className="w-full flex items-center justify-center social-logins-container">
+                <div className="w-full flex items-center justify-center">
+                    <div className="w-full pl-[12px] pr-[12px] items-center justify-center flex flex-col max-w-[500px]">
+                        <div className="w-full flex items-center justify-center gap-[20px]">
+                            {_socialLogins.map(socialLogin => {
+                                const socialLoginStyles =
+                                    socialLogin.type === SocialLoginTypes.apple
+                                        ? 'px-[14px]'
+                                        : 'px-[12px]';
+                                const isActiveSocialLogin = activeSocialLogin === socialLogin.type;
+                                const providerLabel = getSocialLoginProviderLabel(
+                                    socialLogin.type,
+                                    socialLogin.alt
+                                );
 
-                            return (
+                                return (
+                                    <button
+                                        type="button"
+                                        className={`${socialLoginStyles} flex items-center justify-center border-solid border-[1px] border-${primaryColor} bg-white rounded-full py-1 min-w-[60px] min-h-[60px] max-w-[60px] max-h-[60px] overflow-hidden transition-opacity disabled:opacity-40 disabled:cursor-not-allowed`}
+                                        disabled={activeSocialLogin !== null}
+                                        aria-busy={isActiveSocialLogin}
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            void handleSocialLogin(socialLogin);
+                                        }}
+                                        key={socialLogin.id}
+                                    >
+                                        {isActiveSocialLogin ? (
+                                            <span
+                                                role="status"
+                                                aria-label={m['login.social.signingInWith']({
+                                                    provider: providerLabel,
+                                                })}
+                                                className="w-6 h-6 border-2 border-grayscale-300 border-t-grayscale-900 rounded-full animate-spin"
+                                            />
+                                        ) : (
+                                            <img
+                                                src={socialLogin.src}
+                                                alt={socialLogin.alt}
+                                                className="w-full h-full object-contain"
+                                            />
+                                        )}
+                                    </button>
+                                );
+                            })}
+                            {canSwitchLoginType && (
                                 <button
                                     type="button"
-                                    className={`${socialLoginStyles} flex items-center justify-center border-solid border-[1px] border-${primaryColor} bg-white rounded-full py-1 min-w-[60px] min-h-[60px] max-w-[60px] max-h-[60px] overflow-hidden transition-opacity disabled:opacity-40 disabled:cursor-not-allowed`}
-                                    disabled={activeSocialLogin !== null}
-                                    aria-busy={isActiveSocialLogin}
+                                    aria-label={
+                                        activeLoginType === LoginTypesEnum.phone
+                                            ? m['login.email.button']()
+                                            : m['login.phone.button']()
+                                    }
+                                    className={`flex items-center justify-center border-solid border-[1px] border-white/30 ${activeLoginTypeStyles} rounded-full min-w-[60px] min-h-[60px] max-w-[60px] max-h-[60px] overflow-hidden`}
                                     onClick={e => {
                                         e.stopPropagation();
-                                        void handleSocialLogin(socialLogin);
+                                        handleActiveLoginType();
                                     }}
-                                    key={socialLogin.id}
                                 >
-                                    {isActiveSocialLogin ? (
-                                        <span
-                                            role="status"
-                                            aria-label={m['login.social.signingInWith']({
-                                                provider: providerLabel,
-                                            })}
-                                            className="w-6 h-6 border-2 border-grayscale-300 border-t-grayscale-900 rounded-full animate-spin"
-                                        />
-                                    ) : (
-                                        <img
-                                            src={socialLogin.src}
-                                            alt={socialLogin.alt}
-                                            className="w-full h-full object-contain"
-                                        />
-                                    )}
+                                    <ActiveLoginIcon className="w-[32px] h-[32px] object-contain" />
                                 </button>
-                            );
-                        })}
-                        {canSwitchLoginType && (
-                            <button
-                                type="button"
-                                aria-label={
-                                    activeLoginType === LoginTypesEnum.phone
-                                        ? m['login.email.button']()
-                                        : m['login.phone.button']()
-                                }
-                                className={`flex items-center justify-center border-solid border-[1px] border-white/30 ${activeLoginTypeStyles} rounded-full min-w-[60px] min-h-[60px] max-w-[60px] max-h-[60px] overflow-hidden`}
-                                onClick={e => {
-                                    e.stopPropagation();
-                                    handleActiveLoginType();
-                                }}
-                            >
-                                <ActiveLoginIcon className="w-[32px] h-[32px] object-contain" />
-                            </button>
+                            )}
+                        </div>
+                        {showSocialLogins && (
+                            <p className="border-b-[1px] border-solid border-white leading-[0.1em] w-full text-center my-[40px]">
+                                <span
+                                    className="py-0 px-[10px] text-white"
+                                    style={{ backgroundColor: loginBgColor }}
+                                >
+                                    {m['login.social.or']()}
+                                </span>
+                            </p>
                         )}
                     </div>
-                    {showSocialLogins && (
-                        <p className="border-b-[1px] border-solid border-white leading-[0.1em] w-full text-center my-[40px]">
-                            <span
-                                className="py-0 px-[10px] text-white"
-                                style={{ backgroundColor: loginBgColor }}
-                            >
-                                {m['login.social.or']()}
-                            </span>
-                        </p>
-                    )}
                 </div>
-            </div>
-        </IonRow>
+            </IonRow>
+        </>
     );
 };
 

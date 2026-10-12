@@ -1,3 +1,4 @@
+import type { ConsentFlowContractRequestStatus } from '@learncard/types';
 import React from 'react';
 
 import { IonHeader, IonToolbar } from '@ionic/react';
@@ -9,7 +10,7 @@ import { LCNProfile } from '@learncard/types';
 type LearnerInsightsPreviewHeaderProps = {
     profile: LCNProfile;
     readStatus?: 'unseen' | 'seen' | null | undefined;
-    status?: 'pending' | 'accepted' | 'denied' | null | undefined;
+    status?: ConsentFlowContractRequestStatus | undefined;
 };
 
 const LearnerInsightsPreviewHeader: React.FC<LearnerInsightsPreviewHeaderProps> = ({

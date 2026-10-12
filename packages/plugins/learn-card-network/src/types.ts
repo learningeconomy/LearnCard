@@ -1,3 +1,4 @@
+import type { SendContractRequest, ConsentFlowContractRequestForProfile } from '@learncard/types';
 import type { LCNClient } from '@learncard/network-brain-client';
 import {
     LCNProfile,
@@ -639,6 +640,7 @@ export type LearnCardNetworkPluginMethods = {
         image?: string;
         expiresAt?: string;
         writers?: string[];
+        recipients?: string[];
         autoboosts?: AutoBoostConfig[];
     }) => Promise<string>;
     addAutoBoostsToContract: (
@@ -646,6 +648,8 @@ export type LearnCardNetworkPluginMethods = {
         autoboosts: AutoBoostConfig[]
     ) => Promise<boolean>;
     removeAutoBoostsFromContract: (contractUri: string, boostUris: string[]) => Promise<boolean>;
+    addContractRecipient: (contractUri: string, recipient: string) => Promise<boolean>;
+    removeContractRecipient: (contractUri: string, recipient: string) => Promise<boolean>;
     getContract: (uri: string) => Promise<ConsentFlowContractDetails>;
     getContracts: (
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowContractQuery }
@@ -676,6 +680,9 @@ export type LearnCardNetworkPluginMethods = {
             terms: ConsentFlowTerms;
             expiresAt?: string;
             oneTime?: boolean;
+            audienceVersion?: number;
+            /** Bind acceptance to the pending referral the learner reviewed. */
+            expectedRequestId?: string;
         },
         recipientToken?: string
     ) => Promise<{ termsUri: string; redirectUrl?: string }>;
@@ -688,6 +695,7 @@ export type LearnCardNetworkPluginMethods = {
             terms: ConsentFlowTerms;
             expiresAt?: string;
             oneTime?: boolean;
+            audienceVersion?: number;
         }
     ) => Promise<boolean>;
     withdrawConsent: (uri: string) => Promise<boolean>;
@@ -708,13 +716,19 @@ export type LearnCardNetworkPluginMethods = {
 
     syncCredentialsToContract: (
         termsUri: string,
-        categories: Record<string, string[]>
+        categories: Record<string, string[]>,
+        audienceVersion?: number
     ) => Promise<boolean>;
 
     deleteCredentialFromAllContracts: (deletedUris: string[]) => Promise<{
         contractsUpdated: number;
         removedSharedUris: number;
     }>;
+
+    /** Sends one attributed request; identical pending retries are idempotent. */
+    sendContractRequest: (request: SendContractRequest) => Promise<boolean>;
+    /** Target-only denial preserves the request and its referral reference. */
+    denyContractRequest: (contractUri: string) => Promise<boolean>;
 
     sendAiInsightsContractRequest: (
         contractUri: string,
@@ -728,31 +742,25 @@ export type LearnCardNetworkPluginMethods = {
         childProfileId?: string
     ) => Promise<boolean>;
 
-    getContractSentRequests: (contractUri: string) => Promise<
-        {
-            profile: LCNProfile;
-            status: 'pending' | 'accepted' | 'denied' | null;
-            readStatus?: 'unseen' | 'seen' | null;
-        }[]
-    >;
+    getContractSentRequests: (
+        contractUri: string
+    ) => Promise<ConsentFlowContractRequestForProfile[]>;
 
     getRequestStatusForProfile: (
         targetProfileId: string,
-        contractId?: string | undefined,
-        contractUri?: string | undefined
-    ) => Promise<{
-        profile: LCNProfile;
-        status: 'pending' | 'accepted' | 'denied' | null;
-        readStatus?: 'unseen' | 'seen' | null;
-    } | null>;
+        contractId?: string,
+        contractUri?: string
+    ) => Promise<ConsentFlowContractRequestForProfile | null>;
 
     getAllContractRequestsForProfile: (targetProfileId: string) => Promise<
-        {
-            contract: ConsentFlowContract & { uri: string };
-            profile: LCNProfile;
-            status: 'pending' | 'accepted' | 'denied' | null;
-            readStatus?: 'unseen' | 'seen' | null;
-        }[]
+        (ConsentFlowContractRequestForProfile & {
+            contract: ConsentFlowContract & {
+                uri: string;
+                name?: string;
+                image?: string;
+                description?: string;
+            };
+        })[]
     >;
 
     getSharedInsightsRequestsForProfile: (targetProfileId: string) => Promise<

@@ -1,18 +1,18 @@
 # AuthGrantsGetAuthGrant200Response
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**id** | **str** |  | [optional] 
-**name** | **str** |  | [optional] 
-**description** | **str** |  | [optional] 
-**challenge** | **str** |  | [optional] 
-**status** | **str** |  | [optional] 
-**scope** | **str** |  | [optional] 
-**created_at** | **datetime** |  | [optional] 
-**expires_at** | **datetime** |  | [optional] 
+| Name            | Type         | Description | Notes      |
+| --------------- | ------------ | ----------- | ---------- |
+| **id**          | **str**      |             | [optional] |
+| **name**        | **str**      |             | [optional] |
+| **description** | **str**      |             | [optional] |
+| **challenge**   | **str**      |             | [optional] |
+| **status**      | **str**      |             | [optional] |
+| **scope**       | **str**      |             | [optional] |
+| **act_as**      | **str**      |             | [optional] |
+| **created_at**  | **datetime** |             | [optional] |
+| **expires_at**  | **datetime** |             | [optional] |
 
 ## Example
 
@@ -31,6 +31,5 @@ auth_grants_get_auth_grant200_response_dict = auth_grants_get_auth_grant200_resp
 # create an instance of AuthGrantsGetAuthGrant200Response from a dict
 auth_grants_get_auth_grant200_response_from_dict = AuthGrantsGetAuthGrant200Response.from_dict(auth_grants_get_auth_grant200_response_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

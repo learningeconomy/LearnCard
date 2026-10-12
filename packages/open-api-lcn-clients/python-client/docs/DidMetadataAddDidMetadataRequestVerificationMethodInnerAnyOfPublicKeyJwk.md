@@ -1,16 +1,15 @@
 # DidMetadataAddDidMetadataRequestVerificationMethodInnerAnyOfPublicKeyJwk
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**kty** | **str** |  | 
-**crv** | **str** |  | 
-**x** | **str** |  | 
-**y** | **str** |  | [optional] 
-**n** | **str** |  | [optional] 
-**d** | **str** |  | [optional] 
+| Name    | Type    | Description | Notes      |
+| ------- | ------- | ----------- | ---------- |
+| **kty** | **str** |             |
+| **crv** | **str** |             |
+| **x**   | **str** |             |
+| **y**   | **str** |             | [optional] |
+| **n**   | **str** |             | [optional] |
+| **d**   | **str** |             | [optional] |
 
 ## Example
 
@@ -29,6 +28,5 @@ did_metadata_add_did_metadata_request_verification_method_inner_any_of_public_ke
 # create an instance of DidMetadataAddDidMetadataRequestVerificationMethodInnerAnyOfPublicKeyJwk from a dict
 did_metadata_add_did_metadata_request_verification_method_inner_any_of_public_key_jwk_from_dict = DidMetadataAddDidMetadataRequestVerificationMethodInnerAnyOfPublicKeyJwk.from_dict(did_metadata_add_did_metadata_request_verification_method_inner_any_of_public_key_jwk_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

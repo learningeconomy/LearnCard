@@ -1,11 +1,10 @@
 # AuthGrantsUpdateAuthGrantRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**updates** | [**AuthGrantsUpdateAuthGrantRequestUpdates**](AuthGrantsUpdateAuthGrantRequestUpdates.md) |  | 
+| Name        | Type                                                                                      | Description | Notes |
+| ----------- | ----------------------------------------------------------------------------------------- | ----------- | ----- |
+| **updates** | [**AuthGrantsUpdateAuthGrantRequestUpdates**](AuthGrantsUpdateAuthGrantRequestUpdates.md) |             |
 
 ## Example
 
@@ -24,6 +23,5 @@ auth_grants_update_auth_grant_request_dict = auth_grants_update_auth_grant_reque
 # create an instance of AuthGrantsUpdateAuthGrantRequest from a dict
 auth_grants_update_auth_grant_request_from_dict = AuthGrantsUpdateAuthGrantRequest.from_dict(auth_grants_update_auth_grant_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

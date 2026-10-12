@@ -1,13 +1,12 @@
 # BoostCreateChildBoostRequest
 
-
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**parent_uri** | **str** |  | 
-**boost** | [**BoostCreateChildBoostRequestBoost**](BoostCreateChildBoostRequestBoost.md) |  | 
-**skills** | [**List[BoostSendRequestTemplateSkillsInner]**](BoostSendRequestTemplateSkillsInner.md) |  | [optional] 
+| Name           | Type                                                                                    | Description | Notes      |
+| -------------- | --------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **parent_uri** | **str**                                                                                 |             |
+| **boost**      | [**BoostCreateChildBoostRequestBoost**](BoostCreateChildBoostRequestBoost.md)           |             |
+| **skills**     | [**List[BoostSendRequestTemplateSkillsInner]**](BoostSendRequestTemplateSkillsInner.md) |             | [optional] |
 
 ## Example
 
@@ -26,6 +25,5 @@ boost_create_child_boost_request_dict = boost_create_child_boost_request_instanc
 # create an instance of BoostCreateChildBoostRequest from a dict
 boost_create_child_boost_request_from_dict = BoostCreateChildBoostRequest.from_dict(boost_create_child_boost_request_dict)
 ```
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
-
-

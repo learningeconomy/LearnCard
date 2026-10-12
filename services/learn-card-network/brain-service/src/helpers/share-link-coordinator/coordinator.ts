@@ -162,8 +162,11 @@ export const createShareLinkCoordinator = (
     const policyResolver: ShareLinkPolicyResolver =
         dependencies.policyResolver ??
         createShareLinkPolicyResolver({
-            resolveOwnerAge: async () => 'unknown',
-            isManaged: async () => false,
+            resolveOwner: async () => ({
+                age: 'unknown',
+                isManaged: false,
+                isServiceProfile: false,
+            }),
         });
 
     const finalizeOrPending = async (

@@ -52,11 +52,45 @@ post_install do |installer|
   assertDeploymentTarget(installer)
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
-      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+      if target.name == 'CapacitorMlkitBarcodeScanning'
+        config.build_settings['EXCLUDED_SOURCE_FILE_NAMES[sdk=iphonesimulator*]'] = 'BarcodeScanner.swift BarcodeScannerHelper.swift BarcodeScannerPlugin.swift BarcodeScannerView.swift ScanSettings.swift'
+      end
 
       if target.respond_to?(:product_type) and target.product_type == "com.apple.product-type.bundle"
         config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
       end
     end
+  end
+end
+
+# Google ML Kit 8 only ships an x86_64 simulator slice. Keep its settings for
+# physical-device Debug builds, but remove them from arm64 simulator builds.
+post_integrate do |installer|
+  ml_kit_names = '(?:GoogleMLKit|MLImage|MLKitBarcodeScanning|MLKitCommon|MLKitVision)'
+  app_support_path = installer.sandbox.root + 'Target Support Files/Pods-App'
+  scanner_support_path = installer.sandbox.root + 'Target Support Files/CapacitorMlkitBarcodeScanning'
+  xcconfig_paths = ['debug', 'release'].flat_map do |configuration|
+    [
+      app_support_path + "Pods-App.#{configuration}.xcconfig",
+      scanner_support_path + "CapacitorMlkitBarcodeScanning.#{configuration}.xcconfig"
+    ]
+  end
+
+  xcconfig_paths.each do |xcconfig_path|
+    xcconfig = File.readlines(xcconfig_path).flat_map do |line|
+      next [] if line.start_with?('EXCLUDED_ARCHS[sdk=iphonesimulator*] = arm64')
+
+      setting = line.match(/^([A-Z_]+) = (.*#{ml_kit_names}.*)$/)
+      next [line] unless setting
+
+      key = setting[1]
+      device_value = setting[2]
+      simulator_value = device_value.gsub(/\s+-framework\s+"#{ml_kit_names}"/, '')
+      simulator_value = simulator_value.gsub(/\s+"[^"]*#{ml_kit_names}[^"]*"/, '')
+      simulator_value = simulator_value.gsub(/\s+\$\{PODS_ROOT\}\/GoogleMLKit\S*/, '')
+      ["#{key} = #{simulator_value}\n", "#{key}[sdk=iphoneos*] = #{device_value}\n"]
+    end
+
+    File.write(xcconfig_path, xcconfig.join)
   end
 end

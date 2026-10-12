@@ -28,6 +28,8 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
 
     devDomain: 'localhost:3000',
 
+    stage: 'production',
+
     apis: {
         brainService: 'https://network.learncard.com/trpc',
         brainServiceApi: 'https://network.learncard.com/api',
@@ -97,6 +99,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
     },
 
     features: {
+        contractRequests: false,
         aiFeatures: true,
         appStore: true,
         analytics: true,
@@ -106,6 +109,8 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         pathways: false,
         dashboardHome: false,
         useSeededSkillFrameworks: false,
+        escrowRolloutPercent: 0,
+        escrowRolloutAllowlist: [],
         samplePersonas: [],
         legacySamplePersonaContractUris: [],
     },

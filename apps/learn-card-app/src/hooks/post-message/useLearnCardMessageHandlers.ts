@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { loadContractAudience } from 'learn-card-base/hooks/consentAudience';
 import React, { useMemo, useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useHistory } from 'react-router-dom';
@@ -765,9 +766,10 @@ export function useLearnCardMessageHandlers({
                             const credentialCategory =
                                 contractCategoryNameToCategoryMetadata(category)?.credentialType ??
                                 category;
+                            const audience = await loadContractAudience(learnCard, contractUri);
                             const sharedUri = await getOrCreateSharedUriForWallet(
                                 learnCard,
-                                consentedContract.contract.owner.did,
+                                audience.recipients,
                                 queryClient,
                                 id,
                                 credentialCategory
@@ -778,7 +780,8 @@ export function useLearnCardMessageHandlers({
                                     consentedContract.uri,
                                     {
                                         [category]: [sharedUri],
-                                    }
+                                    },
+                                    audience.audienceVersion
                                 );
                             }
                         }

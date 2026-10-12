@@ -893,7 +893,12 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
         expect(config).toMatch(
             /inboxMaintenance:\s+handler: lambda\.inboxMaintenanceHandler[\s\S]*?rate: rate\(1 day\)\s+enabled: true/
         );
-        const handler = await readFile(new URL('../lambda.ts', import.meta.url), 'utf8');
+        // lambda.ts is a thin bootstrap entry that delegates to the lazily imported lambdaApp.ts.
+        const entry = await readFile(new URL('../lambda.ts', import.meta.url), 'utf8');
+        expect(entry).toMatch(
+            /export const inboxMaintenanceHandler[\s\S]*?\(await getApplication\(\)\)\.inboxMaintenanceHandler\(/
+        );
+        const handler = await readFile(new URL('../lambdaApp.ts', import.meta.url), 'utf8');
         expect(handler).toMatch(/inboxMaintenanceHandler[\s\S]*?await runInboxMaintenance\(\)/);
     });
 });

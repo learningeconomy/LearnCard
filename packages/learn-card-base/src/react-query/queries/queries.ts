@@ -668,8 +668,24 @@ export const useGetConnectionsRequests = () => {
         queryKey: ['getConnectionRequests', switchedDid ?? ''],
         queryFn: async () => {
             const wallet = await initWallet();
-            const data = await wallet.invoke.getConnectionRequests();
-            return Array.isArray(data) ? data : [];
+            const allRecords: LCNVisibleProfile[] = [];
+            let cursor: string | undefined;
+            const MAX_PAGES = 50; // Safety limit: 50 pages × 100 = 5000 max records
+
+            for (let page = 0; page < MAX_PAGES; page++) {
+                const result = await wallet.invoke.getPaginatedConnectionRequests({
+                    limit: 100,
+                    cursor,
+                });
+                const records = result?.records;
+                if (Array.isArray(records)) {
+                    allRecords.push(...records);
+                }
+                cursor = result?.cursor;
+                if (!result?.hasMore || !cursor || !records?.length) break;
+            }
+
+            return allRecords;
         },
     });
 };

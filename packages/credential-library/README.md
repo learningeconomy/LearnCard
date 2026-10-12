@@ -209,6 +209,18 @@ their `kind`, reserved ID/spec pairing, and materialization template remain expl
 
 See the [Credential Viewer README](../../examples/credential-viewer/README.md) for details.
 
+### Practice and administrative examples
+
+Seven curated examples exercise RubricScore (`obv3/food-allergen-practice`),
+matched instructor scope (`obv3/food-allergen-facilitator`), French text
+(`obv3/food-allergen-practice-fr`), combined level-only and raw-score results
+(`obv3/phishing-transfer`), enrollment and accommodation claims without an
+achievement (`custom/course-enrollment`, `custom/exam-accommodation`), and mixed
+roles with canonical scalar CLR associations (`clr/mixed-role-portfolio`).
+They use the usual metadata and tag filters; all are unsigned templates. See
+[source provenance and attribution](./SOURCES.md) for the adapted corpus and
+alignment licenses.
+
 ## Fixture Metadata
 
 `kind` identifies the fixture's runtime shape: W3C VC fixtures use

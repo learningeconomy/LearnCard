@@ -5,7 +5,7 @@
     "engines": {
         "node": ">=24.12 <25"
     },
-    "packageManager": "bun@1.3.14",
+    "packageManager": "bun@1.4.2",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
@@ -75,6 +75,7 @@
         "@learncard/email-templates": "workspace:*",
         "@learncard/helpers": "workspace:*",
         "@learncard/learn-card-plugin": "workspace:*",
+        "@learncard/service-config": "workspace:*",
         "@learncard/types": "workspace:*",
         "@learncard/vc-plugin": "workspace:*",
         "@learncard/vc-templates-plugin": "workspace:*",
