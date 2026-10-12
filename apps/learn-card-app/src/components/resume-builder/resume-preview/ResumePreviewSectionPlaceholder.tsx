@@ -59,6 +59,11 @@ export const ResumePreviewSectionPlaceholder: React.FC<{
             description: `Add Achievements to your ${brandingName} passport to automatically populate this section.`,
             emphasis: 'Add Achievements',
         },
+        [CredentialCategoryEnum.qualifications]: {
+            actionLabel: 'Add Qualification',
+            description: `Add Qualifications to your ${brandingName} passport to automatically populate this section.`,
+            emphasis: 'Add Qualifications',
+        },
         [CredentialCategoryEnum.accomplishment]: {
             actionLabel: 'Add Accomplishment',
             description: `Add Accomplishments to your ${brandingName} passport to automatically populate this section.`,

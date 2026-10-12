@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef, MutableRefObject, DependencyList } from 'react';
+import { useState, useEffect, type RefObject, type DependencyList } from 'react';
 
 /* usage: 
  // Ref for the element that we want to detect whether on screen
-  const ref: any = useRef<HTMLDivElement>();
+  const ref = useRef<HTMLDivElement>(null);
   // Call the hook passing in ref and root margin
   // In this case it would only be considered onScreen if more ...
   // ... than 300px of element is visible.
@@ -35,7 +35,7 @@ import { useState, useEffect, useRef, MutableRefObject, DependencyList } from 'r
   */
 
 function useOnScreen<T extends Element>(
-    ref: MutableRefObject<T>,
+    ref: RefObject<T | null | undefined>,
     rootMargin: string = '0px',
     dependencies: DependencyList = []
 ): boolean {

@@ -34,6 +34,11 @@ export type CredentialRefreshMetadata = {
 
 export type CredentialMetadata = {
     category: CredentialCategory;
+    /**
+     * All holder-driven category changes must set 'manual' so automatic backfills preserve them.
+     * Unmarked historical categories are treated as automatic defaults.
+     */
+    categorySource?: 'manual';
     title?: string;
     imgUrl?: string;
     subcategory?: string;
