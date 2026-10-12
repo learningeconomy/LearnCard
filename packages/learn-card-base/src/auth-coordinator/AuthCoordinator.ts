@@ -1,5 +1,6 @@
 import { getLogger } from '../logging/logger';
 const log = getLogger('auth-coordinator');
+let logoutAttempt = 0;
 /**
  * Auth Coordinator
  *
@@ -1510,24 +1511,62 @@ export class AuthCoordinator {
      * call `forgetDevice()` before or after logout.
      */
     async logout(): Promise<void> {
+        const logoutAttemptId = ++logoutAttempt;
+        const startedAt = performance.now();
+        type LogoutPhase = 'pending_recovery' | 'provider_sign_out' | 'key_cleanup' | 'app_cleanup';
+        let phase: LogoutPhase = 'pending_recovery';
+        const elapsedMs = (): number => Math.round(performance.now() - startedAt);
+        const runPhase = async (
+            nextPhase: LogoutPhase,
+            action: () => Promise<void>
+        ): Promise<void> => {
+            phase = nextPhase;
+            const phaseStartedAt = performance.now();
+            log.info('Logout phase started', { logoutAttemptId, phase, elapsedMs: elapsedMs() });
+            await action();
+            log.info('Logout phase completed', {
+                logoutAttemptId,
+                phase,
+                phaseDurationMs: Math.round(performance.now() - phaseStartedAt),
+                elapsedMs: elapsedMs(),
+            });
+        };
+        log.info('Logout started', { logoutAttemptId });
         this.endingSession = true;
         this.stopEscrowPolling?.();
         this.recoveryGeneration++;
         this.escrowStatusGeneration++;
         try {
-            await this.drainEscrowOperations();
-            this.keyDerivation.cancelIdentityRecovery?.();
-            await this.config.authProvider.signOut();
+            await runPhase('pending_recovery', async () => {
+                await this.drainEscrowOperations();
+                this.keyDerivation.cancelIdentityRecovery?.();
+            });
+            await runPhase('provider_sign_out', () => this.config.authProvider.signOut());
 
             if (this.keyDerivation.cleanup) {
-                await this.keyDerivation.cleanup();
+                await runPhase('key_cleanup', async () => {
+                    await this.keyDerivation.cleanup?.();
+                });
             }
 
             if (this.config.onLogout) {
-                await this.config.onLogout();
+                await runPhase('app_cleanup', async () => {
+                    await this.config.onLogout?.();
+                });
             }
 
             this.setState({ status: 'idle' });
+            // App cleanup may schedule asynchronous deletions; their terminal
+            // results are reported separately by the IndexedDB helper.
+            log.info('Logout completed', { logoutAttemptId, elapsedMs: elapsedMs() });
+        } catch (error) {
+            log.error('Logout failed', {
+                logoutAttemptId,
+                phase,
+                errorType: error instanceof Error ? 'error' : typeof error,
+                elapsedMs: elapsedMs(),
+            });
+            throw error;
         } finally {
             this.endingSession = false;
         }
