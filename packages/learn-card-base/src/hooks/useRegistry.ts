@@ -115,20 +115,32 @@ export const useKnownDIDRegistry = (profileId?: string) => {
 
             if (trustedResults?.matchingIssuers.length > 0) {
                 return {
-                    source: 'trusted',
+                    source: 'trusted' as const,
                     results: trustedResults,
                 };
             } else if (untrustedResults?.matchingIssuers.length > 0) {
                 return {
-                    source: 'untrusted',
+                    source: 'untrusted' as const,
                     results: untrustedResults,
                 };
-            } else {
-                return {
-                    source: 'unknown',
-                    results: {},
-                };
             }
+
+            // Check if any registries couldn't be reached — if so, this is an
+            // inconclusive lookup that should not be cached as a definitive "unknown"
+            const uncheckedCount =
+                (trustedResults?.uncheckedRegistries?.length ?? 0) +
+                (untrustedResults?.uncheckedRegistries?.length ?? 0);
+
+            if (uncheckedCount > 0) {
+                throw new Error(
+                    `Registry lookup inconclusive: ${uncheckedCount} registries could not be checked`
+                );
+            }
+
+            return {
+                source: 'unknown' as const,
+                results: {},
+            };
         },
     });
 };
