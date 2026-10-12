@@ -20,6 +20,15 @@ import { CHAIN_NAMESPACES } from '@web3auth/base';
 import { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
 
 import type { KeyDerivationStrategy, ServerKeyStatus } from '@learncard/types';
+import { AuthSessionError } from '@learncard/types';
+import { getLogger } from '../logging/logger';
+
+const log = getLogger('web3auth-key-derivation');
+const DERIVATION_LOCK = 'learncard:web3auth:key-derivation';
+let derivationAttempt = 0;
+// Also deduplicate coordinator recreation within a document, including hosts
+// without Web Locks. Entries live only until the operation settles.
+const pendingDerivations = new Map<string, Promise<string>>();
 
 // ---------------------------------------------------------------------------
 // Config
@@ -40,6 +49,9 @@ export interface Web3AuthStrategyConfig {
      * Set to false to get the CoreKit key instead.
      */
     usePnPKey?: boolean;
+
+    /** Recheck live auth after waiting for another tab, and before returning its key. */
+    isSessionCurrent?: (uid: string) => Promise<boolean>;
 
     /** Optional Ethereum chain config overrides */
     chainConfig?: {
@@ -129,6 +141,7 @@ export const createWeb3AuthStrategy = (
         });
 
         await web3auth.init();
+        log.info('Web3Auth session checked', { restoredSession: web3auth.connected });
 
         // After init(), Web3Auth may have auto-restored a persisted session
         // (e.g. on Android app resume). Calling connect() when already
@@ -139,6 +152,13 @@ export const createWeb3AuthStrategy = (
                 verifierId: uid,
                 idToken,
             });
+        }
+
+        // A session restored from shared SDK storage must belong to this login.
+        // Never return a different account's key just because init() connected.
+        const userInfo = await web3auth.getUserInfo();
+        if (userInfo.verifierId !== uid || userInfo.verifier !== config.verifier) {
+            throw new Error('Web3Auth restored session identity mismatch');
         }
 
         const provider = web3auth.provider;
@@ -154,6 +174,77 @@ export const createWeb3AuthStrategy = (
         }
 
         return privateKey;
+    };
+
+    const deriveKey = (idToken: string, uid: string): Promise<string> => {
+        const identity = JSON.stringify([
+            config.clientId,
+            config.web3AuthNetwork,
+            config.verifier,
+            config.usePnPKey ?? true,
+            uid,
+        ]);
+        const pending = pendingDerivations.get(identity);
+        if (pending) return pending;
+
+        const startedAt = performance.now();
+        const setupAttemptId = ++derivationAttempt;
+        const locks = typeof navigator === 'undefined' ? undefined : navigator.locks;
+        log.info('Web3Auth account setup started', {
+            setupAttemptId,
+            crossTabLockAvailable: Boolean(locks),
+        });
+        const action = async (): Promise<string> => {
+            const assertSessionCurrent = async (): Promise<void> => {
+                if (config.isSessionCurrent && !(await config.isSessionCurrent(uid))) {
+                    throw new AuthSessionError('Sign-in changed while waiting.', 'no_session');
+                }
+            };
+            await assertSessionCurrent();
+            log.info('Web3Auth account setup running', {
+                setupAttemptId,
+                waitMs: Math.round(performance.now() - startedAt),
+            });
+            // Acquire before init(): the preceding tab must finish publishing
+            // its SDK session before this tab attempts session restoration.
+            const privateKey = await deriveKeyFromWeb3Auth(idToken, uid);
+            await assertSessionCurrent();
+            return privateKey;
+        };
+        const operation = (locks ? locks.request(DERIVATION_LOCK, action) : action())
+            .then(privateKey => {
+                log.info('Web3Auth account setup completed', {
+                    setupAttemptId,
+                    elapsedMs: Math.round(performance.now() - startedAt),
+                });
+                return privateKey;
+            })
+            .catch((error: unknown) => {
+                if (error instanceof AuthSessionError) {
+                    log.info('Web3Auth account setup cancelled', { setupAttemptId });
+                    throw error;
+                }
+                const message = error instanceof Error ? error.message : '';
+                const tokenAlreadyUsed = /token is used|duplicate token/i.test(message);
+                log.error('Web3Auth account setup failed', {
+                    setupAttemptId,
+                    tokenAlreadyUsed,
+                    restoredIdentityMismatch:
+                        message === 'Web3Auth restored session identity mismatch',
+                    crossTabLockAvailable: Boolean(locks),
+                    elapsedMs: Math.round(performance.now() - startedAt),
+                });
+                // Torus errors can embed the full OAuth JWT. Do not propagate
+                // them into coordinator state, debug events, or the overlay.
+                throw new Error(
+                    tokenAlreadyUsed
+                        ? 'Sign-in is already completing in another tab. Please wait a moment and try again.'
+                        : 'We couldn’t finish signing you in. Please try again.'
+                );
+            })
+            .finally(() => pendingDerivations.delete(identity));
+        pendingDerivations.set(identity, operation);
+        return operation;
     };
 
     // -----------------------------------------------------------------------
@@ -197,7 +288,7 @@ export const createWeb3AuthStrategy = (
                 );
             }
 
-            return deriveKeyFromWeb3Auth(cachedToken, cachedUid);
+            return deriveKey(cachedToken, cachedUid);
         },
 
         // --- Server communication ---

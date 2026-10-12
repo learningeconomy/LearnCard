@@ -1,0 +1,105 @@
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { createServer, type Server, type ServerResponse } from 'node:http';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { expect, test } from '@playwright/test';
+import type {} from './fixtures/web3auth-multi-tab';
+
+let server: Server;
+let origin: string;
+let connections = 0;
+const usedTokens = new Set<string>();
+const waitingTabs: ServerResponse[] = [];
+test.beforeAll(async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'web3auth-multi-tab-'));
+    let script: string;
+    try {
+        const output = join(directory, 'fixture.js');
+        execFileSync('bun', [resolve(__dirname, 'fixtures/build-web3auth-fixture.ts'), output]);
+        script = readFileSync(output, 'utf8');
+    } finally {
+        rmSync(directory, { recursive: true, force: true });
+    }
+    server = createServer((request, response) => {
+        if (request.url === '/derivation-start') {
+            waitingTabs.push(response);
+            if (waitingTabs.length === 4) waitingTabs.forEach(tab => tab.end());
+        } else if (request.url === '/connect') {
+            let token = '';
+            request.on('data', chunk => {
+                token += chunk.toString();
+            });
+            request.on('end', () => {
+                connections++;
+                const reused = usedTokens.has(token);
+                usedTokens.add(token);
+                // Make competing tabs overlap before the first session is saved.
+                setTimeout(() => {
+                    response.statusCode = reused ? 409 : 200;
+                    response.end();
+                }, 100);
+            });
+        } else if (request.url === '/fixture.js') {
+            response.setHeader('Content-Type', 'application/javascript');
+            response.end(script);
+        } else {
+            response.setHeader('Content-Type', 'text/html');
+            response.end('<!doctype html><script src="/fixture.js"></script>');
+        }
+    });
+    await new Promise<void>(resolveListening => server.listen(0, '127.0.0.1', resolveListening));
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('Missing server address');
+    origin = `http://127.0.0.1:${address.port}`;
+});
+test.afterAll(async () => {
+    if (server) await new Promise<void>(resolveClosed => server.close(() => resolveClosed()));
+});
+
+test('one Firebase login completes account setup in every previously signed-out tab', async ({
+    context,
+}) => {
+    const encode = (value: unknown): string =>
+        Buffer.from(JSON.stringify(value)).toString('base64url');
+    const now = Math.floor(Date.now() / 1000);
+    const idToken = `${encode({ alg: 'RS256' })}.${encode({ sub: 'test-user', aud: 'test-project', iss: 'https://securetoken.google.com/test-project', iat: now, exp: now + 3600 })}.synthetic-signature`;
+    await context.route('**/*', async route => {
+        const url = new URL(route.request().url());
+        if (url.origin === origin) return route.continue();
+        if (
+            url.hostname === 'identitytoolkit.googleapis.com' &&
+            url.pathname.endsWith(':signInWithCustomToken')
+        ) {
+            return route.fulfill({
+                json: {
+                    idToken,
+                    refreshToken: 'synthetic-refresh-token',
+                    expiresIn: '3600',
+                    localId: 'test-user',
+                },
+            });
+        }
+        if (url.hostname === 'identitytoolkit.googleapis.com' && url.pathname.endsWith(':lookup')) {
+            return route.fulfill({
+                json: { users: [{ localId: 'test-user', createdAt: String(now * 1000) }] },
+            });
+        }
+        throw new Error(`Unexpected external request to ${url.hostname}`);
+    });
+    const tabs = await Promise.all(Array.from({ length: 4 }, () => context.newPage()));
+    await Promise.all(
+        tabs.map(async tab => {
+            await tab.goto(origin);
+            await tab.evaluate(() => window.web3AuthTabTest.ready());
+            expect(await tab.evaluate(() => window.web3AuthTabTest.status)).toBe('idle');
+        })
+    );
+    await tabs[0]!.evaluate(() => window.web3AuthTabTest.signIn());
+    for (const tab of tabs) {
+        await expect.poll(() => tab.evaluate(() => window.web3AuthTabTest.status)).toBe('ready');
+        expect(await tab.evaluate(() => window.web3AuthTabTest.key)).toBe('synthetic-private-key');
+        expect(await tab.evaluate(() => window.web3AuthTabTest.error)).toBeUndefined();
+    }
+    expect(connections).toBe(1);
+});

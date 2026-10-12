@@ -300,6 +300,8 @@ registerKeyDerivationFactory('web3auth', () => {
         web3AuthNetwork: (w3a.network as string) ?? '',
         verifier: (w3a.verifierId as string) ?? '',
         chainConfig: w3a.rpcTarget ? { rpcTarget: w3a.rpcTarget as string } : undefined,
+        isSessionCurrent: async uid =>
+            (await resolveAuthProvider(getAuthConfig()).getCurrentUser())?.id === uid,
     });
 });
 

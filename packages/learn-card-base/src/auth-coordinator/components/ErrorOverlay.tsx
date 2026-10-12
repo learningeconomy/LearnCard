@@ -7,6 +7,17 @@ import React from 'react';
 
 import { Overlay } from './Overlay';
 
+// Never render raw service errors: some providers embed credentials in them.
+const displayError = (error: string): string => {
+    if (/token is used|duplicate token|sign-in is already completing in another tab/i.test(error)) {
+        return 'Sign-in is already completing in another tab. Please wait a moment and try again.';
+    }
+    if (/network|offline|failed to fetch|connection/i.test(error)) {
+        return 'Connection issue. Please check your internet and try again.';
+    }
+    return 'We couldn’t finish signing you in. Please try again.';
+};
+
 interface ErrorOverlayProps {
     error: string;
     canRetry: boolean;
@@ -29,7 +40,7 @@ export const ErrorOverlay: React.FC<ErrorOverlayProps> = ({
             <div className="space-y-2">
                 <h2 className="text-xl font-semibold text-grayscale-900">Something went wrong</h2>
 
-                <p className="text-sm text-grayscale-600 leading-relaxed">{error}</p>
+                <p className="text-sm text-grayscale-600 leading-relaxed">{displayError(error)}</p>
             </div>
 
             <div className="space-y-3 pt-1">
