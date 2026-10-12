@@ -14,6 +14,7 @@ import type { Plugin as EsbuildPlugin } from 'esbuild';
 
 import { findDuplicateMessageImports } from './scripts/check-i18n-imports.mjs';
 import { paraglideMissingKeyOnWarn } from './paraglideOnWarn';
+import { scoutNewsDevServer } from './scripts/scoutNewsDevServer';
 import { parseScoutsEnvironment } from './src/config/buildEnvironment';
 import { deepMerge } from '../../packages/learn-card-base/src/config/deepMerge';
 import productionTenantConfig from './environments/scoutpass/config.json';
@@ -92,6 +93,7 @@ export default defineConfig(({ mode, command }) => {
     return {
         cacheDir,
         plugins: [
+            scoutNewsDevServer(),
             i18nImportGuard(),
             react(),
             svgr(),
