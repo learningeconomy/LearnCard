@@ -78,7 +78,12 @@ export const useKnownDIDRegistry = (profileId?: string) => {
     return useQuery({
         queryKey: ['knownDidRegistry', profileId],
         staleTime: 60 * 60 * 1000,
+        enabled: !!profileId,
         queryFn: async () => {
+            if (!profileId) {
+                return { source: 'unknown' as const, results: {} };
+            }
+
             const trustedRegistryClient = new RegistryClient();
             const untrustedRegistryClient = new RegistryClient();
 
@@ -88,6 +93,15 @@ export const useKnownDIDRegistry = (profileId?: string) => {
             const untrustedResponse = await fetch(
                 'https://registries.learncard.com/untrusted-did-registries.json'
             );
+
+            if (!trustedResponse.ok) {
+                throw new Error(`Failed to fetch known registries: ${trustedResponse.status}`);
+            }
+            if (!untrustedResponse.ok) {
+                throw new Error(
+                    `Failed to fetch untrusted registries: ${untrustedResponse.status}`
+                );
+            }
 
             const knownRegistries = await trustedResponse.json();
             const unknownRegistries = await untrustedResponse.json();
