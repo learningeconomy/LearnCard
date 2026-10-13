@@ -151,6 +151,24 @@ Operational notes:
   never access keys. No boot path consumes them yet. Dormant enclave relays reserve
   ports 8001 (regional DynamoDB) and 8002 (regional SES); the gated host proxy
   services/allowlists remain an infrastructure prerequisite, not active egress.
+- **Dormant credential delivery:** additionally measure
+  `ESCROW_AUTHORITY_CREDENTIAL_KMS_KEY_ARN` for a separate credential CMK (never
+  the escrow CMK). Once the pending provisioning/IAM work is available, the host
+  can read `ESCROW_AUTHORITY_CREDENTIAL_OBJECT=credentials/authority-writer/<generation>`
+  and `ESCROW_EMAIL_CREDENTIAL_OBJECT=credentials/email-sender/<generation>` from
+  the artifacts bucket. Unset paths add no reads or boot-response fields; configured
+  missing/oversized objects fail closed, even with first-boot generation enabled.
+  Objects must contain only KMS ciphertext. No provisioning tool or activation
+  path is shipped yet; do not supply dedicated plaintext access keys to the host.
+  Rotation must use an approved new generation/path with continuity review, not
+  overwrite an existing object or roll back authority state.
+- **Measurement provenance:** `build-eif.sh` records all fourteen public authority/
+  email settings under `measurements.json.config.authority` and `.email`. The CI
+  workflow forwards the same environment vars to both reproducibility builds,
+  preserves that config in `escrow-measurements.json`, and includes it in signed
+  `manifest.json` alongside the artifact hashes. Empty values remain empty; these
+  fields are not runtime activation flags or proof that the new configuration
+  has passed the dormant runtime loader's validation.
 - **Diagnosing boot without a console.** CloudTrail on the escrow CMK (`GenerateDataKey` /
   `Decrypt` from the host role, with `recipient` in `additionalEventData`) shows whether the
   enclave reached KMS; `strace` on the host process shows whether it connected to vsock 5001/5002.

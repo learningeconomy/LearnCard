@@ -25,8 +25,11 @@ Direct DynamoDB/SES data-plane clients are compiled under `kms`, with optional
 measured settings, dedicated credential types, generated execution IDs, and no
 automatic retries. They are not constructed by boot or Policy. Local TLS tests
 cover response conversion, body limits, stalled bodies and cross-operation
-connection isolation. Sealed authority/email credential unsealing, host delivery,
-host proxy allowlists, infrastructure and provisioning are not implemented yet.
+connection isolation. Dormant attested credential unsealing and optional opaque
+host ciphertext delivery are implemented. The unsealer is not called by boot or
+Policy. Host proxy allowlists, infrastructure and provisioning are not implemented
+yet. Public authority/email settings are recorded in local measurements and the
+CI-signed manifest; no plaintext access keys belong in either artifact.
 `UnavailableEnrollment` remains wired; no authority or email client is active.
 
 The client layer is not authorization: enclave policy must build its typed requests
