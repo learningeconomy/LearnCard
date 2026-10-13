@@ -3,7 +3,12 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { fastifyTRPCOpenApiPlugin } from 'trpc-to-openapi';
 import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
-import type { IssueInboxCredentialType, UnsignedVC, VC } from '@learncard/types';
+import {
+    JWEValidator,
+    type IssueInboxCredentialType,
+    type UnsignedVC,
+    type VC,
+} from '@learncard/types';
 import { getBitstringStatusListEntries } from '@learncard/helpers';
 
 import { appRouter, createContext } from '../src/app';
@@ -380,7 +385,8 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
         expect(result.deliveries).toEqual([
             { id: issued.issuanceId, credential: result.verifiableCredentials[0] },
         ]);
-        expect(result.verifiableCredentials[0]).toMatchObject({
+        const encrypted = JWEValidator.parse(result.verifiableCredentials[0]);
+        expect(await recipient.learnCard.invoke.decryptDagJwe(encrypted)).toMatchObject({
             type: ['VerifiableCredential', 'ClrCredential'],
             proof: expect.anything(),
             credentialSubject: {
@@ -397,7 +403,7 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
     });
 
     it.each(['finalize', 'claim link', 'claim without profile'] as const)(
-        'recovers exactly one holder-only delivery after discarding the %s response',
+        'recovers exactly one authorized delivery after discarding the %s response',
         async path => {
             const credential = await signedCredential();
             const issued = await issue({
@@ -439,11 +445,11 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
             expect(
                 (await service.invoke.decryptDagJwe(recovery.credential).catch(() => null)) || null
             ).toBeNull();
-            expect(
+            const issuerRead =
                 (await issuer.learnCard.invoke
                     .decryptDagJwe(recovery.credential)
-                    .catch(() => null)) || null
-            ).toBeNull();
+                    .catch(() => null)) || null;
+            expect(issuerRead).toEqual(path === 'finalize' ? credential : null);
             expect((await post('/api/inbox/deliveries', {})).status).toBe(401);
             expect(
                 (await (await post('/api/inbox/deliveries', {}, issuer)).json()).records
@@ -510,9 +516,14 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
                 await verifyRecipientContact('idless@example.test');
                 const response = await post('/api/inbox/finalize', {}, recipient);
                 expect(response.status).toBe(200);
-                expect((await response.json()).deliveries).toEqual([
-                    { id: issued.issuanceId, credential },
-                ]);
+                const { deliveries } = await response.json();
+                expect(deliveries).toHaveLength(1);
+                expect(deliveries[0].id).toBe(issued.issuanceId);
+                expect(
+                    await recipient.learnCard.invoke.decryptDagJwe(
+                        JWEValidator.parse(deliveries[0].credential)
+                    )
+                ).toEqual(credential);
             } else {
                 expect(await claim(issued.claimUrl!)).toEqual([credential]);
             }
