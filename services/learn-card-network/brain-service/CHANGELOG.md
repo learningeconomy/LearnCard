@@ -6,9 +6,15 @@
 
 - LC-2201: Encrypt signing-authority credentials for direct local sends, verified-email
   inbox delivery, and accepted inbox finalization. Preserve public status coordinates
-  for revocation without decrypting payloads. Finalized inbox credentials are indexed
-  for their recipient and returned as encrypted deliveries for client-side decryption.
+  for revocation without decrypting payloads. Ordinary finalized inbox credentials are
+  indexed for their recipient and returned as encrypted deliveries for client-side decryption.
   Interoperable claim exchanges and federated sends intentionally remain plaintext.
+- LC-2201: Finalize ordinary inbox claims and their network indexes, permission hooks,
+  default claimed role, and claim audit in one transaction. Failed graph writes keep
+  pending escrow intact so retry can complete the delivery without partial permissions
+  or orphaned indexes; concurrent claims produce one accepted delivery.
+- LC-2201: Bind unsigned inbox subject IDs to the verified recipient before signing,
+  replacing template-supplied IDs. Pre-signed credentials retain their signed subjects.
 
 ## 3.19.1
 

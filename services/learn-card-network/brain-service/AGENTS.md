@@ -116,6 +116,16 @@ ConsentFlow is a consent management system where:
   `IssuedCredential` wrapper through storage so public status-list coordinates remain
   available without decrypting the credential. Inbox finalization returns encrypted
   deliveries; the network SDK decrypts them locally before returning VCs to the app.
+- Ordinary accepted inbox finalization commits escrow removal, encrypted recovery,
+  credential/boost/sent/received indexes, shared claim hooks, default claimed roles, and
+  the claim audit in one Neo4j transaction. Keep signing and notifications outside it;
+  invalidate permission-related caches only after commit. Failed graph writes leave
+  the pending record retryable and concurrent claims cannot duplicate acceptance.
+- Unsigned inbox subjects are bound to the verified recipient before signing; supplied
+  subject IDs are replaced. Pre-signed subjects are not rewritten.
+- Ordinary unsigned finalization intentionally adds the issuer's profile DID as a reader
+  alongside the managed/app owner DID. This preserves the issuer's `did:key` access when
+  the signing authority uses an app `did:web` owner; it does not add the brain signer.
 - Three interoperable delivery paths intentionally request plaintext (`LC-2201`):
     - `routes/workflows.ts`: boost claim-link exchanges return a VC inside a presentation
       to wallets that may not support LearnCard JWE decryption.
@@ -125,6 +135,8 @@ ConsentFlow is a consent management system where:
 - Managed refresh issuance is a separate existing boundary: refresh sends, inbox refresh
   finalization, and refresh publication inspect the signed VC before encrypting it for
   storage. LC-2201 does not change those refresh flows.
+  Its separate inbox finalization path does not use the ordinary-claim index transaction;
+  do not assume every refresh inbox finalization creates these network relationships.
 
 ### AutoBoosts
 

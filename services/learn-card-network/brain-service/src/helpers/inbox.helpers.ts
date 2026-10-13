@@ -152,7 +152,8 @@ export const claimIntoInbox = async (
             integrationId
         );
         const finalizedInboxCredential = await createInboxCredential({
-            credential: JSON.stringify(issued.credential),
+            // Delivered audit rows never retain a credential payload.
+            credential: '',
             isSigned: true,
             delivered: true,
             isAccepted: true,
@@ -387,7 +388,8 @@ export const issueToInbox = async (
         }
         // Record successful delivery without creating temporary service-readable escrow.
         const finalizedInboxCredential = await createInboxCredential({
-            credential: JSON.stringify(issued.credential),
+            // Delivered audit rows never retain a credential payload.
+            credential: '',
             isSigned: true,
             delivered: true,
             recipient,

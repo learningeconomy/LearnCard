@@ -7,6 +7,7 @@ import {
     UnsignedVC,
     VCValidator,
     JWEValidator,
+    InboxCredentialType,
 } from '@learncard/types';
 import { ProfileType } from 'types/profile';
 import { getContactMethodsForProfile } from '@accesslayer/contact-method/read';
@@ -25,7 +26,7 @@ import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.hel
 import { handleConnectionPromptsForCredentialClaim } from '@helpers/connectionPrompt.helpers';
 import { decryptInboxCredential } from '@helpers/inbox-encryption.helpers';
 import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
-import { getBitstringStatusListEntries, isEncrypted } from '@learncard/helpers';
+import { getBitstringStatusListEntries } from '@learncard/helpers';
 import type { IssuedCredential } from 'types/credential';
 import { getBoostByUri } from '@accesslayer/boost/read';
 import { storeCredential } from '@accesslayer/credential/create';
@@ -33,7 +34,101 @@ import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationsh
 import {
     createSentCredentialRelationship,
     createReceivedCredentialRelationship,
+    setDefaultClaimedRole,
 } from '@accesslayer/credential/relationships/create';
+import { neogma } from '@instance';
+import { processClaimHooks } from '@helpers/claim-hooks.helpers';
+import { clearDidWebCacheForChildProfileManagers } from '@accesslayer/boost/relationships/update';
+
+/** Graph-only completion: a failed write retains pending escrow for the next attempt. */
+const finalizeAcceptedDelivery = async (
+    inboxCredential: InboxCredentialType,
+    issued: IssuedCredential,
+    recipient: ProfileType,
+    sender: ProfileType
+): Promise<boolean> => {
+    const boost = inboxCredential.boostUri
+        ? await getBoostByUri(inboxCredential.boostUri)
+        : undefined;
+    const session = neogma.driver.session();
+    const transaction = session.beginTransaction();
+    try {
+        const finalized = await finalizeAndWipeInboxCredential(
+            inboxCredential.id,
+            { recipientDid: recipient.did, credential: JWEValidator.parse(issued.credential) },
+            {},
+            transaction
+        );
+        if (!finalized) {
+            // Another claim or expiry won the lock. It is not a new issuance failure.
+            await transaction.rollback();
+            return false;
+        }
+        const instance = await storeCredential(issued, transaction);
+        if (boost) await createBoostInstanceOfRelationship(instance, boost, transaction);
+        await createSentCredentialRelationship(
+            { type: 'profile', profile: sender },
+            recipient,
+            instance,
+            undefined,
+            inboxCredential.activityId,
+            inboxCredential.integrationId,
+            transaction
+        );
+        await createReceivedCredentialRelationship(
+            recipient,
+            sender,
+            instance,
+            undefined,
+            transaction
+        );
+        await processClaimHooks(recipient, instance, transaction);
+        await setDefaultClaimedRole(recipient, instance, transaction);
+        if (
+            !(await createClaimedRelationship(
+                recipient.profileId,
+                inboxCredential.id,
+                'finalize',
+                transaction
+            ))
+        ) {
+            throw new Error('Inbox claim recipient no longer exists');
+        }
+        await transaction.commit();
+    } catch (error) {
+        await transaction
+            .rollback()
+            .catch(rollbackError =>
+                console.error(
+                    'Failed to roll back inbox finalization',
+                    inboxCredential.id,
+                    rollbackError
+                )
+            );
+        throw error;
+    } finally {
+        // Closing the session cannot turn a committed delivery into a pending failure.
+        await session
+            .close()
+            .catch(error =>
+                console.error(
+                    'Failed to close inbox finalization session',
+                    inboxCredential.id,
+                    error
+                )
+            );
+    }
+    if (boost) {
+        await clearDidWebCacheForChildProfileManagers(boost.id).catch(error =>
+            console.error(
+                'Could not clear did:web cache after inbox claim',
+                inboxCredential.id,
+                error
+            )
+        );
+    }
+    return true;
+};
 
 export async function finalizeInboxCredentialsForProfile(
     profile: ProfileType,
@@ -116,11 +211,10 @@ export async function finalizeInboxCredentialsForProfile(
                     if (!endpoint || !name)
                         throw new Error('Inbox credential missing signing authority info');
 
-                    const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
-                    if (!issuerProfile) throw new Error('Issuer profile not found');
+                    if (!senderProfile) throw new Error('Issuer profile not found');
 
                     const signingAuthorityForUser = await getSigningAuthorityForUserByName(
-                        issuerProfile,
+                        senderProfile,
                         endpoint,
                         name
                     );
@@ -139,14 +233,15 @@ export async function finalizeInboxCredentialsForProfile(
                         : undefined;
 
                     issued = await issueCredentialWithSigningAuthority(
-                        { type: 'profile', profile: issuerProfile },
+                        { type: 'profile', profile: senderProfile },
                         unsignedCredential,
                         signingAuthorityForUser,
                         domain,
                         undefined,
                         ownerDidOverride,
                         undefined,
-                        [issuerProfile.did]
+                        // Preserve issuer did:key access alongside the managed/app did:web reader.
+                        [senderProfile.did]
                     );
                     finalCredential = issued.credential;
                 } else {
@@ -155,7 +250,7 @@ export async function finalizeInboxCredentialsForProfile(
 
                 if (!inboxCredential.refreshId) {
                     if (!senderProfile) throw new Error('Issuer profile not found');
-                    if (!issued || !isEncrypted(issued.credential)) {
+                    if (!issued) {
                         const signedCredential = VCValidator.parse(finalCredential);
                         const learnCard = await getEmptyLearnCard();
                         issued = {
@@ -164,37 +259,29 @@ export async function finalizeInboxCredentialsForProfile(
                                 profile.did,
                                 inboxCredential.issuerDid,
                             ]),
-                            statusEntries:
-                                issued?.statusEntries ??
-                                getBitstringStatusListEntries(signedCredential),
+                            statusEntries: getBitstringStatusListEntries(signedCredential),
                         };
                     }
-                    const finalized = await finalizeAndWipeInboxCredential(inboxCredential.id, {
-                        recipientDid: profile.did,
-                        credential: JWEValidator.parse(issued.credential),
-                    });
-                    if (!finalized) throw new Error('Inbox credential is no longer pending');
+                    if (
+                        !(await finalizeAcceptedDelivery(
+                            inboxCredential,
+                            issued,
+                            profile,
+                            senderProfile
+                        ))
+                    )
+                        continue;
                     finalCredential = issued.credential;
-                    // Finalization already owns claim prompts and notifications. Index
-                    // the accepted delivery without replaying ordinary send/accept effects.
-                    const instance = await storeCredential(issued);
-                    const boost = inboxCredential.boostUri
-                        ? await getBoostByUri(inboxCredential.boostUri)
-                        : undefined;
-                    if (boost) await createBoostInstanceOfRelationship(instance, boost);
-                    await createSentCredentialRelationship(
-                        { type: 'profile', profile: senderProfile },
-                        profile,
-                        instance,
-                        undefined,
-                        inboxCredential.activityId,
-                        inboxCredential.integrationId
-                    );
-                    await createReceivedCredentialRelationship(profile, senderProfile, instance);
                 }
 
-                // Only write a claim audit edge once the record is actually finalized.
-                await createClaimedRelationship(profile.profileId, inboxCredential.id, 'finalize');
+                // Managed refresh retains its separate lifecycle; ordinary claims audit in the transaction.
+                if (inboxCredential.refreshId) {
+                    await createClaimedRelationship(
+                        profile.profileId,
+                        inboxCredential.id,
+                        'finalize'
+                    );
+                }
 
                 if (
                     senderProfile &&
