@@ -40,6 +40,14 @@ vi.mock('../../components/clr-transcript', () => ({
 }));
 
 describe('academic CLR demo fixtures', () => {
+    it('keeps the preview scroll area within the Ionic route height', () => {
+        const { container } = render(<ClrTranscriptRendererDemo />);
+        const page = container.firstElementChild;
+        expect(page).toHaveClass('h-full');
+        expect(page).not.toHaveClass('h-dvh');
+        expect(page?.lastElementChild).toHaveClass('min-h-0', 'overflow-y-auto');
+    });
+
     it('selects the four added academic fixtures and the synthetic fixture in the full transcript layout', () => {
         render(<ClrTranscriptRendererDemo />);
         for (const key of [

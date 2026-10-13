@@ -50,7 +50,7 @@ const ClrTranscriptRendererDemo = () => {
     );
 
     return (
-        <div className="bg-grayscale-10 h-dvh overflow-hidden font-poppins flex flex-col pt-[var(--ion-safe-area-top,0px)] pb-[var(--ion-safe-area-bottom,0px)]">
+        <div className="bg-grayscale-10 h-full overflow-hidden font-poppins flex flex-col pt-[var(--ion-safe-area-top,0px)] pb-[var(--ion-safe-area-bottom,0px)]">
             {/* Controls header */}
             <div className="px-4 pt-4 pb-3 space-y-3 bg-white border-b border-grayscale-200 shrink-0">
                 <div className="flex items-center justify-between">
