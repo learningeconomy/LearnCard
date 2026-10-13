@@ -193,27 +193,7 @@ export const createClrRecordMap = (
 export const findClrRecordByCanonicalId = (
     model: ClrTranscriptDisplayModel,
     id: string
-): ClrNavigableRecord | undefined => {
-    const course = model.courses.find(record => record.sourceCredentialId === id);
-    if (course) return { kind: 'course', record: course };
-
-    const program = model.programs.find(record => record.sourceCredentialId === id);
-    if (program) return { kind: 'program', record: program };
-
-    const assessment = model.assessments.find(record => record.sourceCredentialId === id);
-    if (assessment) return { kind: 'assessment', record: assessment };
-
-    const competency = model.competencies.find(record => record.sourceCredentialId === id);
-    if (competency) return { kind: 'competency', record: competency };
-
-    const award = model.awards.find(record => record.sourceCredentialId === id);
-    if (award) return { kind: 'award', record: award };
-
-    const other = model.otherRecords.find(record => record.sourceCredentialId === id);
-    if (other) return { kind: 'other', record: other };
-
-    return undefined;
-};
+): ClrNavigableRecord | undefined => createClrRecordMap(model).get(id);
 
 export const findClrRecordById = (
     model: ClrTranscriptDisplayModel,
@@ -221,8 +201,7 @@ export const findClrRecordById = (
 ): ClrNavigableRecord | undefined => {
     const resolved = resolveClrRecord(model.canonical, id);
     if (resolved.resolution !== 'resolved' || !resolved.record) return undefined;
-    id = resolved.record.id;
-    return findClrRecordByCanonicalId(model, id);
+    return findClrRecordByCanonicalId(model, resolved.record.id);
 };
 
 export const createClrRecordSelection = (

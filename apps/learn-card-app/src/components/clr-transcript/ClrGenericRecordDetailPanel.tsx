@@ -1,6 +1,9 @@
 import React, { useMemo } from 'react';
 import * as m from '../../paraglide/messages.js';
-import { createClrCanonicalRecordMap } from 'learn-card-base/helpers/credentials/clr/renderer';
+import {
+    createClrCanonicalRecordMap,
+    createClrRecordMap,
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 import { X } from 'lucide-react';
 import { useModal } from 'learn-card-base';
 import type {
@@ -34,10 +37,10 @@ const ClrGenericRecordDetailPanel = ({
         () => createClrCanonicalRecordMap(model.canonical),
         [model.canonical]
     );
+    const displayRecordsById = useMemo(() => createClrRecordMap(model), [model]);
     const canonical = recordsById.get(record.sourceCredentialId);
-    const course = model.courses.find(
-        item => item.sourceCredentialId === record.sourceCredentialId
-    );
+    const displayRecord = displayRecordsById.get(record.sourceCredentialId);
+    const course = displayRecord?.kind === 'course' ? displayRecord.record : undefined;
     return (
         <div className="h-full overflow-y-auto bg-grayscale-100 font-poppins pb-10">
             <div className="flex items-start justify-between gap-3 rounded-b-[30px] bg-white px-6 py-5">
