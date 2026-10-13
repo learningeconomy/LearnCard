@@ -545,6 +545,8 @@ const isActAsDenial = (error: unknown): boolean => {
     }
     return false;
 };
+const getInboxFailureReason = (reason: unknown): string =>
+    reason instanceof Error ? `${reason.name}: ${reason.message}` : String(reason);
 
 /**
  * @group Plugins
@@ -2795,9 +2797,13 @@ export async function getLearnCardNetworkPlugin(
                         ),
                     }))
                 );
-                const deliveries = results.flatMap(delivery =>
-                    delivery.status === 'fulfilled' ? [delivery.value] : []
-                );
+                const deliveries = results.flatMap((delivery, index) => {
+                    if (delivery.status === 'fulfilled') return [delivery.value];
+                    console.warn(
+                        `Failed to finalize inbox delivery ${result.deliveries[index].id}: ${getInboxFailureReason(delivery.reason)}`
+                    );
+                    return [];
+                });
                 return {
                     ...result,
                     deliveries,
@@ -2817,9 +2823,13 @@ export async function getLearnCardNetworkPlugin(
                         ),
                     }))
                 );
-                const records = results.flatMap(record =>
-                    record.status === 'fulfilled' ? [record.value] : []
-                );
+                const records = results.flatMap((record, index) => {
+                    if (record.status === 'fulfilled') return [record.value];
+                    console.warn(
+                        `Failed to recover inbox delivery ${result.records[index].id}: ${getInboxFailureReason(record.reason)}`
+                    );
+                    return [];
+                });
                 return { ...result, records, failed: results.length - records.length };
             },
             sendGuardianApprovalEmail: async (_learnCard, options) => {
