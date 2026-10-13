@@ -58,10 +58,7 @@ export const ClrRecordSections = ({
                             {getClrSectionLabel(section.kind, layout)}
                         </span>
                         {military && (
-                            <span
-                                aria-hidden="true"
-                                className="text-xs font-medium text-grayscale-600"
-                            >
+                            <span className="text-xs font-medium text-grayscale-600">
                                 {section.records.length}
                             </span>
                         )}
@@ -85,7 +82,7 @@ export const ClrRecordSections = ({
                                     <button
                                         type="button"
                                         onClick={() => onSelectRecord(record.id)}
-                                        className="w-full rounded-[20px] text-start text-base font-semibold text-grayscale-900 hover:text-grayscale-700 focus-visible:outline-emerald-600 [overflow-wrap:anywhere]"
+                                        className="w-full rounded-[20px] text-start text-base font-semibold text-grayscale-900 hover:text-grayscale-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-600 [overflow-wrap:anywhere]"
                                     >
                                         {record.name?.value ??
                                             record.credentialName?.value ??

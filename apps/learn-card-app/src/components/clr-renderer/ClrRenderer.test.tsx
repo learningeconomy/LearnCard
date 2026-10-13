@@ -139,7 +139,9 @@ describe('shared CLR renderer', () => {
             'Qualifications',
             'Awards',
         ])
-            expect(screen.getByRole('heading', { name: heading })).toBeInTheDocument();
+            expect(
+                screen.getByRole('heading', { name: new RegExp(`^${heading}\\s+\\d+$`) })
+            ).toBeInTheDocument();
         expect(view.container.querySelectorAll('[data-clr-record-id]')).toHaveLength(
             model.records.length
         );
@@ -323,11 +325,13 @@ describe('shared CLR renderer', () => {
         const view = render(<ClrRenderer model={model} options={options} />);
         setLocale('es', { reload: false });
         view.rerender(<ClrRenderer model={model} options={options} />);
-        expect(screen.getByRole('heading', { name: 'Cualificaciones' })).toBeInTheDocument();
+        expect(
+            screen.getByRole('heading', { name: /^Cualificaciones\s+\d+$/ })
+        ).toBeInTheDocument();
         expect(screen.getByText('Publicado por')).toBeInTheDocument();
         setLocale('ar', { reload: false });
         view.rerender(<ClrRenderer model={model} options={options} />);
-        expect(screen.getByRole('heading', { name: 'المؤهلات' })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /^المؤهلات\s+\d+$/ })).toBeInTheDocument();
     });
     it('keeps duplicate and unknown children reachable and does not supply missing issuers', () => {
         const sparse = normalizeClrTranscriptDisplayModel({
