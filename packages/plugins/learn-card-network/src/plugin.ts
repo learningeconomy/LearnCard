@@ -30,6 +30,7 @@ import {
     getCredentialStatusArray,
     injectManagedRefreshService as injectSharedManagedRefreshService,
     isVC2Format,
+    isEncrypted,
     resolveStorageReadResult,
 } from '@learncard/helpers';
 import Mustache from 'mustache';
@@ -544,6 +545,8 @@ const isActAsDenial = (error: unknown): boolean => {
     }
     return false;
 };
+const getInboxFailureReason = (reason: unknown): string =>
+    reason instanceof Error ? `${reason.name}: ${reason.message}` : String(reason);
 
 /**
  * @group Plugins
@@ -2779,10 +2782,34 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.inbox.getInboxCredential.query({ credentialId: id });
             },
-            finalizeInboxCredentials: async _learnCard => {
+            finalizeInboxCredentials: async learnCard => {
                 await ensureUser();
-
-                return client.inbox.finalize.mutate();
+                const result = await client.inbox.finalize.mutate();
+                const results = await Promise.allSettled(
+                    result.deliveries.map(async delivery => ({
+                        ...delivery,
+                        credential: VCValidator.parse(
+                            isEncrypted(delivery.credential)
+                                ? await learnCard.invoke.decryptDagJwe(delivery.credential, [
+                                      learnCard.id.keypair(),
+                                  ])
+                                : delivery.credential
+                        ),
+                    }))
+                );
+                const deliveries = results.flatMap((delivery, index) => {
+                    if (delivery.status === 'fulfilled') return [delivery.value];
+                    console.warn(
+                        `Failed to finalize inbox delivery ${result.deliveries[index].id}: ${getInboxFailureReason(delivery.reason)}`
+                    );
+                    return [];
+                });
+                return {
+                    ...result,
+                    deliveries,
+                    verifiableCredentials: deliveries.map(delivery => delivery.credential),
+                    errors: result.errors + results.length - deliveries.length,
+                };
             },
             recoverInboxCredentials: async (learnCard, options = {}) => {
                 const result = await client.inbox.getMyInboxDeliveries.query(options);
@@ -2796,9 +2823,13 @@ export async function getLearnCardNetworkPlugin(
                         ),
                     }))
                 );
-                const records = results.flatMap(record =>
-                    record.status === 'fulfilled' ? [record.value] : []
-                );
+                const records = results.flatMap((record, index) => {
+                    if (record.status === 'fulfilled') return [record.value];
+                    console.warn(
+                        `Failed to recover inbox delivery ${result.records[index].id}: ${getInboxFailureReason(record.reason)}`
+                    );
+                    return [];
+                });
                 return { ...result, records, failed: results.length - records.length };
             },
             sendGuardianApprovalEmail: async (_learnCard, options) => {
