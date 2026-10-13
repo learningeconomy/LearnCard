@@ -116,11 +116,14 @@ ConsentFlow is a consent management system where:
   `IssuedCredential` wrapper through storage so public status-list coordinates remain
   available without decrypting the credential. Inbox finalization returns encrypted
   deliveries; the network SDK decrypts them locally before returning VCs to the app.
-- Ordinary accepted inbox finalization commits escrow removal, encrypted recovery,
-  credential/boost/sent/received indexes, shared claim hooks, default claimed roles, and
-  the claim audit in one Neo4j transaction. Keep signing and notifications outside it;
-  invalidate permission-related caches only after commit. Failed graph writes leave
-  the pending record retryable and concurrent claims cannot duplicate acceptance.
+- Ordinary accepted inbox finalization signs and allocates status-list indices before
+  opening its bounded Neo4j transaction (30 seconds). Retries or a lost claim race may
+  leave indices unused; this is intentional to avoid signing while holding graph locks.
+  The transaction atomically commits escrow removal, encrypted recovery, credential/
+  boost/sent/received indexes, shared claim hooks, default claimed roles, and claim audit.
+  Notifications remain outside it; invalidate permission-related caches only after commit.
+  Failed graph writes leave the pending record retryable and concurrent claims cannot
+  duplicate acceptance.
 - Unsigned inbox subjects are bound to the verified recipient before signing; supplied
   subject IDs are replaced. Pre-signed subjects are not rewritten.
 - Ordinary unsigned finalization intentionally adds the issuer's profile DID as a reader
@@ -137,6 +140,12 @@ ConsentFlow is a consent management system where:
   storage. LC-2201 does not change those refresh flows.
   Its separate inbox finalization path does not use the ordinary-claim index transaction;
   do not assume every refresh inbox finalization creates these network relationships.
+  Refresh inbox creation always persists `refreshId` alongside its `pending_holder`
+  aggregate; finalization dispatches those records to `finalizeInboxRefresh`, whose
+  accepted binding transitions the aggregate directly to `active`. Ordinary records
+  without `refreshId` do not own an `awaiting_claim` aggregate through this flow.
+  Normal `acceptCredential` also attempts activation after its already-received guard,
+  and the holder refresh endpoint can lazily reconcile acceptance.
 
 ### AutoBoosts
 

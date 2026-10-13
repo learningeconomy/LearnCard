@@ -13,6 +13,9 @@
   default claimed role, and claim audit in one transaction. Failed graph writes keep
   pending escrow intact so retry can complete the delivery without partial permissions
   or orphaned indexes; concurrent claims produce one accepted delivery.
+- LC-2201: Bound ordinary inbox finalization's Neo4j transaction to 30 seconds.
+  Signing stays outside the transaction; failed writes and lost claim races may leave
+  unused status-list indices rather than hold graph locks across external signing.
 - LC-2201: Bind unsigned inbox subject IDs to the verified recipient before signing,
   replacing template-supplied IDs. Pre-signed credentials retain their signed subjects.
 

@@ -51,7 +51,10 @@ const finalizeAcceptedDelivery = async (
         ? await getBoostByUri(inboxCredential.boostUri)
         : undefined;
     const session = neogma.driver.session();
-    const transaction = session.beginTransaction();
+    const transaction = session.beginTransaction({ timeout: 30_000 });
+    // Signing and status-index allocation happen before this bounded graph transaction;
+    // a retry or lost claim race may leave unused indices, intentionally, rather than
+    // hold Neo4j locks across external signing.
     try {
         const finalized = await finalizeAndWipeInboxCredential(
             inboxCredential.id,
