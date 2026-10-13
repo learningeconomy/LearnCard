@@ -133,6 +133,7 @@
     "fr:boost.description",
     "fr:boost.image",
     "fr:boost.title",
+    "fr:clrRenderer.expiration",
     "fr:contacts.contact",
     "fr:contacts.notification",
     "fr:contacts.title",
