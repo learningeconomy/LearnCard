@@ -1,8 +1,16 @@
-import { expect, test, type Locator } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import en from '../public/locales/en/translation.json';
 import ar from '../public/locales/ar/translation.json';
 
 const catalogs = { en, ar };
+
+const waitForClrRenderer = async (page: Page): Promise<void> => {
+    // Document load can precede this lazy route leaving its Suspense fallback on CI.
+    // Give navigation a bounded readiness wait; keep content/geometry assertions unchanged.
+    await expect(page.getByRole('heading', { name: 'CLR Renderer', exact: true })).toBeVisible({
+        timeout: 30_000,
+    });
+};
 
 // Assert the accessible name in the selected locale, including after a reload.
 const numericScaleName = (
@@ -57,6 +65,7 @@ test.describe('CLR numeric axes @mocked', () => {
             for (const locale of ['en', 'ar'] as const) {
                 test(`keeps score markers aligned in ${locale}`, async ({ page }) => {
                     await page.goto('/dev/clr-transcript?insets=47,34');
+                    await waitForClrRenderer(page);
                     await page.getByRole('combobox').selectOption(locale);
                     await expect(page.locator('html')).toHaveAttribute(
                         'dir',
@@ -89,6 +98,7 @@ test.describe('CLR numeric axes @mocked', () => {
 
                     // Reload closes the detail surface; the locale persists in the app.
                     await page.reload();
+                    await waitForClrRenderer(page);
                     await expect(page.getByRole('combobox')).toHaveValue(locale);
                     await expect(page.locator('html')).toHaveAttribute(
                         'dir',
@@ -124,9 +134,7 @@ test.describe('CLR numeric axes @mocked', () => {
             test('recovers from a malformed stored locale', async ({ page }) => {
                 await page.addInitScript(() => localStorage.setItem('i18n.language', 'en--US'));
                 await page.goto('/dev/clr-transcript?insets=47,34');
-                await expect(
-                    page.getByRole('heading', { name: 'CLR Renderer', exact: true })
-                ).toBeVisible();
+                await waitForClrRenderer(page);
                 await expect(page.getByRole('combobox')).toHaveValue('en');
                 await expect(page.getByText('Invalid language tag: en--US')).toHaveCount(0);
             });
