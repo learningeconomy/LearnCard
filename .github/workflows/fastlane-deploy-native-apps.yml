@@ -140,6 +140,7 @@ jobs:
                   VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
                   VITE_ENABLE_AUTH_DEBUG_WIDGET: ${{ vars.VITE_ENABLE_AUTH_DEBUG_WIDGET }}
                   VITE_WEB3AUTH_CLIENT_ID: ${{ secrets.VITE_WEB3AUTH_CLIENT_ID }}
+                  VITE_WEB3AUTH_RPC_TARGET: ${{ secrets.VITE_WEB3AUTH_RPC_TARGET }}
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
 
             - name: Sync Capacitor Files to iOS
@@ -267,6 +268,7 @@ jobs:
                   VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
                   VITE_ENABLE_AUTH_DEBUG_WIDGET: ${{ vars.VITE_ENABLE_AUTH_DEBUG_WIDGET }}
                   VITE_WEB3AUTH_CLIENT_ID: ${{ secrets.VITE_WEB3AUTH_CLIENT_ID }}
+                  VITE_WEB3AUTH_RPC_TARGET: ${{ secrets.VITE_WEB3AUTH_RPC_TARGET }}
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
 
             - name: Sync Capacitor Files to Android

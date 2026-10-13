@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.90.39
+
+### Patch Changes
+
+- Bump the ScoutPass release version to unblock deployment of the Web3Auth RPC configuration fix.
+- Automatically allocate a fresh CapGo patch version for ScoutPass deployments so redeploys do not reuse an existing bundle.
+
 ## 1.90.38
 
 ### Patch Changes

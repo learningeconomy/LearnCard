@@ -40,6 +40,7 @@ export const CONTRACT_CATEGORIES: (CredentialCategoryEnum | string)[] = [
     CredentialCategoryEnum.accomplishment,
     CredentialCategoryEnum.accommodation,
     CredentialCategoryEnum.workHistory,
+    CredentialCategoryEnum.qualifications,
     CredentialCategoryEnum.goals,
     CredentialCategoryEnum.professionalTitle,
     CredentialCategoryEnum.roleExperience,
@@ -75,12 +76,12 @@ export const isAiContractCategory = (category: string) =>
 export const contractAnonImageSrc = 'https://cdn.filestackcontent.com/52hRlXLIQVBi4fYpB1xw';
 
 export const getPersonalEntry = (key: string, user?: CurrentUser | null, anonymize = true) => {
-    if (key.toLowerCase() === 'name') return anonymize ? 'Anonymous' : user?.name ?? '';
+    if (key.toLowerCase() === 'name') return anonymize ? 'Anonymous' : (user?.name ?? '');
     if (key.toLowerCase() === 'email') {
-        return anonymize ? 'anonymous@hidden.com' : user?.email ?? '';
+        return anonymize ? 'anonymous@hidden.com' : (user?.email ?? '');
     }
     if (key.toLowerCase() === 'image') {
-        return anonymize ? contractAnonImageSrc : user?.profileImage ?? '';
+        return anonymize ? contractAnonImageSrc : (user?.profileImage ?? '');
     }
 
     return '';
