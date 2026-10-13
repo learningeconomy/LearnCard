@@ -23,6 +23,8 @@
             "relatedRecords": "السجلات المرتبطة"
         },
         "details": {
+            "courseCode": "رمز المقرر",
+            "term": "الفصل الدراسي",
             "issuedBy": "صادر عن",
             "assessedBy": "تم التقييم بواسطة",
             "createdBy": "أُنشئ الإنجاز بواسطة",

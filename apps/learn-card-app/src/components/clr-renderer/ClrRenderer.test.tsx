@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { VC } from '@learncard/types';
+import { VerificationStatusEnum, type VC } from '@learncard/types';
 import {
     clrMilitaryComprehensiveRecord,
     clrMixedCareerRecord,
@@ -16,7 +16,15 @@ import ClrTranscriptFullPage from '../clr-transcript/surfaces/ClrTranscriptFullP
 import ClrTranscriptCard from '../clr-transcript/surfaces/ClrTranscriptCard';
 import ClrTranscriptEmbedWidget from '../clr-transcript/surfaces/ClrTranscriptEmbedWidget';
 
-const mocks = vi.hoisted(() => ({ open: vi.fn(), close: vi.fn(), modal: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+    open: vi.fn(),
+    close: vi.fn(),
+    modal: vi.fn(),
+    verify: vi.fn(),
+}));
+vi.mock('learn-card-base/hooks/useVerifyCredential', () => ({
+    useVerifyCredential: () => ({ verifyCredential: mocks.verify }),
+}));
 vi.mock('learn-card-base', () => ({
     useModal: () => {
         mocks.modal();
@@ -66,10 +74,45 @@ beforeEach(() => {
     mocks.open.mockClear();
     mocks.close.mockClear();
     mocks.modal.mockReset();
+    mocks.verify.mockReset();
     setLocale('en', { reload: false });
 });
 
 describe('shared CLR renderer', () => {
+    it.each([
+        ['Military Training Record', VerificationStatusEnum.Success, 'Valid'],
+        ['Military Training Record', VerificationStatusEnum.Failed, 'Invalid'],
+        ['Mixed Career Record', VerificationStatusEnum.Success, 'Valid'],
+        ['Mixed Career Record', VerificationStatusEnum.Failed, 'Invalid'],
+    ] as const)('shows actual proof results for %s (%s)', async (name, status, label) => {
+        const signed = {
+            ...fixture,
+            name,
+            validUntil: '2000-01-01T00:00:00Z',
+            proof: { type: 'Ed25519Signature2020' },
+        } as VC;
+        mocks.verify.mockResolvedValue([{ check: 'Proof', status }]);
+        const signedModel = normalizeClrTranscriptDisplayModel(signed);
+        render(<ClrRenderer model={signedModel} options={options} />);
+        expect(await screen.findByText(label)).toBeInTheDocument();
+        expect(screen.getByText(/^Expired /)).toBeInTheDocument();
+        expect(screen.queryByText('Signed, not verified')).not.toBeInTheDocument();
+        expect(mocks.verify).toHaveBeenCalledWith(signed);
+    });
+    it.each([ClrTranscriptSurface.Card, ClrTranscriptSurface.Embed])(
+        'keeps %s verification passive',
+        surface => {
+            const signed = { ...fixture, proof: { type: 'Ed25519Signature2020' } } as VC;
+            render(
+                <ClrRenderer
+                    model={normalizeClrTranscriptDisplayModel(signed)}
+                    options={{ ...options, surface }}
+                />
+            );
+            expect(screen.getByText('Signed, not verified')).toBeInTheDocument();
+            expect(mocks.verify).not.toHaveBeenCalled();
+        }
+    );
     it('shows every military child in its section and opens source-backed details', () => {
         const view = render(<ClrRenderer model={model} boost={fixture} options={options} />);
         for (const heading of [
@@ -139,6 +182,13 @@ describe('shared CLR renderer', () => {
         expect(view.container.querySelectorAll('[data-clr-record-id]')).toHaveLength(
             general.records.length
         );
+        fireEvent.click(screen.getByRole('button', { name: 'Applied Systems Thinking' }));
+        const panel = render(mocks.open.mock.lastCall![0]);
+        const details = within(panel.container);
+        expect(details.getByText('Spring 2026')).toBeInTheDocument();
+        expect(details.getByText(general.courses[0].humanCode!.value)).toBeInTheDocument();
+        expect(details.getByText('3 earned')).toBeInTheDocument();
+        expect(details.getByText('3 available')).toBeInTheDocument();
     });
     it.each([ClrTranscriptSurface.Full, ClrTranscriptSurface.Card, ClrTranscriptSurface.Embed])(
         'uses the same layout on %s',

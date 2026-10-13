@@ -23,6 +23,8 @@
             "relatedRecords": "Dossiers associés"
         },
         "details": {
+            "courseCode": "Code du cours",
+            "term": "Période académique",
             "issuedBy": "Émis par",
             "assessedBy": "Évalué par",
             "createdBy": "Accomplissement créé par",

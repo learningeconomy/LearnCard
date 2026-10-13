@@ -50,6 +50,38 @@ beforeEach(() => setLocale('en', { reload: false }));
 afterEach(() => setLocale('en', { reload: false }));
 
 describe('generic CLR record details', () => {
+    it.each([0, 3, undefined])('preserves course fields and earned credits of %s', earned => {
+        const model = normalizeClrTranscriptDisplayModel({
+            type: ['ClrCredential'],
+            credentialSubject: {
+                verifiableCredential: [
+                    {
+                        credentialSubject: {
+                            creditsEarned: earned,
+                            creditUnit: 'ECTS',
+                            term: 'Spring 2026',
+                            achievement: {
+                                achievementType: 'Course',
+                                name: 'Training course',
+                                humanCode: 'TR-101',
+                                creditsAvailable: 4,
+                                creditUnit: 'training hours',
+                            },
+                        },
+                    },
+                ],
+            },
+        });
+        render(<ClrGenericRecordDetailPanel model={model} record={model.courses[0]} />);
+        expect(screen.getByText('TR-101')).toBeInTheDocument();
+        expect(screen.getByText('Spring 2026')).toBeInTheDocument();
+        expect(screen.getByText('4 training hours available')).toBeInTheDocument();
+        if (earned === undefined) {
+            expect(screen.getByLabelText('Earned credits not supplied')).toBeInTheDocument();
+        } else {
+            expect(screen.getByText(`${earned} ECTS earned`)).toBeInTheDocument();
+        }
+    });
     it('preserves identities, renders mixed-record alignments and navigates to the associated qualification', () => {
         const model = normalizeClrTranscriptDisplayModel(credential);
         const select = vi.fn();

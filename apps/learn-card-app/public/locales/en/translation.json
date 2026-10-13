@@ -23,6 +23,8 @@
             "relatedRecords": "Related records"
         },
         "details": {
+            "courseCode": "Course code",
+            "term": "Term",
             "issuedBy": "Issued by",
             "assessedBy": "Assessed by",
             "createdBy": "Achievement created by",
