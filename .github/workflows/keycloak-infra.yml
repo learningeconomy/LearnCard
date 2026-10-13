@@ -3,6 +3,7 @@ on:
     pull_request:
         paths:
             - 'infra/aws/bootstrap/**'
+            - 'infra/aws/infisical-sync/**'
             - 'infra/keycloak/**'
             - '.github/workflows/keycloak-infra.yml'
     push:
@@ -51,6 +52,7 @@ jobs:
             matrix:
                 root:
                     - infra/aws/bootstrap
+                    - infra/aws/infisical-sync
                     - infra/keycloak/terraform/network
                     - infra/keycloak/terraform/service
                     - infra/keycloak/terraform/realm

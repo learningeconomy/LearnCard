@@ -22,10 +22,9 @@ export const useSyncMembershipHighlights = (enabled: boolean = true) => {
     const desiredHighlights = useMemo(() => {
         if (!ids || ids.length === 0) return [] as string[];
 
-        // useGetIDs() returns resolved VCs augmented with a uri field
-        // Boost URIs are embedded on Boost credentials as vc.boostId
-        const boostUris = (ids as any[])
-            .map(item => (item?.boostId ?? item?.vc?.boostId) as string | undefined)
+        // Boost URIs are signed claims; the storage locator stays on the record.
+        const boostUris = ids
+            .map(({ vc }) => vc.boostId as string | undefined)
             .filter(Boolean) as string[];
 
         // Ensure uniqueness and max length (API enforces max 5)
@@ -56,8 +55,7 @@ export const useSyncMembershipHighlights = (enabled: boolean = true) => {
         const key = JSON.stringify(desiredHighlights);
         if (lastSyncedRef.current === key || inFlightRef.current) return;
 
-        let timeout: any;
-        timeout = setTimeout(async () => {
+        const timeout = setTimeout(async () => {
             try {
                 inFlightRef.current = true;
                 const wallet = await initWallet();

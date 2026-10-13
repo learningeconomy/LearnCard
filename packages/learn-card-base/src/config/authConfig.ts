@@ -12,7 +12,12 @@
 import type { AuthProviderType } from '../auth-coordinator/types';
 import type { TenantConfig } from './tenantConfig';
 import { tenantKeycloakConfigSchema, type TenantKeycloakConfig } from './tenantConfigSchema';
-import type { SSSStrategyConfig } from '@learncard/sss-key-manager';
+import type { SSSStrategyConfig, EscrowAttestationPolicy } from '@learncard/sss-key-manager';
+import { getLogger } from '../logging/logger';
+
+const log = getLogger('auth-config');
+
+export type DeploymentStage = TenantConfig['stage'];
 
 export interface AuthConfig {
     /** Which auth provider to use (open string matching providerRegistry factories) */
@@ -32,7 +37,31 @@ export interface AuthConfig {
      * Use the typed helpers (`getSSSConfig()`, etc.) for ergonomic access.
      */
     providerConfig: Record<string, Record<string, unknown>>;
+
+    /** The active tenant's id, used by the escrow production guard (see `isProductionTenant`). */
+    tenantId?: string;
+
+    /**
+     * The deploy stage ('local' | 'staging' | 'production'), bridged from `TenantConfig.stage`.
+     * Used by the escrow production guard (see `getEscrowStrategyConfig`) to tell a staging
+     * deploy apart from production — both build in Vite "production" mode, so `stage` (not
+     * `isProductionEnvironment()`) is the signal that distinguishes them. Defaults to
+     * 'production' so an isolated consumer that never called `setAuthConfigFromTenant` fails
+     * closed.
+     */
+    stage?: DeploymentStage;
+
+    /** Staged rollout percentage (0-100) for automatic escrow enrollment. See `escrowRollout.ts`. */
+    escrowRolloutPercent?: number;
+
+    /** SHA-256 hex hashes of allowlisted stable user identifiers. See `escrowRollout.ts`. */
+    escrowRolloutAllowlist?: string[];
 }
+
+type NitroEscrowPolicy = Extract<EscrowAttestationPolicy, { mode: 'nitro' }>;
+
+/** A single nitro measurement pin — either a full PCR0/1/2 tuple or a legacy image-only pin. */
+export type EscrowMeasurementPin = NitroEscrowPolicy['pinnedMeasurements'][number];
 
 /**
  * Typed SSS key-derivation strategy config.
@@ -44,10 +73,34 @@ export interface SSSConfig {
     escrowRelayKeyId: string;
     escrowEnclaveMode: 'off' | 'software' | 'nitro';
     escrowEnclavePublicKeys: string[];
-    escrowEnclaveMeasurements: { imageSha384: string }[];
+    escrowEnclaveMeasurements: EscrowMeasurementPin[];
+    escrowEnclaveRootSha256?: string;
+    escrowEnclaveMaxAgeMs?: number;
     enableEmailBackupShare: boolean;
     requireEmailForPhoneUsers: boolean;
 }
+
+// -----------------------------------------------------------------
+// Escrow production guard
+// -----------------------------------------------------------------
+
+/**
+ * Tenants deployed to production. Kept as an explicit allowlist (rather than derived from
+ * `environments/*` at runtime, which isn't available to a browser package) — add a tenant here
+ * when it ships a production `environments/<tenant>/config.json` that isn't a local-only stage.
+ */
+export const PRODUCTION_TENANT_IDS: ReadonlySet<string> = new Set([
+    'learncard',
+    'vetpass',
+    'scoutpass',
+]);
+
+export const isProductionTenant = (tenantId: string | undefined): boolean =>
+    !!tenantId && PRODUCTION_TENANT_IDS.has(tenantId);
+
+/** True only for a pin that can ever match an attestation (see `escrow-nitro-attestation.ts`). */
+export const isPcrPinnedMeasurement = (pin: EscrowMeasurementPin): boolean =>
+    typeof pin.pcr0 === 'string' && typeof pin.pcr1 === 'string' && typeof pin.pcr2 === 'string';
 
 // -----------------------------------------------------------------
 // TenantConfig override bridge
@@ -93,6 +146,10 @@ export const setAuthConfigFromTenant = (tenant: TenantConfig): void => {
         authProvider: tenant.auth.provider as AuthProviderType,
         keyDerivation: tenant.auth.keyDerivation,
         providerConfig,
+        tenantId: tenant.tenantId,
+        stage: tenant.stage,
+        escrowRolloutPercent: tenant.features.escrowRolloutPercent,
+        escrowRolloutAllowlist: tenant.features.escrowRolloutAllowlist,
     };
 };
 
@@ -140,6 +197,8 @@ export const getAuthConfig = (): AuthConfig => {
                 .filter(Boolean) ??
             [],
         escrowEnclaveMeasurements: sss.escrowEnclaveMeasurements ?? [],
+        escrowEnclaveRootSha256: sss.escrowEnclaveRootSha256 as string | undefined,
+        escrowEnclaveMaxAgeMs: sss.escrowEnclaveMaxAgeMs as number | undefined,
         enableEmailBackupShare: (sss.enableEmailBackupShare as boolean | undefined) ?? true,
         requireEmailForPhoneUsers: (sss.requireEmailForPhoneUsers as boolean | undefined) ?? true,
     };
@@ -148,6 +207,10 @@ export const getAuthConfig = (): AuthConfig => {
         authProvider: _authConfigOverrides?.authProvider ?? 'firebase',
         keyDerivation: _authConfigOverrides?.keyDerivation ?? 'sss',
         providerConfig,
+        tenantId: _authConfigOverrides?.tenantId,
+        stage: _authConfigOverrides?.stage ?? 'production',
+        escrowRolloutPercent: _authConfigOverrides?.escrowRolloutPercent ?? 0,
+        escrowRolloutAllowlist: _authConfigOverrides?.escrowRolloutAllowlist ?? [],
     };
 };
 
@@ -169,6 +232,8 @@ export const getSSSConfig = (): SSSConfig => {
         escrowEnclavePublicKeys: (sss.escrowEnclavePublicKeys as string[]) ?? [],
         escrowEnclaveMeasurements:
             (sss.escrowEnclaveMeasurements as SSSConfig['escrowEnclaveMeasurements']) ?? [],
+        escrowEnclaveRootSha256: sss.escrowEnclaveRootSha256 as string | undefined,
+        escrowEnclaveMaxAgeMs: sss.escrowEnclaveMaxAgeMs as number | undefined,
         enableEmailBackupShare: (sss.enableEmailBackupShare as boolean) ?? true,
         requireEmailForPhoneUsers: (sss.requireEmailForPhoneUsers as boolean) ?? true,
     };
@@ -187,15 +252,67 @@ export const shouldUseSSS = (): boolean => {
     return getAuthConfig().keyDerivation === 'sss';
 };
 
-/** Map the tenant's explicit trust policy to the escrow strategy configuration. */
-export const getEscrowStrategyConfig = (sss: SSSConfig): SSSStrategyConfig['escrow'] => {
+/** Overrides for `getEscrowStrategyConfig`'s production guard — for tests only. */
+export interface EscrowProdGuardOptions {
+    /** Defaults to `getAuthConfig().tenantId`. */
+    tenantId?: string;
+    /**
+     * Defaults to `getAuthConfig().stage`. Anything other than exactly 'staging' or 'local'
+     * (including an unrecognized string or omission) is treated as 'production' — fail-closed.
+     */
+    stage?: DeploymentStage;
+}
+
+/**
+ * Map the tenant's explicit trust policy to the escrow strategy configuration.
+ *
+ * Two fail-closed guards apply before a policy is returned:
+ *  - `nitro` with zero PCR-tuple pins (empty, or only legacy `{ imageSha384 }` pins) disables
+ *    escrow entirely, since no attestation could ever match.
+ *  - `software` is never allowed for a production tenant on a production deploy — the
+ *    host-trusted software enclave must not run in production; it is downgraded to `off`
+ *    instead. Staging deliberately runs it (see D12 in `services/escrow-enclave-app/SECURITY.md`),
+ *    so the guard keys on the deploy *stage*, not the Vite build mode (staging is also built in
+ *    Vite "production" mode).
+ * Both guards log via `log.error` so a misconfigured tenant is loud, not silent.
+ */
+export const getEscrowStrategyConfig = (
+    sss: SSSConfig,
+    options: EscrowProdGuardOptions = {}
+): SSSStrategyConfig['escrow'] => {
     if (sss.escrowEnclaveMode === 'off') return undefined;
+
+    const tenantId = options.tenantId ?? getAuthConfig().tenantId;
+    const stage = options.stage ?? getAuthConfig().stage;
+    const isProductionDeploy = stage !== 'staging' && stage !== 'local';
+
+    if (sss.escrowEnclaveMode === 'software') {
+        if (isProductionDeploy && isProductionTenant(tenantId)) {
+            log.error('escrow.software-mode.blocked-in-production', { tenantId, stage });
+            return undefined;
+        }
+
+        return {
+            enabled: true,
+            attestation: { mode: 'software', pinnedPublicKeys: sss.escrowEnclavePublicKeys },
+        };
+    }
+
+    const pcrPins = sss.escrowEnclaveMeasurements.filter(isPcrPinnedMeasurement);
+
+    if (pcrPins.length === 0) {
+        log.error('escrow.nitro-mode.no-pcr-pins', { tenantId });
+        return undefined;
+    }
+
     return {
         enabled: true,
-        attestation:
-            sss.escrowEnclaveMode === 'software'
-                ? { mode: 'software', pinnedPublicKeys: sss.escrowEnclavePublicKeys }
-                : { mode: 'nitro', pinnedMeasurements: sss.escrowEnclaveMeasurements },
+        attestation: {
+            mode: 'nitro',
+            pinnedMeasurements: sss.escrowEnclaveMeasurements,
+            rootCertificateSha256: sss.escrowEnclaveRootSha256,
+            maxAgeMs: sss.escrowEnclaveMaxAgeMs,
+        },
     };
 };
 

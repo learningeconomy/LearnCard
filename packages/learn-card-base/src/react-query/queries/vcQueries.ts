@@ -356,6 +356,7 @@ export const useTotalBoostCounts = () => {
 export type VC_WITH_URI = {
     vc: VC;
     uri?: string;
+    category?: CredentialCategory;
 };
 
 // Returns a list of resolved credentials
@@ -610,14 +611,17 @@ export const useGetCredentialsPaginated = (
 
                 const resolvedCredentials = (
                     await Promise.all(
-                        credentialsList?.records?.map(async record => {
-                            const vc = (await wallet.read.get(record?.uri)) as VC;
-                            const uri = record?.uri;
+                        credentialsList?.records?.map(
+                            async (record): Promise<VC_WITH_URI | undefined> => {
+                                const vc = (await wallet.read.get(record?.uri)) as VC | undefined;
+                                if (!vc) return undefined;
+                                const uri = record?.uri;
 
-                            return { vc, uri };
-                        })
+                                return { vc, uri, category: record.category };
+                            }
+                        )
                     )
-                ).filter(Boolean);
+                ).filter((entry): entry is VC_WITH_URI => Boolean(entry));
 
                 return resolvedCredentials.sort((a, b) => {
                     const aDate = getIssuanceDate(a.vc) ?? '';
@@ -765,63 +769,7 @@ export const useGetCurrentUserTroopIdsResolved = (
     });
 };
 
-// query to get all earned IDs
-export const useGetIDs = () => {
-    const { initWallet } = useWallet();
-    const switchedDid = switchedProfileStore.use.switchedDid();
-
-    return useQuery<VC[] | VC_WITH_URI[]>({
-        queryKey: ['useGetIDs', switchedDid ?? ''],
-        queryFn: async () => {
-            try {
-                const wallet = await initWallet();
-
-                // get all creds by categories
-                const [globalAdminIds, nationalNetworkAdminIds, troopLeaderIds, scoutIds] =
-                    await Promise.all([
-                        await wallet.index.LearnCloud.get({
-                            category: CredentialCategoryEnum.globalAdminId,
-                        }),
-                        await wallet.index.LearnCloud.get({
-                            category: CredentialCategoryEnum.nationalNetworkAdminId,
-                        }),
-                        await wallet.index.LearnCloud.get({
-                            category: CredentialCategoryEnum.troopLeaderId,
-                        }),
-                        await wallet.index.LearnCloud.get({
-                            category: CredentialCategoryEnum.scoutId,
-                        }),
-                    ]);
-
-                // combine all creds
-                const credentialsList = [
-                    ...globalAdminIds,
-                    ...nationalNetworkAdminIds,
-                    ...troopLeaderIds,
-                    ...scoutIds,
-                ];
-                // resolve all creds
-                const resolvedCredentials = (
-                    await Promise.all(
-                        credentialsList.map(async record => {
-                            const resolvedVC = await wallet.read.get(record.uri);
-                            return { ...resolvedVC, uri: record?.uri };
-                        })
-                    )
-                ).filter(Boolean) as VC[];
-
-                return resolvedCredentials.sort((a, b) => {
-                    const aDate = getIssuanceDate(a) ?? '';
-                    const bDate = getIssuanceDate(b) ?? '';
-
-                    return bDate.localeCompare(aDate);
-                });
-            } catch (error) {
-                return Promise.reject(new Error(error));
-            }
-        },
-    });
-};
+export { useGetIDs } from './idCredentials';
 
 export const useSyncConsentFlow = (enabled = true) => {
     const { initWallet } = useWallet();

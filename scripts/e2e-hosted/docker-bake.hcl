@@ -1,6 +1,8 @@
 # Export only the dependency stage. Exporting the source image with mode=max
 # also uploads source-bearing intermediate layers that change on every commit.
 # This cache-only target supplies the browser app build.
+# The legacy Docker browser path remains a fallback. Its app dependency cache
+# is not refreshed while E2E_HOST_BROWSER_BUILD=true, so rollback may start cold.
 target "dependency-cache" {
   context    = "."
   dockerfile = "Dockerfile.monorepo"
@@ -76,4 +78,21 @@ target "service-base" {
 
 group "service" {
   targets = ["backend-dependency-cache", "service-base"]
+}
+
+# Experiment: compile the SPA and SDK once on the host, then load only runtimes.
+variable "E2E_BROWSER_RUNTIME_CONTEXT" {
+  # run-browser.sh supplies a unique staged directory inside this workspace.
+  # Manual Bake users must stage build/, nginx.conf and Dockerfile here first.
+  default = "node_modules/.cache/e2e-browser-runtime"
+}
+
+target "hosted-browser-app" {
+  context    = E2E_BROWSER_RUNTIME_CONTEXT
+  dockerfile = "Dockerfile"
+  tags       = ["learn-card-e2e-app"]
+}
+
+group "hosted-browser-backend" {
+  targets = ["backend-dependency-cache", "browser-base", "browser-delete"]
 }
