@@ -9,19 +9,23 @@ export const createDeliveredRelationship = async (
     deliveryMethod: string = 'direct'
 ): Promise<boolean> => {
     const timestamp = new Date().toISOString();
-    
-    const result = await new QueryBuilder(new BindParam({ 
-        profileId, 
-        inboxCredentialId, 
-        timestamp, 
-        recipientDid, 
-        deliveryMethod 
-    }))
+
+    const result = await new QueryBuilder(
+        new BindParam({
+            profileId,
+            inboxCredentialId,
+            timestamp,
+            recipientDid,
+            deliveryMethod,
+        })
+    )
         .match({ model: Profile, identifier: 'profile' })
         .where('profile.profileId = $profileId')
         .match({ model: InboxCredential, identifier: 'inboxCredential' })
         .where('inboxCredential.id = $inboxCredentialId')
-        .create('(profile)-[:DELIVERED_INBOX_CREDENTIAL { timestamp: $timestamp, recipientDid: $recipientDid, deliveryMethod: $deliveryMethod }]->(inboxCredential)')
+        .create(
+            '(profile)-[:DELIVERED_INBOX_CREDENTIAL { timestamp: $timestamp, recipientDid: $recipientDid, deliveryMethod: $deliveryMethod }]->(inboxCredential)'
+        )
         .return('profile')
         .run();
 
@@ -35,18 +39,22 @@ export const createClaimedRelationship = async (
     transaction?: Transaction
 ): Promise<boolean> => {
     const timestamp = new Date().toISOString();
-    
-    const result = await new QueryBuilder(new BindParam({ 
-        profileId, 
-        inboxCredentialId, 
-        timestamp, 
-        claimToken 
-    }))
-        .match({ model: Profile, identifier: 'profile'})
+
+    const result = await new QueryBuilder(
+        new BindParam({
+            profileId,
+            inboxCredentialId,
+            timestamp,
+            claimToken,
+        })
+    )
+        .match({ model: Profile, identifier: 'profile' })
         .where('profile.profileId = $profileId')
-        .match({ model: InboxCredential, identifier: 'inboxCredential'})
+        .match({ model: InboxCredential, identifier: 'inboxCredential' })
         .where('inboxCredential.id = $inboxCredentialId')
-        .create('(profile)-[:CLAIMED_INBOX_CREDENTIAL { timestamp: $timestamp, claimToken: $claimToken }]->(inboxCredential)')
+        .create(
+            '(profile)-[:CLAIMED_INBOX_CREDENTIAL { timestamp: $timestamp, claimToken: $claimToken }]->(inboxCredential)'
+        )
         .return('profile')
         .run(transaction);
 
@@ -60,19 +68,23 @@ export const createEmailSentRelationship = async (
     token: string
 ): Promise<boolean> => {
     const timestamp = new Date().toISOString();
-    
-    const result = await new QueryBuilder(new BindParam({ 
-        profileDid, 
-        inboxCredentialId, 
-        timestamp, 
-        emailAddress, 
-        token 
-    }))
+
+    const result = await new QueryBuilder(
+        new BindParam({
+            profileDid,
+            inboxCredentialId,
+            timestamp,
+            emailAddress,
+            token,
+        })
+    )
         .match({ model: Profile, identifier: 'profile' })
         .where('profile.did = $profileDid')
         .match({ model: InboxCredential, identifier: 'inboxCredential' })
         .where('inboxCredential.id = $inboxCredentialId')
-        .create('(profile)-[:SENT_EMAIL { timestamp: $timestamp, emailAddress: $emailAddress, token: $token }]->(inboxCredential)')
+        .create(
+            '(profile)-[:SENT_EMAIL { timestamp: $timestamp, emailAddress: $emailAddress, token: $token }]->(inboxCredential)'
+        )
         .return('profile')
         .run();
 
@@ -87,20 +99,24 @@ export const createWebhookSentRelationship = async (
     response?: string
 ): Promise<boolean> => {
     const timestamp = new Date().toISOString();
-    
-    const result = await new QueryBuilder(new BindParam({ 
-        profileDid, 
-        inboxCredentialId, 
-        timestamp, 
-        url, 
-        status,
-        response: response || null
-    }))
+
+    const result = await new QueryBuilder(
+        new BindParam({
+            profileDid,
+            inboxCredentialId,
+            timestamp,
+            url,
+            status,
+            response: response || null,
+        })
+    )
         .match({ model: Profile, identifier: 'profile' })
         .where('profile.did = $profileDid')
         .match({ model: InboxCredential, identifier: 'inboxCredential' })
         .where('inboxCredential.id = $inboxCredentialId')
-        .create('(profile)-[:SENT_WEBHOOK { timestamp: $timestamp, url: $url, status: $status, response: $response }]->(inboxCredential)')
+        .create(
+            '(profile)-[:SENT_WEBHOOK { timestamp: $timestamp, url: $url, status: $status, response: $response }]->(inboxCredential)'
+        )
         .return('profile')
         .run();
 
@@ -112,17 +128,21 @@ export const createExpiredRelationship = async (
     inboxCredentialId: string
 ): Promise<boolean> => {
     const timestamp = new Date().toISOString();
-    
-    const result = await new QueryBuilder(new BindParam({ 
-        profileDid, 
-        inboxCredentialId, 
-        timestamp 
-    }))
+
+    const result = await new QueryBuilder(
+        new BindParam({
+            profileDid,
+            inboxCredentialId,
+            timestamp,
+        })
+    )
         .match({ model: Profile, identifier: 'profile' })
         .where('profile.did = $profileDid')
         .match({ model: InboxCredential, identifier: 'inboxCredential' })
         .where('inboxCredential.id = $inboxCredentialId')
-        .create('(profile)-[:EXPIRED_INBOX_CREDENTIAL { timestamp: $timestamp }]->(inboxCredential)')
+        .create(
+            '(profile)-[:EXPIRED_INBOX_CREDENTIAL { timestamp: $timestamp }]->(inboxCredential)'
+        )
         .return('profile')
         .run();
 
