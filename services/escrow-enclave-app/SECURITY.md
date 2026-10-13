@@ -135,12 +135,30 @@ must never be interpreted as missing authority state.
 
 Dedicated credentials are a distinct zeroizing type that rejects STS access-key
 IDs and has no session token or conversion from parent boot credentials. Its
-`from_unsealed` constructor accepts material from trusted enclave code only;
-sealed delivery is still pending. Claimed principal metadata is checked against
+`from_unsealed` constructor accepts material from trusted enclave code only.
+The dormant `CredentialUnsealer` uses a separate measured credential CMK and fresh
+NSM Recipient attestation, then the existing BER/CMS recipient unwrap. Its KMS
+encryption context binds `purpose` (`authority-writer` or `email-sender`), `tenant`,
+`environment`, `authorityGeneration` and `principalArn`. The credential CMK must
+differ from the escrow CMK and use the measured account and existing KMS relay's
+region. It never calls GenerateDataKey or falls back to the escrow CMK.
+
+Decrypted JSON is capped at 4096 bytes; escape bytes are rejected before invoking
+the JSON decoder so it cannot allocate an escape-decoding copy of a secret value.
+Fields are parsed as borrowed strings from a zeroizing buffer; its exact fields are `accessKeyId`, `secretAccessKey`, and
+`principalArn`. Unknown/duplicate fields, session tokens, malformed keys, escaped
+strings requiring allocation, or a principal mismatch fail closed. Owned final
+credentials zeroize on drop; this is not a claim about all SDK/library copies.
+The parent can deliver only optional opaque ciphertexts (6144 bytes each), never
+the dedicated keys. Existing temporary parent STS credentials remain unchanged
+and are used only to authorize attested KMS access, not DynamoDB/SES requests.
+
+Claimed principal metadata is checked against
 measured configuration, but is not independently an AWS identity proof: the
 credential-CMK/provisioning binding and resource IAM policy must enforce that
-contract before activation. No authority client, email client or extra relay is
-called from production boot or Policy in this checkpoint.
+contract before activation. Their infrastructure and provisioning script are still
+pending. No unsealer, authority client, email client or extra relay is called from
+production boot or Policy in this checkpoint.
 
 ### Escrow CMK policy
 
