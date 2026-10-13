@@ -2,6 +2,7 @@ import { SHARE_LINK_OPERATION_RETENTION_MS } from '@helpers/share-link-lifecycle
 
 import { ensureShareLinkConstraints } from '../../models/share-link-constraints';
 import { failShareLink } from './errors';
+import { queueShareAttachmentCleanup } from './attachment';
 import {
     deleteReservation,
     enqueueCleanupJob,
@@ -105,6 +106,25 @@ export const revokeShareLink = async (
 
         if (reservationProps) {
             const reservation = toShareLinkReservationRecord(reservationProps);
+            if (
+                reservation.attachmentId &&
+                reservation.attachmentChunkCount &&
+                reservation.contentVersion
+            ) {
+                await queueShareAttachmentCleanup(
+                    tx,
+                    {
+                        namespace: reservation.namespace,
+                        ownerProfileId: reservation.ownerProfileId,
+                        shareId: reservation.shareId,
+                        contentVersion: reservation.contentVersion,
+                        attachmentId: reservation.attachmentId,
+                        chunkCount: reservation.attachmentChunkCount,
+                    },
+                    'abandoned',
+                    nowIso
+                );
+            }
 
             if (reservation.objectRef) {
                 await enqueueCleanupJob(tx, {
@@ -131,6 +151,21 @@ export const revokeShareLink = async (
         }
 
         if (share.activeObjectRef) {
+            if (share.attachmentId && share.attachmentChunkCount) {
+                await queueShareAttachmentCleanup(
+                    tx,
+                    {
+                        namespace: share.namespace,
+                        ownerProfileId: share.ownerProfileId,
+                        shareId: share.id,
+                        contentVersion: share.contentVersion,
+                        attachmentId: share.attachmentId,
+                        chunkCount: share.attachmentChunkCount,
+                    },
+                    'stopped',
+                    nowIso
+                );
+            }
             await enqueueCleanupJob(tx, {
                 objectRef: share.activeObjectRef,
                 operationId: share.activeObjectOperationId!,

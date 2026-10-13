@@ -92,6 +92,28 @@ If history cannot be loaded, **Clear history** remains available to reset record
 
 If your account changes after an OID4VP send completes, the success screen says so and hides the earlier account’s details. It does not redirect to the verifier under the new account; return to the requesting application to finish its session.
 
+### Publishing a Résumé
+
+Resume Builder publishes one managed link for each résumé. Republishing an active résumé updates that link. Find its entry in **Shared** to change the title, passcode or expiry, or stop access. Edit the résumé itself in Resume Builder.
+
+```mermaid
+flowchart LR
+    A[Prepare résumé] --> B[Publish managed link]
+    B --> C[One entry in Shared]
+    C --> D[Recipient opens link]
+    D --> E[Enter passcode if required]
+    E --> F[Review and download PDF]
+    C --> G[Change expiry or stop access]
+```
+
+New links expire after 30 days by default. Both the résumé and its PDF follow the link's access settings. A recipient downloads the PDF explicitly; opening the link does not preload it.
+
+{% hint style="warning" %}
+Stopping access cannot retract downloaded copies or older résumé URLs. Including a credential includes its original signed claims, even when some fields are hidden on the PDF.
+{% endhint %}
+
+If publishing is interrupted, retry in the same browser to recover the pending attempt. PDFs larger than 4 MiB cannot be published through this flow. Turn off the QR code to download a local copy without publishing.
+
 ### Qualifications
 
 Qualifications has its own section after IDs in the wallet and navigation, even when it is empty. It contains professional licenses, certifications, and apprenticeship, journeyman, and master certificates.
