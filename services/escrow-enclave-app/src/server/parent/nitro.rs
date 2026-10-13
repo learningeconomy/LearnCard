@@ -85,10 +85,10 @@ fn step<T, E>(name: &'static str, result: Result<T, E>) -> io::Result<T> {
 async fn boot_and_serve(port: u32) -> io::Result<()> {
     let nsm = step("nsm_open", RealNsm::new())?;
     let measurement = step("nsm_measurement", measurement(&nsm))?;
-    let time = step(
+    let time = Arc::new(step(
         "roughtime_config",
         RoughtimeTimeSource::production(Arc::new(VsockRoughtimeTransport)),
-    )?;
+    )?);
     let key_id = step("config_key_id", configured("ESCROW_KEY_ID"))?;
     // Comma-separated, bounded (P9.1): read-only decrypt keys accepted alongside
     // the current key, for deliberate rotation or a lost-sealed-key recovery.
@@ -135,6 +135,7 @@ async fn boot_and_serve(port: u32) -> io::Result<()> {
                 },
                 &region,
                 arn,
+                time.clone(),
             ),
         )?;
         let recipient = step("recipient_key", RecipientKey::generate())?;
@@ -198,7 +199,7 @@ async fn boot_and_serve(port: u32) -> io::Result<()> {
             tenant,
             measurement,
             &store,
-            &time,
+            time.as_ref(),
             &authority,
         ),
     )?;
