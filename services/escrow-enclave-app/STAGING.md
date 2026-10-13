@@ -143,6 +143,14 @@ Operational notes:
   `webpki-roots`, not `SSL_CERT_FILE`; root updates require a new measured image.
   This does not enable enrollment or email, and the delayed-delivery time caveat
   in SECURITY.md still applies. Live staging verification remains outstanding.
+- **Dormant direct clients:** `build-eif.sh` forwards optional measured settings:
+  `ESCROW_AUTHORITY_{REGION,ACCOUNT_ID,TABLE,WRITER_USER,TENANT,ENVIRONMENT,GENERATION}`
+  and `ESCROW_EMAIL_{REGION,ACCOUNT_ID,SENDER_USER,FROM,IDENTITY,CONFIGURATION_SET}`.
+  Leave each entire group unset until provisioning/activation is implemented;
+  partial groups are rejected by the config loader. These settings contain names,
+  never access keys. No boot path consumes them yet. Dormant enclave relays reserve
+  ports 8001 (regional DynamoDB) and 8002 (regional SES); the gated host proxy
+  services/allowlists remain an infrastructure prerequisite, not active egress.
 - **Diagnosing boot without a console.** CloudTrail on the escrow CMK (`GenerateDataKey` /
   `Decrypt` from the host role, with `recipient` in `additionalEventData`) shows whether the
   enclave reached KMS; `strace` on the host process shows whether it connected to vsock 5001/5002.

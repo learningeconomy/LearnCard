@@ -21,9 +21,20 @@ writes still fail closed. Readback remains the legacy host-presented view, not
 proof of durable persistence (D3). Existing KMS boot/unsealing now uses fresh
 Roughtime evidence for TLS validity and SigV4, with compiled roots and no automatic
 retries or cross-operation TLS reuse (see SECURITY.md for delayed-delivery limits).
-Direct DynamoDB/SES clients, sealed authority/email credentials, infrastructure and
-provisioning are not implemented yet.
+Direct DynamoDB/SES data-plane clients are compiled under `kms`, with optional
+measured settings, dedicated credential types, generated execution IDs, and no
+automatic retries. They are not constructed by boot or Policy. Local TLS tests
+cover response conversion, body limits, stalled bodies and cross-operation
+connection isolation. Sealed authority/email credential unsealing, host delivery,
+host proxy allowlists, infrastructure and provisioning are not implemented yet.
 `UnavailableEnrollment` remains wired; no authority or email client is active.
+
+The client layer is not authorization: enclave policy must build its typed requests
+from validated intent and bind generation/tenant/expected revision in item keys and
+conditions. It is not exposed as a host RPC. `GetItem` sets `ConsistentRead: true`;
+`TransactGetItems` uses AWS's atomic transactional API (which has no `ConsistentRead`
+parameter). Transaction tokens are 128-bit enclave-generated IDs with immutable
+request bytes; AWS's ten-minute token window does not replace durable receipts.
 
 ## 1. Problem and current boundary
 
