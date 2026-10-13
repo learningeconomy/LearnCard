@@ -389,19 +389,61 @@ Add tests for every numbered requirement, including these adversarial cases:
 - **State loss and audit:** Restore an old backup or present an empty/recreated authority. No silent epoch/budget reset; independently enumerate committed events even when the host suppresses all projections.
 - **Recovery boundary (Attack C):** Suppress API notifications and run an attacker-recipient delayed hold. Must now fail because the code never reaches the user (the hold never starts without the emailed code).
 
-## 9. Attack C Mitigation: Vault-Sent Email Confirmation
+## 9. Attack C mitigation: the enclave sends recovery email itself
 
-Today `create_hold` accepts `ReleasePolicy::Hold` even when the blob has a PIN, and notifications come from lca-api. A compromised lca-api could start a hold with its own recipient key, suppress emails, and receive the share after 7 days.
+**Problem.** `create_hold` accepts `ReleasePolicy::Hold` even when the blob has a
+PIN (`src/policy.rs`, `create_hold`), and every user-facing notification is sent by
+lca-api (`services/learn-card-network/lca-api/src/services/escrow-enclave/notifications.ts`).
+A compromised lca-api can start a hold for its own recipient key, suppress the
+emails, and receive the share after the waiting period. A verifiable "lca-api sent
+it" check is not possible: lca-api also supplies the address, and its email provider
+(Postmark) retains message content, so any confirmation code would be visible to it.
 
-**Mitigation:**
+**Decision (2026-10-13, product owner):** keep the forgot-PIN 7-day path, and move
+recovery email into the enclave. A separate notifier service in the escrow account
+was considered (cheaper wording changes) and rejected in favour of keeping the code
+visible only to the enclave and the user's inbox.
 
-1. The user's email address is bound at enrollment inside the sealed blob / signed intent set by the user's own device so lca-api cannot change it.
-2. The enclave sends via Amazon SES in the escrow account using the same vault-only credential pattern.
-3. On recovery start, the enclave emails a one-time code bound to that hold (hold id + recipient key). The 7-day clock starts only after the code is presented.
-4. The enclave also sends start and pre-release warnings.
-5. If sending fails, the hold does not proceed (fail closed).
+**Design.**
 
-**Trade-offs:** email text is measured (new image to change wording; keep minimal), address change requires re-enrollment from the user's device, users without device+email use other recovery methods, SES domain/DKIM setup, phishing residual ("only enter this code if you started a recovery").
+1. **Binding.** At enrollment the user's device puts the recovery email address and
+   language into the sealed blob. lca-api cannot read or change them. Changing the
+   address means re-enrolling from the user's device.
+2. **Transport.** The enclave calls Amazon Simple Email Service (SES) in the escrow
+   account directly, with the same pattern as the authority table: a dedicated
+   sender credential sealed under the credential CMK, enclave-terminated TLS to a
+   fixed regional endpoint, no host credentials. The SES endpoint is added to the
+   host's fixed relay destinations.
+3. **Confirmation.** A new hold starts in `awaiting_confirmation`. The enclave emails
+   a one-time code bound to the hold ID and recipient key. The waiting period starts
+   only when the code is presented. Codes expire, guesses are bounded, and resends
+   are rate-limited per DID so the enclave cannot be used to flood an inbox. All of
+   this state is committed through the authority table.
+4. **Warnings.** The enclave sends "recovery started" at confirmation and "release in
+   24 hours" before release. The hourly lca-api job asks the enclave to send the
+   second warning; release is refused unless the enclave recorded sending it at
+   least 24 hours earlier. Skipping the job delays release; it cannot bypass it.
+5. **Fail closed.** If SES rejects or the send outcome is unknown, the hold does not
+   advance.
+
+**Content constraints.** Email text is part of the measured image, so changing it
+needs a new EIF, new PCRs and a measurement rotation. Keep it to three plain-text
+messages (code, started, release warning) with no links or images, in the four app
+languages, using the tenant name only. Every message says "Only enter this code if
+you started a recovery." A separately signed template file was considered and
+deferred: its signing key could produce misleading or leaking templates.
+
+**Operations.** SES sending domain with SPF/DKIM/DMARC, production access (out of
+the SES sandbox), bounce and complaint handling, quota monitoring. Cost is
+negligible at expected volume.
+
+**Effort.** Roughly one to two weeks on top of the enrollment authority: enclave SES
+client and code flow, client binding of email/language and a code-entry screen,
+lca-api routes, SES infrastructure.
+
+**Residual risks.** Phishing for the code; users who lose both their device and
+their email account use another recovery method; the host can block email (denial
+of service, fails closed).
 
 ## 10. Open questions for security/product
 
@@ -410,4 +452,4 @@ Today `create_hold` accepts `ReleasePolicy::Hold` even when the blob has a PIN, 
 3. Who owns witness/credential recovery, key rotation and generation abandonment? What independent checkpoint evidence suffices to restore state without rollback?
 4. What traffic forecast, monthly cost ceiling, latency target and regional outage objective must staging demonstrate before approval?
 5. Accept the listed D2/D10/D18 and witness-admin residual risks, and assign owners to reconcile SECURITY/STAGING/ROLLOUT wording before the launch review?
-6. Exact email binding format, SES quotas, template/localization for the vault-sent email confirmation?
+6. Email binding format inside the blob (address normalisation, language tag), code length/expiry/guess and resend limits, and SES quota targets?
