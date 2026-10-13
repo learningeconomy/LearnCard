@@ -64,11 +64,11 @@ const ClrVerificationPills: React.FC<{ boost: VC; verificationItems?: Verificati
     const proofLabel =
         verified === null
             ? items === undefined
-                ? 'Verifying…'
+                ? m['clrRenderer.verifying']()
                 : m['clrRenderer.signedUnverified']()
             : verified
-              ? 'Valid'
-              : 'Invalid';
+              ? m['clrRenderer.valid']()
+              : m['clrRenderer.invalid']();
 
     const expirationIcon = isExpired ? (
         <WarningCircle className="w-4 h-4 shrink-0" />
@@ -77,9 +77,11 @@ const ClrVerificationPills: React.FC<{ boost: VC; verificationItems?: Verificati
     );
 
     let expirationLabel: string;
-    if (isExpired) expirationLabel = `Expired ${formatClrDate(expirationDate!)}`;
-    else if (expirationDate) expirationLabel = `Expires ${formatClrDate(expirationDate)}`;
-    else expirationLabel = 'Does not expire';
+    if (isExpired)
+        expirationLabel = m['clrRenderer.expired']({ date: formatClrDate(expirationDate!) });
+    else if (expirationDate)
+        expirationLabel = m['clrRenderer.expires']({ date: formatClrDate(expirationDate) });
+    else expirationLabel = m['clrRenderer.doesNotExpire']();
 
     const pillBase =
         'flex items-center gap-1 rounded-full px-2 py-1 font-poppins font-[500] text-[12px] leading-tight whitespace-nowrap';
@@ -98,7 +100,7 @@ const ClrVerificationPills: React.FC<{ boost: VC; verificationItems?: Verificati
                 >
                     {proofIcon}
                     <p>
-                        <span className="font-semibold">Proof:</span>{' '}
+                        <span className="font-semibold">{m['clrRenderer.proof']()}:</span>{' '}
                         <span className="text-grayscale-900 text-xs font-normal">{proofLabel}</span>
                     </p>
                 </div>
@@ -112,7 +114,7 @@ const ClrVerificationPills: React.FC<{ boost: VC; verificationItems?: Verificati
             >
                 {expirationIcon}
                 <p>
-                    <span className="font-semibold">Expiration:</span>{' '}
+                    <span className="font-semibold">{m['clrRenderer.expiration']()}:</span>{' '}
                     <span className="text-grayscale-900 text-xs font-normal">
                         {expirationLabel}
                     </span>
