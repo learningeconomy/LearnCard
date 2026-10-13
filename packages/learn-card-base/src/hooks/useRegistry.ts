@@ -120,27 +120,37 @@ export const useKnownDIDRegistry = (profileId?: string) => {
                 untrustedRegistryClient.lookupIssuersFor(profileId),
             ]);
 
+            const trustedUncheckedCount = trustedResults?.uncheckedRegistries?.length ?? 0;
+            const untrustedUncheckedCount = untrustedResults?.uncheckedRegistries?.length ?? 0;
+
+            // Trusted match is conclusive — return immediately
             if (trustedResults?.matchingIssuers.length > 0) {
                 return {
                     source: 'trusted' as const,
                     results: trustedResults,
                 };
-            } else if (untrustedResults?.matchingIssuers.length > 0) {
+            }
+
+            // Before accepting an untrusted match, ensure trusted lookup was complete.
+            // A DID may exist in both registries; if trusted registries failed, we can't
+            // be certain this isn't a trusted issuer, so retry rather than cache "untrusted".
+            if (untrustedResults?.matchingIssuers.length > 0) {
+                if (trustedUncheckedCount > 0) {
+                    throw new Error(
+                        `Registry lookup inconclusive: ${trustedUncheckedCount} trusted registries could not be checked`
+                    );
+                }
                 return {
                     source: 'untrusted' as const,
                     results: untrustedResults,
                 };
             }
 
-            // Check if any registries couldn't be reached — if so, this is an
-            // inconclusive lookup that should not be cached as a definitive "unknown"
-            const uncheckedCount =
-                (trustedResults?.uncheckedRegistries?.length ?? 0) +
-                (untrustedResults?.uncheckedRegistries?.length ?? 0);
-
-            if (uncheckedCount > 0) {
+            // No matches found — ensure all registries were checked before caching "unknown"
+            const totalUncheckedCount = trustedUncheckedCount + untrustedUncheckedCount;
+            if (totalUncheckedCount > 0) {
                 throw new Error(
-                    `Registry lookup inconclusive: ${uncheckedCount} registries could not be checked`
+                    `Registry lookup inconclusive: ${totalUncheckedCount} registries could not be checked`
                 );
             }
 
