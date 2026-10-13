@@ -53,10 +53,9 @@ const AddressBookSelectionModal: React.FC<AddressBookSelectionModalProps> = ({
             try {
                 const wallet = await initWallet();
 
+                // Preserve the existing immediate-parent lookup for contact counts.
                 const parentDataArray: PaginatedBoostsType[] = await Promise.all(
-                    records.map(({ vc }) =>
-                        wallet.invoke.getBoostParents(vc.boostId, { numberOfGenerations: 2 })
-                    )
+                    records.map(({ vc }) => wallet.invoke.getBoostParents(vc.boostId))
                 );
 
                 // For each record, figure out which URI we should use to look up troop counts.

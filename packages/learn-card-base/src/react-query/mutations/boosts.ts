@@ -1127,6 +1127,7 @@ export const useDeleteEarnedBoostMutation = () => {
             queryClient.invalidateQueries({
                 queryKey: ['useGetCredentialCount', didWeb ?? '', category],
             });
+            // Invalidate both the current records key and any persisted legacy ID entries.
             queryClient.invalidateQueries({
                 queryKey: ['useGetIDs', didWeb ?? ''],
             });
