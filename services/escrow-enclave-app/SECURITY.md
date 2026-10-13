@@ -123,6 +123,25 @@ expired by receipt. AWS's own SigV4 time window can reject delayed requests, but
 not an enclave-authenticated elapsed-time guarantee. No revocation/OCSP freshness
 guarantee is added. D2, D3, D11 and D13 remain applicable.
 
+### Dormant direct data-plane clients
+
+The dormant `authority::aws` clients sign only enclave-built GetItem,
+TransactGetItems, conditional TransactWriteItems and SESv2 SendEmail requests.
+They reuse the trusted-time transport above, pin the table/SES identity by full
+account-qualified ARN and do not retry any operation. Each transaction retains an
+immutable token/body pair; each email has a generated execution tag (not an SES
+idempotency guarantee). Unknown mutation outcomes remain errors. Read failures
+must never be interpreted as missing authority state.
+
+Dedicated credentials are a distinct zeroizing type that rejects STS access-key
+IDs and has no session token or conversion from parent boot credentials. Its
+`from_unsealed` constructor accepts material from trusted enclave code only;
+sealed delivery is still pending. Claimed principal metadata is checked against
+measured configuration, but is not independently an AWS identity proof: the
+credential-CMK/provisioning binding and resource IAM policy must enforce that
+contract before activation. No authority client, email client or extra relay is
+called from production boot or Policy in this checkpoint.
+
 ### Escrow CMK policy
 
 The AWS KMS Customer Master Key (CMK) policy (`infra/escrow-enclave/kms.tf`) is the primary security boundary enforcing attestation.
