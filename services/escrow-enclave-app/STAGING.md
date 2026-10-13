@@ -263,8 +263,7 @@ The enclave's 7-day hold requires **at least 2 independent, overlapping signed t
 (D2/D3) and fails closed otherwise. Today only Cloudflare's Roughtime server
 (`roughtime.cloudflare.com:2003`) is realistically reachable, and Cloudflare's own documentation
 says "DO NOT USE IN PRODUCTION"; Google's server is a historical sandbox key with no uptime
-guarantee. With `min_sources=2` enforced in `RoughtimeTimeSource::production()` (itself gated
-behind the `verified-roughtime-keys` feature as a release-review gate), **every real release
+guarantee. With `min_sources=2` enforced in `RoughtimeTimeSource::production()`, **every real release
 attempt today would fail closed with `InsufficientSources`.** This needs an explicit
 product/security decision before any real user can complete a hold-based release in production or
 staging:
