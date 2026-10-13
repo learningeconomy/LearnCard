@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { VerificationStatusEnum, type VC } from '@learncard/types';
 import {
@@ -120,6 +120,44 @@ describe('shared CLR renderer', () => {
         render(<ClrRenderer model={model} boost={boost} options={options} />);
         expect(await screen.findByText('Valid', { exact: true })).toBeInTheDocument();
         expect(mocks.verify).toHaveBeenCalledWith(boost);
+    });
+    it('shows pending verification for an empty host result, then uses a renamed failure', async () => {
+        let resolveVerification!: (
+            items: { check: string; status: typeof VerificationStatusEnum.Failed }[]
+        ) => void;
+        mocks.verify.mockReturnValue(
+            new Promise(resolve => {
+                resolveVerification = resolve;
+            })
+        );
+        const boost = { ...fixture, proof: { type: 'DataIntegrityProof' } } as VC;
+        const model = normalizeClrTranscriptDisplayModel(boost as Record<string, unknown>);
+        const view = render(
+            <ClrRenderer model={model} boost={boost} options={options} verificationItems={[]} />
+        );
+        expect(screen.getByText('Verifying…')).toBeInTheDocument();
+        expect(screen.queryByText('Signed, not verified')).not.toBeInTheDocument();
+        await act(async () => {
+            resolveVerification([{ check: 'Signature', status: VerificationStatusEnum.Failed }]);
+        });
+        expect(screen.getByText('Invalid', { exact: true })).toBeInTheDocument();
+        view.rerender(
+            <ClrRenderer model={model} boost={boost} options={options} verificationItems={[]} />
+        );
+        expect(mocks.verify).toHaveBeenCalledTimes(1);
+    });
+    it('uses successful non-proof results when verification names are normalized', () => {
+        const boost = { ...fixture, proof: { type: 'DataIntegrityProof' } } as VC;
+        const model = normalizeClrTranscriptDisplayModel(boost as Record<string, unknown>);
+        render(
+            <ClrRenderer
+                model={model}
+                boost={boost}
+                options={options}
+                verificationItems={[{ check: 'Signature', status: VerificationStatusEnum.Success }]}
+            />
+        );
+        expect(screen.getByText('Valid', { exact: true })).toBeInTheDocument();
     });
     it('does not claim a valid proof when verification fails to complete', async () => {
         mocks.verify.mockRejectedValue(new Error('Network unavailable'));

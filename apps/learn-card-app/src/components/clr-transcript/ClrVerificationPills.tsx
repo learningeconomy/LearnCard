@@ -19,9 +19,10 @@ const ClrVerificationPills: React.FC<{ boost: VC; verificationItems?: Verificati
     const verifyRef = useRef(verifyCredential);
     verifyRef.current = verifyCredential;
     const [result, setResult] = useState<{ boost: VC; items: VerificationItem[] }>();
+    const hasSuppliedResult = Boolean(verificationItems?.length);
 
     useEffect(() => {
-        if (verificationItems !== undefined || !boost.proof) return;
+        if (hasSuppliedResult || !boost.proof) return;
         let cancelled = false;
         verifyRef.current(boost).then(
             items => {
@@ -34,14 +35,20 @@ const ClrVerificationPills: React.FC<{ boost: VC; verificationItems?: Verificati
         return () => {
             cancelled = true;
         };
-    }, [boost, verificationItems]);
+    }, [boost, hasSuppliedResult]);
 
-    const items = verificationItems ?? (result?.boost === boost ? result.items : undefined);
+    const items = hasSuppliedResult
+        ? verificationItems
+        : result?.boost === boost
+          ? result.items
+          : undefined;
     const proofs = items?.filter(item => /proof/i.test(item.check)) ?? [];
     const verified =
         proofs.length > 0
             ? proofs.every(item => item.status === VerificationStatusEnum.Success)
-            : null;
+            : items?.length
+              ? items.every(item => item.status === VerificationStatusEnum.Success)
+              : null;
 
     const expirationDate =
         boost.validUntil ??
