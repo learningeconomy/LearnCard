@@ -21,7 +21,7 @@ The app browser never loads the account SDK. The parent accepts only `LEARNCARD_
 
 A session-only review token binds the listing and the visible contract. Permission sets, complete sorted audience, audience version, expiry, timestamps and displayed purpose are rechecked before approval and after encryption. Native encryption retains signed originals, copies only explicitly selected full credentials to the complete audience, and records audience-keyed shared URI caches using the same semantics as web consent. A missing selection fails instead of silently dropping a credential.
 
-Required scopes remain enabled; optional defaults start off even if the contract suggests `defaultEnabled`. Personal fields start empty. Required read-category access can include an empty explicit selection, without `shareAll`. Guardian, front-door and smart-résumé contract flows are blocked until their separate UI exists. The résumé tool itself is web-only. Consent launch uses the existing delegate-presentation protocol with a five-minute expiration; no Firebase session is passed to apps.
+Required scopes remain enabled; optional defaults start off even if the contract suggests `defaultEnabled`. Personal fields start empty. Anonymous/redacted credential sharing is deferred: this slice retains full signed contents and refuses anonymous decisions rather than promising redaction. Required read-category access can include an empty explicit selection, without `shareAll`. Guardian, front-door and smart-résumé contract flows are blocked until their separate UI exists. The résumé tool itself is web-only. Consent launch uses the existing delegate-presentation protocol with a five-minute expiration; no Firebase session is passed to apps.
 
 ## Partner SDK support
 

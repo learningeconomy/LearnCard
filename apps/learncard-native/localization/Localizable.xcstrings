@@ -1747,25 +1747,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Only the credentials you select are included."
+            "value": "Only selected credentials are shared, with their original contents."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Solo se incluyen las credenciales que selecciones."
+            "value": "Solo se comparten las credenciales que eliges, con su contenido original."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Seuls les justificatifs choisis sont inclus."
+            "value": "Seuls les justificatifs choisis sont partagés, avec leur contenu d’origine."
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "تُضمّن بيانات الاعتماد التي تختارها فقط."
+            "value": "تُشارك بيانات الاعتماد التي تختارها فقط، بمحتواها الأصلي."
           }
         }
       }

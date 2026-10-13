@@ -1,7 +1,12 @@
 import { describe, expect, test } from 'bun:test';
-import { ConsentFlowContractDetailsValidator, type AppStoreListing } from '@learncard/types';
+import {
+    ConsentFlowContractDetailsValidator,
+    ConsentFlowTermsValidator,
+    type AppStoreListing,
+} from '@learncard/types';
 import {
     appDTO,
+    consentDisclosures,
     createConsumerCommands,
     httpsURL,
     materializeSelections,
@@ -339,4 +344,40 @@ test('pending or stopped owner links never export a URL, and pending revocation 
     };
     await expect(commands.privacyLinkURL({ id })).rejects.toThrow('consumer:inactive');
     expect(reads).toBe(0);
+});
+
+test('native consent never promises anonymous sharing of unchanged signed credentials', async () => {
+    const f = fixture(),
+        d = await decision(f);
+    const review = await f.commands.appsReview({ id: 'app' });
+    expect(review?.allowsAnonymous).toBe(false);
+    await expect(f.commands.appsConsent({ ...d, anonymize: true })).rejects.toThrow(
+        'consumer:unsupported'
+    );
+    expect(f.uploads).toHaveLength(0);
+    expect(f.publications).toHaveLength(0);
+});
+
+test('sharing scopes respect disabled reads, category expiry and broad selection settings', () => {
+    const terms = ConsentFlowTermsValidator.parse({
+        read: {
+            credentials: {
+                categories: {
+                    Learning: { sharing: true, shared: ['lc:one'] },
+                    Achievement: { sharing: false, shared: ['lc:two'] },
+                    ID: { sharing: true, shared: ['lc:old'], shareUntil: '2000-01-01T00:00:00Z' },
+                },
+            },
+        },
+    });
+    expect(consentDisclosures(terms)).toEqual([
+        { id: 'read:Learning', direction: 'read', label: 'Learning', count: 1, detail: 'selected' },
+    ]);
+    terms.read.credentials.sharing = false;
+    expect(consentDisclosures(terms)).toEqual([]);
+    terms.read.credentials.sharing = true;
+    terms.read.credentials.shareAll = true;
+    expect(consentDisclosures(terms)).toEqual([
+        { id: 'read:Learning', direction: 'read', label: 'Learning', count: 1, detail: 'all' },
+    ]);
 });

@@ -39,6 +39,7 @@ public actor DemoConsumerAppService: ConsumerAppService {
         """)
     }
     public func consent(_ decision: ConsumerConsentDecision) throws {
+        if decision.anonymize { throw ConsumerAppError.unsupported }
         guard reviews.contains(decision.reviewID), decision.listingID == "sample-studio", decision.writeCategories.contains("Achievement") else { throw ConsumerAppError.changed }
         agreed = true; withdrawn = false
     }

@@ -230,6 +230,44 @@ export const materializeSelections = async (
     return result;
 };
 
+/** Reflect effective category switches and expiry; cached URIs alone do not grant access. */
+export const consentDisclosures = (terms: ConsentFlowTerms, now = Date.now()) => [
+    ...Object.entries(terms.read.credentials.categories)
+        .filter(
+            ([, x]) =>
+                terms.read.credentials.sharing !== false &&
+                x.sharing === true &&
+                (!x.shareUntil || Date.parse(x.shareUntil) > now)
+        )
+        .map(([key, x]) => ({
+            id: `read:${key}`,
+            direction: 'read',
+            label: key,
+            count: x.shared?.length ?? 0,
+            detail: x.shareAll || terms.read.credentials.shareAll ? 'all' : 'selected',
+        })),
+    ...Object.entries(terms.read.personal).map(([key, value]) => ({
+        id: `personal:${key}`,
+        direction: 'personal',
+        label: key,
+        detail: value,
+    })),
+    ...Object.entries(terms.write.credentials.categories)
+        .filter(([, x]) => x)
+        .map(([key]) => ({
+            id: `write:${key}`,
+            direction: 'write',
+            label: key,
+        })),
+    ...Object.entries(terms.write.personal)
+        .filter(([, x]) => x)
+        .map(([key]) => ({
+            id: `writePersonal:${key}`,
+            direction: 'writePersonal',
+            label: key,
+        })),
+];
+
 export const createConsumerCommands = (getWallet: () => ConsumerWallet | undefined) => {
     const wallet = () => {
         const value = getWallet();
@@ -366,7 +404,8 @@ export const createConsumerCommands = (getWallet: () => ConsumerWallet | undefin
                 readPersonal: permissions(contract.contract.read.personal),
                 writeCredentials: permissions(contract.contract.write.credentials.categories),
                 writePersonal: permissions(contract.contract.write.personal),
-                allowsAnonymous: Boolean(contract.contract.read.anonymize),
+                // This slice preserves full signed contents; it cannot promise anonymous disclosure.
+                allowsAnonymous: false,
                 blockReason,
             };
         },
@@ -403,8 +442,7 @@ export const createConsumerCommands = (getWallet: () => ConsumerWallet | undefin
                 Object.entries(input.personalValues).filter(([, value]) => value.trim())
             );
             check(fresh.contract.read.personal, Object.keys(personal));
-            if (input.anonymize && !fresh.contract.read.anonymize)
-                throw new ConsumerFailure('decision');
+            if (input.anonymize) throw new ConsumerFailure('unsupported');
             for (const [category, ids] of Object.entries(input.selectedCredentials)) {
                 if (
                     !input.readCategories.includes(category) ||
@@ -576,37 +614,7 @@ export const createConsumerCommands = (getWallet: () => ConsumerWallet | undefin
                     status: record.status,
                     recipients: audienceDTO(record.contract),
                     expiresAt: record.expiresAt,
-                    disclosures: [
-                        ...Object.entries(record.terms.read.credentials.categories)
-                            .filter(([, x]) => x.sharing || x.shared?.length)
-                            .map(([key, x]) => ({
-                                id: `read:${key}`,
-                                direction: 'read',
-                                label: key,
-                                count: x.shared?.length ?? 0,
-                                detail: x.shareAll ? 'all' : 'selected',
-                            })),
-                        ...Object.entries(record.terms.read.personal).map(([key, value]) => ({
-                            id: `personal:${key}`,
-                            direction: 'personal',
-                            label: key,
-                            detail: value,
-                        })),
-                        ...Object.entries(record.terms.write.credentials.categories)
-                            .filter(([, x]) => x)
-                            .map(([key]) => ({
-                                id: `write:${key}`,
-                                direction: 'write',
-                                label: key,
-                            })),
-                        ...Object.entries(record.terms.write.personal)
-                            .filter(([, x]) => x)
-                            .map(([key]) => ({
-                                id: `writePersonal:${key}`,
-                                direction: 'writePersonal',
-                                label: key,
-                            })),
-                    ],
+                    disclosures: consentDisclosures(record.terms),
                 })),
                 links: (links?.records ?? []).map(x => ({
                     id: x.id,

@@ -80,7 +80,6 @@ struct NativeConsentView: View {
                         if !review.writePersonal.isEmpty {
                             section("consent.writePersonal") { ForEach(review.writePersonal) { permission in permissionToggle(permission, enabled: membership(permission.id, in: $decision.writePersonal)) } }
                         }
-                        if review.allowsAnonymous { Toggle(NativeText.text("consent.anonymous"), isOn: $decision.anonymize).tint(Palette.selection).padding(20).background(Palette.surface, in: RoundedRectangle(cornerRadius: 20)) }
                     }
                     if let error = consumer.error { ConsumerErrorCard(error: error) {
                         if error == .changed {
