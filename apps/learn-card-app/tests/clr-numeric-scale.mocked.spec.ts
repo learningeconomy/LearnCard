@@ -1,4 +1,21 @@
 import { expect, test, type Locator } from '@playwright/test';
+import en from '../public/locales/en/translation.json';
+import ar from '../public/locales/ar/translation.json';
+
+const catalogs = { en, ar };
+
+// Assert the accessible name in the selected locale, including after a reload.
+const numericScaleName = (
+    locale: keyof typeof catalogs,
+    max: number,
+    value: number,
+    required: number
+): string =>
+    catalogs[locale].clrRenderer.numericScaleWithPassing
+        .replace('{{min}}', '0')
+        .replace('{{max}}', String(max))
+        .replace('{{value}}', String(value))
+        .replace('{{required}}', String(required));
 
 /** Check actual browser geometry: RTL must not reverse labels without reversing markers. */
 const expectNumericAxis = async (
@@ -37,7 +54,7 @@ test.describe('CLR numeric axes @mocked', () => {
         test.describe(`${viewport.width}px`, () => {
             test.use({ viewport });
 
-            for (const locale of ['en', 'ar']) {
+            for (const locale of ['en', 'ar'] as const) {
                 test(`keeps score markers aligned in ${locale}`, async ({ page }) => {
                     await page.goto('/dev/clr-transcript?insets=47,34');
                     await page.getByRole('combobox').selectOption(locale);
@@ -61,7 +78,7 @@ test.describe('CLR numeric axes @mocked', () => {
                     });
                     await expectNumericAxis(
                         modal.getByRole('img', {
-                            name: 'Numeric scale from 0 to 100; achieved 86; passing 70',
+                            name: numericScaleName(locale, 100, 86, 70),
                             exact: true,
                         }),
                         0,
@@ -83,7 +100,7 @@ test.describe('CLR numeric axes @mocked', () => {
                     await page.getByText('General — Training Provider', { exact: true }).click();
                     await expectNumericAxis(
                         page.getByRole('img', {
-                            name: 'Numeric scale from 0 to 40; achieved 36; passing 32',
+                            name: numericScaleName(locale, 40, 36, 32),
                             exact: true,
                         }),
                         0,
@@ -93,7 +110,7 @@ test.describe('CLR numeric axes @mocked', () => {
                     );
                     await expectNumericAxis(
                         page.getByRole('img', {
-                            name: 'Numeric scale from 0 to 100; achieved 86; passing 75',
+                            name: numericScaleName(locale, 100, 86, 75),
                             exact: true,
                         }),
                         0,
