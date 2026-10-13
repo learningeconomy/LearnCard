@@ -518,16 +518,17 @@ signatures, chain, nonce or freshness. It is not a production KMS substitute.
 
 ### KMS transport and credentials
 
-The SDK enables only `rt-tokio` and `default-https-client`, not its legacy
-`rustls` feature: hyper 1.x, rustls 0.23 and AWS-LC handle HTTPS. Certificate
-validation uses rustls-webpki with **native CA roots**, not bundled
-`webpki-roots`. Smithy loads these through `rustls-native-certs`, honoring
-`SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt` in the Dockerfile. Thus the
-Alpine CA bundle baked into the measured image remains the trust store (D11);
-local development uses the platform trust store unless explicitly overridden.
+The SDK enables only `rt-tokio`, with an explicit hyper 1/rustls 0.23/AWS-LC
+transport. `webpki-roots` are compiled into the measured binary; platform trust
+stores and `SSL_CERT_FILE` are not used, including in local development.
+Each KMS operation obtains fresh `TimeSource` evidence before network IO. TLS
+validates at both interval endpoints; SigV4 uses the midpoint. No system clock
+fallback, automatic retry, TLS resumption, or cross-operation connection reuse is
+allowed. Missing evidence fails closed, including at boot. See SECURITY.md's
+"AWS TLS and signing time" section for the Roughtime delayed-delivery limitation.
 
 `AwsKmsClient` (`kms` feature) requires explicit temporary parent STS credentials
-and a region; it never uses IMDS or an environment credential chain. Reconstruct
+and a region plus an enclave `TimeSource`; it never uses IMDS or an environment credential chain. Reconstruct
 the client with refreshed credentials per boot/request; never log these values.
 Its default endpoint is `https://kms.<region>.amazonaws.com:8000`.
 Linux Nitro startup validates the region and writes that exact hostname mapping

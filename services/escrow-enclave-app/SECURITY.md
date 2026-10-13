@@ -83,6 +83,48 @@ We are scrupulously honest about the limits of this system. The following table 
 
 ## KMS Key Policy Summary
 
+### AWS TLS and signing time (authority foundations)
+
+The existing KMS client now obtains fresh enclave-verified `TimeSource` evidence
+before each Decrypt or GenerateDataKey operation. Production supplies the compiled
+Roughtime quorum; unavailable or malformed intervals fail before AWS network IO.
+This hardens existing boot/unsealing, not enrollment authorization:
+`UnavailableEnrollment` remains wired, and authority/email clients are not active.
+Boot now also requires available Roughtime evidence for KMS access.
+
+The previous SDK-default HTTPS transport used rustls's system clock and native
+roots from the Alpine CA bundle baked into the EIF. The replacement uses a narrow
+hyper 1/rustls adapter because the locked Smithy HTTPS builder does not expose a
+custom rustls configuration/time provider. Mozilla roots from `webpki-roots` are
+compiled into the binary and pinned by Cargo.lock; neither host CA files nor
+`SSL_CERT_FILE`/proxy environment variables select trust roots or transport.
+This is WebPKI trust plus the fixed regional AWS hostname, not AWS-only CA pinning.
+
+- Certificate chain/name validation runs at **both authenticated interval bounds**,
+  rounding the lower bound down and the upper bound up to whole seconds. TLS
+  handshake-signature verification remains rustls/WebPKI's standard implementation.
+- An explicit rustls time provider uses the same sample, with no wall-clock fallback.
+  SigV4 uses the interval midpoint through the SDK's explicit time source.
+- Each operation creates a fresh SDK client and connection pool. TLS resumption,
+  early data, idle pooling, Hyper's cancelled-request retries and SDK retries are
+  disabled. SDK response-date clock-skew correction therefore cannot influence a
+  subsequent request. An unknown GenerateDataKey outcome is not automatically retried.
+- Only HTTPS to the configured regional authority is accepted. Redirects are not
+  followed. Responses are bounded to 1 MiB, with a 15-second whole-exchange deadline;
+  local timers bound resource use, not trusted elapsed time.
+
+**Limit:** Roughtime authenticates server processing time, not a receipt-time upper
+bound. A host that delays a live response or suspends execution can make the sample
+old before the handshake or request completes. Fresh nonces, disabled reuse and
+timeouts do not prove real-time freshness against suspension. Certificate checks
+cover the signed interval, not a proven current wall-clock interval; a compromised
+certificate key valid then is not ruled out solely because the certificate has
+expired by receipt. AWS's own SigV4 time window can reject delayed requests, but is
+not an enclave-authenticated elapsed-time guarantee. No revocation/OCSP freshness
+guarantee is added. D2, D3, D11 and D13 remain applicable.
+
+### Escrow CMK policy
+
 The AWS KMS Customer Master Key (CMK) policy (`infra/escrow-enclave/kms.tf`) is the primary security boundary enforcing attestation.
 
 - **Per-Tuple PCR Statements:** `kms:GenerateDataKey` and `kms:Decrypt` are granted via individual statements for each approved measurement tuple (PCR0, PCR1, PCR2). Conditions use `StringEqualsIgnoreCase` and require all three PCRs to match simultaneously.
