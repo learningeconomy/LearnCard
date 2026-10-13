@@ -49,9 +49,9 @@ const BoostEarnedIDListAlternative: React.FC<BoostEarnedIDListProps> = ({
         records?.map((record, index) => {
             return (
                 <BoostEarnedIDCard
-                    key={record?.id || index}
+                    key={record.uri || record.vc.id || index}
                     uri={record?.uri}
-                    credential={record}
+                    credential={record.vc}
                     defaultImg={defaultImg}
                     categoryType={category}
                     boostPageViewMode={viewMode}
@@ -64,7 +64,7 @@ const BoostEarnedIDListAlternative: React.FC<BoostEarnedIDListProps> = ({
         try {
             await earnedBoostsRefetch?.();
         } catch (e) {
-            throw new Error('There was an error, please try again.');
+            throw new Error('There was an error, please try again.', { cause: e });
         }
     };
 

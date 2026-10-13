@@ -26,11 +26,13 @@ const BulkBoostParentSelectorModal: React.FC<BulkBoostParentSelectorModalProps> 
     const { data: earnedBoostIDs, isLoading } = useGetIDs();
 
     const nationalNetworkIds =
-        earnedBoostIDs?.filter(
-            cred =>
-                getDefaultCategoryForCredential(cred) ===
-                CredentialCategoryEnum.nationalNetworkAdminId
-        ) ?? [];
+        earnedBoostIDs
+            ?.map(({ vc }) => vc)
+            .filter(
+                cred =>
+                    getDefaultCategoryForCredential(cred) ===
+                    CredentialCategoryEnum.nationalNetworkAdminId
+            ) ?? [];
 
     return (
         <div className="flex items-center justify-center py-[20px]">
@@ -61,7 +63,7 @@ const BulkBoostParentSelectorModal: React.FC<BulkBoostParentSelectorModalProps> 
 type NetworkItemProps = {
     networkUri: string;
     isSelected: boolean;
-    onClick: () => {};
+    onClick: () => void;
 };
 
 const NetworkItem: React.FC<NetworkItemProps> = ({ networkUri, isSelected, onClick }) => {
