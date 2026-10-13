@@ -275,8 +275,8 @@ const buildFakeVerifier = (
                     resolved.body === undefined
                         ? ''
                         : typeof resolved.body === 'string'
-                        ? resolved.body
-                        : JSON.stringify(resolved.body);
+                          ? resolved.body
+                          : JSON.stringify(resolved.body);
 
                 return makeResponse(
                     resolved.status,
@@ -314,7 +314,7 @@ const makeResponse = (status: number, body: string, contentType: string): Respon
         headers: new Headers({ 'content-type': contentType }),
         text: async () => body,
         json: async () => JSON.parse(body),
-    } as Response);
+    }) as Response;
 
 const looksLikeJws = (s: string): boolean =>
     /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(s);
@@ -526,7 +526,7 @@ describe('OpenID4VC plugin — presentCredentials end-to-end', () => {
         });
     });
 
-    it('bubbles verifier rejection as VpSubmitError with status + body', async () => {
+    it('bubbles verifier rejection as VpSubmitError without exposing the response body', async () => {
         const mock = await buildMockLearnCard();
         const verifier = buildFakeVerifier();
         const plugin = getPlugin(mock, verifier.fetchImpl);
@@ -562,10 +562,9 @@ describe('OpenID4VC plugin — presentCredentials end-to-end', () => {
         const err = thrown as VpSubmitError;
         expect(err.code).toBe('server_error');
         expect(err.status).toBe(400);
-        expect(err.body).toEqual({
-            error: 'invalid_presentation',
-            error_description: 'nonce mismatch',
-        });
+        expect(err.message).toBe('Verifier returned HTTP 400');
+        expect(err.body).toBeUndefined();
+        expect(err.cause).toBeUndefined();
     });
 
     it('throws BuildPresentationError when a pick references an unknown descriptor', async () => {
