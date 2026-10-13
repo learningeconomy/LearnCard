@@ -196,3 +196,7 @@ The browser uses a separate nonpersistent WKWebView and a bundled local parent w
 Apple String Catalog is the native translation source. Generated .strings/.stringsdict resources also support SwiftPM tests. English, Spanish, French and Arabic cover new Apps/consent/Data Sharing/browser/language UI and selected existing shell labels, with pluralization and RTL. Paraglide remains in the web/JavaScript layer. Existing credential-builder, recovery and dashboard copy still needs a complete localization audit; translation coverage is not represented as complete.
 
 Follow-ups: native AI career Pathways (confirmed by the user, not Journeys); separate Families/guardian navigation and approval; separate AI Sessions/native learner-context synchronization; web-only résumé builder; continued visual review; full existing-screen localization and translation review. Keep admin/developer/publisher tools out of the consumer client.
+
+## Manual review pause — 2026-10-13
+
+The consumer Apps slice is pushed through implementation commit `10141da12`, with full native CI passing. The latest build is installed on LearnCard Native Lab. The user requested documentation/memory synchronization and a pause to review manually. Resume with their feedback; do not start Pathways or another design phase automatically. [STATUS.md](STATUS.md) is the current handoff, including evidence, review entry points and live-validation gaps.

@@ -2,6 +2,8 @@
 
 An independent personal credential app: SwiftUI on iOS first, Kotlin and Jetpack Compose on Android after the credential and account contracts are proven. It focuses on collecting, receiving, creating, claiming, sending, and sharing credentials. The user approved fully native clients on October 12, 2026.
 
+**Current handoff:** [STATUS.md](STATUS.md) records the installed review build, passing CI, manual review areas and remaining scope. Iteration is paused for the user's manual review as of October 13, 2026.
+
 The default app now connects to the approved staging test account through native Firebase email-code sign-in, the existing SSS recovery flow, and device-bound Keychain storage. Existing-account recovery, profile loading, the first 30 encrypted collection records, incoming offers, and relaunch have been confirmed live. See [account integration](ACCOUNT_INTEGRATION.md) for evidence and remaining cases.
 
 Run with `--demo` for **unsigned, in-memory sample content**. Samples reset on restart; sample sending records local activity and delivers no messages. The native redesign uses actual credential artwork, neutral light/dark canvases, colorful layered cards, round artwork windows, and reduced-motion-aware card transitions. The main destinations are Collection, Inbox, Apps, and Home. Apps now has native catalog discovery, installation, app details, agreement review and an in-app browser. Profile Data Sharing is native too; see [APPS_INTEGRATION.md](APPS_INTEGRATION.md) for support boundaries and follow-ups. Home is a streamlined dashboard with arrivals, creation, and session activity.
