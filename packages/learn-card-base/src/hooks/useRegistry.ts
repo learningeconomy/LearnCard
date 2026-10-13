@@ -77,12 +77,18 @@ export const useTrustedAppsRegistry = (profileId?: string) => {
 export const useKnownDIDRegistry = (profileId?: string) => {
     return useQuery({
         queryKey: ['knownDidRegistry', profileId],
-        staleTime: 60 * 60 * 1000,
+        // Incomplete results get 60s freshness; conclusive results get 1 hour
+        staleTime: query =>
+            (query.state.data as { incomplete?: boolean } | undefined)?.incomplete
+                ? 60_000
+                : 60 * 60 * 1000,
         gcTime: 60 * 60 * 1000,
         enabled: !!profileId,
+        // Limit retries for catalogue fetch failures to avoid retry storms
+        retry: 1,
         queryFn: async () => {
             if (!profileId) {
-                return { source: 'unknown' as const, results: {} };
+                return { source: 'unknown' as const, results: {}, incomplete: false };
             }
 
             const trustedRegistryClient = new RegistryClient();
@@ -122,41 +128,33 @@ export const useKnownDIDRegistry = (profileId?: string) => {
 
             const trustedUncheckedCount = trustedResults?.uncheckedRegistries?.length ?? 0;
             const untrustedUncheckedCount = untrustedResults?.uncheckedRegistries?.length ?? 0;
+            const totalUncheckedCount = trustedUncheckedCount + untrustedUncheckedCount;
 
             // Trusted match is conclusive — return immediately
             if (trustedResults?.matchingIssuers.length > 0) {
                 return {
                     source: 'trusted' as const,
                     results: trustedResults,
+                    incomplete: false,
                 };
             }
 
-            // Before accepting an untrusted match, ensure trusted lookup was complete.
-            // A DID may exist in both registries; if trusted registries failed, we can't
-            // be certain this isn't a trusted issuer, so retry rather than cache "untrusted".
+            // Return untrusted match even if trusted lookup was incomplete.
+            // This keeps the "untrusted" warning visible (safety) while flagging
+            // the result for re-check within 60 seconds.
             if (untrustedResults?.matchingIssuers.length > 0) {
-                if (trustedUncheckedCount > 0) {
-                    throw new Error(
-                        `Registry lookup inconclusive: ${trustedUncheckedCount} trusted registries could not be checked`
-                    );
-                }
                 return {
                     source: 'untrusted' as const,
                     results: untrustedResults,
+                    incomplete: trustedUncheckedCount > 0,
                 };
             }
 
-            // No matches found — ensure all registries were checked before caching "unknown"
-            const totalUncheckedCount = trustedUncheckedCount + untrustedUncheckedCount;
-            if (totalUncheckedCount > 0) {
-                throw new Error(
-                    `Registry lookup inconclusive: ${totalUncheckedCount} registries could not be checked`
-                );
-            }
-
+            // No matches found — flag as incomplete if any registries couldn't be checked
             return {
                 source: 'unknown' as const,
                 results: {},
+                incomplete: totalUncheckedCount > 0,
             };
         },
     });
