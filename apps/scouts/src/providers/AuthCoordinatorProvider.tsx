@@ -374,6 +374,8 @@ const AuthSessionManager: React.FC<{
     const [lcnProfileLoading, setLcnProfileLoading] = useState(false);
 
     const walletInitRef = useRef(false);
+    const walletInitGenerationRef = useRef(0);
+    const walletInitIdentityRef = useRef<string | null>(null);
 
     // Delay showing the stalled-migration overlay so the async Web3Auth
     // extraction has time to complete before we flash the "stalled" UI.
@@ -709,7 +711,23 @@ const AuthSessionManager: React.FC<{
     const walletAuthStateRef = useRef(coordinator.state);
     useEffect(() => {
         walletAuthStateRef.current = coordinator.state;
+        const identity = coordinator.state.status === 'ready' ? coordinator.state.privateKey : null;
+        if (walletInitIdentityRef.current !== identity) {
+            walletInitIdentityRef.current = identity;
+            // Invalidate pending work even if it has not published a wallet yet.
+            // Generation ownership also prevents an old failure resetting a new init.
+            walletInitGenerationRef.current += 1;
+            walletInitRef.current = false;
+        }
     }, [coordinator.state]);
+    useEffect(
+        () => () => {
+            walletInitGenerationRef.current += 1;
+            walletInitRef.current = false;
+            walletInitIdentityRef.current = null;
+        },
+        []
+    );
 
     useEffect(() => {
         if (coordinator.state.status !== 'ready' || walletInitRef.current) return;
@@ -718,9 +736,14 @@ const AuthSessionManager: React.FC<{
         if (showEmailLinkGate) return;
 
         const { privateKey, did } = coordinator.state;
+        const generation = ++walletInitGenerationRef.current;
         const isStale = (): boolean => {
             const latest = walletAuthStateRef.current;
-            return latest.status !== 'ready' || latest.privateKey !== privateKey;
+            return (
+                walletInitGenerationRef.current !== generation ||
+                latest.status !== 'ready' ||
+                latest.privateKey !== privateKey
+            );
         };
 
         walletInitRef.current = true;
@@ -732,6 +755,7 @@ const AuthSessionManager: React.FC<{
 
                 if (!newWallet) {
                     log.error('Failed to initialize wallet from private key');
+                    walletInitRef.current = false;
                     return;
                 }
 
@@ -804,7 +828,7 @@ const AuthSessionManager: React.FC<{
                             status?.maskedRecoveryEmail
                         );
 
-                        if (readId !== recoveryMethodReadRef.current) return;
+                        if (isStale() || readId !== recoveryMethodReadRef.current) return;
                         setRecoveryMethodCount(userConfiguredCount);
 
                         // Show recovery setup modal only on public computers
@@ -820,7 +844,7 @@ const AuthSessionManager: React.FC<{
                 }
             } catch (e) {
                 log.error('Wallet initialization failed', e);
-                walletInitRef.current = false;
+                if (!isStale()) walletInitRef.current = false;
             }
         };
 
@@ -834,7 +858,6 @@ const AuthSessionManager: React.FC<{
             setLcnProfile(null);
             setRecoveryMethodCount(null);
             recoveryMethodReadRef.current += 1;
-            walletInitRef.current = false;
             walletModeStore.set.mode(null);
         }
     }, [coordinator.state.status, wallet]);
