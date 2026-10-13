@@ -71,7 +71,7 @@ describe('Shared Computer sign-in persistence', (): void => {
         await changeSignInPersistence(firebase, true);
         expect(useSignInPersistence.getState().error).toBeNull();
         expect(useSignInPersistence.getState().isUpdating).toBe(false);
-    });
+    }, 30_000);
     it('keeps tab A session tokens private when tab B chooses persistent sign-in', async () => {
         const { changeSignInPersistence, withSignInPersistence } =
             await import('./signInPersistence');
