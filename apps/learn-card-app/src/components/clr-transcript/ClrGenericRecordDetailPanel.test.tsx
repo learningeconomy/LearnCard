@@ -1,7 +1,10 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { normalizeClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
+import {
+    inferClrLayout,
+    normalizeClrTranscriptDisplayModel,
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 import { setLocale } from '../../paraglide/runtime.js';
 import * as m from '../../paraglide/messages.js';
 import ClrGenericRecordDetailPanel from './ClrGenericRecordDetailPanel';
@@ -50,6 +53,59 @@ beforeEach(() => setLocale('en', { reload: false }));
 afterEach(() => setLocale('en', { reload: false }));
 
 describe('generic CLR record details', () => {
+    it.each([
+        ['Military Training Record', 'military'],
+        ['Westbridge University – Fall 2025', 'general'],
+    ])('preserves course codes and credit quantities in %s', (name, layout) => {
+        const model = normalizeClrTranscriptDisplayModel({
+            type: ['ClrCredential'],
+            name,
+            credentialSubject: {
+                verifiableCredential: [
+                    {
+                        credentialSubject: {
+                            creditsEarned: 0,
+                            creditUnit: 'ECTS',
+                            achievement: {
+                                achievementType: 'Course',
+                                name: 'Field Training',
+                                humanCode: 'FT-101',
+                                creditsAvailable: 4,
+                                creditUnit: 'training hours',
+                            },
+                        },
+                    },
+                ],
+            },
+        });
+        expect(inferClrLayout(model.canonical).kind).toBe(layout);
+        render(<ClrGenericRecordDetailPanel model={model} record={model.courses[0]} />);
+        expect(screen.getByText('FT-101')).toBeInTheDocument();
+        expect(screen.getByText('0 ECTS earned')).toBeInTheDocument();
+        expect(screen.getByText('4 training hours available')).toBeInTheDocument();
+        expect(screen.queryByLabelText('Earned credits not supplied')).not.toBeInTheDocument();
+    });
+
+    it('keeps missing earned credits unknown when only available credits are supplied', () => {
+        const model = normalizeClrTranscriptDisplayModel({
+            type: ['ClrCredential'],
+            credentialSubject: {
+                achievement: [
+                    {
+                        achievementType: 'Course',
+                        name: 'Training',
+                        creditsAvailable: 3,
+                        creditUnit: 'ECTS',
+                    },
+                ],
+            },
+        });
+        render(<ClrGenericRecordDetailPanel model={model} record={model.courses[0]} />);
+        expect(screen.getByText('3 ECTS available')).toBeInTheDocument();
+        expect(screen.getByLabelText('Earned credits not supplied')).toHaveTextContent('Earned —');
+        expect(screen.queryByText('0 earned')).not.toBeInTheDocument();
+    });
+
     it('preserves identities, renders mixed-record alignments and navigates to the associated qualification', () => {
         const model = normalizeClrTranscriptDisplayModel(credential);
         const select = vi.fn();
