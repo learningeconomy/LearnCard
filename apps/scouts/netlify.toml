@@ -9,6 +9,7 @@ SKIP_DIDKIT_NAPI = "1"
 [build]
 command = "bunx nx build scouts --skip-nx-cache"
 publish = "build/"
+edge_functions = "netlify/edge-functions"
 
 # Netlify Deploy Preview (still built by Netlify's git integration for PRs)
 [context.deploy-preview]

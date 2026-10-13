@@ -1,23 +1,17 @@
-import serverlessHttp from 'serverless-http';
-import * as Sentry from '@sentry/serverless';
+import { bootstrapLambda } from '@learncard/service-config';
 
-import oidcApp from './src/oidc';
-import { environment } from './src/config/environment';
-import { toServerlessApplication } from './src/helpers/serverlessApplication';
+import { base, stages } from './src/config/stageConfig';
 
-Sentry.AWSLambda.init({
-    dsn: environment.SENTRY_DSN,
-    environment: environment.SENTRY_ENV,
-    enabled: Boolean(environment.SENTRY_DSN),
-    tracesSampleRate: 1.0,
-    integrations: [
-        new Sentry.Integrations.Console(),
-        new Sentry.Integrations.Http(),
-        new Sentry.Integrations.ContextLines(),
-        new Sentry.Integrations.Mongo(),
-    ],
+type OidcApp = typeof import('./oidcLambdaApp');
+
+const getApplication = bootstrapLambda<OidcApp>({
+    base,
+    stages,
+    stage: process.env.AWS_LAMBDA_FUNCTION_NAME
+        ? process.env.LAMBDA_STAGE
+        : process.env.CONFIG_STAGE,
+    importApp: () => import('./oidcLambdaApp'),
 });
 
-export const oidcHandler = Sentry.AWSLambda.wrapHandler(
-    serverlessHttp(toServerlessApplication(oidcApp))
-);
+export const oidcHandler = async (...args: Parameters<OidcApp['oidcHandler']>) =>
+    (await getApplication()).oidcHandler(...args);
