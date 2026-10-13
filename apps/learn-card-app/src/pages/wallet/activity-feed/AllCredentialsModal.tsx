@@ -11,9 +11,7 @@ export const AllCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose
     const { data, isPending, isFetching, hasNextPage, fetchNextPage } =
         useGetCredentialList(undefined);
     const sentinelRef = useRef<HTMLDivElement>(null);
-    // useOnScreen's legacy type omits null even though its implementation guards current.
-    const observerRef = sentinelRef as React.MutableRefObject<HTMLDivElement>;
-    const onScreen = useOnScreen(observerRef, '300px', [data?.pages?.length]);
+    const onScreen = useOnScreen(sentinelRef, '300px', [data?.pages?.length]);
 
     useEffect(() => {
         if (onScreen && hasNextPage) fetchNextPage();

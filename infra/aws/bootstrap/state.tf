@@ -95,6 +95,30 @@ resource "aws_s3_bucket_policy" "state" {
 resource "aws_s3_bucket_lifecycle_configuration" "state" {
   bucket     = aws_s3_bucket.state.id
   depends_on = [aws_s3_bucket_versioning.state]
+  # S3 lifecycle prefixes are literal, not wildcard patterns. Scope to this env.
+  rule {
+    id     = "expire-private-diagnostics-after-30-days"
+    status = "Enabled"
+    filter {
+      prefix = "keycloak/${var.environment}/diagnostics/"
+    }
+    expiration {
+      days = 30
+    }
+    noncurrent_version_expiration {
+      noncurrent_days = 30
+    }
+  }
+  rule {
+    id     = "remove-private-diagnostics-delete-markers"
+    status = "Enabled"
+    filter {
+      prefix = "keycloak/${var.environment}/diagnostics/"
+    }
+    expiration {
+      expired_object_delete_marker = true
+    }
+  }
   rule {
     id     = "expire-noncurrent-state-after-90-days"
     status = "Enabled"

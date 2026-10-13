@@ -32,6 +32,7 @@ describe('CLR canonical normalization corpus', () => {
             'clr/professional-organization-record',
             'clr/licensing-regulatory-record',
             'clr/mixed-career-record',
+            'clr/mixed-role-portfolio',
         ]);
         for (const fixture of clrFixtures) {
             const model = normalizeClrTranscriptDisplayModel(
@@ -91,7 +92,7 @@ describe('CLR canonical normalization corpus', () => {
         let resultCount = 0;
         let associationCount = 0;
 
-        expect(clrFixtures).toHaveLength(18);
+        expect(clrFixtures).toHaveLength(19);
 
         for (const fixture of clrFixtures) {
             const credential = fixture.credential as unknown as Record<string, unknown>;
@@ -116,10 +117,10 @@ describe('CLR canonical normalization corpus', () => {
             associationCount += model.canonical.associations.length;
         }
 
-        expect(embeddedCount).toBe(214);
+        expect(embeddedCount).toBe(217);
         expect(definitionOnlyCount).toBe(6);
-        expect(resultCount).toBe(281);
-        expect(associationCount).toBe(183);
+        expect(resultCount).toBe(284);
+        expect(associationCount).toBe(185);
     });
 
     it('retains status-only, rubric-level-only, and unresolved result references', () => {
@@ -131,8 +132,8 @@ describe('CLR canonical normalization corpus', () => {
         const results = models.flatMap(model => model.records.flatMap(record => record.results));
         const warnings = models.flatMap(model => model.canonical.warnings);
 
-        expect(results.filter(result => result.status && !result.value)).toHaveLength(19);
-        expect(results.filter(result => result.achievedLevelId && !result.value)).toHaveLength(4);
+        expect(results.filter(result => result.status && !result.value)).toHaveLength(20);
+        expect(results.filter(result => result.achievedLevelId && !result.value)).toHaveLength(5);
         expect(
             warnings.filter(warning => warning.code === 'UNRESOLVED_RESULT_DESCRIPTION')
         ).toHaveLength(6);

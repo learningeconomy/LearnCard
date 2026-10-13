@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 
 import type { CredentialFixture } from '@learncard/credential-library';
-import { prepareFixture } from '@learncard/credential-library';
+import { prepareViewerFixture } from '../lib/prepare';
 
 import { Badge } from './Badge';
 import { SPEC_LABELS, SPEC_COLORS } from '../lib/colors';
@@ -33,6 +33,7 @@ export const SendPanel: React.FC<SendPanelProps> = ({ fixtures, onClose }) => {
         results: [],
     });
     const [progress, setProgress] = useState(0);
+    const [keepFixtureDates, setKeepFixtureDates] = useState(false);
 
     const isBulk = fixtures.length > 1;
 
@@ -52,16 +53,16 @@ export const SendPanel: React.FC<SendPanelProps> = ({ fixtures, onClose }) => {
             const fixture = fixtures[i];
 
             try {
-                const prepared = prepareFixture(fixture, {
-                    issuerDid: did,
-                    subjectDid: recipient.trim(),
-                });
+                const prepared = prepareViewerFixture(
+                    fixture,
+                    { issuerDid: did, subjectDid: recipient.trim() },
+                    keepFixtureDates
+                );
 
                 const res = await send({
                     recipient: recipient.trim(),
                     credential: prepared as Record<string, unknown>,
                     name: fixture.name,
-                    category: 'Achievement',
                 });
 
                 results.push(res);
@@ -78,7 +79,7 @@ export const SendPanel: React.FC<SendPanelProps> = ({ fixtures, onClose }) => {
 
         setResult({ succeeded, failed, errors, results });
         setStep(failed > 0 && succeeded === 0 ? 'error' : 'success');
-    }, [recipient, did, fixtures, send]);
+    }, [recipient, did, fixtures, send, keepFixtureDates]);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -172,7 +173,21 @@ export const SendPanel: React.FC<SendPanelProps> = ({ fixtures, onClose }) => {
                                     Recipient type is auto-detected. Creates a boost on-the-fly and
                                     sends it.
                                 </p>
+                                <p className="mt-1 text-xs text-emerald-400">
+                                    Each credential uses its detected category, including
+                                    Qualifications.
+                                </p>
                             </div>
+
+                            <label className="flex items-center gap-2 text-xs text-gray-300">
+                                <input
+                                    type="checkbox"
+                                    checked={keepFixtureDates}
+                                    onChange={event => setKeepFixtureDates(event.target.checked)}
+                                    className="accent-emerald-600"
+                                />
+                                Keep fixture dates (including expired credentials)
+                            </label>
 
                             <button
                                 onClick={handleSend}

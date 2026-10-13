@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import type { ModalInstanceToken } from 'learn-card-base/components/modals/types/Modals';
 import { useHistory } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { getLogger } from 'learn-card-base';
@@ -691,11 +692,15 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     }
 
     const handleSwitchAccountsClick = () => {
-        newModal(
+        const modalRef: { token?: ModalInstanceToken } = {};
+        modalRef.token = newModalWithToken(
             <AccountSwitcherModal
                 showServiceProfiles
                 containerClassName="max-h-[65vh]"
                 showStepsFooter
+                onSwitchComplete={() => {
+                    if (modalRef.token) forceCloseModalByToken(modalRef.token);
+                }}
             />,
             {
                 sectionClassName: '!bg-transparent !border-none !shadow-none !max-w-[400px]',

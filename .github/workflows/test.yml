@@ -30,6 +30,18 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
+            # The escrow Rust crates share one pinned toolchain; installing it here
+            # stops nx's parallel `cargo test` runs racing to install it.
+            - name: Install pinned Rust toolchain
+              working-directory: services/escrow-enclave-app
+              run: rustup toolchain install
+
+            - name: Authenticate Docker Hub pulls
+              uses: ./.github/actions/dockerhub-login
+              with:
+                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+
             - name: Run tests
               uses: nick-fields/retry@v2
               with:
@@ -65,6 +77,12 @@ jobs:
             - name: Checkout repository
               uses: actions/checkout@v7
 
+            - name: Set up AI Agent Node LTS
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: services/learn-card-network/ai-agent/.nvmrc
+                  package-manager-cache: false
+
             - name: Use composite setup action
               uses: ./.github/actions/setup
 
@@ -77,6 +95,12 @@ jobs:
 
             - name: Run AI Agent tests
               run: bun run --cwd services/learn-card-network/ai-agent test -- run
+
+            - name: Verify feed with real DIDKit WASM
+              run: bun run --cwd services/learn-card-network/ai-agent smoke:feed-wasm
+
+            - name: Verify private Sentry telemetry
+              run: bun run --cwd services/learn-card-network/ai-agent smoke:sentry
 
             - name: Build AI Agent
               run: bun run --cwd services/learn-card-network/ai-agent build
@@ -93,6 +117,11 @@ jobs:
                   ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
                   fetch-depth: 0
             - uses: ./.github/actions/setup
+            - name: Authenticate Docker Hub pulls
+              uses: ./.github/actions/dockerhub-login
+              with:
+                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
             - name: Test inbox security and queued issuance with Neo4j, Redis, and SQS
               run: bunx nx run network-brain-service:test:inbox:e2e
 

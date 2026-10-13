@@ -18,7 +18,7 @@ export const AdminToolsFamilySelectorButton: React.FC<{
         >
     >;
     families: VC[];
-    selectedFamily: VC | undefined;
+    selectedFamily: { name: string; picture: string; uri: string } | undefined;
 }> = ({ setSelectedFamily, families, selectedFamily }) => {
     const { newModal } = useModal({
         desktop: ModalTypes.Cancel,

@@ -52,7 +52,7 @@ Inspection uses curated metadata, never implementation source or default paramet
 1. Start with `inspect` if you do not already know the method path or argument order.
 2. Inspect the exact function before credential creation, issuance, or delivery.
 3. Use the smallest method that answers the request.
-4. If a write call fails, read the structured error payload before retrying. It includes `method`, `argsSummary`, `underlyingError`, `knownUsage`, and `failureHints` when available.
+4. If a write call fails, inspect the method's signature and failure hints before retrying.
 5. Summarize results in user-friendly language instead of dumping raw JSON.
 
 For large namespaces, include `query` instead of inspecting everything. For example, use query `"profile"` when looking for profile methods.
@@ -236,30 +236,9 @@ Signing authorities must be configured by an operator outside this tool. Creatin
 
 ## Failure Diagnostics
 
-Failed wallet calls return a bounded diagnostic payload as the tool error string. Treat `underlyingError` as the most important field once you have already followed the documented method signature.
+Failed wallet calls return the fixed tool error `Wallet method call failed.` Backend payloads, arbitrary error fields, and raw stack previews are not sent to the model. Operational telemetry retains only the original cause's approved, sanitized diagnostics and hashed frame identifiers.
 
-Example shape:
-
-```json
-{
-    "error": "Wallet method call failed",
-    "method": "invoke.sendBoost",
-    "argsSummary": ["taylor", "lc:network:localhost%3A4000/trpc:boost:example"],
-    "underlyingError": {
-        "name": "Error",
-        "message": "Target profile not found",
-        "cause": {
-            "message": "Network route rejected the request"
-        }
-    },
-    "knownUsage": "sendBoost(profileId, boostUri, options?)",
-    "failureHints": [
-        "Usage: sendBoost(profileId, boostUri, options?). Put the profile ID first and the Boost URI second."
-    ]
-}
-```
-
-Do not keep retrying the same write call when `argsSummary` and `knownUsage` show the call shape is already correct. Use `underlyingError.message`, `code`, `statusCode`, `data`, `issues`, or `cause` to decide whether the next step is permissions, credential validation, signing authority setup, recipient lookup, or user action.
+Inspect the exact method for argument order, preconditions, and failure hints. Do not keep retrying an unchanged write call after checking its shape. If the prerequisite or cause remains unknown, report the failed operation and ask for operator help rather than inferring a permission or validation failure.
 
 ## Available Namespaces
 

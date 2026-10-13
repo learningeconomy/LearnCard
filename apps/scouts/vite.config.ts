@@ -14,6 +14,7 @@ import type { Plugin as EsbuildPlugin } from 'esbuild';
 
 import { findDuplicateMessageImports } from './scripts/check-i18n-imports.mjs';
 import { paraglideMissingKeyOnWarn } from './paraglideOnWarn';
+import { scoutNewsDevServer } from './scripts/scoutNewsDevServer';
 import { parseScoutsEnvironment } from './src/config/buildEnvironment';
 import { deepMerge } from '../../packages/learn-card-base/src/config/deepMerge';
 import productionTenantConfig from './environments/scoutpass/config.json';
@@ -80,10 +81,19 @@ export default defineConfig(({ mode, command }) => {
         productionTenantConfig as Record<string, unknown>,
         stageTenantConfig as Record<string, unknown>
     );
+    // Same three-way split as stageTenantConfig above, expressed as the schema-validated
+    // `stage` field so runtime code (e.g. the escrow software-enclave guard in
+    // authConfig.ts) can tell a staging deploy apart from production.
+    tenantOverrides.stage = environment.VITE_NODE_ENV.startsWith('staging')
+        ? 'staging'
+        : environment.VITE_NODE_ENV.startsWith('development')
+          ? 'local'
+          : 'production';
 
     return {
         cacheDir,
         plugins: [
+            scoutNewsDevServer(),
             i18nImportGuard(),
             react(),
             svgr(),

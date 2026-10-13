@@ -960,6 +960,47 @@ describe('Consent Flow Contracts', () => {
             expect(data.records[0]?.terms).toEqual(normalFullTerms);
         });
 
+        it('does not require guardian approval for managed service profiles, but does for managed children', async () => {
+            await Profile.relateTo({
+                alias: 'managedBy',
+                where: { source: { profileId: 'userb' }, target: { profileId: 'userc' } },
+            });
+
+            const managedChildData = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            expect(managedChildData.records[0]?.guardian.required).toBe(true);
+
+            await Profile.update({ isServiceProfile: true }, { where: { profileId: 'userb' } });
+            const serviceProfileData =
+                await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                    did: userBDid,
+                });
+            expect(serviceProfileData.records[0]?.guardian).toEqual({
+                required: false,
+                approved: false,
+            });
+        });
+
+        it('keeps guardian approval required for legacy service-flagged children', async () => {
+            await Profile.relateTo({
+                alias: 'managedBy',
+                where: { source: { profileId: 'userb' }, target: { profileId: 'userc' } },
+            });
+            await Profile.update(
+                { type: 'child', isServiceProfile: true },
+                { where: { profileId: 'userb' } }
+            );
+
+            const data = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            expect(data.records[0]?.guardian).toEqual({
+                required: true,
+                approved: false,
+            });
+        });
+
         it('should omit withdrawn consent before returning provider-facing data', async () => {
             const activeData = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
                 did: userBDid,
@@ -1162,6 +1203,17 @@ describe('Consent Flow Contracts', () => {
                 approved: true,
                 approval,
             });
+            await Profile.update({ isServiceProfile: true }, { where: { profileId: 'userb' } });
+            const serviceProfileWithApproval =
+                await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                    did: userBDid,
+                });
+            expect(serviceProfileWithApproval.records[0]?.guardian).toEqual({
+                required: true,
+                approved: true,
+                approval,
+            });
+
             const current = (await getContractTermsByUri(approved.records[0]!.termsUri))!;
             expect(current.terms.guardianApproval).toEqual(approval);
             const transactions = await getTransactionsForTerms(current.terms.id, { limit: 10 });

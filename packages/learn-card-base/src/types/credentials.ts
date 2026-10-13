@@ -39,6 +39,7 @@ import { AchievementCredential, VC } from '@learncard/types';
 export const CREDENTIAL_CATEGORIES = [
     'Social Badge',
     'Achievement',
+    'Qualifications',
     'Course', // not in the above enum (CredentialCategoryEnum)
     'Skill',
     'ID',

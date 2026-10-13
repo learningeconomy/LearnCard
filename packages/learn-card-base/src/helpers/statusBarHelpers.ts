@@ -32,6 +32,8 @@ export const getStatusBarColor = (
         return 'light';
     } else if (path === '/achievements') {
         return 'pink-400';
+    } else if (path === '/qualifications') {
+        return 'orange-400';
     } else if (path === '/currencies' || path === '/socialBadges') {
         return 'blue-400';
     } else if (path === '/ids') {

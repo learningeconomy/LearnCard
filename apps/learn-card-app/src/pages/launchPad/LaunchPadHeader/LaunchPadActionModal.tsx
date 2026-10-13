@@ -1,3 +1,4 @@
+import type { ModalInstanceToken } from 'learn-card-base/components/modals/types/Modals';
 import React, { useState, useEffect } from 'react';
 import moment from 'moment';
 import { useHistory } from 'react-router-dom';
@@ -216,7 +217,8 @@ const ActionButton: React.FC<{
     role?: string;
 }> = ({ label, bg, bgHex, textColor, borderColor, to, onClick, role }) => {
     const history = useHistory();
-    const { newModal, closeModal, closeAllModals } = useModal();
+    const { newModal, newModalWithToken, forceCloseModalByToken, closeModal, closeAllModals } =
+        useModal();
     const { checkAndPromptRecovery } = useBoostRecoveryCheck();
     const { theme, getIconSet } = useTheme();
     const brandingConfig = useBrandingConfig();
@@ -254,22 +256,35 @@ const ActionButton: React.FC<{
                 history.push('/families?createFamily=1');
                 closeModal();
                 return;
-            case 'Switch Child':
+            case 'Switch Child': {
                 closeModal();
-                newModal(
-                    <AccountSwitcherModal />,
+                const modalRef: { token?: ModalInstanceToken } = {};
+                modalRef.token = newModalWithToken(
+                    <AccountSwitcherModal
+                        onSwitchComplete={() => {
+                            if (modalRef.token) forceCloseModalByToken(modalRef.token);
+                        }}
+                    />,
                     { sectionClassName: '!max-w-[400px]' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                 );
                 return;
-            case 'Add Child':
+            }
+            case 'Add Child': {
                 closeModal();
-                newModal(
-                    <AccountSwitcherModal initialStep={SwitcherStepEnum.createChildAccount} />,
+                const modalRef: { token?: ModalInstanceToken } = {};
+                modalRef.token = newModalWithToken(
+                    <AccountSwitcherModal
+                        initialStep={SwitcherStepEnum.createChildAccount}
+                        onSwitchComplete={() => {
+                            if (modalRef.token) forceCloseModalByToken(modalRef.token);
+                        }}
+                    />,
                     { sectionClassName: '!max-w-[400px]' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                 );
                 return;
+            }
             case 'Boost Child':
                 closeModal();
                 newModal(
@@ -311,13 +326,17 @@ const ActionButton: React.FC<{
                     { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
                 );
                 return;
-            case 'Switch Account':
+            case 'Switch Account': {
                 closeModal();
-                newModal(
+                const modalRef: { token?: ModalInstanceToken } = {};
+                modalRef.token = newModalWithToken(
                     <AccountSwitcherModal
                         showServiceProfiles
                         containerClassName="max-h-[65vh]"
                         showStepsFooter
+                        onSwitchComplete={() => {
+                            if (modalRef.token) forceCloseModalByToken(modalRef.token);
+                        }}
                     />,
                     {
                         sectionClassName:
@@ -326,6 +345,7 @@ const ActionButton: React.FC<{
                     }
                 );
                 return;
+            }
             case 'Issue Credential':
                 closeModal();
                 newModal(

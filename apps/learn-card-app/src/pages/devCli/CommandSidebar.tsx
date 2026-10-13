@@ -423,6 +423,7 @@ export const COMMANDS: CommandTemplate[] = [
                 type: 'select',
                 options: [
                     'Achievement',
+                    'Qualifications',
                     'ID',
                     'Skill',
                     'Learning History',
@@ -469,6 +470,7 @@ export const COMMANDS: CommandTemplate[] = [
                 type: 'select',
                 options: [
                     'Achievement',
+                    'Qualifications',
                     'ID',
                     'Skill',
                     'Learning History',
@@ -514,6 +516,7 @@ export const COMMANDS: CommandTemplate[] = [
                 type: 'select',
                 options: [
                     'Achievement',
+                    'Qualifications',
                     'ID',
                     'Skill',
                     'Learning History',
@@ -559,6 +562,7 @@ export const COMMANDS: CommandTemplate[] = [
                 type: 'select',
                 options: [
                     'Achievement',
+                    'Qualifications',
                     'ID',
                     'Skill',
                     'Learning History',
@@ -752,6 +756,7 @@ export const COMMANDS: CommandTemplate[] = [
                 type: 'select',
                 options: [
                     'Achievement',
+                    'Qualifications',
                     'ID',
                     'Skill',
                     'Learning History',

@@ -2,7 +2,7 @@
 # of the stock image so `start-dev --import-realm` can bring up the `apple` IdP
 # alongside the built-in `google` one. No `kc.sh build` here: start-dev builds
 # automatically on boot, and this image is never used with `start --optimized`.
-FROM quay.io/keycloak/keycloak:26.7.4
+FROM quay.io/keycloak/keycloak:26.8.0
 
 # Only legacy external-token retrieval is disabled, not broker login/callbacks.
 # Keycloak 26.7.4 requires unversioned names for features-disabled.
