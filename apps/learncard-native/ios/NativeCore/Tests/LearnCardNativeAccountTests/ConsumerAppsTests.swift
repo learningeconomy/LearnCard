@@ -9,6 +9,7 @@ import LearnCardNativeCore
     var observer: CheckedContinuation<Void, Never>?
     func wait() async { await withCheckedContinuation { continuation = $0; entered = true; observer?.resume(); observer = nil } }
     func started() async { if !entered { await withCheckedContinuation { observer = $0 } } }
+    func arrive() { entered = true; observer?.resume(); observer = nil }
     func release() { continuation?.resume(); continuation = nil }
 }
 @MainActor private final class DelayedConsumer: ConsumerAppService {
@@ -70,21 +71,23 @@ import LearnCardNativeCore
     func testCommandQueueOrdersWaitersAndDropsCancelledCommands() async throws {
         let queue = AccountCommandQueue(); try await queue.acquire()
         var executed: [Int] = []
-        let first = Task { try await queue.acquire(); executed.append(1); queue.release() }
-        while queue.waitingCount < 1 { await Task.yield() }
-        let cancelled = Task { try await queue.acquire(); executed.append(2); queue.release() }
-        while queue.waitingCount < 2 { await Task.yield() }
-        let third = Task { try await queue.acquire(); executed.append(3); queue.release() }
-        while queue.waitingCount < 3 { await Task.yield() }
+        let firstStarted = ConsumerGate(), cancelledStarted = ConsumerGate(), thirdStarted = ConsumerGate()
+        let first = Task { firstStarted.arrive(); try await queue.acquire(); executed.append(1); queue.release() }
+        await firstStarted.started(); XCTAssertEqual(queue.waitingCount, 1)
+        let cancelled = Task { cancelledStarted.arrive(); try await queue.acquire(); executed.append(2); queue.release() }
+        await cancelledStarted.started(); XCTAssertEqual(queue.waitingCount, 2)
+        let third = Task { thirdStarted.arrive(); try await queue.acquire(); executed.append(3); queue.release() }
+        await thirdStarted.started(); XCTAssertEqual(queue.waitingCount, 3)
         cancelled.cancel()
-        while queue.waitingCount > 2 { await Task.yield() }
-        queue.release(); try await first.value; try await third.value
         do { try await cancelled.value; XCTFail("A cancelled command ran") } catch { XCTAssertEqual(error as? AccountError, .cancelled) }
+        XCTAssertEqual(queue.waitingCount, 2)
+        queue.release(); try await first.value; try await third.value
         XCTAssertEqual(executed, [1, 3])
     }
     func testDisposedCommandQueueRejectsAllWaitersAndFutureCalls() async throws {
         let queue = AccountCommandQueue(); try await queue.acquire()
-        let waiter = Task { try await queue.acquire() }; while queue.waitingCount == 0 { await Task.yield() }; queue.dispose()
+        let started = ConsumerGate()
+        let waiter = Task { started.arrive(); try await queue.acquire() }; await started.started(); XCTAssertEqual(queue.waitingCount, 1); queue.dispose()
         do { try await waiter.value; XCTFail("A disposed waiter ran") } catch { XCTAssertEqual(error as? AccountError, .cancelled) }
         do { try await queue.acquire(); XCTFail("A disposed queue reopened") } catch { XCTAssertEqual(error as? AccountError, .cancelled) }
     }
