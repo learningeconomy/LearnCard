@@ -1,4 +1,6 @@
 import React from 'react';
+import type { VC, VerificationItem } from '@learncard/types';
+import ClrVerificationPills from '../clr-transcript/ClrVerificationPills';
 import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 import {
     formatClrDate,
@@ -16,12 +18,16 @@ export const ClrCollectionHeader = ({
     sections,
     actions,
     compact = false,
+    boost,
+    verificationItems,
 }: {
     model: ClrTranscriptDisplayModel;
     layout: Exclude<ClrLayoutKind, 'academic'>;
     sections: ClrRecordSection[];
     actions?: React.ReactNode;
     compact?: boolean;
+    boost?: VC;
+    verificationItems?: VerificationItem[];
 }) => {
     const military = layout === 'military';
     const collection = model.canonical.collection;
@@ -168,7 +174,11 @@ export const ClrCollectionHeader = ({
                 <ClrTranscriptTrustBadge
                     verification={model.verification}
                     evidenceCount={model.evidence.length}
+                    hideStatus={Boolean(boost && model.verification.credentialSigned)}
                 />
+                {boost && (
+                    <ClrVerificationPills boost={boost} verificationItems={verificationItems} />
+                )}
             </div>
         </header>
     );

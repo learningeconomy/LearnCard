@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { VC } from '@learncard/types';
+import { VerificationStatusEnum, type VC } from '@learncard/types';
 import {
     clrMilitaryComprehensiveRecord,
     clrMixedCareerRecord,
@@ -16,7 +16,15 @@ import ClrTranscriptFullPage from '../clr-transcript/surfaces/ClrTranscriptFullP
 import ClrTranscriptCard from '../clr-transcript/surfaces/ClrTranscriptCard';
 import ClrTranscriptEmbedWidget from '../clr-transcript/surfaces/ClrTranscriptEmbedWidget';
 
-const mocks = vi.hoisted(() => ({ open: vi.fn(), close: vi.fn(), modal: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+    open: vi.fn(),
+    close: vi.fn(),
+    modal: vi.fn(),
+    verify: vi.fn(),
+}));
+vi.mock('learn-card-base/hooks/useVerifyCredential', () => ({
+    useVerifyCredential: () => ({ verifyCredential: mocks.verify }),
+}));
 vi.mock('learn-card-base', () => ({
     useModal: () => {
         mocks.modal();
@@ -66,10 +74,61 @@ beforeEach(() => {
     mocks.open.mockClear();
     mocks.close.mockClear();
     mocks.modal.mockReset();
+    mocks.verify.mockReset().mockResolvedValue([]);
     setLocale('en', { reload: false });
 });
 
 describe('shared CLR renderer', () => {
+    it.each([clrMixedCareerRecord, clrMilitaryComprehensiveRecord])(
+        'shows supplied proof results and expiration for $id',
+        fixture => {
+            const boost = {
+                ...fixture.credential,
+                proof: { type: 'DataIntegrityProof' },
+                validUntil: '2020-01-01T00:00:00Z',
+            } as VC;
+            const model = normalizeClrTranscriptDisplayModel(boost as Record<string, unknown>);
+            const view = render(
+                <ClrRenderer
+                    model={model}
+                    boost={boost}
+                    options={options}
+                    verificationItems={[{ check: 'proof', status: VerificationStatusEnum.Success }]}
+                />
+            );
+            expect(screen.getByText('Valid', { exact: true })).toBeInTheDocument();
+            expect(screen.getByText(/^Expired /)).toBeInTheDocument();
+            expect(screen.queryByText('Signed, not verified')).not.toBeInTheDocument();
+            view.rerender(
+                <ClrRenderer
+                    model={model}
+                    boost={boost}
+                    options={options}
+                    verificationItems={[{ check: 'proof', status: VerificationStatusEnum.Failed }]}
+                />
+            );
+            expect(screen.getByText('Invalid', { exact: true })).toBeInTheDocument();
+            expect(mocks.verify).not.toHaveBeenCalled();
+        }
+    );
+    it('verifies a full collection when the host has not supplied results', async () => {
+        mocks.verify.mockResolvedValue([
+            { check: 'proof', status: VerificationStatusEnum.Success },
+        ]);
+        const boost = { ...fixture, proof: { type: 'DataIntegrityProof' } } as VC;
+        const model = normalizeClrTranscriptDisplayModel(boost as Record<string, unknown>);
+        render(<ClrRenderer model={model} boost={boost} options={options} />);
+        expect(await screen.findByText('Valid', { exact: true })).toBeInTheDocument();
+        expect(mocks.verify).toHaveBeenCalledWith(boost);
+    });
+    it('does not claim a valid proof when verification fails to complete', async () => {
+        mocks.verify.mockRejectedValue(new Error('Network unavailable'));
+        const boost = { ...fixture, proof: { type: 'DataIntegrityProof' } } as VC;
+        const model = normalizeClrTranscriptDisplayModel(boost as Record<string, unknown>);
+        render(<ClrRenderer model={model} boost={boost} options={options} />);
+        expect(await screen.findByText('Signed, not verified')).toBeInTheDocument();
+        expect(screen.queryByText('Valid', { exact: true })).not.toBeInTheDocument();
+    });
     it('shows every military child in its section and opens source-backed details', () => {
         const view = render(<ClrRenderer model={model} boost={fixture} options={options} />);
         for (const heading of [

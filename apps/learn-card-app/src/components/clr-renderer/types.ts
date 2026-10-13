@@ -1,4 +1,4 @@
-import type { VC } from '@learncard/types';
+import type { VC, VerificationItem } from '@learncard/types';
 import type {
     ClrTranscriptDisplayModel,
     ClrLayoutKind,
@@ -12,6 +12,7 @@ export interface ClrRendererProps {
     options: ViewOptions;
     boost?: VC;
     boostUri?: string;
+    verificationItems?: VerificationItem[];
     insetTop?: boolean;
     onViewDetails?: () => void;
 }

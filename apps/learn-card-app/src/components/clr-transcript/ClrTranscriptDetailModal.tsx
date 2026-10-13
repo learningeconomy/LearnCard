@@ -26,6 +26,7 @@ const ClrTranscriptDetailModal: React.FC<{
                 options={options}
                 boost={boost}
                 boostUri={boostUri}
+                verificationItems={verificationItems}
             />
             {verificationItems.length > 0 && (
                 <div className="px-4 pb-10">
