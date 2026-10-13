@@ -1,5 +1,16 @@
 # learn-card-core
 
+## Unreleased
+
+### Patch Changes
+
+- LC-2201: Decrypt encrypted inbox finalization deliveries locally before exposing
+  credentials to callers. The public `finalizeInboxCredentials()` result remains VCs;
+  failed decryptions count as errors and remain recoverable through inbox recovery.
+- LC-2201: Decryption and validation failures during inbox finalization and recovery
+  now log the affected delivery ID and rejection reason without logging credential
+  contents. Failure counts and successful sibling deliveries are unchanged.
+
 ## 3.0.1
 
 ### Patch Changes
