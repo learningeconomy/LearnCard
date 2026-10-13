@@ -209,6 +209,7 @@ docker run --rm \
     --build-arg="ESCROW_AUTHORITY_TENANT=${ESCROW_AUTHORITY_TENANT:-}" \
     --build-arg="ESCROW_AUTHORITY_ENVIRONMENT=${ESCROW_AUTHORITY_ENVIRONMENT:-}" \
     --build-arg="ESCROW_AUTHORITY_GENERATION=${ESCROW_AUTHORITY_GENERATION:-}" \
+    --build-arg="ESCROW_AUTHORITY_CREDENTIAL_KMS_KEY_ARN=${ESCROW_AUTHORITY_CREDENTIAL_KMS_KEY_ARN:-}" \
     --build-arg="ESCROW_EMAIL_REGION=${ESCROW_EMAIL_REGION:-}" \
     --build-arg="ESCROW_EMAIL_ACCOUNT_ID=${ESCROW_EMAIL_ACCOUNT_ID:-}" \
     --build-arg="ESCROW_EMAIL_SENDER_USER=${ESCROW_EMAIL_SENDER_USER:-}" \
@@ -288,7 +289,8 @@ jq -n \
     --arg tenant "$ESCROW_TENANT" --arg keyId "$ESCROW_KEY_ID" \
     --arg kmsRegion "$ESCROW_KMS_REGION" --arg kmsKeyArn "$ESCROW_KMS_KEY_ARN" \
     --arg previousKeyIds "$ESCROW_PREVIOUS_KEY_IDS" --argjson allowFirstBoot "$ESCROW_ALLOW_FIRST_BOOT" \
-    '{pcr0: $pcr0, pcr1: $pcr1, pcr2: $pcr2, imageTag: $imageTag, sourceDateEpoch: $sourceDateEpoch, gitCommit: $gitCommit, eifSha256: $eifSha256, nitroCliVersion: $nitroCliVersion, nitroCliContainerImage: $nitroCliContainerImage, config: {tenant: $tenant, keyId: $keyId, kmsRegion: $kmsRegion, kmsKeyArn: $kmsKeyArn, previousKeyIds: ($previousKeyIds | split(",") | map(select(length > 0))), allowFirstBoot: $allowFirstBoot}}' \
+    --argjson directClients "$(bash "${SERVICE_DIR}/scripts/measurement-config.sh")" \
+    '{pcr0: $pcr0, pcr1: $pcr1, pcr2: $pcr2, imageTag: $imageTag, sourceDateEpoch: $sourceDateEpoch, gitCommit: $gitCommit, eifSha256: $eifSha256, nitroCliVersion: $nitroCliVersion, nitroCliContainerImage: $nitroCliContainerImage, config: {tenant: $tenant, keyId: $keyId, kmsRegion: $kmsRegion, kmsKeyArn: $kmsKeyArn, previousKeyIds: ($previousKeyIds | split(",") | map(select(length > 0))), allowFirstBoot: $allowFirstBoot, authority: $directClients.authority, email: $directClients.email}}' \
     >"${OUT_DIR}/measurements.json"
 
 echo "==> Wrote ${OUT_DIR}/measurements.json and ${EIF_PATH}" >&2

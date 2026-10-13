@@ -255,6 +255,10 @@ mod tests {
             ("ESCROW_AUTHORITY_TENANT", "learncard"),
             ("ESCROW_AUTHORITY_ENVIRONMENT", "staging"),
             ("ESCROW_AUTHORITY_GENERATION", "g1"),
+            (
+                "ESCROW_AUTHORITY_CREDENTIAL_KMS_KEY_ARN",
+                "arn:aws:kms:us-east-1:123456789012:key/00000000-1111-2222-3333-444444444444",
+            ),
             ("ESCROW_EMAIL_REGION", "us-east-1"),
             ("ESCROW_EMAIL_ACCOUNT_ID", "123456789012"),
             ("ESCROW_EMAIL_SENDER_USER", "sender"),
@@ -278,6 +282,8 @@ mod tests {
             "arn:aws:ses:us-east-1:123456789012:identity/staging.notify.learncard.com"
         );
         for name in settings.keys() {
+            assert!(include_str!("../../scripts/measurement-config.sh")
+                .contains(&format!("${{{name}:-}}")));
             assert!(include_str!("../../Dockerfile").contains(&format!("ARG {name}=\"\"")));
             assert!(include_str!("../../Dockerfile").contains(&format!("{name}=${{{name}}}")));
             assert!(include_str!("../../scripts/build-eif.sh")
