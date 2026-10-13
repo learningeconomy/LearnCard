@@ -172,14 +172,18 @@ The policy layer must canonicalize and bound these request bytes (8192 maximum).
    Same ID with a different hold/payload/event is rejected. Reservation and its
    single result intentionally share the request ID. Non-PIN exact duplicates
    return the existing record without an append, even if the hold is now terminal.
-5. A head is remembered **before** signed bytes leave the enclave. Failed,
-   conflicting, cancelled or lying appends cannot make it sign a local fork.
-   Conflict/Unavailable propagate; there is no automatic retry on an older head.
-   If that signed record was not persisted, the chain stays fail-closed in this
-   process until the exact signed history is restored. Do not restart to clear it.
+5. A speculative proposal is remembered **before** signed bytes leave the enclave,
+   separately from the committed high-water mark. Only authenticated readback
+   advances that mark. Conflict/Unavailable propagate; there is no automatic retry.
+   After Conflict, a subsequent read must contain a valid signed successor at the
+   proposed sequence and preserve the committed prefix. This reconciles a losing
+   signer to the winner and discards its proposal; the winner then fences out the
+   losing fork. A conflict flag alone never permits returning to the old prefix.
+   Unavailable, cancellation and unsuccessful readback retain the exact proposal
+   fence until its signed history is restored. Do not restart to clear it.
    No comparison resumes from a persisted-but-ambiguous reservation.
 
-`observe` checks that the chain contains the previously observed/signed record
+`observe` checks that the chain contains the previously read-back committed record
 at its original sequence, not merely that its new sequence is larger. Therefore
 both truncation and a longer fork are rejected. Pure `verify_chain` has no memory;
 production callers use the stateful APIs, not that pure monitor helper alone.

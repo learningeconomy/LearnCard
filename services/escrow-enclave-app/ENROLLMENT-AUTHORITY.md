@@ -12,6 +12,16 @@ All interfaces and record types below marked proposed are new work, not existing
 Paths are repository-relative; `app/` below means `services/escrow-enclave-app/`,
 `api/` means `services/learn-card-network/lca-api/`.
 
+### Implementation status
+
+Foundations work has started with the losing-signer fix only: speculative ledger
+proposals are separate from committed high-water marks. A conflict can reconcile
+to a verified winning successor without resetting the committed prefix; ambiguous
+writes still fail closed. Readback remains the legacy host-presented view, not
+proof of durable persistence (D3). Trusted-time AWS transport, sealed authority/email
+credentials, infrastructure and provisioning are not implemented yet.
+`UnavailableEnrollment` remains wired; no authority or email client is active.
+
 ## 1. Problem and current boundary
 
 The enclave can decrypt a blob and authenticate its contents. It cannot establish
