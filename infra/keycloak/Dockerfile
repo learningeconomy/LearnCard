@@ -1,6 +1,6 @@
 # Resolve the complete runtime graph, verifying Maven Central checksums strictly.
 # No Maven/JDK build tooling is copied into the runtime image.
-FROM maven:3.9.11-eclipse-temurin-21@sha256:6fdc855a6ed81d288ca7ca37ac6ff5e9308b612485c0801d70b25a858c83d237 AS jdbc
+FROM maven:3.9-eclipse-temurin-26@sha256:b2c1ad85954592f9928e84327c65201f308ad9b5d8ed7d5b823717c97bf23fbb AS jdbc
 WORKDIR /jdbc
 COPY jdbc/pom.xml ./pom.xml
 RUN mvn --batch-mode --no-transfer-progress --strict-checksums \
@@ -9,7 +9,7 @@ RUN mvn --batch-mode --no-transfer-progress --strict-checksums \
 
 # start --optimized rejects changes to build-time options at runtime: bake them here.
 # In 26.7.4 HTTP_RELATIVE_PATH is build-time; CACHE and CACHE_STACK are runtime.
-FROM quay.io/keycloak/keycloak:26.7.4 AS builder
+FROM quay.io/keycloak/keycloak:26.8.0 AS builder
 COPY --from=jdbc --chown=keycloak:keycloak /jdbc/providers/ /opt/keycloak/providers/
 
 # Apple Identity Provider for Keycloak (https://github.com/klausbetz/apple-identity-provider-keycloak)
@@ -30,7 +30,7 @@ ENV KC_DB=postgres \
     KC_HTTP_RELATIVE_PATH=/
 RUN /opt/keycloak/bin/kc.sh build
 
-FROM quay.io/keycloak/keycloak:26.7.4
+FROM quay.io/keycloak/keycloak:26.8.0
 COPY --from=builder /opt/keycloak/ /opt/keycloak/
 ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]
 CMD ["start", "--optimized"]

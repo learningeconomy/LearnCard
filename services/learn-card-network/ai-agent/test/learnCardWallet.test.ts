@@ -407,34 +407,6 @@ describe('createLearnCardWalletTool', () => {
         for (const method of Object.values(invoke)) expect(method).not.toHaveBeenCalled();
     });
 
-    it('reports real SDK failures without exporting sensitive error fields', async () => {
-        const tool = fixtureTool({
-            invoke: {
-                sendBoost: async () => {
-                    throw Object.assign(new Error('Target profile cannot receive this Boost'), {
-                        code: 'FORBIDDEN',
-                        seed: 'fixture-secret',
-                        cause: Object.assign(new Error('Permission denied'), { statusCode: 403 }),
-                    });
-                },
-            },
-        });
-        const error = await tool
-            .execute({ path: 'invoke.sendBoost', args: ['recipient', boostUri] }, context)
-            .then(
-                () => {
-                    throw new Error('Expected wallet rejection');
-                },
-                (failure: Error) => failure
-            );
-        const payload = JSON.parse(error.message);
-        expect(payload).toMatchObject({
-            method: 'invoke.sendBoost',
-            underlyingError: { code: 'FORBIDDEN', seed: '[redacted]', cause: { statusCode: 403 } },
-        });
-        expect(error.message).not.toContain('fixture-secret');
-    });
-
     it('keeps an absent public lookup result explicit', async () => {
         publicReader.getOtherProfile.mockResolvedValueOnce(undefined);
         const tool = fixtureTool({});

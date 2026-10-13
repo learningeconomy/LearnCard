@@ -6,7 +6,8 @@
     "module": "./dist/credential-library.esm.js",
     "files": [
         "dist",
-        "src"
+        "src",
+        "SOURCES.md"
     ],
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.build.json",

@@ -101,7 +101,8 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
     const isSwitchedProfile = switchedProfileStore?.use?.isSwitchedProfile();
     const parentUser = currentUserStore.get.parentUser();
     const parentUserDid = currentUserStore.get.parentUserDid();
-    const isCurrentUserServiceProfile = currentLCNUser?.isServiceProfile;
+    const isCurrentUserServiceProfile =
+        currentLCNUser?.type !== 'child' && currentLCNUser?.isServiceProfile === true;
 
     const { mutateAsync: createBoost } = useCreateBoost();
     const { mutateAsync: addCredentialToWallet } = useAddCredentialToWallet();
@@ -139,7 +140,8 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
     // Filter to only show service profiles (organizations)
     const profileRecords = Array.isArray(profiles?.records) ? profiles.records : [];
     const serviceProfiles = profileRecords.filter(
-        ({ profile }: { profile: LCNProfile }) => profile.isServiceProfile
+        ({ profile }: { profile: LCNProfile }) =>
+            profile.type !== 'child' && profile.isServiceProfile
     );
 
     // Check profile uniqueness
@@ -218,7 +220,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
             profileId: currentLCNUser.profileId!,
             displayName: currentLCNUser.displayName!,
             image: currentLCNUser.image,
-            isServiceProfile: currentLCNUser.isServiceProfile ?? false,
+            isServiceProfile: isCurrentUserServiceProfile,
         };
 
         setSelectedProfile(orgProfile);

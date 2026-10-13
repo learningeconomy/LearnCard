@@ -10,8 +10,9 @@
  */
 
 import * as React from 'react';
-import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach, Mock } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Ensure React is in scope for JSX
 global.React = React;
@@ -76,10 +77,6 @@ vi.mock('react-router-dom', () => ({
     useLocation: vi.fn(),
 }));
 
-vi.mock('@tanstack/react-query', () => ({
-    useQueryClient: () => ({ resetQueries: vi.fn() }),
-}));
-
 // Mock the entire learn-card-base module to avoid deep crypto dependencies
 // Use require for mocks that need to be configurable
 const mockFns = {
@@ -87,6 +84,8 @@ const mockFns = {
     useConsentedContracts: vi.fn(),
     useCurrentUser: vi.fn(),
     useGetCurrentLCNUser: vi.fn(),
+    getAvailableProfiles: vi.fn(),
+    switchedDid: undefined as string | undefined,
     initWallet: vi.fn(),
     presentToast: vi.fn(),
 };
@@ -231,7 +230,7 @@ vi.mock('learn-card-base/stores/walletStore', () => ({
             profileType: vi.fn(),
         },
         use: {
-            switchedDid: () => undefined,
+            switchedDid: () => mockFns.switchedDid,
             profileType: () => null,
             isSwitchedProfile: () => false,
         },
@@ -283,8 +282,22 @@ describe('ExternalConsentFlowDoor', () => {
     const contractUri = 'lc:network:localhost:contract:test-123';
     const returnTo = 'https://example.com/callback';
 
+    let queryClient: QueryClient;
+    const renderDoor = () =>
+        render(<ExternalConsentFlowDoor login={true} />, {
+            wrapper: ({ children }) => (
+                <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+            ),
+        });
     beforeEach(() => {
         vi.clearAllMocks();
+        queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        mockFns.switchedDid = undefined;
+        mockFns.getAvailableProfiles.mockResolvedValue({ records: [], hasMore: false });
+        mockFns.initWallet.mockResolvedValue({
+            invoke: { getAvailableProfiles: mockFns.getAvailableProfiles },
+        });
+        mockFns.useConsentedContracts.mockReturnValue({ data: [], isLoading: false });
 
         mockUseHistory.mockReturnValue({ push: mockPush });
         mockUseLocation.mockReturnValue({
@@ -313,6 +326,8 @@ describe('ExternalConsentFlowDoor', () => {
             error: null,
         });
     });
+
+    afterEach(() => queryClient.clear());
     it('shows the selected organization identity after wallet restoration', () => {
         mockFns.useCurrentUser.mockReturnValue({ name: '', profileImage: '', uid: 'test-uid' });
         mockFns.useGetCurrentLCNUser.mockReturnValue({
@@ -325,12 +340,109 @@ describe('ExternalConsentFlowDoor', () => {
         });
         mockFns.useConsentedContracts.mockReturnValue({ data: [], isLoading: false });
 
-        render(<ExternalConsentFlowDoor login={true} />);
+        renderDoor();
 
         expect(screen.getByRole('button', { name: 'Continue as Demo Organization' })).toBeTruthy();
         expect(screen.getByRole('img', { name: 'Demo Organization' }).getAttribute('src')).toBe(
             'https://example.com/org.png'
         );
+    });
+
+    it('restores a child’s family identity when its network profile is blank', async () => {
+        mockFns.switchedDid = 'did:web:localhost%3A4000:users:child-id';
+        mockFns.useCurrentUser.mockReturnValue({ name: '', profileImage: '', uid: 'parent-auth' });
+        mockFns.useGetCurrentLCNUser.mockReturnValue({
+            currentLCNUser: {
+                profileId: 'child-id',
+                did: mockFns.switchedDid,
+                displayName: '',
+                image: '',
+            },
+            currentLCNUserLoading: false,
+        });
+        mockFns.getAvailableProfiles.mockResolvedValue({
+            records: [
+                {
+                    profile: { profileId: 'child-id', did: mockFns.switchedDid },
+                    manager: { displayName: 'Lil Demo', image: 'https://example.com/child.png' },
+                },
+            ],
+            hasMore: false,
+        });
+
+        renderDoor();
+
+        await screen.findByRole('button', { name: 'Continue as Lil Demo' });
+        expect(screen.getByRole('img', { name: 'Lil Demo' }).getAttribute('src')).toBe(
+            'https://example.com/child.png'
+        );
+    });
+
+    it.each([
+        {
+            displayName: 'Updated Child',
+            image: '',
+            expectedName: 'Updated Child',
+            expectedImage: 'https://example.com/family.png',
+        },
+        {
+            displayName: '',
+            image: 'https://example.com/profile.png',
+            expectedName: 'Lil Demo',
+            expectedImage: 'https://example.com/profile.png',
+        },
+    ])(
+        'keeps explicit profile identity ahead of family metadata: $expectedName',
+        async ({ displayName, image, expectedName, expectedImage }) => {
+            mockFns.switchedDid = 'did:web:localhost%3A4000:users:child-id';
+            mockFns.useCurrentUser.mockReturnValue({
+                name: '',
+                profileImage: '',
+                uid: 'parent-auth',
+            });
+            mockFns.useGetCurrentLCNUser.mockReturnValue({
+                currentLCNUser: { profileId: 'child-id', displayName, image },
+                currentLCNUserLoading: false,
+            });
+            mockFns.getAvailableProfiles.mockResolvedValue({
+                records: [
+                    {
+                        profile: { profileId: 'child-id' },
+                        manager: {
+                            displayName: 'Lil Demo',
+                            image: 'https://example.com/family.png',
+                        },
+                    },
+                ],
+                hasMore: false,
+            });
+
+            renderDoor();
+
+            await screen.findByRole('button', { name: `Continue as ${expectedName}` });
+            await waitFor(() =>
+                expect(screen.getByRole('img', { name: expectedName }).getAttribute('src')).toBe(
+                    expectedImage
+                )
+            );
+        }
+    );
+
+    it('waits for the child’s identity instead of allowing consent as an opaque account ID', () => {
+        mockFns.switchedDid = 'did:web:localhost%3A4000:users:child-id';
+        mockFns.useCurrentUser.mockReturnValue({ name: '', profileImage: '', uid: 'parent-auth' });
+        mockFns.useGetCurrentLCNUser.mockReturnValue({
+            currentLCNUser: { profileId: 'child-id', displayName: '', image: '' },
+            currentLCNUserLoading: false,
+        });
+        mockFns.getAvailableProfiles.mockReturnValue(new Promise<unknown>(() => {}));
+
+        renderDoor();
+
+        expect(
+            screen.getByRole('button', { name: 'Loading profile...' }).hasAttribute('disabled')
+        ).toBe(true);
+        expect(screen.queryByRole('button', { name: 'Continue as child-id' })).toBeNull();
     });
 
     describe('Race condition: clicking Continue while consent query is loading', () => {
@@ -341,7 +453,7 @@ describe('ExternalConsentFlowDoor', () => {
                 isLoading: true,
             });
 
-            render(<ExternalConsentFlowDoor login={true} />);
+            renderDoor();
 
             // Find and click the Continue button
             const continueButton = screen.getByRole('button', { name: /continue as/i });
@@ -366,7 +478,7 @@ describe('ExternalConsentFlowDoor', () => {
                 isLoading: true,
             });
 
-            const { rerender } = render(<ExternalConsentFlowDoor login={true} />);
+            const { rerender } = renderDoor();
 
             // Click while loading
             const continueButton = screen.getByRole('button', { name: /continue as/i });
@@ -402,7 +514,7 @@ describe('ExternalConsentFlowDoor', () => {
                 isLoading: false,
             });
 
-            render(<ExternalConsentFlowDoor login={true} />);
+            renderDoor();
 
             const continueButton = screen.getByRole('button', { name: /continue as/i });
             fireEvent.click(continueButton);

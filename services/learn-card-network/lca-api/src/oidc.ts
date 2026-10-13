@@ -19,7 +19,7 @@
 import Fastify, { type FastifyPluginAsync, type FastifyReply, type FastifyRequest } from 'fastify';
 import formbody from '@fastify/formbody';
 import fastifyRateLimit from '@fastify/rate-limit';
-import { environment } from '@environment';
+import { environment } from '@config/oidcEnvironment';
 import cache from '@cache';
 import { redeemLoginTicket } from '@cache/login-tickets';
 

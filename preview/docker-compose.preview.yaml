@@ -301,7 +301,7 @@ services:
             LRSQL_ALLOW_ALL_ORIGINS: true
 
     keycloak:
-        image: quay.io/keycloak/keycloak:26.7.4
+        image: quay.io/keycloak/keycloak:26.8.0
         command: start-dev --import-realm
         environment:
             KC_BOOTSTRAP_ADMIN_USERNAME: admin

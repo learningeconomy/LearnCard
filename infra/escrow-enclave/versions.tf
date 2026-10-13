@@ -1,0 +1,69 @@
+# =============================================================================
+# escrow-enclave — Terraform + provider requirements, backend, tags
+#
+# This module provisions the compute/network substrate (P3.1) AND the
+# supporting KMS/IAM/S3/DynamoDB resources (P3.2) for the Nitro
+# Enclave-backed escrow recovery "enclave-host" service. instance_profile_name remains an
+# optional override (default null) for pointing at an externally managed
+# profile instead of the one iam.tf creates; every other P3.2 resource
+# (kms.tf, iam.tf, storage.tf, ledger.tf) is created directly by this
+# module, not passed in.
+# =============================================================================
+
+terraform {
+  # >= 1.9, not 1.6: variables.tf's asg_max_size validation condition
+  # references var.asg_min_size (a cross-variable validation reference),
+  # which Terraform only supports from 1.9 onward — 1.6-1.8 would fail to
+  # parse that validation block at all.
+  required_version = ">= 1.9"
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+
+  # Partial backend configuration on purpose: no bucket/key/region/dynamodb
+  # table is hardcoded here so the SAME module can be initialized against
+  # different per-environment state buckets (staging vs production) without
+  # editing source. Supply the rest at init time, e.g.:
+  #
+  #   terraform init \
+  #     -backend-config="bucket=learncard-terraform-state-<env>" \
+  #     -backend-config="key=escrow-enclave/<env>/terraform.tfstate" \
+  #     -backend-config="region=us-east-1" \
+  #     -backend-config="dynamodb_table=terraform-state-lock"
+  #
+  # or via a checked-in (non-secret) `backend-<env>.hcl` file with
+  # `-backend-config=backend-<env>.hcl`. `terraform init -backend=false`
+  # (used for local `terraform validate`) ignores this block entirely and
+  # requires no AWS credentials.
+  backend "s3" {}
+}
+
+provider "aws" {
+  region = var.aws_region
+
+  default_tags {
+    tags = local.common_tags
+  }
+}
+
+locals {
+  # Merged onto every resource created by this module via provider
+  # default_tags (with the one known exception of aws_autoscaling_group,
+  # whose distinct tag {} blocks don't participate in default_tags — see
+  # compute.tf). var.tags can add extra tags but cannot remove/override
+  # these three.
+  common_tags = merge(
+    var.tags,
+    {
+      Project     = "learncard-escrow-enclave"
+      ManagedBy   = "terraform"
+      Environment = var.environment
+    }
+  )
+
+  name_prefix = "escrow-enclave-${var.environment}"
+}

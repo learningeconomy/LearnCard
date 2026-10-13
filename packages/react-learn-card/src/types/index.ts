@@ -38,6 +38,7 @@ export enum Icons {
 export enum LCCategoryEnum {
     socialBadge = 'Social Badge',
     achievement = 'Achievement',
+    qualifications = 'Qualifications',
     course = 'Course',
     job = 'Job',
     id = 'ID',
@@ -68,6 +69,7 @@ export enum LCSubtypes {
 // deprecated - ids, currency
 export enum WalletCategoryTypes {
     achievements = 'achievements',
+    qualifications = 'qualifications',
     jobHistory = 'jobhistory',
     learningHistory = 'learningHistory',
     skills = 'skills',

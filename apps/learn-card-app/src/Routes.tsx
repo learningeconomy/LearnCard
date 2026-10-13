@@ -26,7 +26,9 @@ const NotificationsPage = lazyWithRetry(
     () => import('./pages/notificationsPage/NotificationsPage')
 );
 const LoginPage = lazyWithRetry(() => import('./pages/login/LoginPage'));
+const CancelRecoveryPage = lazyWithRetry(() => import('./pages/recovery/CancelRecoveryPage'));
 const AchievementsPage = lazyWithRetry(() => import('./pages/achievements/AchievementsPage'));
+const QualificationsPage = lazyWithRetry(() => import('./pages/qualifications/QualificationsPage'));
 
 const IdsPage = lazyWithRetry(() => import('./pages/ids/IdsPage'));
 
@@ -206,6 +208,7 @@ export const Routes: React.FC = () => {
             >
                 <GenericErrorBoundary>
                     <Switch location={background || location}>
+                        <SentryRoute exact path="/recovery/cancel" component={CancelRecoveryPage} />
                         <Route exact path="/s/:id" component={ShareLinkViewer} />
                         <SentryRoute exact path="/login" component={LoginPage} />
                         <SentryRoute
@@ -259,6 +262,7 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/contacts/search" component={AddressBook} />
                         <PrivateRoute exact path="/socialBadges" component={SocialBadgesPage} />
                         <PrivateRoute exact path="/achievements" component={AchievementsPage} />
+                        <PrivateRoute exact path="/qualifications" component={QualificationsPage} />
                         <PrivateRoute
                             exact
                             path="/accomplishments"
@@ -431,6 +435,7 @@ export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
     '/skills': () => SkillsPage.preload(),
     '/socialBadges': () => SocialBadgesPage.preload(),
     '/achievements': () => AchievementsPage.preload(),
+    '/qualifications': () => QualificationsPage.preload(),
     '/learninghistory': () => LearningHistoryPage.preload(),
     '/accomplishments': () => AccomplishmentsPage.preload(),
     '/accommodations': () => AccommodationsPage.preload(),

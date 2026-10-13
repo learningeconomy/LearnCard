@@ -1,0 +1,14 @@
+# Escrow recovery trust boundary: the Nitro enclave, its host, KMS policy and
+# infra, the ledger monitor, the client attestation check, and the lca-api code
+# that talks to the enclave. Changes here need review from @learningeconomy/nitro-enclave
+# (see infra/escrow-enclave/README.md "two-person rule").
+/infra/escrow-enclave/                                      @learningeconomy/nitro-enclave
+/infra/escrow-enclave-bootstrap/                            @learningeconomy/nitro-enclave
+/infra/escrow-enclave-network/                              @learningeconomy/nitro-enclave
+/services/escrow-enclave-app/                               @learningeconomy/nitro-enclave
+/services/escrow-enclave-host/                              @learningeconomy/nitro-enclave
+/services/escrow-ledger-monitor/                            @learningeconomy/nitro-enclave
+/services/learn-card-network/lca-api/src/services/escrow-enclave/ @learningeconomy/nitro-enclave
+/packages/sss-key-manager/src/escrow-*                      @learningeconomy/nitro-enclave
+/.github/workflows/escrow-enclave-eif.yml                   @learningeconomy/nitro-enclave
+/.github/CODEOWNERS                                         @learningeconomy/nitro-enclave
