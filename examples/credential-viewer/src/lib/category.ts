@@ -93,9 +93,7 @@ export const getCategoryForCredential = (
     if (!subject) return 'Achievement';
 
     const achievement = subject.achievement as
-        | Record<string, unknown>
-        | Record<string, unknown>[]
-        | undefined;
+        Record<string, unknown> | Record<string, unknown>[] | undefined;
 
     if (!achievement) return 'Achievement';
 
@@ -104,8 +102,7 @@ export const getCategoryForCredential = (
         if (achievement.length === 0) return 'Achievement';
 
         const firstType = (achievement[0] as Record<string, unknown>)?.achievementType as
-            | string
-            | undefined;
+            string | undefined;
 
         if (firstType && CATEGORY_MAP[firstType]) return CATEGORY_MAP[firstType];
 

@@ -68,13 +68,7 @@ export default selectedCredsStore;
 // used to resest a specific category in the store
 export const resetSelectedCredsStoreSelectedIds = (
     achievementType:
-        | 'skill'
-        | 'achievement'
-        | 'id'
-        | 'course'
-        | 'socialBadges'
-        | 'workHistory'
-        | 'all',
+        'skill' | 'achievement' | 'id' | 'course' | 'socialBadges' | 'workHistory' | 'all',
     resetType: 'empty' | 'fill'
 ) => {
     const _credentials = selectedCredsStore.get.credentials();

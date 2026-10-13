@@ -46,7 +46,10 @@ interface TenantConfigSet {
 // ---------------------------------------------------------------------------
 
 const registry: TenantRegistry = generatedData.registry as TenantRegistry;
-const tenantConfigSets: Record<string, TenantConfigSet> = generatedData.tenants as Record<string, TenantConfigSet>;
+const tenantConfigSets: Record<string, TenantConfigSet> = generatedData.tenants as Record<
+    string,
+    TenantConfigSet
+>;
 
 // ---------------------------------------------------------------------------
 // Public helpers

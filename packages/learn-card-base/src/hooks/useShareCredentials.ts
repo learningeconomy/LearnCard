@@ -197,9 +197,8 @@ export const useShareCredentials = (
                     allWorkHistoryIds,
                     allSocialBadgeIds;
                 if (preSelectedCredentials) {
-                    const preSelectedSortedCredentials = await getAllSortedCredentials(
-                        preSelectedCredentials
-                    );
+                    const preSelectedSortedCredentials =
+                        await getAllSortedCredentials(preSelectedCredentials);
                     allSkillIds = preSelectedSortedCredentials.skills?.map(vc => getUniqueId(vc));
                     allCourseIds = preSelectedSortedCredentials.courses?.map(vc => getUniqueId(vc));
                     allAchievementIds = preSelectedSortedCredentials.achievements?.map(vc =>

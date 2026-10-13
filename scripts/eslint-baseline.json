@@ -2412,9 +2412,8 @@
         "fde2172941c250aeae437d9132dd4a94547e760e66fb30216dc54de4b9a7bd4e": 1
     },
     "packages/learn-card-base/src/hooks/useShareCredentials.ts": {
-        "0c6754757c1f043c8c452da89171ff675e8dd697359b6837a3c7b861a4ae8d9f": 1,
         "51f862be17b9a3362124de2c247277bd0315c4805fdf284a9d4a5fb0c0d4806b": 1,
-        "e17c11832b73e2ebd33522544714fc1c95d7959bfe947b57b7777d26040737da": 1
+        "fa4d88a68a30c607b09c78df5bbae2192aee539dba505df7d1488cc6035d4ded": 1
     },
     "packages/learn-card-base/src/hooks/useSharedUrisInTerms.ts": {
         "a3ed401a205d1f62ef7909193895e2df9837d3d5a33a55a5c25bf481f352eca0": 1

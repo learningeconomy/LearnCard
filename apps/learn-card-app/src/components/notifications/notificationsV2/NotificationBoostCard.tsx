@@ -150,8 +150,8 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     const badgeScaleClass = isCertDisplayType
         ? 'w-[120px] min-w-[120px] scale-[0.7]'
         : isMeritStyleBadge
-        ? 'w-[138px] min-w-[138px] scale-[0.8]'
-        : 'w-full';
+          ? 'w-[138px] min-w-[138px] scale-[0.8]'
+          : 'w-full';
 
     // Compact circular fallback (matching the ID treatment) for display types
     // whose full art can't fit the notification slot, e.g. media/portfolio.

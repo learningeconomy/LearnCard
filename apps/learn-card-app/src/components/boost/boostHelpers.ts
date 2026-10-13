@@ -140,9 +140,9 @@ export const addFallbackNameToCMSState = (state: BoostCMSState): BoostCMSState =
         ? replaceUnderscoresWithWhiteSpace(
               getAchievementTypeFromCustomType(state.basicInfo.achievementType ?? '') ?? ''
           )
-        : CATEGORY_TO_SUBCATEGORY_LIST[state.basicInfo.type]?.find(
+        : (CATEGORY_TO_SUBCATEGORY_LIST[state.basicInfo.type]?.find(
               options => options.type === state.basicInfo.achievementType
-          )?.title ?? '';
+          )?.title ?? '');
 
     return {
         ...state,

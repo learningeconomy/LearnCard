@@ -58,9 +58,19 @@ describe('resolveCategoryKey', () => {
 describe('CATEGORY_KEY_TO_VALUE', () => {
     it('contains expected category keys', () => {
         const expectedKeys = [
-            'aiTopic', 'aiPathway', 'aiInsight', 'skill', 'socialBadge',
-            'achievement', 'learningHistory', 'accomplishment', 'accommodation',
-            'workHistory', 'resume', 'family', 'id',
+            'aiTopic',
+            'aiPathway',
+            'aiInsight',
+            'skill',
+            'socialBadge',
+            'achievement',
+            'learningHistory',
+            'accomplishment',
+            'accommodation',
+            'workHistory',
+            'resume',
+            'family',
+            'id',
         ];
 
         for (const key of expectedKeys) {

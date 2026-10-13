@@ -292,11 +292,9 @@ const ActionButton: React.FC<{
                 closeModal();
                 newModal(
                     <AdminToolsOptionsContainer
-                        option={
-                            adminToolOptions.find(
-                                option => option.type === AdminToolOptionsEnum.BULK_UPLOAD
-                            )!
-                        }
+                        option={adminToolOptions.find(
+                            option => option.type === AdminToolOptionsEnum.BULK_UPLOAD
+                        )!}
                     />,
                     {},
                     { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
@@ -346,11 +344,9 @@ const ActionButton: React.FC<{
                 closeModal();
                 newModal(
                     <AdminToolsOptionsContainer
-                        option={
-                            developerToolOptions.find(
-                                option => option.type === AdminToolOptionsEnum.API_TOKENS
-                            )!
-                        }
+                        option={developerToolOptions.find(
+                            option => option.type === AdminToolOptionsEnum.API_TOKENS
+                        )!}
                     />,
                     {},
                     { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
@@ -360,11 +356,9 @@ const ActionButton: React.FC<{
                 closeModal();
                 newModal(
                     <AdminToolsOptionsContainer
-                        option={
-                            developerToolOptions.find(
-                                option => option.type === AdminToolOptionsEnum.SIGNING_AUTHORITY
-                            )!
-                        }
+                        option={developerToolOptions.find(
+                            option => option.type === AdminToolOptionsEnum.SIGNING_AUTHORITY
+                        )!}
                     />,
                     {},
                     { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
@@ -374,11 +368,9 @@ const ActionButton: React.FC<{
                 closeModal();
                 newModal(
                     <AdminToolsOptionsContainer
-                        option={
-                            adminToolOptions.find(
-                                option => option.type === AdminToolOptionsEnum.CONSENT_FLOW
-                            )!
-                        }
+                        option={adminToolOptions.find(
+                            option => option.type === AdminToolOptionsEnum.CONSENT_FLOW
+                        )!}
                     />,
                     {},
                     { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
@@ -388,11 +380,9 @@ const ActionButton: React.FC<{
                 closeModal();
                 newModal(
                     <AdminToolsOptionsContainer
-                        option={
-                            developerToolOptions.find(
-                                option => option.type === AdminToolOptionsEnum.NETWORKS
-                            )!
-                        }
+                        option={developerToolOptions.find(
+                            option => option.type === AdminToolOptionsEnum.NETWORKS
+                        )!}
                     />,
                     {},
                     { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
@@ -458,7 +448,7 @@ const ActionButton: React.FC<{
                 </span>{' '}
                 {label === 'Build My LearnCard'
                     ? `Build My ${brandingConfig.name}`
-                    : ACTION_LABELS[label]?.() ?? label}
+                    : (ACTION_LABELS[label]?.() ?? label)}
             </div>
         </button>
     );
@@ -562,7 +552,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const { isAiEnabled, isLoading: isAiFeatureLoading } = useAiFeatureGate();
 
     const activeRole = (
-        isChildProfile ? LearnCardRolesEnum.learner : role ?? LearnCardRolesEnum.learner
+        isChildProfile ? LearnCardRolesEnum.learner : (role ?? LearnCardRolesEnum.learner)
     ) as LearnCardRolesEnum;
 
     const roleLabel = getRoleTitle(activeRole);
@@ -926,7 +916,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                               label={label}
                               bg={
                                   !actionModalButtonColors
-                                      ? colorByLabel[label] ?? bgColors[i % bgColors.length]
+                                      ? (colorByLabel[label] ?? bgColors[i % bgColors.length])
                                       : ''
                               }
                               bgHex={
@@ -952,16 +942,16 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                                             history.push('/families');
                                         }
                                       : label === 'View Learner Insights'
-                                      ? handleViewLearnerInsights
-                                      : label === 'View Child Insights'
-                                      ? handleViewChildInsights
-                                      : label === 'Edit Skills Frameworks'
-                                      ? handleEditSkillsFrameworks
-                                      : label === 'Request Learner Insights'
-                                      ? () => void handleRequestLearnerInsights()
-                                      : label === 'Add to LearnCard'
-                                      ? handleAddToLearnCard
-                                      : undefined
+                                        ? handleViewLearnerInsights
+                                        : label === 'View Child Insights'
+                                          ? handleViewChildInsights
+                                          : label === 'Edit Skills Frameworks'
+                                            ? handleEditSkillsFrameworks
+                                            : label === 'Request Learner Insights'
+                                              ? () => void handleRequestLearnerInsights()
+                                              : label === 'Add to LearnCard'
+                                                ? handleAddToLearnCard
+                                                : undefined
                               }
                           />
                       ))}
