@@ -98,9 +98,10 @@ fn certificates() -> (
         &root_key,
     )
     .unwrap();
-    leaf.add_extension(&SubjectAltName(vec![GeneralName::DnsName(
-        Ia5String::new("kms.us-east-1.amazonaws.com").unwrap(),
-    )]))
+    leaf.add_extension(&SubjectAltName(vec![
+        GeneralName::DnsName(Ia5String::new("kms.us-east-1.amazonaws.com").unwrap()),
+        GeneralName::DnsName(Ia5String::new("localhost").unwrap()),
+    ]))
     .unwrap();
     let leaf = leaf.build::<DerSignature>().unwrap().to_der().unwrap();
     let mut roots = RootCertStore::empty();
@@ -111,6 +112,194 @@ fn certificates() -> (
         leaf_key.to_pkcs8_der().unwrap().as_bytes().to_vec(),
     );
     (roots, CertificateDer::from(leaf), key.into())
+}
+
+async fn local_response(body: Vec<u8>, stall: bool) -> Result<HttpResponse, ConnectorError> {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let (roots, cert, key) = certificates();
+    let server = rustls::ServerConfig::builder_with_provider(Arc::new(
+        rustls::crypto::aws_lc_rs::default_provider(),
+    ))
+    .with_safe_default_protocol_versions()
+    .unwrap()
+    .with_no_client_auth()
+    .with_single_cert(vec![cert], key)
+    .unwrap();
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let endpoint = format!(
+        "https://localhost:{}",
+        listener.local_addr().unwrap().port()
+    );
+    let (ready_tx, ready_rx) = tokio::sync::oneshot::channel();
+    let task = tokio::spawn(async move {
+        let (socket, _) = listener.accept().await.unwrap();
+        let mut tls = tokio_rustls::TlsAcceptor::from(Arc::new(server))
+            .accept(socket)
+            .await
+            .unwrap();
+        let mut request = Vec::new();
+        loop {
+            request.push(tls.read_u8().await.unwrap());
+            if request.ends_with(b"\r\n\r\n") {
+                break;
+            }
+            assert!(request.len() < 16_384);
+        }
+        let header = format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\nX-Test: converted\r\nConnection: close\r\n\r\n", body.len());
+        tls.write_all(header.as_bytes()).await.unwrap();
+        tls.flush().await.unwrap();
+        ready_tx.send(()).unwrap();
+        if stall {
+            std::future::pending::<()>().await;
+        }
+        // The client may close immediately at the size limit. Only BrokenPipe /
+        // ConnectionReset are expected in that case; do not mask other failures.
+        let sent = async {
+            tls.write_all(&body).await?;
+            tls.shutdown().await
+        }
+        .await;
+        if let Err(error) = sent {
+            assert!(body.len() > MAX_RESPONSE_BYTES);
+            assert!(matches!(
+                error.kind(),
+                std::io::ErrorKind::BrokenPipe | std::io::ErrorKind::ConnectionReset
+            ));
+        }
+    });
+    let time = RequestTime::from_interval(TrustedInterval {
+        lo_ms: (START + 50) * 1000,
+        hi_ms: (START + 50) * 1000,
+    })
+    .unwrap();
+    let connector = time
+        .connector_with_tls(&endpoint, time.tls_config(roots).unwrap())
+        .unwrap();
+    let request = hyper::Request::builder()
+        .uri(&endpoint)
+        .body(SdkBody::empty())
+        .unwrap();
+    let response = tokio::spawn(async move {
+        connector
+            .call(HttpRequest::try_from(request).unwrap())
+            .await
+    });
+    ready_rx.await.unwrap();
+    if stall {
+        tokio::time::pause();
+        tokio::time::advance(REQUEST_TIMEOUT + Duration::from_secs(1)).await;
+    }
+    let result = response.await.unwrap();
+    if stall {
+        task.abort();
+        assert!(task.await.unwrap_err().is_cancelled());
+    } else {
+        task.await.unwrap();
+    }
+    result
+}
+
+#[tokio::test]
+async fn http_response_is_converted_and_body_limit_is_enforced() {
+    let response = local_response(b"{\"ok\":true}".to_vec(), false)
+        .await
+        .unwrap();
+    assert_eq!(response.status().as_u16(), 200);
+    assert_eq!(response.headers().get("x-test"), Some("converted"));
+    assert_eq!(response.body().bytes().unwrap(), b"{\"ok\":true}");
+    assert_eq!(
+        local_response(vec![b'a'; MAX_RESPONSE_BYTES], false)
+            .await
+            .unwrap()
+            .body()
+            .bytes()
+            .unwrap()
+            .len(),
+        MAX_RESPONSE_BYTES
+    );
+    assert!(local_response(vec![b'a'; MAX_RESPONSE_BYTES + 1], false)
+        .await
+        .is_err());
+}
+
+#[tokio::test]
+async fn stalled_response_fails_at_exchange_deadline() {
+    assert!(local_response(vec![b'a'; 10], true).await.is_err());
+}
+
+#[tokio::test]
+async fn consecutive_operations_open_new_tls_sessions_and_recheck_validity() {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let (roots, cert, key) = certificates();
+    let server = rustls::ServerConfig::builder_with_provider(Arc::new(
+        rustls::crypto::aws_lc_rs::default_provider(),
+    ))
+    .with_safe_default_protocol_versions()
+    .unwrap()
+    .with_no_client_auth()
+    .with_single_cert(vec![cert], key)
+    .unwrap();
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let endpoint = format!(
+        "https://localhost:{}",
+        listener.local_addr().unwrap().port()
+    );
+    let server = tokio::spawn(async move {
+        let acceptor = tokio_rustls::TlsAcceptor::from(Arc::new(server));
+        for i in 0..2 {
+            let (socket, _) = listener.accept().await.unwrap();
+            let tls = acceptor.accept(socket).await;
+            if i == 1 {
+                assert!(tls.is_err());
+                break;
+            }
+            let mut tls = tls.unwrap();
+            let mut request = Vec::new();
+            loop {
+                request.push(tls.read_u8().await.unwrap());
+                if request.ends_with(b"\r\n\r\n") {
+                    break;
+                }
+                assert!(request.len() < 16_384);
+            }
+            // Deliberately offer keep-alive. A reused connection would bypass
+            // the next operation's certificate expiry check and hang this test.
+            tls.write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\n{}")
+                .await
+                .unwrap();
+            tls.flush().await.unwrap();
+            assert_eq!(
+                tls.read_u8().await.unwrap_err().kind(),
+                std::io::ErrorKind::UnexpectedEof
+            );
+        }
+    });
+    for (seconds, succeeds) in [(START + 50, true), (END + 1, false)] {
+        let time = RequestTime::acquire(&Clock(Ok(TrustedInterval {
+            lo_ms: seconds * 1000,
+            hi_ms: seconds * 1000,
+        })))
+        .await
+        .unwrap();
+        let connector = time
+            .connector_with_tls(&endpoint, time.tls_config(roots.clone()).unwrap())
+            .unwrap();
+        let request = hyper::Request::builder()
+            .uri(&endpoint)
+            .body(SdkBody::empty())
+            .unwrap();
+        assert_eq!(
+            connector
+                .call(HttpRequest::try_from(request).unwrap())
+                .await
+                .is_ok(),
+            succeeds
+        );
+    }
+    tokio::time::timeout(Duration::from_secs(2), server)
+        .await
+        .unwrap()
+        .unwrap();
 }
 
 fn verifier(roots: RootCertStore, lo_ms: u64, hi_ms: u64) -> IntervalVerifier {

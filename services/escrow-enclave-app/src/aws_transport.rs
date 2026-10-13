@@ -99,12 +99,20 @@ impl RequestTime {
         Ok(http_client_fn(move |_, _| connector.clone()))
     }
 
-    fn connector(&self, endpoint: &str) -> Result<SharedHttpConnector, KmsError> {
+    pub(crate) fn connector(&self, endpoint: &str) -> Result<SharedHttpConnector, KmsError> {
         let roots = RootCertStore {
             roots: webpki_roots::TLS_SERVER_ROOTS.to_vec(),
         };
+        self.connector_with_tls(endpoint, self.tls_config(roots)?)
+    }
+
+    fn connector_with_tls(
+        &self,
+        endpoint: &str,
+        config: ClientConfig,
+    ) -> Result<SharedHttpConnector, KmsError> {
         let tls = HttpsConnectorBuilder::new()
-            .with_tls_config(self.tls_config(roots)?)
+            .with_tls_config(config)
             .https_only()
             .enable_http1()
             .build();
