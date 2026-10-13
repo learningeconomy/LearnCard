@@ -13,6 +13,7 @@ import ClrResultWithScaleList from './ClrResultWithScaleList';
 import ClrAlignmentList from './ClrAlignmentList';
 import ClrRelationshipChips from './ClrRelationshipChips';
 import ClrTranscriptEvidenceList from './ClrTranscriptEvidenceList';
+import { ClrCreditValues } from './ClrCreditValues';
 
 /** Source-backed details for qualifications and mixed records reached through CLR associations. */
 const ClrGenericRecordDetailPanel = ({
@@ -34,10 +35,18 @@ const ClrGenericRecordDetailPanel = ({
         [model.canonical]
     );
     const canonical = recordsById.get(record.sourceCredentialId);
+    const course = model.courses.find(
+        item => item.sourceCredentialId === record.sourceCredentialId
+    );
     return (
         <div className="h-full overflow-y-auto bg-grayscale-100 font-poppins pb-10">
             <div className="flex items-start justify-between gap-3 rounded-b-[30px] bg-white px-6 py-5">
                 <div className="min-w-0">
+                    {canonical?.humanCode && (
+                        <p className="break-words text-sm font-medium text-grayscale-600">
+                            {canonical.humanCode.value}
+                        </p>
+                    )}
                     <h2 className="break-words text-xl font-semibold text-grayscale-900">
                         {record.name?.value ?? m['clrTranscript.details.recordDetails']()}
                     </h2>
@@ -65,6 +74,12 @@ const ClrGenericRecordDetailPanel = ({
                     </p>
                 )}
                 <div className="space-y-4 rounded-[20px] border border-grayscale-200 bg-white p-4">
+                    {canonical?.term && (
+                        <p className="break-words text-sm text-grayscale-700">
+                            {canonical.term.value}
+                        </p>
+                    )}
+                    {course && <ClrCreditValues course={course} />}
                     <ClrResultWithScaleList results={record.results} showResultType={adminMode} />
                     <ClrRecordDetails record={canonical} prominentFields={prominentFields} />
                     <ClrAlignmentList alignments={record.alignments} />

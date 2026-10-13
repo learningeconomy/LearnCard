@@ -5,6 +5,7 @@ import { normalizeClrTranscriptDisplayModel } from 'learn-card-base/helpers/cred
 import { setLocale } from '../../paraglide/runtime.js';
 import * as m from '../../paraglide/messages.js';
 import ClrGenericRecordDetailPanel from './ClrGenericRecordDetailPanel';
+import { clrMixedCareerRecord } from '@learncard/credential-library';
 import { ClrOtherRecordsSection } from './ClrOtherRecordsSection';
 const closeModal = vi.hoisted(() => vi.fn());
 vi.mock('learn-card-base', () => ({
@@ -50,6 +51,20 @@ beforeEach(() => setLocale('en', { reload: false }));
 afterEach(() => setLocale('en', { reload: false }));
 
 describe('generic CLR record details', () => {
+    it.each(['Mixed Career Record', 'Joint Services Transcript'])(
+        'preserves course codes, terms, and credits in %s',
+        name => {
+            const model = normalizeClrTranscriptDisplayModel({
+                ...clrMixedCareerRecord.credential,
+                name,
+            } as Record<string, unknown>);
+            render(<ClrGenericRecordDetailPanel model={model} record={model.courses[0]} />);
+            expect(screen.getByText('SYN-MIXED-COLLEGE-COURSE')).toBeInTheDocument();
+            expect(screen.getByText('Spring 2026')).toBeInTheDocument();
+            expect(screen.getByText('3 earned')).toBeInTheDocument();
+            expect(screen.getByText('3 available')).toBeInTheDocument();
+        }
+    );
     it('preserves identities, renders mixed-record alignments and navigates to the associated qualification', () => {
         const model = normalizeClrTranscriptDisplayModel(credential);
         const select = vi.fn();
