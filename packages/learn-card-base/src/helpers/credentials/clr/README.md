@@ -76,7 +76,8 @@ and display parity against every registered CLR fixture.
 `inferClrLayout(canonical)` returns `{ kind, reason }`, with `kind` set to
 `academic`, `military`, or `general`. Title terms and compatible academic types are
 configured in `layout-heuristics.ts`; its linear scanner avoids backtracking on
-untrusted collection titles. This is a presentation hint, never a new
+untrusted collection titles. The scanner recognizes ASCII words only, so localized
+titles with accented letters may fall back to general. This is a presentation hint, never a new
 credential claim. CLR 2.0's use-case categories are not machine-readable sectors.
 Military or service-branch titles explicitly naming training, service, qualifications,
 records or transcripts select the military layout. Known record titles include

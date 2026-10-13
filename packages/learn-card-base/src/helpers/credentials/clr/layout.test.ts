@@ -84,6 +84,25 @@ describe('CLR collection layout', () => {
             reason: 'conflicting-title',
         });
     });
+    it.each(['Transcript of Military Training', 'Official Transcript — Military Service'])(
+        'keeps a separate leading transcript signal neutral in %s',
+        title => {
+            expect(inferClrLayout(normalizeClrCredential(collection(title)))).toEqual({
+                kind: 'general',
+                reason: 'conflicting-title',
+            });
+        }
+    );
+    it('distinguishes an academy transcript from a service record title', () => {
+        expect(
+            inferClrLayout(normalizeClrCredential(collection('Air Force Academy Transcript'))).kind
+        ).toBe('academic');
+        expect(
+            inferClrLayout(
+                normalizeClrCredential(collection('Community College of the Air Force Transcript'))
+            ).kind
+        ).toBe('military');
+    });
     it.each(['Army', 'Navy Academy', 'Community College of the Air Force', 'NotAARTS'])(
         'does not classify provider or partial names in %s',
         title => {

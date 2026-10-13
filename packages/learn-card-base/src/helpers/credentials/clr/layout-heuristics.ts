@@ -88,7 +88,7 @@ interface ClrTitleSignals {
     academic: boolean;
 }
 
-/** Tokenize ASCII title words in one pass; whitespace and punctuation cannot backtrack. */
+/** Tokenize ASCII title words case-insensitively in one pass. Non-ASCII titles remain conservative. */
 const titleWords = (title: string): string[] => {
     const words: string[] = [];
     let start = -1;
