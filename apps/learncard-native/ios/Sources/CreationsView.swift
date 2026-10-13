@@ -1,7 +1,9 @@
 import SwiftUI
+import LearnCardNativeSDK
 import LearnCardNativeCore
 
 struct CreationsView: View {
+    @Environment(\.locale) private var nativeLocale
     let store: AppStore
     var sendOnSelect = false
     @State private var send: Credential?
@@ -16,7 +18,7 @@ struct CreationsView: View {
             VStack(alignment: .leading, spacing: 20) {
                 Text("Credentials you can give again.").font(.subheadline).foregroundStyle(Palette.secondary)
                 if loading { ProgressView("Loading your creations…").frame(maxWidth: .infinity) }
-                if let error { Text(error).foregroundStyle(Palette.secondary); Button("Try Again") { Task { await load(more: false) } } }
+                if let error { Text(error).foregroundStyle(Palette.secondary); Button(NativeText.literal("Try Again")) { Task { await load(more: false) } } }
                 if loaded && items.isEmpty { EmptyState(symbol: "sparkles", title: "Make something worth giving", detail: "Credentials you create will appear here.") }
                 ForEach(items) { credential in
                     if sendOnSelect {
@@ -30,7 +32,7 @@ struct CreationsView: View {
                 }
                 if hasMore { Button("Load More") { Task { await load(more: true) } }.disabled(loading) }
             }.padding(20)
-        }.background(Palette.paper).navigationTitle("Your creations").navigationBarTitleDisplayMode(.inline)
+        }.background(Palette.paper).navigationTitle(NativeText.literal("Your creations")).navigationBarTitleDisplayMode(.inline)
             .sheet(item: $send) { SendView(store: store, credential: $0) }
             .task { if !loaded { await load(more: false) } }
             .refreshable { await load(more: false) }

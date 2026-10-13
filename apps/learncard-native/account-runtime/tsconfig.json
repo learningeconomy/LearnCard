@@ -1,0 +1,23 @@
+{
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "strict": true,
+        "skipLibCheck": true,
+        "noEmit": true,
+        "esModuleInterop": true,
+        "baseUrl": "../../..",
+        "paths": {
+            "learn-card-base/helpers/share-links": [
+                "packages/learn-card-base/src/helpers/share-links/index.ts"
+            ],
+            "learn-card-base/plugins/sqlite/types": [
+                "packages/learn-card-base/src/plugins/sqlite/types.ts"
+            ]
+        },
+        "customConditions": ["development"],
+        "jsx": "react-jsx"
+    },
+    "files": ["consumer-apps.ts", "consumer-host.ts", "consumer-fixture.ts"]
+}

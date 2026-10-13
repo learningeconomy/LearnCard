@@ -5,6 +5,15 @@ import LearnCardNativeSDK
 @main
 struct LearnCardNativeApp: App {
     @State private var store = AppStore()
+    @AppStorage(NativeLanguage.preferenceKey) private var language = "system"
+    init() {
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        if let index = args.firstIndex(of: "--locale"), args.indices.contains(index + 1), NativeLanguage(rawValue: args[index + 1]) != nil {
+            UserDefaults.standard.set(args[index + 1], forKey: NativeLanguage.preferenceKey)
+        }
+        #endif
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -17,6 +26,8 @@ struct LearnCardNativeApp: App {
                 #endif
             }
                 .tint(Palette.brandGreen)
+                .environment(\.locale, (NativeLanguage(rawValue: language) ?? .system).locale)
+                .environment(\.layoutDirection, (NativeLanguage(rawValue: language) ?? .system).isRightToLeft ? .rightToLeft : .leftToRight)
                 .preferredColorScheme(ProcessInfo.processInfo.arguments.contains("--preview-dark") ? .dark : nil)
         }
     }

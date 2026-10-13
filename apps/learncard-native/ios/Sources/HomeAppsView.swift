@@ -1,8 +1,10 @@
 import SwiftUI
+import LearnCardNativeSDK
 import LearnCardNativeCore
 
 /// A compact personal dashboard. Counts describe loaded data; activity is session-local.
 struct HomeView: View {
+    @Environment(\.locale) private var nativeLocale
     let store: AppStore
     var profileName: String?
     let openInbox: () -> Void
@@ -29,7 +31,7 @@ struct HomeView: View {
                     Button(action: create) {
                         VStack(alignment: .leading, spacing: 14) {
                             Image(systemName: "plus").font(.title2)
-                            Text("Create").font(.title2.bold())
+                            Text(NativeText.literal("Create")).font(.title2.bold())
                             Text("Celebrate someone").font(.subheadline.weight(.medium))
                         }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading).padding(20)
                             .foregroundStyle(Palette.cardInk).background(Palette.pinkCard, in: RoundedRectangle(cornerRadius: 24))
@@ -41,7 +43,7 @@ struct HomeView: View {
                     HStack(spacing: 14) {
                         Image(systemName: "rectangle.stack.badge.plus").font(.title2).foregroundStyle(Palette.green)
                         VStack(alignment: .leading, spacing: 5) {
-                            Text("Your creations").font(.headline).foregroundStyle(Palette.ink)
+                            Text(NativeText.literal("Your creations")).font(.headline).foregroundStyle(Palette.ink)
                             Text("Credentials you can give again").font(.caption).foregroundStyle(Palette.secondary)
                         }
                         Spacer(); Image(systemName: "chevron.right").foregroundStyle(Palette.secondary)
@@ -78,31 +80,5 @@ struct HomeView: View {
         .navigationTitle(scrolled ? "Home" : "").navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(Palette.paper, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar)
         .refreshable { await store.refresh() }
-    }
-}
-
-/// Consumer store destination reserved for the next integration phase.
-struct AppsView: View {
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                PageHeading(title: "Apps")
-                VStack(alignment: .leading, spacing: 22) {
-                    Image("AppsTabActive").resizable().scaledToFit().frame(width: 64, height: 64).accessibilityHidden(true)
-                    Text("More ways to learn").font(.title.bold())
-                    Text("Discover experiences that connect with your LearnCard.").font(.body)
-                    Link(destination: URL(string: "https://staging.learncard.app/launchpad/browse")!) {
-                        Label("Browse on LearnCard", systemImage: "arrow.up.right")
-                            .font(.body.weight(.semibold)).padding(.vertical, 14).padding(.horizontal, 18)
-                            .background(.white.opacity(0.75), in: Capsule())
-                    }.accessibilityIdentifier("apps-browse")
-                }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
-                    .foregroundStyle(Palette.cardInk).background(Palette.blueCard, in: RoundedRectangle(cornerRadius: 28))
-                Text("Native app browsing and installation are coming next. The web store may ask you to sign in.")
-                    .font(.subheadline).foregroundStyle(Palette.secondary)
-            }.padding(20)
-        }.background(SectionBackground(tint: Palette.paper))
-            .navigationTitle("").navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Palette.paper, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar)
     }
 }

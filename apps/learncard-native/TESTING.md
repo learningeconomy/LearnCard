@@ -43,3 +43,11 @@ LC_NATIVE_SIMULATOR_NAME='LearnCard Native UI Checks' \
 ```
 
 CI does not send verification email, recover a real account, send credentials to real recipients, or run the opt-in staging exchange. Live SSS/Firebase service availability, physical-device lock/unlock, revoked credentials, minimum-iOS compatibility, and real upload/send/share/profile mutations still need separate validation. UI screenshots are evidence for review, not pixel-diff snapshot assertions. Keep testing the existing account connection as backend contracts evolve.
+
+## Consumer Apps and localization regressions
+
+CI additionally runs a strict check of native consumer modules against the source SDK (`scripts/typecheck-consumer.ts`, `account-runtime/tsconfig.json`), actual dispatch-table checks for every Apps/privacy command, consent materialization tests (full audience, explicit selection, required permissions, stale agreements, missing records and identity origin), and partner source/origin rejection. Swift tests cover response Bool/null fragments, FIFO/cancellation/disposal of SDK commands, agreement removal versus uninstall, and late reads/install responses after account lock. Native catalog translations/plurals/RTL use the real generated localization resources.
+
+Consumer UI checks cover install/consent/withdraw, profile Data Sharing, the **actual PartnerConnect client** inside a WK iframe (host handshake, identity cancel/accept and unsupported action), account background closing the browser, and French/Arabic navigation. Samples are isolated and never install an app, publish consent, issue a credential or send an email on a real account. Catalog reads are public. Real published partner-app mutations, contract expiry/guardian gates against staging, device web sign-in continuity and physical-device browser behavior still require live validation.
+
+The consumer type check fails native-module and global/config diagnostics. It resolves workspace sources with the development condition rather than depending on ignored local SDK `.d.ts` builds. Existing diagnostics in imported monorepo implementation files remain owned by those packages and are reported as a count; this check does not claim to type-check the whole monorepo.

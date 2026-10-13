@@ -1,7 +1,9 @@
 import SwiftUI
+import LearnCardNativeSDK
 import LearnCardNativeCore
 
 struct ReceiveView: View {
+    @Environment(\.locale) private var nativeLocale
     @Environment(\.dismiss) private var dismiss
     let store: AppStore
     @Binding var selectedOffer: Credential?
@@ -41,7 +43,7 @@ struct ReceiveView: View {
             .foregroundStyle(Palette.ink)
             .navigationTitle("Receive")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button(NativeText.literal("Cancel")) { dismiss() } } }
         }
     }
 

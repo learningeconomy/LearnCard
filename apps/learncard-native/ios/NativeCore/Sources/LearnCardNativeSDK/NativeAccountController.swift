@@ -16,6 +16,7 @@ extension FirebaseSession: AccountSession {}
 /// Replace only the account backend in tests, retaining the production controller and views.
 @MainActor public protocol AccountHost: AnyObject {
     var credentialService: any CredentialService { get }
+    var consumerService: any ConsumerAppService { get }
     func initialize() async throws -> AccountState
     func recover(method: String, phrase: String, fileContents: String, password: String, emailShare: String) async throws -> AccountState
     func updateProfile(name: String, bio: String) async throws -> AccountState
@@ -24,7 +25,10 @@ extension FirebaseSession: AccountSession {}
 
 extension AccountRuntime: AccountHost {
     public var credentialService: any CredentialService { LiveCredentialService(runtime: self) }
+    public var consumerService: any ConsumerAppService { LiveConsumerAppService(runtime: self) }
 }
+
+public extension AccountHost { var consumerService: any ConsumerAppService { UnavailableConsumerAppService() } }
 
 public enum AccountActivity: Sendable { case active, inactive, background }
 
@@ -123,7 +127,7 @@ public final class NativeAccountController {
         self.state = state; phase = state.phase
         if state.error != nil { throw AccountError.recovery }
         if state.phase == "ready", let runtime {
-            let store = NativeAppStore(service: runtime.credentialService, isLive: true)
+            let store = NativeAppStore(service: runtime.credentialService, isLive: true, consumerService: runtime.consumerService)
             self.store = store
             await store.refresh()
         }
@@ -171,6 +175,7 @@ public final class NativeAccountController {
     public func lock() {
         generation += 1
         runtime?.dispose(); runtime = nil
+        store?.consumer.lock()
         store = nil; state = nil; user = nil; recipientName = nil
         busy = false; phase = "locked"; error = nil
     }

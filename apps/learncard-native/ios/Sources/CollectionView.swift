@@ -1,7 +1,9 @@
 import SwiftUI
+import LearnCardNativeSDK
 import LearnCardNativeCore
 
 struct CollectionView: View {
+    @Environment(\.locale) private var nativeLocale
     let store: AppStore
     var onScrollStateChange: (Bool) -> Void = { _ in }
     @State private var search = ""
@@ -23,10 +25,10 @@ struct CollectionView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
                 PageHeading(title: "Collection")
-                Text("My credentials").font(.subheadline.weight(.medium)).foregroundStyle(Palette.secondary)
+                Text(NativeText.literal("My credentials")).font(.subheadline.weight(.medium)).foregroundStyle(Palette.secondary)
                 HStack(spacing: 10) {
                     Image(systemName: "magnifyingglass").foregroundStyle(Palette.secondary).accessibilityHidden(true)
-                    TextField("Find a credential", text: $search).focused($searching)
+                    TextField(NativeText.literal("Find a credential"), text: $search).focused($searching)
                         .submitLabel(.search).onSubmit { searching = false }
                         .accessibilityIdentifier("collection-search")
                     if !search.isEmpty {
@@ -46,7 +48,7 @@ struct CollectionView: View {
                 if store.snapshot == nil {
                     VStack(spacing: 16) {
                         if store.isBusy { ProgressView("Loading your collection…") }
-                        else { Button("Try Again") { Task { await store.refresh() } } }
+                        else { Button(NativeText.literal("Try Again")) { Task { await store.refresh() } } }
                     }.frame(maxWidth: .infinity).padding(.vertical, 50)
                 } else if credentials.isEmpty {
                     EmptyState(symbol: "rectangle.stack", title: "Your next achievement belongs here",

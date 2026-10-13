@@ -1,7 +1,9 @@
 import SwiftUI
+import LearnCardNativeSDK
 import LearnCardNativeCore
 
 struct ShareCredentialsView: View {
+    @Environment(\.locale) private var nativeLocale
     @Environment(\.dismiss) private var dismiss
     let store: AppStore
     @State private var selected = Set<String>()
@@ -56,7 +58,7 @@ struct ShareCredentialsView: View {
                 } else {
                     Section {
                         Text("Choose one or several credentials.").font(.subheadline).foregroundStyle(Palette.secondary)
-                        TextField("Find a credential", text: $search).accessibilityIdentifier("share-search")
+                        TextField(NativeText.literal("Find a credential"), text: $search).accessibilityIdentifier("share-search")
                     }
                     ForEach(choices) { credential in
                         Button {
@@ -78,7 +80,7 @@ struct ShareCredentialsView: View {
                 if let error { Text(error).font(.subheadline).foregroundStyle(Palette.secondary) }
             }
             .scrollContentBackground(.hidden).background(Palette.paper)
-            .navigationTitle("Share credentials").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle(NativeText.literal("Share credentials")).navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button(result?.pending == false ? "Done" : "Cancel") { passcode = ""; dismiss() }.disabled(store.isBusy) }
                 if review && result == nil { ToolbarItem(placement: .topBarTrailing) { Button("Back") { review = false }.disabled(store.isBusy) } }

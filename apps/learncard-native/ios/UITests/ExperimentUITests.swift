@@ -7,7 +7,7 @@ final class ExperimentUITests: XCTestCase {
     @MainActor
     func testCollectionTitleAndScrollingBrand() {
         let app = XCUIApplication()
-        app.launchArguments = ["--demo"]
+        app.launchArguments = ["--demo", "--locale", "en"]
         app.launch()
         XCTAssertTrue(app.staticTexts["page-title-collection"].waitForExistence(timeout: 10), app.debugDescription)
         XCTAssertTrue(app.staticTexts["page-title-collection"].isHittable)
@@ -27,7 +27,7 @@ final class ExperimentUITests: XCTestCase {
     @MainActor
     func testMainDestinationsHaveVisibleTitles() {
         let app = XCUIApplication()
-        app.launchArguments = ["--demo"]
+        app.launchArguments = ["--demo", "--locale", "en"]
         app.launch()
         for title in ["Inbox", "Apps", "Home", "Collection"] {
             app.buttons["nav-\(title.lowercased())"].tap()
@@ -40,7 +40,7 @@ final class ExperimentUITests: XCTestCase {
     @MainActor
     func testClaimMovesSampleIntoCollection() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["--demo"]
+        app.launchArguments = ["--demo", "--locale", "en"]
         app.launch()
         app.buttons["nav-inbox"].tap()
         let offer = app.buttons["offer-first-aid"]
@@ -59,7 +59,7 @@ final class ExperimentUITests: XCTestCase {
     @MainActor
     func testCreateAndRecordSend() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["--demo"]
+        app.launchArguments = ["--demo", "--locale", "en"]
         app.launch()
         app.buttons["create"].tap(); app.buttons["Create new"].tap()
         let title = app.textFields["draft-title"]
@@ -88,7 +88,7 @@ final class ExperimentUITests: XCTestCase {
 
     @MainActor
     func testTrayAndAccountSettings() {
-        let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
+        let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", "en"]; app.launch()
         XCTAssertTrue(app.buttons["nav-apps"].waitForExistence(timeout: 5))
         app.buttons["Account"].tap()
         XCTAssertTrue(app.buttons["account-edit-profile"].waitForExistence(timeout: 5))
@@ -99,7 +99,7 @@ final class ExperimentUITests: XCTestCase {
 
     @MainActor
     func testPlusActionsAndMultipleCredentialSharing() {
-        let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
+        let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", "en"]; app.launch()
         app.buttons["create"].tap()
         XCTAssertTrue(app.buttons["Create new"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Send existing creation"].exists)
@@ -117,7 +117,7 @@ final class ExperimentUITests: XCTestCase {
 
     @MainActor
     func testCreationFormatAndCategoryUseActionSheets() {
-        let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
+        let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", "en"]; app.launch()
         app.buttons["create"].tap(); app.buttons["Create new"].tap(); app.swipeUp()
         app.buttons["draft-format"].tap()
         let formatSheet = app.sheets.firstMatch
@@ -136,7 +136,7 @@ final class ExperimentUITests: XCTestCase {
 
     @MainActor
     func testCreateForSomeoneKeepsTemplateSeparateFromCollection() {
-        let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
+        let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", "en"]; app.launch()
         app.buttons["create"].tap(); app.buttons["Create new"].tap()
         XCTAssertTrue(app.buttons["draft-artwork"].exists)
         let title = app.textFields["draft-title"]; title.tap(); title.typeText("Native kindness badge")
@@ -157,7 +157,7 @@ final class ExperimentUITests: XCTestCase {
     @MainActor
     func testReceiveReviewsBeforeClaiming() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["--demo"]
+        app.launchArguments = ["--demo", "--locale", "en"]
         app.launch()
         app.buttons["nav-home"].tap()
         app.buttons["receive"].tap()
@@ -173,8 +173,8 @@ final class ExperimentUITests: XCTestCase {
     @MainActor
     func testNativeShareSheetAndDarkMode() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["--demo"]
-        app.launchArguments = ["--demo", "--preview-dark"]
+        app.launchArguments = ["--demo", "--locale", "en"]
+        app.launchArguments = ["--demo", "--preview-dark", "--locale", "en"]
         app.launch()
         app.buttons["credential-design"].tap()
         app.swipeUp()

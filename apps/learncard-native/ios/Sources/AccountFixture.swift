@@ -47,6 +47,7 @@ import LearnCardNativeSDK
 @MainActor private final class FixtureHost: AccountHost {
     let vault: KeychainVault
     let credentialService: any CredentialService = DemoCredentialService()
+    let consumerService: any ConsumerAppService = DemoConsumerAppService()
     private var disposed = false
     init(vault: KeychainVault) { self.vault = vault }
     func initialize() async throws -> AccountState {

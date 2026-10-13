@@ -4,6 +4,8 @@ ios/NativeCore/.swiftpm/
 **/xcuserdata/
 *.xcuserstate
 artifacts/
+ios/NativeCore/Sources/LearnCardNativeSDK/Resources/*.lproj/
+ios/NativeCore/Sources/LearnCardNativeSDK/Resources/native-english.json
 ios/NativeCore/Sources/LearnCardNativeSDK/Resources/sdk.js
 ios/NativeCore/Sources/LearnCardNativeSDK/Resources/didkit.wasm
 ios/NativeCore/Sources/LearnCardNativeSDK/Resources/vectors.json
@@ -12,3 +14,6 @@ ios/NativeCore/Sources/LearnCardNativeSDK/Resources/account-sdk.js
 ios/NativeCore/Sources/LearnCardNativeSDK/Resources/account-config.json
 ios/NativeCore/Sources/LearnCardNativeSDK/Resources/live-sdk.js
 ios/NativeCore/Sources/LearnCardNativeSDK/Resources/live-vectors.json
+
+ios/NativeCore/Sources/LearnCardNativeSDK/Resources/consumer-host.js
+ios/NativeCore/Sources/LearnCardNativeSDK/Resources/consumer-fixture.js

@@ -1,7 +1,9 @@
 import SwiftUI
 import LearnCardNativeCore
+import LearnCardNativeSDK
 
 struct RootView: View {
+    @Environment(\.locale) private var nativeLocale
     @Bindable var store: AppStore
     var account: AccountController? = nil
     @State private var showReceive = false
@@ -44,26 +46,26 @@ struct RootView: View {
                             }
                         }
                         ToolbarItem(placement: .topBarTrailing) {
-                            Button("Account", systemImage: "person.crop.circle") { showAccount = true }
+                            Button(NativeText.literal("Account"), systemImage: "person.crop.circle") { showAccount = true }
                                 .labelStyle(.iconOnly)
                         }
                     }
             }
-            .tabItem { Label { Text("Collection") } icon: { Image(selectedTab == 0 ? "CollectionTabActive" : "CollectionTab").renderingMode(.original) } }
+            .tabItem { Label { Text(NativeText.literal("Collection")) } icon: { Image(selectedTab == 0 ? "CollectionTabActive" : "CollectionTab").renderingMode(.original) } }
             .tag(0)
             NavigationStack { InboxView(store: store, selectedOffer: $offer) }
-                .tabItem { Label { Text("Inbox") } icon: { Image(selectedTab == 1 ? "InboxTabActive" : "InboxTab").renderingMode(.original) } }
+                .tabItem { Label { Text(NativeText.literal("Inbox")) } icon: { Image(selectedTab == 1 ? "InboxTabActive" : "InboxTab").renderingMode(.original) } }
                 .badge(store.snapshot?.offers.count ?? 0)
                 .tag(1)
-            NavigationStack { AppsView() }
-                .tabItem { Label { Text("Apps") } icon: { Image(selectedTab == 2 ? "AppsTabActive" : "AppsTab").renderingMode(.original) } }
+            NavigationStack { AppsView(store: store, create: { showCreate = true }, openInbox: { selectedTab = 1 }) }
+                .tabItem { Label { Text(NativeText.literal("Apps")) } icon: { Image(selectedTab == 2 ? "AppsTabActive" : "AppsTab").renderingMode(.original) } }
                 .tag(2)
             NavigationStack {
                 HomeView(store: store, profileName: account?.state?.profileName,
                          openInbox: { selectedTab = 1 }, create: { showCreate = true },
                          receive: { showReceive = true })
             }
-                .tabItem { Label { Text("Home") } icon: { Image(selectedTab == 3 ? "HomeTabActive" : "HomeTab").renderingMode(.original) } }
+                .tabItem { Label { Text(NativeText.literal("Home")) } icon: { Image(selectedTab == 3 ? "HomeTabActive" : "HomeTab").renderingMode(.original) } }
                 .tag(3)
         }
         .toolbar(.hidden, for: .tabBar)
@@ -75,17 +77,17 @@ struct RootView: View {
         }) { ReceiveView(store: store, selectedOffer: $receivedOffer) }
         .sheet(isPresented: $showExisting) {
             NavigationStack { CreationsView(store: store, sendOnSelect: true)
-                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { showExisting = false } } } }
+                .toolbar { ToolbarItem(placement: .cancellationAction) { Button(NativeText.literal("Done")) { showExisting = false } } } }
         }
         .sheet(isPresented: $showShare) { ShareCredentialsView(store: store) }
         .sheet(isPresented: $showCreate) { CreateView(store: store) }
-        .sheet(isPresented: $showAccount) { AccountView(account: account) }
+        .sheet(isPresented: $showAccount) { AccountView(account: account, store: store) }
         .sheet(item: $offer) { CredentialDetailView(store: store, credential: $0, isOffer: true) }
         .alert("Something went wrong", isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })) {
-            Button("Done", role: .cancel) { store.error = nil }
+            Button(NativeText.literal("Done"), role: .cancel) { store.error = nil }
         } message: { Text(store.error ?? "Please try again.") }
         .alert("Done", isPresented: Binding(get: { store.notice != nil }, set: { if !$0 { store.notice = nil } })) {
-            Button("Done", role: .cancel) { store.notice = nil }
+            Button(NativeText.literal("Done"), role: .cancel) { store.notice = nil }
         } message: { Text(store.notice ?? "") }
         .onOpenURL { url in
             guard !store.isLive else { store.error = "Open Inbox to review credentials sent to this account."; return }

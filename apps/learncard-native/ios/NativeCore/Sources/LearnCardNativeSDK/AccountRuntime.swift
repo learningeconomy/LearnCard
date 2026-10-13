@@ -33,6 +33,7 @@ public final class AccountRuntime: NSObject, WKNavigationDelegate {
     private var deadline: Task<Void, Never>?
     private var disposed = false
     private var ready = false
+    private let commands = AccountCommandQueue()
 
     public init(user: FirebaseUser, vault: KeychainVault, firebase: FirebaseSession) {
         bridge = AccountBridge(user: user, vault: vault, firebase: firebase)
@@ -103,6 +104,7 @@ public final class AccountRuntime: NSObject, WKNavigationDelegate {
     public func dispose() {
         guard !disposed else { return }
         disposed = true; ready = false
+        commands.dispose()
         deadline?.cancel(); deadline = nil
         bridge.invalidate(); transport.stop()
         webView.configuration.userContentController.removeAllScriptMessageHandlers()
@@ -113,7 +115,9 @@ public final class AccountRuntime: NSObject, WKNavigationDelegate {
         webView.loadHTMLString("", baseURL: nil)
     }
 
-    private func command<T: Decodable>(_ method: String, input: [String: Any] = [:]) async throws -> T {
+    func command<T: Decodable>(_ method: String, input: [String: Any] = [:]) async throws -> T {
+        try await commands.acquire()
+        defer { commands.release() }
         guard !disposed, pending == nil else { throw AccountError.cancelled }
         let text: String = try await withCheckedThrowingContinuation { continuation in
             pending = continuation
@@ -133,22 +137,7 @@ public final class AccountRuntime: NSObject, WKNavigationDelegate {
                     }
                 }
         }
-        let data = Data(text.utf8)
-        guard let envelope = try JSONSerialization.jsonObject(with: data) as? [String: Any], envelope["ok"] as? Bool == true,
-              let value = envelope["value"] else {
-            throw method == "recover" ? AccountError.recovery : AccountError.unavailable
-        }
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .custom { value in
-            let text = try value.singleValueContainer().decode(String.self)
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            if let date = formatter.date(from: text) { return date }
-            formatter.formatOptions = [.withInternetDateTime]
-            guard let date = formatter.date(from: text) else { throw AccountError.unavailable }
-            return date
-        }
-        return try decoder.decode(T.self, from: JSONSerialization.data(withJSONObject: value))
+        return try AccountReply.decode(text, method: method)
     }
 
     public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {

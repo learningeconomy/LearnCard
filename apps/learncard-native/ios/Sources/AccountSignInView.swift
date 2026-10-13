@@ -3,6 +3,7 @@ import UniformTypeIdentifiers
 import LearnCardNativeSDK
 
 struct AccountRootView: View {
+    @Environment(\.locale) private var nativeLocale
     @Environment(\.scenePhase) private var scenePhase
     @State private var account: AccountController
     init(account: AccountController = AccountController()) { _account = State(initialValue: account) }
@@ -24,6 +25,7 @@ struct AccountRootView: View {
 }
 
 struct AccountSignInView: View {
+    @Environment(\.locale) private var nativeLocale
     @Bindable var account: AccountController
     @State private var code = ""
     @State private var method = "email"
@@ -58,7 +60,7 @@ struct AccountSignInView: View {
                         }
                     }
                 case "signIn", "idle":
-                    Section("Sign in") {
+                    Section(NativeText.literal("Sign in")) {
                         Text(account.email)
                         PrimaryButton(title: "Send Sign-In Code", loading: account.busy, disabled: account.busy) {
                             Task { await account.sendCode() }
@@ -67,26 +69,26 @@ struct AccountSignInView: View {
                 case "code":
                     Section("Check your email") {
                         Text("Enter the code sent to \(account.email).")
-                        TextField("Six-digit code", text: $code).keyboardType(.numberPad).textContentType(.oneTimeCode)
+                        TextField(NativeText.literal("Six-digit code"), text: $code).keyboardType(.numberPad).textContentType(.oneTimeCode)
                             .accessibilityIdentifier("sign-in-code")
                         PrimaryButton(title: "Sign In", loading: account.busy, disabled: account.busy || code.count != 6) {
                             let value = code; code = ""
                             Task { await account.verify(value) }
                         }.accessibilityIdentifier("verify-sign-in-code")
-                        Button("Send a New Code") { Task { await account.sendCode() } }.disabled(account.busy)
+                        Button(NativeText.literal("Send a New Code")) { Task { await account.sendCode() } }.disabled(account.busy)
                     }
                 case "needs_recovery", "recovery":
-                    Section("Choose how to restore access") {
+                    Section(NativeText.literal("Choose how to restore access")) {
                         Text("After recovery, this iPhone can remember your account.")
                             .font(.subheadline).foregroundStyle(Palette.secondary)
                         Picker("Method", selection: $method) {
-                            Text("Recovery email").tag("email")
-                            Text("Saved recovery words").tag("phrase")
-                            Text("Backup file").tag("backup")
+                            Text(NativeText.literal("Recovery email")).tag("email")
+                            Text(NativeText.literal("Saved recovery words")).tag("phrase")
+                            Text(NativeText.literal("Backup file")).tag("backup")
                         }
                         if method == "phrase" {
                             Text("Use the words you saved when setting up recovery.").font(.caption).foregroundStyle(Palette.secondary)
-                            SecureField("Saved recovery words", text: $phrase).textInputAutocapitalization(.never).autocorrectionDisabled()
+                            SecureField(NativeText.literal("Saved recovery words"), text: $phrase).textInputAutocapitalization(.never).autocorrectionDisabled()
                                 .accessibilityIdentifier("recovery-phrase")
                         } else if method == "backup" {
                             Button(fileName.isEmpty ? "Choose Backup File" : fileName) { importing = true }
@@ -107,7 +109,7 @@ struct AccountSignInView: View {
                     Section {
                         Text(account.phase == "missing_profile" ? "Your account is restored, but its staging profile hasn't been set up yet." : "Complete account setup or upgrade in staging LearnCard, then try again here.")
                         Link("Open Staging LearnCard", destination: URL(string: "https://staging.learncard.ai")!)
-                        Button("Try Again") { Task { await account.resume() } }.disabled(account.busy)
+                        Button(NativeText.literal("Try Again")) { Task { await account.resume() } }.disabled(account.busy)
                     }
                 }
                 if account.user != nil {

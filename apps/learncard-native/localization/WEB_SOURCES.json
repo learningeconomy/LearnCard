@@ -1,0 +1,20 @@
+{
+    "source": "apps/learn-card-app/public/locales/{en,es,fr,ar}/translation.json",
+    "reusedKeys": [
+        "developerPortal.dashboards.activity.source.inbox",
+        "developerPortal.credentialBuilder.sectionTitles.achievements",
+        "consentFlow.credentialType.membershipPlural",
+        "developerPortal.guides.embedApp.apiReference.create",
+        "shareLinks.share",
+        "pathways.saveProfile",
+        "developerPortal.guides.embedApp.launchCategories.notifications",
+        "issueFlow.copy",
+        "base.boostFooter.share",
+        "boost.sendBoost",
+        "shareLinks.categoryFilter",
+        "login.developerSignIn.signInAction",
+        "recovery.recoverAccount",
+        "common.skipForNow",
+        "developerPortal.submissionForm.steps.review.title"
+    ]
+}

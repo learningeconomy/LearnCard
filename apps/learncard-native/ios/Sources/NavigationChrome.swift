@@ -1,8 +1,10 @@
 import SwiftUI
+import LearnCardNativeSDK
 
 enum CollectionAction { case create, send, share }
 
 struct CollectionActionsMenu: View {
+    @Environment(\.locale) private var nativeLocale
     let select: (CollectionAction) -> Void
     var body: some View {
         VStack(spacing: 2) {
@@ -16,7 +18,7 @@ struct CollectionActionsMenu: View {
             HStack(spacing: 12) {
                 Image(systemName: symbol).font(.system(size: 17, weight: .medium)).foregroundStyle(Palette.cardInk)
                     .frame(width: 36, height: 36).background(tint, in: Circle()).accessibilityHidden(true)
-                Text(title).font(.subheadline.weight(.medium)).foregroundStyle(Palette.ink)
+                Text(NativeText.literal(title)).font(.subheadline.weight(.medium)).foregroundStyle(Palette.ink)
                 Spacer(minLength: 0)
             }.padding(.horizontal, 6).frame(minHeight: 52).contentShape(Rectangle())
         }.buttonStyle(CredentialPressStyle())
@@ -24,6 +26,7 @@ struct CollectionActionsMenu: View {
 }
 
 struct NativeTabTray: View {
+    @Environment(\.locale) private var nativeLocale
     @Binding var selection: Int
     let inboxCount: Int
     private let names = ["Collection", "Inbox", "Apps", "Home"]
@@ -42,10 +45,10 @@ struct NativeTabTray: View {
                                         .background(Color.red, in: Capsule()).offset(x: 8, y: -3).accessibilityHidden(true)
                                 }
                             }.accessibilityHidden(true)
-                        Text(names[tab]).font(.caption2.weight(selection == tab ? .semibold : .regular))
+                        Text(NativeText.literal(names[tab])).font(.caption2.weight(selection == tab ? .semibold : .regular))
                             .foregroundStyle(selection == tab ? Palette.selection : Palette.secondary)
                     }.frame(maxWidth: .infinity, minHeight: 60).contentShape(Rectangle())
-                }.buttonStyle(.plain).accessibilityLabel(names[tab])
+                }.buttonStyle(.plain).accessibilityLabel(NativeText.literal(names[tab]))
                     .accessibilityValue(tab == 1 && inboxCount > 0 ? "\(inboxCount) to review" : "")
                     .accessibilityAddTraits(selection == tab ? .isSelected : [])
                     .accessibilityIdentifier("nav-\(names[tab].lowercased())")

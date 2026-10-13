@@ -79,7 +79,7 @@ import XCTest
 
     private func launch(_ scenario: String) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["--account-fixture", scenario, UUID().uuidString, "--fixture-reset"]
+        app.launchArguments = ["--account-fixture", scenario, UUID().uuidString, "--fixture-reset", "--locale", "en"]
         app.launch(); return app
     }
     private func relaunch(_ app: XCUIApplication) {

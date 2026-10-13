@@ -1,4 +1,5 @@
 import SwiftUI
+import LearnCardNativeSDK
 import LearnCardNativeCore
 
 enum Palette {
@@ -52,6 +53,7 @@ private extension Color {
 }
 
 struct PrimaryButton: View {
+    @Environment(\.locale) private var nativeLocale
     let title: String
     var loading = false
     var disabled = false
@@ -74,6 +76,7 @@ struct PrimaryButton: View {
 }
 
 struct CredentialArtwork: View {
+    @Environment(\.locale) private var nativeLocale
     let credential: Credential
     var size: CGFloat = 104
 
@@ -105,6 +108,7 @@ struct CredentialArtwork: View {
 }
 
 struct CredentialCard: View {
+    @Environment(\.locale) private var nativeLocale
     let credential: Credential
     var featured = false
     var onWhiteSurface = false
@@ -199,6 +203,7 @@ struct CredentialPressStyle: ButtonStyle {
 }
 
 struct SectionBackground: View {
+    @Environment(\.locale) private var nativeLocale
     let tint: Color
     var body: some View {
         tint.ignoresSafeArea()
@@ -206,11 +211,13 @@ struct SectionBackground: View {
 }
 
 struct PageHeading: View {
+    @Environment(\.locale) private var nativeLocale
     let title: String
+    var identifier: String? = nil
     var body: some View {
-        Text(title).font(.largeTitle.bold()).foregroundStyle(Palette.ink)
+        Text(NativeText.literal(title)).font(.largeTitle.bold()).foregroundStyle(Palette.ink)
             .accessibilityAddTraits(.isHeader)
-            .accessibilityIdentifier("page-title-\(title.lowercased())")
+            .accessibilityIdentifier("page-title-\(identifier ?? title.lowercased())")
     }
 }
 
@@ -222,6 +229,7 @@ extension View {
 }
 
 struct LearnCardBrand: View {
+    @Environment(\.locale) private var nativeLocale
     var compact = false
     var body: some View {
         Image("LearnCardMark").resizable().scaledToFit()
@@ -232,6 +240,7 @@ struct LearnCardBrand: View {
 }
 
 struct EmptyState: View {
+    @Environment(\.locale) private var nativeLocale
     let symbol: String
     let title: String
     let detail: String

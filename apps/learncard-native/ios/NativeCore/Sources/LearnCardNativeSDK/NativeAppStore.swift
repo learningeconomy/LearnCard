@@ -10,10 +10,12 @@ public final class NativeAppStore {
     public var error: String?
     public var notice: String?
     public let isLive: Bool
+    public let consumer: ConsumerAppsStore
 
-    public init(service: any CredentialService = DemoCredentialService(), isLive: Bool = false) {
+    public init(service: any CredentialService = DemoCredentialService(), isLive: Bool = false, consumerService: (any ConsumerAppService)? = nil) {
         self.service = service
         self.isLive = isLive
+        consumer = ConsumerAppsStore(service: consumerService ?? (isLive ? UnavailableConsumerAppService() : DemoConsumerAppService()))
     }
 
     public func refresh() async {

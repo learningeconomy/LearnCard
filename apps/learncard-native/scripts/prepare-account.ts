@@ -2,6 +2,7 @@ import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../../../packages/learn-card-ba
 import { build } from 'esbuild';
 import { readFile, writeFile, copyFile, mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import './prepare-localization';
 const root = resolve(import.meta.dir, '../../..');
 const folder = resolve(
     root,
@@ -64,6 +65,19 @@ await build({
     ],
     logLevel: 'warning',
 });
+for (const entry of ['consumer-host', 'consumer-fixture']) {
+    await build({
+        entryPoints: [resolve(root, `apps/learncard-native/account-runtime/${entry}.ts`)],
+        outfile: resolve(folder, `${entry}.js`),
+        bundle: true,
+        minify: true,
+        format: 'iife',
+        platform: 'browser',
+        target: ['safari18'],
+        conditions: ['development', 'browser'],
+        logLevel: 'warning',
+    });
+}
 console.log(
     'Prepared bundled account SDK and public staging Firebase configuration. No account secrets bundled.'
 );

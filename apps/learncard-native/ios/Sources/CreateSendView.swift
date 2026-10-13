@@ -4,6 +4,7 @@ import LearnCardNativeCore
 import LearnCardNativeSDK
 
 struct CreateView: View {
+    @Environment(\.locale) private var nativeLocale
     @Environment(\.dismiss) private var dismiss
     let store: AppStore
     @State private var title = ""
@@ -62,9 +63,9 @@ struct CreateView: View {
                 }.listRowBackground(Color.clear)
             }
             .scrollContentBackground(.hidden).background(Palette.paper).foregroundStyle(Palette.ink)
-            .navigationTitle("Create a credential").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle(NativeText.literal("Create a credential")).navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(submitting) }
+                ToolbarItem(placement: .cancellationAction) { Button(NativeText.literal("Cancel")) { dismiss() }.disabled(submitting) }
                 if step > 0 {
                     ToolbarItem(placement: .topBarTrailing) { Button("Back") { withAnimation { step -= 1 } }.disabled(submitting) }
                 }
@@ -122,13 +123,13 @@ struct CreateView: View {
                         ForEach(["Badge", "Certificate", "Course", "Competency", "Membership", "License", "MicroCredential"], id: \.self) { format in
                             Button(formatName(format)) { achievementType = format }
                         }
-                        Button("Cancel", role: .cancel) {}
+                        Button(NativeText.literal("Cancel"), role: .cancel) {}
                     }
                 Button { showCategory = true } label: { selectionRow("Category", value: kind.rawValue) }
                     .accessibilityIdentifier("draft-category")
                     .confirmationDialog("Collection category", isPresented: $showCategory, titleVisibility: .visible) {
                         ForEach(CredentialKind.allCases, id: \.self) { category in Button(category.rawValue) { kind = category } }
-                        Button("Cancel", role: .cancel) {}
+                        Button(NativeText.literal("Cancel"), role: .cancel) {}
                     }
             }
             Section("How was it earned?") {
@@ -208,6 +209,7 @@ struct CreateView: View {
 }
 
 struct RecipientPickerView: View {
+    @Environment(\.locale) private var nativeLocale
     @Environment(\.dismiss) private var dismiss
     let store: AppStore
     @Binding var selection: AccountRecipient?
@@ -232,7 +234,7 @@ struct RecipientPickerView: View {
                     }.accessibilityIdentifier("recipient-\(person.id)")
                 }
             }.navigationTitle("Choose someone").navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+                .toolbar { ToolbarItem(placement: .cancellationAction) { Button(NativeText.literal("Cancel")) { dismiss() } } }
                 .task { if !store.isLive { results = (try? await store.searchRecipients("")) ?? [] } }
         }
     }
@@ -250,6 +252,7 @@ struct RecipientPickerView: View {
 }
 
 struct SendView: View {
+    @Environment(\.locale) private var nativeLocale
     @Environment(\.dismiss) private var dismiss
     let store: AppStore
     let credential: Credential
@@ -298,7 +301,7 @@ struct SendView: View {
             .foregroundStyle(Palette.ink)
             .navigationTitle(store.isLive ? "Send a credential" : "Send a sample")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button(NativeText.literal("Cancel")) { dismiss() } } }
         }
         .interactiveDismissDisabled(store.isBusy)
     }

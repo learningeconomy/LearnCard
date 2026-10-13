@@ -7,6 +7,7 @@ export LC_NATIVE_SIMULATOR_NAME="LearnCard Native UI Checks"
 export LC_NATIVE_SCHEME=LearnCardNative
 export LC_NATIVE_LIVE_TEST=0
 mkdir -p "$task_root/artifacts"
+bun "$task_root/scripts/typecheck-consumer.ts"
 bun --conditions=development test "$task_root"/account-runtime/*.test.ts "$task_root/sdk-spike/staging.test.ts"
 bash "$task_root/scripts/test-core.sh" 2>&1 | tee "$task_root/artifacts/swift-core.log"
 lc_run="$(date +%Y%m%d-%H%M%S)-$$"

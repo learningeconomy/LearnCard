@@ -116,3 +116,25 @@ test('unknown and inherited command names are refused', async () => {
     }
     expect(bridgeCalls).toBe(0);
 });
+
+// These routes must remain in the actual dispatch table when feature modules move.
+test.each([
+    'appsBrowse',
+    'appsInstalled',
+    'appsInstall',
+    'appsRemove',
+    'appsReview',
+    'appsConsent',
+    'appsLaunch',
+    'appsIdentity',
+    'appsEvent',
+    'privacySnapshot',
+    'privacyWithdraw',
+    'privacyStopLink',
+    'privacyLinkURL',
+])('consumer command %s uses a registered, sanitized failure envelope', async method => {
+    const reply = JSON.parse(await account.call(method, {}));
+    expect(reply.ok).toBe(false);
+    expect(['consumer:signIn', 'consumer:connection']).toContain(reply.error);
+    expect(bridgeCalls).toBe(0);
+});

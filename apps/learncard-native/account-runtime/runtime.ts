@@ -15,6 +15,7 @@ import { AuthCoordinator } from '../../../packages/learn-card-base/src/auth-coor
 import type { UnifiedAuthState } from '../../../packages/learn-card-base/src/auth-coordinator/types';
 import type { NativeGlobal, NativeUser, NativeMessage } from './types';
 import { LCN_DID_WEB_REGEX } from '../../../packages/learn-card-base/src/constants/regexes';
+import { createConsumerCommands, consumerErrorCode } from './consumer-apps';
 
 const bridge = (globalThis as unknown as NativeGlobal).webkit.messageHandlers;
 const native = (input: NativeMessage): Promise<string | null> =>
@@ -47,7 +48,7 @@ for (const level of ['debug', 'log', 'info', 'warn', 'error'] as const) console[
 
 let coordinator: AuthCoordinator;
 let strategy: ReturnType<typeof createSSSStrategy>;
-let wallet: Awaited<ReturnType<typeof initLearnCard>> | undefined;
+let wallet: import('./consumer-apps').ConsumerWallet | undefined;
 let wasm: Uint8Array;
 let user: NativeUser;
 let myProfileName: string;
@@ -266,6 +267,7 @@ const shares = new Map<
 >();
 
 const commands = {
+    ...createConsumerCommands(() => wallet),
     initialize: async (input: { wasmBase64: string; user: NativeUser }) => {
         user = input.user;
         wasm = Uint8Array.from(atob(input.wasmBase64), char => char.charCodeAt(0));
@@ -616,15 +618,17 @@ Object.defineProperty(globalThis, 'LearnCardAccount', {
                         ) => Promise<unknown>
                     )(input as never),
                 });
-            } catch {
+            } catch (error) {
                 return JSON.stringify({
                     ok: false,
                     error:
-                        method === 'initialize'
-                            ? 'connection'
-                            : method === 'recover'
-                              ? 'recovery'
-                              : 'unavailable',
+                        method.startsWith('apps') || method.startsWith('privacy')
+                            ? consumerErrorCode(error)
+                            : method === 'initialize'
+                              ? 'connection'
+                              : method === 'recover'
+                                ? 'recovery'
+                                : 'unavailable',
                 });
             }
         },
