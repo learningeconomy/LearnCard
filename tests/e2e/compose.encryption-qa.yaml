@@ -2,7 +2,7 @@
 # Reuse the host's installed dependencies; never build/install another monorepo copy.
 # The checkout is read-only. Databases and generated assets stay in LC2201_QA_DIR.
 x-qa-runtime: &qa-runtime
-    image: oven/bun:1.3.14
+    image: oven/bun:1.4.2
     build: !reset null
     working_dir: /app
     volumes: !override
@@ -10,6 +10,15 @@ x-qa-runtime: &qa-runtime
 services:
     brain:
         <<: *qa-runtime
+        # Managed localhost DIDs must resolve from the signer as well as from the host.
+        # All three API processes share loopback; only this container publishes ports.
+        ports: !override
+            - '4000:4000'
+            - '4100:4100'
+            - '5200:5200'
+        networks:
+            learn-card:
+                aliases: [cloud, lca-api]
         # Ignore inherited service credentials/URLs: this walkthrough must stay local.
         environment:
             NEO4J_URI: bolt://neo4j:7687
@@ -24,6 +33,11 @@ services:
             NOTIFICATIONS_SERVICE_PORT: 5200
     cloud:
         <<: *qa-runtime
+        network_mode: service:brain
+        networks: !reset null
+        ports: !reset []
+        expose: !reset []
+        extra_hosts: !reset []
         volumes: !override
             - ../..:/app:ro
             - ${LC2201_QA_DIR:?Set LC2201_QA_DIR first}/generated:/app/services/learn-card-network/learn-cloud-service/generated
@@ -45,6 +59,11 @@ services:
             - ${LC2201_QA_DIR:?Set LC2201_QA_DIR first}/data/postgres:/var/lib/postgresql
     lca-api:
         <<: *qa-runtime
+        network_mode: service:brain
+        networks: !reset null
+        ports: !reset []
+        expose: !reset []
+        extra_hosts: !reset []
         environment:
             SKIP_DIDKIT_NAPI: '1'
             MONGO_URI: mongodb://mongodb:27017?ssl=false&replicaSet=rs0
