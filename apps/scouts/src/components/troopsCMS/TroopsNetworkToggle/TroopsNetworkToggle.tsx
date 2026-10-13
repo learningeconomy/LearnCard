@@ -32,11 +32,13 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
     const { data: earnedBoostIDs } = useGetIDs();
 
     const nationalNetworkIds =
-        (earnedBoostIDs as any[])?.filter(
-            cred =>
-                getDefaultCategoryForCredential(cred as any) ===
-                CredentialCategoryEnum.nationalNetworkAdminId
-        ) ?? [];
+        earnedBoostIDs
+            ?.map(({ vc }) => vc)
+            .filter(
+                cred =>
+                    getDefaultCategoryForCredential(cred) ===
+                    CredentialCategoryEnum.nationalNetworkAdminId
+            ) ?? [];
 
     const nationalNetworkIdsCount = nationalNetworkIds.length ?? 0;
 
@@ -52,7 +54,7 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
                 state={state}
                 setState={setState}
                 viewMode={viewMode}
-                nationalNetworkIds={nationalNetworkIds as any}
+                nationalNetworkIds={nationalNetworkIds}
             />
         );
     };
