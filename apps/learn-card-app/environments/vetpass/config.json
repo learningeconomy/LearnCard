@@ -53,6 +53,7 @@
         "aiFeatures": true,
         "appStore": true,
         "analytics": true,
+        "contractRequests": true,
         "themeSwitching": false,
         "introSlides": true,
         "launchPadQuickActions": false,

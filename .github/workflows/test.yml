@@ -33,7 +33,8 @@ jobs:
             - name: Run tests
               uses: nick-fields/retry@v2
               with:
-                  timeout_minutes: 10
+                  # Full-suite PRs (shared packages touched) run ~9 min under load.
+                  timeout_minutes: 20
                   max_attempts: 3
                   command: bunx nx affected --target=test --base=origin/main --head=HEAD
               env:

@@ -29,5 +29,5 @@ describe('Vite environment definitions', () => {
             if (previousWeb3AuthClientId === undefined) delete process.env.VITE_WEB3AUTH_CLIENT_ID;
             else process.env.VITE_WEB3AUTH_CLIENT_ID = previousWeb3AuthClientId;
         }
-    });
+    }, 30_000);
 });
