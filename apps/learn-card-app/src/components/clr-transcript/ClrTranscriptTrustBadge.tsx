@@ -5,8 +5,7 @@ import type { VerificationSummary } from 'learn-card-base/helpers/credentials/cl
 const ClrTranscriptTrustBadge: React.FC<{
     verification: VerificationSummary;
     evidenceCount?: number;
-    verificationContent?: React.ReactNode;
-}> = ({ verification, evidenceCount = 0, verificationContent }) => {
+}> = ({ verification, evidenceCount = 0 }) => {
     const statusLabel = (verification: VerificationSummary): string => {
         if (verification.credentialVerified) return m['clrRenderer.verified']();
         if (verification.credentialSigned) return m['clrRenderer.signedUnverified']();
@@ -15,11 +14,9 @@ const ClrTranscriptTrustBadge: React.FC<{
 
     return (
         <div className="flex flex-wrap items-center gap-2">
-            {verificationContent ?? (
-                <span className="text-xs font-medium text-grayscale-700 px-2.5 py-1 rounded-full bg-grayscale-100">
-                    {statusLabel(verification)}
-                </span>
-            )}
+            <span className="text-xs font-medium text-grayscale-700 px-2.5 py-1 rounded-full bg-grayscale-100">
+                {statusLabel(verification)}
+            </span>
             {evidenceCount > 0 && (
                 <span className="text-xs font-medium text-grayscale-700 px-2.5 py-1 rounded-full bg-grayscale-100">
                     {m['clrRenderer.evidenceAttached']()}

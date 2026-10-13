@@ -9,7 +9,6 @@ import type {
 } from 'learn-card-base/helpers/credentials/clr/renderer';
 import { formatAchievementType } from 'learn-card-base/helpers/credentials/clr/helpers';
 import { ClrRecordDetails } from './ClrRecordDetails';
-import { ClrCreditValues } from './ClrCreditValues';
 import ClrResultWithScaleList from './ClrResultWithScaleList';
 import ClrAlignmentList from './ClrAlignmentList';
 import ClrRelationshipChips from './ClrRelationshipChips';
@@ -35,9 +34,6 @@ const ClrGenericRecordDetailPanel = ({
         [model.canonical]
     );
     const canonical = recordsById.get(record.sourceCredentialId);
-    const course = model.courses.find(
-        candidate => candidate.sourceCredentialId === record.sourceCredentialId
-    );
     return (
         <div className="h-full overflow-y-auto bg-grayscale-100 font-poppins pb-10">
             <div className="flex items-start justify-between gap-3 rounded-b-[30px] bg-white px-6 py-5">
@@ -69,34 +65,6 @@ const ClrGenericRecordDetailPanel = ({
                     </p>
                 )}
                 <div className="space-y-4 rounded-[20px] border border-grayscale-200 bg-white p-4">
-                    {course && (
-                        <section className="space-y-3">
-                            <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                {[
-                                    {
-                                        label: m['clrTranscript.details.courseCode'](),
-                                        field: course.humanCode,
-                                    },
-                                    {
-                                        label: m['clrTranscript.details.term'](),
-                                        field: course.term,
-                                    },
-                                ].map(({ label, field }) =>
-                                    field?.value ? (
-                                        <div key={label}>
-                                            <dt className="text-xs font-medium text-grayscale-700">
-                                                {label}
-                                            </dt>
-                                            <dd className="break-words text-sm text-grayscale-900">
-                                                {field.value}
-                                            </dd>
-                                        </div>
-                                    ) : null
-                                )}
-                            </dl>
-                            <ClrCreditValues course={course} />
-                        </section>
-                    )}
                     <ClrResultWithScaleList results={record.results} showResultType={adminMode} />
                     <ClrRecordDetails record={canonical} prominentFields={prominentFields} />
                     <ClrAlignmentList alignments={record.alignments} />

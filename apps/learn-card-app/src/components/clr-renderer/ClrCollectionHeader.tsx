@@ -1,5 +1,4 @@
 import React from 'react';
-import type { VC } from '@learncard/types';
 import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 import {
     formatClrDate,
@@ -7,7 +6,6 @@ import {
 } from 'learn-card-base/helpers/credentials/clr/renderer';
 import type { ClrLayoutKind } from 'learn-card-base/helpers/credentials/clr/layout';
 import ClrTranscriptTrustBadge from '../clr-transcript/ClrTranscriptTrustBadge';
-import ClrVerificationPills from '../clr-transcript/ClrVerificationPills';
 import ClrIssuerAddress from '../clr-transcript/ClrIssuerAddress';
 import { getClrLayoutLabel, getClrSectionLabel } from './labels';
 import * as m from '../../paraglide/messages.js';
@@ -18,14 +16,12 @@ export const ClrCollectionHeader = ({
     sections,
     actions,
     compact = false,
-    boost,
 }: {
     model: ClrTranscriptDisplayModel;
     layout: Exclude<ClrLayoutKind, 'academic'>;
     sections: ClrRecordSection[];
     actions?: React.ReactNode;
     compact?: boolean;
-    boost?: VC;
 }) => {
     const military = layout === 'military';
     const collection = model.canonical.collection;
@@ -172,11 +168,6 @@ export const ClrCollectionHeader = ({
                 <ClrTranscriptTrustBadge
                     verification={model.verification}
                     evidenceCount={model.evidence.length}
-                    verificationContent={
-                        !compact && boost?.proof ? (
-                            <ClrVerificationPills boost={boost} />
-                        ) : undefined
-                    }
                 />
             </div>
         </header>

@@ -116,7 +116,6 @@ const InteractiveClrRenderer = (props: ClrRendererProps & { presentation: ClrPre
                     layout={kind}
                     sections={sections}
                     compact={!full}
-                    boost={boost}
                     actions={
                         full && props.boost ? (
                             <ShareBoostLink

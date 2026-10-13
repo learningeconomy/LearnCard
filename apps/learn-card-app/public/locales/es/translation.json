@@ -23,8 +23,6 @@
             "relatedRecords": "Registros relacionados"
         },
         "details": {
-            "courseCode": "Código del curso",
-            "term": "Período académico",
             "issuedBy": "Emitido por",
             "assessedBy": "Evaluado por",
             "createdBy": "Logro creado por",
