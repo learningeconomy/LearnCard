@@ -5,10 +5,8 @@
 #
 # Two stages:
 #   1. `builder` — fully static (musl + crt-static) release binary.
-#   2. final    — `FROM scratch`: only the static binary + the CA root
-#                 bundle the enclave needs to verify KMS's TLS certificate
-#                 (notepad decisions.md D11: "enclave TLS verifies KMS certs
-#                 against CA roots baked into the EIF").
+#   2. final    — `FROM scratch`: the static binary with compiled webpki-roots
+#                 for AWS TLS verification, plus the enclave hosts mapping.
 #
 # Build this via scripts/build-eif.sh, which sets SOURCE_DATE_EPOCH
 # consistently and drives kaniko in --reproducible mode so two builds of the
@@ -87,8 +85,7 @@ ENV SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH}
 #                          (from openssl-libs-static) so the final binary
 #                          has no libssl.so/libcrypto.so dependency, matching
 #                          the fully-static FROM-scratch runtime stage.
-#   ca-certificates     — provides /etc/ssl/certs/ca-certificates.crt,
-#                          copied into the runtime stage per decision D11.
+#   ca-certificates     — build-time HTTPS only; runtime roots are compiled.
 RUN apk add --no-cache \
         build-base \
         linux-headers \
@@ -201,13 +198,11 @@ RUN set -eux; \
 # means PCR0 reproducibility does not depend on that flag working perfectly.
 RUN touch -d "@${SOURCE_DATE_EPOCH}" \
         /build/target/x86_64-unknown-linux-musl/release/escrow-enclave \
-        /build/enclave-hosts \
-        /etc/ssl/certs/ca-certificates.crt
+        /build/enclave-hosts
 
 # ---------------------------------------------------------------------------
 # Runtime stage: FROM scratch. No shell, no package manager, no libc (the
-# binary above is fully static). Only the binary and the CA roots needed to
-# verify KMS's TLS certificate (decisions.md D11) are present.
+# binary above is fully static). AWS TLS roots are inside the measured binary.
 #
 # Fixed non-root UID/GID (65532, the common "nonroot" convention — e.g.
 # distroless's default) via --chown, per task P2.1's "Deterministic: ...
@@ -238,18 +233,12 @@ ENV ESCROW_TENANT=${ESCROW_TENANT} \
 COPY --from=builder --chown=65532:65532 --chmod=0555 \
     /build/target/x86_64-unknown-linux-musl/release/escrow-enclave \
     /escrow-enclave
-COPY --from=builder --chown=65532:65532 --chmod=0444 \
-    /etc/ssl/certs/ca-certificates.crt \
-    /etc/ssl/certs/ca-certificates.crt
 
 # A real image layer, not Docker's ephemeral build-time /etc/hosts. Startup
 # overwrites it with the validated regional KMS mapping before any KMS request.
 COPY --from=builder --chown=65532:65532 --chmod=0644 /build/enclave-hosts /etc/hosts
 
-# Smithy's current hyper 1 / rustls 0.23 / AWS-LC client loads native roots via
-# rustls-native-certs, which honors SSL_CERT_FILE (no bundled webpki-roots).
-# This measured Alpine CA bundle remains the KMS trust store, per D11.
-ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+# No native/root-file environment override: Cargo.lock pins webpki-roots.
 
 USER 65532:65532
 
