@@ -27,11 +27,13 @@ const BulkBoostParentSelector: React.FC<BulkBoostParentSelectorProps> = ({
     const { data: earnedBoostIDs } = useGetIDs();
 
     const nationalNetworkIds =
-        earnedBoostIDs?.filter(
-            cred =>
-                getDefaultCategoryForCredential(cred) ===
-                CredentialCategoryEnum.nationalNetworkAdminId
-        ) ?? [];
+        earnedBoostIDs
+            ?.map(({ vc }) => vc)
+            .filter(
+                cred =>
+                    getDefaultCategoryForCredential(cred) ===
+                    CredentialCategoryEnum.nationalNetworkAdminId
+            ) ?? [];
 
     const { data: networkBoost, isLoading } = useGetBoost(parentUri);
     const networkName = networkBoost?.meta?.edits?.name ?? networkBoost?.name;
