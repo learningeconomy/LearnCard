@@ -1,6 +1,7 @@
 import cloneDeep from 'lodash/cloneDeep';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { isVC2Format } from '@learncard/helpers';
+import { getIDsQueryKey } from '../queries/idCredentials';
 import {
     BoostCategoryOptionsEnum,
     // oxlint-disable-next-line no-unused-vars
@@ -1040,7 +1041,7 @@ export const useDeleteEarnedBoostMutation = () => {
                 queryKey: ['boosts'],
             });
             await queryClient.cancelQueries({
-                queryKey: ['useGetIDs', didWeb],
+                queryKey: getIDsQueryKey(didWeb),
             });
 
             const currentQuery = queryClient.getQueryData([
@@ -1054,7 +1055,7 @@ export const useDeleteEarnedBoostMutation = () => {
                 didWeb ?? '',
                 category,
             ]);
-            const currentIDQueryList = queryClient.getQueryData(['useGetIDs', didWeb ?? '']);
+            const currentIDQueryList = queryClient.getQueryData(getIDsQueryKey(didWeb));
 
             // update cache optimistically
             // remove from useGetCredentials cache
@@ -1102,10 +1103,8 @@ export const useDeleteEarnedBoostMutation = () => {
                     updatedQueryList
                 );
 
-                queryClient.setQueryData(
-                    ['useGetIDs', didWeb ?? ''],
-                    (oldData: (VC | VC_WITH_URI)[] = []) =>
-                        oldData.filter(credential => credential.uri !== boostUri)
+                queryClient.setQueryData(getIDsQueryKey(didWeb), (oldData: VC_WITH_URI[] = []) =>
+                    oldData.filter(credential => credential.uri !== boostUri)
                 );
 
                 return { currentQuery, oldStaleTime, oldListStaleTime }; //use in OnError
