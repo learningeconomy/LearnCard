@@ -14,12 +14,15 @@ Paths are repository-relative; `app/` below means `services/escrow-enclave-app/`
 
 ### Implementation status
 
-Foundations work has started with the losing-signer fix only: speculative ledger
+Foundations include the losing-signer fix: speculative ledger
 proposals are separate from committed high-water marks. A conflict can reconcile
 to a verified winning successor without resetting the committed prefix; ambiguous
 writes still fail closed. Readback remains the legacy host-presented view, not
-proof of durable persistence (D3). Trusted-time AWS transport, sealed authority/email
-credentials, infrastructure and provisioning are not implemented yet.
+proof of durable persistence (D3). Existing KMS boot/unsealing now uses fresh
+Roughtime evidence for TLS validity and SigV4, with compiled roots and no automatic
+retries or cross-operation TLS reuse (see SECURITY.md for delayed-delivery limits).
+Direct DynamoDB/SES clients, sealed authority/email credentials, infrastructure and
+provisioning are not implemented yet.
 `UnavailableEnrollment` remains wired; no authority or email client is active.
 
 ## 1. Problem and current boundary

@@ -136,6 +136,13 @@ Operational notes:
   `127.0.0.1:8000`.
 - **KMS `CiphertextForRecipient` is BER** (indefinite lengths, sometimes chunked
   `encryptedContent`), not DER. `kms/ber.rs` normalises it before the strict CMS checks.
+- **Authority-foundations builds:** KMS boot/unsealing now queries the existing
+  Roughtime relay before every AWS request, failing closed if verified time is
+  unavailable. Check relay port 5001 as well as the KMS byte proxy when diagnosing
+  `kms_unseal_or_generate`/`kms_unseal_previous` failures. TLS roots are compiled
+  `webpki-roots`, not `SSL_CERT_FILE`; root updates require a new measured image.
+  This does not enable enrollment or email, and the delayed-delivery time caveat
+  in SECURITY.md still applies. Live staging verification remains outstanding.
 - **Diagnosing boot without a console.** CloudTrail on the escrow CMK (`GenerateDataKey` /
   `Decrypt` from the host role, with `recipient` in `additionalEventData`) shows whether the
   enclave reached KMS; `strace` on the host process shows whether it connected to vsock 5001/5002.
