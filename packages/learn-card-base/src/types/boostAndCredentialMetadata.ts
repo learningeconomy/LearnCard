@@ -19,6 +19,12 @@ import AchievementsIcon, {
     AchievementsIconSolid,
     ThickAchievementsIconWithShape,
 } from 'learn-card-base/svgs/wallet/AchievementsIcon';
+import {
+    QualificationsIcon,
+    QualificationsIconWallet,
+    QualificationsIconTypeSelector,
+    QualificationsIconSolidColor,
+} from 'learn-card-base/svgs/wallet/QualificationsIcon';
 import StudiesIcon, {
     StudiesIconSolid,
     ThickStudiesIconWithShape,
@@ -43,6 +49,7 @@ import idsGraphic from '../assets/images/walletids.webp';
 import learningHistoryGraphic from '../assets/images/backpack.png';
 import skillsGraphic from '../assets/images/walletskills.webp';
 import achievementsGraphic from '../assets/images/walletTrophy.png';
+import qualificationsGraphic from '../assets/icons/qualifications.svg';
 import badgeGraphic from '../assets/images/social-badge-2.png';
 import membershipGraphic from '../assets/images/membership-graphic.png';
 import apple from '../assets/images/apple.png';
@@ -73,6 +80,7 @@ import AiInsightsIcon, {
 export enum CredentialCategoryEnum {
     socialBadge = 'Social Badge',
     achievement = 'Achievement',
+    qualifications = 'Qualifications',
     accomplishment = 'Accomplishment',
     accommodation = 'Accommodation',
     workHistory = 'Work History',
@@ -125,6 +133,7 @@ export enum CredentialCategoryEnum {
 export enum BoostCategoryOptionsEnum {
     socialBadge = 'Social Badge',
     achievement = 'Achievement',
+    qualifications = 'Qualifications',
     course = 'Course',
     job = 'Job', // not in CredentialCategory
     id = 'ID',
@@ -261,6 +270,27 @@ export const boostCategoryMetadata: Record<BoostCategoryOptionsEnum, BoostCatego
         // badge thumbnail
         SolidIconComponent: AchievementsIconSolid,
         badgeBackgroundColor: 'pink-500',
+    },
+    [BoostCategoryOptionsEnum.qualifications]: {
+        displayName: 'Qualification',
+        title: 'Qualifications',
+        titleSingular: 'Qualification',
+        plural: 'Qualifications',
+        credentialType: CredentialCategoryEnum.qualifications,
+        value: BoostCategoryOptionsEnum.qualifications,
+        color: 'orange-700',
+        darkColor: 'orange-900',
+        subColor: 'orange-300',
+        lightColor: 'orange-100',
+        ShapeIcon: Diamond,
+        WalletIcon: QualificationsIconWallet,
+        IconComponent: QualificationsIcon,
+        IconWithShape: QualificationsIconTypeSelector,
+        SolidIconComponent: QualificationsIconSolidColor,
+        CategoryImage: qualificationsGraphic,
+        shapeColor: 'text-orange-300 w-[35px] h-[35px]',
+        iconStyles: 'h-[35px] w-[35px]',
+        badgeBackgroundColor: 'orange-700',
     },
     [BoostCategoryOptionsEnum.course]: {
         displayName: 'Course',
@@ -901,6 +931,13 @@ export const categoryMetadata: Record<CredentialCategoryEnum, CredentialMetadata
         defaultImageSrc: achievementsGraphic,
         walletColor: 'spice-300',
         ...boostCategoryMetadata[BoostCategoryOptionsEnum.achievement],
+    },
+    [CredentialCategoryEnum.qualifications]: {
+        boostType: BoostCategoryOptionsEnum.qualifications,
+        walletSubtype: WalletCategoryTypes.qualifications,
+        defaultImageSrc: qualificationsGraphic,
+        walletColor: 'orange-300',
+        ...boostCategoryMetadata[BoostCategoryOptionsEnum.qualifications],
     },
     [CredentialCategoryEnum.family]: {
         boostType: BoostCategoryOptionsEnum.family,
