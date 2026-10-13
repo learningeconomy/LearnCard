@@ -124,6 +124,10 @@ ConsentFlow is a consent management system where:
   Notifications remain outside it; invalidate permission-related caches only after commit.
   Failed graph writes leave the pending record retryable and concurrent claims cannot
   duplicate acceptance.
+- CI runs `bunx nx run network-brain-service:test:inbox:e2e`, which includes
+  `test/credential-storage.neo4j.spec.ts` and `test/inbox.spec.ts`. Keep the storage
+  trust-boundary guard and finalization rollback/concurrency coverage in this CI-run
+  configuration, not only the locally invoked integration suite.
 - Unsigned inbox subjects are bound to the verified recipient before signing; supplied
   subject IDs are replaced. Pre-signed subjects are not rewritten.
 - Ordinary unsigned finalization intentionally adds the issuer's profile DID as a reader
