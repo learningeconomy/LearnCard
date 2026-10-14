@@ -262,10 +262,11 @@ credential-delivery resources and proxy wiring out from under a still-deployed,
 email-measured EIF; that EIF's own boot config still expects
 `email_credential_ciphertext`, so its **next boot fails closed** instead of
 quietly falling back to the old unconfirmed path. To pause attack-C email
-confirmation without touching the enclave at all, unset lca-api's
-`ESCROW_ENCLAVE_MODE` (or otherwise take its rollout out of service) — this stops
-`startRecovery`/`confirmRecovery`/the reminders job from calling the enclave at
-all, with no Terraform apply or new artifact.
+confirmation without touching the enclave, set lca-api's
+`ESCROW_RELEASE_KILL_SWITCH=true` (cancellation and reminders keep working), or,
+only if the enclave must not be called at all, unset `ESCROW_ENCLAVE_MODE`
+(blocks every escrow operation including cancellation). Neither needs a
+Terraform apply or new artifact; see the table below for exact effects.
 
 **Full rollback (requires a new, coordinated build).** Reverting the enclave
 itself means deploying a previous, compatible **EIF, its own measurements, and
@@ -280,24 +281,35 @@ note earlier in this document). Never reuse a burned sending domain or
 re-provision over an existing credential slot as part of a rollback — treat it
 as its own reviewed generation/path, same as any other credential rotation.
 
-**Existing holds during either step:**
+**Existing holds: behaviour differs per lever.** The three states below are
+not interchangeable; pick the lever whose effect you actually want.
 
-- `awaitingConfirmation` holds can still be **confirmed** with a code the user
-  already received (`confirm-hold` never requires email — only `resend-code`
-  does) and can always be **cancelled** (cancellation requires no email
-  either). They cannot have a **new** code resent while paused or rolled back.
-- `pending` (confirmed, awaiting release) holds that have not yet had their
-  24-hour release-warning sent **cannot be warned, and therefore cannot ever
-  release**, until email capability (both the resources and a matching
-  measured image) is restored — `send-release-warning` fails closed
-  (`unavailable`) with no sender wired, and release itself requires a recorded
-  warning in addition to the 7-day wait. This stalls the hold rather than
-  losing it or its history; it resumes once email is restored on the same
-  generation.
-- No new Hold-policy hold can be **created** while email is unconfigured —
-  unchanged from today: `create-hold` already fails the whole request for a
-  Hold-policy blob with no sender wired, never falling back to an unconfirmed
-  path.
+| Operation                                | Full pause (`ESCROW_ENCLAVE_MODE` unset)                 | Release kill switch (`ESCROW_RELEASE_KILL_SWITCH=true`) | Service enabled, email-disabled compatible EIF |
+| ---------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------- | ---------------------------------------------- |
+| Start recovery (`startRecovery`)         | Blocked (`PRECONDITION_FAILED`)                          | Blocked                                                 | Hold-policy start fails closed (no sender)     |
+| Confirm code (`confirmRecovery`)         | Blocked                                                  | Blocked                                                 | Works with an already-received code            |
+| Resend code (`resendRecoveryCode`)       | Blocked                                                  | Blocked                                                 | Fails closed (`unavailable`)                   |
+| Cancel (`cancelRecovery` / cancel link)  | **Blocked**                                              | Works                                                   | Works                                          |
+| Reminders job (warnings, cancel retries) | **Stopped** (still alarms on cancellations near release) | Runs                                                    | Runs; warnings fail closed (`unavailable`)     |
+| Complete / release (`completeRecovery`)  | Blocked                                                  | Blocked                                                 | Only holds already warned 24h earlier          |
+
+- **Full pause** blocks every escrow procedure in the route middleware
+  (`routes/index.ts`, covered by the disabled-mode test in
+  `test/keys-escrow.spec.ts`) and the reminders job exits early, so users
+  cannot cancel either. Use it only when the enclave path itself must not be
+  called at all; prefer the kill switch otherwise.
+- **Release kill switch** is the default incident lever: it stops new
+  recoveries, confirmation, resends and release, while cancellation and the
+  reminders job (warning sends and cancellation retries) keep running. Warnings
+  sent while it is on still count toward the 24-hour requirement once it is
+  lifted.
+- **Email-disabled compatible EIF** (after a full rollback): confirmation and
+  cancellation need no email; new Hold-policy holds, resends and release
+  warnings fail closed. A `pending` hold not yet warned **cannot release** until
+  email (resources and a matching measured image) is restored on the same
+  authority generation; it stalls rather than losing its history.
+
+Verify each column in staging before relying on it.
 
 ## 1. Terraform apply order
 
