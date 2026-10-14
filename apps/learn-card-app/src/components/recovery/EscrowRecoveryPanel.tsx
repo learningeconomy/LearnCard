@@ -180,11 +180,19 @@ export const EscrowRecoveryPanel = ({
     // must adopt the server's current value instead of keeping the one
     // captured when the hold was started.
     const refreshHoldStatus = async (
-        hold: { confirmed?: boolean; releaseAfter: string } | null | undefined
+        hold: { confirmed?: boolean; releaseAfter?: string } | null | undefined
     ): Promise<void> => {
         if (!hold) return;
         setConfirmed(Boolean(hold.confirmed));
-        if (pending && hold.releaseAfter !== pending.releaseAfter) {
+        // Guard against a missing/malformed value (e.g. a terminal-status
+        // response that omits it): never adopt a releaseAfter that would
+        // render as an invalid date.
+        if (
+            pending &&
+            hold.releaseAfter &&
+            !Number.isNaN(Date.parse(hold.releaseAfter)) &&
+            hold.releaseAfter !== pending.releaseAfter
+        ) {
             const updated = { ...pending, releaseAfter: hold.releaseAfter };
             setPending(updated);
             await savePendingEscrowRecovery(updated, scope);
