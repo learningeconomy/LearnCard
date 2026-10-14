@@ -1057,8 +1057,9 @@ impl<'a> Policy<'a> {
             && existing_item.hold_id == req.hold_id
             && existing_item.release_warning_sent_hi_ms.is_some()
         {
-            let release_warning_sent_hi_ms =
-                existing_item.release_warning_sent_hi_ms.ok_or(ErrorCode::Policy)?;
+            let release_warning_sent_hi_ms = existing_item
+                .release_warning_sent_hi_ms
+                .ok_or(ErrorCode::Policy)?;
             return Ok((
                 self.authority_hold_snapshot(req.hold_id, &existing_item)?,
                 release_warning_sent_hi_ms,
