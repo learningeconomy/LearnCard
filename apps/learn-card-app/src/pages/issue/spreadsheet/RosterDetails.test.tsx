@@ -38,7 +38,7 @@ describe('roster review layout', () => {
         const data = props(60);
         render(<RosterDetails {...data} />);
         expect(screen.getAllByRole('row')).toHaveLength(51);
-        fireEvent.click(screen.getByRole('button', { name: 'Next', exact: true }));
+        fireEvent.click(screen.getByRole('button', { name: /^Next$/ }));
         expect(screen.getAllByRole('row')).toHaveLength(11);
         expect(data.onRecipientsChange).not.toHaveBeenCalled();
     });
