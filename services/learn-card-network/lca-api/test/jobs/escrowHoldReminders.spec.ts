@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { beforeAll, afterAll, afterEach, describe, it, expect } from 'vitest';
+import { beforeAll, afterAll, afterEach, beforeEach, describe, it, expect } from 'vitest';
 import { client } from '@mongo';
 import {
     createUserKeysIndexes,
@@ -93,6 +93,12 @@ beforeAll(async () => {
     await client.connect();
     await createUserKeysIndexes();
     await createEscrowHoldsIndexes();
+});
+
+// The reminder job scans every due hold (including overdue catch-up), so holds
+// left behind by other spec files sharing this Mongo would be picked up.
+beforeEach(async () => {
+    await getEscrowHoldsCollection().deleteMany({});
 });
 
 afterEach(async () => {
