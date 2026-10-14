@@ -1,8 +1,8 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { VC } from '@learncard/types';
+import { VerificationStatusEnum, type VC } from '@learncard/types';
 import { BoostCategoryOptionsEnum, DisplayTypeEnum } from 'learn-card-base';
 
 type MenuProps = {
@@ -18,6 +18,8 @@ type FooterLayoutProps = React.PropsWithChildren<{
 }>;
 const mocks = vi.hoisted(() => ({
     newModal: vi.fn(),
+    verify: vi.fn(),
+    fullPage: vi.fn(),
 }));
 
 vi.mock('learn-card-base', () => ({
@@ -28,7 +30,7 @@ vi.mock('learn-card-base', () => ({
             updateSelectedDisplayView: vi.fn(),
         },
     },
-    useWallet: () => ({ initWallet: vi.fn() }),
+    useWallet: () => ({ initWallet: async () => ({ invoke: { verifyCredential: mocks.verify } }) }),
     useModal: () => ({ newModal: mocks.newModal, closeModal: vi.fn() }),
     ModalTypes: { Right: 'right' },
     useDeviceTypeByWidth: () => ({ isMobile: true }),
@@ -107,7 +109,10 @@ vi.mock('./BoostMediaPreview', () => ({
     ),
 }));
 vi.mock('../../../clr-transcript/surfaces/ClrTranscriptFullPage', () => ({
-    default: () => null,
+    default: (props: unknown) => {
+        mocks.fullPage(props);
+        return null;
+    },
     createClrRecordNavigator: () => ({
         selectRecord: vi.fn(),
         openRecord: vi.fn(),
@@ -184,6 +189,26 @@ const courseCredential = {
 } as unknown as VC;
 
 describe('NonBoostPreview', () => {
+    it('passes computed proof results to the full CLR renderer', async () => {
+        const verificationItems = [{ check: 'proof', status: VerificationStatusEnum.Failed }];
+        mocks.verify.mockResolvedValue(verificationItems);
+        render(
+            <NonBoostPreview
+                credential={credential}
+                verificationItems={[]}
+                categoryType={BoostCategoryOptionsEnum.learningHistory}
+                customThumbComponent={null}
+                customBodyCardComponent={null}
+                customFooterComponent={null}
+                customIssueHistoryComponent={null}
+                handleCloseModal={vi.fn()}
+                isClrCredential
+            />
+        );
+        await waitFor(() =>
+            expect(mocks.fullPage.mock.lastCall?.[0].verificationItems).toEqual(verificationItems)
+        );
+    });
     it('only exposes credential options through the preview footer', () => {
         const handleCloseModal = vi.fn();
         render(

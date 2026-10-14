@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import * as m from '../../paraglide/messages.js';
 
 import CircleCheckmark from 'learn-card-base/svgs/CircleCheckmark';
 import RedXCircle from 'learn-card-base/svgs/RedXCircle';
@@ -10,22 +11,44 @@ import type { VC, VerificationItem } from '@learncard/types';
 import { VerificationStatusEnum } from '@learncard/types';
 import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
 
-const ClrVerificationPills: React.FC<{ boost: VC }> = ({ boost }) => {
-    const { verifyCredential, worstVerificationStatus } = useVerifyCredential();
-    const [verified, setVerified] = useState<boolean | null>(null);
+const ClrVerificationPills: React.FC<{ boost: VC; verificationItems?: VerificationItem[] }> = ({
+    boost,
+    verificationItems,
+}) => {
+    const { verifyCredential } = useVerifyCredential();
+    const verifyRef = useRef(verifyCredential);
+    verifyRef.current = verifyCredential;
+    const [result, setResult] = useState<{ boost: VC; items: VerificationItem[] }>();
+    const hasSuppliedResult = Boolean(verificationItems?.length);
 
     useEffect(() => {
-        verifyCredential(boost).then((items: VerificationItem[]) => {
-            const proofItem = items.find((i: VerificationItem) =>
-                i.check.toLowerCase().includes('proof')
-            );
-            setVerified(
-                proofItem
-                    ? proofItem.status === VerificationStatusEnum.Success
-                    : worstVerificationStatus === VerificationStatusEnum.Success
-            );
-        });
-    }, []);
+        if (hasSuppliedResult || !boost.proof) return;
+        let cancelled = false;
+        verifyRef.current(boost).then(
+            items => {
+                if (!cancelled) setResult({ boost, items });
+            },
+            () => {
+                if (!cancelled) setResult({ boost, items: [] });
+            }
+        );
+        return () => {
+            cancelled = true;
+        };
+    }, [boost, hasSuppliedResult]);
+
+    const items = hasSuppliedResult
+        ? verificationItems
+        : result?.boost === boost
+          ? result.items
+          : undefined;
+    const proofs = items?.filter(item => /proof/i.test(item.check)) ?? [];
+    const verified =
+        proofs.length > 0
+            ? proofs.every(item => item.status === VerificationStatusEnum.Success)
+            : items?.length
+              ? items.every(item => item.status === VerificationStatusEnum.Success)
+              : null;
 
     const expirationDate =
         boost.validUntil ??
@@ -38,7 +61,14 @@ const ClrVerificationPills: React.FC<{ boost: VC }> = ({ boost }) => {
         ) : (
             <RedXCircle className="w-4 h-4 shrink-0" />
         );
-    const proofLabel = verified === null ? 'Verifying…' : verified ? 'Valid' : 'Invalid';
+    const proofLabel =
+        verified === null
+            ? items === undefined
+                ? m['clrRenderer.verifying']()
+                : m['clrRenderer.signedUnverified']()
+            : verified
+              ? m['clrRenderer.valid']()
+              : m['clrRenderer.invalid']();
 
     const expirationIcon = isExpired ? (
         <WarningCircle className="w-4 h-4 shrink-0" />
@@ -47,26 +77,30 @@ const ClrVerificationPills: React.FC<{ boost: VC }> = ({ boost }) => {
     );
 
     let expirationLabel: string;
-    if (isExpired) expirationLabel = `Expired ${formatClrDate(expirationDate!)}`;
-    else if (expirationDate) expirationLabel = `Expires ${formatClrDate(expirationDate)}`;
-    else expirationLabel = 'Does not expire';
+    if (isExpired)
+        expirationLabel = m['clrRenderer.expired']({ date: formatClrDate(expirationDate!) });
+    else if (expirationDate)
+        expirationLabel = m['clrRenderer.expires']({ date: formatClrDate(expirationDate) });
+    else expirationLabel = m['clrRenderer.doesNotExpire']();
 
     const pillBase =
         'flex items-center gap-1 rounded-full px-2 py-1 font-poppins font-[500] text-[12px] leading-tight whitespace-nowrap';
 
     return (
         <div className="flex flex-wrap gap-2">
-            {verified !== null && (
+            {Boolean(boost.proof) && (
                 <div
                     className={`${pillBase} ${
-                        verified
-                            ? 'bg-emerald-100 text-grayscale-900'
-                            : 'bg-red-100 text-grayscale-900'
+                        verified === null
+                            ? 'bg-grayscale-100 text-grayscale-900'
+                            : verified
+                              ? 'bg-emerald-100 text-grayscale-900'
+                              : 'bg-red-100 text-grayscale-900'
                     }`}
                 >
                     {proofIcon}
                     <p>
-                        <span className="font-semibold">Proof:</span>{' '}
+                        <span className="font-semibold">{m['clrRenderer.proof']()}:</span>{' '}
                         <span className="text-grayscale-900 text-xs font-normal">{proofLabel}</span>
                     </p>
                 </div>
@@ -80,7 +114,7 @@ const ClrVerificationPills: React.FC<{ boost: VC }> = ({ boost }) => {
             >
                 {expirationIcon}
                 <p>
-                    <span className="font-semibold">Expiration:</span>{' '}
+                    <span className="font-semibold">{m['clrRenderer.expiration']()}:</span>{' '}
                     <span className="text-grayscale-900 text-xs font-normal">
                         {expirationLabel}
                     </span>

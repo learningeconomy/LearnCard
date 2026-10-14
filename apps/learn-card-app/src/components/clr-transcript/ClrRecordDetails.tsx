@@ -52,7 +52,13 @@ const IdentifierRows = ({ identifiers }: { identifiers: ClrIdentifierModel[] }) 
 );
 
 /** Displays supplied child-record facts without borrowing claims from its transcript publisher. */
-export const ClrRecordDetails = ({ record }: { record?: ClrNormalizedRecord }) => {
+export const ClrRecordDetails = ({
+    record,
+    prominentFields = false,
+}: {
+    record?: ClrNormalizedRecord;
+    prominentFields?: boolean;
+}) => {
     if (!record) return null;
 
     const profiles = [
@@ -67,14 +73,17 @@ export const ClrRecordDetails = ({ record }: { record?: ClrNormalizedRecord }) =
         { label: m['clrTranscript.details.validFrom'](), date: record.dates.validFrom },
         { label: m['clrTranscript.details.validUntil'](), date: record.dates.validUntil },
     ].filter(({ date }) => date?.value);
+    const primaryFields = [
+        { label: m['clrTranscript.details.role'](), field: record.role },
+        { label: m['clrTranscript.details.narrative'](), field: record.narrative },
+        { label: m['clrTranscript.details.licenseNumber'](), field: record.licenseNumber },
+    ].filter(({ field }) => field?.value);
     const metadata = [
         { label: m['clrTranscript.details.fieldOfStudy'](), field: record.fieldOfStudy },
         { label: m['clrTranscript.details.specialization'](), field: record.specialization },
         { label: m['clrTranscript.details.language'](), field: record.language },
         { label: m['clrTranscript.details.version'](), field: record.version },
-        { label: m['clrTranscript.details.role'](), field: record.role },
-        { label: m['clrTranscript.details.narrative'](), field: record.narrative },
-        { label: m['clrTranscript.details.licenseNumber'](), field: record.licenseNumber },
+        ...(!prominentFields ? primaryFields : []),
     ].filter(({ field }) => field?.value);
     const achievementIdentifiers = record.achievementIdentifiers.filter(
         identifier => identifier.identifier?.value || identifier.identityHash?.value
@@ -85,7 +94,7 @@ export const ClrRecordDetails = ({ record }: { record?: ClrNormalizedRecord }) =
     const hasAdditional = Boolean(
         metadata.length ||
         record.tags.length ||
-        achievementIdentifiers.length ||
+        (!prominentFields && achievementIdentifiers.length) ||
         subjectIdentifiers.length ||
         record.subjectId?.value ||
         record.achievementId?.value
@@ -94,10 +103,35 @@ export const ClrRecordDetails = ({ record }: { record?: ClrNormalizedRecord }) =
     const criteriaUrl = safeWebUrl(criteria?.id?.value);
     const hasCriteria = Boolean(criteria?.narrative?.value || criteria?.id?.value);
 
-    if (!profiles.length && !dates.length && !hasCriteria && !hasAdditional) return null;
+    if (
+        !profiles.length &&
+        !dates.length &&
+        !hasCriteria &&
+        !hasAdditional &&
+        !primaryFields.length &&
+        !achievementIdentifiers.length
+    )
+        return null;
 
     return (
         <div className="space-y-5 rounded-2xl border border-grayscale-200 bg-white p-4 font-poppins">
+            {prominentFields && primaryFields.length > 0 && (
+                <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {primaryFields.map(({ label, field }) => (
+                        <DetailRow key={label} label={label}>
+                            {field?.value}
+                        </DetailRow>
+                    ))}
+                </dl>
+            )}
+            {prominentFields && achievementIdentifiers.length > 0 && (
+                <section className="space-y-2">
+                    <h4 className="text-sm font-semibold text-grayscale-900">
+                        {m['clrTranscript.details.achievementIdentifiers']()}
+                    </h4>
+                    <IdentifierRows identifiers={achievementIdentifiers} />
+                </section>
+            )}
             {profiles.length > 0 && (
                 <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     {profiles.map(({ label, profile }) => {
@@ -198,7 +232,7 @@ export const ClrRecordDetails = ({ record }: { record?: ClrNormalizedRecord }) =
                                 </DetailRow>
                             )}
                         </dl>
-                        {achievementIdentifiers.length > 0 && (
+                        {!prominentFields && achievementIdentifiers.length > 0 && (
                             <section className="space-y-2">
                                 <h4 className="text-sm font-semibold text-grayscale-900">
                                     {m['clrTranscript.details.achievementIdentifiers']()}

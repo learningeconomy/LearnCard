@@ -1,6 +1,8 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { setLocale } from '../../paraglide/runtime.js';
+import * as m from '../../paraglide/messages.js';
 
 import { clrAchievementIdAssociations } from '../../../../../packages/credential-library/src/fixtures/clr/achievement-id-associations';
 import { normalizeClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
@@ -20,6 +22,24 @@ const resultFor = (recordName: string) => {
 };
 
 describe('ClrResultWithScaleList', () => {
+    it('localizes the numeric scale description for screen readers', () => {
+        setLocale('ar', { reload: false });
+        try {
+            render(<ClrResultWithScaleList results={resultFor('Applied Systems Design')} />);
+            expect(
+                screen.getByRole('img', {
+                    name: m['clrRenderer.numericScaleWithPassing']({
+                        min: '0',
+                        max: '100',
+                        value: '86',
+                        required: '70',
+                    }),
+                })
+            ).toBeInTheDocument();
+        } finally {
+            setLocale('en', { reload: false });
+        }
+    });
     it('renders rubric-only and status-only results without inventing numeric values', () => {
         const normalized = normalizeClrTranscriptDisplayModel({
             type: ['ClrCredential'],

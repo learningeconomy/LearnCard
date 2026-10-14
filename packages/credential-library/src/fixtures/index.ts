@@ -46,6 +46,7 @@ import { clrUniversityTranscript } from './clr/university-transcript';
 import { clrStudentOfficialAcademicTranscript } from './clr/student-official-academic-transcript';
 import { clrEmploymentRecord } from './clr/employment-record';
 import { clrTrainingProviderRecord } from './clr/training-provider-record';
+import { clrMilitaryComprehensiveRecord } from './clr/military-comprehensive-record';
 import { clrMilitaryTrainingRecord } from './clr/military-training-record';
 import { clrProfessionalOrganizationRecord } from './clr/professional-organization-record';
 import { clrLicensingRegulatoryRecord } from './clr/licensing-regulatory-record';
@@ -148,6 +149,7 @@ export const ALL_FIXTURES: LibraryFixture[] = [
     clrEmploymentRecord,
     clrTrainingProviderRecord,
     clrMilitaryTrainingRecord,
+    clrMilitaryComprehensiveRecord,
     clrProfessionalOrganizationRecord,
     clrLicensingRegulatoryRecord,
     clrMixedCareerRecord,
@@ -241,6 +243,7 @@ export {
     clrEmploymentRecord,
     clrTrainingProviderRecord,
     clrMilitaryTrainingRecord,
+    clrMilitaryComprehensiveRecord,
     clrProfessionalOrganizationRecord,
     clrLicensingRegulatoryRecord,
     clrMixedCareerRecord,

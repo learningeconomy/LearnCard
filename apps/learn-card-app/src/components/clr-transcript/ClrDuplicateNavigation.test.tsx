@@ -12,9 +12,12 @@ const modal = vi.hoisted(() => ({ newModal: vi.fn(), closeModal: vi.fn() }));
 vi.mock('learn-card-base', () => ({
     useModal: () => modal,
     ModalTypes: { Right: 'right' },
+    CredentialCategoryEnum: { learningHistory: 'learningHistory' },
     isSkillCompetencyAlignment: () => false,
     SkillCompetencyCard: () => null,
 }));
+vi.mock('../boost/boost-options-menu/ShareBoostLink', () => ({ default: () => null }));
+vi.mock('./ClrTranscriptDetailModal', () => ({ default: () => null }));
 vi.mock('./ClrTranscriptEvidenceList', () => ({ default: () => null }));
 vi.mock('./ClrTranscriptSummaryHeader', () => ({ default: () => null }));
 vi.mock('./ClrTranscriptWarningsPanel', () => ({ default: () => null }));
