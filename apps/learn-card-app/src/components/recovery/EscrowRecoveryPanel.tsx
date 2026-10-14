@@ -173,6 +173,24 @@ export const EscrowRecoveryPanel = ({
         };
     }, [scope, loadAttempt]);
 
+    // [B] `releaseAfter` can advance after the start-time estimate (a late
+    // release-warning send pushes the enclave's real release gate later, see
+    // EscrowHold.ts's `computeEffectiveReleaseAfter`) or move earlier (hold
+    // confirmation replaces the creation-time estimate) — both callers below
+    // must adopt the server's current value instead of keeping the one
+    // captured when the hold was started.
+    const refreshHoldStatus = async (
+        hold: { confirmed?: boolean; releaseAfter: string } | null | undefined
+    ): Promise<void> => {
+        if (!hold) return;
+        setConfirmed(Boolean(hold.confirmed));
+        if (pending && hold.releaseAfter !== pending.releaseAfter) {
+            const updated = { ...pending, releaseAfter: hold.releaseAfter };
+            setPending(updated);
+            await savePendingEscrowRecovery(updated, scope);
+        }
+    };
+
     // Confirmation state lives only on the server; a reload must re-derive it
     // rather than trust whatever was last persisted locally. Must stay above
     // every early return below so hook call order never varies between renders.
@@ -181,7 +199,7 @@ export const EscrowRecoveryPanel = ({
         let cancelled = false;
         onStatus({ holdId: pending.holdId, resumeToken: pending.resumeToken })
             .then(hold => {
-                if (!cancelled && hold) setConfirmed(Boolean(hold.confirmed));
+                if (!cancelled) void refreshHoldStatus(hold);
             })
             .catch(() => {});
         return () => {
@@ -276,7 +294,7 @@ export const EscrowRecoveryPanel = ({
             );
             return false;
         }
-        setConfirmed(Boolean(hold.confirmed));
+        await refreshHoldStatus(hold);
         return true;
     };
 

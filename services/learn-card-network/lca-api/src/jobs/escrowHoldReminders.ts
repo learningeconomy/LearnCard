@@ -10,6 +10,7 @@ import {
     releaseEscrowReminderClaim,
     recordEscrowStartNotificationAttempt,
     recordEscrowHoldNotification,
+    computeEffectiveReleaseAfter,
 } from '@models';
 import { environment } from '@environment';
 import {
@@ -172,7 +173,7 @@ export const runEscrowHoldReminders = async (
             // or redirect. send-release-warning both notifies the real owner
             // and records the timestamp release is independently gated on.
             if (sendReleaseWarning && claimed.releasePolicy !== 'pin' && claimed.holdRecord) {
-                await sendReleaseWarning({
+                const { releaseWarningSentAtMs } = await sendReleaseWarning({
                     holdId: claimed.holdRecord.hold.holdId,
                     expectedDid: claimed.primaryDid,
                 });
@@ -183,7 +184,22 @@ export const runEscrowHoldReminders = async (
                 // selected next run, the enclave call is a no-op, and this
                 // write finally lands. Without it, every run re-called the
                 // enclave for every hold in the 24h window forever.
-                await recordEscrowHoldNotification(claimed._id, 'reminder');
+                // [B]: also persist the effective availability from the
+                // authoritative confirmation/warning times — a late
+                // (catch-up) warning can push real availability later than
+                // the hold's existing stored `releaseAfter` estimate, which
+                // otherwise keeps advertising an already-passed deadline.
+                await recordEscrowHoldNotification(
+                    claimed._id,
+                    'reminder',
+                    claimed.confirmedAt
+                        ? computeEffectiveReleaseAfter({
+                              confirmedAtMs: claimed.confirmedAt.getTime(),
+                              holdDurationMs: claimed.holdRecord.holdDurationMs,
+                              releaseWarningSentAtMs,
+                          })
+                        : undefined
+                );
                 reminded += 1;
                 continue;
             }

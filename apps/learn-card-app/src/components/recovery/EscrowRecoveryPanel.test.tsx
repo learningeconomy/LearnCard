@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EscrowHoldRestartThrottledError } from '@learncard/sss-key-manager';
 import { EscrowRecoveryPanel, formatTimeRemaining } from './EscrowRecoveryPanel';
+import { loadPendingEscrowRecovery, savePendingEscrowRecovery } from './escrowRecoveryStorage';
 
 vi.mock('./escrowRecoveryStorage', () => ({
     isEscrowRecoveryStorageAvailable: () => true,
@@ -347,6 +348,52 @@ describe('EscrowRecoveryPanel', () => {
         fireEvent.click(screen.getByText("I don't have a PIN"));
 
         expect(screen.getByText('Start a 7-day recovery')).toBeInTheDocument();
+    });
+
+    // [B] releaseAfter can move after the start-time estimate (e.g. an
+    // overdue release-warning send advances it, or confirmation corrects
+    // it) — the panel must adopt the server's current value on "Check
+    // status" rather than keep showing a countdown to the stale one.
+    it('[B] refreshes releaseAfter from the server when clicking Check status', async () => {
+        const staleReleaseAfter = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        const freshReleaseAfter = new Date(Date.now() - 1000).toISOString();
+        vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce({
+            holdId: 'hold-1',
+            resumeToken: 'resume-token',
+            clientEphemeralPrivateKey: 'private-key',
+            releaseAfter: staleReleaseAfter,
+            requestedAt: new Date(Date.now() - 1000).toISOString(),
+        });
+        mockOnStatus.mockResolvedValue({
+            holdId: 'hold-1',
+            status: 'pending' as const,
+            releasePolicy: 'hold' as const,
+            requestedAt: new Date(Date.now() - 1000).toISOString(),
+            releaseAfter: freshReleaseAfter,
+        });
+
+        render(
+            <EscrowRecoveryPanel
+                view="status"
+                available={false}
+                onStart={mockOnStart}
+                onStatus={mockOnStatus}
+                onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
+            />
+        );
+
+        expect(await screen.findByText('Check status')).toBeInTheDocument();
+        expect(screen.queryByText('Ready to restore')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByText('Check status'));
+
+        expect(await screen.findByText('Ready to restore')).toBeInTheDocument();
+        expect(savePendingEscrowRecovery).toHaveBeenCalledWith(
+            expect.objectContaining({ releaseAfter: freshReleaseAfter }),
+            'default'
+        );
     });
 });
 

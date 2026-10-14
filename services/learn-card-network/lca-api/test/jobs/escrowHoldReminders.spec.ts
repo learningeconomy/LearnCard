@@ -14,6 +14,9 @@ import {
     generateEscrowResumeToken,
     hashEscrowResumeToken,
     recordEscrowHoldNotification,
+    computeEffectiveReleaseAfter,
+    ESCROW_RELEASE_TIME_MARGIN_MS,
+    ESCROW_RELEASE_WARNING_GAP_MS,
     type AuthProviderMapping,
 } from '@models';
 import {
@@ -255,6 +258,59 @@ describe('runEscrowHoldReminders', () => {
             const third = await runEscrowHoldReminders({ now });
             expect(third.reminded).toBe(0);
             expect(calls).toHaveLength(2);
+        } finally {
+            delete software.sendReleaseWarning;
+        }
+    });
+
+    // [B] A catch-up warning sent well after the 7-day window elapsed (an
+    // outage, or the job simply not running for a while) must advertise an
+    // availability time derived from the LATER gate — the enclave's own
+    // `release_warning_sent_hi_ms + 24h` — not the hold's original,
+    // long-since-passed creation/confirmation-based estimate, which would
+    // otherwise keep telling the client it's ready when the enclave would
+    // still refuse release.
+    it('[B] an overdue warning advances the stored releaseAfter to the warning-based availability time', async () => {
+        const now = new Date();
+        // Confirmed 10 days ago: its own 7-day-plus-margin gate has long
+        // since passed, so only the warning-based gate can be the later one.
+        const confirmedAt = new Date(now.getTime() - 10 * 24 * HOUR);
+        const hold = await seed(new Date(confirmedAt.getTime() + HOUR));
+        await getEscrowHoldsCollection().updateOne(
+            { _id: hold._id },
+            { $set: { requiresConfirmation: true, confirmedAt } }
+        );
+        const releaseWarningSentAtMs = now.getTime();
+        const software = getEscrowEnclave() as unknown as Record<string, unknown>;
+        software.sendReleaseWarning = async (params: { holdId: string; expectedDid: string }) => ({
+            receipt: {
+                version: 1 as const,
+                kind: 'commit' as const,
+                keyId: 'test-key',
+                measurement: Array.from({ length: 32 }, () => 0),
+                payload: 'AQ==',
+                signature: Buffer.alloc(64).toString('base64'),
+            },
+            releaseWarningSentAtMs,
+        });
+        try {
+            const result = await runEscrowHoldReminders({ now });
+            expect(result.reminded).toBe(1);
+            const stored = await findEscrowHoldById(hold._id);
+            const expected = computeEffectiveReleaseAfter({
+                confirmedAtMs: confirmedAt.getTime(),
+                holdDurationMs: hold.holdRecord.holdDurationMs,
+                releaseWarningSentAtMs,
+            });
+            // Sanity: the warning-based gate really is the later one here.
+            expect(expected.getTime()).toBe(
+                releaseWarningSentAtMs +
+                    ESCROW_RELEASE_WARNING_GAP_MS +
+                    ESCROW_RELEASE_TIME_MARGIN_MS
+            );
+            expect(stored?.releaseAfter.getTime()).toBe(expected.getTime());
+            // And specifically later than the original (long-passed) estimate.
+            expect(stored!.releaseAfter.getTime()).toBeGreaterThan(hold.releaseAfter.getTime());
         } finally {
             delete software.sendReleaseWarning;
         }
