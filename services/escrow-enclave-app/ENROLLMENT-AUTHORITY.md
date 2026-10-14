@@ -23,18 +23,21 @@ Roughtime evidence for TLS validity and SigV4, with compiled roots and no automa
 retries or cross-operation TLS reuse (see SECURITY.md for delayed-delivery limits).
 Direct DynamoDB/SES data-plane clients are compiled under `kms`, with optional
 measured settings, dedicated credential types, generated execution IDs, and no
-automatic retries. They are not constructed by boot or Policy. Local TLS tests
+automatic retries. Configured boot now constructs the authority client. Local TLS tests
 cover response conversion, body limits, stalled bodies and cross-operation
-connection isolation. Dormant attested credential unsealing and optional opaque
-host ciphertext delivery are implemented. The unsealer is not called by boot or
-Policy. Gated authority/credential/email infrastructure, optional delegated DNS,
+connection isolation. Attested writer-credential unsealing and optional opaque
+host ciphertext delivery are implemented. Email credential unsealing and sending
+remain inactive. Gated authority/credential/email infrastructure, optional delegated DNS,
 host proxy allowlists, governance alarms and operator provisioning are implemented
 but off by default. The management-account SCP is a prerequisite to enabling them;
 see `infra/escrow-enclave/README.md`. Public authority/email settings are recorded in local measurements and the
 CI-signed manifest; no plaintext access keys belong in either artifact.
-`UnavailableEnrollment` remains wired; no authority or email client is active.
+Without authority configuration, `UnavailableEnrollment` remains wired. Partial
+configuration, missing ciphertext or unsealing failure fails boot closed. No email
+client is active. **Do not deploy the configured authority before items e–i:** the
+new policy APIs/hold format still need wire, app/client and independent monitor integration.
 
-PR 2 item-a checkpoint adds the dormant persistence schema in
+PR 2 item-a checkpoint adds the persistence schema in
 `src/authority/state.rs`. It is available without AWS features for offline tests
 and future independent verification. Account rows bind tenant, generation and DID
 hash; operation revision is separate from enrollment version and epoch. Active
@@ -48,7 +51,7 @@ length-framed tenant/generation and DID hash; sort keys distinguish `ENROLLMENT`
 `HOLD#<holdId>` and `OPERATION#<requestId>`. This encoding is **not** the future
 signed-intent canonicalization. Stored proposal bytes are **not** signed proof of
 commit. Schema validation does not authenticate a snapshot or enforce transitions.
-PR 2 item b adds a dormant `AuthorityStore` with the direct DynamoDB adapter and an
+PR 2 item b adds `AuthorityStore` with the direct DynamoDB adapter and an
 explicit `fake-authority` feature. Each transition atomically puts the account,
 request-operation, optional hold, and immutable `EXECUTION#<randomId>` receipt.
 Rows contain `pk`, `sk`, and a binary `payload`; existing rows require exact prior
@@ -59,20 +62,52 @@ The durable execution ID is generated inside the enclave and stored with the
 operation and receipt. It is independent of the AWS client's short-lived transport
 idempotency token. The immutable receipt binds the transaction digest and resulting
 revision; it survives updates to a PIN operation's reservation/result row. Receipts
-are storage evidence, not yet signed portable post-commit artifacts. An acknowledged
+retain the exact signed proposal in their immutable execution row, so a reservation
+event is not lost when its mutable operation row advances to a result. Receipts
+are storage evidence; item c separately signs portable post-commit artifacts. An acknowledged
 write requires receipt readback for `Applied`; reconciliation returns only
 `Reconciled`, never a fresh PIN comparison permit. Missing receipts with unchanged
 or missing account state remain `Unknown`. Only an atomic read showing an advanced
 account revision without that receipt establishes a losing transaction. There is
 no automatic retry, deletion, expiry, or refund path. A missing account is never
 initialized from an existing blob; only an explicitly prepared initial enrollment
-can create it, and its owner authorization remains a policy-layer obligation.
+can create it, and item c verifies the owner's signature and plaintext bindings first.
 
-The next checkpoint is item c: policy transitions and configured authority wiring,
-using the item-d signed-intent verifier before enabling enrollment mutations.
-Policy/wire/client/monitor integration and end-to-end authority security guarantees
-remain unimplemented. `UnavailableEnrollment` is still wired even when the measured
-authority settings are present.
+Item c adds `policy/authority.rs`. Configured boot unseals the dedicated writer
+credentials, supervises the DynamoDB relay and installs `AuthorityEnrollment` as
+both the enrollment source and transactional policy backend. The signed-intent
+verifier is compiled with this mode and called unconditionally for enrollment
+changes; there is no unsigned activation switch. The old unsigned carry method is
+refused in configured mode. Enroll/replace/disable/carry validate decrypted DID,
+share version and PIN action before committing. All resulting active envelopes
+are persisted atomically, including enclave-randomized carry output. Background
+rewrap requires the current blob and signed delegation and preserves plaintext,
+epoch, PIN generation and attempts. It increments enrollment version, invalidating
+old holds while leaving the epoch unchanged.
+
+Set/change/clear start a fresh signed PIN generation; keep/carry/rewrap cannot
+refund attempts. Only `Applied` reservations permit a comparison. Reconciled or
+unknown reservations are never resumed. PIN success and hold release commit in
+one transaction; cancellation, rotation and other result writers race against
+the same account/hold conditions. Conflict fails closed without retrying comparison.
+Reconciled release commits do not disclose another seal. Cancellation uses a stable
+hold-bound operation ID; committed cancellations can be confirmed across restarts
+without a new transition. A missing receipt never establishes non-commit.
+
+Authority holds have policy version 2 and use `ledgerSeq` as the creation operation
+revision. Their `signature` contains base64 JSON of a signed **Commit** artifact,
+not a legacy ledger signature. Proposal and Commit records use distinct tags under
+`learncard-authority-signed-record-v1`, bind key ID and measurement, and use raw
+low-S P-256 signatures. Policy stores signed proposals with the transaction and
+signs commit artifacts only after authenticated receipt readback. Commit payloads
+bind the immutable execution receipt, proposed-event hash and request commitment.
+The configured policy does not derive freshness or PIN budgets from the legacy
+parent ledger. Item g must consume these authority artifacts independently before
+deployment; the existing monitor alone does not observe this new audit path.
+
+The next checkpoint is item e: expose the signed policy APIs and new receipts/holds
+through the wire and lca-api. Client integration, monitor integration, remaining
+end-to-end tests and deployment documentation are still pending.
 
 Item d was implemented before c to avoid an unsigned activation window. The Rust
 verifier is `src/authority/intent.rs`; the TypeScript encoder/signer is
@@ -83,8 +118,8 @@ envelopes test ciphertext identity binding, not decrypted-plaintext authorizatio
 The verifier requires an authenticated authority snapshot and exact request
 envelopes. A valid signature over a fabricated source still fails when that source
 is not the active authority blob (attack B). Signature replay fails after enrollment
-version changes; unrelated operation revisions do not invalidate intent. No policy,
-route or AuthCoordinator path calls these helpers yet.
+version changes; unrelated operation revisions do not invalidate intent. Policy now
+calls the verifier; routes and AuthCoordinator still need to carry/sign these intents.
 
 The client layer is not authorization: enclave policy must build its typed requests
 from validated intent and bind generation/tenant/expected revision in item keys and
@@ -153,7 +188,8 @@ unchanged. Recovery requests never require a new owner signature. Intent verific
 does not authorize release and does not establish commit freshness: item c must
 condition the mutation against the verified enrollment version and source identity,
 consume durable request tombstones, and distinguish proposals from signed commit
-receipts. Until that integration lands, the production authority remains disabled.
+receipts. The item-c policy now enforces this boundary; rollout must still wait for
+the remaining wire/client/monitor integration and deployment gates.
 
 ## 1. Problem and current boundary
 
