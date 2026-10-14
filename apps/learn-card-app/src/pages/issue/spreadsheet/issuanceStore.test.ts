@@ -1,4 +1,4 @@
-import { addSubmissionAttempts } from './issuance';
+import { addSubmissionAttempts, canReplaceIssuanceRecipients } from './issuance';
 import { mergeSpreadsheet } from './roster';
 import { parseSpreadsheet, readSpreadsheetText } from './parseSpreadsheet';
 import 'fake-indexeddb/auto';
@@ -12,6 +12,31 @@ import {
 import { makeRun } from './fixtures.test-support';
 
 describe('IndexedDB issuance recovery', () => {
+    it('retains failed row history through correction, recovery and a new retry attempt', async () => {
+        const initial = makeRun(2);
+        initial.templateUri = 'lc:network:example.com:boost:template';
+        const run = addSubmissionAttempts(initial);
+        run.attempts[0].done = true;
+        run.outcomes = { 'row-0': { state: 'sent' }, 'row-1': { state: 'failed' } };
+        await saveIssuanceRun(run);
+        expect(canReplaceIssuanceRecipients(run, run.draft.recipients.slice(0, 1))).toBe(false);
+        const originalBody = structuredClone(run.attempts[0].body);
+        run.draft.recipients = run.draft.recipients.map(row =>
+            row.kind === 'email' && row.rowId === 'row-1'
+                ? { ...row, email: 'corrected@test.com' }
+                : row
+        );
+        await saveIssuanceRun(run);
+        const restored = (await readIssuanceRun(run.id, run.scope))!;
+        const retry = addSubmissionAttempts(restored, true);
+        expect(retry.attempts[0].body).toEqual(originalBody);
+        expect(retry.attempts[1].body.items[0].recipient).toEqual({
+            type: 'email',
+            value: 'corrected@test.com',
+        });
+        expect(retry.attempts[1].rowIds).toEqual(['row-1']);
+        await expect(saveIssuanceRun(retry)).resolves.toBeUndefined();
+    });
     it('commits the draft, raw spreadsheet and outcomes within its issuer/network/tenant scope', async () => {
         const run = makeRun();
         await saveIssuanceRun(run);
