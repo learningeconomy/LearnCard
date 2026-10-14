@@ -57,6 +57,22 @@ test('uses the release snapshot without consulting possibly stale latest tags', 
     );
 });
 
+test('rejects partial release snapshots without substituting older latest versions', async () => {
+    const releaseVersions = Object.fromEntries(CONSUMER_PACKAGES.map(name => [name, '9.8.7']));
+    let requests = 0;
+    await assert.rejects(
+        resolveVersions({
+            releaseVersions,
+            fetchMetadata: async () => {
+                requests++;
+                return { ok: true, json: async () => ({ version: '9.8.6' }) };
+            },
+        }),
+        /complete consumer\/plugin snapshot.*must not fall back to latest/
+    );
+    assert.equal(requests, 0);
+});
+
 test('snapshots nightly tags once and preserves explicit manual versions', async () => {
     const requests = [];
     const result = await resolveVersions({
@@ -218,9 +234,86 @@ test('enforces a total deadline, including sleep and stalled child processes', a
             group: 'consumers',
             versions,
             cwd: fixture(t),
-            run: () => ({ error: new Error('ETIMEDOUT'), signal: 'SIGKILL' }),
+            run: () => ({
+                error: Object.assign(new Error('ETIMEDOUT'), { code: 'ETIMEDOUT' }),
+                signal: 'SIGKILL',
+            }),
         }),
-        /could not complete/
+        /Timed out/
+    );
+});
+
+test('allows a slow successful install to use the remaining overall deadline', async t => {
+    let time = 0;
+    let attempts = 0;
+    let verified = false;
+    await installPackages({
+        manager: 'npm',
+        group: 'consumers',
+        versions,
+        cwd: fixture(t),
+        timeoutMs: 300_000,
+        pollIntervalMs: 1000,
+        now: () => time,
+        wait: async delay => {
+            time += delay;
+        },
+        run: (_command, _args, options) => {
+            attempts++;
+            assert.equal(options.timeout, 300_000);
+            time += 180_000;
+            return { status: 0 };
+        },
+        verify: () => {
+            verified = true;
+        },
+    });
+    assert.equal(attempts, 1);
+    assert(verified);
+});
+
+test('does not retry unexplained process signals or spawn errors', async t => {
+    for (const result of [
+        { signal: 'SIGKILL' },
+        { error: Object.assign(new Error('ENOENT'), { code: 'ENOENT' }) },
+    ]) {
+        let attempts = 0;
+        await assert.rejects(
+            installPackages({
+                manager: 'npm',
+                group: 'consumers',
+                versions,
+                cwd: fixture(t),
+                run: () => {
+                    attempts++;
+                    return result;
+                },
+            }),
+            /could not complete/
+        );
+        assert.equal(attempts, 1);
+    }
+});
+
+test('rejects a child that reports success after the overall deadline', async t => {
+    let time = 0;
+    await assert.rejects(
+        installPackages({
+            manager: 'npm',
+            group: 'consumers',
+            versions,
+            cwd: fixture(t),
+            timeoutMs: 100,
+            now: () => time,
+            run: () => {
+                time = 101;
+                return { status: 0 };
+            },
+            verify: () => {
+                throw new Error('Must not verify an expired installation');
+            },
+        }),
+        /Timed out/
     );
 });
 

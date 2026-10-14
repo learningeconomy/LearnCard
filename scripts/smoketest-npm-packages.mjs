@@ -51,7 +51,12 @@ const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 export const validateVersions = versions => {
     for (const name of ALL_PACKAGES) {
         if (!EXACT_VERSION.test(versions[name] ?? '')) {
-            throw new Error('Missing exact smoketest version for ' + name);
+            throw new Error(
+                'Missing exact smoketest version for ' +
+                    name +
+                    '. Supply a complete consumer/plugin snapshot; incomplete release maps ' +
+                    'must not fall back to latest.'
+            );
         }
     }
     return versions;
@@ -90,6 +95,9 @@ export const resolveVersions = async ({
     overrides = {},
     fetchMetadata = fetch,
 } = {}) => {
+    // A release snapshot is authoritative. Filling a partial snapshot from
+    // latest could validate the previous release while npm scans the new one.
+    // Only manual/nightly runs with no snapshot resolve tags.
     if (Object.keys(releaseVersions).length > 0) return validateVersions(releaseVersions);
     const entries = await Promise.all(
         ALL_PACKAGES.map(async name => {
@@ -227,7 +235,9 @@ export const installPackages = async ({
         const result = run(manager, [...args, ...specifications], {
             cwd,
             encoding: 'utf8',
-            timeout: Math.min(remaining, 120_000),
+            // Large public installs may legitimately take more than two minutes.
+            // Bound the child by the overall deadline, not an earlier attempt cap.
+            timeout: remaining,
             killSignal: 'SIGKILL',
             maxBuffer: 8 * 1024 * 1024,
             env: {
@@ -242,6 +252,11 @@ export const installPackages = async ({
         });
         if (result.stdout) process.stdout.write(result.stdout);
         if (result.stderr) process.stderr.write(result.stderr);
+        if (result.error?.code === 'ETIMEDOUT' || now() >= deadline) {
+            throw new Error(
+                'Timed out waiting for published packages: ' + specifications.join(' ')
+            );
+        }
         if (result.error || result.signal) {
             throw new Error(
                 manager +

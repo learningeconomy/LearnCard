@@ -25,7 +25,7 @@ on:
     workflow_call:
         inputs:
             package-versions:
-                description: 'Exact package versions from the publishing checkout (JSON)'
+                description: 'Complete exact consumer/plugin snapshot from the publishing checkout (JSON)'
                 type: string
                 required: false
                 default: '{}'

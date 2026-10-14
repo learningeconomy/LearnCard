@@ -141,3 +141,61 @@ for (const [name, damage, expected] of [
         assert.equal(f.read('a-public').dependencies['@learncard/public'], 'workspace:^');
     });
 }
+
+test('allows comments and string literal types mentioning the private helper', t => {
+    const f = bundledFixture(t);
+    writeFileSync(
+        join(f.dist, 'index.d.ts'),
+        [
+            '/** Previously used @learncard/service-config. */',
+            '// import type { StageEnv } from "@learncard/service-config";',
+            'export type PackageName = "@learncard/service-config";',
+            'export type Documentation = "import(\'@learncard/service-config\')";',
+        ].join('\n')
+    );
+    const result = f.run();
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(f.read('service').dependencies['@learncard/service-config'], undefined);
+});
+
+for (const declaration of [
+    'import "@learncard/service-config";',
+    'export type { StageEnv } from "@learncard/service-config/stageConfig";',
+    'export type Options = import("@learncard/service-config").StageEnv;',
+    'import config = require("@learncard/service-config");',
+    '/// <reference types="@learncard/service-config" />',
+    'import type { StageEnv } from "@learncard\\u002fservice-config";',
+]) {
+    test('rejects private declaration module references: ' + declaration, t => {
+        const f = bundledFixture(t);
+        writeFileSync(join(f.dist, 'index.d.ts'), declaration);
+        const result = f.run();
+        assert.equal(result.status, 1);
+        assert.match(result.stderr, /declarations still reference/);
+        assert.equal(f.read('service').dependencies['@learncard/service-config'], 'workspace:*');
+    });
+}
+
+for (const specifier of ['@internal/config', '../../private']) {
+    test('rejects declaration references resolving into the private package: ' + specifier, t => {
+        const f = bundledFixture(t);
+        writeFileSync(join(f.root, 'private/index.d.ts'), 'export interface StageEnv {}');
+        writeFileSync(
+            join(f.root, 'service/tsconfig.build.json'),
+            JSON.stringify({
+                compilerOptions: {
+                    baseUrl: '.',
+                    paths: { '@internal/config': ['../private/index.d.ts'] },
+                },
+            })
+        );
+        writeFileSync(
+            join(f.dist, 'index.d.ts'),
+            'import type { StageEnv } from "' + specifier + '";'
+        );
+        const result = f.run();
+        assert.equal(result.status, 1);
+        assert.match(result.stderr, /declarations still reference/);
+        assert.equal(f.read('service').dependencies['@learncard/service-config'], 'workspace:*');
+    });
+}

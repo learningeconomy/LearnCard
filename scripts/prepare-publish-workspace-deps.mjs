@@ -3,6 +3,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
+
+const ts = createRequire(import.meta.url)('typescript');
 
 const PACKAGE_DEPENDENCY_FIELDS = [
     'dependencies',
@@ -114,6 +117,68 @@ const bundledPrivateDependencies = new Map(
     ].map(name => [name, new Set(['@learncard/service-config'])])
 );
 
+const declarationReferencesDependency = (file, dependencyName, dependencyDir, options) => {
+    const source = ts.createSourceFile(
+        file,
+        fs.readFileSync(file, 'utf8'),
+        ts.ScriptTarget.Latest,
+        true
+    );
+    if (source.parseDiagnostics.length > 0) {
+        throw new Error('Cannot verify malformed public declaration: ' + file);
+    }
+    const isInsideDependency = resolvedFile => {
+        const relative = path.relative(
+            dependencyDir,
+            ts.sys.realpath?.(resolvedFile) ?? resolvedFile
+        );
+        return (
+            relative === '' ||
+            (relative !== '..' &&
+                !relative.startsWith('..' + path.sep) &&
+                !path.isAbsolute(relative))
+        );
+    };
+    const references = [...source.typeReferenceDirectives.map(reference => reference.fileName)];
+    for (const reference of source.referencedFiles) {
+        if (isInsideDependency(path.resolve(path.dirname(file), reference.fileName))) return true;
+    }
+    const visit = node => {
+        if (
+            (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+            node.moduleSpecifier &&
+            ts.isStringLiteral(node.moduleSpecifier)
+        ) {
+            references.push(node.moduleSpecifier.text);
+        } else if (
+            ts.isImportEqualsDeclaration(node) &&
+            ts.isExternalModuleReference(node.moduleReference) &&
+            node.moduleReference.expression &&
+            ts.isStringLiteral(node.moduleReference.expression)
+        ) {
+            references.push(node.moduleReference.expression.text);
+        } else if (
+            ts.isImportTypeNode(node) &&
+            ts.isLiteralTypeNode(node.argument) &&
+            ts.isStringLiteral(node.argument.literal)
+        ) {
+            references.push(node.argument.literal.text);
+        }
+        ts.forEachChild(node, visit);
+    };
+    visit(source);
+    return references.some(specifier => {
+        if (specifier === dependencyName || specifier.startsWith(dependencyName + '/')) return true;
+        const resolvedModule = ts.resolveModuleName(
+            specifier,
+            file,
+            options,
+            ts.sys
+        ).resolvedModule;
+        return resolvedModule && isInsideDependency(resolvedModule.resolvedFileName);
+    });
+};
+
 const verifyBundledDependency = (packageJsonPath, dependencyName) => {
     const dir = path.dirname(packageJsonPath);
     const dist = path.join(dir, 'dist');
@@ -146,6 +211,22 @@ const verifyBundledDependency = (packageJsonPath, dependencyName) => {
             );
         }
     }
+    const configPath = ['tsconfig.build.json', 'tsconfig.json']
+        .map(name => path.join(dir, name))
+        .find(file => fs.existsSync(file));
+    let options = {
+        moduleResolution: ts.ModuleResolutionKind.Bundler,
+        module: ts.ModuleKind.ESNext,
+    };
+    if (configPath) {
+        const config = ts.readConfigFile(configPath, ts.sys.readFile);
+        if (config.error)
+            throw new Error('Cannot read declaration resolution config: ' + configPath);
+        options = ts.parseJsonConfigFileContent(config.config, ts.sys, dir).options;
+    }
+    const dependencyDir = fs.realpathSync(
+        path.dirname(workspacePackages.get(dependencyName).packageJsonPath)
+    );
     let declarations = 0;
     const checkTypes = directory => {
         for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
@@ -153,7 +234,7 @@ const verifyBundledDependency = (packageJsonPath, dependencyName) => {
             if (entry.isDirectory()) checkTypes(file);
             else if (/\.d\.[cm]?ts$/.test(entry.name)) {
                 declarations += 1;
-                if (fs.readFileSync(file, 'utf8').includes(dependencyName)) {
+                if (declarationReferencesDependency(file, dependencyName, dependencyDir, options)) {
                     throw new Error(
                         'Public declarations still reference ' + dependencyName + ': ' + file
                     );
