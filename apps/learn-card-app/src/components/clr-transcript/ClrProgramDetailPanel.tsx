@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import X from '../svgs/X';
+import { ClrRecordDetails } from './ClrRecordDetails';
 import { FlatIcon } from 'learn-card-base/components/FlatIcon';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { CertificateDisplayIcon } from 'learn-card-base';
@@ -15,16 +16,15 @@ import ClrProgramCredentialCollapsible from './ClrProgramCredentialCollapsible';
 
 import { useModal } from 'learn-card-base';
 
-import { formatAchievementType } from './clr.helpers';
+import { formatAchievementType } from 'learn-card-base/helpers/credentials/clr/helpers';
 import {
-    formatClrDate,
     getLinkedCompetencies,
     getRelationshipsForRecord,
-} from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 import type {
     ClrTranscriptDisplayModel,
     ProgramDisplayModel,
-} from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 import type { VC } from '@learncard/types';
 
 const ClrProgramDetailPanel: React.FC<{
@@ -36,6 +36,7 @@ const ClrProgramDetailPanel: React.FC<{
     issuerName?: string;
     issuerLogo?: string;
 }> = ({ program, boost, model, onSelectRecord, adminMode = false, issuerName, issuerLogo }) => {
+    const record = model.records.find(candidate => candidate.id === program.sourceCredentialId);
     const { closeModal } = useModal();
     const [resultsOpen, setResultsOpen] = useState(true);
 
@@ -58,9 +59,6 @@ const ClrProgramDetailPanel: React.FC<{
         [program.sourceCredentialId]: {
             kind: 'program',
             title: program.name?.value ?? 'Program',
-            dateLabel: program.earnedAt?.value
-                ? `Added ${formatClrDate(program.earnedAt.value)}`
-                : undefined,
         },
     };
 
@@ -94,49 +92,20 @@ const ClrProgramDetailPanel: React.FC<{
             </div>
 
             <div className="px-5 space-y-5">
-                <div className="bg-white shadow-box-bottom rounded-2xl overflow-hidden w-full p-4">
-                    {/* Description + dates */}
-                    {(program.description?.value ||
-                        program.earnedAt?.value ||
-                        program.validUntil?.value) && (
-                        <div className="space-y-2">
-                            {program.description?.value && (
-                                <div>
-                                    <h3 className="text-lg font-medium text-grayscale-900 mb-2">
-                                        Description
-                                    </h3>
-                                    <p className="text-base text-grayscale-700 leading-relaxed">
-                                        {program.description.value}
-                                    </p>
-                                </div>
-                            )}
-                            {(program.earnedAt?.value || program.validUntil?.value) && (
-                                <div className="flex gap-4 flex-wrap">
-                                    {program.earnedAt?.value && (
-                                        <div>
-                                            <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide mb-0.5">
-                                                Awarded
-                                            </p>
-                                            <p className="text-base text-grayscale-900">
-                                                {formatClrDate(program.earnedAt.value)}
-                                            </p>
-                                        </div>
-                                    )}
-                                    {program.validUntil?.value && (
-                                        <div>
-                                            <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide mb-0.5">
-                                                Expires
-                                            </p>
-                                            <p className="text-base text-grayscale-900">
-                                                {formatClrDate(program.validUntil.value)}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                {program.description?.value && (
+                    <div className="bg-white shadow-box-bottom rounded-2xl overflow-hidden w-full p-4">
+                        <div>
+                            <h3 className="text-lg font-medium text-grayscale-900 mb-2">
+                                Description
+                            </h3>
+                            <p className="text-base text-grayscale-700 leading-relaxed">
+                                {program.description.value}
+                            </p>
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
+
+                <ClrRecordDetails record={record} />
 
                 {relationships.length > 0 && (
                     <div className="bg-white shadow-box-bottom rounded-2xl p-4">
@@ -230,6 +199,9 @@ const ClrProgramDetailPanel: React.FC<{
                                 <ClrCompetencyBlock
                                     key={c.sourceCredentialId}
                                     competency={c}
+                                    record={model.records.find(
+                                        record => record.id === c.sourceCredentialId
+                                    )}
                                     relationships={getRelationshipsForRecord(
                                         model.relationships,
                                         c.sourceCredentialId
@@ -264,6 +236,7 @@ const ClrProgramDetailPanel: React.FC<{
                     issuerLogo={issuerLogo}
                     skillCount={programCompetencies.length}
                     credential={boost}
+                    record={record}
                 />
 
                 {/* Admin provenance */}

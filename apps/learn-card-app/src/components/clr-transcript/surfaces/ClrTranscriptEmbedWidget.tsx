@@ -4,7 +4,7 @@ import ClrTranscriptHeader from '../ClrTranscriptHeader';
 import ClrTranscriptSummaryStats from '../ClrTranscriptSummaryStats';
 import ClrTranscriptEvidenceList from '../ClrTranscriptEvidenceList';
 
-import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.helpers';
+import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const ClrTranscriptEmbedWidget: React.FC<{
     model: ClrTranscriptDisplayModel;

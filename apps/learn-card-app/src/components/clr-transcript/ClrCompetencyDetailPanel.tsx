@@ -8,12 +8,15 @@ import { SkillsIcon } from 'learn-card-base/svgs/wallet/SkillsIcon';
 import { StudiesIcon } from 'learn-card-base/svgs/wallet/StudiesIcon';
 
 import { useModal } from 'learn-card-base';
-import { formatClrDate, getLinkedCompetencies } from '../../helpers/clrRenderer.helpers';
+import {
+    formatClrDate,
+    getLinkedCompetencies,
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 import type {
     ClrTranscriptDisplayModel,
     CompetencyDisplayModel,
-} from '../../helpers/clrRenderer.helpers';
-import { getRelationshipsForRecord } from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
+import { getRelationshipsForRecord } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 type CompetencySection = {
     id: string;
@@ -52,7 +55,7 @@ const ClrCompetencyDetailPanel: React.FC<{
             {
                 id: `course-${course.sourceCredentialId}`,
                 dateLabel: course.earnedAt?.value
-                    ? `Earned ${formatClrDate(course.earnedAt.value)}`
+                    ? formatClrDate(course.earnedAt.value)
                     : undefined,
                 humanCode: course.humanCode?.value,
                 title: course.name?.value ?? 'Course',
@@ -74,7 +77,7 @@ const ClrCompetencyDetailPanel: React.FC<{
             {
                 id: `program-${program.sourceCredentialId}`,
                 dateLabel: program.earnedAt?.value
-                    ? `Awarded ${formatClrDate(program.earnedAt.value)}`
+                    ? formatClrDate(program.earnedAt.value)
                     : undefined,
                 title: program.name?.value ?? 'Program',
                 competencies: programCompetencies,
@@ -127,6 +130,9 @@ const ClrCompetencyDetailPanel: React.FC<{
                     <ClrCompetencyBlock
                         key={competency.sourceCredentialId}
                         competency={competency}
+                        record={model.records.find(
+                            record => record.id === competency.sourceCredentialId
+                        )}
                         relationships={getRelationshipsForRecord(
                             relationships,
                             competency.sourceCredentialId

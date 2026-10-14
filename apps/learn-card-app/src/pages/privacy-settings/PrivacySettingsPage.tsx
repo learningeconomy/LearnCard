@@ -1,3 +1,4 @@
+import { useVerifierHistoryEligibility } from '../../helpers/verifier-history/useEligibility';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 
 import { IonContent, IonPage, useIonViewWillEnter } from '@ionic/react';
@@ -30,6 +31,7 @@ import { useAnalytics } from '../../analytics';
 import * as m from '../../paraglide/messages.js';
 import { useLocale } from '../../i18n';
 import DataSharingCenterView from './DataSharingCenterView';
+import VerifierHistorySection from './components/VerifierHistorySection';
 import ShareLinkCreate from '../../components/share-links/ShareLinkCreate';
 import ShareLinkOwnerPreview from '../../components/share-links/ShareLinkOwnerPreview';
 import SavedCollectionPreview from '../../components/share-links/SavedCollectionPreview';
@@ -50,6 +52,7 @@ type PrivacySettingsProfile = {
 
 const PrivacySettingsPage: React.FC = () => {
     const flags = useFlags();
+    const historyEligible = useVerifierHistoryEligibility();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -290,7 +293,15 @@ const PrivacySettingsPage: React.FC = () => {
     return (
         <IonPage>
             <IonContent>
-                <DataSharingCenterView vm={vm} />
+                <DataSharingCenterView
+                    vm={vm}
+                    verifierHistory={
+                        <VerifierHistorySection
+                            eligible={historyEligible()}
+                            isEligible={historyEligible}
+                        />
+                    }
+                />
             </IonContent>
         </IonPage>
     );

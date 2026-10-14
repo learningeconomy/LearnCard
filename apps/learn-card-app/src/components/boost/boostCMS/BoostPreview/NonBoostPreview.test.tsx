@@ -116,7 +116,7 @@ vi.mock('../../../clr-transcript/surfaces/ClrTranscriptFullPage', () => ({
 vi.mock('../../../clr-transcript/ClrCourseDetailPanel', () => ({
     default: () => <div>CLR course detail</div>,
 }));
-vi.mock('../../../../helpers/clrRenderer.helpers', () => {
+vi.mock('learn-card-base/helpers/credentials/clr/renderer', () => {
     const getAchievement = (rawCredential: Record<string, unknown>) => {
         const subject = rawCredential.credentialSubject as Record<string, unknown> | undefined;
         return subject?.achievement as Record<string, unknown> | undefined;
@@ -151,7 +151,7 @@ vi.mock('../../../../helpers/clrRenderer.helpers', () => {
         ClrTranscriptSurface: { Full: 'full' },
     };
 });
-vi.mock('../../../clr-transcript/clr.helpers', () => ({
+vi.mock('learn-card-base/helpers/credentials/clr/helpers', () => ({
     getDownloadableEvidence: () => [],
 }));
 

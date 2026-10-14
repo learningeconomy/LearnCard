@@ -1,9 +1,9 @@
 import React from 'react';
 
 import MediaAttachmentsBox from '../../pages/ids/view-id/IdDetails/MediaAttachmentBoxCerts';
-import { formatClrDate } from '../../helpers/clrRenderer.helpers';
+import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
 
-import type { EvidenceDisplayModel } from '../../helpers/clrRenderer.helpers';
+import type { EvidenceDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 export type ClrEvidenceSourceSummary = {
     kind: 'transcript' | 'course' | 'program' | 'assessment';

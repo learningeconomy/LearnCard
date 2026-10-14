@@ -22,9 +22,9 @@ import {
     isStandaloneCourseCredential,
     normalizeClrTranscriptDisplayModel,
     ClrTranscriptSurface,
-} from '../../../../helpers/clrRenderer.helpers';
-import { getDownloadableEvidence } from '../../../clr-transcript/clr.helpers';
-import { getClrIssuerLogo } from '../../../clr-transcript/clrKind.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
+import { getDownloadableEvidence } from 'learn-card-base/helpers/credentials/clr/helpers';
+import { getClrIssuerLogo } from 'learn-card-base/helpers/credentials/clr/kind';
 import {
     getAchievementType,
     getCredentialName,

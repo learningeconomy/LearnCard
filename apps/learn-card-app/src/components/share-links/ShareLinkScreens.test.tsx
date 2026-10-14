@@ -33,6 +33,7 @@ const mocks = vi.hoisted(() => ({
     anonymousWallet: vi.fn(),
     prepare: vi.fn(),
     prepareUpdate: vi.fn(),
+    prepareMetadata: vi.fn(),
     recovery: vi.fn(),
     decrypt: vi.fn(),
     validate: vi.fn(),
@@ -92,6 +93,7 @@ vi.mock('./shareLinkFlow', async importOriginal => ({
     ...(await importOriginal<object>()),
     prepareShare: (...args: unknown[]) => mocks.prepare(...args),
     prepareShareUpdate: (...args: unknown[]) => mocks.prepareUpdate(...args),
+    prepareShareMetadataUpdate: (...args: unknown[]) => mocks.prepareMetadata(...args),
     readShareRecovery: (...args: unknown[]) => mocks.recovery(...args),
 }));
 import { enterSharePrivacy } from './sharePrivacy';
@@ -539,6 +541,104 @@ describe('create screen', () => {
         );
     });
 });
+describe('managed resume publication boundary', () => {
+    it('directs protected resume copies to Resume Builder without committing a generic link', async () => {
+        mocks.prepare.mockRejectedValue(new Error('managed-resume'));
+        render(<ShareLinkCreate onDismiss={() => {}} />);
+        fireEvent.click(await screen.findByRole('checkbox'));
+        fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+        fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Resume copy' } });
+        fireEvent.click(screen.getByRole('button', { name: /Preview/ }));
+        await screen.findByText('Use Resume Builder to publish this resume.');
+        expect(mocks.wallet.invoke.createShareLink).not.toHaveBeenCalled();
+        expect(mocks.wallet.invoke.updateShareLink).not.toHaveBeenCalled();
+        expect(
+            screen.queryByRole('button', { name: 'Create private link' })
+        ).not.toBeInTheDocument();
+    });
+});
+describe('managed resume Shared settings', () => {
+    it('updates only metadata and keeps the protected attachment version and selection', async () => {
+        const editShare = {
+            id: 'AAAAAAAAAAAAAAAAAAAAAA',
+            title: 'Resume',
+            note: 'Original',
+            selectedCount: 1,
+            version: 3,
+            contentVersion: 2,
+            status: 'active',
+            contentState: 'finalized',
+            attachmentId: '3fb368b0-6cfb-4de5-838a-0bdb53c441bd',
+            attachmentChunkCount: 3,
+            passcodeProtected: true,
+            notifyOnView: false,
+            expiresAt: null,
+        } as ShareLink;
+        const originalPayload = {
+            protocol: 'lc-share/v1',
+            shareId: editShare.id,
+            contentVersion: 2,
+            sharer: { displayName: 'Owner', profileId: 'owner' },
+            presentation: { verifiableCredential: [credential] },
+            selection: [{ credentialIndex: 0 }],
+            endorsements: [],
+        };
+        mocks.prepareMetadata.mockImplementation(
+            async (_wallet, share, _recovery, title, note, protection) => ({
+                input: {
+                    id: share.id,
+                    expectedVersion: share.version,
+                    title,
+                    note,
+                    clientRequestId: 'fbf0b4dc-33aa-42e4-8c7f-5d1c0d97dc88',
+                    ...protection,
+                },
+                key: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+                ownerDid: 'owner',
+                payload: originalPayload,
+            })
+        );
+        render(<ShareLinkCreate editShare={editShare} onDismiss={() => {}} />);
+        await screen.findByText('Edit resume content in Resume Builder.');
+        await waitFor(() => expect(screen.getByRole('button', { name: /Preview/ })).toBeEnabled());
+        expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /Back/ })).not.toBeInTheDocument();
+        expect(mocks.wallet.index.LearnCloud.getPage).not.toHaveBeenCalled();
+        expect(mocks.wallet.read.get).not.toHaveBeenCalled();
+        fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Updated resume' } });
+        fireEvent.change(screen.getByPlaceholderText('Leave blank to keep current passcode'), {
+            target: { value: '12345678' },
+        });
+        fireEvent.click(screen.getByRole('switch', { name: /Notify me when viewed/ }));
+        fireEvent.click(screen.getByRole('button', { name: /Preview/ }));
+        await screen.findByTestId('share-link-preview');
+        expect(mocks.prepareMetadata).toHaveBeenCalledOnce();
+        expect(mocks.prepareUpdate).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', { name: 'Update private link' }));
+        await screen.findByText('Your link is updated');
+        const input = mocks.wallet.invoke.updateShareLink.mock.calls[0][0];
+        expect(input).toMatchObject({
+            id: editShare.id,
+            expectedVersion: 3,
+            title: 'Updated resume',
+            passcode: '12345678',
+            notifyOnView: true,
+        });
+        for (const contentField of [
+            'contentVersion',
+            'selectedCount',
+            'envelope',
+            'ownerEncryptedRecovery',
+            'attachment',
+        ])
+            expect(input).not.toHaveProperty(contentField);
+        expect(mocks.wallet.invoke.createShareLink).not.toHaveBeenCalled();
+        await expect(mocks.prepareMetadata.mock.results[0].value).resolves.toHaveProperty(
+            'payload',
+            originalPayload
+        );
+    });
+});
 describe('recipient screen', () => {
     it('shows a neutral retry state when passcode verification is unavailable', async () => {
         mocks.wallet.invoke.resolveShareLink.mockResolvedValue({ state: 'try_later' });
@@ -917,7 +1017,7 @@ describe('recipient screen', () => {
             render(<ShareLinkViewer />);
             await screen.findByText('Community leadership');
             fireEvent.click(screen.getByRole('button', { name: 'Download JSON' }));
-            expect(createObjectURL).toHaveBeenCalledTimes(1);
+            await waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(1));
             const blob = createObjectURL.mock.calls[0][0];
             expect(blob.type).toBe('application/json');
             const contents = await new Promise<string>((resolve, reject) => {
