@@ -1,5 +1,9 @@
 import {
     clrUniversityTranscript,
+    clrMilitaryComprehensiveRecord,
+    clrMilitaryTrainingRecord,
+    clrMixedCareerRecord,
+    clrTrainingProviderRecord,
     clrNdStudentTranscript,
     clrGreatPlainsFull,
     clrMinimal,
@@ -14,8 +18,21 @@ import {
 
 import { clrAcademicProvenanceDemo } from './clrAcademicProvenance.fixture';
 
-/** Academic examples available in the transcript-only developer demo. */
+/** Source-backed examples for all CLR layouts. */
 export const CLR_TRANSCRIPT_DEMO_FIXTURES = {
+    military: {
+        label: 'Military — Comprehensive',
+        credential: clrMilitaryComprehensiveRecord.credential,
+    },
+    militaryTraining: {
+        label: 'Military — Training Record',
+        credential: clrMilitaryTrainingRecord.credential,
+    },
+    mixedCareer: { label: 'General — Mixed Career', credential: clrMixedCareerRecord.credential },
+    trainingProvider: {
+        label: 'General — Training Provider',
+        credential: clrTrainingProviderRecord.credential,
+    },
     westbridge: { label: 'Westbridge (Full)', credential: clrWestbridgeFull.credential },
     university: { label: 'University', credential: clrUniversityTranscript.credential },
     nd: { label: 'North Dakota', credential: clrNdStudentTranscript.credential },
