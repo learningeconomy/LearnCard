@@ -4,7 +4,12 @@ import { getDidWeb } from '@learncard/helpers';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { getDefaultCategoryForCredential } from 'learn-card-base';
 import { getAppBaseUrl, getResolvedTenantConfig } from '../../config/bootstrapTenantConfig';
-import { RecipientMode, Recipient, LinkOptions } from '../../pages/issue/components/recipientTypes';
+import {
+    RecipientMode,
+    Recipient,
+    LinkOptions,
+    recipientKey,
+} from '../../pages/issue/components/recipientTypes';
 
 import {
     OBv3CredentialTemplate,
@@ -27,13 +32,7 @@ import {
  */
 
 export type SimpleCredentialType =
-    | 'badge'
-    | 'certificate'
-    | 'course'
-    | 'skill'
-    | 'license'
-    | 'membership'
-    | 'micro-credential';
+    'badge' | 'certificate' | 'course' | 'skill' | 'license' | 'membership' | 'micro-credential';
 
 const ACHIEVEMENT_TYPE_BY_SIMPLE_TYPE: Record<SimpleCredentialType, string> = {
     badge: 'Badge',
@@ -205,7 +204,7 @@ const deliverBoost = async (
                 const recipientIdentifier =
                     recipient.kind === 'profile' ? recipient.profileId : recipient.email;
                 const recipientData =
-                    options.variableValuesByRecipient?.[recipientIdentifier] ?? templateData;
+                    options.variableValuesByRecipient?.[recipientKey(recipient)] ?? templateData;
                 return wallet.invoke.send({
                     type: 'boost',
                     recipient: recipientIdentifier,
@@ -280,7 +279,7 @@ const stripUnresolvedRecipientId = (credential: Record<string, unknown>): void =
  * network fills them per-issuance — substitution + signing happen at send time
  * via `templateData`, keeping the stored boost a genuine reusable template.
  */
-const buildReusableBoostTemplate = (
+export const buildReusableBoostTemplate = (
     template: OBv3CredentialTemplate,
     issuerDid: string,
     recipientDid?: string
