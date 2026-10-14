@@ -12,7 +12,7 @@ struct AccountView: View {
             ScrollView {
                 VStack(spacing: 18) {
                     HStack(spacing: 14) {
-                        avatar
+                        ProfileArtwork(url: account?.state?.profileImage, size: 64)
                         VStack(alignment: .leading, spacing: 5) {
                             Text(account?.state?.profileName ?? "Native Lab").font(.title3.bold()).foregroundStyle(Palette.ink)
                             Text(account?.state?.profileId.map { "@\($0)" } ?? "Unsigned samples").font(.subheadline).foregroundStyle(Palette.secondary)
@@ -55,19 +55,6 @@ struct AccountView: View {
                     Button(NativeText.literal("Cancel"), role: .cancel) {}
                 } message: { Text("You'll need your recovery method when signing in again on this iPhone.") }
         }.presentationDetents([.large]).presentationDragIndicator(.visible).presentationBackground(Palette.paper)
-    }
-    @ViewBuilder private var avatar: some View {
-        if let url = account?.state?.profileImage {
-            AsyncImage(url: url) { phase in
-                if let image = phase.image { image.resizable().scaledToFill() }
-                else if phase.error != nil { initials }
-                else { ProgressView() }
-            }.frame(width: 64, height: 64).background(Palette.cyanCard).clipShape(Circle())
-        } else { initials.frame(width: 64, height: 64).background(Palette.cyanCard, in: Circle()) }
-    }
-    private var initials: some View {
-        Text((account?.state?.profileName ?? "Native Lab").split(separator: " ").prefix(2).compactMap(\.first).map(String.init).joined())
-            .font(.title3.weight(.semibold)).foregroundStyle(Palette.cardInk)
     }
     private var divider: some View { Divider().padding(.leading, 64) }
     private func row(_ title: String, symbol: String, tint: Color, web: Bool = false, destructive: Bool = false) -> some View {

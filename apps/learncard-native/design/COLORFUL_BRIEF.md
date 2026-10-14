@@ -28,11 +28,11 @@ Avoid pastel-on-pastel, tinting the entire app yellow/green, glass/blur panels, 
 
 The user initially asked to try more intense solid page backdrops, then explicitly requested a return to the neutral style after review on October 14. The neutral `families-colorful-concept-2026-10-13.png` is the current reference. All page canvases use grayscale-100 `#EFF0F5` in light mode and charcoal `#11151C` in dark mode. Colorful category artwork, card fills, icons and accents remain, with navy text on bright fills and opaque white/dark panels. The stronger `colorful-backdrops-concept-2026-10-13.png` is preserved only as a historical experiment; its blue Collection, violet Inbox, cyan Apps, green Families and pink Home page fills should not be reapplied without new user direction.
 
-## Interactive detail card
+## Detail-card motion — updated 2026-10-14
 
-The user requested touch-controlled 3D in credential details. Hold for 0.35 seconds, then drag to tilt the card up to 7° horizontally and 5° vertically. A light selection haptic marks engagement. A faint reflected-light strip follows the touch; the original artwork/text stay opaque. Release returns the card with a short spring. This replaces passive drift in detail/review screens; Collection keeps its existing small idle drift.
+The initial hold-and-drag experiment is superseded: the user requested a gentle automatic looping tilt and no stacked layers in detail/review screens. Use one isolated card, a slow eight-second wave, bounded 2.6° horizontal/0.65° vertical rotation and faint surface reflection. Remove the gesture recognizer, hold hint and redundant chevron. Collection's stacked featured card remains a separate browsing treatment.
 
-Quick swipes still scroll. A deliberate hold recognizes the card gesture before a drag; the page is never globally locked. A small UIKit input surface uses [native gesture failure requirements](https://developer.apple.com/documentation/uikit/uigesturerecognizerdelegate/gesturerecognizer%28_%3Ashouldberequiredtofailby%3A%29) so scroll/sheet pans can proceed when the hold fails, while a recognized hold controls the card. Drag coordinates are measured in the screen's coordinate space, so rotating the card cannot move its own input origin. Gesture state resets on release/cancellation, and background stops the pose. Reduce Motion and VoiceOver use a static card. A concise hold-and-drag hint has four-locale copy. The detail card no longer shows a navigation chevron inside an already-open credential. SwiftUI renders the tilt and spring; the highlight is surface reflection, not a gradient page backdrop.
+Native swipes scroll normally because the card has no input surface. Offscreen/background, Reduce Motion and VoiceOver pause the loop and use the static pose. The drawn shell, adaptive lists and illustrated Inbox/search direction are recorded in [DRAWN_SHELL_BRIEF.md](DRAWN_SHELL_BRIEF.md).
 
 ### Exact stronger-backdrop prompt
 

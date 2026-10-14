@@ -12,12 +12,14 @@ public final class NativeAppStore {
     public let isLive: Bool
     public let consumer: ConsumerAppsStore
     public let families: FamiliesStore
+    public let inbox: InboxStore
 
-    public init(service: any CredentialService = DemoCredentialService(), isLive: Bool = false, consumerService: (any ConsumerAppService)? = nil, familyService: (any FamilyService)? = nil) {
+    public init(service: any CredentialService = DemoCredentialService(), isLive: Bool = false, consumerService: (any ConsumerAppService)? = nil, familyService: (any FamilyService)? = nil, inboxService: (any InboxService)? = nil) {
         self.service = service
         self.isLive = isLive
         consumer = ConsumerAppsStore(service: consumerService ?? (isLive ? UnavailableConsumerAppService() : DemoConsumerAppService()))
         families = FamiliesStore(service: familyService ?? (isLive ? UnavailableFamilyService() : DemoFamilyService()))
+        inbox = InboxStore(service: inboxService ?? (isLive ? UnavailableInboxService() : DemoInboxService()))
     }
 
     public func refresh() async {
@@ -26,7 +28,10 @@ public final class NativeAppStore {
 
     public func claim(_ credential: Credential) async -> Bool {
         let success = await perform { try await self.service.claim(offerID: credential.id) }
-        if success { notice = isLive ? "Credential added to your collection." : "Sample added to your collection." }
+        if success {
+            notice = isLive ? "Credential added to your collection." : "Sample added to your collection."
+            await inbox.afterClaim()
+        }
         return success
     }
 

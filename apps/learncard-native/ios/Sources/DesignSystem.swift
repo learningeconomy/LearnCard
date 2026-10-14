@@ -146,6 +146,7 @@ struct CredentialCard: View {
     var onWhiteSurface = false
     var showsDisclosure = true
     var animatesPresence = true
+    var showsStack = true
     @Environment(\.dynamicTypeSize) private var textSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -174,9 +175,9 @@ struct CredentialCard: View {
         }
         .background(onWhiteSurface ? Palette.surface : Palette.categoryTint(credential.displayCategory), in: RoundedRectangle(cornerRadius: 24))
         .clipShape(RoundedRectangle(cornerRadius: 24))
-        .overlay(RoundedRectangle(cornerRadius: 24).stroke(Palette.surface, lineWidth: featured ? 3 : 0))
+        .overlay(RoundedRectangle(cornerRadius: 24).stroke(Palette.surface, lineWidth: featured && showsStack ? 3 : 0))
         .background {
-            if featured {
+            if featured && showsStack {
                 RoundedRectangle(cornerRadius: 24).fill(credential.displayCategory == .achievement ? Palette.portfolioCard : Palette.pinkCard)
                     .rotationEffect(.degrees(reduceMotion ? 0 : -3)).offset(x: -3, y: 8)
                 RoundedRectangle(cornerRadius: 24).fill(credential.displayCategory == .experience || credential.displayCategory == .aiTopic ? Palette.studiesCard : Palette.cyanCard)
@@ -184,7 +185,7 @@ struct CredentialCard: View {
             }
         }
         .shadow(color: .black.opacity(featured ? 0.07 : 0), radius: 10, x: 0, y: 7)
-        .padding(.bottom, featured ? 15 : 0)
+        .padding(.bottom, featured && showsStack ? 15 : 0)
         .modifier(CardPresenceMotion(enabled: featured && animatesPresence))
         .accessibilityElement(children: .combine)
     }
@@ -256,8 +257,9 @@ struct PageHeading: View {
     @Environment(\.locale) private var nativeLocale
     let title: String
     var identifier: String? = nil
+    @ScaledMetric(relativeTo: .largeTitle) private var titleSize = 38.0
     var body: some View {
-        Text(NativeText.literal(title)).font(.largeTitle.bold()).foregroundStyle(Palette.ink)
+        Text(NativeText.literal(title)).font(.system(size: titleSize, weight: .bold)).tracking(-0.8).foregroundStyle(Palette.ink)
             .accessibilityAddTraits(.isHeader)
             .accessibilityIdentifier("page-title-\(identifier ?? title.lowercased())")
     }
@@ -284,10 +286,23 @@ private struct SubtleEntrance: ViewModifier {
 
 struct LearnCardBrand: View {
     @Environment(\.locale) private var nativeLocale
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var textSize
     var compact = false
+    private var showsWordmark: Bool { !compact && !textSize.isAccessibilitySize }
     var body: some View {
-        Image("LearnCardMark").resizable().scaledToFit()
-            .frame(width: compact ? 28 : 34, height: compact ? 28 : 34)
+        HStack(spacing: showsWordmark ? 8 : 0) {
+            Image("LearnCardPaintedMark").resizable().scaledToFit()
+                .frame(width: compact ? 34 : 40, height: compact ? 34 : 40)
+            Text("LearnCard").font(.system(size: 20, weight: .bold)).tracking(-0.6)
+                .foregroundStyle(Palette.ink).fixedSize().opacity(showsWordmark ? 1 : 0)
+                .offset(x: showsWordmark ? 0 : -6)
+                .frame(width: showsWordmark ? 106 : 0, alignment: .leading).clipped()
+                .accessibilityHidden(!showsWordmark)
+        }.frame(width: showsWordmark ? 154 : compact ? 34 : 40, height: 44, alignment: .leading)
+            .fixedSize(horizontal: true, vertical: false)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.24), value: compact)
+            .accessibilityElement(children: .ignore)
             .accessibilityLabel("LearnCard")
             .accessibilityIdentifier(compact ? "learncard-brand-compact" : "learncard-brand-full")
     }

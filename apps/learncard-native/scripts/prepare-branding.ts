@@ -15,7 +15,7 @@ await copyFile(
 
 /** Deterministic vector artwork matching the approved mockup; no runtime raster generation. */
 const icon = (name: string, active: boolean, dark: boolean): string => {
-    const ink = active ? '#18224E' : dark ? '#BBC5D6' : '#6F7590';
+    const ink = dark ? '#EFF0F5' : '#18224E';
     const paper = dark ? '#202732' : '#FFFFFF';
     const fills: Record<string, string> = {
         CollectionTab: '#93C5FD',
@@ -23,32 +23,33 @@ const icon = (name: string, active: boolean, dark: boolean): string => {
         AppsTab: '#22D3EE',
         HomeTab: '#BEF264',
     };
-    const fill = active ? fills[name] : paper;
+    const fill = fills[name];
     const line = ink;
     let drawing = '';
     if (name === 'CollectionTab')
         drawing = `
-        <rect x="13" y="5" width="23" height="32" rx="4" fill="${active ? '#34D399' : paper}" stroke="${ink}" stroke-width="1.7"/>
-        <path d="M8 4L28 2c2-.2 3 1 3 3v29c0 2-1 3-3 3L8 38c-2 .1-3-1-3-3V7c0-2 1-3 3-3Z" fill="${fill}" stroke="${ink}" stroke-width="2"/>
-        <path d="M11 10l13-1M11 31l13-1" stroke="${line}" stroke-width="1.8" stroke-linecap="round"/>
-        <circle cx="18" cy="20" r="5.4" stroke="${line}" stroke-width="1.8"/>`;
+        <path d="M12 4h16c3 0 4 2 4 5v24c0 3-1 4-4 4H12c-3 0-4-1-4-4V9c0-3 1-5 4-5Z" fill="${fill}" stroke="${ink}" stroke-width="2.5"/>
+        <rect x="14" y="10" width="12" height="7" rx="2" fill="${paper}" stroke="${line}" stroke-width="2"/>
+        <path d="M14 23h12M14 29h8" stroke="${line}" stroke-width="2.3" stroke-linecap="round"/>`;
     if (name === 'InboxTab')
         drawing = `
-        <path d="M4 21L11 10h18l7 11v14H4V21Z" fill="${active ? fill : paper}" stroke="${ink}" stroke-width="2" stroke-linejoin="round"/>
-        <path d="M4 22h10l3 5h6l3-5h10" stroke="${ink}" stroke-width="2" stroke-linejoin="round"/>`;
+        <rect x="5" y="9" width="30" height="25" rx="5" fill="${fill}" stroke="${ink}" stroke-width="2.5"/>
+        <path d="M6 11l14 11 14-11" stroke="${ink}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
     if (name === 'AppsTab')
         drawing = `
-        <path d="M12 21l-6 5 2 8 7-5M28 21l6 5-2 8-7-5" fill="${active ? '#C4B5FD' : paper}" stroke="${ink}" stroke-width="1.8" stroke-linejoin="round"/>
-        <path d="M20 3C9 11 10 22 15 31h10c5-9 6-20-5-28Z" fill="${fill}" stroke="${ink}" stroke-width="2" stroke-linejoin="round"/>
-        <circle cx="20" cy="17" r="4" fill="${active ? '#FDE047' : paper}" stroke="${line}" stroke-width="1.8"/>
-        <path d="M17 35h6M19 38h2" stroke="${active ? '#34D399' : ink}" stroke-width="2" stroke-linecap="round"/>`;
+        <g transform="rotate(38 20 20)">
+        <path d="M12 22l-5 5 2 7 6-5M28 22l5 5-2 7-6-5" fill="#93C5FD" stroke="${ink}" stroke-width="2.3" stroke-linejoin="round"/>
+        <path d="M20 3C10 10 10 22 15 31h10c5-9 5-21-5-28Z" fill="#34D399" stroke="${ink}" stroke-width="2.5" stroke-linejoin="round"/>
+        <circle cx="20" cy="16" r="3.5" fill="#22D3EE" stroke="${line}" stroke-width="2"/>
+        <path d="M17 35l3 3 3-3" stroke="#FBBF24" stroke-width="2.5" stroke-linecap="round"/>
+        </g>`;
     if (name === 'HomeTab')
         drawing = `
-        <path d="M5 31L20 20L35 9" stroke="${active ? '#22D3EE' : ink}" stroke-width="2.2" stroke-linecap="round"/>
-        <circle cx="5" cy="31" r="4" fill="${active ? '#F9A8D4' : paper}" stroke="#EC4899" stroke-width="2"/>
-        <circle cx="20" cy="20" r="4" fill="${active ? '#67E8F9' : paper}" stroke="#06B6D4" stroke-width="2"/>
-        <circle cx="35" cy="9" r="4" fill="${active ? '#C4B5FD' : paper}" stroke="#8B5CF6" stroke-width="2"/>`;
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none">${drawing}</svg>`;
+        <path d="M8 32l12-12L32 8" stroke="${ink}" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="8" cy="32" r="4.5" fill="#FDE047" stroke="${ink}" stroke-width="2.5"/>
+        <circle cx="20" cy="20" r="4.5" fill="#FDE047" stroke="${ink}" stroke-width="2.5"/>
+        <circle cx="32" cy="8" r="4.5" fill="#FDE047" stroke="${ink}" stroke-width="2.5"/>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none"><g opacity="${active ? 1 : 0.78}">${drawing}</g></svg>`;
 };
 for (const active of [false, true]) {
     for (const name of ['CollectionTab', 'InboxTab', 'AppsTab', 'HomeTab']) {

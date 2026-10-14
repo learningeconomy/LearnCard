@@ -39,7 +39,7 @@ struct NativeTabTray: View {
                 Button { selection = tab } label: {
                     VStack(spacing: 4) {
                         Image(icons[tab] + (selection == tab ? "Active" : ""))
-                            .resizable().scaledToFit().frame(width: 28, height: 28)
+                            .resizable().scaledToFit().frame(width: 31, height: 31)
                             .overlay(alignment: .topTrailing) {
                                 if tab == 1 && inboxCount > 0 {
                                     Text(inboxCount > 99 ? "99+" : "\(inboxCount)").font(.system(size: 9, weight: .bold)).foregroundStyle(.white)
@@ -47,13 +47,12 @@ struct NativeTabTray: View {
                                         .background(Color.red, in: Capsule()).offset(x: 8, y: -3).accessibilityHidden(true)
                                 }
                             }.accessibilityHidden(true)
-                        Text(tab == 1 ? NativeText.text("nav.inbox.short") : NativeText.literal(names[tab])).font(.caption2.weight(selection == tab ? .semibold : .regular))
+                        Text(tab == 1 ? NativeText.text("nav.inbox.short") : NativeText.literal(names[tab])).font(.footnote.weight(selection == tab ? .semibold : .medium))
                             .foregroundStyle(selection == tab ? Palette.selection : Palette.secondary)
-                    }.frame(maxWidth: .infinity, minHeight: 60).contentShape(Rectangle())
-                        .background {
+                    }.frame(maxWidth: .infinity, minHeight: 68).contentShape(Rectangle())
+                        .overlay(alignment: .bottom) {
                             if selection == tab {
-                                RoundedRectangle(cornerRadius: 16).fill(Palette.selection.opacity(0.08))
-                                    .padding(.horizontal, 9).padding(.vertical, 3)
+                                Capsule().fill(Palette.selection).frame(width: 32, height: 3)
                                     .matchedGeometryEffect(id: "active-tab", in: highlight)
                             }
                         }
@@ -62,7 +61,7 @@ struct NativeTabTray: View {
                     .accessibilityAddTraits(selection == tab ? .isSelected : [])
                     .accessibilityIdentifier("nav-\(names[tab].lowercased())")
             }
-        }.padding(.top, 5).padding(.horizontal, 8)
+        }.padding(.top, 6).padding(.bottom, 5).padding(.horizontal, 8)
             .background(Palette.surface.ignoresSafeArea(edges: .bottom))
             .overlay(alignment: .top) { Rectangle().fill(Palette.line.opacity(0.6)).frame(height: 0.5) }
             .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.86), value: selection)

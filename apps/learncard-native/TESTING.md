@@ -68,7 +68,9 @@ Family regressions cover full owned/member/roster pagination, foreign family ref
 
 These are synthetic mutations and real local SDK signatures, not live family setup or child-account access. See [Families integration](FAMILIES_INTEGRATION.md) and [the child-account test gate](FAMILIES_NEXT_PHASE.md).
 
-## Interactive credential details — 2026-10-14
+## Earlier interactive credential experiment — 2026-10-14
+
+This hold-and-drag interaction is superseded by the automatic-loop direction below. The local evidence is retained as history; hosted run `38517841840` for `77efd4fd9` failed. The abbreviated log does not establish a cause, and artifact retrieval timed out. The workflow now prints result summaries on failure as well as success.
 
 The Families/Colorful source baseline `a0321e78c` passed [hosted CI 38496224004](https://github.com/learningeconomy/LearnCard/actions/runs/38496224004). This follow-up adds two UI regressions, bringing the suite to 69 Bun + 43 Swift + 32 simulator cases (144), plus the intentionally skipped opt-in live exchange.
 
@@ -79,3 +81,23 @@ The gesture waits 0.35 seconds before activation. A standard XCTest swipe has a 
 After the user requested neutral page canvases again, all five focused UI checks passed: the two new detail-card cases, Collection scroll/title branding, all main destination titles and dark-mode sharing. Result bundle: `artifacts/ui-20261014-013406-10109.xcresult`. Light Collection and dark detail/share attachments were inspected. This is functional and visual review, not a pixel-diff assertion or a new local full-suite run.
 
 Native source-contract validation and final Release compilation passed. Debug was then rebuilt and installed on LearnCard Native Lab; executable, SDK and private configuration hashes matched the build. Build/test/install commands must run sequentially when sharing the same DerivedData directory, otherwise Xcode's build database can lock.
+
+## Drawn shell, adaptive lists and automatic detail motion — 2026-10-14
+
+The pre-resume drawn-shell suite had 69 Bun + 43 Swift + 34 simulator cases (146), plus the intentionally skipped opt-in live exchange. Two new UI cases check action/account entry on all four tabs and Collection search: all matches visible, no Latest issued card, illustrated no-match state and reset to browsing. The existing detail-card cases now exercise native scrolling and claiming with accessibility-size text under automatic motion and Reduce Motion; the touch recognizer is removed.
+
+The shared-header test caught a real popover routing bug: using one presentation binding on all four toolbar anchors could target a hidden tab. Each anchor now presents only for the active tab. Container accessibility identifiers also overrode nested credential/reset button identifiers in SwiftUI; identifiers now remain on the controls themselves. These changes preserve the existing tests instead of weakening assertions.
+
+The full local suite passed all **146 cases** (69 Bun, 43 Swift, 34 simulator; one opt-in live skip), including the source-contract check and independent web-SDK verification of 10 iOS outputs. Result bundle: `artifacts/native-regressions-20261014-021459-27510.xcresult`. Inbox, compact search results/empty state and dark detail/share screenshots were inspected. Xcode compiled the preserved-vector light/dark SVG assets. Search uses a short local-filter debounce; no network-wide search is claimed. This is not pixel-diff or iPad validation.
+
+## Resumed drawn shell and Inbox — 2026-10-14
+
+The suite now includes **170 cases**: 83 Bun, 51 Swift and 36 simulator cases, plus one intentionally skipped opt-in live exchange. The new command checks execute the real account bundle for `inboxList`/`inboxAction`. Inbox protocol cases cover owned identifiers, fresh request state, committed-write reconciliation, archive semantics, server-only POST_CLAIM prompts, prompt UUID deduplication, terminal server states/receipts, linked notification metadata, opaque/broken pagination and account switches. These are synthetic boundaries, not real connection writes.
+
+Swift cases cover late reads/actions after lock, duplicate taps, terminal receipts when metadata fails, page reconciliation, duplicate credential-arrival suppression, demo-only post-claim prompts, response errors, localization and exact transport routes. Existing production account-controller background/resume and sign-out tests also assert that the old Inbox is cleared, remains locked and is replaced on resume.
+
+Four focused simulator cases passed in `artifacts/inbox-focused.xcresult`: Inbox request/update actions, explicit post-claim decision, shared header across tabs and Collection search/reset. Their screenshots were inspected: new outlined tray icons/underline, readable plus, drawn avatar, compact rows and illustrated prompt. The full local 170-case suite passed, independently verified 10 iOS outputs with the web SDK, and compiled Release. Bundle: `artifacts/native-regressions-20261014-155632-36714.xcresult`. Final source-contract/protocol checks and all 51 core cases passed again after strengthening the production account-controller Inbox assertions.
+
+Both direct UI runs and CI default to the dedicated LearnCard Native UI Checks simulator. An explicit device override is still supported. Build/test scripts use `nice -n 10` and two jobs by default; override with `LC_NATIVE_BUILD_JOBS`. Shared DerivedData operations remain sequential. Local full-suite runs must preserve/restore the private review configuration before installing a live-account build.
+
+The later scale/brand feedback was applied after that full run. Five focused shell/search/large-type/scroll checks passed in `inbox-bold-shell.xcresult`, and four language/dark-mode/connection checks passed in `inbox-bold-languages.xcresult`. The painted mosaic/wordmark/smiley revision passed shared-header and French/Arabic checks; the new collapse assertion caught duplicate native AX wrappers, then an in-progress transition measurement. It now uses the first wrapper and waits for the collapsed geometry, retaining the assertion. `inbox-wordmark-settled.xcresult` passes the final scrolling-header check; `inbox-final-chrome.xcresult` passes dark sharing but retains the historical early measurement failure. The wordmark explicitly reserves its native layout width and hides its accessibility text when collapsed. These focused passes do not claim a second full 170-case run on the final visual source. Fresh hosted CI checks the pushed source.

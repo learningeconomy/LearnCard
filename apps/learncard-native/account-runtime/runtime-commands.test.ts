@@ -152,3 +152,13 @@ test.each([
     expect(['family:unavailable', 'family:decision']).toContain(reply.error);
     expect(bridgeCalls).toBe(0);
 });
+
+test.each(['inboxList', 'inboxAction'])(
+    'inbox command %s is registered and refuses signed-out input',
+    async method => {
+        const reply = JSON.parse(await account.call(method, {}));
+        expect(reply.ok).toBe(false);
+        expect(['inbox:signIn', 'inbox:connection']).toContain(reply.error);
+        expect(bridgeCalls).toBe(0);
+    }
+);

@@ -2,4 +2,4 @@
 set -euo pipefail
 task_root="$(cd "$(dirname "$0")/.." && pwd)"
 bun --conditions=development "$task_root/scripts/prepare-account.ts"
-swift test --package-path "$task_root/ios/NativeCore"
+nice -n 10 swift test --jobs "${LC_NATIVE_BUILD_JOBS:-2}" --package-path "$task_root/ios/NativeCore"

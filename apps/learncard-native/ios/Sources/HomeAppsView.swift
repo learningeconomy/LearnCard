@@ -10,6 +10,7 @@ struct HomeView: View {
     let openInbox: () -> Void
     let create: () -> Void
     let receive: () -> Void
+    var onScrollStateChange: (Bool) -> Void = { _ in }
     @State private var scrolled = false
     @Environment(\.dynamicTypeSize) private var textSize
 
@@ -87,7 +88,7 @@ struct HomeView: View {
             }.padding(20)
         }
         .background(SectionBackground(tint: Palette.homeCanvas))
-        .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 60 } action: { _, value in scrolled = value }
+        .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 60 } action: { _, value in scrolled = value; onScrollStateChange(value) }
         .navigationTitle(scrolled ? "Home" : "").navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(Palette.homeCanvas, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar)
         .refreshable { await store.refresh() }

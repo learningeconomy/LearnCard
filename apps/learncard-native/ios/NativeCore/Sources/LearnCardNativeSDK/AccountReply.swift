@@ -9,6 +9,8 @@ enum AccountReply {
                let failure = ConsumerAppError(rawValue: String(code.dropFirst("consumer:".count))) { throw failure }
             if let code = envelope["error"] as? String, code.hasPrefix("family:"),
                let failure = FamilyError(rawValue: String(code.dropFirst("family:".count))) { throw failure }
+            if let code = envelope["error"] as? String, code.hasPrefix("inbox:"),
+               let failure = InboxError(rawValue: String(code.dropFirst("inbox:".count))) { throw failure }
             throw method == "recover" ? AccountError.recovery : AccountError.unavailable
         }
         let decoder = JSONDecoder()

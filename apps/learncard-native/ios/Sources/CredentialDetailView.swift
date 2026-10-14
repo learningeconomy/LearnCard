@@ -22,7 +22,7 @@ struct CredentialDetailView: View {
     private var content: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
-                InteractiveCredentialCard(credential: credential)
+                CredentialDetailCard(credential: credential)
                 VStack(alignment: .leading, spacing: 10) {
                     Text("About this credential").font(.headline).foregroundStyle(Palette.ink)
                     Text(credential.summary).foregroundStyle(Palette.secondary).lineSpacing(4)

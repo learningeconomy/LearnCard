@@ -56,6 +56,7 @@ import LearnCardNativeCore
 @MainActor private final class HostStub: AccountHost {
     let access: AccessStub
     let credentialService: any CredentialService = DemoCredentialService()
+    let inboxService: any InboxService = DemoInboxService()
     var initializeGate: Gate?
     var recoveryGate: Gate?
     var initialState: AccountState?
@@ -116,11 +117,15 @@ import LearnCardNativeCore
         let harness = Harness(), account = harness.controller()
         await account.resume()
         let first = account.store
+        await first?.inbox.load()
+        XCTAssertEqual(first?.inbox.items.count, 2)
         XCTAssertEqual(first?.snapshot?.credentials.count, 3)
         await account.activityChanged(.background)
         XCTAssertTrue(harness.hosts[0].disposed)
         XCTAssertNil(account.store); XCTAssertNil(account.state); XCTAssertNil(account.user)
         XCTAssertEqual(account.phase, "locked")
+        XCTAssertTrue(first?.inbox.items.isEmpty == true)
+        XCTAssertFalse(first?.inbox.loaded == true)
         await account.activityChanged(.inactive)
         XCTAssertEqual(harness.hosts.count, 1)
         await account.activityChanged(.active)
@@ -128,6 +133,8 @@ import LearnCardNativeCore
         XCTAssertEqual(account.store?.snapshot?.credentials.count, 3)
         XCTAssertFalse(account.store === first)
         XCTAssertEqual(harness.hosts.count, 2)
+        await account.store?.inbox.load()
+        XCTAssertEqual(account.store?.inbox.items.count, 2)
     }
 
     func testInactiveInterruptionKeepsAccountAndDoesNotReconnect() async {
@@ -188,7 +195,11 @@ import LearnCardNativeCore
 
     func testSignOutPreservesRememberedAccessButRelaunchNeedsSignIn() async {
         let harness = Harness(), account = harness.controller(); await account.resume()
+        let previousInbox = account.store?.inbox
+        await previousInbox?.load(); XCTAssertEqual(previousInbox?.items.count, 2)
         await account.signOut(forget: false)
+        XCTAssertTrue(previousInbox?.items.isEmpty == true)
+        await previousInbox?.load(); XCTAssertTrue(previousInbox?.items.isEmpty == true)
         assertSignedOut(account)
         XCTAssertTrue(harness.access.remembered); XCTAssertTrue(harness.access.forgets.isEmpty)
         XCTAssertTrue(harness.hosts[0].disposed)

@@ -24,6 +24,7 @@
         "consumer-host.ts",
         "consumer-fixture.ts",
         "families.ts",
+        "inbox.ts",
         "personal-creations.ts"
     ]
 }

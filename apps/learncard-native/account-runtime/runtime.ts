@@ -16,6 +16,7 @@ import type { UnifiedAuthState } from '../../../packages/learn-card-base/src/aut
 import type { NativeGlobal, NativeUser, NativeMessage } from './types';
 import { LCN_DID_WEB_REGEX } from '../../../packages/learn-card-base/src/constants/regexes';
 import { createConsumerCommands, consumerErrorCode } from './consumer-apps';
+import { createInboxCommands, inboxErrorCode } from './inbox';
 import { createFamilyCommands, familyErrorCode, type FamilyPinService } from './families';
 import { getClient as getAccountAPI } from '@learncard/lca-api-client';
 import { isFamilyCreation, sendPersonalCreation } from './personal-creations';
@@ -272,6 +273,31 @@ const shares = new Map<
 
 const commands = {
     ...createConsumerCommands(() => wallet),
+    ...createInboxCommands(
+        () => wallet,
+        async current => {
+            const client = await getAccountAPI(
+                'https://staging.api.learncard.app/trpc',
+                async challenge => {
+                    const proof = await current.invoke.getDidAuthVp({
+                        proofFormat: 'jwt',
+                        challenge,
+                    });
+                    if (typeof proof !== 'string') throw new Error('Account proof unavailable');
+                    return proof;
+                }
+            );
+            return {
+                list: async cursor =>
+                    client.notifications.notifications.query({
+                        options: { limit: 30, cursor, sort: 'REVERSE_CHRONOLOGICAL' },
+                        filters: { archived: false },
+                    }),
+                update: (id, meta) =>
+                    client.notifications.updateNotificationMeta.mutate({ _id: id, meta }),
+            };
+        }
+    ),
     ...createFamilyCommands(
         () => wallet,
         async current => {
@@ -644,15 +670,17 @@ Object.defineProperty(globalThis, 'LearnCardAccount', {
             } catch (error) {
                 return JSON.stringify({
                     ok: false,
-                    error: method.startsWith('families')
-                        ? familyErrorCode(error)
-                        : method.startsWith('apps') || method.startsWith('privacy')
-                          ? consumerErrorCode(error)
-                          : method === 'initialize'
-                            ? 'connection'
-                            : method === 'recover'
-                              ? 'recovery'
-                              : 'unavailable',
+                    error: method.startsWith('inbox')
+                        ? inboxErrorCode(error)
+                        : method.startsWith('families')
+                          ? familyErrorCode(error)
+                          : method.startsWith('apps') || method.startsWith('privacy')
+                            ? consumerErrorCode(error)
+                            : method === 'initialize'
+                              ? 'connection'
+                              : method === 'recover'
+                                ? 'recovery'
+                                : 'unavailable',
                 });
             }
         },

@@ -32,6 +32,18 @@ jobs:
                   xcrun simctl list runtimes
             - name: Domain, account, lifecycle, UI and SDK interoperability
               run: bash apps/learncard-native/scripts/test-ci.sh
+            - name: Summarize simulator results
+              if: always()
+              run: |
+                  python3 - <<'PY'
+                  from pathlib import Path
+                  import subprocess
+                  results = sorted(Path('apps/learncard-native/artifacts').glob('native-regressions-*.xcresult'))
+                  if not results:
+                      print('No simulator result bundle was produced.')
+                  for result in results:
+                      subprocess.run(['xcrun', 'xcresulttool', 'get', 'test-results', 'summary', '--path', str(result)])
+                  PY
             - name: Upload test results and screenshots
               if: always()
               uses: actions/upload-artifact@v4

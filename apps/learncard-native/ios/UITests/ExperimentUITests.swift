@@ -12,9 +12,16 @@ final class ExperimentUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["page-title-collection"].waitForExistence(timeout: 10), app.debugDescription)
         XCTAssertTrue(app.staticTexts["page-title-collection"].isHittable)
         XCTAssertTrue(app.descendants(matching: .any)["learncard-brand-full"].exists)
+        let expandedBrandWidth = app.descendants(matching: .any).matching(identifier: "learncard-brand-full").firstMatch.frame.width
         app.swipeUp()
         XCTAssertTrue(app.navigationBars.staticTexts["Collection"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.descendants(matching: .any)["learncard-brand-compact"].waitForExistence(timeout: 5), app.debugDescription)
+        let compactBrand = app.descendants(matching: .any).matching(identifier: "learncard-brand-compact").firstMatch
+        let collapsed = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            compactBrand.exists && compactBrand.frame.width < expandedBrandWidth * 0.6
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [collapsed], timeout: 5), .completed,
+                       "Scrolling should remove the wordmark after its transition")
         app.swipeDown()
         XCTAssertTrue(app.staticTexts["page-title-collection"].isHittable)
         XCTAssertTrue(app.descendants(matching: .any)["learncard-brand-full"].waitForExistence(timeout: 5), app.debugDescription)
@@ -49,6 +56,7 @@ final class ExperimentUITests: XCTestCase {
         app.buttons["claim"].tap()
         XCTAssertTrue(app.alerts["Done"].waitForExistence(timeout: 5))
         app.alerts["Done"].buttons["Done"].tap()
+        skipSampleConnectionPrompt(app)
         XCTAssertFalse(app.buttons["offer-first-aid"].exists)
         app.buttons["nav-collection"].tap()
         XCTAssertTrue(app.buttons["credential-first-aid"].waitForExistence(timeout: 5))
@@ -188,12 +196,12 @@ final class ExperimentUITests: XCTestCase {
     }
 
     @MainActor
-    func testDetailCardTiltReleasesScrollingAndAllowsClaim() {
+    func testLoopingDetailCardAllowsScrollingAndClaim() {
         checkDetailCardScrollingAndClaim(reduceMotion: false)
     }
 
     @MainActor
-    func testReducedMotionDetailCardStaysStaticAndAllowsClaim() {
+    func testReducedMotionDetailAllowsScrollingAndClaim() {
         checkDetailCardScrollingAndClaim(reduceMotion: true)
     }
 
@@ -206,13 +214,10 @@ final class ExperimentUITests: XCTestCase {
         XCTAssertTrue(app.buttons["nav-inbox"].waitForExistence(timeout: 10)); app.buttons["nav-inbox"].tap()
         let offer = app.buttons["offer-first-aid"]
         XCTAssertTrue(offer.waitForExistence(timeout: 5)); offer.tap()
-        let card = app.descendants(matching: .any).matching(identifier: "credential-interactive-card").firstMatch
+        let card = app.descendants(matching: .any).matching(identifier: "credential-detail-card").firstMatch
         XCTAssertTrue(card.waitForExistence(timeout: 5))
-        XCTAssertEqual(app.staticTexts["Hold and drag to tilt"].exists, !reduceMotion)
-        let start = card.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.35))
-        let end = card.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: 0.45))
-        start.press(forDuration: 0.5, thenDragTo: end)
-        // Exercise a quick swipe starting on the card after release, not only outside it.
+        XCTAssertFalse(app.staticTexts["Hold and drag to tilt"].exists)
+        // The looping visual must not capture touches or interfere with native scrolling.
         let oldFrame = card.frame
         card.swipeUp()
         // Accessibility bounds clip to the viewport once the top passes the navigation bar.
@@ -223,7 +228,92 @@ final class ExperimentUITests: XCTestCase {
         XCTAssertTrue(claim.isHittable); claim.tap()
         XCTAssertTrue(app.alerts["Done"].waitForExistence(timeout: 5))
         app.alerts["Done"].buttons["Done"].tap()
+        skipSampleConnectionPrompt(app)
         XCTAssertFalse(app.buttons["offer-first-aid"].exists)
+    }
+
+    @MainActor private func skipSampleConnectionPrompt(_ app: XCUIApplication) {
+        let skip = app.buttons["connection-prompt-skip"]
+        XCTAssertTrue(skip.waitForExistence(timeout: 5)); skip.tap()
+        XCTAssertTrue(app.buttons["nav-inbox"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor func testInboxConnectionRequestAndUpdatesHaveDistinctActions() {
+        let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", "en"]; app.launch()
+        XCTAssertTrue(app.buttons["nav-inbox"].waitForExistence(timeout: 10)); app.buttons["nav-inbox"].tap()
+        let accept = app.buttons["inbox-accept-sample-request"]
+        for _ in 0..<6 where !accept.isHittable { app.swipeUp() }
+        XCTAssertTrue(accept.isHittable)
+        let before = XCTAttachment(screenshot: app.screenshot()); before.name = "Drawn Inbox connection requests and updates"; before.lifetime = .keepAlways; add(before)
+        accept.tap(); XCTAssertFalse(accept.exists)
+        XCTAssertTrue(app.staticTexts["Connected"].waitForExistence(timeout: 5))
+        let dismiss = app.buttons["inbox-dismiss-sample-request"]; XCTAssertTrue(dismiss.isHittable); dismiss.tap()
+        XCTAssertFalse(dismiss.exists); XCTAssertFalse(app.staticTexts["Alex Morgan"].exists)
+    }
+
+    @MainActor func testClaimConnectionPromptRequiresExplicitDecision() {
+        let app = XCUIApplication(); app.launchArguments = ["--demo", "--locale", "en"]; app.launch()
+        app.buttons["nav-inbox"].tap(); let offer = app.buttons["offer-first-aid"]
+        XCTAssertTrue(offer.waitForExistence(timeout: 10)); offer.tap(); app.buttons["claim"].tap()
+        XCTAssertTrue(app.alerts["Done"].waitForExistence(timeout: 5)); app.alerts["Done"].buttons["Done"].tap()
+        let connect = app.buttons["connection-prompt-connect"]
+        XCTAssertTrue(connect.waitForExistence(timeout: 5)); XCTAssertTrue(app.buttons["connection-prompt-skip"].exists)
+        let image = XCTAttachment(screenshot: app.screenshot()); image.name = "Post-claim native connection decision"; image.lifetime = .keepAlways; add(image)
+        connect.tap(); XCTAssertTrue(app.buttons["nav-inbox"].waitForExistence(timeout: 5))
+        XCTAssertFalse(connect.exists)
+    }
+
+    @MainActor
+    func testSharedHeaderActionsAndAccountAcrossTabs() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--demo", "--locale", "en"]
+        app.launch()
+        for tab in ["inbox", "apps", "home", "collection"] {
+            app.buttons["nav-\(tab)"].tap()
+            XCTAssertTrue(app.descendants(matching: .any)["learncard-brand-full"].waitForExistence(timeout: 5))
+            XCTAssertTrue(app.buttons["create"].isHittable)
+            XCTAssertTrue(app.buttons["account"].isHittable)
+            if tab == "inbox" {
+                let screenshot = XCTAttachment(screenshot: app.screenshot())
+                screenshot.name = "Drawn Inbox and shared header"; screenshot.lifetime = .keepAlways; add(screenshot)
+            }
+            app.buttons["account"].tap()
+            XCTAssertTrue(app.buttons["account-language"].waitForExistence(timeout: 5))
+            app.navigationBars.buttons["Done"].tap()
+            app.buttons["create"].tap()
+            for action in ["Create new", "Send existing creation", "Share credentials"] {
+                XCTAssertTrue(app.buttons[action].waitForExistence(timeout: 5))
+            }
+            app.buttons["Create new"].tap()
+            XCTAssertTrue(app.textFields["draft-title"].waitForExistence(timeout: 5))
+            app.navigationBars.buttons["Cancel"].tap()
+        }
+    }
+
+    @MainActor
+    func testCollectionSearchShowsAllMatchesWithoutLatestCardAndCanReset() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--demo", "--locale", "en"]
+        app.launch()
+        XCTAssertTrue(app.buttons["credential-design"].waitForExistence(timeout: 10))
+        let search = app.textFields["collection-search"]
+        search.tap(); search.typeText("design\n")
+        XCTAssertTrue(app.staticTexts["Search results"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["Latest issued"].exists)
+        XCTAssertTrue(app.buttons["credential-design"].exists)
+        XCTAssertFalse(app.buttons["credential-community"].exists)
+        XCTAssertTrue(app.staticTexts["1 match"].exists)
+        let results = XCTAttachment(screenshot: app.screenshot())
+        results.name = "Compact Collection search results"; results.lifetime = .keepAlways; add(results)
+        app.buttons["collection-search-clear"].tap()
+        search.tap(); search.typeText("astronaut\n")
+        XCTAssertTrue(app.staticTexts["No matches yet"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["Latest issued"].exists)
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "Illustrated Collection search empty state"; screenshot.lifetime = .keepAlways; add(screenshot)
+        app.buttons["collection-search-reset"].tap()
+        XCTAssertTrue(app.staticTexts["Latest issued"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["credential-design"].exists)
     }
 
     func testJavaScriptCoreRuntimeCapabilities() throws {

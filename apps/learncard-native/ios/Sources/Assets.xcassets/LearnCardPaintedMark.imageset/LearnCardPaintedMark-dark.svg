@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+            <defs>
+                <linearGradient id="mint" x2="1" y2="1"><stop stop-color="#78F5DD"/><stop offset="1" stop-color="#36DCC5"/></linearGradient>
+                <linearGradient id="green" x2="1" y2="1"><stop stop-color="#4EDFB3"/><stop offset="1" stop-color="#26C99D"/></linearGradient>
+                <linearGradient id="cyan" x2="1" y2="1"><stop stop-color="#5CDBF3"/><stop offset="1" stop-color="#16C7E7"/></linearGradient>
+                <linearGradient id="lime" x2="1" y2="1"><stop stop-color="#CDF885"/><stop offset="1" stop-color="#ACED59"/></linearGradient>
+                <linearGradient id="blue" x2="1" y2="1"><stop stop-color="#9BCDFC"/><stop offset="1" stop-color="#6AABF3"/></linearGradient>
+                <linearGradient id="yellow" x2="1" y2="1"><stop stop-color="#FFEA72"/><stop offset="1" stop-color="#F8D636"/></linearGradient>
+                <linearGradient id="pink" x2="1" y2="1"><stop stop-color="#FFB6D9"/><stop offset="1" stop-color="#FA8BC6"/></linearGradient>
+                <linearGradient id="violet" x2="1" y2="1"><stop stop-color="#C7A5F8"/><stop offset="1" stop-color="#A479EB"/></linearGradient>
+            </defs>
+            <path d="M5 3Q11 2 19 3Q22 3 21 7L21 18Q21 22 17 22L5 22Q2 21 3 17L3 7Q2 4 5 3Z" fill="url(#mint)"/>
+            <path d="M27 3L39 3Q43 3 42 7L42 18Q43 22 38 22L27 21Q23 22 24 17L24 7Q23 3 27 3Z" fill="url(#green)"/>
+            <path d="M48 3L59 3Q63 3 62 8L62 18Q62 22 58 22L47 22Q44 21 44 17L45 7Q44 3 48 3Z" fill="url(#cyan)"/>
+            <path d="M6 25L18 24Q22 24 21 29L21 39Q20 43 17 42L5 42Q2 42 3 38L3 29Q2 25 6 25Z" fill="url(#lime)"/>
+            <path d="M27 25L39 24Q42 25 42 28L42 39Q42 42 38 42L27 42Q24 42 24 38L24 28Q24 25 27 25Z" fill="#FFFFFF"/>
+            <path d="M48 25L59 25Q63 24 62 29L62 39Q62 43 58 42L47 42Q44 42 45 38L44 29Q44 25 48 25Z" fill="url(#blue)"/>
+            <path d="M6 45L17 45Q21 44 21 49L21 59Q21 63 17 62L5 62Q2 62 3 58L3 49Q2 45 6 45Z" fill="url(#yellow)"/>
+            <path d="M27 45L39 44Q43 45 42 49L42 59Q42 63 38 62L27 62Q24 62 24 58L24 49Q23 45 27 45Z" fill="url(#pink)"/>
+            <path d="M48 45L59 45Q62 44 62 49L62 59Q63 63 58 62L47 62Q44 62 44 58L45 49Q44 45 48 45Z" fill="url(#violet)"/>
+            <path d="M29 27L33 27L33 36L38 36L38 39L29 39Z" fill="#18224E"/>
+        </svg>

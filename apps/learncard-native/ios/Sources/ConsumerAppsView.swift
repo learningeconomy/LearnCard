@@ -7,6 +7,7 @@ struct AppsView: View {
     let store: AppStore
     let create: () -> Void
     let openInbox: () -> Void
+    var onScrollStateChange: (Bool) -> Void = { _ in }
     @State private var discover = false
     @State private var category = "all"
     @State private var query = ""
@@ -115,8 +116,7 @@ struct AppsView: View {
         }.background(Palette.appsCanvas)
             .navigationTitle(scrolled ? NativeText.text("apps.title") : "").navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Palette.appsCanvas, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar)
-            .toolbar { ToolbarItem(placement: .topBarLeading) { LearnCardBrand(compact: scrolled) } }
-            .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 60 } action: { _, value in scrolled = value }
+            .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 60 } action: { _, value in scrolled = value; onScrollStateChange(value) }
             .task { await consumer.loadInstalled() }
             .task(id: "\(discover):\(category):\(query)") {
                 if discover {
