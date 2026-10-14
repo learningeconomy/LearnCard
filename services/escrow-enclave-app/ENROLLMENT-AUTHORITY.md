@@ -34,8 +34,9 @@ see `infra/escrow-enclave/README.md`. Public authority/email settings are record
 CI-signed manifest; no plaintext access keys belong in either artifact.
 Without authority configuration, `UnavailableEnrollment` remains wired. Partial
 configuration, missing ciphertext or unsealing failure fails boot closed. No email
-client is active. **Do not deploy the configured authority before items f–i:** the
-wire/API path is implemented; app/client and independent monitor integration remain.
+client is active. **Do not deploy the configured authority before items g–i:** the
+wire/API and client paths are implemented; independent monitor integration and
+final rollout gates remain.
 
 PR 2 item-a checkpoint adds the persistence schema in
 `src/authority/state.rs`. It is available without AWS features for offline tests
@@ -130,10 +131,40 @@ clients can check the returned ciphertext without reconstructing a DynamoDB tran
 API shape validation is not signature verification: clients must verify these artifacts
 against the nonce-bound attested ledger key before trusting them (item f).
 
-The next checkpoint is item f: client intent production and signed state/receipt
-verification. Monitor integration, remaining end-to-end tests and deployment
-documentation are still pending. Software mode remains legacy staging/dev only;
-it does not implement or impersonate the signed authority protocol.
+Item f integrates the signed protocol into `sss-key-manager` and AuthCoordinator.
+The NSM verifier extracts the raw P-256 ledger key only from the signed `public_key`
+field and derives the record measurement from the verified PCR0/1/2 tuple. Legacy
+evidence without an attested ledger key remains readable for compatibility but
+cannot authorize Nitro enrollment. The client requires a fresh random Snapshot
+nonce, verifies the record signature/kind/scope, and compares the signed state
+against its unsigned duplicate. It verifies each mutation's commit against the
+exact intent digest, expected enrollment version, DID/tenant/generation, epoch
+and actual returned blob identity before treating enrollment as successful.
+
+Automatic repair checks the authority even when Mongo claims enrollment. Empty
+staging generations re-enroll cleanly without importing Mongo epochs or PIN state.
+Active PINs carry only via signed keep intent; set/change/clear are selected from
+verified state. A disabled authority is never resurrected by background repair,
+even if Mongo loses its opt-out marker. Explicit enable without a new PIN signs
+a clear of the retired verifier. Disable uses the POST body endpoint, verifies
+its commit, and can recognize an already-disabled state through fresh evidence.
+
+Only receipt/Snapshot-verified ciphertext enters the client's account-scoped
+session cache (`getVerifiedEscrowEnvelope`); durable ciphertext remains in the
+authority and lca-api caches the returned envelope. The session cache is not a
+freshness oracle and is cleared on account switch, logout and device forgetting.
+Guarded asynchronous writes cannot emit a mutation after a forgotten session
+resumes. AuthCoordinator does not replace a failed verification with Mongo's
+optimistic enrolled flag. Recovery itself never requests the lost key to sign
+an intent; owner signatures begin only after key possession/reconstruction.
+
+`escrow-authority-v1.json` adds Rust-produced Snapshot/Commit signatures and a
+fake-CA NSM document with the bound ledger key, verified by both Rust and TypeScript.
+Its documented fixture keys/root are public test material, never production trust.
+
+The next checkpoint is item g: independent authority monitoring. Remaining audit
+tests and deployment documentation are still pending. Software mode remains legacy
+staging/dev only; it does not implement or impersonate the signed authority protocol.
 
 Item d was implemented before c to avoid an unsigned activation window. The Rust
 verifier is `src/authority/intent.rs`; the TypeScript encoder/signer is
@@ -144,8 +175,9 @@ envelopes test ciphertext identity binding, not decrypted-plaintext authorizatio
 The verifier requires an authenticated authority snapshot and exact request
 envelopes. A valid signature over a fabricated source still fails when that source
 is not the active authority blob (attack B). Signature replay fails after enrollment
-version changes; unrelated operation revisions do not invalidate intent. Policy now
-calls the verifier and routes carry signed intent; AuthCoordinator still needs to sign it.
+version changes; unrelated operation revisions do not invalidate intent. Policy
+calls the verifier, routes carry intent, and AuthCoordinator supplies the account
+key to the strategy that verifies state and signs the exact change.
 
 The client layer is not authorization: enclave policy must build its typed requests
 from validated intent and bind generation/tenant/expected revision in item keys and
