@@ -37,8 +37,13 @@ import {
 import { inAppMessageValidator, type InAppMessage } from '@learncard/types';
 import {
     getLastInAppMessages,
+    getMessageLastSeen,
+    getInAppMessageFatigueState,
     isInAppMessagesDebug,
+    clearInAppMessageEvents,
+    emitInAppMessageEvent,
     messageMatches,
+    resetInAppMessageFatigue,
     resetInAppMessageDismissals,
     setInAppMessageOverride,
     setInAppMessagesDebug,
@@ -56,18 +61,6 @@ import {
     IN_APP_MESSAGE_TEMPLATE_CATEGORIES,
 } from './inAppMessageTemplates';
 import { InAppMessageBuilder, debugFieldInputStyle } from './InAppMessageBuilder';
-
-const SEEN_STORAGE_KEY = 'lcb-in-app-messages-seen';
-
-const readSeenMap = (): Record<string, string> => {
-    try {
-        const raw = globalThis.localStorage?.getItem(SEEN_STORAGE_KEY);
-
-        return raw ? (JSON.parse(raw) as Record<string, string>) : {};
-    } catch {
-        return {};
-    }
-};
 
 const frequencyLabel = (message: InAppMessage | undefined): string => {
     if (!message) return '—';
@@ -106,6 +99,8 @@ const diagnosticDot = (d: InAppMessageDiagnostic): string => {
 const diagnosticStatus = (d: InAppMessageDiagnostic): string => {
     if (!d.enabled) return 'disabled';
     if (d.willShow) return 'will show';
+    if (!d.triggerSatisfied) return 'trigger waiting';
+    if (d.fatigueSuppressed) return 'fatigue suppressed';
     if (d.matched && d.suppressed) return 'suppressed';
 
     return 'no match';
@@ -235,7 +230,7 @@ const NEW_VERSION = '999.0.0';
 
 interface DryRunScenario {
     label: string;
-    context: Omit<InAppMessageRuntimeContext, 'role'>;
+    context: Pick<InAppMessageRuntimeContext, 'platform' | 'versions'>;
 }
 
 const DRY_RUN_SCENARIOS: DryRunScenario[] = [
@@ -362,6 +357,10 @@ const TargetingDryRun: React.FC<{
                             matches={messageMatches(selected, {
                                 ...scenario.context,
                                 role: role.trim() || null,
+                                now: Date.now(),
+                                credentials: [],
+                                credentialsComplete: true,
+                                recentEvents: [],
                             })}
                         />
                     ))}
@@ -384,7 +383,7 @@ const TargetingDryRun: React.FC<{
 export const InAppMessagesDebugTab: React.FC = () => {
     const [copied, copyToClipboard] = useCopyToClipboard();
 
-    const { report, ready, context } = useInAppMessages();
+    const { report, ready, context, credentialFacts } = useInAppMessages();
     const gate = useInAppMessagePresentationGate();
     const override = useInAppMessageOverride();
 
@@ -393,10 +392,23 @@ export const InAppMessagesDebugTab: React.FC = () => {
     const [jsonInput, setJsonInput] = useState('');
     const [jsonError, setJsonError] = useState<string | null>(null);
     const [draft, setDraft] = useState<InAppMessage | null>(null);
+    const [factsBusy, setFactsBusy] = useState<'backfill' | 'clear' | null>(null);
+    const [credentialFilter, setCredentialFilter] = useState('');
 
-    const [resetCount, setResetCount] = useState(0);
+    const [, setResetCount] = useState(0);
     const flagMessages = getLastInAppMessages();
-    const seenMap = useMemo(() => readSeenMap(), [report, resetCount]);
+    const fatigueState = getInAppMessageFatigueState(credentialFacts.accountDid ?? undefined);
+    const visibleSummaries = useMemo(() => {
+        const needle = credentialFilter.trim().toLowerCase();
+
+        if (!needle) return credentialFacts.summaries ?? [];
+
+        return (credentialFacts.summaries ?? []).filter(summary =>
+            [summary.issuer, ...summary.types, ...summary.nestedIssuers]
+                .filter(Boolean)
+                .some(value => value?.toLowerCase().includes(needle))
+        );
+    }, [credentialFacts.summaries, credentialFilter]);
 
     const handleToggleTracing = useCallback(() => {
         setTracing(prev => {
@@ -445,6 +457,20 @@ export const InAppMessagesDebugTab: React.FC = () => {
 
         setInAppMessageOverride(result.data);
     }, [jsonInput]);
+
+    const handleFactsAction = useCallback(
+        async (action: 'backfill' | 'clear') => {
+            setFactsBusy(action);
+
+            try {
+                if (action === 'backfill') await credentialFacts.backfillNow();
+                else await credentialFacts.clearFacts();
+            } finally {
+                setFactsBusy(null);
+            }
+        },
+        [credentialFacts]
+    );
 
     return (
         <div className="space-y-2">
@@ -520,6 +546,32 @@ export const InAppMessagesDebugTab: React.FC = () => {
                         onCopy={copyToClipboard}
                     />
                     <KVRow
+                        label="Credential facts"
+                        value={`${credentialFacts.summaries?.length ?? 0}/${credentialFacts.total} (${
+                            credentialFacts.complete ? 'complete' : 'incomplete'
+                        })`}
+                        copied={copied}
+                        onCopy={copyToClipboard}
+                    />
+                    <KVRow
+                        label="Decrypt reads"
+                        value={`${credentialFacts.readsUsed}/200`}
+                        copied={copied}
+                        onCopy={copyToClipboard}
+                    />
+                    <KVRow
+                        label="Recent events"
+                        value={context?.recentEvents.length ?? 0}
+                        copied={copied}
+                        onCopy={copyToClipboard}
+                    />
+                    <KVRow
+                        label="Blocking shown"
+                        value={fatigueState.blockingShownThisSession}
+                        copied={copied}
+                        onCopy={copyToClipboard}
+                    />
+                    <KVRow
                         label="Override active"
                         value={override ? override.id : false}
                         copied={copied}
@@ -538,6 +590,35 @@ export const InAppMessagesDebugTab: React.FC = () => {
                         }`}
                     >
                         Tracing {tracing ? 'ON' : 'OFF'}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => void handleFactsAction('backfill')}
+                        disabled={factsBusy !== null}
+                        className="text-[10px] bg-gray-800 hover:bg-gray-700 disabled:text-gray-600 text-gray-300 px-2 py-0.5 rounded transition-colors"
+                    >
+                        {factsBusy === 'backfill' ? 'Backfilling…' : 'Backfill now'}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => void handleFactsAction('clear')}
+                        disabled={factsBusy !== null}
+                        className="text-[10px] bg-gray-800 hover:bg-gray-700 disabled:text-gray-600 text-gray-300 px-2 py-0.5 rounded transition-colors"
+                    >
+                        {factsBusy === 'clear' ? 'Clearing…' : 'Clear facts'}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => {
+                            resetInAppMessageFatigue();
+                            setResetCount(count => count + 1);
+                        }}
+                        className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-0.5 rounded transition-colors"
+                    >
+                        Reset cap
                     </button>
 
                     <button
@@ -571,6 +652,113 @@ export const InAppMessagesDebugTab: React.FC = () => {
             </Section>
 
             <Section
+                title="Credential facts & events"
+                icon={<FlaskConical className="w-3 h-3 text-gray-500" />}
+            >
+                <p className="text-[9px] text-gray-500 leading-tight">
+                    Credential data shown here never leaves this device.
+                </p>
+
+                <input
+                    type="text"
+                    value={credentialFilter}
+                    onChange={event => setCredentialFilter(event.target.value)}
+                    placeholder="Filter by issuer or type"
+                    style={debugFieldInputStyle}
+                    className="w-full text-[10px] rounded px-1.5 py-1 placeholder:!text-gray-500"
+                />
+
+                <div className="space-y-1 max-h-36 overflow-y-auto">
+                    {visibleSummaries.map(summary => (
+                        <div key={summary.uri} className="bg-gray-900/60 rounded p-1.5">
+                            <p className="text-[9px] text-gray-300 font-mono truncate">
+                                {summary.uri}
+                            </p>
+                            <p className="text-[9px] text-gray-500 truncate">
+                                {summary.issuer ?? 'unknown issuer'} ·{' '}
+                                {summary.types.join(', ') || 'unknown type'}
+                            </p>
+                            <div className="flex gap-2 pt-1">
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        copyToClipboard('credential-rule', {
+                                            credential: {
+                                                ...(summary.issuer
+                                                    ? { issuers: [summary.issuer] }
+                                                    : {}),
+                                                ...(summary.types.length > 0
+                                                    ? { vcTypes: [summary.types.at(-1)] }
+                                                    : {}),
+                                            },
+                                        })
+                                    }
+                                    className="text-[9px] text-gray-500 hover:text-gray-300"
+                                >
+                                    {copied === 'credential-rule' ? 'Copied!' : 'Copy as rule'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        emitInAppMessageEvent('credential.claimed', {
+                                            credential: summary,
+                                            ...(credentialFacts.accountDid
+                                                ? { accountDid: credentialFacts.accountDid }
+                                                : {}),
+                                        })
+                                    }
+                                    className="text-[9px] text-gray-500 hover:text-gray-300"
+                                >
+                                    Simulate claim
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="flex gap-2">
+                    <button
+                        type="button"
+                        onClick={() =>
+                            emitInAppMessageEvent('app.opened', {
+                                ...(credentialFacts.accountDid
+                                    ? { accountDid: credentialFacts.accountDid }
+                                    : {}),
+                            })
+                        }
+                        className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-0.5 rounded"
+                    >
+                        Emit app.opened
+                    </button>
+                    <button
+                        type="button"
+                        onClick={clearInAppMessageEvents}
+                        className="text-[10px] bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-0.5 rounded"
+                    >
+                        Clear events
+                    </button>
+                </div>
+
+                {(context?.recentEvents ?? []).slice(-10).map((event, index) => (
+                    <p
+                        key={`${event.occurredAt}-${index}`}
+                        className="text-[9px] text-gray-500 font-mono"
+                    >
+                        {event.event} · {new Date(event.occurredAt).toLocaleTimeString()}
+                    </p>
+                ))}
+
+                {report.invalid.map((invalid, index) => (
+                    <p
+                        key={`${invalid.id ?? 'unknown'}-${index}`}
+                        className="text-[9px] text-red-400"
+                    >
+                        Invalid {invalid.id ?? 'message'}: {invalid.error}
+                    </p>
+                ))}
+            </Section>
+
+            <Section
                 title="Flag messages"
                 icon={<ListChecks className="w-3 h-3 text-gray-500" />}
                 defaultOpen
@@ -595,7 +783,10 @@ export const InAppMessagesDebugTab: React.FC = () => {
                                 key={d.id}
                                 diagnostic={d}
                                 message={flagMessages.find(m => m.id === d.id)}
-                                lastSeen={seenMap[d.id]}
+                                lastSeen={getMessageLastSeen(
+                                    d.id,
+                                    credentialFacts.accountDid ?? undefined
+                                )}
                                 copied={copied}
                                 onCopy={copyToClipboard}
                                 onForceShow={m => setInAppMessageOverride(m)}

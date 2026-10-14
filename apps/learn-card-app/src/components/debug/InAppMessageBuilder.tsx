@@ -36,7 +36,7 @@ interface BuilderAction {
     url: string;
 }
 
-type BuilderConditionKind = 'platform' | 'role' | 'version';
+type BuilderConditionKind = 'platform' | 'role' | 'version' | 'credential';
 
 interface BuilderCondition {
     kind: BuilderConditionKind;
@@ -45,6 +45,13 @@ interface BuilderCondition {
     source: 'native' | 'web' | 'capgo';
     op: 'lt' | 'lte' | 'eq' | 'gte' | 'gt';
     value: string;
+    issuers: string;
+    nestedIssuers: string;
+    vcTypes: string;
+    categories: string;
+    achievementTypes: string;
+    issuedWithinDays: string;
+    minCount: string;
 }
 
 interface BuilderState {
@@ -56,12 +63,17 @@ interface BuilderState {
     everyDays: string;
     priority: string;
     dismissible: boolean;
+    bypassFatigue: boolean;
     mediaType: '' | 'youtube' | 'image' | 'gif';
     mediaUrl: string;
     emoji: string;
     combinator: 'all' | 'any';
     conditions: BuilderCondition[];
     actions: BuilderAction[];
+    triggerEvent: '' | 'credential.claimed' | 'app.opened';
+    triggerIssuers: string;
+    triggerVcTypes: string;
+    triggerWindowMinutes: string;
 }
 
 const emptyCondition = (): BuilderCondition => ({
@@ -71,6 +83,13 @@ const emptyCondition = (): BuilderCondition => ({
     source: 'native',
     op: 'lt',
     value: '1.0.0',
+    issuers: 'did:example:issuer',
+    nestedIssuers: '',
+    vcTypes: 'ClrCredential',
+    categories: '',
+    achievementTypes: '',
+    issuedWithinDays: '',
+    minCount: '1',
 });
 
 const emptyAction = (): BuilderAction => ({
@@ -90,12 +109,17 @@ const initialState: BuilderState = {
     everyDays: '3',
     priority: '0',
     dismissible: true,
+    bypassFatigue: false,
     mediaType: '',
     mediaUrl: '',
     emoji: '',
     combinator: 'all',
     conditions: [],
     actions: [emptyAction()],
+    triggerEvent: '',
+    triggerIssuers: '',
+    triggerVcTypes: '',
+    triggerWindowMinutes: '10',
 };
 
 const EMOJI_PRESETS = [
@@ -134,6 +158,24 @@ const conditionToPredicate = (c: BuilderCondition): Record<string, unknown> | nu
         return roles.length > 0 ? { role: roles } : null;
     }
 
+    if (c.kind === 'credential') {
+        const credential = {
+            ...(csvToList(c.issuers).length > 0 ? { issuers: csvToList(c.issuers) } : {}),
+            ...(csvToList(c.nestedIssuers).length > 0
+                ? { nestedIssuers: csvToList(c.nestedIssuers) }
+                : {}),
+            ...(csvToList(c.vcTypes).length > 0 ? { vcTypes: csvToList(c.vcTypes) } : {}),
+            ...(csvToList(c.categories).length > 0 ? { categories: csvToList(c.categories) } : {}),
+            ...(csvToList(c.achievementTypes).length > 0
+                ? { achievementTypes: csvToList(c.achievementTypes) }
+                : {}),
+            ...(c.issuedWithinDays ? { issuedWithinDays: Number(c.issuedWithinDays) } : {}),
+            minCount: Number(c.minCount),
+        };
+
+        return { credential };
+    }
+
     return { version: { source: c.source, op: c.op, value: c.value.trim() } };
 };
 
@@ -146,8 +188,8 @@ const buildDraftJson = (s: BuilderState): Record<string, unknown> => {
         predicates.length === 0
             ? undefined
             : predicates.length === 1
-            ? predicates[0]
-            : { [s.combinator]: predicates };
+              ? predicates[0]
+              : { [s.combinator]: predicates };
 
     const actions = s.actions.map(a => ({
         label: a.label,
@@ -156,9 +198,13 @@ const buildDraftJson = (s: BuilderState): Record<string, unknown> => {
             a.type === 'internalLink'
                 ? { type: a.type, path: a.path }
                 : a.type === 'externalLink'
-                ? { type: a.type, url: a.url }
-                : { type: a.type },
+                  ? { type: a.type, url: a.url }
+                  : { type: a.type },
     }));
+    const triggerWhere = {
+        ...(csvToList(s.triggerIssuers).length > 0 ? { issuers: csvToList(s.triggerIssuers) } : {}),
+        ...(csvToList(s.triggerVcTypes).length > 0 ? { vcTypes: csvToList(s.triggerVcTypes) } : {}),
+    };
 
     return {
         id: s.id,
@@ -168,10 +214,20 @@ const buildDraftJson = (s: BuilderState): Record<string, unknown> => {
         frequency: s.frequency === 'everyDays' ? { everyDays: Number(s.everyDays) } : s.frequency,
         priority: Number(s.priority),
         dismissible: s.dismissible,
+        bypassFatigue: s.bypassFatigue,
         ...(s.mediaType && s.mediaUrl ? { media: { type: s.mediaType, url: s.mediaUrl } } : {}),
         ...(s.emoji.trim() ? { emoji: s.emoji.trim() } : {}),
         actions,
         ...(targeting ? { targeting } : {}),
+        ...(s.triggerEvent
+            ? {
+                  trigger: {
+                      event: s.triggerEvent,
+                      ...(Object.keys(triggerWhere).length > 0 ? { where: triggerWhere } : {}),
+                      windowMinutes: Number(s.triggerWindowMinutes),
+                  },
+              }
+            : {}),
     };
 };
 
@@ -234,12 +290,12 @@ export const InAppMessageBuilder: React.FC<{
         const rawPredicates: Record<string, unknown>[] = !targeting
             ? []
             : 'all' in targeting
-            ? (targeting.all as Record<string, unknown>[])
-            : 'any' in targeting
-            ? (targeting.any as Record<string, unknown>[])
-            : [targeting];
+              ? (targeting.all as Record<string, unknown>[])
+              : 'any' in targeting
+                ? (targeting.any as Record<string, unknown>[])
+                : [targeting];
 
-        const conditions: BuilderCondition[] = rawPredicates.flatMap(p => {
+        const conditions = rawPredicates.flatMap((p): BuilderCondition[] => {
             if ('platform' in p) {
                 return [
                     {
@@ -278,6 +334,32 @@ export const InAppMessageBuilder: React.FC<{
                 ];
             }
 
+            if ('credential' in p) {
+                const credential = p.credential as {
+                    issuers?: string[];
+                    nestedIssuers?: string[];
+                    vcTypes?: string[];
+                    categories?: string[];
+                    achievementTypes?: string[];
+                    issuedWithinDays?: number;
+                    minCount?: number;
+                };
+
+                return [
+                    {
+                        ...emptyCondition(),
+                        kind: 'credential' as const,
+                        issuers: credential.issuers?.join(', ') ?? '',
+                        nestedIssuers: credential.nestedIssuers?.join(', ') ?? '',
+                        vcTypes: credential.vcTypes?.join(', ') ?? '',
+                        categories: credential.categories?.join(', ') ?? '',
+                        achievementTypes: credential.achievementTypes?.join(', ') ?? '',
+                        issuedWithinDays: credential.issuedWithinDays?.toString() ?? '',
+                        minCount: credential.minCount?.toString() ?? '1',
+                    },
+                ];
+            }
+
             return [];
         });
 
@@ -290,6 +372,7 @@ export const InAppMessageBuilder: React.FC<{
             everyDays: typeof m.frequency === 'object' ? String(m.frequency.everyDays) : '3',
             priority: String(m.priority),
             dismissible: m.dismissible,
+            bypassFatigue: m.bypassFatigue,
             mediaType: m.media?.type ?? '',
             mediaUrl: m.media?.url ?? '',
             emoji: m.emoji ?? '',
@@ -302,6 +385,10 @@ export const InAppMessageBuilder: React.FC<{
                 path: 'path' in a.action ? String(a.action.path) : '/',
                 url: 'url' in a.action ? String(a.action.url) : 'https://',
             })),
+            triggerEvent: m.trigger?.event ?? '',
+            triggerIssuers: m.trigger?.where?.issuers?.join(', ') ?? '',
+            triggerVcTypes: m.trigger?.where?.vcTypes?.join(', ') ?? '',
+            triggerWindowMinutes: String(m.trigger?.windowMinutes ?? 10),
         });
     }, []);
 
@@ -424,6 +511,16 @@ export const InAppMessageBuilder: React.FC<{
                     />
                     dismissible
                 </label>
+
+                <label className="flex items-center gap-1 text-[9px] text-gray-500 ml-1">
+                    <input
+                        type="checkbox"
+                        checked={state.bypassFatigue}
+                        onChange={e => set('bypassFatigue', e.target.checked)}
+                        className="w-3 h-3"
+                    />
+                    bypass cap
+                </label>
             </FieldRow>
 
             <FieldRow label="frequency">
@@ -459,6 +556,53 @@ export const InAppMessageBuilder: React.FC<{
                     className={`${fieldInputClass} max-w-[50px]`}
                 />
             </FieldRow>
+
+            <FieldRow label="trigger">
+                <select
+                    value={state.triggerEvent}
+                    onChange={e =>
+                        set('triggerEvent', e.target.value as BuilderState['triggerEvent'])
+                    }
+                    className={fieldSelectClass}
+                >
+                    <option value="">none</option>
+                    <option value="credential.claimed">credential.claimed</option>
+                    <option value="app.opened">app.opened</option>
+                </select>
+
+                {state.triggerEvent && (
+                    <input
+                        type="number"
+                        min={1}
+                        value={state.triggerWindowMinutes}
+                        onChange={e => set('triggerWindowMinutes', e.target.value)}
+                        title="Window in minutes"
+                        style={debugFieldInputStyle}
+                        className={`${fieldInputClass} max-w-[50px]`}
+                    />
+                )}
+            </FieldRow>
+
+            {state.triggerEvent === 'credential.claimed' && (
+                <FieldRow label="trigger where">
+                    <input
+                        type="text"
+                        value={state.triggerIssuers}
+                        onChange={e => set('triggerIssuers', e.target.value)}
+                        placeholder="issuer DIDs"
+                        style={debugFieldInputStyle}
+                        className={fieldInputClass}
+                    />
+                    <input
+                        type="text"
+                        value={state.triggerVcTypes}
+                        onChange={e => set('triggerVcTypes', e.target.value)}
+                        placeholder="VC types"
+                        style={debugFieldInputStyle}
+                        className={fieldInputClass}
+                    />
+                </FieldRow>
+            )}
 
             <FieldRow label="media">
                 <select
@@ -660,6 +804,7 @@ export const InAppMessageBuilder: React.FC<{
                             <option value="platform">platform</option>
                             <option value="role">role</option>
                             <option value="version">version</option>
+                            <option value="credential">credential</option>
                         </select>
 
                         {c.kind === 'platform' && (
@@ -723,6 +868,83 @@ export const InAppMessageBuilder: React.FC<{
                                     placeholder="1.2.3"
                                     style={debugFieldInputStyle}
                                     className={`${fieldInputClass} max-w-[70px]`}
+                                />
+                            </React.Fragment>
+                        )}
+
+                        {c.kind === 'credential' && (
+                            <React.Fragment>
+                                <input
+                                    type="text"
+                                    value={c.issuers}
+                                    onChange={e => updateCondition(i, { issuers: e.target.value })}
+                                    placeholder="issuer DIDs"
+                                    title="Issuers (comma separated)"
+                                    style={debugFieldInputStyle}
+                                    className={fieldInputClass}
+                                />
+                                <input
+                                    type="text"
+                                    value={c.vcTypes}
+                                    onChange={e => updateCondition(i, { vcTypes: e.target.value })}
+                                    placeholder="VC types"
+                                    title="VC types (comma separated)"
+                                    style={debugFieldInputStyle}
+                                    className={fieldInputClass}
+                                />
+                                <input
+                                    type="text"
+                                    value={c.categories}
+                                    onChange={e =>
+                                        updateCondition(i, { categories: e.target.value })
+                                    }
+                                    placeholder="categories"
+                                    title="Categories (comma separated)"
+                                    style={debugFieldInputStyle}
+                                    className={fieldInputClass}
+                                />
+                                <input
+                                    type="text"
+                                    value={c.nestedIssuers}
+                                    onChange={e =>
+                                        updateCondition(i, { nestedIssuers: e.target.value })
+                                    }
+                                    placeholder="nested issuers"
+                                    title="Nested issuers (comma separated)"
+                                    style={debugFieldInputStyle}
+                                    className={fieldInputClass}
+                                />
+                                <input
+                                    type="text"
+                                    value={c.achievementTypes}
+                                    onChange={e =>
+                                        updateCondition(i, { achievementTypes: e.target.value })
+                                    }
+                                    placeholder="achievement types"
+                                    title="Achievement types (comma separated)"
+                                    style={debugFieldInputStyle}
+                                    className={fieldInputClass}
+                                />
+                                <input
+                                    type="number"
+                                    min={0.01}
+                                    value={c.issuedWithinDays}
+                                    onChange={e =>
+                                        updateCondition(i, { issuedWithinDays: e.target.value })
+                                    }
+                                    placeholder="days"
+                                    title="Issued within days"
+                                    style={debugFieldInputStyle}
+                                    className={`${fieldInputClass} max-w-[50px]`}
+                                />
+                                <input
+                                    type="number"
+                                    min={1}
+                                    value={c.minCount}
+                                    onChange={e => updateCondition(i, { minCount: e.target.value })}
+                                    title="Minimum count"
+                                    style={debugFieldInputStyle}
+                                    className={`${fieldInputClass} max-w-[45px]`}
                                 />
                             </React.Fragment>
                         )}

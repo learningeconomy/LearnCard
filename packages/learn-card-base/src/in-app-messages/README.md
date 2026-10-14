@@ -6,12 +6,14 @@ messages; each message carries its own **targeting predicate tree** that is eval
 so it can see things LaunchDarkly's own rules cannot — the Capacitor platform, the native binary
 version, and the live Capgo/OTA bundle version.
 
--   **Show a message** with title, body, and media (YouTube / image / GIF)
--   **Call-to-action buttons** — open an in-app feature, an external link, the app store, or run a Capgo update
--   **Dismissable or required** (blocking)
--   **Native-aware app-store links** — iOS → App Store, Android → Google Play, web → configured URL
--   **Capgo update with live progress** — check, download (with %), and reload onto the latest bundle
--   **Targeting** by platform, semver version (native / web / capgo), and profile role
+- **Show a message** with title, body, and media (YouTube / image / GIF)
+- **Call-to-action buttons** — open an in-app feature, an external link, the app store, or run a Capgo update
+- **Dismissable or required** (blocking)
+- **Native-aware app-store links** — iOS → App Store, Android → Google Play, web → configured URL
+- **Capgo update with live progress** — check, download (with %), and reload onto the latest bundle
+- **Targeting** by platform, semver version (native / web / capgo), and profile role
+- **On-device credential targeting** without sending decrypted credential data to the server
+- **Claim and app-open triggers** with blocking-message fatigue protection
 
 ---
 
@@ -201,6 +203,7 @@ Leaves:
 { "platform": ["ios", "android", "web"] }
 { "role": ["learner", "teacher", "guardian", "admin", "counselor", "developer"] }
 { "version": { "source": "native" | "web" | "capgo", "op": "lt"|"lte"|"eq"|"gte"|"gt", "value": "1.2.3" } }
+{ "credential": { "issuers"?: ["did:…"], "nestedIssuers"?: ["did:…"], "vcTypes"?: ["ClrCredential"], "categories"?: ["Learning History"], "achievementTypes"?: ["Course"], "issuedWithinDays"?: 30, "minCount"?: 1 } }
 ```
 
 Combinators (nest arbitrarily):
@@ -213,12 +216,36 @@ Combinators (nest arbitrarily):
 
 Version sources:
 
--   `native` — installed native binary version (`App.getInfo().version`)
--   `web` — web build's `package.json` version (`__APP_VERSION__`)
--   `capgo` — live Capgo/OTA bundle version (`CapacitorUpdater.current()`)
+- `native` — installed native binary version (`App.getInfo().version`)
+- `web` — web build's `package.json` version (`__APP_VERSION__`)
+- `capgo` — live Capgo/OTA bundle version (`CapacitorUpdater.current()`)
 
 > **Fails closed:** if a `version` source is unavailable (e.g. `capgo` on web) or the string can't
 > be parsed as semver, that predicate evaluates to `false` — the message simply won't show.
+
+Credential fields are ANDed against one credential summary; values within a field are ORed. Fields
+from different credentials are never combined. Missing facts do not match, and a credential rule
+under `not` remains non-matching until the device has a complete facts set.
+
+### Triggers and blocking fatigue
+
+Messages may add `trigger: { event, where?, windowMinutes? }`, where `event` is
+`credential.claimed` or `app.opened`. Claim events are emitted only after the credential is stored;
+`where` evaluates against that claimed credential's local summary. Events remain in memory for 30
+minutes and are never persisted.
+
+The flag may add `settings: { maxBlockingPerSession, blockingCooldownHours }` (defaults: `1` and
+`48`). Modal messages are subject to both limits. Banners and toasts are not. Required messages
+(`dismissible: false`) and messages with `bypassFatigue: true` are exempt.
+
+### Credential-facts privacy and lifecycle
+
+Only minimal summaries—URI, category, credential types, issuer identifiers, achievement types and
+issued date—are stored in the dedicated `lcb-in-app-messages-facts` IndexedDB database. Full
+decrypted credentials are never stored there. Summaries are isolated by active DID, cleared by the
+normal logout IndexedDB cleanup, and never enter network requests, analytics, Sentry, or persisted
+React Query state. Backfill reuses resolved-query cache entries first, decrypts at idle time in
+batches of four, and caps ordinary work at 200 decrypts per app session.
 
 ---
 
@@ -254,15 +281,15 @@ The Zod schema and inferred types live in `@learncard/types` (`inAppMessages.ts`
 To avoid interfering with login and other critical flows, the host will **not** present a message
 until the app is in a stable, safe state. A message only shows when **all** of these hold:
 
--   **Auth is settled** — `isAuthSettled(useAuthStatus())` is true (never during the boot/resume
-    window, which is what caused early flashes).
--   **The user is logged in** — `useIsLoggedIn()` (override with `requireAuth={false}`).
--   **Onboarding isn't open** — `useIsOnboardingOpen()` is false.
--   **Not on a critical route** — the current `location.pathname` isn't under a suppressed prefix
-    (`/login`, `/claim`, `/consent-flow`, `/waitingsofa`, `/connect`, `/invite`, `/share`, `/legal`,
-    `/hidden`, `/oid4vci`, `/oid4vp`, `/__/auth`, …).
--   **The state has settled for a moment** — the gate must stay open for `settleDelayMs` (default
-    1200ms) to ride out transient route flicker during navigation.
+- **Auth is settled** — `isAuthSettled(useAuthStatus())` is true (never during the boot/resume
+  window, which is what caused early flashes).
+- **The user is logged in** — `useIsLoggedIn()` (override with `requireAuth={false}`).
+- **Onboarding isn't open** — `useIsOnboardingOpen()` is false.
+- **Not on a critical route** — the current `location.pathname` isn't under a suppressed prefix
+  (`/login`, `/claim`, `/consent-flow`, `/waitingsofa`, `/connect`, `/invite`, `/share`, `/legal`,
+  `/hidden`, `/oid4vci`, `/oid4vp`, `/__/auth`, …).
+- **The state has settled for a moment** — the gate must stay open for `settleDelayMs` (default
+  1200ms) to ride out transient route flicker during navigation.
 
 A message's `frequency` impression is only consumed once it **actually** presents (post-gate), so a
 boot-time flash can no longer burn a `"once"` message.
@@ -323,8 +350,8 @@ __inAppMessages.clearForce(); // stop forcing / close the preview
 
 You can also enable it **without the console**:
 
--   URL query param: append `?iamDebug=1`
--   localStorage: set `lcb-in-app-messages-debug` to `"1"`
+- URL query param: append `?iamDebug=1`
+- localStorage: set `lcb-in-app-messages-debug` to `"1"`
 
 When enabled, every evaluation logs a `[in-app-messages] evaluated` entry (via the central
 `logger` + `console.info`) plus `shown` / `closed` / `capgo:*` lifecycle events.
@@ -369,6 +396,11 @@ can see exactly which clause vetoed a message. `getLastInAppMessagesReport()` an
 in-app-messages/
 ├── predicates.ts             — pure semver compare + predicate-tree evaluator (unit-tested)
 ├── dismissalStore.ts         — per-id frequency/dismissal persistence (localStorage + session)
+├── credentialFacts.ts        — pure credential summarization and matching
+├── credentialFactsStore.ts   — DID-isolated IndexedDB storage with memory fallback
+├── useCredentialFacts.ts     — reconciliation and bounded idle backfill
+├── inAppMessageEvents.ts     — memory-only claim/app-open event buffer
+├── fatigueStore.ts           — blocking session cap and cooldown
 ├── storeLinks.ts             — native-aware App Store / Play Store link resolution + open
 ├── useRuntimeContext.ts      — gathers { platform, native/web/capgo versions, role }
 ├── useCapgoUpdate.ts         — OTA check → download (progress) → set/reload
