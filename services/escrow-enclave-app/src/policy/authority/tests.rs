@@ -1112,6 +1112,39 @@ async fn carry_persists_randomized_winner_preserves_budget_and_losing_signer_can
     assert_eq!(f.state().await.pin.generation.get(), 1);
 }
 
+// P2-d (cross-language contract): a Carry target blob's PLAINTEXT must never
+// carry recoveryEmail/recoveryLanguage — the enclave always fills them in
+// from the source — regardless of what the signed intent claims. The client
+// contract test in sss-strategy.test.ts exercises the same invariant from
+// the TypeScript side (`enrollEscrow` must omit these fields from the blob
+// it encrypts whenever the operation resolves to carry), so a regression on
+// either side is caught independently.
+#[tokio::test]
+async fn carry_rejects_a_target_blob_whose_plaintext_already_carries_contact_fields() {
+    let f = Fixture::new();
+    let mut p = f.policy(false);
+    let env = f.enroll(&mut p, true).await;
+    let target = f.blob_with_contact(2, None, Some(("attacker@example.com", "en")));
+    let signed = f
+        .intent(
+            "carry-with-contact",
+            EnrollmentAction::Carry,
+            PinAction::Keep,
+            Some(&env),
+            Some(&target),
+            2,
+            true,
+        )
+        .await;
+    assert!(p
+        .apply_enrollment_intent(&signed, Some(&env), Some(&target))
+        .await
+        .is_err());
+    // Unaffected: the state still reflects the original enrollment, not a
+    // partially-applied carry.
+    assert!(active(&f.state().await).unwrap().envelope == env);
+}
+
 #[tokio::test]
 async fn rewrap_needs_delegation_preserves_plaintext_epoch_and_budget_and_invalidates_old_holds() {
     for delegated in [false, true] {
@@ -1670,6 +1703,142 @@ async fn send_release_warning_requires_pending_and_release_requires_both_gates()
         .await
         .unwrap();
     assert!(f.hold_status("check-released").await == HoldStatus::Released);
+}
+
+// P2-a: consecutive hourly-job-style retries (lca-api retrying after losing
+// its own acknowledgment, or simply running again before it learns the hold
+// was already warned) must send at most one email and never move the
+// timestamp release is gated on.
+#[tokio::test]
+async fn send_release_warning_is_idempotent_never_resends_and_never_moves_the_timestamp() {
+    let f = Fixture::new();
+    let mut p = f.policy(false);
+    let env = f.enroll(&mut p, true).await;
+    let hold = f.awaiting_hold(&mut p, &env).await;
+    let code = f.last_sent_code();
+    p.confirm_hold(ConfirmHoldRequest {
+        envelope: &env,
+        hold: &hold,
+        request_id: "confirm",
+        expected_did: &f.did,
+        client_ephemeral_public_key: &f.client.public_key,
+        code: &code,
+    })
+    .await
+    .unwrap();
+    p.send_release_warning(SendReleaseWarningRequest {
+        hold_id: "hold",
+        request_id: "warn-1",
+        expected_did: &f.did,
+    })
+    .await
+    .unwrap();
+    let sent_after_first = f.email.sent.lock().unwrap().len();
+    async fn item(f: &Fixture, label: &str) -> HoldItem {
+        f.store
+            .load(&f.authority.binding(&f.did), label, Some("hold"))
+            .await
+            .unwrap()
+            .hold
+            .unwrap()
+    }
+    let warned_at_first = item(&f, "inspect-warning-1")
+        .await
+        .release_warning_sent_hi_ms
+        .unwrap();
+    // Advance time, then retry under a DIFFERENT request id (the realistic
+    // shape of an hourly job's next run) and also under the SAME one.
+    *f.time.0.lock().unwrap() += HOLD_DURATION_MS;
+    for (n, request_id) in ["warn-2", "warn-1"].into_iter().enumerate() {
+        p.send_release_warning(SendReleaseWarningRequest {
+            hold_id: "hold",
+            request_id,
+            expected_did: &f.did,
+        })
+        .await
+        .unwrap();
+        assert_eq!(f.email.sent.lock().unwrap().len(), sent_after_first);
+        assert_eq!(
+            item(&f, &format!("inspect-warning-check-{n}"))
+                .await
+                .release_warning_sent_hi_ms
+                .unwrap(),
+            warned_at_first
+        );
+    }
+}
+
+// P2-c: a lost response (or a retry under a fresh request id after a process
+// restart) must not be treated as an error once the hold was already
+// confirmed by an earlier, genuinely code-verified call. It must never move
+// `confirmed_hi_ms` or consume another guess.
+#[tokio::test]
+async fn confirm_hold_is_idempotent_after_a_lost_response_and_never_regrants_a_guess() {
+    let f = Fixture::new();
+    let mut p = f.policy(false);
+    let env = f.enroll(&mut p, true).await;
+    let hold = f.awaiting_hold(&mut p, &env).await;
+    let code = f.last_sent_code();
+    p.confirm_hold(ConfirmHoldRequest {
+        envelope: &env,
+        hold: &hold,
+        request_id: "confirm-1",
+        expected_did: &f.did,
+        client_ephemeral_public_key: &f.client.public_key,
+        code: &code,
+    })
+    .await
+    .unwrap();
+    async fn confirm_item(f: &Fixture, label: &str) -> HoldItem {
+        f.store
+            .load(&f.authority.binding(&f.did), label, Some("hold"))
+            .await
+            .unwrap()
+            .hold
+            .unwrap()
+    }
+    let confirmed_at_first = confirm_item(&f, "inspect-confirm-1").await.confirmed_hi_ms.unwrap();
+    let guesses_after_first = confirm_item(&f, "inspect-confirm-2").await.code_guesses_used;
+    *f.time.0.lock().unwrap() += 1000;
+    // A retry under a fresh request id (lost response / process restart),
+    // presenting a DIFFERENT, wrong-shaped code (it is never checked once
+    // already confirmed) must still succeed and must not move state.
+    p.confirm_hold(ConfirmHoldRequest {
+        envelope: &env,
+        hold: &hold,
+        request_id: "confirm-2",
+        expected_did: &f.did,
+        client_ephemeral_public_key: &f.client.public_key,
+        code: "00000000",
+    })
+    .await
+    .unwrap();
+    assert_eq!(
+        confirm_item(&f, "inspect-confirm-3").await.confirmed_hi_ms.unwrap(),
+        confirmed_at_first
+    );
+    assert_eq!(
+        confirm_item(&f, "inspect-confirm-4").await.code_guesses_used,
+        guesses_after_first
+    );
+    assert!(f.hold_status("inspect-status").await == HoldStatus::Pending);
+    // A hold that was NEVER confirmed still rejects a wrong guess normally
+    // (the idempotent branch must not short-circuit the real check).
+    let f2 = Fixture::new();
+    let mut p2 = f2.policy(false);
+    let env2 = f2.enroll(&mut p2, true).await;
+    let hold2 = f2.awaiting_hold(&mut p2, &env2).await;
+    assert!(p2
+        .confirm_hold(ConfirmHoldRequest {
+            envelope: &env2,
+            hold: &hold2,
+            request_id: "wrong-guess",
+            expected_did: &f2.did,
+            client_ephemeral_public_key: &f2.client.public_key,
+            code: "00000000",
+        })
+        .await
+        .is_err());
 }
 
 #[tokio::test]

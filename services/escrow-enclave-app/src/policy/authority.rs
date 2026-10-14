@@ -932,11 +932,29 @@ impl<'a> Policy<'a> {
             .load(&binding, req.request_id, Some(&hold.hold_id))
             .await
             .map_err(|_| ErrorCode::Unavailable)?;
+        let existing_item = before.hold.clone().ok_or(ErrorCode::Policy)?;
+        // P9.1 (attack C): idempotent — this exact hold was already confirmed
+        // by an earlier call, possibly under a different request ID if the
+        // caller lost its response (lost ack, process restart). The code can
+        // no longer be checked here (its hash is wiped on success) and it
+        // does not need to be: this branch fires only when the hold is
+        // already bound to the SAME signed hold record (hold id, blob,
+        // epoch, revision and digest all match), so it never grants a
+        // confirmation that did not already happen behind a correct guess.
+        // It never moves `confirmed_hi_ms` and never consumes another guess.
+        if existing_item.status == HoldStatus::Pending
+            && hold.blob_hash == hex::encode(existing_item.blob_identity)
+            && hold.enrollment_epoch == existing_item.epoch.get()
+            && req.hold.ledger_seq == existing_item.created_revision.get()
+            && existing_item.signed_hold_digest == hold_hash(&self.tenant, req.hold)?
+        {
+            return self.authority_hold_snapshot(&hold.hold_id, &existing_item);
+        }
         if before.operation.is_some() {
             return Err(ErrorCode::Policy);
         }
         let mut after = before.enrollment.clone().ok_or(ErrorCode::Unavailable)?;
-        let mut item = before.hold.clone().ok_or(ErrorCode::Policy)?;
+        let mut item = existing_item;
         if item.status != HoldStatus::AwaitingConfirmation
             || hold.blob_hash != hex::encode(item.blob_identity)
             || hold.enrollment_epoch != item.epoch.get()
@@ -1023,11 +1041,24 @@ impl<'a> Policy<'a> {
             .load(&binding, req.request_id, Some(req.hold_id))
             .await
             .map_err(|_| ErrorCode::Unavailable)?;
+        let existing_item = before.hold.clone().ok_or(ErrorCode::Policy)?;
+        // P9.1 (attack C): idempotent — once a warning send is durably
+        // recorded, a repeat call (the hourly job retrying after losing its
+        // own acknowledgment) must never resend the email or move the
+        // timestamp release is gated on. Only the FIRST successful send is
+        // ever recorded; whether a resend is ever desirable is a product
+        // decision, not a retry-safety one — see ENROLLMENT-AUTHORITY.md §9.
+        if existing_item.status == HoldStatus::Pending
+            && existing_item.hold_id == req.hold_id
+            && existing_item.release_warning_sent_hi_ms.is_some()
+        {
+            return self.authority_hold_snapshot(req.hold_id, &existing_item);
+        }
         if before.operation.is_some() {
             return Err(ErrorCode::Policy);
         }
         let mut after = before.enrollment.clone().ok_or(ErrorCode::Unavailable)?;
-        let mut item = before.hold.clone().ok_or(ErrorCode::Policy)?;
+        let mut item = existing_item;
         if item.status != HoldStatus::Pending || item.hold_id != req.hold_id {
             return Err(ErrorCode::Policy);
         }
@@ -1176,6 +1207,32 @@ impl<'a> Policy<'a> {
             .await
             .map_err(|_| ErrorCode::Unavailable)?;
         Ok(receipt)
+    }
+
+    /// Shared idempotent "already done" attestation for operations whose
+    /// one-time side effect (an email send, a confirmation) must never
+    /// repeat once durably recorded. Signs a fresh Snapshot-kind record over
+    /// the hold's current committed fields instead of writing a new
+    /// transition or re-running the side effect.
+    fn authority_hold_snapshot(
+        &self,
+        hold_id: &str,
+        item: &HoldItem,
+    ) -> Result<SignedAuthorityRecord, ErrorCode> {
+        self.ledger
+            .sign_authority_record(
+                RecordKind::Snapshot,
+                &serde_json::to_vec(&(
+                    "learncard-authority-hold-snapshot-v1",
+                    hold_id,
+                    item.signed_hold_digest,
+                    item.status,
+                    item.confirmed_hi_ms,
+                    item.release_warning_sent_hi_ms,
+                ))
+                .map_err(|_| ErrorCode::Policy)?,
+            )
+            .map_err(ledger_error)
     }
 
     async fn authority_time(&self) -> Result<TimeEvidence, ErrorCode> {
