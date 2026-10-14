@@ -113,7 +113,7 @@ run "authority_writer_is_only_data_principal" {
     error_message = "Only the writer may access authority data, including against administrator identity-policy allows."
   }
   assert {
-    condition     = alltrue([for principal in [aws_iam_role.enclave_host.arn, "arn:aws:iam::123456789012:role/OrganizationAccountAccessRole", var.kms_admin_role_arn] : principal != local.authority_writer_arn]) && anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyLifecycleExceptBreakGlass" && try(s.Condition.ArnNotEquals["aws:PrincipalArn"], "") == var.kms_admin_role_arn && contains(s.Action, "dynamodb:DeleteResourcePolicy") && contains(s.Action, "dynamodb:RestoreTableToPointInTime") && contains(s.Action, "dynamodb:ImportTable")])
+    condition     = alltrue([for principal in [aws_iam_role.enclave_host.arn, "arn:aws:iam::123456789012:role/OrganizationAccountAccessRole", var.kms_admin_role_arn] : principal != local.authority_writer_arn]) && anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyLifecycleExceptBreakGlass" && try(s.Condition.ArnNotEquals["aws:PrincipalArn"], "") == var.kms_admin_role_arn && contains(s.Action, "dynamodb:DeleteResourcePolicy") && contains(s.Action, "dynamodb:RestoreTableToPointInTime") && !contains(s.Action, "dynamodb:ImportTable") && !contains(s.Action, "dynamodb:CreateTable")])
     error_message = "Host/org-admin must be denied data and lifecycle operations; only break-glass is excepted for lifecycle."
   }
   assert {

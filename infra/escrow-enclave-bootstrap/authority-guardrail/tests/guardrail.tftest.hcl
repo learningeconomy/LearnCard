@@ -22,6 +22,11 @@ run "protects_keys_and_admin_trust_from_org_admin" {
     error_message = "SCP must protect all access-key management from everyone except escrow-kms-admin."
   }
   assert {
+    condition     = anytrue([for s in local.guardrail.Statement : s.Sid == "DenyAuthorityLifecycleExceptAdmin" && alltrue([for a in ["dynamodb:CreateTable", "dynamodb:ImportTable", "dynamodb:RestoreTableFromBackup", "dynamodb:CreateGlobalTable", "dynamodb:UpdateGlobalTable*"] : contains(s.Action, a)])])
+    error_message = "Table-creation actions that DynamoDB resource policies reject must stay in the SCP"
+  }
+
+  assert {
     condition     = alltrue([for sid in ["DenyDedicatedConsole", "DenyDedicatedUserTakeover", "DenyAdminRoleTakeover", "DenyBootstrapUserTakeover", "DenyCredentialBucketReconfiguration", "DenyNonWriterAuthorityData", "DenyAlternateAuthorityData", "DenyStandaloneAuthorityWrites", "DenyAuthorityLifecycleExceptAdmin"] : anytrue([for s in local.guardrail.Statement : s.Sid == sid && s.Effect == "Deny"])]) && !strcontains(aws_organizations_policy.authority[0].content, "OrganizationAccountAccessRole")
     error_message = "Org admin must have no deny exception, including takeover, console, policy/lifecycle and alternate API paths."
   }

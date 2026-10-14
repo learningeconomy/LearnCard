@@ -10,6 +10,9 @@ locals {
   authority_mutation_actions  = ["dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:ConditionCheckItem"]
   authority_bypass_actions    = ["dynamodb:PartiQL*", "dynamodb:BatchWriteItem", "dynamodb:BatchGetItem", "dynamodb:Query", "dynamodb:Scan", "dynamodb:ExportTableToPointInTime", "dynamodb:EnableKinesisStreamingDestination", "dynamodb:UpdateKinesisStreamingDestination", "dynamodb:DisableKinesisStreamingDestination"]
   authority_lifecycle_actions = ["dynamodb:CreateTable", "dynamodb:DeleteTable", "dynamodb:UpdateTable", "dynamodb:UpdateTimeToLive", "dynamodb:UpdateContinuousBackups", "dynamodb:RestoreTableFromBackup", "dynamodb:RestoreTableToPointInTime", "dynamodb:ImportTable", "dynamodb:PutResourcePolicy", "dynamodb:DeleteResourcePolicy", "dynamodb:CreateGlobalTable", "dynamodb:UpdateGlobalTable*", "dynamodb:TagResource", "dynamodb:UntagResource"]
+  # DynamoDB resource policies reject table-creation actions (they cannot target
+  # an existing table). The SCP's DenyAuthorityLifecycleExceptAdmin covers those.
+  authority_table_scoped_lifecycle_actions = setsubtract(local.authority_lifecycle_actions, ["dynamodb:CreateTable", "dynamodb:RestoreTableFromBackup", "dynamodb:ImportTable", "dynamodb:CreateGlobalTable", "dynamodb:UpdateGlobalTable*"])
   authority_resource_policy = {
     Version = "2012-10-17"
     Statement = [
@@ -24,7 +27,7 @@ locals {
       { Sid = "DenyNonTransactionalWrites", Effect = "Deny", Principal = "*", Action = local.authority_mutation_actions, Resource = local.authority_table_arn,
       Condition = { StringNotEqualsIfExists = { "dynamodb:EnclosingOperation" = "TransactWriteItems" } } },
       { Sid = "DenyAlternateDataApis", Effect = "Deny", Principal = "*", Action = local.authority_bypass_actions, Resource = [local.authority_table_arn, "${local.authority_table_arn}/index/*"] },
-      { Sid = "DenyLifecycleExceptBreakGlass", Effect = "Deny", Principal = "*", Action = local.authority_lifecycle_actions, Resource = local.authority_table_arn,
+      { Sid = "DenyLifecycleExceptBreakGlass", Effect = "Deny", Principal = "*", Action = local.authority_table_scoped_lifecycle_actions, Resource = local.authority_table_arn,
       Condition = { ArnNotEquals = { "aws:PrincipalArn" = var.kms_admin_role_arn } } },
       { Sid = "DenyTtlAlways", Effect = "Deny", Principal = "*", Action = ["dynamodb:UpdateTimeToLive"], Resource = local.authority_table_arn },
     ]
