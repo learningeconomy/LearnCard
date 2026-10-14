@@ -44,7 +44,7 @@ final class StagingTransport: NSObject, WKScriptMessageHandlerWithReply {
               let address = input["url"] as? String, let url = URL(string: address),
               url.scheme == "https",
               url.user == nil, url.password == nil, url.port == nil,
-              let method = input["method"] as? String, permits(url, method: method),
+              let method = input["method"] as? String, Self.permits(url, method: method, accountHost: accountHost),
               let headers = input["headers"] as? [String: String] else {
             diagnostics.append("Request refused by transport policy")
             replyHandler(nil, "Staging transport refused the request")
@@ -82,16 +82,20 @@ final class StagingTransport: NSObject, WKScriptMessageHandlerWithReply {
         }
     }
 
-    private func permits(_ url: URL, method: String) -> Bool {
+    nonisolated static func permits(_ url: URL, method: String, accountHost: Bool) -> Bool {
         if ["staging.network.learncard.com", "staging.cloud.learncard.com"].contains(url.host ?? "") {
             return ["GET", "POST"].contains(method)
         }
-        return accountHost && url.host == "staging.api.learncard.app" && url.path.hasPrefix("/api/keys/") &&
-            ["GET", "POST", "PUT", "DELETE"].contains(method)
+        guard accountHost, url.host == "staging.api.learncard.app" else { return false }
+        if url.path.hasPrefix("/api/keys/") { return ["GET", "POST", "PUT", "DELETE"].contains(method) }
+        guard url.path.hasPrefix("/trpc/"), ["GET", "POST"].contains(method) else { return false }
+        let actions = url.path.dropFirst("/trpc/".count).split(separator: ",", omittingEmptySubsequences: false)
+        let allowed: Set<String> = ["utilities.getChallenges", "pins.hasPin", "pins.createPin", "pins.verifyPin"]
+        return !actions.isEmpty && actions.allSatisfy { allowed.contains(String($0)) }
     }
 
     nonisolated static func permitsHeader(_ name: String, url: URL, accountHost: Bool) -> Bool {
         ["authorization", "content-type", "accept", "x-tenant-id"].contains(name.lowercased()) ||
-            (accountHost && url.host == "staging.api.learncard.app" && name.lowercased() == "x-auth-token")
+            (accountHost && url.host == "staging.api.learncard.app" && url.path.hasPrefix("/api/keys/") && name.lowercased() == "x-auth-token")
     }
 }

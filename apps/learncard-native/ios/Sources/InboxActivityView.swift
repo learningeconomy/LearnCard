@@ -19,14 +19,14 @@ struct InboxView: View {
                                 Text(credential.title).font(.headline).foregroundStyle(Palette.ink).multilineTextAlignment(.leading)
                                 Text(credential.issuer).font(.caption).foregroundStyle(Palette.secondary).multilineTextAlignment(.leading)
                                 Text(credential.kind.rawValue).font(.caption2.weight(.medium)).foregroundStyle(Palette.cardInk)
-                                    .padding(.horizontal, 8).padding(.vertical, 4).background(Palette.categoryTint(credential.kind), in: Capsule())
+                                    .padding(.horizontal, 8).padding(.vertical, 4).background(Palette.categoryTint(credential.displayCategory), in: Capsule())
                             }.frame(maxWidth: .infinity, alignment: .leading)
                             Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(Palette.secondary)
                                 .frame(width: 30, height: 30).background(Palette.paper, in: Circle()).accessibilityHidden(true)
                         }.padding(16).frame(maxWidth: .infinity, minHeight: 104)
                             .background(Palette.surface, in: RoundedRectangle(cornerRadius: 22))
                             .overlay(RoundedRectangle(cornerRadius: 22).stroke(Palette.line.opacity(0.55), lineWidth: 0.5))
-                    }.buttonStyle(.plain).accessibilityIdentifier("offer-\(credential.id)")
+                    }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("offer-\(credential.id)")
                 }
                 if store.snapshot?.offers.isEmpty == true {
                     EmptyState(symbol: "tray", title: "You're all caught up", detail: "New credentials will appear here.")

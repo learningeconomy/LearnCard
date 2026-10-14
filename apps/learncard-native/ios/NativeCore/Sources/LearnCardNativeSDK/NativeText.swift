@@ -36,7 +36,7 @@ public enum NativeText {
         return bundle.localizedString(forKey: key, value: english[key] ?? key, table: "Localizable")
     }
     public static func literal(_ source: String, language: NativeLanguage? = nil) -> String {
-        guard let key = english.first(where: { $0.value == source })?.key else { return source }
+        guard let key = literalKeys[source] else { return source }
         return text(key, language: language)
     }
     public static func format(_ key: String, _ values: String..., language: NativeLanguage? = nil) -> String {
@@ -50,5 +50,14 @@ public enum NativeText {
         guard let url = Bundle.module.url(forResource: "native-english", withExtension: "json"),
               let data = try? Data(contentsOf: url), let values = try? JSONDecoder().decode([String: String].self, from: data) else { return [:] }
         return values
+    }()
+    // Legacy literal migration uses one deterministic canonical key. Compact variants
+    // must be requested explicitly, never change a page title or VoiceOver label.
+    private static let literalKeys: [String: String] = {
+        var result: [String: String] = [:]
+        for key in english.keys.sorted() where !key.hasSuffix(".short") {
+            if let source = english[key], result[source] == nil { result[source] = key }
+        }
+        return result
     }()
 }

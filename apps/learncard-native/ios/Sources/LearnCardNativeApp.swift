@@ -25,7 +25,7 @@ struct LearnCardNativeApp: App {
                 client
                 #endif
             }
-                .tint(Palette.brandGreen)
+                .tint(Palette.selection)
                 .environment(\.locale, (NativeLanguage(rawValue: language) ?? .system).locale)
                 .environment(\.layoutDirection, (NativeLanguage(rawValue: language) ?? .system).isRightToLeft ? .rightToLeft : .leftToRight)
                 .preferredColorScheme(ProcessInfo.processInfo.arguments.contains("--preview-dark") ? .dark : nil)

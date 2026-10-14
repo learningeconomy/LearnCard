@@ -28,6 +28,8 @@ struct CollectionActionsMenu: View {
 struct NativeTabTray: View {
     @Environment(\.locale) private var nativeLocale
     @Binding var selection: Int
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Namespace private var highlight
     let inboxCount: Int
     private let names = ["Collection", "Inbox", "Apps", "Home"]
     private let icons = ["CollectionTab", "InboxTab", "AppsTab", "HomeTab"]
@@ -45,10 +47,17 @@ struct NativeTabTray: View {
                                         .background(Color.red, in: Capsule()).offset(x: 8, y: -3).accessibilityHidden(true)
                                 }
                             }.accessibilityHidden(true)
-                        Text(NativeText.literal(names[tab])).font(.caption2.weight(selection == tab ? .semibold : .regular))
+                        Text(tab == 1 ? NativeText.text("nav.inbox.short") : NativeText.literal(names[tab])).font(.caption2.weight(selection == tab ? .semibold : .regular))
                             .foregroundStyle(selection == tab ? Palette.selection : Palette.secondary)
                     }.frame(maxWidth: .infinity, minHeight: 60).contentShape(Rectangle())
-                }.buttonStyle(.plain).accessibilityLabel(NativeText.literal(names[tab]))
+                        .background {
+                            if selection == tab {
+                                RoundedRectangle(cornerRadius: 16).fill(Palette.selection.opacity(0.08))
+                                    .padding(.horizontal, 9).padding(.vertical, 3)
+                                    .matchedGeometryEffect(id: "active-tab", in: highlight)
+                            }
+                        }
+                }.buttonStyle(CredentialPressStyle()).accessibilityLabel(NativeText.literal(names[tab]))
                     .accessibilityValue(tab == 1 && inboxCount > 0 ? "\(inboxCount) to review" : "")
                     .accessibilityAddTraits(selection == tab ? .isSelected : [])
                     .accessibilityIdentifier("nav-\(names[tab].lowercased())")
@@ -56,6 +65,8 @@ struct NativeTabTray: View {
         }.padding(.top, 5).padding(.horizontal, 8)
             .background(Palette.surface.ignoresSafeArea(edges: .bottom))
             .overlay(alignment: .top) { Rectangle().fill(Palette.line.opacity(0.6)).frame(height: 0.5) }
+            .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.86), value: selection)
+            .sensoryFeedback(.selection, trigger: selection)
             .accessibilityElement(children: .contain).accessibilityLabel("Bottom navigation")
     }
 }

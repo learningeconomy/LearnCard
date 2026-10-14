@@ -83,18 +83,18 @@ struct CollectionView: View {
                     Button { Task { await store.loadMore() } } label: {
                         HStack { if store.isBusy { ProgressView() }; Text(store.isBusy ? "Loading…" : "Load More") }
                             .font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 48)
-                    }.disabled(store.isBusy).buttonStyle(.plain).foregroundStyle(Palette.green)
+                    }.disabled(store.isBusy).buttonStyle(.plain).foregroundStyle(Palette.selection)
                 }
             }
             .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 28)
         }
-        .background(SectionBackground(tint: Palette.paper))
+        .background(SectionBackground(tint: Palette.collectionCanvas))
         .onScrollGeometryChange(for: Bool.self) { geometry in
             geometry.contentOffset.y + geometry.contentInsets.top > 60
         } action: { _, compact in scrolled = compact; onScrollStateChange(compact) }
         .navigationTitle(scrolled ? "Collection" : "")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(Palette.paper, for: .navigationBar)
+        .toolbarBackground(Palette.collectionCanvas, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .scrollDismissesKeyboard(.interactively)
         .refreshable { await store.refresh() }
@@ -105,7 +105,7 @@ struct CollectionView: View {
             CredentialDetailView(store: store, credential: credential)
                 .credentialZoom(id: credential.id, namespace: cards, reduceMotion: reduceMotion)
         } label: {
-            CredentialCard(credential: credential, featured: featured)
+            CredentialCard(credential: credential, featured: featured, onWhiteSurface: !featured)
                 .matchedTransitionSource(id: credential.id, in: cards)
         }
         .buttonStyle(CredentialPressStyle())

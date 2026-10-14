@@ -200,3 +200,13 @@ Follow-ups: native AI career Pathways (confirmed by the user, not Journeys); sep
 ## Manual review pause — 2026-10-13
 
 The consumer Apps slice is pushed through implementation commit `10141da12`, with full native CI passing. The latest build is installed on LearnCard Native Lab. The user requested documentation/memory synchronization and a pause to review manually. Resume with their feedback; do not start Pathways or another design phase automatically. [STATUS.md](STATUS.md) is the current handoff, including evidence, review entry points and live-validation gaps.
+
+## Resumed: Families and visual refinement — 2026-10-13
+
+The user resumed and authorized autonomous progress while away, prioritizing additional native flows such as Families plus coordinated solid logo-colored backdrops and subtle motion. The previous pause is superseded.
+
+The initial native Families slice reuses existing backend contracts for overview/roster, creation, name/motto/color editing and invitations to existing-account guardians. Child creation/switching and guardian approval remain separate because their account custody and multi-operation lifecycle need additional regression coverage and a recovery/transaction design. No backend permissions are widened, restricted claim policies are not rewritten, and no live family mutation is performed for validation. See [FAMILIES_INTEGRATION.md](FAMILIES_INTEGRATION.md).
+
+The user clarified that the default **Colorful** web theme, not Formal, should guide the design, then asked to try more intense solid page colors. Use exact web category tokens on Collection/Inbox/Apps/Families/Home, opaque white/dark panels, navy text on bright fills and contrasting credential framing. Neutral gray remains an acceptable fallback; both studies are saved in [design/COLORFUL_BRIEF.md](design/COLORFUL_BRIEF.md). Preserve original categories independently of the native browsing groups so portfolio stays yellow and badges stay blue.
+
+The tray gains a brief moving selection indicator; family cards get one short entrance; press feedback respects Reduce Motion. Keep the actual mosaic logo and approved outlined icon shapes, using flat Colorful details instead of blue gradients.

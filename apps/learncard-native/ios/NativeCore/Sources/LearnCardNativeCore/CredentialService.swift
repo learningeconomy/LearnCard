@@ -27,18 +27,18 @@ public actor DemoCredentialService: CredentialService {
         credentials = [
             Credential(id: "design", title: "Design for people", issuer: "Open Learning Studio",
                        summary: "Exploring thoughtful design through research, prototyping, and real conversations.",
-                       kind: .learning, date: date),
+                       kind: .learning, date: date, category: "Accomplishment"),
             Credential(id: "community", title: "Community builder", issuer: "Neighborhood Collective",
                        summary: "Recognizing the time and care you put into bringing people together.",
                        kind: .achievement, date: date),
             Credential(id: "member", title: "A place to belong", issuer: "Learning Circle",
                        summary: "A member of a community that learns and grows together.",
-                       kind: .membership, date: date),
+                       kind: .membership, date: date, category: "ID"),
         ]
         offers = [
             Credential(id: "first-aid", title: "Ready to help", issuer: "Community Skills Lab",
                        summary: "Completed a hands-on introduction to first aid and everyday emergency preparedness.",
-                       kind: .learning, date: date),
+                       kind: .learning, date: date, category: "Social Badge"),
             Credential(id: "mentor", title: "Made a difference", issuer: "Learning Circle",
                        summary: "Thank you for helping someone find their next step.",
                        kind: .achievement, date: date),

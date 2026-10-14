@@ -108,3 +108,27 @@ import Testing
     await #expect(throws: ClientError.invalidDraft) { try await service.share(credentialIDs: ["design", "unknown"], title: "Samples", requestID: "request", passcode: nil) }
     await #expect(throws: ClientError.invalidDraft) { try await service.share(credentialIDs: ["design", "design"], title: "Samples", requestID: "request", passcode: nil) }
 }
+
+@Test func originalCategoriesSurviveEncodingWithoutChangingNativeBrowsingGroups() throws {
+    let value = Credential(id: "portfolio", title: "Design", issuer: "Studio", summary: "Work samples",
+                           kind: .achievement, date: .now, category: "Accomplishment")
+    let decoded = try JSONDecoder().decode(Credential.self, from: JSONEncoder().encode(value))
+    #expect(decoded.category == "Accomplishment")
+    #expect(decoded.displayCategory == .portfolio)
+    #expect(decoded.kind == .achievement)
+    #expect(CredentialCategory.resolve("Social Badge", fallback: .achievement) == .badge)
+    #expect(CredentialCategory.resolve("Work History", fallback: .achievement) == .experience)
+}
+
+@Test func legacyAndUnknownPartnerCategoriesRemainDecodable() throws {
+    let value = Credential(id: "legacy", title: "Member", issuer: "Club", summary: "Membership", kind: .membership, date: .now)
+    let data = try JSONEncoder().encode(value)
+    var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    object.removeValue(forKey: "category")
+    let legacy = try JSONDecoder().decode(Credential.self, from: JSONSerialization.data(withJSONObject: object))
+    #expect(legacy.displayCategory == .id)
+    object["category"] = "partner.custom-category"
+    let partner = try JSONDecoder().decode(Credential.self, from: JSONSerialization.data(withJSONObject: object))
+    #expect(partner.displayCategory == .id)
+    #expect(partner.category == "partner.custom-category")
+}

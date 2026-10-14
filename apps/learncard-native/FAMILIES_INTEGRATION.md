@@ -1,0 +1,46 @@
+# Native Families — October 13, 2026
+
+Families is now reachable from Home, Account and Apps → From LearnCard. It keeps the existing four-tab navigation. The first native slice covers family overview, full guardian/child roster, profile details, family creation, name/motto/color editing and invitations to existing LearnCard accounts. Child-account creation/switching and guardian approval are separate follow-ups; an explicit in-app web fallback keeps those existing capabilities reachable.
+
+## Existing contracts
+
+| Flow            | Existing contract                                                                                      | Native behavior                                                                                                                                                                                                                                                                       |
+| --------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Find families   | `getPaginatedBoosts({ category: 'Family' })` and encrypted LearnCloud Family index                     | Reads all pages, resolves membership `boostId`, deduplicates templates. Does not depend on the first 30 Collection records.                                                                                                                                                           |
+| Roster          | `getBoostAdmins`, `getBoostChildrenProfileManagers`                                                    | Reads all roster pages. Child rows are manager descriptors, not independent signed-in accounts. Names, artwork and bio come from actual metadata.                                                                                                                                     |
+| Create          | `newCredential`, `createBoost`, `createClaimHook`, `send`, `acceptCredential`, LearnCloud upload/index | Same Family category, titles, display shape, guardian claim permissions and ADD_ADMIN hook as web. Creates the current account's family membership and indexes its signed credential.                                                                                                 |
+| PIN             | Existing LCA `pins.hasPin`, `pins.createPin`, `pins.verifyPin`                                         | Five ASCII digits, confirmation for a new PIN, existing PIN verified. PIN input clears on submit/background and is never stored in family metadata.                                                                                                                                   |
+| Edit            | `getBoostPermissions`, `updateBoost`                                                                   | Checks edit permission and preserves unrelated template fields, including custom appearance unless a new color is explicitly chosen. Removes a stale legacy template proof before editing an unsigned template. Updates future family credentials; issued originals remain unchanged. |
+| Invite guardian | Existing profile lookup, guardian claim policy, ADD_ADMIN hook and `send`                              | Explicit recipient/access review and PIN. Access starts on acceptance, not an immediate `addBoostAdmin`. Refuses templates with a restricted/non-guardian claim policy rather than rewriting that policy.                                                                             |
+
+Family operations are available only for families found in the current account's owned/member records. Permissions are read again after the invitation's PIN/hook waits, and the server remains authoritative. The current account generation is checked between asynchronous stages. Late reads or action replies cannot reopen family data after lock/sign-out, and a locked store refuses new actions.
+
+Family templates are excluded from the ordinary Your creations/send-existing picker. Generic delivery also rechecks current template metadata and refuses a family template, so guardian membership cannot bypass the Families invitation review and PIN through another screen.
+
+The account transport permits only the exact LCA challenge/PIN actions needed by this slice, including batches containing only those actions. Its Firebase recovery header remains confined to `/api/keys/`; it does not go to the PIN routes. The separate web fallback receives no native Firebase session or account signing keys.
+
+## Retry boundaries
+
+Creation metadata records a random request ID and a fingerprint of non-secret family fields. A committed template can be found after a lost creation reply. Within the same account host, an uncertain creation that cannot be found is refused rather than blindly repeated. Managed-refresh send idempotency keys reuse self-membership/invitation issuance, and the personal index uses a stable ID. This is not a server transaction or a globally unique template constraint: partially completed setup, concurrent clients, and server availability still need live validation. An error never claims the whole family operation succeeded. Review the family before retrying; do not infer production readiness from synthetic retry tests. Cross-launch setup continuation needs its own durable recovery design.
+
+## Visual and language direction
+
+The user clarified that the **default Colorful web theme**, not Formal, is the design source and then requested stronger solid backdrops. The [revised references and exact prompts](design/COLORFUL_BRIEF.md) supersede the palette in the [initial Families study](design/FAMILIES_BRIEF.md). Native pages use flat category-token canvases with opaque white/dark panels, compact thumb-left roster rows and simple amber/blue/green discs when no family artwork exists. Existing artwork has loading/failure states. The actual mosaic mark and approved outlined icon shapes remain, with flat Colorful details.
+
+Collection preserves original category metadata independently of its three browsing groups, so portfolio, badge, studies and experiences render the correct colors. Grid cards have colored artwork sections and contrasting white/dark text bodies. A surface border separates a featured card even when its category matches the page. Colored surfaces retain navy text in both modes; secondary text meets contrast on every category fill. Primary actions use LearnCard deep green, with adaptive dark-mode contrast. The tray selection indicator moves briefly between tabs; press feedback and one short family-card entrance honor Reduce Motion. Featured-card drift pauses offscreen/background.
+
+The new Families strings use the native String Catalog in English, Spanish, French and Arabic. Names and family content are kept verbatim. Arabic direction and translated screens are exercised in simulator tests; human translation review remains necessary.
+
+## Remaining scope
+
+- **Child creation:** web currently spans manager creation, managed profile creation, credential delivery/acceptance, index population and permission cleanup. An atomic/idempotent server operation or a durable recovery design is needed before a native flow can safely hide that complexity.
+- **Child switching:** distinguish a family-held managed profile from guardian-only approval access. Guardian authorization alone does not imply possession of the child's signing keys. Port scoped child-host construction, parent PIN return, background/resume and sign-out before exposing switching.
+- **Guardian approval:** native account/credential approval requests and app-consent guardian gates need their own screens and regression cases. Existing unsupported consent cases stay blocked.
+- Native child editing, membership removal/deletion, custom member-title editing, guardian invite links and notification/request history are not represented as complete.
+- Existing-template/custom-claim-policy compatibility, real PIN service behavior and family creation/invitation/edit mutations need dedicated staging validation. No live family mutation was performed by the agent.
+
+## Code and verification map
+
+`account-runtime/families.ts` maps existing SDK contracts; `ios/NativeCore/Sources/LearnCardNativeCore/Families.swift` defines DTOs; `FamilyService.swift` connects the account host; `FamiliesStore.swift` owns lifecycle/state; `ios/Sources/FamiliesView.swift` contains the native flows.
+
+Protocol tests cover permission refusal, restricted policies, all roster pages, account changes during PIN preparation, invitation policy changes, retry IDs and real SDK family-template signing. Swift tests cover late reads/creation, locked actions, pending invitations, unavailable live capability, translation and scoped transport. Five simulator checks cover creation, editing/child-profile boundaries, invite review/PIN clearing, language/dark mode and account background. They use synthetic services and send no live invitations. CI already discovers the new tests through the existing wildcard/scheme; see [TESTING.md](TESTING.md) for run evidence.

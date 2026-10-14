@@ -157,7 +157,7 @@ struct CreateView: View {
                     Text(summary).font(.body).multilineTextAlignment(.center)
                     Text("\(formatName(achievementType)) · \(kind.rawValue)").font(.caption.weight(.medium))
                 }.foregroundStyle(Palette.cardInk).padding(24).frame(maxWidth: .infinity)
-                    .background(Palette.categoryTint(kind), in: RoundedRectangle(cornerRadius: 24))
+                    .background(Palette.categoryTint(.resolve(nil, fallback: kind)), in: RoundedRectangle(cornerRadius: 24))
             }.listRowBackground(Color.clear).listRowInsets(EdgeInsets())
             Section("Delivery") {
                 Label(forMe ? "For you" : "For \(recipient?.name ?? "the selected member")", systemImage: "person.crop.circle")

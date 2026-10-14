@@ -55,6 +55,10 @@ struct AppsView: View {
                             ConsumerToolRow(title: NativeText.text("sharing.title"), subtitle: NativeText.text("sharing.subtitle"), symbol: "lock.open", tint: Palette.pinkCard)
                         }.accessibilityIdentifier("apps-data-sharing")
                         Divider().padding(.leading, 74)
+                        NavigationLink { FamiliesView(appStore: store) } label: {
+                            ConsumerToolRow(title: NativeText.text("family.title"), subtitle: NativeText.text("family.subtitle"), symbol: "person.2", tint: Palette.familyCard)
+                        }.accessibilityIdentifier("apps-families")
+                        Divider().padding(.leading, 74)
                         Button(action: create) {
                             ConsumerToolRow(title: NativeText.text("apps.recognize"), subtitle: NativeText.text("apps.recognizeBody"), symbol: "person.2", tint: Palette.cyanCard)
                         }.accessibilityIdentifier("apps-recognize")
@@ -108,9 +112,9 @@ struct AppsView: View {
                         .disabled(consumer.browseBusy || consumer.installedBusy)
                 }
             }.padding(20)
-        }.background(Palette.paper)
+        }.background(Palette.appsCanvas)
             .navigationTitle(scrolled ? NativeText.text("apps.title") : "").navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Palette.paper, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(Palette.appsCanvas, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar)
             .toolbar { ToolbarItem(placement: .topBarLeading) { LearnCardBrand(compact: scrolled) } }
             .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 60 } action: { _, value in scrolled = value }
             .task { await consumer.loadInstalled() }

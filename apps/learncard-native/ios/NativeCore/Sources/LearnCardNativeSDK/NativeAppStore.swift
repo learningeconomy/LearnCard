@@ -11,11 +11,13 @@ public final class NativeAppStore {
     public var notice: String?
     public let isLive: Bool
     public let consumer: ConsumerAppsStore
+    public let families: FamiliesStore
 
-    public init(service: any CredentialService = DemoCredentialService(), isLive: Bool = false, consumerService: (any ConsumerAppService)? = nil) {
+    public init(service: any CredentialService = DemoCredentialService(), isLive: Bool = false, consumerService: (any ConsumerAppService)? = nil, familyService: (any FamilyService)? = nil) {
         self.service = service
         self.isLive = isLive
         consumer = ConsumerAppsStore(service: consumerService ?? (isLive ? UnavailableConsumerAppService() : DemoConsumerAppService()))
+        families = FamiliesStore(service: familyService ?? (isLive ? UnavailableFamilyService() : DemoFamilyService()))
     }
 
     public func refresh() async {

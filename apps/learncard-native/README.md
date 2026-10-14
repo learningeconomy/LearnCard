@@ -2,11 +2,11 @@
 
 An independent personal credential app: SwiftUI on iOS first, Kotlin and Jetpack Compose on Android after the credential and account contracts are proven. It focuses on collecting, receiving, creating, claiming, sending, and sharing credentials. The user approved fully native clients on October 12, 2026.
 
-**Current handoff:** [STATUS.md](STATUS.md) records the installed review build, passing CI, manual review areas and remaining scope. Iteration is paused for the user's manual review as of October 13, 2026.
+**Current handoff:** [STATUS.md](STATUS.md) records the review build, validation, manual review areas and remaining scope. The user resumed iteration on October 13, 2026; native Families and default Colorful theme/motion refinement are the current slice. See [FAMILIES_INTEGRATION.md](FAMILIES_INTEGRATION.md) for supported flows and child-account follow-ups, and [the Colorful design brief](design/COLORFUL_BRIEF.md) for the stronger solid-backdrop direction.
 
 The default app now connects to the approved staging test account through native Firebase email-code sign-in, the existing SSS recovery flow, and device-bound Keychain storage. Existing-account recovery, profile loading, the first 30 encrypted collection records, incoming offers, and relaunch have been confirmed live. See [account integration](ACCOUNT_INTEGRATION.md) for evidence and remaining cases.
 
-Run with `--demo` for **unsigned, in-memory sample content**. Samples reset on restart; sample sending records local activity and delivers no messages. The native redesign uses actual credential artwork, neutral light/dark canvases, colorful layered cards, round artwork windows, and reduced-motion-aware card transitions. The main destinations are Collection, Inbox, Apps, and Home. Apps now has native catalog discovery, installation, app details, agreement review and an in-app browser. Profile Data Sharing is native too; see [APPS_INTEGRATION.md](APPS_INTEGRATION.md) for support boundaries and follow-ups. Home is a streamlined dashboard with arrivals, creation, and session activity.
+Run with `--demo` for **unsigned, in-memory sample content**. Samples reset on restart; sample sending records local activity and delivers no messages. The native redesign uses actual credential artwork, coordinated solid light/dark canvases, colorful layered cards, round artwork windows, and reduced-motion-aware transitions. The main destinations are Collection, Inbox, Apps, and Home. Apps now has native catalog discovery, installation, app details, agreement review and an in-app browser. Profile Data Sharing is native too; see [APPS_INTEGRATION.md](APPS_INTEGRATION.md) for support boundaries and follow-ups. Home is a streamlined dashboard with arrivals, creation, Families and session activity.
 
 ## Run on iOS
 
@@ -87,7 +87,7 @@ python3 apps/learncard-native/scripts/generate-project.py
 
 See [the SDK spike results and account connection design](SDK_SPIKE.md) and [the product and implementation plan](PLAN.md) for the live-account integration sequence and Android follow-up.
 
-Consumer Apps is the current priority. Native AI career Pathways, Families and AI Sessions are separate follow-ups; résumé builder stays web-only. Store administration and developer publishing portals remain excluded; see [PLAN.md](PLAN.md).
+Consumer Apps is implemented, and the first native Families slice covers roster, family creation/editing and guardian invitations. Native child-account creation/switching and guardian approval, AI career Pathways and AI Sessions remain follow-ups; résumé builder stays web-only. Store administration and developer publishing portals remain excluded; see [PLAN.md](PLAN.md).
 
 The approved visual direction and implementation brief are saved in [design/BRIEF.md](design/BRIEF.md). Reproduce navigation artwork with `bun apps/learncard-native/scripts/prepare-branding.ts` from the repository root; The generator rasterizes deterministic vector artwork, including light/dark navigation variants.
 

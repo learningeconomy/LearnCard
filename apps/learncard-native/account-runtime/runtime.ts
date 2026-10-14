@@ -16,6 +16,9 @@ import type { UnifiedAuthState } from '../../../packages/learn-card-base/src/aut
 import type { NativeGlobal, NativeUser, NativeMessage } from './types';
 import { LCN_DID_WEB_REGEX } from '../../../packages/learn-card-base/src/constants/regexes';
 import { createConsumerCommands, consumerErrorCode } from './consumer-apps';
+import { createFamilyCommands, familyErrorCode, type FamilyPinService } from './families';
+import { getClient as getAccountAPI } from '@learncard/lca-api-client';
+import { isFamilyCreation, sendPersonalCreation } from './personal-creations';
 
 const bridge = (globalThis as unknown as NativeGlobal).webkit.messageHandlers;
 const native = (input: NativeMessage): Promise<string | null> =>
@@ -146,7 +149,7 @@ const image = (value: unknown): string | undefined => {
 };
 const kindFor = (category: unknown): string => {
     const value = string(category).toLowerCase();
-    return value.includes('id') || value.includes('member')
+    return value.includes('id') || value.includes('member') || value.includes('family')
         ? 'Memberships'
         : value.includes('learn') || value.includes('study')
           ? 'Learning'
@@ -214,6 +217,7 @@ const display = async (record: Record<string, unknown>, verify = true) => {
         issuer: await issuerLabel(raw.issuer),
         summary: string(achievement.description) || string(raw.description),
         kind: kindFor(record.category),
+        category: string(record.category) || undefined,
         date: string(raw.issuanceDate) || string(raw.validFrom) || '1970-01-01T00:00:00Z',
         createdByMe: raw.issuer === wallet.id.did() || issuer.id === wallet.id.did(),
         isSample: false,
@@ -268,6 +272,27 @@ const shares = new Map<
 
 const commands = {
     ...createConsumerCommands(() => wallet),
+    ...createFamilyCommands(
+        () => wallet,
+        async current => {
+            const client = await getAccountAPI(
+                'https://staging.api.learncard.app/trpc',
+                async challenge => {
+                    const proof = await current.invoke.getDidAuthVp({
+                        proofFormat: 'jwt',
+                        challenge,
+                    });
+                    if (typeof proof !== 'string') throw new Error('Account proof unavailable');
+                    return proof;
+                }
+            );
+            return {
+                hasPin: () => client.pins.hasPin.query({}),
+                createPin: pin => client.pins.createPin.mutate({ pin }),
+                verifyPin: pin => client.pins.verifyPin.query({ pin }),
+            } satisfies FamilyPinService;
+        }
+    ),
     initialize: async (input: { wasmBase64: string; user: NativeUser }) => {
         user = input.user;
         wasm = Uint8Array.from(atob(input.wasmBase64), char => char.charCodeAt(0));
@@ -455,6 +480,7 @@ const commands = {
         });
         const credentials = [];
         for (const record of page.records) {
+            if (isFamilyCreation(record)) continue;
             creationURIs.add(record.uri);
             const item = await display(
                 {
@@ -488,11 +514,8 @@ const commands = {
     send: async (input: { uri: string; recipient: string }) => {
         if (!wallet || !creationURIs.has(input.uri) || !input.recipient.trim())
             throw new Error('Creation unavailable');
-        await wallet.invoke.send({
-            type: 'boost',
-            recipient: input.recipient,
-            templateUri: input.uri,
-        });
+        const current = wallet;
+        await sendPersonalCreation(current, input, () => wallet === current);
         activity.unshift({
             id: crypto.randomUUID(),
             title: 'Credential sent',
@@ -621,14 +644,15 @@ Object.defineProperty(globalThis, 'LearnCardAccount', {
             } catch (error) {
                 return JSON.stringify({
                     ok: false,
-                    error:
-                        method.startsWith('apps') || method.startsWith('privacy')
-                            ? consumerErrorCode(error)
-                            : method === 'initialize'
-                              ? 'connection'
-                              : method === 'recover'
-                                ? 'recovery'
-                                : 'unavailable',
+                    error: method.startsWith('families')
+                        ? familyErrorCode(error)
+                        : method.startsWith('apps') || method.startsWith('privacy')
+                          ? consumerErrorCode(error)
+                          : method === 'initialize'
+                            ? 'connection'
+                            : method === 'recover'
+                              ? 'recovery'
+                              : 'unavailable',
                 });
             }
         },

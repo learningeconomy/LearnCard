@@ -19,5 +19,11 @@
         "customConditions": ["development"],
         "jsx": "react-jsx"
     },
-    "files": ["consumer-apps.ts", "consumer-host.ts", "consumer-fixture.ts"]
+    "files": [
+        "consumer-apps.ts",
+        "consumer-host.ts",
+        "consumer-fixture.ts",
+        "families.ts",
+        "personal-creations.ts"
+    ]
 }

@@ -48,6 +48,7 @@ import LearnCardNativeSDK
     let vault: KeychainVault
     let credentialService: any CredentialService = DemoCredentialService()
     let consumerService: any ConsumerAppService = DemoConsumerAppService()
+    let familyService: any FamilyService = DemoFamilyService()
     private var disposed = false
     init(vault: KeychainVault) { self.vault = vault }
     func initialize() async throws -> AccountState {

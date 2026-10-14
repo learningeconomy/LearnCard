@@ -138,3 +138,17 @@ test.each([
     expect(['consumer:signIn', 'consumer:connection']).toContain(reply.error);
     expect(bridgeCalls).toBe(0);
 });
+
+test.each([
+    'familiesList',
+    'familiesDetail',
+    'familiesPinStatus',
+    'familiesCreate',
+    'familiesEdit',
+    'familiesInvite',
+])('family command %s is registered and never forwards signed-out input', async method => {
+    const reply = JSON.parse(await account.call(method, {}));
+    expect(reply.ok).toBe(false);
+    expect(['family:unavailable', 'family:decision']).toContain(reply.error);
+    expect(bridgeCalls).toBe(0);
+});

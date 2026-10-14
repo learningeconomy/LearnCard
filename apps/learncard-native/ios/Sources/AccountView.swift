@@ -24,6 +24,8 @@ struct AccountView: View {
                         NavigationLink { EditAccountProfileView(account: account) } label: { row("Edit profile", symbol: "person.crop.circle", tint: Palette.blueCard) }
                             .accessibilityIdentifier("account-edit-profile")
                         divider
+                        NavigationLink { FamiliesView(appStore: store) } label: { row(NativeText.text("family.title"), symbol: "person.2", tint: Palette.familyCard) }.accessibilityIdentifier("account-families")
+                        divider
                         NavigationLink { DataSharingView(consumer: store.consumer) } label: { row("Data Sharing", symbol: "lock", tint: Palette.cyanCard) }.accessibilityIdentifier("account-data-sharing")
                         divider
                         NavigationLink { AccountSecurityView(account: account) } label: { row("Recovery & security", symbol: "shield", tint: Palette.pinkCard) }

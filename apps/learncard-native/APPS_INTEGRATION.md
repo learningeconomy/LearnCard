@@ -42,7 +42,7 @@ English/Spanish/French/Arabic cover Apps, consent, Data Sharing, browser/languag
 ## Follow-up scope
 
 1. Native **AI career Pathways** — the current `/ai/pathways` feature. User confirmed this meaning; newer Journeys `/pathways` needs separate scope confirmation.
-2. Families and guardian approval — its own account/navigation/permissions feature, including server gates and child context.
+2. Families — the initial native roster/create/edit/guardian-invite slice is described in [FAMILIES_INTEGRATION.md](FAMILIES_INTEGRATION.md). Child creation/switching and guardian approval remain separate account/navigation/permissions work, including server gates and child context.
 3. AI Sessions and native learner-context synchronization — its own credentials and session feature.
 4. Résumé builder stays web-only in the in-app browser.
 5. Continue visual iteration, migrate remaining existing-screen copy, and validate real partner actions on staging with dedicated test data.

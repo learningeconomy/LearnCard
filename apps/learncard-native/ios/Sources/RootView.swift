@@ -17,6 +17,7 @@ struct RootView: View {
     @State private var receivedOffer: Credential?
     @State private var selectedTab = 0
     @State private var compactBrand = false
+    @State private var showFamilyReview = false
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -82,6 +83,12 @@ struct RootView: View {
         .sheet(isPresented: $showShare) { ShareCredentialsView(store: store) }
         .sheet(isPresented: $showCreate) { CreateView(store: store) }
         .sheet(isPresented: $showAccount) { AccountView(account: account, store: store) }
+        .sheet(isPresented: $showFamilyReview) {
+            NavigationStack {
+                FamiliesView(appStore: store)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button(NativeText.text("common.done")) { showFamilyReview = false } } }
+            }.presentationDetents([.large])
+        }
         .sheet(item: $offer) { CredentialDetailView(store: store, credential: $0, isOffer: true) }
         .alert("Something went wrong", isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })) {
             Button(NativeText.literal("Done"), role: .cancel) { store.error = nil }
@@ -89,6 +96,11 @@ struct RootView: View {
         .alert("Done", isPresented: Binding(get: { store.notice != nil }, set: { if !$0 { store.notice = nil } })) {
             Button(NativeText.literal("Done"), role: .cancel) { store.notice = nil }
         } message: { Text(store.notice ?? "") }
+        .onAppear {
+            #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("--review-families") { showFamilyReview = true }
+            #endif
+        }
         .onOpenURL { url in
             guard !store.isLive else { store.error = "Open Inbox to review credentials sent to this account."; return }
             Task {

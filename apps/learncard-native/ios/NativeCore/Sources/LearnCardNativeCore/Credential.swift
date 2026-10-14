@@ -14,6 +14,48 @@ public enum CredentialKind: String, Codable, CaseIterable, Sendable {
     }
 }
 
+/// Original LearnCard category semantics survive the simpler native browsing groups.
+/// Unknown partner categories remain displayable instead of failing account decoding.
+public enum CredentialCategory: Sendable {
+    case badge, achievement, studies, portfolio, assistance, experience, id, family, skill, aiTopic, aiPathway, aiInsight
+
+    public static func resolve(_ category: String?, fallback: CredentialKind) -> Self {
+        switch category?.lowercased().filter({ $0.isLetter }) {
+        case "socialbadge", "badge", "badges", "boost": .badge
+        case "achievement", "achievements": .achievement
+        case "learninghistory", "study", "studies", "learning": .studies
+        case "accomplishment", "portfolio": .portfolio
+        case "accommodation", "assistance": .assistance
+        case "workhistory", "experience", "experiences": .experience
+        case "id", "ids", "membership", "memberships": .id
+        case "family": .family
+        case "skill", "skills": .skill
+        case "aitopic": .aiTopic
+        case "aipathway": .aiPathway
+        case "aiinsight": .aiInsight
+        default:
+            switch fallback { case .achievement: .achievement; case .membership: .id; case .learning: .studies }
+        }
+    }
+
+    public var symbol: String {
+        switch self {
+        case .badge: "seal"
+        case .achievement: "trophy"
+        case .studies: "book.closed"
+        case .portfolio: "book.pages"
+        case .assistance: "lifepreserver"
+        case .experience: "mountain.2"
+        case .id: "person.crop.rectangle"
+        case .family: "person.2"
+        case .skill: "sparkles"
+        case .aiTopic: "bubble.left.and.bubble.right"
+        case .aiPathway: "point.topleft.down.to.point.bottomright.curvepath"
+        case .aiInsight: "lightbulb"
+        }
+    }
+}
+
 /// Display model only. A production adapter must retain the original signed payload separately.
 public struct Credential: Identifiable, Codable, Hashable, Sendable {
     public let id: String
@@ -21,6 +63,8 @@ public struct Credential: Identifiable, Codable, Hashable, Sendable {
     public let issuer: String
     public let summary: String
     public let kind: CredentialKind
+    public let category: String?
+    public var displayCategory: CredentialCategory { .resolve(category, fallback: kind) }
     public let date: Date
     public let createdByMe: Bool
     public let isSample: Bool
@@ -31,12 +75,13 @@ public struct Credential: Identifiable, Codable, Hashable, Sendable {
 
     public init(id: String, title: String, issuer: String, summary: String,
                 kind: CredentialKind, date: Date, createdByMe: Bool = false, isSample: Bool = true,
-                artworkURL: URL? = nil, issuerLogoURL: URL? = nil, signedPayload: String? = nil, verificationSummary: String? = nil) {
+                artworkURL: URL? = nil, issuerLogoURL: URL? = nil, signedPayload: String? = nil, verificationSummary: String? = nil, category: String? = nil) {
         self.id = id
         self.title = title
         self.issuer = issuer
         self.summary = summary
         self.kind = kind
+        self.category = category
         self.date = date
         self.createdByMe = createdByMe
         self.isSample = isSample; self.artworkURL = artworkURL; self.issuerLogoURL = issuerLogoURL

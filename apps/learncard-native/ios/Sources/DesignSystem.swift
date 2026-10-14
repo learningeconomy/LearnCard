@@ -4,44 +4,76 @@ import LearnCardNativeCore
 
 enum Palette {
     static let ink = Color(light: 0x18224E, dark: 0xEFF0F5)
-    static let secondary = Color(light: 0x52597A, dark: 0xC5C8D3)
+    static let secondary = Color(light: 0x353E64, dark: 0xC5C8D3)
     static let canvas = Color(uiColor: .systemGroupedBackground)
     static let surface = Color(uiColor: .secondarySystemGroupedBackground)
-    static let paper = Color(light: 0xF7F8FA, dark: 0x11151C)
-    static let selection = Color(light: 0x0969FF, dark: 0x3ED9ED)
+    static let paper = Color(light: 0xEFF0F5, dark: 0x11151C)
+    // Colorful theme: solid section canvases, opaque panels, exact category colors.
+    // Source: learn-card-app/src/theme/schemas/colorful/theme.json + tailwind.config.js.
+    static let collectionCanvas = Color(light: 0x93C5FD, dark: 0x102C43)
+    static let appsCanvas = Color(light: 0x22D3EE, dark: 0x0D2C36)
+    static let familiesCanvas = Color(light: 0x34D399, dark: 0x103226)
+    static let familyDetailCanvas = familiesCanvas
+    static let homeCanvas = Color(light: 0xF9A8D4, dark: 0x351F30)
+    static let selection = ink
     static let selectionInk = Color(light: 0xFFFFFF, dark: 0x18224E)
-    static let cyanCard = Color(light: 0xA6F5ED, dark: 0x59E6DF)
-    static let blueCard = Color(light: 0xBCE6FF, dark: 0x4B83F5)
-    static let pinkCard = Color(light: 0xFFC5E0, dark: 0xF579B8)
+    static let cyanCard = Color(hex: 0x22D3EE) // Experiences: cyan-401
+    static let blueCard = Color(hex: 0x93C5FD) // Badges / IDs: blue-300
+    static let pinkCard = Color(hex: 0xF9A8D4) // Achievements: pink-300
+    static let lilacCard = Color(hex: 0xC4B5FD) // Assistance / Skills: violet-300
+    static let limeCard = Color(hex: 0xBEF264) // AI Insights: lime-300
+    static let studiesCard = Color(hex: 0x34D399) // Studies: emerald-401
+    static let portfolioCard = Color(hex: 0xFDE047) // Portfolio: yellow-300
+    static let familyCard = Color(hex: 0xFBBF24) // Families: amber-400
+    static let tealCard = Color(hex: 0x5EEAD4) // AI Pathways: teal-300
+    static let topicCard = Color(hex: 0x67E8F9) // AI Topics: cyan-301
     static let cardInk = Color(red: 24 / 255, green: 34 / 255, blue: 78 / 255)
     static let cardSecondary = Color(red: 53 / 255, green: 62 / 255, blue: 100 / 255)
-    static let inboxCanvas = paper
-    static let activityCanvas = paper
+    static let inboxCanvas = Color(light: 0xC4B5FD, dark: 0x29223E)
+    static let activityCanvas = homeCanvas
     static let mint = Color(light: 0xECFDF5, dark: 0x14352D)
     static let green = Color(light: 0x047857, dark: 0x6EE7B7)
     static let line = Color(light: 0xE2E3E9, dark: 0x353E64)
+    static let errorInk = Color(light: 0xB42338, dark: 0xFF9CB0)
     // LearnCard colorful theme: login green and category pink / emerald / blue.
     static let brandGreen = Color(light: 0x058760, dark: 0x80E0C6)
     static let buttonGreen = Color(red: 4 / 255, green: 120 / 255, blue: 87 / 255)
 
-    static func categoryTint(_ kind: CredentialKind) -> Color {
-        switch kind {
+    static func familyTint(_ color: FamilyColor) -> Color {
+        switch color { case .amber: familyCard; case .mint: studiesCard; case .blue: blueCard; case .lilac: lilacCard; case .pink: pinkCard }
+    }
+
+    static func categoryTint(_ category: CredentialCategory) -> Color {
+        switch category {
         case .achievement: pinkCard
-        case .membership: blueCard
-        case .learning: cyanCard
+        case .badge, .id: blueCard
+        case .studies: studiesCard
+        case .portfolio: portfolioCard
+        case .assistance, .skill: lilacCard
+        case .experience: cyanCard
+        case .family: familyCard
+        case .aiTopic: topicCard
+        case .aiPathway: tealCard
+        case .aiInsight: limeCard
         }
     }
 
-    static func categoryAccent(_ kind: CredentialKind) -> Color {
-        switch kind {
+    static func categoryAccent(_ category: CredentialCategory) -> Color {
+        switch category {
         case .achievement: Color(light: 0xBE185D, dark: 0xF9A8D4)
-        case .membership: Color(light: 0x1D4ED8, dark: 0x93C5FD)
-        case .learning: green
+        case .badge, .id: Color(light: 0x1D4ED8, dark: 0x93C5FD)
+        case .studies, .aiPathway: green
+        case .portfolio: Color(light: 0xA16207, dark: 0xFDE047)
+        case .assistance, .skill: Color(light: 0x5B21B6, dark: 0xC4B5FD)
+        case .experience, .aiTopic: Color(light: 0x0E7490, dark: 0x67E8F9)
+        case .family: Color(light: 0x92400E, dark: 0xFBBF24)
+        case .aiInsight: Color(light: 0x3F6212, dark: 0xBEF264)
         }
     }
 }
 
 private extension Color {
+    init(hex: UInt32) { self.init(light: hex, dark: hex) }
     init(light: UInt32, dark: UInt32) {
         self.init(uiColor: UIColor { traits in
             let hex = traits.userInterfaceStyle == .dark ? dark : light
@@ -62,14 +94,14 @@ struct PrimaryButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 10) {
-                if loading { ProgressView().tint(.white) }
+                if loading { ProgressView().tint(Palette.selectionInk) }
                 Text(title).font(.body.weight(.semibold))
             }
             .frame(maxWidth: .infinity, minHeight: 54)
-            .foregroundStyle(.white)
-            .background(Palette.buttonGreen, in: RoundedRectangle(cornerRadius: 20))
+            .foregroundStyle(Palette.selectionInk)
+            .background(Palette.green, in: RoundedRectangle(cornerRadius: 20))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CredentialPressStyle())
         .disabled(disabled || loading)
         .opacity(disabled ? 0.4 : 1)
     }
@@ -88,7 +120,7 @@ struct CredentialArtwork: View {
                 AsyncImage(url: url) { phase in
                     if let image = phase.image { image.resizable().scaledToFill().frame(width: size, height: size) }
                     else if phase.error != nil { fallback }
-                    else { ProgressView().controlSize(.small).tint(Palette.categoryAccent(credential.kind)).frame(width: size, height: size).background(Palette.paper, in: Circle()) }
+                    else { ProgressView().controlSize(.small).tint(Palette.categoryAccent(credential.displayCategory)).frame(width: size, height: size).background(Palette.paper, in: Circle()) }
                 }
             } else { fallback }
         }
@@ -96,14 +128,14 @@ struct CredentialArtwork: View {
         .background(Palette.surface.opacity(0.9), in: Circle())
         .clipShape(Circle())
         .overlay(Circle().stroke(.white.opacity(0.65), lineWidth: 3))
-        .shadow(color: Palette.categoryAccent(credential.kind).opacity(0.12), radius: 15, x: 0, y: 8)
+        .shadow(color: Palette.categoryAccent(credential.displayCategory).opacity(0.12), radius: 15, x: 0, y: 8)
         .accessibilityHidden(true)
     }
 
     private var fallback: some View {
-        Image(systemName: credential.kind.symbol)
+        Image(systemName: credential.displayCategory.symbol)
             .font(.system(size: size * 0.36, weight: .light))
-            .foregroundStyle(Palette.categoryAccent(credential.kind))
+            .foregroundStyle(Palette.categoryAccent(credential.displayCategory))
     }
 }
 
@@ -129,20 +161,23 @@ struct CredentialCard: View {
                     }.frame(maxWidth: .infinity, alignment: .leading)
                 }.padding(22).frame(minHeight: 200)
             } else {
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: onWhiteSurface ? 0 : 14) {
                     CredentialArtwork(credential: credential, size: textSize.isAccessibilitySize ? 132 : 98)
-                        .frame(maxWidth: .infinity).padding(.vertical, 4)
-                    identity(featured: false)
-                    footer
-                }.padding(16).frame(maxWidth: .infinity, minHeight: textSize.isAccessibilitySize ? 0 : 260, alignment: .topLeading)
+                        .frame(maxWidth: .infinity).padding(.vertical, onWhiteSurface ? 18 : 4)
+                        .background(onWhiteSurface ? Palette.categoryTint(credential.displayCategory) : .clear)
+                    VStack(alignment: .leading, spacing: 14) { identity(featured: false); footer }
+                        .padding(onWhiteSurface ? 16 : 0)
+                }.padding(onWhiteSurface ? 0 : 16).frame(maxWidth: .infinity, minHeight: textSize.isAccessibilitySize ? 0 : 260, alignment: .topLeading)
             }
         }
-        .background(onWhiteSurface ? Palette.surface : Palette.categoryTint(credential.kind), in: RoundedRectangle(cornerRadius: 24))
+        .background(onWhiteSurface ? Palette.surface : Palette.categoryTint(credential.displayCategory), in: RoundedRectangle(cornerRadius: 24))
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .overlay(RoundedRectangle(cornerRadius: 24).stroke(Palette.surface, lineWidth: featured ? 3 : 0))
         .background {
             if featured {
-                RoundedRectangle(cornerRadius: 24).fill(credential.kind == .membership ? Palette.pinkCard : Palette.blueCard)
+                RoundedRectangle(cornerRadius: 24).fill(credential.displayCategory == .badge || credential.displayCategory == .id ? Palette.pinkCard : Palette.blueCard)
                     .rotationEffect(.degrees(reduceMotion ? 0 : -3)).offset(x: -3, y: 8)
-                RoundedRectangle(cornerRadius: 24).fill(credential.kind == .learning ? Palette.pinkCard : Palette.cyanCard)
+                RoundedRectangle(cornerRadius: 24).fill(credential.displayCategory == .experience || credential.displayCategory == .aiTopic ? Palette.portfolioCard : Palette.cyanCard)
                     .rotationEffect(.degrees(reduceMotion ? 0 : 2.5)).offset(x: 2, y: 13)
             }
         }
@@ -155,12 +190,14 @@ struct CredentialCard: View {
     private var footer: some View {
         HStack(spacing: 4) {
             Text(credential.isSample ? "Sample" : credential.kind.rawValue)
-                .font(.caption2.weight(.semibold)).foregroundStyle(cardSecondary)
+                .font(.caption2.weight(.semibold)).foregroundStyle(onWhiteSurface ? Palette.cardSecondary : cardSecondary)
                 .lineLimit(textSize.isAccessibilitySize ? nil : 1).minimumScaleFactor(0.85)
+                .padding(.horizontal, onWhiteSurface ? 9 : 0).padding(.vertical, onWhiteSurface ? 5 : 0)
+                .background(onWhiteSurface ? Palette.categoryTint(credential.displayCategory) : .clear, in: Capsule())
             Spacer(minLength: 0)
             Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(cardText).frame(width: 32, height: 32)
-                .background(.white.opacity(0.65), in: Circle()).accessibilityHidden(true)
+                .background(onWhiteSurface ? Palette.paper : .white.opacity(0.65), in: Circle()).accessibilityHidden(true)
         }
     }
 
@@ -188,7 +225,8 @@ private struct CardPresenceMotion: ViewModifier {
             let wave = moves ? sin(tick.date.timeIntervalSinceReferenceDate / 3.5) : 0
             content.rotation3DEffect(.degrees(wave * 1.4), axis: (x: 0, y: 1, z: 0), perspective: 0.4)
         }
-        .onAppear { visible = true }.onDisappear { visible = false }
+        .onScrollVisibilityChange(threshold: 0.1) { visible = $0 }
+        .onDisappear { visible = false }
     }
 }
 
@@ -222,9 +260,21 @@ struct PageHeading: View {
 }
 
 extension View {
+    func subtleEntrance() -> some View { modifier(SubtleEntrance()) }
     @ViewBuilder func credentialZoom(id: String, namespace: Namespace.ID, reduceMotion: Bool) -> some View {
         if reduceMotion { self }
         else { self.navigationTransition(.zoom(sourceID: id, in: namespace)) }
+    }
+}
+
+/// One short arrival transition. No looping, scroll scrubbing or offscreen timers.
+private struct SubtleEntrance: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var appeared = false
+    func body(content: Content) -> some View {
+        content.opacity(appeared || reduceMotion ? 1 : 0)
+            .offset(y: appeared || reduceMotion ? 0 : 6)
+            .onAppear { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.24)) { appeared = true } }
     }
 }
 

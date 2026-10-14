@@ -49,9 +49,20 @@ struct HomeView: View {
                         Spacer(); Image(systemName: "chevron.right").foregroundStyle(Palette.secondary)
                     }.padding(20).background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
                 }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("home-creations")
+                NavigationLink { FamiliesView(appStore: store) } label: {
+                    HStack(spacing: 14) {
+                        Image(systemName: "person.2").font(.system(size: 22, weight: .regular)).foregroundStyle(Palette.cardInk)
+                            .frame(width: 44, height: 44).background(Palette.familyCard, in: Circle())
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(NativeText.text("family.title")).font(.headline).foregroundStyle(Palette.ink)
+                            Text(NativeText.text("family.subtitle")).font(.caption).foregroundStyle(Palette.secondary)
+                        }.frame(maxWidth: .infinity, alignment: .leading)
+                        Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(Palette.secondary)
+                    }.padding(20).background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
+                }.buttonStyle(CredentialPressStyle()).accessibilityIdentifier("home-families")
                 if !store.isLive {
                     Button("Try a sample claim link", action: receive).accessibilityIdentifier("receive")
-                        .font(.subheadline.weight(.medium)).foregroundStyle(Palette.green)
+                        .font(.subheadline.weight(.medium)).foregroundStyle(Palette.selection)
                 }
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Recent activity").font(.title3.bold()).foregroundStyle(Palette.ink)
@@ -75,10 +86,10 @@ struct HomeView: View {
                     .background(Palette.surface, in: RoundedRectangle(cornerRadius: 24))
             }.padding(20)
         }
-        .background(SectionBackground(tint: Palette.paper))
+        .background(SectionBackground(tint: Palette.homeCanvas))
         .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 60 } action: { _, value in scrolled = value }
         .navigationTitle(scrolled ? "Home" : "").navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(Palette.paper, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar)
+        .toolbarBackground(Palette.homeCanvas, for: .navigationBar).toolbarBackground(.visible, for: .navigationBar)
         .refreshable { await store.refresh() }
     }
 }
