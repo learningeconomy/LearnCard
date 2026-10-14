@@ -40,6 +40,36 @@ describe('CHAPI incoming credential boundaries', () => {
         expect(result).toHaveLength(2);
         expect(result[0]).toBe(credential);
     });
+    it('accepts the VC Playground multi-proof offer without modifying signed data', async () => {
+        // The real Veres VC-API response includes these three final ECDSA
+        // suites without created. Each suite makes that timestamp optional.
+        const offeredCredential = {
+            ...credential,
+            proof: ['ecdsa-rdfc-2019', 'ecdsa-jcs-2019', 'ecdsa-sd-2023'].map(cryptosuite => ({
+                ...credential.proof,
+                cryptosuite,
+            })),
+        };
+        const offeredPresentation = {
+            ...presentation,
+            verifiableCredential: [offeredCredential],
+        };
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockResolvedValue({
+                ok: true,
+                json: async () => ({ verifiablePresentation: offeredPresentation }),
+            })
+        );
+        const resolved = await loadChapiPresentation(
+            {} as BespokeLearnCard,
+            event(presentation, { protocols: { vcapi: 'https://issuer.example/exchange' } })
+        );
+        expect(resolved).toBe(offeredPresentation);
+        expect(getReceivedCredentials(resolved)[0]).toBe(offeredCredential);
+        expect(offeredCredential.proof).toHaveLength(3);
+        expect(offeredCredential.proof.every(proof => !('created' in proof))).toBe(true);
+    });
     it('rejects empty and malformed offers before persisting them', () => {
         for (const value of [
             null,

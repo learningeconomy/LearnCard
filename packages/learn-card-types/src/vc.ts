@@ -200,7 +200,14 @@ export const ProofValidator = z
     .superRefine((proof, ctx) => {
         if (
             proof.created === undefined &&
-            (proof.type !== 'DataIntegrityProof' || proof.cryptosuite !== 'ecdsa-rdfc-2019')
+            // The final ECDSA suites all make created optional. In particular,
+            // issuers can attach all three proofs to one credential; requiring
+            // a timestamp on either additional proof rejects the entire VC.
+            // https://www.w3.org/TR/vc-di-ecdsa/#proof-configuration-ecdsa-jcs-2019
+            (proof.type !== 'DataIntegrityProof' ||
+                !['ecdsa-rdfc-2019', 'ecdsa-jcs-2019', 'ecdsa-sd-2023'].includes(
+                    proof.cryptosuite as string
+                ))
         ) {
             ctx.addIssue({
                 code: 'custom',
