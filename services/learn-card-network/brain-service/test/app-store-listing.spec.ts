@@ -893,6 +893,65 @@ describe('AppStoreListing', () => {
                 const after = await readAppStoreListingById(listingId);
                 expect(after).toBeNull();
             });
+
+            it('deletes an ARCHIVED (rejected) listing', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+                await setListingStatus(listingId, 'ARCHIVED');
+
+                const ok = await userA.clients.fullAuth.appStore.deleteListing({ listingId });
+                expect(ok).toBe(true);
+
+                const after = await readAppStoreListingById(listingId);
+                expect(after).toBeNull();
+            });
+
+            it('refuses to delete a listing that is in review', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+                await userA.clients.fullAuth.appStore.submitForReview({ listingId });
+
+                await expect(
+                    userA.clients.fullAuth.appStore.deleteListing({ listingId })
+                ).rejects.toMatchObject({
+                    code: 'PRECONDITION_FAILED',
+                    message: 'Only draft apps can be deleted. Withdraw it from review first.',
+                });
+
+                const after = await readAppStoreListingById(listingId);
+                expect(after?.app_listing_status).toBe('PENDING_REVIEW');
+            });
+
+            it('refuses to delete a live listing', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+                await setListingStatus(listingId, 'LISTED');
+
+                await expect(
+                    userA.clients.fullAuth.appStore.deleteListing({ listingId })
+                ).rejects.toMatchObject({
+                    code: 'PRECONDITION_FAILED',
+                    message: "Live apps can't be deleted. Remove it from the store first.",
+                });
+
+                const after = await readAppStoreListingById(listingId);
+                expect(after?.app_listing_status).toBe('LISTED');
+            });
+
+            it('refuses to delete a live listing even with a pending update in review', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+                await setListingStatus(listingId, 'LISTED');
+                await userA.clients.fullAuth.appStore.updateListing({
+                    listingId,
+                    updates: { tagline: 'A new tagline' },
+                });
+                await userA.clients.fullAuth.appStore.submitListingUpdate({ listingId });
+
+                await expect(
+                    userA.clients.fullAuth.appStore.deleteListing({ listingId })
+                ).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' });
+            });
         });
 
         describe('submitForReview', () => {
@@ -2083,12 +2142,15 @@ describe('AppStoreListing', () => {
                 let browseResults = await noAuthClient.appStore.browseListedApps();
                 expect(browseResults.records.some(r => r.listing_id === listingId)).toBe(true);
 
-                // Delete the listing
-                await userA.clients.fullAuth.appStore.deleteListing({ listingId });
+                await setListingStatus(listingId, 'ARCHIVED');
 
-                // Verify it no longer appears in browse
                 browseResults = await noAuthClient.appStore.browseListedApps();
                 expect(browseResults.records.some(r => r.listing_id === listingId)).toBe(false);
+
+                await userA.clients.fullAuth.appStore.deleteListing({ listingId });
+
+                const after = await readAppStoreListingById(listingId);
+                expect(after).toBeNull();
             });
 
             it('unlisting an app removes it from public browse', async () => {
