@@ -345,6 +345,17 @@ describe('authority enrollment persistence', () => {
         expect((await record())?.escrowBlob?.envelope).toEqual(envelope);
         expect(apply).toHaveBeenCalledTimes(1);
     });
+    it('suppresses its own started notification and marks requiresConfirmation for an authority-mode hold', async () => {
+        await enroll();
+        const software = getEscrowEnclave();
+        __setEscrowEnclaveForTests(
+            Object.assign(software, { confirmHold: async () => ({ success: true as const }) })
+        );
+        const started = await start();
+        const stored = await findEscrowHoldById(started.holdId);
+        expect(stored?.requiresConfirmation).toBe(true);
+        expect(stored?.startedNotificationPending).toBe(false);
+    });
     it('persists a cancellation commit receipt before clearing the durable pending marker', async () => {
         await enroll();
         const started = await start();

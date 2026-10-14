@@ -37,7 +37,11 @@ async fn every_language_and_message_kind_renders_the_recovery_context_line_and_n
             assert!(!record.subject.is_empty());
             assert!(!record.body.to_lowercase().contains("http"));
             assert!(!record.body.contains('<'));
-            assert!(!record.body.is_empty());
+            // P9.1 (attack C): the one line every message must carry so an
+            // attacker who only controls the recipient key (not the inbox)
+            // produces an email that's immediately recognizable as not theirs.
+            let index = super::language_index(language).unwrap();
+            assert!(record.body.contains(super::CONTEXT_LINE[index]));
         }
     }
 }

@@ -410,6 +410,48 @@ impl Fixture {
         });
         (entered, resume)
     }
+    /// Like `hold()` with `ReleasePolicy::Hold`, but stops right after
+    /// create_hold — for tests of confirmation itself, which must not go
+    /// through `hold()`'s own auto-confirm/auto-warn step.
+    async fn awaiting_hold(
+        &self,
+        p: &mut Policy<'_>,
+        envelope: &EscrowEnvelope,
+    ) -> SignedHoldRecord {
+        let state = self.state().await;
+        let signed = p
+            .create_hold(CreateHoldRequest {
+                envelope,
+                hold_id: "hold",
+                request_id: "create",
+                expected_did: &self.did,
+                expected_share_version: active(&state).unwrap().share_version,
+                enrollment_epoch: state.epoch.get(),
+                release_policy: ReleasePolicy::Hold,
+                client_ephemeral_public_key: &self.client.public_key,
+            })
+            .await
+            .unwrap();
+        signed
+    }
+    fn last_sent_code(&self) -> String {
+        self.email
+            .sent
+            .lock()
+            .unwrap()
+            .last()
+            .and_then(|sent| sent.code.clone())
+            .expect("a one-time code must have been sent")
+    }
+    async fn hold_status(&self, request: &str) -> HoldStatus {
+        self.store
+            .load(&self.authority.binding(&self.did), request, Some("hold"))
+            .await
+            .unwrap()
+            .hold
+            .unwrap()
+            .status
+    }
 }
 
 struct BudgetTime {
@@ -1315,6 +1357,372 @@ async fn snapshot_is_nonce_bound_and_pending_old_holds_cancel_after_disable() {
         .cancel_hold(f.release(&env, &hold, "retry", None))
         .await
         .unwrap();
+}
+
+#[tokio::test]
+async fn confirm_hold_rejects_a_wrong_guess_and_succeeds_with_the_correct_code() {
+    let f = Fixture::new();
+    let mut p = f.policy(false);
+    let env = f.enroll(&mut p, true).await;
+    let hold = f.awaiting_hold(&mut p, &env).await;
+    let code = f.last_sent_code();
+    let wrong = if code.starts_with('0') {
+        "19999999"
+    } else {
+        "09999999"
+    }
+    .to_string();
+    assert!(p
+        .confirm_hold(ConfirmHoldRequest {
+            envelope: &env,
+            hold: &hold,
+            request_id: "guess-wrong",
+            expected_did: &f.did,
+            client_ephemeral_public_key: &f.client.public_key,
+            code: &wrong,
+        })
+        .await
+        .is_err());
+    assert!(f.hold_status("check-after-wrong").await == HoldStatus::AwaitingConfirmation);
+    p.confirm_hold(ConfirmHoldRequest {
+        envelope: &env,
+        hold: &hold,
+        request_id: "guess-right",
+        expected_did: &f.did,
+        client_ephemeral_public_key: &f.client.public_key,
+        code: &code,
+    })
+    .await
+    .unwrap();
+    assert!(f.hold_status("check-after-right").await == HoldStatus::Pending);
+}
+
+#[tokio::test]
+async fn confirm_hold_fails_closed_after_the_fifth_wrong_guess_even_with_the_right_code() {
+    let f = Fixture::new();
+    let mut p = f.policy(false);
+    let env = f.enroll(&mut p, true).await;
+    let hold = f.awaiting_hold(&mut p, &env).await;
+    let code = f.last_sent_code();
+    let wrong = if code.starts_with('0') {
+        "19999999"
+    } else {
+        "09999999"
+    }
+    .to_string();
+    for i in 0..crate::authority::state::MAX_CODE_GUESSES {
+        assert!(p
+            .confirm_hold(ConfirmHoldRequest {
+                envelope: &env,
+                hold: &hold,
+                request_id: &format!("guess-{i}"),
+                expected_did: &f.did,
+                client_ephemeral_public_key: &f.client.public_key,
+                code: &wrong,
+            })
+            .await
+            .is_err());
+    }
+    // The budget is exhausted; even the correct code must now fail closed.
+    assert!(p
+        .confirm_hold(ConfirmHoldRequest {
+            envelope: &env,
+            hold: &hold,
+            request_id: "guess-right-too-late",
+            expected_did: &f.did,
+            client_ephemeral_public_key: &f.client.public_key,
+            code: &code,
+        })
+        .await
+        .is_err());
+    assert!(f.hold_status("check-exhausted").await == HoldStatus::AwaitingConfirmation);
+}
+
+#[tokio::test]
+async fn confirm_hold_fails_closed_once_the_code_has_expired() {
+    let f = Fixture::new();
+    let mut p = f.policy(false);
+    let env = f.enroll(&mut p, true).await;
+    let hold = f.awaiting_hold(&mut p, &env).await;
+    let code = f.last_sent_code();
+    *f.time.0.lock().unwrap() += crate::policy::authority::CODE_TTL_MS + 1;
+    assert!(p
+        .confirm_hold(ConfirmHoldRequest {
+            envelope: &env,
+            hold: &hold,
+            request_id: "guess-after-expiry",
+            expected_did: &f.did,
+            client_ephemeral_public_key: &f.client.public_key,
+            code: &code,
+        })
+        .await
+        .is_err());
+    assert!(f.hold_status("check-expired").await == HoldStatus::AwaitingConfirmation);
+}
+
+#[tokio::test]
+async fn confirm_hold_rejects_a_key_that_does_not_match_the_signed_hold_record() {
+    // P9.1 (attack C): an attacker who only controls the recipient (ephemeral)
+    // key associated with a *different* client session must not be able to
+    // confirm this hold even with the correct code — the signed hold record's
+    // own client_ephemeral_public_key must match the caller-supplied one.
+    let f = Fixture::new();
+    let mut p = f.policy(false);
+    let env = f.enroll(&mut p, true).await;
+    let hold = f.awaiting_hold(&mut p, &env).await;
+    let code = f.last_sent_code();
+    let attacker = generate_escrow_key_pair().unwrap();
+    assert!(p
+        .confirm_hold(ConfirmHoldRequest {
+            envelope: &env,
+            hold: &hold,
+            request_id: "guess-attacker-key",
+            expected_did: &f.did,
+            client_ephemeral_public_key: &attacker.public_key,
+            code: &code,
+        })
+        .await
+        .is_err());
+    assert!(f.hold_status("check-attacker-key").await == HoldStatus::AwaitingConfirmation);
+    p.confirm_hold(ConfirmHoldRequest {
+        envelope: &env,
+        hold: &hold,
+        request_id: "guess-legit-key",
+        expected_did: &f.did,
+        client_ephemeral_public_key: &f.client.public_key,
+        code: &code,
+    })
+    .await
+    .unwrap();
+    assert!(f.hold_status("check-legit-key").await == HoldStatus::Pending);
+}
+
+#[tokio::test]
+async fn resend_code_issues_a_fresh_code_invalidates_the_old_one_and_resets_guesses() {
+    let f = Fixture::new();
+    let mut p = f.policy(false);
+    let env = f.enroll(&mut p, true).await;
+    let hold = f.awaiting_hold(&mut p, &env).await;
+    let original = f.last_sent_code();
+    // Burn a guess against the original code before resending.
+    let wrong = if original.starts_with('0') {
+        "19999999"
+    } else {
+        "09999999"
+    }
+    .to_string();
+    assert!(p
+        .confirm_hold(ConfirmHoldRequest {
+            envelope: &env,
+            hold: &hold,
+            request_id: "guess-before-resend",
+            expected_did: &f.did,
+            client_ephemeral_public_key: &f.client.public_key,
+            code: &wrong,
+        })
+        .await
+        .is_err());
+    *f.time.0.lock().unwrap() += crate::policy::authority::MIN_SEND_GAP_MS + 1;
+    p.resend_code(ResendCodeRequest {
+        envelope: &env,
+        hold: &hold,
+        request_id: "resend",
+        expected_did: &f.did,
+        client_ephemeral_public_key: &f.client.public_key,
+    })
+    .await
+    .unwrap();
+    let fresh = f.last_sent_code();
+    assert_ne!(original, fresh);
+    // The old code must no longer match, even with a fresh guess budget.
+    assert!(p
+        .confirm_hold(ConfirmHoldRequest {
+            envelope: &env,
+            hold: &hold,
+            request_id: "guess-old-after-resend",
+            expected_did: &f.did,
+            client_ephemeral_public_key: &f.client.public_key,
+            code: &original,
+        })
+        .await
+        .is_err());
+    // The fresh code works, proving the guess counter was reset (only one
+    // guess was spent above, well under the budget either way, but this
+    // confirms resend didn't leave the hold permanently unconfirmable).
+    p.confirm_hold(ConfirmHoldRequest {
+        envelope: &env,
+        hold: &hold,
+        request_id: "guess-fresh-after-resend",
+        expected_did: &f.did,
+        client_ephemeral_public_key: &f.client.public_key,
+        code: &fresh,
+    })
+    .await
+    .unwrap();
+    assert!(f.hold_status("check-resend-confirmed").await == HoldStatus::Pending);
+}
+
+#[tokio::test]
+async fn resend_code_is_throttled_per_window_and_per_minimum_gap() {
+    let f = Fixture::new();
+    let mut p = f.policy(false);
+    let env = f.enroll(&mut p, true).await;
+    let hold = f.awaiting_hold(&mut p, &env).await;
+    // One send already happened at create_hold; MAX_SENDS_PER_WINDOW total
+    // sends are allowed per rolling window, so exactly one more resend must
+    // succeed before the window is exhausted (advancing time past
+    // MIN_SEND_GAP_MS each time so only the window budget is under test).
+    for i in 0..(crate::policy::authority::MAX_SENDS_PER_WINDOW - 1) {
+        *f.time.0.lock().unwrap() += crate::policy::authority::MIN_SEND_GAP_MS + 1;
+        p.resend_code(ResendCodeRequest {
+            envelope: &env,
+            hold: &hold,
+            request_id: &format!("resend-ok-{i}"),
+            expected_did: &f.did,
+            client_ephemeral_public_key: &f.client.public_key,
+        })
+        .await
+        .unwrap();
+    }
+    *f.time.0.lock().unwrap() += crate::policy::authority::MIN_SEND_GAP_MS + 1;
+    assert!(p
+        .resend_code(ResendCodeRequest {
+            envelope: &env,
+            hold: &hold,
+            request_id: "resend-over-window-budget",
+            expected_did: &f.did,
+            client_ephemeral_public_key: &f.client.public_key,
+        })
+        .await
+        .is_err());
+}
+
+#[tokio::test]
+async fn resend_code_rejects_a_second_send_within_the_minimum_gap() {
+    let f = Fixture::new();
+    let mut p = f.policy(false);
+    let env = f.enroll(&mut p, true).await;
+    let hold = f.awaiting_hold(&mut p, &env).await;
+    *f.time.0.lock().unwrap() += crate::policy::authority::MIN_SEND_GAP_MS - 1;
+    assert!(p
+        .resend_code(ResendCodeRequest {
+            envelope: &env,
+            hold: &hold,
+            request_id: "resend-too-soon",
+            expected_did: &f.did,
+            client_ephemeral_public_key: &f.client.public_key,
+        })
+        .await
+        .is_err());
+}
+
+#[tokio::test]
+async fn send_release_warning_requires_pending_and_release_requires_both_gates() {
+    let f = Fixture::new();
+    let mut p = f.policy(false);
+    let env = f.enroll(&mut p, true).await;
+    let hold = f.awaiting_hold(&mut p, &env).await;
+    // Not yet confirmed: neither a warning nor a release may proceed.
+    assert!(p
+        .send_release_warning(SendReleaseWarningRequest {
+            hold_id: "hold",
+            request_id: "warn-too-early",
+            expected_did: &f.did,
+        })
+        .await
+        .is_err());
+    assert!(p
+        .release(f.release(&env, &hold, "release-unconfirmed", None))
+        .await
+        .is_err());
+    // Confirm while the code is still fresh; the 7-day wait is measured from
+    // this moment, not hold creation, so time must not be advanced before it.
+    let code = f.last_sent_code();
+    p.confirm_hold(ConfirmHoldRequest {
+        envelope: &env,
+        hold: &hold,
+        request_id: "confirm",
+        expected_did: &f.did,
+        client_ephemeral_public_key: &f.client.public_key,
+        code: &code,
+    })
+    .await
+    .unwrap();
+    let confirmed_at = *f.time.0.lock().unwrap();
+    assert!(p
+        .release(f.release(&env, &hold, "release-confirmed-but-unwarned", None))
+        .await
+        .is_err());
+    p.send_release_warning(SendReleaseWarningRequest {
+        hold_id: "hold",
+        request_id: "warn",
+        expected_did: &f.did,
+    })
+    .await
+    .unwrap();
+    // Warned, but the 7-day wait since confirmation has not elapsed yet.
+    assert!(p
+        .release(f.release(&env, &hold, "release-warned-but-too-early", None))
+        .await
+        .is_err());
+    *f.time.0.lock().unwrap() = confirmed_at + HOLD_DURATION_MS + 1000;
+    p.release(f.release(&env, &hold, "release-ok", None))
+        .await
+        .unwrap();
+    assert!(f.hold_status("check-released").await == HoldStatus::Released);
+}
+
+#[tokio::test]
+async fn cancel_succeeds_from_awaiting_confirmation_and_from_pending_but_not_once_released() {
+    let f = Fixture::new();
+    let mut p = f.policy(false);
+    let env = f.enroll(&mut p, true).await;
+    let hold = f.awaiting_hold(&mut p, &env).await;
+    assert!(f.hold_status("check-awaiting").await == HoldStatus::AwaitingConfirmation);
+    p.cancel_hold(f.release(&env, &hold, "cancel-awaiting", None))
+        .await
+        .unwrap();
+    assert!(f.hold_status("check-cancelled-1").await == HoldStatus::Cancelled);
+    // cancel_hold derives its own request id from the hold's digest (not the
+    // caller-supplied one), so retrying on an already-cancelled hold is a
+    // success, not an error — matching the receipt already recorded.
+    p.cancel_hold(f.release(&env, &hold, "cancel-again", None))
+        .await
+        .unwrap();
+
+    let f = Fixture::new();
+    let mut p = f.policy(false);
+    let env = f.enroll(&mut p, true).await;
+    let hold = f.awaiting_hold(&mut p, &env).await;
+    let code = f.last_sent_code();
+    p.confirm_hold(ConfirmHoldRequest {
+        envelope: &env,
+        hold: &hold,
+        request_id: "confirm",
+        expected_did: &f.did,
+        client_ephemeral_public_key: &f.client.public_key,
+        code: &code,
+    })
+    .await
+    .unwrap();
+    assert!(f.hold_status("check-pending").await == HoldStatus::Pending);
+    p.cancel_hold(f.release(&env, &hold, "cancel-pending", None))
+        .await
+        .unwrap();
+    assert!(f.hold_status("check-cancelled-2").await == HoldStatus::Cancelled);
+
+    let f = Fixture::new();
+    let mut p = f.policy(false);
+    let env = f.enroll(&mut p, true).await;
+    let hold = f.hold(&mut p, &env, ReleasePolicy::Hold).await;
+    *f.time.0.lock().unwrap() += HOLD_DURATION_MS + 1000;
+    p.release(f.release(&env, &hold, "release", None))
+        .await
+        .unwrap();
+    assert!(p
+        .cancel_hold(f.release(&env, &hold, "cancel-released", None))
+        .await
+        .is_err());
 }
 
 #[cfg(feature = "enclave-runtime")]

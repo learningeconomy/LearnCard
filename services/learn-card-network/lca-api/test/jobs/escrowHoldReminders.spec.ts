@@ -18,6 +18,7 @@ import {
 } from '@models';
 import {
     __setEscrowEnclaveForTests,
+    getEscrowEnclave,
     notifyEscrowHoldEvent,
 } from '../../src/services/escrow-enclave';
 import { escrowCancelTokenMatches, hashEscrowCancelToken } from '@helpers/escrowCancelToken';
@@ -152,6 +153,41 @@ describe('runEscrowHoldReminders', () => {
         await runEscrowHoldReminders({ now: new Date(now.getTime() + HOUR / 2), limit: 1, notify });
         expect(attempts[0]).toBe(untouched._id);
         expect(attempts[1]).toBe(reminder._id);
+    });
+
+    it('calls the enclave sendReleaseWarning instead of its own reminder notification for an authority-mode hold', async () => {
+        const now = new Date();
+        const hold = await seed(new Date(now.getTime() + HOUR));
+        await getEscrowHoldsCollection().updateOne(
+            { _id: hold._id },
+            { $set: { requiresConfirmation: true, confirmedAt: now } }
+        );
+        const calls: { holdId: string; expectedDid: string }[] = [];
+        // This file has no per-test enclave reset (unlike keys-escrow.spec.ts's
+        // beforeEach): Object.assign mutates the shared software singleton in
+        // place, so it must be cleaned up or it leaks into every later test.
+        const software = getEscrowEnclave() as unknown as Record<string, unknown>;
+        software.sendReleaseWarning = async (params: { holdId: string; expectedDid: string }) => {
+            calls.push(params);
+            return { success: true as const };
+        };
+        try {
+            const notified: string[] = [];
+            const notify: typeof notifyEscrowHoldEvent = async event => {
+                notified.push(event.hold._id);
+                return true;
+            };
+            const result = await runEscrowHoldReminders({ now, notify });
+            expect(result.reminded).toBe(1);
+            expect(calls).toEqual([
+                { holdId: hold.holdRecord.hold.holdId, expectedDid: hold.primaryDid },
+            ]);
+            expect(notified).toHaveLength(0);
+            const stored = await findEscrowHoldById(hold._id);
+            expect(stored?.notifications.map(entry => entry.kind)).toEqual([]);
+        } finally {
+            delete software.sendReleaseWarning;
+        }
     });
 
     it('retries an undelivered start notification with a cancel link', async () => {
