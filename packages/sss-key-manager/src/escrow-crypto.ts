@@ -28,13 +28,22 @@ export interface EscrowEnvelope {
     ciphertext: string;
 }
 
-/** Recovery share bound to an identity and a positive share version. */
+/** P9.1 (attack C): the app's compiled template languages. Keep in lockstep with
+ * apps/learn-card-app/src/i18n's SUPPORTED_LANGUAGES and the Rust RECOVERY_LANGUAGES. */
+export const RECOVERY_LANGUAGES = ['en', 'es', 'fr', 'ar'] as const;
+
+/** Recovery share bound to an identity and a positive share version.
+ * `recoveryEmail`/`recoveryLanguage`: bound by the user's own device at
+ * enrollment, never by lca-api. Always both-present or both-absent; changing
+ * the address requires a fresh `replace` enrollment, not an edit. */
 export interface EscrowBlobPlaintext {
     version: typeof ESCROW_ENVELOPE_VERSION;
     recoveryShare: string;
     did: string;
     shareVersion: number;
     pinVerifier?: string;
+    recoveryEmail?: string;
+    recoveryLanguage?: string;
 }
 
 /** Released recovery share additionally bound to its recovery hold. */
@@ -105,6 +114,34 @@ export const parseEscrowBlobPlaintext = (value: unknown): EscrowBlobPlaintext =>
         throw new Error('Invalid escrow shareVersion');
     }
 
+    // P9.1: paired requirement; deliberately conservative email shape (not full
+    // RFC 5322/IDN), matching the enclave's `normalize()` exactly.
+    if ((value.recoveryEmail !== undefined) !== (value.recoveryLanguage !== undefined)) {
+        throw new Error('Invalid escrow recoveryEmail');
+    }
+    let recoveryContact: Pick<EscrowBlobPlaintext, 'recoveryEmail' | 'recoveryLanguage'> = {};
+    if (value.recoveryEmail !== undefined) {
+        const email = requireString(value, 'recoveryEmail', { min: 3, max: 254 })
+            .trim()
+            .toLowerCase();
+        const at = email.split('@');
+        if (
+            !/^[\x21-\x7e]+$/.test(email) ||
+            at.length !== 2 ||
+            at[0].length === 0 ||
+            at[1].length === 0 ||
+            !at[1].includes('.') ||
+            at[1].startsWith('.') ||
+            at[1].endsWith('.')
+        ) {
+            throw new Error('Invalid escrow recoveryEmail');
+        }
+        const language = requireString(value, 'recoveryLanguage', { min: 2, max: 2 });
+        if (!(RECOVERY_LANGUAGES as readonly string[]).includes(language)) {
+            throw new Error('Invalid escrow recoveryLanguage');
+        }
+        recoveryContact = { recoveryEmail: email, recoveryLanguage: language };
+    }
     return {
         version: ESCROW_ENVELOPE_VERSION,
         recoveryShare: requireString(value, 'recoveryShare', {
@@ -123,6 +160,7 @@ export const parseEscrowBlobPlaintext = (value: unknown): EscrowBlobPlaintext =>
                   }).toLowerCase(),
               }
             : {}),
+        ...recoveryContact,
     };
 };
 

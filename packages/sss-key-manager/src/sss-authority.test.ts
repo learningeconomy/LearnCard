@@ -262,6 +262,8 @@ const setup = async (legacyEnrolled = false) => {
         providerType: 'firebase' as const,
         privateKey: owner.seedHex,
         signDidAuthVp: async () => 'vp',
+        // P9.1 (attack C): nitro/authority-mode enroll/replace now requires both.
+        options: { recoveryEmail: 'owner@example.com', recoveryLanguage: 'en' },
     };
     return {
         strategy,

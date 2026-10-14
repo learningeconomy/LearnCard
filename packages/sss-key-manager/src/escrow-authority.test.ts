@@ -185,6 +185,10 @@ describe('attested authority artifacts', () => {
                 shareVersion: 42,
                 privateKey: owner.seedHex,
                 pinAction,
+                // P9.1: ignored by createEscrowEnrollmentIntent whenever the
+                // resolved action is disable/carry; required for enroll/replace.
+                recoveryEmail: 'owner@example.com',
+                recoveryLanguage: 'en',
             });
         expect((await create('automatic')).intent).toMatchObject({
             action: 'carry',

@@ -220,7 +220,7 @@ describe('authority enrollment persistence', () => {
         );
         const signedIntent = await signEscrowEnrollmentIntent(
             {
-                version: 1,
+                version: 2,
                 tenant: 'learncard',
                 did,
                 authorityGeneration: 'fresh-g1',
@@ -233,6 +233,8 @@ describe('authority enrollment persistence', () => {
                 enrollmentEpoch: 1,
                 requestId: randomUUID(),
                 allowRewrap: true,
+                recoveryEmail: 'owner@example.com',
+                recoveryLanguage: 'en',
             },
             pk
         );
@@ -294,6 +296,8 @@ describe('authority enrollment persistence', () => {
                 targetBlobIdentity: null,
                 allowRewrap: false,
                 requestId: randomUUID(),
+                recoveryEmail: null,
+                recoveryLanguage: null,
             },
             pk
         );

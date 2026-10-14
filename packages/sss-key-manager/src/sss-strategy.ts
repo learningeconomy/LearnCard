@@ -1216,7 +1216,17 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         verifiedKey?: VerifiedEnclaveIdentity,
         pinMaterial?: { pinSalt: string; pinVerifier: string },
         clearPin = false,
-        assertCurrent = guardedStorage().assertCurrent
+        assertCurrent = guardedStorage().assertCurrent,
+        // P9.1 (attack C): the device's own authenticated-account email + app
+        // locale, bound into both the blob plaintext and the signed intent for
+        // nitro/authority mode. Kept last (after the long-established
+        // `assertCurrent` position) so existing positional callers that pass
+        // `assertCurrent` explicitly are never silently shifted. Omitting them
+        // here only fails closed once the enclave resolves the action to
+        // enroll/replace (see the `recoveryEmail && authority` guard below) —
+        // carry/disable/software-mode are unaffected.
+        recoveryEmail = '',
+        recoveryLanguage = ''
     ): Promise<void> => {
         if (!config.escrow?.enabled) throw new Error('Escrow enrollment is disabled');
         if (!signDidAuthVp) throw new Error('DID proof signing is required for escrow enrollment');
@@ -1241,6 +1251,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 did: primaryDid,
                 shareVersion,
                 ...(pinMaterial ? { pinVerifier: pinMaterial.pinVerifier } : {}),
+                ...(authority && recoveryEmail ? { recoveryEmail, recoveryLanguage } : {}),
             },
             publicKey,
             keyId
@@ -1259,6 +1270,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                   shareVersion,
                   privateKey,
                   pinAction: pinMaterial ? 'set' : clearPin ? 'clear' : 'automatic',
+                  recoveryEmail,
+                  recoveryLanguage,
               })
             : undefined;
         assertCurrent();
@@ -1317,6 +1330,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         let clearPinForEnrollment = forceRotate;
         if (!config.escrow?.enabled) return { enrolled: false, reason: 'disabled' };
         const pin = params.options?.pin;
+        const recoveryEmail = params.options?.recoveryEmail ?? '';
+        const recoveryLanguage = params.options?.recoveryLanguage ?? '';
         if (pin !== undefined) {
             const validation = validatePin(pin);
             if (!validation.ok)
@@ -1406,7 +1421,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     undefined,
                     undefined,
                     retry.clearPin,
-                    storage.assertCurrent
+                    storage.assertCurrent,
+                    recoveryEmail,
+                    recoveryLanguage
                 );
                 unenrolledRotation = undefined;
                 return { enrolled: true, changed: true, shareVersion: retry.shareVersion };
@@ -1463,7 +1480,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 verifiedKey,
                 pinMaterial,
                 clearPinForEnrollment,
-                storage.assertCurrent
+                storage.assertCurrent,
+                recoveryEmail,
+                recoveryLanguage
             );
             unenrolledRotation = undefined;
             return { enrolled: true, changed: true, shareVersion };
@@ -2016,6 +2035,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     shareVersion: current.shareVersion ?? 0,
                     privateKey: params.privateKey,
                     pinAction: 'disable',
+                    // Disable always nulls these server-side regardless of input.
+                    recoveryEmail: '',
+                    recoveryLanguage: '',
                 });
                 const vp = await requestFreshDidAuthVp(
                     serverUrl,
@@ -2089,7 +2111,21 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         async setEscrowPin({ pin, ...params }): Promise<void> {
             const storage = guardedStorage();
             const result = await withRotationLock(() =>
-                ensureEscrowEnrollmentUnguarded(this, { ...params, options: { pin } }, storage)
+                // P9.1: preserve the caller's recoveryEmail/recoveryLanguage — do
+                // not replace `params.options` wholesale, or nitro enroll/replace
+                // loses its required recovery contact.
+                ensureEscrowEnrollmentUnguarded(
+                    this,
+                    {
+                        ...params,
+                        options: {
+                            pin,
+                            recoveryEmail: params.options?.recoveryEmail,
+                            recoveryLanguage: params.options?.recoveryLanguage,
+                        },
+                    },
+                    storage
+                )
             );
             if (!result.enrolled || !result.changed) {
                 throw new Error('Automatic recovery is not available for this account.');

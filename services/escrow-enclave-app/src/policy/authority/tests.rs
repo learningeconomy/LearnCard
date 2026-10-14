@@ -193,6 +193,17 @@ impl Fixture {
         .unwrap()
     }
     fn blob(&self, version: u32, pin: Option<&str>) -> EscrowEnvelope {
+        self.blob_with_contact(version, pin, None)
+    }
+    /// `contact`: `Some((email, language))` for an Enroll/Replace target that must
+    /// match the signed intent; `None` for Carry targets (the enclave fills it in
+    /// from source) or any blob not exercising the attack-C email binding.
+    fn blob_with_contact(
+        &self,
+        version: u32,
+        pin: Option<&str>,
+        contact: Option<(&str, &str)>,
+    ) -> EscrowEnvelope {
         encrypt_escrow_blob(
             &EscrowBlobPlaintext {
                 version: 1,
@@ -201,6 +212,8 @@ impl Fixture {
                 share_version: version.into(),
                 pin_verifier: pin.map(str::to_owned),
                 pin_attempts_floor: None,
+                recovery_email: contact.map(|(e, _)| e.to_string()),
+                recovery_language: contact.map(|(_, l)| l.to_string()),
             },
             &self.old.public_key,
             "old",
@@ -233,8 +246,19 @@ impl Fixture {
             .unwrap()
             .enrollment;
         let old_epoch = state.as_ref().map(|s| s.epoch.get()).unwrap_or(0);
+        // Mirrors the real required-ness rule: Enroll/Replace bind a fresh
+        // recovery contact, Disable/Carry inherit the prior value untouched.
+        let (recovery_email, recovery_language) =
+            if matches!(action, EnrollmentAction::Enroll | EnrollmentAction::Replace) {
+                (
+                    Some("owner@example.com".to_string()),
+                    Some("en".to_string()),
+                )
+            } else {
+                (None, None)
+            };
         let intent = EnrollmentIntent {
-            version: 1,
+            version: 2,
             tenant: "tenant".into(),
             did: self.did.clone(),
             authority_generation: "g1".into(),
@@ -250,6 +274,8 @@ impl Fixture {
             enrollment_epoch: old_epoch + u64::from(action != EnrollmentAction::Disable),
             request_id: request.into(),
             allow_rewrap,
+            recovery_email,
+            recovery_language,
         };
         let signature = STANDARD.encode(
             self.signer
@@ -259,7 +285,8 @@ impl Fixture {
         SignedEnrollmentIntent { intent, signature }
     }
     async fn enroll(&self, p: &mut Policy<'_>, delegated: bool) -> EscrowEnvelope {
-        let target = self.blob(1, Some(&"11".repeat(32)));
+        let target =
+            self.blob_with_contact(1, Some(&"11".repeat(32)), Some(("owner@example.com", "en")));
         let signed = self
             .intent(
                 "enroll",
@@ -461,13 +488,14 @@ async fn mutation_crash_matrix_keeps_each_committed_active_envelope_and_never_re
                 Err(ErrorCode::PinMismatch)
             ));
             let mut p = f.policy(false);
-            let target = f.blob(
+            let target = f.blob_with_contact(
                 2,
                 if kind == OperationKind::Replace {
                     Some("3333333333333333333333333333333333333333333333333333333333333333")
                 } else {
                     None
                 },
+                (kind == OperationKind::Replace).then_some(("owner@example.com", "en")),
             );
             let action = match kind {
                 OperationKind::Carry => EnrollmentAction::Carry,
@@ -547,7 +575,7 @@ async fn enrollment_and_delayed_release_crash_matrix_preserves_terminal_order() 
     for fault in [Fault::Before, Fault::After, Fault::Readback] {
         let f = Fixture::new();
         let mut p = f.policy(false);
-        let target = f.blob(1, None);
+        let target = f.blob_with_contact(1, None, Some(("owner@example.com", "en")));
         let intent = f
             .intent(
                 "initial",
@@ -615,7 +643,7 @@ async fn enrollment_and_delayed_release_crash_matrix_preserves_terminal_order() 
 async fn enroll_requires_owner_signature_persists_output_and_signs_only_post_commit() {
     let f = Fixture::new();
     let mut p = f.policy(false);
-    let target = f.blob(1, Some(&"11".repeat(32)));
+    let target = f.blob_with_contact(1, Some(&"11".repeat(32)), Some(("owner@example.com", "en")));
     let signed = f
         .intent(
             "enroll",
@@ -854,7 +882,7 @@ async fn pin_change_and_clear_reset_only_when_signed_and_old_blobs_cannot_releas
     let _ = p
         .release(f.release(&env, &hold, "bad", Some(&"22".repeat(32))))
         .await;
-    let target = f.blob(2, Some(&"33".repeat(32)));
+    let target = f.blob_with_contact(2, Some(&"33".repeat(32)), Some(("owner@example.com", "en")));
     let keep = f
         .intent(
             "keep",
@@ -893,7 +921,7 @@ async fn pin_change_and_clear_reset_only_when_signed_and_old_blobs_cannot_releas
         .release(f.release(&env, &hold, "old", Some(&"11".repeat(32))))
         .await
         .is_err());
-    let target = f.blob(3, None);
+    let target = f.blob_with_contact(3, None, Some(("owner@example.com", "en")));
     let clear = f
         .intent(
             "clear",
@@ -1030,7 +1058,7 @@ async fn rotation_before_paused_release_wins_and_lost_enrollment_response_keeps_
     let env = f.enroll(&mut a, true).await;
     let hold = f.hold(&mut a, &env, ReleasePolicy::Hold).await;
     *f.time.0.lock().unwrap() = HOLD_DURATION_MS + 1000;
-    let target = f.blob(2, Some(&"11".repeat(32)));
+    let target = f.blob_with_contact(2, Some(&"11".repeat(32)), Some(("owner@example.com", "en")));
     let signed = f
         .intent(
             "rotate",
@@ -1255,7 +1283,7 @@ mod wire_tests {
             public_key: f.keys.public_key.clone(),
             mode: AttestationMode::Software,
         };
-        let target = f.blob(1, None);
+        let target = f.blob_with_contact(1, None, Some(("owner@example.com", "en")));
         let signed = f
             .intent(
                 "enroll",

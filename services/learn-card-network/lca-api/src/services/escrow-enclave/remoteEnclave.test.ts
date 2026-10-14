@@ -293,7 +293,7 @@ describe('createRemoteEnclave', () => {
         const input = {
             signedIntent: {
                 intent: {
-                    version: 1 as const,
+                    version: 2 as const,
                     tenant: 'learncard',
                     did: 'did:key:z6MktwupdmLXVVqTzCw4i46r4uGyosGXRnR3XjN4Zq7oMMsw',
                     authorityGeneration: 'g1',
@@ -306,6 +306,8 @@ describe('createRemoteEnclave', () => {
                     enrollmentEpoch: 1,
                     requestId: 'request',
                     allowRewrap: true,
+                    recoveryEmail: 'owner@example.com',
+                    recoveryLanguage: 'en',
                 },
                 signature: Buffer.alloc(64).toString('base64'),
             },

@@ -211,6 +211,21 @@ impl<'a> Policy<'a> {
             {
                 return Err(ErrorCode::Policy);
             }
+            // P9.1 (attack C): Enroll/Replace bind the owner-signed email/language
+            // to this exact blob; Carry must arrive with neither and inherits the
+            // source's values verbatim, exactly like the PIN verifier just below.
+            if intent.action == EnrollmentAction::Carry {
+                if blob.recovery_email.is_some() || blob.recovery_language.is_some() {
+                    return Err(ErrorCode::Policy);
+                }
+                let source_blob = source_blob.as_mut().ok_or(ErrorCode::Policy)?;
+                blob.recovery_email = source_blob.recovery_email.take();
+                blob.recovery_language = source_blob.recovery_language.take();
+            } else if blob.recovery_email != intent.recovery_email
+                || blob.recovery_language != intent.recovery_language
+            {
+                return Err(ErrorCode::Policy);
+            }
             if intent.action == EnrollmentAction::Carry {
                 if blob.pin_verifier.is_some() {
                     return Err(ErrorCode::Policy);
@@ -397,6 +412,10 @@ impl<'a> Policy<'a> {
             || current.share_version != req.expected_share_version
             || after.epoch.get() != req.enrollment_epoch
             || (req.release_policy == ReleasePolicy::Pin && !after.pin.configured)
+            // P9.1 (attack C): an enrollment bound before PR3, or carried forward
+            // without ever completing an Enroll/Replace, has no recovery contact.
+            // Fail closed rather than start a hold nobody confirmed receiving mail for.
+            || blob.recovery_email.is_none()
         {
             return Err(ErrorCode::Policy);
         }

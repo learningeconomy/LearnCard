@@ -40,7 +40,7 @@ export const SignedEnrollmentIntentValidator = z
     .object({
         intent: z
             .object({
-                version: z.literal(1),
+                version: z.literal(2),
                 tenant: label,
                 did: z.string().length(56),
                 authorityGeneration: label,
@@ -59,6 +59,11 @@ export const SignedEnrollmentIntentValidator = z
                 enrollmentEpoch: safeInteger.positive(),
                 requestId: z.string().min(1).max(112),
                 allowRewrap: z.boolean(),
+                // P9.1 (attack C): shape only — `encodeEscrowEnrollmentIntent` below
+                // enforces normalization, the paired requirement, and the language
+                // allow-list; lca-api never re-derives or overrides these values.
+                recoveryEmail: z.string().min(3).max(254).nullable(),
+                recoveryLanguage: z.string().length(2).nullable(),
             })
             .strict()
             .refine(intent => {

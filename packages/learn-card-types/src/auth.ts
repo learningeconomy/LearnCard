@@ -280,7 +280,15 @@ export interface IdentityRecoverySession {
 export type SssActivationState = 'provisional' | 'active';
 
 /** Optional PIN enrollment requires rotating the existing escrow share. */
-export type EscrowEnrollmentOptions = { pin?: string };
+export type EscrowEnrollmentOptions = {
+    pin?: string;
+    /** P9.1 (attack C): required by the enclave for nitro/authority-mode
+     *  enroll/replace; bound into the sealed blob + signed intent, never read
+     *  or changed by lca-api. The authenticated account's email + the app's
+     *  current locale (one of the compiled template languages). */
+    recoveryEmail?: string;
+    recoveryLanguage?: string;
+};
 
 /** Stable error-message contract shared by PIN recovery clients and servers. */
 export const ESCROW_PIN_LOCKED_MESSAGE =
@@ -550,6 +558,9 @@ export interface KeyDerivationStrategy<
         privateKey: string;
         signDidAuthVp: DidAuthVpSigner;
         pin: string;
+        /** P9.1: only `recoveryEmail`/`recoveryLanguage` apply here; `options.pin`
+         *  is ignored in favor of the required top-level `pin`. */
+        options?: EscrowEnrollmentOptions;
     }): Promise<void>;
 
     /** Remove a PIN by rotating escrow material with an owner proof. */

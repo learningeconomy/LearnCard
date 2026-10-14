@@ -288,13 +288,19 @@ export const verifyEscrowEnrollmentCommit = async (
     return { envelope: output, receipt: record };
 };
 
-/** Owner-only mutation selection. Recovery itself never calls this helper. */
+/** Owner-only mutation selection. Recovery itself never calls this helper.
+ * P9.1 (attack C): `recoveryEmail`/`recoveryLanguage` are always supplied by the
+ * caller (the device's authenticated account email + app locale) but are only
+ * bound into the intent for enroll/replace; disable/carry null them out here
+ * regardless of input, since the enclave carries the prior value forward. */
 export const createEscrowEnrollmentIntent = async (input: {
     state: EscrowAuthorityState;
     target: EscrowEnvelope | null;
     shareVersion: number;
     privateKey: string;
     pinAction: 'automatic' | 'set' | 'clear' | 'disable';
+    recoveryEmail: string;
+    recoveryLanguage: string;
 }): Promise<SignedEscrowEnrollmentIntent> => {
     const current = state(input.state);
     const target = input.target === null ? null : envelope(input.target);
@@ -327,8 +333,9 @@ export const createEscrowEnrollmentIntent = async (input: {
     requireEvidence(!disabling || input.target === null);
     requireEvidence(disabling || input.target !== null);
     if (action === 'carry') requireEvidence(input.shareVersion > (current.shareVersion ?? 0));
+    const bindsRecoveryContact = action === 'enroll' || action === 'replace';
     const intent: EscrowEnrollmentIntent = {
-        version: 1,
+        version: 2,
         tenant: current.tenant,
         did: current.did,
         authorityGeneration: current.authorityGeneration,
@@ -341,6 +348,8 @@ export const createEscrowEnrollmentIntent = async (input: {
         enrollmentEpoch: current.enrollmentEpoch + (disabling ? 0 : 1),
         requestId: crypto.randomUUID(),
         allowRewrap: !disabling,
+        recoveryEmail: bindsRecoveryContact ? input.recoveryEmail : null,
+        recoveryLanguage: bindsRecoveryContact ? input.recoveryLanguage : null,
     };
     return signEscrowEnrollmentIntent(intent, input.privateKey);
 };

@@ -4,13 +4,19 @@
 use super::state::{
     Binding, EnrollmentItem, EnrollmentStatus, ItemValue, StoredItem, MAX_COUNTER, SCHEMA_VERSION,
 };
-use crate::{crypto::escrow_blob_identity, ledger::Hash, wire::EscrowEnvelope};
+use crate::{
+    crypto::{escrow_blob_identity, RECOVERY_LANGUAGES},
+    ledger::Hash,
+    wire::EscrowEnvelope,
+};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use ed25519_dalek::{Signature, VerifyingKey};
 use serde::{Deserialize, Deserializer, Serialize};
 use sha2::{Digest, Sha256};
 
-pub const INTENT_DOMAIN: &[u8] = b"learncard-escrow-enrollment-intent-v1\0";
+// P9.1: bumped alongside `version` (intent struct field) so the two new
+// recovery fields can never be verified against the pre-PR3 byte layout.
+pub const INTENT_DOMAIN: &[u8] = b"learncard-escrow-enrollment-intent-v2\0";
 pub const MAX_SIGNED_INTENT_BYTES: usize = 4096;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
@@ -54,6 +60,13 @@ pub struct EnrollmentIntent {
     pub enrollment_epoch: u64,
     pub request_id: String,
     pub allow_rewrap: bool,
+    /// P9.1 (attack C): required (and must match the decrypted target blob) on
+    /// Enroll/Replace; must be null on Disable/Carry (the enclave carries the
+    /// prior value forward). Explicit null is required, not an omitted field.
+    #[serde(deserialize_with = "required_optional")]
+    pub recovery_email: Option<String>,
+    #[serde(deserialize_with = "required_optional")]
+    pub recovery_language: Option<String>,
 }
 
 fn required_optional<'de, D: Deserializer<'de>>(
@@ -88,16 +101,47 @@ impl SignedEnrollmentIntent {
 }
 
 impl EnrollmentIntent {
-    /// V1: domain, then 13 fields each prefixed by its u32 BE byte length.
+    /// V2: domain, then 15 fields each prefixed by its u32 BE byte length.
     /// Numeric field widths and enum tags are fixed; see the shared golden vector.
     pub fn canonical_bytes(&self) -> Result<Vec<u8>, IntentError> {
         require(
-            self.version == 1
+            self.version == 2
                 && self.expected_enrollment_version <= MAX_COUNTER
                 && self.share_version > 0
                 && self.enrollment_epoch > 0
                 && self.enrollment_epoch <= MAX_COUNTER,
         )?;
+        match (&self.recovery_email, &self.recovery_language) {
+            (Some(email), Some(language)) => {
+                require(
+                    (3..=254).contains(&email.len())
+                        && email.bytes().all(|b| b.is_ascii_graphic())
+                        && email == &email.to_ascii_lowercase()
+                        && email.trim() == email,
+                )?;
+                let mut parts = email.splitn(3, '@');
+                let (local, domain) = match (parts.next(), parts.next(), parts.next()) {
+                    (Some(l), Some(d), None) if !l.is_empty() && !d.is_empty() => (l, d),
+                    _ => return Err(IntentError),
+                };
+                require(!local.is_empty())?;
+                require(
+                    domain.contains('.') && !domain.starts_with('.') && !domain.ends_with('.'),
+                )?;
+                require(RECOVERY_LANGUAGES.contains(&language.as_str()))?;
+            }
+            (None, None) => require(matches!(
+                self.action,
+                EnrollmentAction::Disable | EnrollmentAction::Carry
+            ))?,
+            _ => return Err(IntentError),
+        }
+        if matches!(
+            self.action,
+            EnrollmentAction::Enroll | EnrollmentAction::Replace
+        ) {
+            require(self.recovery_email.is_some())?;
+        }
         label(&self.tenant)?;
         label(&self.authority_generation)?;
         require(
@@ -153,6 +197,14 @@ impl EnrollmentIntent {
             self.enrollment_epoch.to_be_bytes().as_slice(),
             self.request_id.as_bytes(),
             &[u8::from(self.allow_rewrap)],
+            self.recovery_email
+                .as_deref()
+                .unwrap_or_default()
+                .as_bytes(),
+            self.recovery_language
+                .as_deref()
+                .unwrap_or_default()
+                .as_bytes(),
         ] {
             bytes.extend_from_slice(&(field.len() as u32).to_be_bytes());
             bytes.extend_from_slice(field);
