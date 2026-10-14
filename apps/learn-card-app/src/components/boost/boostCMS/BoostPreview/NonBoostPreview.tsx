@@ -126,7 +126,12 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
 }) => {
     const { track } = useAnalytics();
     const { initWallet } = useWallet();
-    const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
+    const [verificationResult, setVerificationResult] = useState<{
+        credential: VC;
+        items: VerificationItem[];
+    }>();
+    const vcVerifications =
+        verificationResult?.credential === credential ? verificationResult.items : [];
     const viewedCredentialIdRef = React.useRef<string | undefined>(undefined);
     const renderMethod = getSvgMustacheRenderMethod(credential as VC);
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
@@ -147,14 +152,22 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
 
     useEffect(() => {
         if (isPreview) return;
+        let cancelled = false;
 
         const verify = async () => {
-            const wallet = await initWallet();
-            const verifications = await wallet?.invoke?.verifyCredential(credential, {}, true);
-            setVCVerifications(verifications);
+            try {
+                const wallet = await initWallet();
+                const verifications = await wallet?.invoke?.verifyCredential(credential, {}, true);
+                if (!cancelled) setVerificationResult({ credential, items: verifications ?? [] });
+            } catch {
+                if (!cancelled) setVerificationResult({ credential, items: [] });
+            }
         };
 
         verify();
+        return () => {
+            cancelled = true;
+        };
     }, [credential, isPreview]);
 
     useEffect(() => {
@@ -384,6 +397,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 boost={clrCredential}
                 // boostUri comes from boost cards; credentialUri from direct credential views
                 boostUri={boostUri ?? credentialUri}
+                verificationItems={verifications}
                 options={{ viewer: 'student', surface: ClrTranscriptSurface.Full }}
             />
         );

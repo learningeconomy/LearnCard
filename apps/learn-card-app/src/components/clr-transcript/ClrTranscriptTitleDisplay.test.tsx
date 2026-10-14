@@ -32,6 +32,7 @@ const createTranscriptModel = (
     gpa?: number,
     title: string | null = 'Silverbrook College Transcript'
 ) => ({
+    canonical: { collection: { name: { value: title ?? 'Transcript' } }, records: [] },
     header: { title: title ? { value: title } : undefined },
     summary: {
         gpa: gpa === undefined ? undefined : { value: gpa },
