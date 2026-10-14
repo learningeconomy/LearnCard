@@ -1,11 +1,12 @@
 import React from 'react';
+import { formatClrCreditTotal } from 'learn-card-base/helpers/credentials/clr/credits';
 
 import ClrCourseTable from './ClrCourseTable';
 
 import type {
     ClrTranscriptDisplayModel,
     CourseDisplayModel,
-} from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const ClrCourseSection: React.FC<{
     model: ClrTranscriptDisplayModel;
@@ -20,8 +21,11 @@ const ClrCourseSection: React.FC<{
                 </p>
                 <p className="text-xs text-grayscale-500">
                     {model.summary.courseCount} course{model.summary.courseCount !== 1 ? 's' : ''}
-                    {model.summary.totalCreditsAvailable !== undefined &&
-                        `, ${model.summary.totalCreditsAvailable} credits`}
+                    {model.summary.creditTotals.map(total => (
+                        <span className="block" key={`${total.kind}-${total.unit ?? ''}`}>
+                            {formatClrCreditTotal(total)}
+                        </span>
+                    ))}
                 </p>
             </div>
             <ClrCourseTable

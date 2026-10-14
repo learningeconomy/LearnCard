@@ -1,6 +1,6 @@
 {
     "name": "@learncard/network-brain-service",
-    "version": "3.19.1",
+    "version": "4.0.0",
     "description": "",
     "engines": {
         "node": ">=24.12 <25"
@@ -75,6 +75,7 @@
         "@learncard/email-templates": "workspace:*",
         "@learncard/helpers": "workspace:*",
         "@learncard/learn-card-plugin": "workspace:*",
+        "@learncard/partner-connect-core": "workspace:*",
         "@learncard/service-config": "workspace:*",
         "@learncard/types": "workspace:*",
         "@learncard/vc-plugin": "workspace:*",

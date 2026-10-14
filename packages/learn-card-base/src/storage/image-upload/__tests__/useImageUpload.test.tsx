@@ -79,4 +79,45 @@ describe('useImageUpload', () => {
             })
         );
     });
+
+    it('never uploads error pages fetched from an image link', async () => {
+        const upload = vi.fn().mockResolvedValue(uploadRes);
+        registerImageUploadProviderFactory('test-hook-provider', () => createTestProvider(upload));
+        setImageUploadConfigFromTenant({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            storage: { provider: 'test-hook-provider' } as unknown as TenantStorageConfig,
+        } as TenantConfig);
+        const results: Array<string | null> = [];
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce(new Response('Not found', { status: 404 }))
+            .mockResolvedValueOnce(
+                new Response('<html></html>', { headers: { 'content-type': 'text/html' } })
+            )
+            .mockResolvedValueOnce(
+                new Response(new Uint8Array([137, 80, 78, 71]), {
+                    headers: { 'content-type': 'image/png' },
+                })
+            );
+        vi.stubGlobal('fetch', fetchMock);
+
+        const TestComponent = () => {
+            const { uploadImageFromUrl } = useImageUpload({});
+            useEffect(() => {
+                (async () => {
+                    for (const url of ['/missing.ico', '/page.png', '/icon.png']) {
+                        results.push(await uploadImageFromUrl(url));
+                    }
+                })();
+            }, []);
+            return null;
+        };
+
+        render(<TestComponent />);
+
+        await waitFor(() => expect(results).toHaveLength(3));
+        expect(results.slice(0, 2)).toEqual([null, null]);
+        expect(upload).toHaveBeenCalledTimes(1);
+        vi.unstubAllGlobals();
+    });
 });

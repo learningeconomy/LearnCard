@@ -48,7 +48,10 @@ import type {
     ClrAssociation,
 } from '../boostLinkedCredentials/ClrAchievementsSummaryBox';
 import { getClrLinkedCredentials } from 'learn-card-base/helpers/credentialHelpers';
-import { getClrTranscriptKind, getClrTranscriptIssuerInfo } from '../../clr-transcript';
+import {
+    getClrTranscriptKind,
+    getClrTranscriptIssuerInfo,
+} from 'learn-card-base/helpers/credentials/clr/kind';
 
 import {
     getIssuanceDate,

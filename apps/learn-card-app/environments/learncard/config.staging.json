@@ -13,6 +13,7 @@
     },
     "features": {
         "analytics": false,
+        "contractRequests": true,
         "useSeededSkillFrameworks": true,
         "samplePersonas": [
             {

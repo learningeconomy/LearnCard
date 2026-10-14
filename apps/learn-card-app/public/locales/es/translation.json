@@ -1,4 +1,62 @@
 {
+    "clrTranscript": {
+        "credits": {
+            "earnedNotSuppliedAria": "No se han proporcionado los créditos obtenidos",
+            "earnedNotSupplied": "Obtenidos —",
+            "earnedQuantity": "{{value}} obtenidos",
+            "availableQuantity": "{{value}} disponibles",
+            "inferredQuantity": "{{value}} según la descripción"
+        },
+        "relationships": {
+            "targetAmbiguous": "Destino ambiguo",
+            "targetUnresolved": "Destino sin resolver",
+            "parent": "Parte de {{name}}",
+            "child": "Incluye {{name}}",
+            "prerequisite": "Requiere {{name}}",
+            "unlock": "Habilita {{name}}",
+            "peer": "Realizado junto con {{name}}",
+            "equivalent": "Equivalente a {{name}}",
+            "supersededBy": "Sustituido por {{name}}",
+            "replacement": "Sustituye a {{name}}",
+            "related": "Relacionado con {{name}}",
+            "openRecord": "Abrir {{name}}: {{label}}",
+            "relatedRecords": "Registros relacionados"
+        },
+        "details": {
+            "issuedBy": "Emitido por",
+            "assessedBy": "Evaluado por",
+            "createdBy": "Logro creado por",
+            "activityStarted": "Inicio de la actividad",
+            "activityEnded": "Fin de la actividad",
+            "awarded": "Otorgado",
+            "validFrom": "Válido desde",
+            "validUntil": "Válido hasta",
+            "fieldOfStudy": "Campo de estudio",
+            "specialization": "Especialización",
+            "language": "Idioma",
+            "version": "Versión",
+            "role": "Función",
+            "narrative": "Relato del estudiante",
+            "licenseNumber": "Número de licencia",
+            "criteria": "Criterios",
+            "viewCriteria": "Ver criterios",
+            "criteriaReference": "Referencia de criterios",
+            "additionalDetails": "Detalles adicionales",
+            "tags": "Etiquetas",
+            "achievementId": "ID del logro",
+            "learnerId": "ID del estudiante",
+            "achievementIdentifiers": "Identificadores del logro",
+            "learnerIdentifiers": "Identificadores del estudiante",
+            "identifier": "Identificador",
+            "hashedIdentifier": "{{label}} (con hash)",
+            "otherRecords": "Otros registros",
+            "itemCountOne": "{{count}} elemento",
+            "itemCountOther": "{{count}} elementos",
+            "record": "Registro",
+            "recordDetails": "Detalles del registro",
+            "closeRecordDetails": "Cerrar detalles del registro"
+        }
+    },
     "inboxClaimSetup": {
         "setup": "Termina de configurar tu cuenta para reclamar tu credencial.",
         "continue": "Continuar configurando la cuenta",
@@ -1769,7 +1827,6 @@
         "previewCredentials": "Vista previa de {{count}} credenciales"
     },
     "consentFlow": {
-        "reviewChanged": "Los detalles de acceso cambiaron. Revísalos antes de volver a conectar.",
         "guardianApprovalRequired": "Pide a un administrador actual de la cuenta que apruebe esta conexión y vuelve a intentarlo.",
         "title": "Consentimiento",
         "acceptAndSync": "Aceptar y sincronizar",
@@ -1890,6 +1947,7 @@
             "email": "correo electrónico",
             "profilePicture": "foto de perfil"
         },
+        "reviewChanged": "Los detalles de acceso cambiaron. Revísalos antes de volver a conectar.",
         "retryPublication": "Tus opciones para compartir están guardadas. Inténtalo de nuevo para terminar de enviarlas."
     },
     "recovery": {
@@ -3583,12 +3641,6 @@
         "skillsHub": "Centro de habilidades"
     },
     "base": {
-        "consentAudience": {
-            "title": "Revisa quién recibe tus datos",
-            "description": "La información que elijas estará disponible para todas las personas que aparecen a continuación.",
-            "confirm": "Confirmar uso compartido",
-            "cancel": "Cancelar"
-        },
         "verification": {
             "selfIssued": "Autoemitido",
             "trustedIssuer": "Emisor de confianza",
@@ -3627,6 +3679,12 @@
                 "suspended": "Suspendida"
             },
             "expires": "Caduca"
+        },
+        "consentAudience": {
+            "title": "Revisa quién recibe tus datos",
+            "description": "La información que elijas estará disponible para todas las personas que aparecen a continuación.",
+            "confirm": "Confirmar uso compartido",
+            "cancel": "Cancelar"
         }
     },
     "sdk": {
@@ -8087,9 +8145,9 @@
                     "description": "Configura un flujo de consentimiento para enviar y acceder a datos de usuario y credenciales con su permiso."
                 },
                 "courseCatalog": {
-                    "title": "Conectar catálogo de cursos",
-                    "subtitle": "Integración LMS empresarial",
-                    "description": "Configuración guiada completa para socios LMS. Configura webhooks, crea plantillas de credenciales, mapea tus datos y publica con emisión automática de credenciales."
+                    "title": "Emitir desde un catálogo de cursos",
+                    "subtitle": "Convierte una hoja de cursos en credenciales",
+                    "description": "Sube tu lista de cursos, obtén un diseño de credencial para cada uno y otórgalos a los estudiantes cuando terminen."
                 },
                 "verifyCredentials": {
                     "title": "Verificar credenciales",
@@ -8251,7 +8309,8 @@
             "filterAll": "Todas",
             "filterListed": "Publicadas",
             "filterDraft": "Borrador",
-            "filterArchived": "Archivadas"
+            "filterArchived": "Archivadas",
+            "filterUpdates": "Actualizaciones"
         },
         "listing": {
             "submittedBy": "Enviado por:",
@@ -8318,6 +8377,23 @@
                 "standardDesc": "Visibilidad normal en búsqueda y navegación",
                 "demoted": "Degradado",
                 "demotedDesc": "Visibilidad reducida en los listados"
+            },
+            "update": {
+                "title": "Actualización pendiente de revisión",
+                "description": "Estos cambios solo se publican si los apruebas.",
+                "draftNote": "El desarrollador todavía está editando una actualización.",
+                "capabilities": "También cambia lo que puede hacer la app (versión {{version}}).",
+                "approve": "Aprobar actualización",
+                "reject": "Rechazar actualización",
+                "fieldName": "Nombre",
+                "fieldTagline": "Eslogan",
+                "fieldDescription": "Descripción",
+                "fieldIcon": "Icono",
+                "fieldScreenshots": "Capturas de pantalla",
+                "fieldHighlights": "Destacados",
+                "fieldLinks": "Enlaces y contacto",
+                "fieldLaunch": "Dónde se ejecuta la app",
+                "fieldOther": "Otros detalles"
             }
         }
     },
@@ -9377,6 +9453,78 @@
         "signInToSave": "Inicia sesión para guardar",
         "saveHint": "Guarda esta colección firmada con tus elementos recibidos."
     },
+    "resumePublishing": {
+        "linkReady": "Tu enlace privado está listo.",
+        "opening": "Abriendo tu enlace privado...",
+        "linkUnavailable": "Este enlace no está disponible. Revisa sus ajustes y vuelve a publicar el currículum.",
+        "legacy": "Vuelve a publicar este currículum para crear un enlace administrado.",
+        "pending": "La publicación aún se está confirmando. Inténtalo de nuevo para comprobar el mismo intento.",
+        "size": "Este currículum es demasiado grande para publicarlo. Desactiva el código QR para descargarlo.",
+        "inactive": "Este enlace se ha detenido o ha caducado. Revisa sus ajustes antes de publicar de nuevo.",
+        "failed": "No pudimos publicar este currículum. Inténtalo de nuevo.",
+        "account": "Tu cuenta ha cambiado. Inténtalo de nuevo.",
+        "changed": "Tu currículum cambió mientras se preparaba. Inténtalo de nuevo.",
+        "cleanup": "Tu currículum está publicado, pero la limpieza no se completó. Inténtalo más tarde.",
+        "limits": "Detener este enlace impide el acceso futuro. No se pueden retirar copias guardadas ni enlaces anteriores.",
+        "republishLimits": "Volver a publicar no retira enlaces anteriores ni copias guardadas.",
+        "pdfHeading": "Currículum publicado",
+        "previewError": "No pudimos abrir este currículum.",
+        "downloadExact": "Descargar PDF del currículum",
+        "updated": "Este currículum ha cambiado",
+        "updatedHint": "Abre el enlace de nuevo para ver la versión más reciente.",
+        "recovered": "Tu publicación anterior está confirmada. Se ha cargado el currículum guardado.",
+        "originalClaims": "Las credenciales seleccionadas conservan sus detalles firmados originales; ocultar campos en este PDF no los elimina.",
+        "downloadToView": "Descargar para ver",
+        "pdfSize": "PDF · Tamaño: {{size}} KB",
+        "pdfReady": "Descarga este currículum para abrir el PDF en tu dispositivo.",
+        "discard": "Borrar la preparación interrumpida",
+        "discarding": "Borrando la preparación interrumpida...",
+        "discarded": "Se ha borrado la preparación interrumpida. Puedes publicar de nuevo.",
+        "interrupted": "La preparación de la publicación se interrumpió. Reintenta o bórrala antes de empezar un nuevo currículum.",
+        "discardFailed": "No pudimos borrar esta preparación. Inténtalo de nuevo.",
+        "manageContent": "Edita el contenido del currículum en Resume Builder.",
+        "publishInBuilder": "Usa Resume Builder para publicar este currículum."
+    },
+    "verifierSelection": {
+        "hint": "Elige las credenciales que quieres enviar a esta aplicación.",
+        "review": "Revisar"
+    },
+    "verifierHistory": {
+        "viewCredentials": "Ver credenciales compartidas con {{verifier}}",
+        "credentialsCount": "Credenciales ({{count}})",
+        "credentialsList": "Nombres de credenciales registrados",
+        "viewAll": "Ver los {{count}}",
+        "preview": "Se muestran {{shown}} de {{total}} entradas",
+        "page": "Página {{page}} de {{total}}",
+        "previous": "Anterior",
+        "next": "Siguiente",
+        "saveFailed": "No se pudo actualizar el historial. No necesitas enviar tu información de nuevo.",
+        "title": "Compartido con verificadores",
+        "description": "Historial privado de la información que decidiste enviar a otras aplicaciones.",
+        "managedUnavailable": "El historial no está disponible para cuentas administradas.",
+        "loading": "Actualizando el historial…",
+        "open": "Abrir historial privado",
+        "record": "Guardar historial privado",
+        "retention": "Guarda hasta 500 entradas de los últimos 90 días. Las entradas antiguas se eliminan al conectarte.",
+        "limits": "Los títulos no describen todos los datos enviados. Eliminar el historial no retira la información enviada. Desactivar el registro conserva el historial anterior.",
+        "cleanupPending": "No se pudieron leer o eliminar algunos registros. Borra el historial para eliminarlos.",
+        "refresh": "Actualizar",
+        "clear": "Borrar historial",
+        "empty": "No hay envíos registrados.",
+        "unknownVerifier": "Aplicación solicitante",
+        "sent": "Enviado; aceptación desconocida",
+        "handedOff": "Entregado a la aplicación; recepción sin confirmar",
+        "credential": "Credencial",
+        "delete": "Eliminar entrada",
+        "deleteLabel": "Eliminar entrada de {{verifier}}",
+        "loadFailed": "No se pudo cargar o actualizar el historial. Comprueba tu conexión e inténtalo de nuevo.",
+        "retry": "Reintentar historial",
+        "clearTitle": "¿Borrar el historial privado?",
+        "clearBody": "Se eliminarán permanentemente todas las entradas del historial privado. Tus credenciales y la información ya enviada no cambian.",
+        "clearConsent": "La opción de registro se mantiene si se puede leer la configuración; de lo contrario, se desactiva.",
+        "clearRecovery": "No se pudo cargar parte del historial. Al borrarlo, también se eliminan las entradas ilegibles.",
+        "accountChanged": "El envío terminó, pero cambiaste de cuenta. Vuelve a la aplicación que lo solicitó para continuar."
+    },
     "contractRequests": {
         "label": "Conectar",
         "referred": "{{referrer}} te ha referido a {{owner}}.",
@@ -9401,5 +9549,72 @@
         "reviewFirst": "Revisa y elige tus datos antes de conectar.",
         "pending": "Invitaciones pendientes",
         "empty": "No hay invitaciones pendientes."
+    },
+    "clrRenderer": {
+        "military": "Registro militar",
+        "general": "Registro de aprendizaje",
+        "training": "Formación",
+        "courses": "Cursos",
+        "programs": "Programas",
+        "activities": "Actividades",
+        "fieldwork": "Funciones y trabajo de campo",
+        "assessments": "Evaluaciones",
+        "competencies": "Competencias",
+        "qualifications": "Cualificaciones",
+        "awards": "Reconocimientos",
+        "other": "Otros registros",
+        "publishedBy": "Publicado por",
+        "partial": "Registro parcial: incluye solo algunos logros.",
+        "empty": "No se proporcionaron registros individuales.",
+        "viewDetails": "Ver detalles",
+        "recordDetails": "Detalles del registro",
+        "closeDetails": "Cerrar detalles del registro",
+        "issuedBy": "Emitido por",
+        "assessedBy": "Evaluado por",
+        "createdBy": "Logro creado por",
+        "activityStart": "Inicio de la actividad",
+        "activityEnd": "Fin de la actividad",
+        "awarded": "Otorgado",
+        "validFrom": "Válido desde",
+        "validUntil": "Válido hasta",
+        "issued": "Emitido",
+        "role": "Función",
+        "narrative": "Relato del estudiante",
+        "license": "Número de licencia",
+        "field": "Área de estudio",
+        "specialization": "Especialización",
+        "language": "Idioma",
+        "version": "Versión",
+        "identifier": "Identificador",
+        "hashedIdentifier": "{{label}} (hash)",
+        "criteria": "Criterios",
+        "viewCriteria": "Ver criterios",
+        "criteriaReference": "Referencia de criterios",
+        "additional": "Detalles adicionales",
+        "tags": "Etiquetas",
+        "achievementId": "Identificador del logro",
+        "learnerId": "Identificador del estudiante",
+        "achievementIdentifiers": "Identificadores del logro",
+        "learnerIdentifiers": "Identificadores del estudiante",
+        "requiredValue": "Valor requerido: {{value}}",
+        "requiredLevel": "Nivel requerido: {{value}}",
+        "verified": "Contenido firmado verificado",
+        "signedUnverified": "Firmado, sin verificar",
+        "verifying": "Verificando…",
+        "valid": "Válido",
+        "invalid": "Inválido",
+        "proof": "Prueba",
+        "expiration": "Vencimiento",
+        "expired": "Venció el {{date}}",
+        "expires": "Vence el {{date}}",
+        "doesNotExpire": "No vence",
+        "numericScale": "Escala numérica de {{min}} a {{max}}; resultado {{value}}",
+        "numericScaleWithPassing": "Escala numérica de {{min}} a {{max}}; resultado {{value}}; mínimo para aprobar {{required}}",
+        "unsigned": "Credencial sin firma",
+        "evidenceAttached": "Evidencia adjunta",
+        "status": "Estado: {{status}}",
+        "revocationCheck": "Comprobación de revocación disponible",
+        "evidenceCount": "Elementos de evidencia: {{count}}",
+        "evidence": "Evidencia de apoyo"
     }
 }
