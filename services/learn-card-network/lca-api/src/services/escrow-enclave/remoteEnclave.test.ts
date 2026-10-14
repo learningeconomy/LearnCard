@@ -21,6 +21,26 @@ const receipt = {
     signature: Buffer.alloc(64).toString('base64'),
 };
 
+// Real Rust shape for the idempotent-retry path (`authority_hold_snapshot`,
+// policy/authority.rs): a signed tuple, never an `AuthorityCommitValidator`.
+const snapshotReceipt = {
+    version: 1 as const,
+    kind: 'snapshot' as const,
+    keyId: 'key-1',
+    measurement: Array(32).fill(0),
+    payload: Buffer.from(
+        JSON.stringify([
+            'learncard-authority-hold-snapshot-v1',
+            'hold-1',
+            Array(32).fill(7),
+            'pending',
+            1700000000000,
+            1700086400000,
+        ])
+    ).toString('base64'),
+    signature: Buffer.alloc(64).toString('base64'),
+};
+
 const envelope: EscrowEnvelope = {
     version: 1,
     algorithm: 'P-256-HKDF-SHA256-AES-256-GCM',
@@ -287,6 +307,106 @@ describe('createRemoteEnclave', () => {
         await expect(enclave.releaseEscrow(input)).rejects.toBeInstanceOf(EscrowUnavailableError);
         post.mockResolvedValue(respond(200, { ok: true }));
         await expect(enclave.cancelHold(input)).rejects.toBeInstanceOf(EscrowUnavailableError);
+    });
+
+    // [A] confirm-hold/send-release-warning: a fresh call returns a signed
+    // `commit`; an idempotent retry (lost response, hourly job re-run)
+    // returns a signed `snapshot` instead — both are real response shapes
+    // the enclave can return, never a stub that only ever returns `commit`.
+    const confirmInput = {
+        envelope,
+        hold,
+        clientEphemeralPublicKey: hold.hold.clientEphemeralPublicKey,
+        expectedDid: hold.hold.did,
+        code: '12345678',
+    };
+    it('confirmHold accepts a fresh commit receipt and returns the authoritative confirmation time', async () => {
+        const post = vi
+            .fn()
+            .mockResolvedValue(
+                respond(200, { confirmed: true, receipt, confirmedHiMs: 1700000000000 })
+            );
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+
+        await expect(enclave.confirmHold!(confirmInput)).resolves.toEqual({
+            receipt,
+            confirmedAtMs: 1700000000000,
+        });
+    });
+    it('confirmHold accepts a retry snapshot receipt (not a commit) and returns the SAME confirmation time', async () => {
+        const post = vi.fn().mockResolvedValue(
+            respond(200, {
+                confirmed: true,
+                receipt: snapshotReceipt,
+                confirmedHiMs: 1700000000000,
+            })
+        );
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+
+        await expect(enclave.confirmHold!(confirmInput)).resolves.toEqual({
+            receipt: snapshotReceipt,
+            confirmedAtMs: 1700000000000,
+        });
+    });
+    it('confirmHold fails closed when the receipt is neither a commit nor a snapshot', async () => {
+        const post = vi.fn().mockResolvedValue(
+            respond(200, {
+                confirmed: true,
+                receipt: { ...receipt, kind: 'proposal' },
+                confirmedHiMs: 1700000000000,
+            })
+        );
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+
+        await expect(enclave.confirmHold!(confirmInput)).rejects.toBeInstanceOf(
+            EscrowUnavailableError
+        );
+    });
+    it('confirmHold fails closed when confirmedHiMs is missing (pre-fix response shape)', async () => {
+        const post = vi.fn().mockResolvedValue(respond(200, { confirmed: true, receipt }));
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+
+        await expect(enclave.confirmHold!(confirmInput)).rejects.toBeInstanceOf(
+            EscrowUnavailableError
+        );
+    });
+
+    const warningInput = { holdId: hold.hold.holdId, expectedDid: hold.hold.did };
+    it('sendReleaseWarning accepts a fresh commit receipt and returns the authoritative send time', async () => {
+        const post = vi
+            .fn()
+            .mockResolvedValue(
+                respond(200, { sent: true, receipt, releaseWarningSentHiMs: 1700086400000 })
+            );
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+
+        await expect(enclave.sendReleaseWarning!(warningInput)).resolves.toEqual({
+            receipt,
+            releaseWarningSentAtMs: 1700086400000,
+        });
+    });
+    it('sendReleaseWarning accepts a retry snapshot receipt (not a commit) and returns the SAME send time', async () => {
+        const post = vi.fn().mockResolvedValue(
+            respond(200, {
+                sent: true,
+                receipt: snapshotReceipt,
+                releaseWarningSentHiMs: 1700086400000,
+            })
+        );
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+
+        await expect(enclave.sendReleaseWarning!(warningInput)).resolves.toEqual({
+            receipt: snapshotReceipt,
+            releaseWarningSentAtMs: 1700086400000,
+        });
+    });
+    it('sendReleaseWarning fails closed when releaseWarningSentHiMs is missing (pre-fix response shape)', async () => {
+        const post = vi.fn().mockResolvedValue(respond(200, { sent: true, receipt }));
+        const enclave = createRemoteEnclave({ baseUrl, token, timeoutMs, transport: { post } });
+
+        await expect(enclave.sendReleaseWarning!(warningInput)).rejects.toBeInstanceOf(
+            EscrowUnavailableError
+        );
     });
 
     it('forwards signed enrollment once and rejects a proposal or mismatched result generation', async () => {

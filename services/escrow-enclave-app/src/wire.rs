@@ -195,6 +195,12 @@ pub mod v1 {
         ConfirmHold {
             confirmed: bool,
             receipt: SignedAuthorityRecord,
+            /// Authoritative enclave confirmation time (Unix ms), present on
+            /// both a fresh confirm (`receipt.kind == commit`) and an
+            /// idempotent retry (`receipt.kind == snapshot`) — callers must
+            /// use this, never a locally-observed `now`, to compute the
+            /// release deadline (see lca-api's `routes/escrow.ts`).
+            confirmed_hi_ms: u64,
         },
         ResendCode {
             sent: bool,
@@ -203,6 +209,10 @@ pub mod v1 {
         SendReleaseWarning {
             sent: bool,
             receipt: SignedAuthorityRecord,
+            /// Authoritative enclave warning-sent time (Unix ms), present on
+            /// both a fresh send (`receipt.kind == commit`) and an idempotent
+            /// retry (`receipt.kind == snapshot`).
+            release_warning_sent_hi_ms: u64,
         },
         Health {
             ok: bool,

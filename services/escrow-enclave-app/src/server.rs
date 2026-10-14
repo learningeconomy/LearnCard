@@ -393,7 +393,7 @@ impl Service<'_> {
                 expected_did,
                 code,
             } => {
-                let receipt = self
+                let (receipt, confirmed_hi_ms) = self
                     .policy
                     .confirm_hold(ConfirmHoldRequest {
                         envelope: &envelope,
@@ -407,6 +407,7 @@ impl Service<'_> {
                 Ok(Response::ConfirmHold {
                     confirmed: true,
                     receipt,
+                    confirmed_hi_ms,
                 })
             }
             Request::ResendCode {
@@ -436,7 +437,7 @@ impl Service<'_> {
                 request_id,
                 expected_did,
             } => {
-                let receipt = self
+                let (receipt, release_warning_sent_hi_ms) = self
                     .policy
                     .send_release_warning(SendReleaseWarningRequest {
                         hold_id: &hold_id,
@@ -447,6 +448,7 @@ impl Service<'_> {
                 Ok(Response::SendReleaseWarning {
                     sent: true,
                     receipt,
+                    release_warning_sent_hi_ms,
                 })
             }
         }

@@ -129,10 +129,19 @@ export interface EscrowEnclave {
     createHold(input: EnclaveCreateHoldInput): Promise<{ holdRecord: EscrowHoldRecord }>;
     cancelHold(input: CancelHoldRequest): Promise<void | { receipt: AuthorityRecord }>;
     /** P9.1 (attack C): authority (nitro) mode only — software mode never
-     * produces an awaiting-confirmation hold, so it has nothing to confirm. */
-    confirmHold?(input: ConfirmHoldRequest): Promise<{ receipt: AuthorityRecord }>;
+     * produces an awaiting-confirmation hold, so it has nothing to confirm.
+     * `confirmedAtMs` is the enclave's authoritative confirmation time
+     * (present on both a fresh confirm and an idempotent retry); callers
+     * must use it instead of a locally-observed clock to compute deadlines. */
+    confirmHold?(
+        input: ConfirmHoldRequest
+    ): Promise<{ receipt: AuthorityRecord; confirmedAtMs: number }>;
     resendCode?(input: ResendCodeRequest): Promise<{ receipt: AuthorityRecord }>;
-    sendReleaseWarning?(input: SendReleaseWarningRequest): Promise<{ receipt: AuthorityRecord }>;
+    /** `releaseWarningSentAtMs` is the enclave's authoritative warning-sent
+     * time, present on both a fresh send and an idempotent retry. */
+    sendReleaseWarning?(
+        input: SendReleaseWarningRequest
+    ): Promise<{ receipt: AuthorityRecord; releaseWarningSentAtMs: number }>;
 }
 export class EscrowPolicyError extends Error {
     constructor() {

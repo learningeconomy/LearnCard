@@ -864,7 +864,7 @@ impl<'a> Policy<'a> {
     pub async fn confirm_hold(
         &mut self,
         #[allow(unused_variables)] req: ConfirmHoldRequest<'_>,
-    ) -> Result<SignedAuthorityRecord, ErrorCode> {
+    ) -> Result<(SignedAuthorityRecord, u64), ErrorCode> {
         #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
         if self.authority.is_some() {
             return self.authority_confirm_hold(req).await;
@@ -877,7 +877,7 @@ impl<'a> Policy<'a> {
     pub async fn send_release_warning(
         &mut self,
         #[allow(unused_variables)] req: SendReleaseWarningRequest<'_>,
-    ) -> Result<SignedAuthorityRecord, ErrorCode> {
+    ) -> Result<(SignedAuthorityRecord, u64), ErrorCode> {
         #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
         if self.authority.is_some() {
             return self.authority_send_release_warning(req).await;

@@ -1894,13 +1894,15 @@ async fn send_release_warning_is_idempotent_never_resends_and_never_moves_the_ti
     })
     .await
     .unwrap();
-    p.send_release_warning(SendReleaseWarningRequest {
-        hold_id: "hold",
-        request_id: "warn-1",
-        expected_did: &f.did,
-    })
-    .await
-    .unwrap();
+    let (first_receipt, first_warned_hi) = p
+        .send_release_warning(SendReleaseWarningRequest {
+            hold_id: "hold",
+            request_id: "warn-1",
+            expected_did: &f.did,
+        })
+        .await
+        .unwrap();
+    assert!(first_receipt.kind == RecordKind::Commit);
     let sent_after_first = f.email.sent.lock().unwrap().len();
     async fn item(f: &Fixture, label: &str) -> HoldItem {
         f.store
@@ -1914,18 +1916,34 @@ async fn send_release_warning_is_idempotent_never_resends_and_never_moves_the_ti
         .await
         .release_warning_sent_hi_ms
         .unwrap();
+    assert_eq!(first_warned_hi, warned_at_first);
     // Advance time, then retry under a DIFFERENT request id (the realistic
     // shape of an hourly job's next run) and also under the SAME one.
     *f.time.0.lock().unwrap() += HOLD_DURATION_MS;
     for (n, request_id) in ["warn-2", "warn-1"].into_iter().enumerate() {
-        p.send_release_warning(SendReleaseWarningRequest {
-            hold_id: "hold",
-            request_id,
-            expected_did: &f.did,
-        })
-        .await
-        .unwrap();
+        let (receipt, warned_hi) = p
+            .send_release_warning(SendReleaseWarningRequest {
+                hold_id: "hold",
+                request_id,
+                expected_did: &f.did,
+            })
+            .await
+            .unwrap();
         assert_eq!(f.email.sent.lock().unwrap().len(), sent_after_first);
+        assert_eq!(warned_hi, warned_at_first);
+        assert!(receipt.kind == RecordKind::Snapshot);
+        let (tag, snapshot_hold_id, _digest, status, _confirmed_hi, release_warning_sent_hi): (
+            String,
+            String,
+            Hash,
+            HoldStatus,
+            Option<u64>,
+            Option<u64>,
+        ) = serde_json::from_slice(&STANDARD.decode(&receipt.payload).unwrap()).unwrap();
+        assert_eq!(tag, "learncard-authority-hold-snapshot-v1");
+        assert_eq!(snapshot_hold_id, "hold");
+        assert!(status == HoldStatus::Pending);
+        assert_eq!(release_warning_sent_hi, Some(warned_at_first));
         assert_eq!(
             item(&f, &format!("inspect-warning-check-{n}"))
                 .await
@@ -1947,16 +1965,18 @@ async fn confirm_hold_is_idempotent_after_a_lost_response_and_never_regrants_a_g
     let env = f.enroll(&mut p, true).await;
     let hold = f.awaiting_hold(&mut p, &env).await;
     let code = f.last_sent_code();
-    p.confirm_hold(ConfirmHoldRequest {
-        envelope: &env,
-        hold: &hold,
-        request_id: "confirm-1",
-        expected_did: &f.did,
-        client_ephemeral_public_key: &f.client.public_key,
-        code: &code,
-    })
-    .await
-    .unwrap();
+    let (first_receipt, first_confirmed_hi) = p
+        .confirm_hold(ConfirmHoldRequest {
+            envelope: &env,
+            hold: &hold,
+            request_id: "confirm-1",
+            expected_did: &f.did,
+            client_ephemeral_public_key: &f.client.public_key,
+            code: &code,
+        })
+        .await
+        .unwrap();
+    assert!(first_receipt.kind == RecordKind::Commit);
     async fn confirm_item(f: &Fixture, label: &str) -> HoldItem {
         f.store
             .load(&f.authority.binding(&f.did), label, Some("hold"))
@@ -1969,6 +1989,7 @@ async fn confirm_hold_is_idempotent_after_a_lost_response_and_never_regrants_a_g
         .await
         .confirmed_hi_ms
         .unwrap();
+    assert_eq!(first_confirmed_hi, confirmed_at_first);
     let guesses_after_first = confirm_item(&f, "inspect-confirm-2")
         .await
         .code_guesses_used;
@@ -1976,16 +1997,31 @@ async fn confirm_hold_is_idempotent_after_a_lost_response_and_never_regrants_a_g
     // A retry under a fresh request id (lost response / process restart),
     // presenting a DIFFERENT, wrong-shaped code (it is never checked once
     // already confirmed) must still succeed and must not move state.
-    p.confirm_hold(ConfirmHoldRequest {
-        envelope: &env,
-        hold: &hold,
-        request_id: "confirm-2",
-        expected_did: &f.did,
-        client_ephemeral_public_key: &f.client.public_key,
-        code: "00000000",
-    })
-    .await
-    .unwrap();
+    let (retry_receipt, retry_confirmed_hi) = p
+        .confirm_hold(ConfirmHoldRequest {
+            envelope: &env,
+            hold: &hold,
+            request_id: "confirm-2",
+            expected_did: &f.did,
+            client_ephemeral_public_key: &f.client.public_key,
+            code: "00000000",
+        })
+        .await
+        .unwrap();
+    assert_eq!(retry_confirmed_hi, confirmed_at_first);
+    assert!(retry_receipt.kind == RecordKind::Snapshot);
+    let (tag, snapshot_hold_id, _digest, status, confirmed_hi, _release_warning_sent_hi): (
+        String,
+        String,
+        Hash,
+        HoldStatus,
+        Option<u64>,
+        Option<u64>,
+    ) = serde_json::from_slice(&STANDARD.decode(&retry_receipt.payload).unwrap()).unwrap();
+    assert_eq!(tag, "learncard-authority-hold-snapshot-v1");
+    assert_eq!(snapshot_hold_id, "hold");
+    assert!(status == HoldStatus::Pending);
+    assert_eq!(confirmed_hi, Some(confirmed_at_first));
     assert_eq!(
         confirm_item(&f, "inspect-confirm-3")
             .await

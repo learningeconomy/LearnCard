@@ -3,8 +3,10 @@ import axios from 'axios';
 import { z } from 'zod';
 import {
     AuthorityCommitValidator,
+    AuthorityHoldReceiptValidator,
     AuthorityMutationValidator,
     AuthorityStateResponseValidator,
+    safeInteger,
 } from './authorityContract';
 import {
     ESCROW_ALGORITHM,
@@ -304,9 +306,13 @@ export const createRemoteEnclave = (config: RemoteEnclaveConfig): EscrowEnclave 
                     code: input.code,
                     ...(input.requestId ? { requestId: input.requestId } : {}),
                 },
-                z.object({ confirmed: z.literal(true), receipt: AuthorityCommitValidator })
+                z.object({
+                    confirmed: z.literal(true),
+                    receipt: AuthorityHoldReceiptValidator,
+                    confirmedHiMs: safeInteger,
+                })
             );
-            return { receipt: result.receipt };
+            return { receipt: result.receipt, confirmedAtMs: result.confirmedHiMs };
         },
         resendCode: async (input: ResendCodeRequest) => {
             const result = await call(
@@ -330,9 +336,16 @@ export const createRemoteEnclave = (config: RemoteEnclaveConfig): EscrowEnclave 
                     expectedDid: input.expectedDid,
                     ...(input.requestId ? { requestId: input.requestId } : {}),
                 },
-                z.object({ sent: z.literal(true), receipt: AuthorityCommitValidator })
+                z.object({
+                    sent: z.literal(true),
+                    receipt: AuthorityHoldReceiptValidator,
+                    releaseWarningSentHiMs: safeInteger,
+                })
             );
-            return { receipt: result.receipt };
+            return {
+                receipt: result.receipt,
+                releaseWarningSentAtMs: result.releaseWarningSentHiMs,
+            };
         },
         releaseEscrow: async (input: ReleaseRequest): Promise<ReleaseResult> => {
             validatedHold(input.hold);

@@ -908,7 +908,7 @@ impl<'a> Policy<'a> {
     pub async fn authority_confirm_hold(
         &mut self,
         req: ConfirmHoldRequest<'_>,
-    ) -> Result<SignedAuthorityRecord, ErrorCode> {
+    ) -> Result<(SignedAuthorityRecord, u64), ErrorCode> {
         identifier(req.request_id)?;
         identifier(&req.hold.hold.hold_id)?;
         validate_client_key(req.client_ephemeral_public_key)?;
@@ -948,7 +948,11 @@ impl<'a> Policy<'a> {
             && req.hold.ledger_seq == existing_item.created_revision.get()
             && existing_item.signed_hold_digest == hold_hash(&self.tenant, req.hold)?
         {
-            return self.authority_hold_snapshot(&hold.hold_id, &existing_item);
+            let confirmed_hi_ms = existing_item.confirmed_hi_ms.ok_or(ErrorCode::Policy)?;
+            return Ok((
+                self.authority_hold_snapshot(&hold.hold_id, &existing_item)?,
+                confirmed_hi_ms,
+            ));
         }
         if before.operation.is_some() {
             return Err(ErrorCode::Policy);
@@ -980,13 +984,14 @@ impl<'a> Policy<'a> {
         item.code_guesses_used += 1;
         item.updated_revision = after.revisions.operation;
         let expired = time.interval.lo_ms > expires;
+        let confirmed_hi_ms = time.interval.hi_ms;
         let supplied = hold_code_hash(&hold.hold_id, &hold.client_ephemeral_public_key, req.code)?;
         let matched = !expired && bool::from(supplied.ct_eq(&code_hash));
         if matched {
             item.status = HoldStatus::Pending;
             item.code_hash = None;
             item.code_expires_lo_ms = None;
-            item.confirmed_hi_ms = Some(time.interval.hi_ms);
+            item.confirmed_hi_ms = Some(confirmed_hi_ms);
         }
         let digest = self
             .operation_for(req.hold, req.request_id, time, "confirm", None)?
@@ -1021,7 +1026,7 @@ impl<'a> Policy<'a> {
                 .send(recipient, language, EmailMessage::RecoveryStarted)
                 .await;
         }
-        Ok(receipt)
+        Ok((receipt, confirmed_hi_ms))
     }
 
     /// P9.1 (attack C): system-initiated (lca-api's hourly job, not a user
@@ -1031,7 +1036,7 @@ impl<'a> Policy<'a> {
     pub async fn authority_send_release_warning(
         &mut self,
         req: SendReleaseWarningRequest<'_>,
-    ) -> Result<SignedAuthorityRecord, ErrorCode> {
+    ) -> Result<(SignedAuthorityRecord, u64), ErrorCode> {
         identifier(req.request_id)?;
         identifier(req.hold_id)?;
         let authority = self.authority()?;
@@ -1052,7 +1057,12 @@ impl<'a> Policy<'a> {
             && existing_item.hold_id == req.hold_id
             && existing_item.release_warning_sent_hi_ms.is_some()
         {
-            return self.authority_hold_snapshot(req.hold_id, &existing_item);
+            let release_warning_sent_hi_ms =
+                existing_item.release_warning_sent_hi_ms.ok_or(ErrorCode::Policy)?;
+            return Ok((
+                self.authority_hold_snapshot(req.hold_id, &existing_item)?,
+                release_warning_sent_hi_ms,
+            ));
         }
         if before.operation.is_some() {
             return Err(ErrorCode::Policy);
@@ -1100,6 +1110,7 @@ impl<'a> Policy<'a> {
             .map_err(|_| ErrorCode::Policy)?,
         )
         .into();
+        let release_warning_sent_hi_ms = time.interval.hi_ms;
         self.authority_commit(
             binding,
             before,
@@ -1111,7 +1122,7 @@ impl<'a> Policy<'a> {
             Some(item),
         )
         .await
-        .map(|(receipt, _)| receipt)
+        .map(|(receipt, _)| (receipt, release_warning_sent_hi_ms))
     }
 
     /// P9.1 (attack C): generates and sends a brand-new code for a hold still
