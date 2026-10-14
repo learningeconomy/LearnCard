@@ -31,6 +31,8 @@ import { getOrFetchConsentedContracts } from './useConsentedContracts';
 import { queueAiInsightCredentialRefresh } from 'learn-card-base/react-query/mutations/ai-passport';
 import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
 import { getLogger } from '../logging/logger';
+import { addCredentialSummary } from '../in-app-messages/credentialFactsStore';
+import { emitInAppMessageEvent } from '../in-app-messages/inAppMessageEvents';
 const log = getLogger('use-wallet');
 
 let generating = false; // Mutex flag to allow first init call to acquire a lock
@@ -317,6 +319,25 @@ export const useWallet = () => {
         return true;
     };
 
+    const recordCredentialClaim = async (
+        wallet: BespokeLearnCard,
+        uri: string,
+        vc: VC,
+        category: CredentialCategory
+    ): Promise<void> => {
+        try {
+            const accountDid = wallet.id.did();
+            const summary = await addCredentialSummary(accountDid, uri, vc, category);
+
+            emitInAppMessageEvent('credential.claimed', {
+                credential: summary,
+                accountDid,
+            });
+        } catch (error) {
+            log.warn('Could not update in-app message facts after claim', error);
+        }
+    };
+
     const resolveCredential = async (uri: string) => {
         if (!uri) throw new Error('URI is required');
 
@@ -508,6 +529,8 @@ export const useWallet = () => {
                 }
             }
 
+            if (result && returnUri) await recordCredentialClaim(wallet, returnUri, vc, category);
+
             return {
                 result: result ?? false,
                 credentialUri: returnUri ?? '',
@@ -633,6 +656,8 @@ export const useWallet = () => {
                         category,
                     });
                 }
+
+                await recordCredentialClaim(wallet, uri, vc as VC, category);
             }
             return result;
         } catch (e) {
