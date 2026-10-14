@@ -69,10 +69,22 @@ initialized from an existing blob; only an explicitly prepared initial enrollmen
 can create it, and its owner authorization remains a policy-layer obligation.
 
 The next checkpoint is item c: policy transitions and configured authority wiring,
-with signed intent verification required before enabling enrollment mutations.
+using the item-d signed-intent verifier before enabling enrollment mutations.
 Policy/wire/client/monitor integration and end-to-end authority security guarantees
 remain unimplemented. `UnavailableEnrollment` is still wired even when the measured
 authority settings are present.
+
+Item d was implemented before c to avoid an unsigned activation window. The Rust
+verifier is `src/authority/intent.rs`; the TypeScript encoder/signer is
+`packages/sss-key-manager/src/escrow-enrollment-intent.ts`. Both consume the shared
+golden vector `packages/sss-key-manager/src/__fixtures__/escrow-enrollment-intent-v1.json`.
+The fixture uses a **public RFC 8032 test seed**, never a real account key. Its
+envelopes test ciphertext identity binding, not decrypted-plaintext authorization.
+The verifier requires an authenticated authority snapshot and exact request
+envelopes. A valid signature over a fabricated source still fails when that source
+is not the active authority blob (attack B). Signature replay fails after enrollment
+version changes; unrelated operation revisions do not invalidate intent. No policy,
+route or AuthCoordinator path calls these helpers yet.
 
 The client layer is not authorization: enclave policy must build its typed requests
 from validated intent and bind generation/tenant/expected revision in item keys and
@@ -80,6 +92,68 @@ conditions. It is not exposed as a host RPC. `GetItem` sets `ConsistentRead: tru
 `TransactGetItems` uses AWS's atomic transactional API (which has no `ConsistentRead`
 parameter). Transaction tokens are 128-bit enclave-generated IDs with immutable
 request bytes; AWS's ten-minute token window does not replace durable receipts.
+
+### Signed enrollment intent V1 encoding (item d)
+
+The account's own **Ed25519** key signs, matching LearnCard's `did:key` plugin.
+The verifier decodes the DID locally: `did:key:z` followed by canonical base58btc
+of the two-byte Ed25519 multicodec `ed 01` and 32-byte compressed public key.
+Other DID methods, codecs, fragments, invalid/noncanonical points and weak keys
+fail closed. It never fetches a DID document. The client checks that its 32-byte
+seed derives exactly that public key and wipes its temporary seed byte array.
+
+Sign **the complete message bytes** using ordinary RFC 8032 Ed25519 (not a digest,
+Ed25519ph, JWS or JSON). The signature is raw 64-byte `R || S`, transported as
+canonical padded standard base64. Rust uses `verify_strict`; malformed/noncanonical
+signatures are rejected. JSON object order and whitespace do not affect the signed
+message; unknown/duplicate fields, omitted required nulls and out-of-range integers
+are rejected by the Rust decoder. Raw signed-intent JSON is capped at 4096 bytes.
+
+The message starts with the ASCII bytes `learncard-escrow-enrollment-intent-v1`
+followed by a single zero byte. Append the following fields **in this order**.
+Every field, including integers and booleans, has a four-byte unsigned big-endian
+byte-length prefix. Integers are unsigned big-endian at the fixed width below.
+
+| Field                       | Encoding                                                                         |
+| --------------------------- | -------------------------------------------------------------------------------- |
+| `version`                   | Four bytes; exactly `1`                                                          |
+| `tenant`                    | ASCII `[A-Za-z0-9_-]`, 1–128 bytes                                               |
+| `did`                       | Canonical Ed25519 `did:key` UTF-8, 56 bytes                                      |
+| `authorityGeneration`       | ASCII `[A-Za-z0-9_-]`, 1–128 bytes                                               |
+| `expectedEnrollmentVersion` | Eight bytes; 0 through `2^53 - 1`                                                |
+| `action`                    | One byte: enroll=0, replace=1, disable=2, carry=3                                |
+| `sourceBlobIdentity`        | Zero bytes for explicit JSON null, otherwise 32 bytes decoded from lowercase hex |
+| `targetBlobIdentity`        | Same encoding as source identity                                                 |
+| `pinAction`                 | One byte: set=0, change=1, clear=2, keep=3                                       |
+| `shareVersion`              | Four bytes; 1 through `2^32 - 1`                                                 |
+| `enrollmentEpoch`           | Eight bytes; 1 through `2^53 - 1`                                                |
+| `requestId`                 | ASCII `[A-Za-z0-9._-]`, 1–112 bytes                                              |
+| `allowRewrap`               | One byte: false=0, true=1                                                        |
+
+Blob identities use the existing `learncard-escrow-blob-id-v1` algorithm, including
+Q/-Q equivalence. The TypeScript helper validates the P-256 point and reproduces
+the Rust identity. For carry, `targetBlobIdentity` is the **submitted target before
+enclave resealing**; the resulting ciphertext must be persisted atomically and
+bound by the separate post-commit receipt. The owner cannot sign a future randomized
+envelope that the enclave has not produced yet.
+
+Initial enrollment requires expected version zero, no source, target present and
+epoch one. Re-enrollment from disabled state requires its retained version and next
+epoch; it cannot silently keep a disabled PIN whose verifier is no longer available.
+Replace/carry require the active source and next epoch; share versions cannot
+decrease (carry requires a strict increase and keeps the existing PIN). Disable
+requires the active source, no target, current share version/epoch, `pinAction=keep`
+and `allowRewrap=false`; the tombstone preserves accounting. Set requires no prior
+PIN; change/clear require one. These checks do not replace decrypting the inputs
+and enforcing DID/share/PIN semantics in policy.
+
+`allowRewrap` explicitly delegates only the background operation described in the
+product rules: DID, share version, epoch, verifier and attempts must all remain
+unchanged. Recovery requests never require a new owner signature. Intent verification
+does not authorize release and does not establish commit freshness: item c must
+condition the mutation against the verified enrollment version and source identity,
+consume durable request tombstones, and distinguish proposals from signed commit
+receipts. Until that integration lands, the production authority remains disabled.
 
 ## 1. Problem and current boundary
 
