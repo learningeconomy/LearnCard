@@ -1,17 +1,9 @@
+import type { InferredClrKind, ClrTranscriptIssuerInfo } from './display.types';
+export type { InferredClrKind, ClrTranscriptIssuerInfo } from './display.types';
 import type { VC } from '@learncard/types';
 
-import {
-    normalizeClrTranscriptDisplayModel,
-    type ClrTranscriptDisplayModel,
-} from '../../helpers/clrRenderer.helpers';
-import { inferProgramKind } from './clr.helpers';
-
-export type InferredClrKind = 'transcript' | 'course' | 'degree' | 'unknown';
-
-export type ClrTranscriptIssuerInfo = {
-    issuerName?: string;
-    logoSrc?: string;
-};
+import { normalizeClrTranscriptDisplayModel, type ClrTranscriptDisplayModel } from './display';
+import { inferProgramKind } from './presentation';
 
 /** Returns the issuer-provided mark first, with the credential image as a fallback. */
 export const getClrIssuerLogo = (model: ClrTranscriptDisplayModel): string | undefined =>

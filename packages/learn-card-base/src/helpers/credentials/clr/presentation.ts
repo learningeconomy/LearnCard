@@ -1,36 +1,12 @@
-import { openAttachmentUrl as openSharedAttachmentUrl } from 'learn-card-base/helpers/openAttachmentUrl';
-
+import type { TermGroup, AssessmentSummary } from './display.types';
+export type { TermGroup, AssessmentSummary } from './display.types';
 import type {
     AssessmentDisplayModel,
     CourseDisplayModel,
-    EvidenceDisplayModel,
     ResultDisplayModel,
     RubricLevelDisplayModel,
-} from '../../helpers/clrRenderer.helpers';
-
-/** Keeps the evidence picker focused on items that can actually be downloaded. */
-export const getDownloadableEvidence = (evidence: EvidenceDisplayModel[]): EvidenceDisplayModel[] =>
-    evidence.filter(e => e.id?.value);
-
-/** Builds a filesystem-safe filename while preserving a real extension when one is already present. */
-export const toSafeFileName = (name: string | undefined, mimeType: string | undefined): string => {
-    const base = (name || 'evidence').trim().replace(/[^\w.-]/g, '_');
-    if (/\.\w{2,5}$/.test(base)) return base;
-    const ext =
-        mimeType === 'application/pdf'
-            ? '.pdf'
-            : mimeType?.startsWith('image/')
-              ? `.${mimeType.split('/')[1]}`
-              : '';
-    return `${base}${ext}`;
-};
-
-export const openAttachmentUrl = (url: string | undefined, fileName: string): Promise<boolean> =>
-    openSharedAttachmentUrl(url, fileName);
-
-/** Downloads inline data URIs or remote evidence links using the best available platform path. */
-export const downloadEvidence = (item: EvidenceDisplayModel): Promise<boolean> =>
-    openAttachmentUrl(item.id?.value, toSafeFileName(item.name?.value, item.mimeType));
+} from './display.types';
+import { getActiveLocale, normalizeLocale } from '../../../i18n';
 
 // "BachelorDegree" → "Bachelor Degree", "LearningProgram" → "Learning Program"
 /** Inserts spaces between camelCase segments so achievement types read naturally in the UI. */
@@ -56,7 +32,7 @@ export const formatClrGpa = (value: string | number | boolean | undefined): stri
 
     if (typeof value === 'number') {
         return Number.isFinite(value)
-            ? new Intl.NumberFormat('en-US', {
+            ? new Intl.NumberFormat(getActiveLocale(), {
                   maximumFractionDigits: 4,
               }).format(value)
             : String(value);
@@ -70,7 +46,7 @@ export const formatClrGpa = (value: string | number | boolean | undefined): stri
     const parsed = Number(trimmed);
     if (!Number.isFinite(parsed)) return trimmed;
 
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(getActiveLocale(), {
         maximumFractionDigits: 4,
     }).format(parsed);
 };
@@ -96,8 +72,6 @@ const deriveDisplayTerm = (isoDate: string): string => {
     return `Fall ${y}`;
 };
 
-export type TermGroup = { label: string; courses: CourseDisplayModel[] };
-
 /** Groups courses by explicit term, then falls back to a derived academic term. */
 export const groupByTerm = (courses: CourseDisplayModel[]): TermGroup[] => {
     const map = new Map<string, CourseDisplayModel[]>();
@@ -111,14 +85,6 @@ export const groupByTerm = (courses: CourseDisplayModel[]): TermGroup[] => {
         map.get(label)!.push(course);
     }
     return Array.from(map.entries()).map(([label, c]) => ({ label, courses: c }));
-};
-
-export type AssessmentSummary = {
-    /** Big number / level shown in the row, e.g. `28` for a composite score or `Integrating`. */
-    headline: string;
-    /** Secondary line, e.g. `5 scores` or `10 criteria`. */
-    detail: string;
-    progress?: { levels: RubricLevelDisplayModel[]; achieved?: RubricLevelDisplayModel };
 };
 
 const pickPrimaryScore = (results: ResultDisplayModel[]): ResultDisplayModel | undefined =>
@@ -169,11 +135,38 @@ export const summarizeAssessment = (assessment: AssessmentDisplayModel): Assessm
     }
 
     const primary = pickPrimaryScore(results);
-    const headline = primary ? String(primary.value.value) : '—';
+    const headline = primary ? String(getResultDisplayValue(primary)) : '—';
     const scale = primary?.valueMax?.value !== undefined ? ` of ${primary.valueMax.value}` : '';
 
     return {
         headline: `${headline}${scale}`,
         detail: `${results.length} score${results.length !== 1 ? 's' : ''}`,
     };
+};
+
+/** Selects display text without inventing a Result.value claim. */
+export const getResultDisplayValue = (result: ResultDisplayModel): string | number | boolean =>
+    result.value?.value ??
+    result.achievedLevel?.name ??
+    result.status?.value ??
+    result.achievedLevelId?.value ??
+    '—';
+
+/** Labels a result from its own description/type; never guesses a grade from its value. */
+export const getClrResultLabel = (result: ResultDisplayModel): string =>
+    result.label?.value ??
+    (result.resultType?.value ? formatAchievementType(result.resultType.value) : undefined) ??
+    (result.status ? 'Status' : result.achievedLevelId ? 'Proficiency' : 'Result');
+
+/** Formats a source date using the host application's active locale. */
+export const formatClrDate = (value: string, locale = getActiveLocale()): string => {
+    if (!/^\d{4}-\d{2}-\d{2}(T[\d:.]+Z?)?$/.test(value)) return value;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+        ? value
+        : date.toLocaleDateString(normalizeLocale(locale), {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+          });
 };

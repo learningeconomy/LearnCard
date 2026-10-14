@@ -8,7 +8,7 @@ import { useVerifyCredential } from 'learn-card-base/hooks/useVerifyCredential';
 
 import type { VC, VerificationItem } from '@learncard/types';
 import { VerificationStatusEnum } from '@learncard/types';
-import { formatClrDate } from '../../helpers/clrRenderer.helpers';
+import { formatClrDate } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const ClrVerificationPills: React.FC<{ boost: VC }> = ({ boost }) => {
     const { verifyCredential, worstVerificationStatus } = useVerifyCredential();
@@ -27,7 +27,9 @@ const ClrVerificationPills: React.FC<{ boost: VC }> = ({ boost }) => {
         });
     }, []);
 
-    const expirationDate = boost.validUntil ?? (boost as any).expirationDate;
+    const expirationDate =
+        boost.validUntil ??
+        (typeof boost.expirationDate === 'string' ? boost.expirationDate : undefined);
     const isExpired = expirationDate ? new Date(expirationDate) < new Date() : false;
 
     const proofIcon =

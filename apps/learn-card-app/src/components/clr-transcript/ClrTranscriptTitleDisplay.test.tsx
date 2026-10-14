@@ -9,11 +9,11 @@ const mocks = vi.hoisted(() => ({
     inferKind: vi.fn(() => 'transcript'),
 }));
 
-vi.mock('../../helpers/clrRenderer.helpers', () => ({
+vi.mock('learn-card-base/helpers/credentials/clr/renderer', () => ({
     normalizeClrTranscriptDisplayModel: mocks.normalize,
 }));
 
-vi.mock('./clrKind.helpers', () => ({
+vi.mock('learn-card-base/helpers/credentials/clr/kind', () => ({
     inferClrKindWithTitleFallback: mocks.inferKind,
 }));
 

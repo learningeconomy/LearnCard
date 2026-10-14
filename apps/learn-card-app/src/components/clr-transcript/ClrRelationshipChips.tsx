@@ -1,9 +1,11 @@
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
+import { mDynamic } from '../../i18n/mDynamic';
 import { ChevronRight } from 'lucide-react';
 
 import ClrSourceInfo from './ClrSourceInfo';
 
-import type { RelationshipDisplayModel } from '../../helpers/clrRenderer.helpers';
+import type { RelationshipDisplayModel } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const ClrRelationshipChips: React.FC<{
     relationships: RelationshipDisplayModel[];
@@ -12,8 +14,17 @@ const ClrRelationshipChips: React.FC<{
     if (relationships.length === 0) return null;
 
     return (
-        <div className="flex flex-wrap gap-2" aria-label="Related records">
+        <div
+            className="flex flex-wrap gap-2"
+            aria-label={m['clrTranscript.relationships.relatedRecords']()}
+        >
             {relationships.map(relationship => {
+                const messageKey = `clrTranscript.relationships.${relationship.kind}`;
+                const translatedLabel = mDynamic(messageKey, {
+                    name: relationship.relatedRecordName,
+                });
+                // Unknown kinds or missing messages retain the compatibility label without throwing.
+                const label = translatedLabel === messageKey ? relationship.label : translatedLabel;
                 const isNavigable = relationship.navigable && onSelectRecord !== undefined;
 
                 return (
@@ -28,18 +39,33 @@ const ClrRelationshipChips: React.FC<{
                                 type="button"
                                 className="inline-flex items-center gap-1.5 py-1.5 pl-3 pr-1 text-left text-xs font-medium hover:text-grayscale-900"
                                 onClick={() => onSelectRecord(relationship.relatedRecordId)}
-                                aria-label={`Open ${relationship.relatedRecordName}: ${relationship.label}`}
+                                aria-label={m['clrTranscript.relationships.openRecord']({
+                                    name: relationship.relatedRecordName,
+                                    label,
+                                })}
                             >
-                                <span>{relationship.label}</span>
+                                <span>{label}</span>
                                 <ChevronRight className="h-3.5 w-3.5" />
                             </button>
                         ) : (
                             <span className="py-1.5 pl-3 pr-2 text-xs font-medium">
-                                {relationship.label}
+                                {label}
+                                {relationship.resolution &&
+                                    relationship.resolution !== 'resolved' && (
+                                        <span className="ml-1 text-grayscale-500">
+                                            (
+                                            {relationship.resolution === 'ambiguous'
+                                                ? m['clrTranscript.relationships.targetAmbiguous']()
+                                                : m[
+                                                      'clrTranscript.relationships.targetUnresolved'
+                                                  ]()}
+                                            )
+                                        </span>
+                                    )}
                             </span>
                         )}
                         <div className="pr-1.5">
-                            <ClrSourceInfo field={relationship.source} label={relationship.label} />
+                            <ClrSourceInfo field={relationship.source} label={label} />
                         </div>
                     </div>
                 );

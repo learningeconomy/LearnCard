@@ -1,3 +1,7 @@
+import {
+    getClrResultLabel,
+    getResultDisplayValue,
+} from 'learn-card-base/helpers/credentials/clr/presentation';
 import React from 'react';
 
 import ClrSourceInfo from './ClrSourceInfo';
@@ -6,7 +10,7 @@ import type {
     AlignmentDisplayModel,
     ResultDisplayModel,
     RubricLevelDisplayModel,
-} from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const ResultAlignment: React.FC<{ alignment: AlignmentDisplayModel }> = ({ alignment }) => {
     const name = alignment.targetName?.value ?? alignment.targetCode?.value;
@@ -35,7 +39,8 @@ const ResultAlignment: React.FC<{ alignment: AlignmentDisplayModel }> = ({ align
 };
 
 const isStatusResult = (result: ResultDisplayModel): boolean =>
-    result.resultType?.value === 'Status' || result.value.sourcePath.endsWith('.status');
+    result.resultType?.value === 'Status' ||
+    (!result.value && Boolean(result.status) && !result.achievedLevel);
 
 const RubricScale: React.FC<{
     levels: RubricLevelDisplayModel[];
@@ -191,7 +196,7 @@ const NumericScale: React.FC<{
 };
 
 const ResultScale: React.FC<{ result: ResultDisplayModel }> = ({ result }) => {
-    const value = String(result.value.value);
+    const value = String(getResultDisplayValue(result));
     if (isStatusResult(result)) {
         return (
             <span className="inline-flex rounded-full border border-grayscale-300 bg-grayscale-100 px-3 py-1 text-xs font-medium text-grayscale-700">
@@ -225,7 +230,7 @@ const ResultScale: React.FC<{ result: ResultDisplayModel }> = ({ result }) => {
             <NumericScale
                 min={result.valueMin.value}
                 max={result.valueMax.value}
-                value={result.value.value}
+                value={getResultDisplayValue(result)}
                 required={result.requiredValue?.value}
             />
         );
@@ -266,7 +271,7 @@ const ClrResultWithScaleList: React.FC<{
                     <div className="mb-3 flex items-start justify-between gap-3">
                         <div className="min-w-0">
                             <p className="text-sm font-medium text-grayscale-700">
-                                {result.label?.value ?? 'Result'}
+                                {getClrResultLabel(result)}
                                 {showResultType && result.resultType?.value && (
                                     <span className="ml-1 text-grayscale-400">
                                         [{result.resultType.value}]
@@ -275,12 +280,17 @@ const ClrResultWithScaleList: React.FC<{
                             </p>
                             {!isStatusResult(result) && (
                                 <p className="mt-0.5 text-lg font-semibold text-grayscale-900">
-                                    {String(result.value.value)}
+                                    {String(getResultDisplayValue(result))}
                                 </p>
                             )}
                         </div>
                         <ClrSourceInfo
-                            field={result.resultDescriptionId ?? result.value}
+                            field={
+                                result.resultDescriptionId ??
+                                result.value ??
+                                result.status ??
+                                result.achievedLevelId
+                            }
                             label={result.label?.value ?? 'result scale'}
                         />
                     </div>
