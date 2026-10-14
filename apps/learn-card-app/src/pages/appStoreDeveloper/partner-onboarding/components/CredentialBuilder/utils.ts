@@ -26,6 +26,7 @@ import {
 } from './types';
 
 import * as m from '../../../../../paraglide/messages.js';
+import { parseCredentialNumber } from '@learncard/helpers';
 
 // Known system variables that are auto-injected at issuance time
 const SYSTEM_VARIABLES = ['issue_date', 'issuer_did', 'recipient_did'];
@@ -81,8 +82,8 @@ export const fieldToJson = (field: TemplateFieldValue | undefined): string | und
 
 // OBv3 types creditsEarned / creditsAvailable as numbers, so a string value makes
 // the whole credential fail schema validation. Emit a JSON number for static
-// numeric input, keep {{mustache}} placeholders for dynamic templates, and omit
-// anything non-numeric rather than poison the credential.
+// numeric input and keep {{mustache}} placeholders for dynamic templates. Retain
+// invalid text so validation blocks issuance instead of silently dropping data.
 export const numericFieldToJson = (
     field: TemplateFieldValue | undefined
 ): number | string | undefined => {
@@ -90,8 +91,11 @@ export const numericFieldToJson = (
     if (field.isDynamic && field.variableName) return `{{${field.variableName}}}`;
     const trimmed = field.value?.trim();
     if (!trimmed) return undefined;
-    const parsed = Number(trimmed);
-    return Number.isFinite(parsed) ? parsed : undefined;
+    try {
+        return parseCredentialNumber(trimmed);
+    } catch {
+        return trimmed;
+    }
 };
 
 /**
