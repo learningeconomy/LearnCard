@@ -38,22 +38,23 @@ override_resource {
   values = { arn = "arn:aws:iam::123456789012:role/escrow-enclave-staging-host-role" }
 }
 variables {
-  environment                         = "staging"
-  vpc_id                              = "vpc-0123456789abcdef0"
-  private_subnet_ids                  = ["subnet-0000000000000001", "subnet-0000000000000002"]
-  lca_api_security_group_id           = "sg-0123456789abcdef0"
-  eif_s3_uri                          = "s3://test-artifacts/test.eif"
-  enclave_image_version               = "test"
-  kms_admin_role_arn                  = "arn:aws:iam::123456789012:role/escrow-kms-admin"
-  host_binary_s3_uri                  = "s3://test-artifacts/host"
-  host_binary_sha256                  = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-  escrow_key_id                       = "test-key"
-  host_bearer_token_parameter_name    = "/test/bearer"
-  host_tls_certificate_parameter_name = "/test/cert"
-  host_tls_private_key_parameter_name = "/test/key"
-  monitor_zip_path                    = "tests/fixtures/monitor-bootstrap.zip"
-  monitor_tenant                      = "learncard"
-  monitor_public_key_parameter_name   = "/test/monitor"
+  authority_monitor_guardrail_policy_id = "p-monitor123"
+  environment                           = "staging"
+  vpc_id                                = "vpc-0123456789abcdef0"
+  private_subnet_ids                    = ["subnet-0000000000000001", "subnet-0000000000000002"]
+  lca_api_security_group_id             = "sg-0123456789abcdef0"
+  eif_s3_uri                            = "s3://test-artifacts/test.eif"
+  enclave_image_version                 = "test"
+  kms_admin_role_arn                    = "arn:aws:iam::123456789012:role/escrow-kms-admin"
+  host_binary_s3_uri                    = "s3://test-artifacts/host"
+  host_binary_sha256                    = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  escrow_key_id                         = "test-key"
+  host_bearer_token_parameter_name      = "/test/bearer"
+  host_tls_certificate_parameter_name   = "/test/cert"
+  host_tls_private_key_parameter_name   = "/test/key"
+  monitor_zip_path                      = "tests/fixtures/monitor-bootstrap.zip"
+  monitor_tenant                        = "learncard"
+  monitor_public_key_parameter_name     = "/test/monitor"
   enclave_measurements = [
     { label = "n", pcr0 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", pcr1 = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", pcr2 = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" },
     { label = "n1", pcr0 = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", pcr1 = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", pcr2 = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" },
@@ -69,6 +70,11 @@ run "disabled_is_structurally_a_noop" {
       length(aws_iam_user_policy.authority_writer) == 0, length(aws_iam_user_policy.email_sender) == 0,
       length(aws_kms_key.credentials) == 0, length(aws_kms_alias.credentials) == 0,
       length(aws_iam_role_policy.host_credential_decrypt) == 0,
+      length(aws_iam_role_policy.authority_monitor) == 0,
+      length(aws_cloudwatch_metric_alarm.authority_integrity) == 0,
+      length(aws_cloudwatch_metric_alarm.authority_heartbeat) == 0,
+      output.authority_monitor_trust_parameter_name == null,
+      !contains(keys(aws_lambda_function.monitor.environment[0].variables), "AUTHORITY_TABLE"),
       length(aws_ses_domain_identity.enclave) == 0, length(aws_ses_domain_dkim.enclave) == 0,
       length(aws_ses_domain_mail_from.enclave) == 0, length(aws_ses_configuration_set.enclave) == 0,
       length(aws_ses_event_destination.enclave) == 0, length(aws_route53_zone.sending) == 0,
@@ -109,24 +115,32 @@ run "authority_writer_is_only_data_principal" {
     error_message = "Authority must be on-demand, encrypted, deletion-protected, PITR-enabled, and have no TTL."
   }
   assert {
-    condition     = alltrue([for s in jsondecode(aws_dynamodb_resource_policy.authority[0].policy).Statement : s.Effect != "Allow" || try(s.Principal.AWS, "") == local.authority_writer_arn]) && anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyNonWriterData" && s.Effect == "Deny" && try(s.Condition.ArnNotEquals["aws:PrincipalArn"], "") == local.authority_writer_arn && contains(s.Action, "dynamodb:PutItem")])
-    error_message = "Only the writer may access authority data, including against administrator identity-policy allows."
+    condition     = alltrue([for s in jsondecode(aws_dynamodb_resource_policy.authority[0].policy).Statement : s.Effect != "Allow" || try(s.Principal.AWS, "") == local.authority_writer_arn || (try(s.Principal.AWS, "") == local.authority_monitor_arn && toset(try(s.Action, [])) == toset(["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan"]))]) && anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyNonWriterData" && s.Effect == "Deny" && try(s.Condition.ArnNotEquals["aws:PrincipalArn"], "") == local.authority_writer_arn && contains(try(s.Action, []), "dynamodb:PutItem")])
+    error_message = "Only the writer may mutate; only the exact observer gains read-only access."
   }
   assert {
-    condition     = alltrue([for principal in [aws_iam_role.enclave_host.arn, "arn:aws:iam::123456789012:role/OrganizationAccountAccessRole", var.kms_admin_role_arn] : principal != local.authority_writer_arn]) && anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyLifecycleExceptBreakGlass" && try(s.Condition.ArnNotEquals["aws:PrincipalArn"], "") == var.kms_admin_role_arn && contains(s.Action, "dynamodb:DeleteResourcePolicy") && contains(s.Action, "dynamodb:RestoreTableToPointInTime") && !contains(s.Action, "dynamodb:ImportTable") && !contains(s.Action, "dynamodb:CreateTable")])
+    condition     = alltrue([for principal in [aws_iam_role.enclave_host.arn, "arn:aws:iam::123456789012:role/OrganizationAccountAccessRole", var.kms_admin_role_arn] : principal != local.authority_writer_arn && principal != local.authority_monitor_arn]) && anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyLifecycleExceptBreakGlass" && try(s.Condition.ArnNotEquals["aws:PrincipalArn"], "") == var.kms_admin_role_arn && contains(try(s.Action, []), "dynamodb:DeleteResourcePolicy") && contains(try(s.Action, []), "dynamodb:RestoreTableToPointInTime") && !contains(try(s.Action, []), "dynamodb:ImportTable") && !contains(try(s.Action, []), "dynamodb:CreateTable")])
     error_message = "Host/org-admin must be denied data and lifecycle operations; only break-glass is excepted for lifecycle."
   }
   assert {
-    condition     = anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyAlternateDataApis" && contains(s.Action, "dynamodb:PartiQL*") && contains(s.Action, "dynamodb:BatchWriteItem")]) && anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyTtlAlways" && s.Effect == "Deny"]) && anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyNonTransactionalWrites" && try(s.Condition.StringNotEqualsIfExists["dynamodb:EnclosingOperation"], "") == "TransactWriteItems"])
+    condition     = anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyAlternateDataApis" && contains(try(s.Action, []), "dynamodb:PartiQL*") && contains(try(s.Action, []), "dynamodb:BatchWriteItem")]) && anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyTtlAlways" && s.Effect == "Deny"]) && anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyNonTransactionalWrites" && try(s.Condition.StringNotEqualsIfExists["dynamodb:EnclosingOperation"], "") == "TransactWriteItems"])
     error_message = "PartiQL/batch/TTL and standalone mutations must be denied."
   }
   assert {
-    condition     = anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyAlternateDataApis" && alltrue([for a in ["dynamodb:EnableKinesisStreamingDestination", "dynamodb:UpdateKinesisStreamingDestination", "dynamodb:DisableKinesisStreamingDestination"] : contains(s.Action, a)])]) && anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyUntrustedPrincipalsAllApis" && s.Action == ["dynamodb:*"] && try(toset(s.Condition.ArnNotEquals["aws:PrincipalArn"]), toset([])) == toset([local.authority_writer_arn, var.kms_admin_role_arn])])
+    condition     = anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyAlternateDataApis" && alltrue([for a in ["dynamodb:EnableKinesisStreamingDestination", "dynamodb:UpdateKinesisStreamingDestination", "dynamodb:DisableKinesisStreamingDestination"] : contains(try(s.Action, []), a)])]) && anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyUntrustedPrincipalsAllApis" && try(s.Action, []) == ["dynamodb:*"] && try(toset(s.Condition.ArnNotEquals["aws:PrincipalArn"]), toset([])) == toset([local.authority_writer_arn, var.kms_admin_role_arn, local.authority_monitor_arn])])
     error_message = "Kinesis and future table APIs must not provide a nonwriter/org-admin extraction path."
   }
   assert {
     condition     = alltrue([for s in jsondecode(aws_iam_user_policy.authority_writer[0].policy).Statement : s.Resource == local.authority_table_arn && alltrue([for a in s.Action : contains(local.authority_item_actions, a)])]) && strcontains(base64decode(aws_launch_template.enclave_host.user_data), "vsock-proxy 8001 dynamodb.us-east-1.amazonaws.com 443") && !strcontains(base64decode(aws_launch_template.enclave_host.user_data), "vsock-proxy 8002") && !strcontains(base64decode(aws_launch_template.enclave_host.user_data), "CREDENTIAL_OBJECT")
     error_message = "Writer privileges and disabled-email/delivery proxy settings must be narrow."
+  }
+  assert {
+    condition     = length(aws_iam_role_policy.authority_monitor) == 1 && alltrue([for s in jsondecode(aws_iam_role_policy.authority_monitor[0].policy).Statement : alltrue([for a in s.Action : contains(["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan", "ssm:GetParameter"], a)])]) && aws_lambda_function.monitor.environment[0].variables.AUTHORITY_TABLE == local.authority_table_name && aws_lambda_function.monitor.environment[0].variables.AUTHORITY_GENERATION == "g1" && aws_lambda_function.monitor.environment[0].variables.AUTHORITY_TRUST_PARAMETER == "/escrow-enclave-staging/authority-monitor-trust"
+    error_message = "Observer grants and fixed table/generation/trust wiring must be read-only."
+  }
+  assert {
+    condition     = anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyMonitorNonReads" && try(toset(s.NotAction), toset([])) == toset(["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan"]) && try(s.Condition.ArnEquals["aws:PrincipalArn"], "") == local.authority_monitor_arn]) && anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyEnumerationExceptMonitor" && try(s.Condition.ArnNotEquals["aws:PrincipalArn"], "") == local.authority_monitor_arn]) && length(aws_cloudwatch_metric_alarm.authority_integrity) == 2 && aws_cloudwatch_metric_alarm.authority_heartbeat[0].treat_missing_data == "breaching"
+    error_message = "Monitor must have no write/control escape and must alarm on failures or missing coverage."
   }
 }
 run "credential_cmk_pins_complete_tuples_and_context" {

@@ -1,4 +1,5 @@
 use aws_lambda_events::event::dynamodb::Event;
+use escrow_ledger_monitor::authority::{AuthorityTrust, Config as AuthorityConfig};
 use escrow_ledger_monitor::{Error, Metric, Monitor, TrustedKeys, aws::Aws};
 use lambda_runtime::{LambdaEvent, service_fn};
 use serde_dynamo::AttributeValue;
@@ -11,11 +12,22 @@ fn env(name: &str) -> Result<String, Error> {
         .ok_or(Error::Configuration)
 }
 
-async fn handle(monitor: &Monitor<Aws>, event: Value) -> Result<(), Error> {
+async fn handle(
+    monitor: &Monitor<Aws>,
+    authority: Option<&AuthorityConfig>,
+    event: Value,
+) -> Result<(), Error> {
     if event.get("source").and_then(Value::as_str) == Some("aws.events")
         && event.get("detail-type").and_then(Value::as_str) == Some("Scheduled Event")
     {
-        return monitor.sweep().await;
+        return match authority {
+            Some(config) => {
+                let (legacy, authority) =
+                    tokio::join!(monitor.sweep(), monitor.sweep_authority(config));
+                legacy.and(authority)
+            }
+            None => monitor.sweep().await,
+        };
     }
     if event
         .get("Records")
@@ -69,6 +81,51 @@ async fn main() -> Result<(), lambda_runtime::Error> {
     {
         return Err(Error::Configuration.into());
     }
+    let authority_values = [
+        "AUTHORITY_TABLE",
+        "AUTHORITY_GENERATION",
+        "AUTHORITY_TRUST_PARAMETER",
+    ]
+    .map(|name| std::env::var(name).ok().filter(|v| !v.is_empty()));
+    let authority = if authority_values.iter().all(Option::is_none) {
+        None
+    } else {
+        let [Some(table), Some(generation), Some(parameter)] = authority_values else {
+            return Err(Error::Configuration.into());
+        };
+        if table.len() > 255
+            || table.len() < 3
+            || !table
+                .bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b"._-".contains(&b))
+            || !parameter.starts_with('/')
+        {
+            return Err(Error::Configuration.into());
+        }
+        escrow_enclave::authority::state::Binding {
+            tenant: tenant.clone(),
+            generation: generation.clone(),
+            did_hash: [0; 32],
+        }
+        .validate()
+        .map_err(|_| Error::Configuration)?;
+        let result = aws_sdk_ssm::Client::new(&config)
+            .get_parameter()
+            .name(parameter)
+            .with_decryption(false)
+            .send()
+            .await
+            .map_err(|_| Error::Unavailable)?;
+        let value = result
+            .parameter
+            .and_then(|p| p.value)
+            .ok_or(Error::Configuration)?;
+        Some(AuthorityConfig {
+            table,
+            generation,
+            trust: AuthorityTrust::parse(&value)?,
+        })
+    };
     let monitor = Monitor {
         key,
         tenant: tenant.clone(),
@@ -85,7 +142,7 @@ async fn main() -> Result<(), lambda_runtime::Error> {
         },
     };
     lambda_runtime::run(service_fn(|event: LambdaEvent<Value>| async {
-        match handle(&monitor, event.payload).await {
+        match handle(&monitor, authority.as_ref(), event.payload).await {
             Err(Error::Integrity) => monitor.alarm(Metric::LedgerIntegrityFailure).await,
             result => result,
         }

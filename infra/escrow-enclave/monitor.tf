@@ -101,16 +101,20 @@ resource "aws_lambda_function" "monitor" {
     target_arn = aws_sqs_queue.monitor_dlq.arn
   }
   environment {
-    variables = {
+    variables = merge({
       TENANT                      = var.monitor_tenant
       RECORDS_TABLE               = aws_dynamodb_table.records.name
       HEADS_TABLE                 = aws_dynamodb_table.heads.name
       AUDIT_BUCKET                = aws_s3_bucket.audit.id
       ALARM_TOPIC                 = aws_sns_topic.monitor.arn
       LEDGER_PUBLIC_KEY_PARAMETER = var.monitor_public_key_parameter_name
-    }
+      }, var.enable_enrollment_authority ? {
+      AUTHORITY_TABLE           = local.authority_table_name
+      AUTHORITY_GENERATION      = var.authority_generation
+      AUTHORITY_TRUST_PARAMETER = local.authority_monitor_trust_parameter
+    } : {})
   }
-  depends_on = [aws_iam_role_policy.monitor_notifications, aws_iam_role_policy.ledger_monitor, aws_cloudwatch_log_group.monitor]
+  depends_on = [aws_iam_role_policy.monitor_notifications, aws_iam_role_policy.ledger_monitor, aws_cloudwatch_log_group.monitor, aws_iam_role_policy.authority_monitor]
 }
 
 resource "aws_lambda_event_source_mapping" "monitor" {

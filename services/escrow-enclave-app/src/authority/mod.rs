@@ -1,4 +1,5 @@
 //! Measured-scope authority, owner intent, conditional persistence and audit artifacts.
+pub mod audit;
 #[cfg(feature = "kms")]
 pub mod aws;
 #[cfg(feature = "kms")]

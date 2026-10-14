@@ -1,6 +1,7 @@
 //! Authoritative policy path. Never imports state or PIN budgets from the parent
 //! ledger. Every transition is fenced by an atomic account/operation/hold write.
 use super::*;
+pub use crate::authority::audit::{AuthorityCommitPayload, AuthorityEvent};
 use crate::authority::{
     intent::{verify_intent, EnrollmentAction, IntentContext, PinAction, SignedEnrollmentIntent},
     record::{RecordKind, SignedAuthorityRecord},
@@ -8,7 +9,7 @@ use crate::authority::{
         ActiveBlob, Binding, Counter, EnrollmentItem, EnrollmentStatus, HoldItem, HoldStatus,
         OperationItem, OperationKind, OperationOutcome, PinState, Revisions,
     },
-    store::{AuthorityStore, CommitOutcome, CommitReceipt, Snapshot, Transition},
+    store::{AuthorityStore, CommitOutcome, Snapshot, Transition},
 };
 use std::sync::Arc;
 
@@ -70,35 +71,6 @@ impl EnrollmentSource for AuthorityEnrollment {
 /// Returned only after authenticated commit readback. The encrypted output is
 /// already durable in the account row; loss of this response cannot lose it.
 pub type AuthorityMutation = crate::wire::v1::AuthorityMutationResponse;
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct AuthorityEvent {
-    pub binding: Binding,
-    pub kind: OperationKind,
-    pub outcome: OperationOutcome,
-    pub previous_revisions: Option<Revisions>,
-    pub revisions: Revisions,
-    pub previous_pin: Option<PinState>,
-    pub pin: PinState,
-    pub epoch: Counter,
-    pub source_identity: Option<Hash>,
-    pub target_identity: Option<Hash>,
-    pub hold_id: Option<String>,
-    pub hold_status: Option<HoldStatus>,
-    pub request_digest: Hash,
-    pub time: TimeEvidence,
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct AuthorityCommitPayload {
-    pub commit: CommitReceipt,
-    pub event_hash: Hash,
-    pub request_digest: Hash,
-    pub result_blob_identity: Option<Hash>,
-    pub enrollment_epoch: u64,
-}
 
 impl<'a> Policy<'a> {
     pub fn authority_enabled(&self) -> bool {
@@ -848,6 +820,7 @@ impl<'a> Policy<'a> {
     ) -> Result<(SignedAuthorityRecord, bool), ErrorCode> {
         let event = AuthorityEvent {
             binding: binding.clone(),
+            request_id: request.into(),
             kind,
             outcome,
             previous_revisions: before.enrollment.as_ref().map(|e| e.revisions),
@@ -861,6 +834,8 @@ impl<'a> Policy<'a> {
                 .and_then(|e| active(e).ok())
                 .map(|b| b.identity),
             target_identity: active(&after).ok().map(|b| b.identity),
+            share_version: active(&after).ok().map(|b| b.share_version),
+            rewrap_delegated: active(&after).is_ok_and(|b| b.rewrap_delegated),
             hold_id: hold.as_ref().map(|h| h.hold_id.clone()),
             hold_status: hold.as_ref().map(|h| h.status),
             request_digest,

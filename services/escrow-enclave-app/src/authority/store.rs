@@ -4,10 +4,10 @@
 //! Exact prior-row conditions fence all writes. Every transaction writes an
 //! immutable execution receipt; neither AWS token expiry nor process restart
 //! removes it. Missing receipts alone never establish that a write did not commit.
+pub use super::audit::{CommitReceipt, ExecutionRecord};
 use super::{state::*, AuthorityError as Error};
 use crate::ledger::Hash;
 use rand_core::{OsRng, RngCore};
-use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{collections::BTreeSet, future::Future, pin::Pin};
 
@@ -74,25 +74,6 @@ impl Scope {
 
 /// Metadata attesting what the authority committed, not a portable signature.
 /// Policy signs a distinct post-commit artifact in the next layer.
-#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct CommitReceipt {
-    pub schema_version: u32,
-    pub binding: Binding,
-    pub execution_id: [u8; 16],
-    pub revisions: Revisions,
-    pub transaction_digest: Hash,
-}
-
-/// Immutable audit evidence for every phase, including a reservation whose
-/// mutable request row later advances to a result. No event is lost on overwrite.
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct ExecutionRecord {
-    pub receipt: CommitReceipt,
-    pub proposed_event: Vec<u8>,
-}
-
 pub enum CommitOutcome {
     /// Returned only for this consumed execution's successful write + readback.
     Applied(CommitReceipt),
