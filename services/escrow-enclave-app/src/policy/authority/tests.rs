@@ -1797,8 +1797,13 @@ async fn confirm_hold_is_idempotent_after_a_lost_response_and_never_regrants_a_g
             .hold
             .unwrap()
     }
-    let confirmed_at_first = confirm_item(&f, "inspect-confirm-1").await.confirmed_hi_ms.unwrap();
-    let guesses_after_first = confirm_item(&f, "inspect-confirm-2").await.code_guesses_used;
+    let confirmed_at_first = confirm_item(&f, "inspect-confirm-1")
+        .await
+        .confirmed_hi_ms
+        .unwrap();
+    let guesses_after_first = confirm_item(&f, "inspect-confirm-2")
+        .await
+        .code_guesses_used;
     *f.time.0.lock().unwrap() += 1000;
     // A retry under a fresh request id (lost response / process restart),
     // presenting a DIFFERENT, wrong-shaped code (it is never checked once
@@ -1814,11 +1819,16 @@ async fn confirm_hold_is_idempotent_after_a_lost_response_and_never_regrants_a_g
     .await
     .unwrap();
     assert_eq!(
-        confirm_item(&f, "inspect-confirm-3").await.confirmed_hi_ms.unwrap(),
+        confirm_item(&f, "inspect-confirm-3")
+            .await
+            .confirmed_hi_ms
+            .unwrap(),
         confirmed_at_first
     );
     assert_eq!(
-        confirm_item(&f, "inspect-confirm-4").await.code_guesses_used,
+        confirm_item(&f, "inspect-confirm-4")
+            .await
+            .code_guesses_used,
         guesses_after_first
     );
     assert!(f.hold_status("inspect-status").await == HoldStatus::Pending);
