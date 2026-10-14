@@ -28,7 +28,7 @@ import {
     BoostPageViewModeType,
     CredentialCategoryEnum,
     resetIonicModalBackground,
-    categoryMetadata,
+    getCategoryMetadata,
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 import { VC, Boost } from '@learncard/types';
@@ -129,8 +129,8 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
 
     const cardTitle = boost?.name || boostVC?.credentialSubject?.achievement?.name;
 
-    const type = categoryMetadata[categoryType].walletSubtype;
-    const { darkColor } = categoryMetadata[categoryType];
+    const type = getCategoryMetadata(categoryType).walletSubtype;
+    const { darkColor } = getCategoryMetadata(categoryType);
 
     const isAwardDisplay = boostVC?.display?.displayType === 'award';
 
@@ -162,7 +162,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
         );
     }
 
-    let customButtonComponent = (
+    const customButtonComponent = (
         <CustomManagedBoostButton
             showSkeleton={showSkeleton}
             isDraft={isDraft}

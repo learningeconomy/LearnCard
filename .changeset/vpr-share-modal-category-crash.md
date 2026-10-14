@@ -1,5 +1,7 @@
 ---
 "learn-card-app": patch
+"learn-card-base": patch
+"scoutpass-app": patch
 ---
 
-Fix a crash in the share modal when a credential has a missing or unknown category.
+Fix crashes when a credential has a missing or unknown category. Category metadata lookups now fall back to Achievement.

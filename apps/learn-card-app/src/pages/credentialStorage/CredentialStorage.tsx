@@ -8,7 +8,7 @@ import {
     redirectStore,
     CredentialCategory,
     CredentialCategoryEnum,
-    categoryMetadata,
+    getCategoryMetadata,
     useToast,
     ToastTypeEnum,
 } from 'learn-card-base';
@@ -23,6 +23,7 @@ import {
 } from 'learn-card-base/helpers/credentialHelpers';
 
 import useWallet from 'learn-card-base/hooks/useWallet';
+import { getUniqueId } from 'learn-card-base/helpers/credentials/ids';
 import { IonPage, IonContent, IonRow, IonCol, IonGrid, IonLoading } from '@ionic/react';
 
 import CredentialStorageFooter from './CredentialStorageFooter';
@@ -106,9 +107,10 @@ const MultiCredential: React.FC<{
             cred?.category ||
             getDefaultCategoryForCredential(cred) ||
             CredentialCategoryEnum.achievement;
-        const categoryImgUrl = categoryMetadata[category].defaultImageSrc;
+        const categoryImgUrl = getCategoryMetadata(category).defaultImageSrc;
         return (
             <BoostEarnedCard
+                key={getUniqueId(cred)}
                 credential={cred}
                 defaultImg={categoryImgUrl}
                 categoryType={category}
@@ -156,7 +158,7 @@ const CredentialStorage: React.FC = () => {
 
     const [event, setEvent] = useState<CredentialStoreEvent>();
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [lcDid, setLcDid] = useState<any>();
+    const [lcDid, setLcDid] = useState<string>();
     const [claimCount, setClaimCount] = useState(0);
     const [totalToClaim, setTotalToClaim] = useState(0);
     const { presentToast } = useToast();

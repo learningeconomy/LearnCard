@@ -3,8 +3,7 @@ import BoostEarnedCard from '../boost/boost-earned-card/BoostEarnedCard';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { getUniqueId } from 'learn-card-base/helpers/credentials/ids';
 import {
-    CredentialCategoryEnum,
-    categoryMetadata,
+    getCategoryMetadata,
     useGetCredentialList,
     useGetResolvedCredentials,
 } from 'learn-card-base';
@@ -117,8 +116,7 @@ export const VprShareModal: React.FC<VprShareModalProps> = ({
     });
 
     const renderCredentialCard = (credential: (typeof allCredentials)[number], key: string) => {
-        const categoryImgUrl =
-            categoryMetadata[credential.category as CredentialCategoryEnum]?.defaultImageSrc;
+        const categoryImgUrl = getCategoryMetadata(credential.category).defaultImageSrc;
         const uniqueId = credential.vc ? getUniqueId(credential.vc) : credential.record.uri;
 
         return (
