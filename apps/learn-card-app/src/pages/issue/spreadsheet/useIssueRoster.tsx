@@ -25,7 +25,7 @@ import {
     downloadRosterCsv,
     type ColumnScopes,
 } from './roster';
-import { executeIssuance } from './issuance';
+import { executeIssuance, canRemoveIssuanceRow, canReplaceIssuanceRecipients } from './issuance';
 import {
     listIssuanceRuns,
     readIssuanceRun,
@@ -532,6 +532,16 @@ export const useIssueRoster = (options: RosterOptions) => {
             options.values
         );
     };
+    const canRemove = (rowId: string): boolean => canRemoveIssuanceRow(runRef.current, rowId);
+    const changeRecipients = (recipients: Recipient[]): void => {
+        if (!canReplaceIssuanceRecipients(runRef.current, recipients)) {
+            setError(spreadsheetErrorMessage(new IssuanceRecoveryError('busy')));
+            return;
+        }
+        options.setRecipients(
+            recipients.map(row => ({ ...row, rowId: row.rowId ?? crypto.randomUUID() }))
+        );
+    };
     const allProblems = getRowProblems(
         options.recipients,
         options.variables,
@@ -588,6 +598,8 @@ export const useIssueRoster = (options: RosterOptions) => {
         apply,
         reset,
         locked,
+        canRemove,
+        changeRecipients,
         valuesForRow,
         problems,
         hasProblems: Object.values(problems).some(value => value.length > 0),

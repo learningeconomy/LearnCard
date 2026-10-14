@@ -10,4 +10,5 @@ export interface SpreadsheetView {
     templateLocked: boolean;
     busy: boolean;
     locked?: (rowId: string) => boolean;
+    canRemove?: (rowId: string) => boolean;
 }

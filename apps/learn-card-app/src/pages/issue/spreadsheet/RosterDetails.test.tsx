@@ -42,4 +42,15 @@ describe('roster review layout', () => {
         expect(screen.getAllByRole('row')).toHaveLength(11);
         expect(data.onRecipientsChange).not.toHaveBeenCalled();
     });
+    it('keeps attempted failed rows editable but prevents removing their recovery history', () => {
+        const data = props(1);
+        render(<RosterDetails {...data} canRemove={() => false} />);
+        expect(screen.getByRole('button', { name: 'Skip', exact: true })).toBeDisabled();
+        const email = screen.getByRole('textbox', { name: /Email for/ });
+        expect(email).toBeEnabled();
+        fireEvent.change(email, { target: { value: 'corrected@test.com' } });
+        expect(data.onRecipientsChange).toHaveBeenCalledWith([
+            expect.objectContaining({ rowId: 'row-0', email: 'corrected@test.com' }),
+        ]);
+    });
 });

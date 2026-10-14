@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     addSubmissionAttempts,
+    canRemoveIssuanceRow,
+    canReplaceIssuanceRecipients,
     classifyInboxOutcome,
     executeIssuance,
     type IssuanceTransport,
@@ -92,6 +94,58 @@ describe('durable roster issuance', () => {
         expect(stored!.attempts[0].batchId).toBeTruthy();
         await executeIssuance(stored!, api, opts);
         expect(api.submit).toHaveBeenCalledTimes(1);
+    });
+    it.each(['BAD_REQUEST', 'UNAUTHORIZED', 'FORBIDDEN', 'TOO_MANY_REQUESTS'])(
+        'preserves lost-acknowledgement uncertainty when a replay returns %s',
+        async code => {
+            const run = makeRun(1);
+            const api = transport();
+            const opts = options(run);
+            vi.mocked(api.submit).mockRejectedValueOnce(new Error('lost acknowledgement'));
+            await expect(executeIssuance(run, api, opts)).rejects.toThrow('lost acknowledgement');
+            const original = structuredClone(stored!.attempts[0].body);
+            const denied = Object.assign(new Error('replay rejected'), { data: { code } });
+            vi.mocked(api.submit).mockRejectedValueOnce(denied);
+            await expect(executeIssuance(stored!, api, opts)).rejects.toThrow('replay rejected');
+            expect(stored!.outcomes['row-0'].state).toBe('queued');
+            expect(stored!.attempts[0].done).not.toBe(true);
+            expect(stored!.attempts[0].body).toEqual(original);
+            stored!.attempts[0].createdAt = Date.now() - 25 * 3_600_000;
+            await expect(
+                executeIssuance(stored!, api, { ...opts, retryFailed: true })
+            ).rejects.toThrow('expired');
+            expect(api.submit).toHaveBeenCalledTimes(2);
+            expect(stored!.attempts).toHaveLength(1);
+        }
+    );
+    it('permits a new attempt after a definite rejection of the first submission', async () => {
+        const run = makeRun(1);
+        const api = transport();
+        const opts = options(run);
+        vi.mocked(api.submit).mockRejectedValueOnce({ data: { code: 'FORBIDDEN' } });
+        const rejected = await executeIssuance(run, api, opts);
+        expect(rejected.outcomes['row-0'].state).toBe('failed');
+        expect(rejected.attempts[0].done).toBe(true);
+        const retried = await executeIssuance(rejected, api, { ...opts, retryFailed: true });
+        expect(retried.outcomes['row-0'].state).toBe('sent');
+        expect(retried.attempts).toHaveLength(2);
+    });
+    it('retains attempted failed rows while allowing their corrections and pre-admission skips', async () => {
+        const run = makeRun(2);
+        expect(canReplaceIssuanceRecipients(run, run.draft.recipients.slice(0, 1))).toBe(true);
+        const api = transport();
+        vi.mocked(api.wait).mockResolvedValueOnce(statusFor('first', 2, [1]));
+        const result = await executeIssuance(run, api, options(run));
+        expect(canRemoveIssuanceRow(result, 'row-1')).toBe(false);
+        expect(canReplaceIssuanceRecipients(result, result.draft.recipients.slice(0, 1))).toBe(
+            false
+        );
+        const corrected = result.draft.recipients.map(row =>
+            row.kind === 'email' && row.rowId === 'row-1'
+                ? { ...row, email: 'corrected@test.com' }
+                : row
+        );
+        expect(canReplaceIssuanceRecipients(result, corrected)).toBe(true);
     });
     it('uses a new request attempt and the same item key for definite failures only', async () => {
         const run = makeRun(2);

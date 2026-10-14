@@ -23,6 +23,7 @@ export interface RosterDetailsProps {
     evidence: Record<string, string>;
     problems: Record<string, RowProblem[]>;
     locked: (rowId: string) => boolean;
+    canRemove?: (rowId: string) => boolean;
     disabled?: boolean;
     onRecipientsChange: (recipients: Recipient[]) => void;
     onScopeChange: (name: string, scope: 'shared' | 'perRecipient') => void;
@@ -131,7 +132,11 @@ export const RosterDetails: React.FC<RosterDetailsProps> = props => {
     const remove = (recipient: Recipient): React.ReactNode => (
         <button
             type="button"
-            disabled={disabled || props.locked(recipientKey(recipient))}
+            disabled={
+                disabled ||
+                props.locked(recipientKey(recipient)) ||
+                props.canRemove?.(recipientKey(recipient)) === false
+            }
             onClick={() => props.onRecipientsChange(recipients.filter(row => row !== recipient))}
             className="py-2 px-3 rounded-[20px] border border-grayscale-300 text-sm text-grayscale-700 hover:bg-grayscale-10 disabled:opacity-40"
         >

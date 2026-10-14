@@ -221,6 +221,22 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         ).toBeVisible({ timeout: 30000 });
         expect(submissions.map(body => body.items.length)).toEqual([100, 100, 50]);
         expect(templateCount).toBe(1);
+        const failedEmail = page.getByRole('textbox', { name: 'Email for Person 7', exact: true });
+        await expect(failedEmail).toBeEnabled();
+        await expect(
+            page
+                .getByRole('row')
+                .filter({ has: failedEmail })
+                .getByRole('button', { name: 'Skip', exact: true })
+        ).toBeDisabled();
+        await page.getByRole('button', { name: 'View All', exact: true }).click();
+        await expect(
+            page
+                .getByRole('listitem')
+                .filter({ has: page.getByText('Person 7', { exact: true }) })
+                .getByRole('button', { name: 'Skip', exact: true })
+        ).toBeDisabled();
+        await page.getByRole('button', { name: 'Cancel', exact: true }).click();
         await page.reload();
         // The HAR seed login keeps its private key in memory; reauthenticate after reload.
         await waitForAuthenticatedState(page, { path: '/issue', profileId: TEST_USER_PROFILE_ID });
