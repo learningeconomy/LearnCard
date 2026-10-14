@@ -313,8 +313,7 @@ export const IssueCredentialView: React.FC<IssueCredentialViewProps> = ({
                                         {recipientMode === 'people' &&
                                             !spreadsheet &&
                                             recipients.length < 4 &&
-                                            !isSubmitting &&
-                                            !spreadsheet?.templateLocked && (
+                                            !isSubmitting && (
                                                 <RecipientEvidenceSection
                                                     recipients={recipients}
                                                     recipientEvidence={recipientEvidence}
@@ -360,8 +359,7 @@ export const IssueCredentialView: React.FC<IssueCredentialViewProps> = ({
                                         {recipientMode === 'people' &&
                                             !spreadsheet &&
                                             recipients.length < 4 &&
-                                            !isSubmitting &&
-                                            !spreadsheet?.templateLocked && (
+                                            !isSubmitting && (
                                                 <RecipientEvidenceSection
                                                     recipients={recipients}
                                                     recipientEvidence={recipientEvidence}
