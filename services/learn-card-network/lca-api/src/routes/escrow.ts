@@ -1,4 +1,9 @@
-import { timingSafeEqual, randomUUID } from 'crypto';
+import { timingSafeEqual, randomUUID, randomBytes } from 'crypto';
+import {
+    AuthorityCommitValidator,
+    AuthorityStateResponseValidator,
+    SignedEnrollmentIntentValidator,
+} from '../services/escrow-enclave/authorityContract';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { ESCROW_PIN_MAX_ATTEMPTS } from '@learncard/sss-key-manager';
@@ -42,6 +47,7 @@ import {
     hasUnconfirmedEscrowCancellation,
     cancelEscrowHoldByCancelToken,
     completeEscrowHold,
+    recordEscrowReleaseReceipt,
     hasCompletedEscrowHoldForVersion,
     expireStaleEscrowHolds,
     hashEscrowResumeToken,
@@ -317,6 +323,85 @@ const statusInput = z
         { message: 'Provide exactly one identity proof.' }
     );
 
+const removalInput = AuthInputValidator.extend({
+    optOut: z.boolean(),
+    signedIntent: SignedEnrollmentIntentValidator.optional(),
+    sourceEnvelope: EscrowEnvelopeValidator.optional(),
+}).strict();
+const removalOutput = successValidator.extend({ receipt: AuthorityCommitValidator.optional() });
+
+const removeEscrow = async (
+    input: z.infer<typeof removalInput>,
+    did: string,
+    tenant: Context['tenant']
+): Promise<z.infer<typeof removalOutput>> => {
+    const { authProvider } = await verifyAndGetContactMethod(input);
+    const userKey = await requireUserKey(authProvider);
+    assertDidOwner(userKey, did);
+    if (
+        input.optOut &&
+        !userKey.recoveryMethods.some(
+            method =>
+                method.type !== 'escrow' &&
+                method.shareVersion === userKey.shareVersion &&
+                isRecoveryMethodConfirmed(userKey, method)
+        )
+    ) {
+        throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: 'Set up another recovery method before turning off automatic recovery.',
+        });
+    }
+    let receipt;
+    if (isEscrowRemoteMode()) {
+        const enclave = getEscrowEnclave();
+        const signed = input.signedIntent;
+        if (
+            !signed ||
+            !enclave.applyEnrollmentIntent ||
+            signed.intent.action !== 'disable' ||
+            signed.intent.did !== did ||
+            signed.intent.tenant !== tenant.id
+        )
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Signed disable intent is required.',
+            });
+        const result = await enclaveOperation(() =>
+            enclave.applyEnrollmentIntent!({
+                signedIntent: signed,
+                sourceEnvelope: input.sourceEnvelope ?? userKey.escrowBlob?.envelope ?? null,
+                targetEnvelope: null,
+            })
+        );
+        receipt = result.receipt;
+    } else if (input.signedIntent)
+        throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: 'Signed authority operations require remote mode.',
+        });
+    const cleared = await clearEscrowByAuthProvider(authProvider, {
+        optOut: input.optOut,
+        ...(isEscrowRemoteMode()
+            ? { expected: { blob: userKey.escrowBlob, pin: userKey.escrowPin } }
+            : {}),
+    });
+    if (!cleared)
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Automatic recovery changed; please refresh.',
+        });
+    for (const policy of ['hold', 'pin'] as const) {
+        const pending = await findPendingEscrowHoldByAuthProvider(authProvider, policy);
+        const cancelled = pending && (await cancelEscrowHold(pending._id, 'did'));
+        if (cancelled) {
+            await cancelHoldInEnclave(cancelled, userKey);
+            await notifyEscrowHoldEvent({ kind: 'cancelled', hold: cancelled, userKey, tenant });
+        }
+    }
+    return { success: true, ...(receipt ? { receipt } : {}) };
+};
+
 export const escrowRouter = t.router({
     getAttestation: openRoute
         .meta({ openapi: { method: 'GET', path: '/keys/escrow/attestation', tags: ['Keys'] } })
@@ -363,6 +448,25 @@ export const escrowRouter = t.router({
             };
         }),
 
+    getAuthorityState: didAndChallengeRoute
+        .meta({ openapi: { method: 'POST', path: '/keys/escrow/authority-state', tags: ['Keys'] } })
+        .input(AuthInputValidator.extend({ nonce: z.string().regex(/^[0-9a-f]{64}$/) }).strict())
+        .output(AuthorityStateResponseValidator)
+        .mutation(async ({ input, ctx }) => {
+            const { authProvider } = await verifyAndGetContactMethod(input);
+            const userKey = await requireUserKey(authProvider);
+            assertDidOwner(userKey, ctx.user.did);
+            const enclave = getEscrowEnclave();
+            if (!isEscrowRemoteMode() || !enclave.getEnrollmentState)
+                throw new TRPCError({ code: 'PRECONDITION_FAILED', message: unavailableMessage });
+            const result = await enclaveOperation(() =>
+                enclave.getEnrollmentState!({ expectedDid: ctx.user.did, nonce: input.nonce })
+            );
+            if (result.state.did !== ctx.user.did || result.state.tenant !== ctx.tenant.id)
+                throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
+            return result;
+        }),
+
     enroll: didAndChallengeRoute
         .meta({ openapi: { method: 'POST', path: '/keys/escrow', tags: ['Keys'] } })
         .input(
@@ -372,9 +476,17 @@ export const escrowRouter = t.router({
                 enclaveKeyId: EscrowBlobValidator.shape.enclaveKeyId,
                 pinSalt: EscrowPinSaltValidator.optional(),
                 clearPin: z.boolean().optional(),
+                signedIntent: SignedEnrollmentIntentValidator.optional(),
+                sourceEnvelope: EscrowEnvelopeValidator.nullable().optional(),
             }).strict()
         )
-        .output(successValidator.extend({ shareVersion: z.number() }))
+        .output(
+            successValidator.extend({
+                shareVersion: z.number(),
+                envelope: EscrowEnvelopeValidator.optional(),
+                receipt: AuthorityCommitValidator.optional(),
+            })
+        )
         .mutation(async ({ input, ctx }) => {
             const { authProvider } = await verifyAndGetContactMethod(input);
             const userKey = await requireUserKey(authProvider);
@@ -391,6 +503,111 @@ export const escrowRouter = t.router({
                     message: 'Key material changed; please retry.',
                 });
             }
+            if (isEscrowRemoteMode()) {
+                const enclave = getEscrowEnclave();
+                const signed = input.signedIntent;
+                if (!signed || !enclave.applyEnrollmentIntent || !enclave.getEnrollmentState)
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message: 'Signed enrollment intent is required.',
+                    });
+                const intent = signed.intent;
+                if (
+                    intent.did !== ctx.user.did ||
+                    intent.tenant !== ctx.tenant.id ||
+                    intent.action === 'disable' ||
+                    intent.shareVersion !== input.shareVersion ||
+                    !!input.pinSalt !==
+                        (intent.pinAction === 'set' || intent.pinAction === 'change') ||
+                    !!input.clearPin !== (intent.pinAction === 'clear')
+                )
+                    throw new TRPCError({ code: 'BAD_REQUEST', message: invalidMessage });
+                const current = await enclaveOperation(() =>
+                    enclave.getEnrollmentState!({
+                        expectedDid: ctx.user.did,
+                        nonce: randomBytes(32).toString('hex'),
+                    })
+                );
+                if (
+                    current.state.enrollmentVersion !== intent.expectedEnrollmentVersion ||
+                    current.state.authorityGeneration !== intent.authorityGeneration
+                )
+                    throw new TRPCError({
+                        code: 'CONFLICT',
+                        message: 'Automatic recovery changed; please refresh.',
+                    });
+                const preservePin = intent.pinAction === 'keep' && current.state.hasPin;
+                const oldBlob = userKey.escrowBlob;
+                const oldPin = userKey.escrowPin;
+                if (
+                    preservePin &&
+                    (!oldBlob || !oldPin || oldBlob.blobHash !== intent.sourceBlobIdentity)
+                )
+                    throw new TRPCError({
+                        code: 'PRECONDITION_FAILED',
+                        message: 'Set or clear your recovery PIN before continuing.',
+                    });
+                const attestation = await enclaveOperation(() => enclave.getAttestation());
+                if (
+                    attestation.mode !== 'nitro' ||
+                    input.envelope.keyId !== attestation.keyId ||
+                    input.enclaveKeyId !== attestation.keyId
+                )
+                    throw new TRPCError({ code: 'BAD_REQUEST', message: invalidMessage });
+                const result = await enclaveOperation(() =>
+                    enclave.applyEnrollmentIntent!({
+                        signedIntent: signed,
+                        sourceEnvelope:
+                            input.sourceEnvelope === undefined
+                                ? current.state.envelope
+                                : input.sourceEnvelope,
+                        targetEnvelope: input.envelope,
+                    })
+                );
+                if (!result.envelope)
+                    throw new TRPCError({
+                        code: 'SERVICE_UNAVAILABLE',
+                        message: unavailableMessage,
+                    });
+                const stored = await setEscrowBlobByAuthProvider(
+                    authProvider,
+                    {
+                        envelope: result.envelope,
+                        enclaveKeyId: result.envelope.keyId,
+                        enclaveMode: 'nitro',
+                        measurements: attestation.measurements,
+                        shareVersion: input.shareVersion,
+                        createdAt: new Date(),
+                        authorityGeneration: result.authorityGeneration,
+                        enrollmentVersion: result.enrollmentVersion,
+                        commitReceipt: result.receipt,
+                    },
+                    input.shareVersion,
+                    input.pinSalt ? { salt: input.pinSalt } : undefined,
+                    preservePin && oldBlob && oldPin ? { blob: oldBlob, pin: oldPin } : undefined,
+                    {
+                        enrollmentEpoch: result.enrollmentEpoch,
+                        expectedBlob: oldBlob,
+                        expectedPin: oldPin,
+                    }
+                );
+                if (!stored)
+                    throw new TRPCError({
+                        code: 'CONFLICT',
+                        message: 'Automatic recovery changed; refresh its authoritative state.',
+                    });
+                return {
+                    success: true as const,
+                    shareVersion: input.shareVersion,
+                    envelope: result.envelope,
+                    receipt: result.receipt,
+                };
+            }
+            if (input.signedIntent)
+                throw new TRPCError({
+                    code: 'PRECONDITION_FAILED',
+                    message: 'Signed authority operations require remote mode.',
+                });
             const attestation = await enclaveOperation(() => getEscrowEnclave().getAttestation());
             if (
                 input.enclaveKeyId !== attestation.keyId ||
@@ -490,42 +707,15 @@ export const escrowRouter = t.router({
     remove: didAndChallengeRoute
         .meta({ openapi: { method: 'DELETE', path: '/keys/escrow', tags: ['Keys'] } })
         .input(AuthInputValidator.extend({ optOut: z.boolean() }).strict())
-        .output(successValidator)
-        .mutation(async ({ input, ctx }) => {
-            const { authProvider } = await verifyAndGetContactMethod(input);
-            const userKey = await requireUserKey(authProvider);
-            assertDidOwner(userKey, ctx.user.did);
-            if (
-                input.optOut &&
-                !userKey.recoveryMethods.some(
-                    method =>
-                        method.type !== 'escrow' &&
-                        method.shareVersion === userKey.shareVersion &&
-                        isRecoveryMethodConfirmed(userKey, method)
-                )
-            ) {
-                throw new TRPCError({
-                    code: 'PRECONDITION_FAILED',
-                    message:
-                        'Set up another recovery method before turning off automatic recovery.',
-                });
-            }
-            await clearEscrowByAuthProvider(authProvider, { optOut: input.optOut });
-            for (const policy of ['hold', 'pin'] as const) {
-                const pending = await findPendingEscrowHoldByAuthProvider(authProvider, policy);
-                const cancelled = pending && (await cancelEscrowHold(pending._id, 'did'));
-                if (cancelled) {
-                    await cancelHoldInEnclave(cancelled, userKey);
-                    await notifyEscrowHoldEvent({
-                        kind: 'cancelled',
-                        hold: cancelled,
-                        userKey,
-                        tenant: ctx.tenant,
-                    });
-                }
-            }
-            return { success: true as const };
-        }),
+        .output(removalOutput)
+        .mutation(({ input, ctx }) => removeEscrow(input, ctx.user.did, ctx.tenant)),
+
+    // Signed capabilities and encrypted sources belong in a body, never a DELETE query URL.
+    disable: didAndChallengeRoute
+        .meta({ openapi: { method: 'POST', path: '/keys/escrow/disable', tags: ['Keys'] } })
+        .input(removalInput.extend({ signedIntent: SignedEnrollmentIntentValidator }))
+        .output(removalOutput)
+        .mutation(({ input, ctx }) => removeEscrow(input, ctx.user.did, ctx.tenant)),
 
     optIn: didAndChallengeRoute
         .meta({ openapi: { method: 'POST', path: '/keys/escrow/opt-in', tags: ['Keys'] } })
@@ -973,6 +1163,7 @@ export const escrowRouter = t.router({
                 try {
                     return {
                         result: await getEscrowEnclave().releaseEscrow({
+                            requestId: hold._id,
                             envelope: (reserved ?? userKey).escrowBlob!.envelope,
                             hold: hold.holdRecord,
                             clientEphemeralPublicKey: hold.clientEphemeralPublicKey,
@@ -986,7 +1177,7 @@ export const escrowRouter = t.router({
                     // Keep the typed mismatch inside the wrapper; never expose enclave internals.
                     if (hold.releasePolicy === 'pin' && error instanceof EscrowPinMismatchError)
                         return { mismatch: true as const };
-                    if (reserved)
+                    if (reserved && hold.holdRecord.hold.policyVersion !== 2)
                         await refundEscrowPinAttempt(
                             hold.authProvider,
                             hold.shareVersion,
@@ -1047,6 +1238,8 @@ export const escrowRouter = t.router({
                 });
             }
             const { sealed } = release.result;
+            if (release.result.receipt)
+                await recordEscrowReleaseReceipt(hold._id, release.result.receipt);
             // A successful evaluation also consumes the lifetime budget; do not
             // erase other requests' reservations or replenish guesses here.
             const authShare = await enclaveOperation(async () =>

@@ -15,6 +15,8 @@ import {
     openEscrowRelease,
     splitPrivateKey,
     reconstructFromShares,
+    signEscrowEnrollmentIntent,
+    getEscrowBlobIdentity,
     type EscrowEnvelope,
 } from '@learncard/sss-key-manager';
 import { client } from '@mongo';
@@ -52,6 +54,10 @@ import {
 } from '../src/services/escrow-enclave';
 import { getClient, getUser } from './helpers/getClient';
 import { runEscrowHoldReminders } from '../src/jobs/escrowHoldReminders';
+import type {
+    AuthorityMutationResult,
+    AuthorityStateResponse,
+} from '../src/services/escrow-enclave/authorityContract';
 
 const makeMockToken = (email: string, uid: string): string =>
     `header.${Buffer.from(JSON.stringify({ sub: uid, email })).toString('base64url')}.signature`;
@@ -138,6 +144,216 @@ afterAll(async () => {
     delete process.env.ESCROW_HOLD_DURATION_MS;
     __setEscrowEnclaveForTests(undefined);
     await client.close();
+});
+
+describe('authority enrollment persistence', () => {
+    it('redacts signed capabilities and receipts from telemetry', () => {
+        expect(
+            redactSecretFields({
+                signedIntent: { signature: 'capability' },
+                nested: { commitReceipt: 'receipt' },
+            })
+        ).toEqual({ signedIntent: '[Redacted]', nested: { commitReceipt: '[Redacted]' } });
+    });
+    const receipt = {
+        version: 1 as const,
+        kind: 'commit' as const,
+        keyId,
+        measurement: Array.from({ length: 32 }, () => 0),
+        payload: 'AQ==',
+        signature: Buffer.alloc(64).toString('base64'),
+    };
+    afterEach(() => {
+        process.env.ESCROW_ENCLAVE_MODE = 'software';
+        delete process.env.ESCROW_ENCLAVE_REMOTE_URL;
+        delete process.env.ESCROW_ENCLAVE_REMOTE_TOKEN;
+        __setEscrowEnclaveForTests(undefined);
+    });
+    const setup = async () => {
+        const software = getEscrowEnclave();
+        const attestation = await software.getAttestation();
+        const persisted = await encryptEscrowBlob(
+            { recoveryShare: shares.recoveryShare, did, shareVersion: 1 },
+            enclaveKeys.publicKey,
+            keyId
+        );
+        const apply = vi.fn(async (): Promise<AuthorityMutationResult> => ({
+            envelope: persisted,
+            receipt,
+            authorityGeneration: 'fresh-g1',
+            enrollmentVersion: 1,
+            enrollmentEpoch: 1,
+        }));
+        const state = vi.fn(
+            async (input: {
+                expectedDid: string;
+                nonce: string;
+            }): Promise<AuthorityStateResponse> => ({
+                state: {
+                    tenant: 'learncard',
+                    authorityGeneration: 'fresh-g1',
+                    did: input.expectedDid,
+                    status: 'empty',
+                    enrollmentVersion: 0,
+                    enrollmentEpoch: 0,
+                    envelope: null,
+                    shareVersion: null,
+                    hasPin: false,
+                    pinGeneration: 0,
+                    attemptsUsed: 0,
+                },
+                proof: { ...receipt, kind: 'snapshot' },
+            })
+        );
+        process.env.ESCROW_ENCLAVE_MODE = 'remote';
+        process.env.ESCROW_ENCLAVE_REMOTE_URL = 'https://escrow.invalid';
+        process.env.ESCROW_ENCLAVE_REMOTE_TOKEN = 't'.repeat(32);
+        __setEscrowEnclaveForTests(
+            Object.assign(software, {
+                getAttestation: async (): Promise<EnclaveAttestation> => ({
+                    ...attestation,
+                    mode: 'nitro',
+                }),
+                applyEnrollmentIntent: apply,
+                getEnrollmentState: state,
+            })
+        );
+        const signedIntent = await signEscrowEnrollmentIntent(
+            {
+                version: 1,
+                tenant: 'learncard',
+                did,
+                authorityGeneration: 'fresh-g1',
+                expectedEnrollmentVersion: 0,
+                action: 'enroll',
+                sourceBlobIdentity: null,
+                targetBlobIdentity: await getEscrowBlobIdentity(envelope),
+                pinAction: 'keep',
+                shareVersion: 1,
+                enrollmentEpoch: 1,
+                requestId: randomUUID(),
+                allowRewrap: true,
+            },
+            pk
+        );
+        return {
+            apply,
+            state,
+            persisted,
+            input: { ...auth, envelope, shareVersion: 1, enclaveKeyId: keyId, signedIntent },
+        };
+    };
+    it('stores and returns the persisted ciphertext with authoritative epoch, never the submitted target or Mongo epoch', async () => {
+        await enroll();
+        await getUserKeysCollection().updateOne(
+            { 'authProviders.id': authProvider.id },
+            { $set: { 'escrowBlob.enrollmentEpoch': 900 } }
+        );
+        const { input, persisted, apply } = await setup();
+        const result = await owner().escrow.enroll(input);
+        expect(result.envelope).toEqual(persisted);
+        expect(result.envelope).not.toEqual(envelope);
+        expect((await record())?.escrowBlob).toMatchObject({
+            envelope: persisted,
+            enrollmentEpoch: 1,
+            enrollmentVersion: 1,
+            authorityGeneration: 'fresh-g1',
+            commitReceipt: receipt,
+        });
+        expect(apply).toHaveBeenCalledTimes(1);
+    });
+    it('rejects unsigned enroll/disable and does not fall back after an authority error', async () => {
+        const { input, apply } = await setup();
+        await expect(enroll()).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        await expect(owner().escrow.remove({ ...auth, optOut: false })).rejects.toMatchObject({
+            code: 'BAD_REQUEST',
+        });
+        expect(apply).not.toHaveBeenCalled();
+        apply.mockRejectedValueOnce(new EscrowUnavailableError());
+        await expect(owner().escrow.enroll(input)).rejects.toThrow();
+        expect((await record())?.escrowBlob).toBeUndefined();
+        expect(apply).toHaveBeenCalledTimes(1);
+    });
+    it('forwards the client nonce without using Mongo as authority', async () => {
+        const { state } = await setup();
+        const nonce = 'ab'.repeat(32);
+        const result = await owner().escrow.getAuthorityState({ ...auth, nonce });
+        expect(state).toHaveBeenCalledWith({ expectedDid: did, nonce });
+        expect(result.state.enrollmentVersion).toBe(0);
+        expect(result.proof.kind).toBe('snapshot');
+    });
+    it('disables through a POST body containing signed intent before clearing the Mongo cache', async () => {
+        const { input, apply, persisted } = await setup();
+        await owner().escrow.enroll(input);
+        const signedIntent = await signEscrowEnrollmentIntent(
+            {
+                ...input.signedIntent.intent,
+                expectedEnrollmentVersion: 1,
+                action: 'disable',
+                sourceBlobIdentity: await getEscrowBlobIdentity(persisted),
+                targetBlobIdentity: null,
+                allowRewrap: false,
+                requestId: randomUUID(),
+            },
+            pk
+        );
+        apply.mockResolvedValueOnce({
+            envelope: null,
+            receipt,
+            authorityGeneration: 'fresh-g1',
+            enrollmentVersion: 2,
+            enrollmentEpoch: 1,
+        });
+        const result = await owner().escrow.disable({
+            ...auth,
+            optOut: false,
+            signedIntent,
+            sourceEnvelope: persisted,
+        });
+        expect(result.receipt).toEqual(receipt);
+        expect((await record())?.escrowBlob).toBeUndefined();
+        expect(apply.mock.calls.length).toBe(2);
+    });
+    it('does not overwrite a concurrent Mongo change after an authoritative commit', async () => {
+        const { input, apply, persisted } = await setup();
+        apply.mockImplementationOnce(async () => {
+            await models.setEscrowBlobByAuthProvider(
+                authProvider,
+                {
+                    envelope,
+                    enclaveKeyId: keyId,
+                    enclaveMode: 'nitro',
+                    measurements: {},
+                    shareVersion: 1,
+                    createdAt: new Date(),
+                },
+                1
+            );
+            return {
+                envelope: persisted,
+                receipt,
+                authorityGeneration: 'fresh-g1',
+                enrollmentVersion: 1,
+                enrollmentEpoch: 1,
+            };
+        });
+        await expect(owner().escrow.enroll(input)).rejects.toMatchObject({ code: 'CONFLICT' });
+        expect((await record())?.escrowBlob?.envelope).toEqual(envelope);
+        expect(apply).toHaveBeenCalledTimes(1);
+    });
+    it('persists a cancellation commit receipt before clearing the durable pending marker', async () => {
+        await enroll();
+        const started = await start();
+        const software = getEscrowEnclave();
+        __setEscrowEnclaveForTests(
+            Object.assign(software, { cancelHold: async () => ({ receipt }) })
+        );
+        await owner().escrow.cancelRecovery(auth);
+        const cancelled = await findEscrowHoldById(started.holdId);
+        expect(cancelled?.enclaveCancelConfirmedAt).toBeInstanceOf(Date);
+        expect(cancelled?.enclaveCancelPendingAt).toBeUndefined();
+        expect(cancelled?.enclaveCancelReceipt).toEqual(receipt);
+    });
 });
 
 describe('A6 escrow recovery', () => {
@@ -2146,16 +2362,12 @@ describe('P6.1 escrow enclave-mode staleness', () => {
     });
 
     it('refuses recovery for a nitro blob if the server rolls back to software mode', async () => {
-        const base = getEscrowEnclave();
-        process.env.ESCROW_ENCLAVE_MODE = 'remote';
-        process.env.ESCROW_ENCLAVE_REMOTE_URL = 'http://localhost:5999';
-        process.env.ESCROW_ENCLAVE_REMOTE_TOKEN = 'r'.repeat(32);
-        __setEscrowEnclaveForTests(withAttestationOverrides(base, { mode: 'nitro' }));
-        await enroll(); // stores enclaveMode: 'nitro'
-        delete process.env.ESCROW_ENCLAVE_REMOTE_URL;
-        delete process.env.ESCROW_ENCLAVE_REMOTE_TOKEN;
-        process.env.ESCROW_ENCLAVE_MODE = 'software';
-        __setEscrowEnclaveForTests(undefined); // roll back to the real software backend
+        await enroll();
+        // Seed the cached mode directly: unsigned remote enrollment is now refused.
+        await getUserKeysCollection().updateOne(
+            { 'authProviders.id': authProvider.id },
+            { $set: { 'escrowBlob.enclaveMode': 'nitro' } }
+        );
         await expect(start()).rejects.toMatchObject({ code: 'FORBIDDEN', message: staleMessage });
         expect((await owner().keys.getAuthShare(auth))?.escrowStale).toBe('mode-mismatch');
     });
