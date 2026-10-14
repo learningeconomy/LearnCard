@@ -1,5 +1,6 @@
 import React from 'react';
 import { useCanManageCompetencies } from '../../../hooks/useCanManageCompetencies';
+import { useDismissCompetencyAdminModal } from '../../SkillFrameworks/withCompetencyAdmin';
 
 import AdminToolsModalFooter from './AdminToolsModalFooter';
 // import AdminToolsNetworkOption from '../AdminToolsNetwork/AdminToolsNetwork';
@@ -21,7 +22,10 @@ export const AdminToolsOptionsContainer: React.FC<{ option: AdminToolOption }> =
         option.type === AdminToolOptionsEnum.SKILL_FRAMEWORKS ||
         option.type === AdminToolOptionsEnum.IMPORT_SKILL_FRAMEWORKS;
 
-    if (isFrameworkTool && !canManageCompetencies) return null;
+    const canOpenTool = !isFrameworkTool || canManageCompetencies;
+    useDismissCompetencyAdminModal(canOpenTool);
+
+    if (!canOpenTool) return null;
 
     const activeAdminToolOption: AdminToolOptionsEnum = option.type;
 

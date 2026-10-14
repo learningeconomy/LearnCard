@@ -1,5 +1,6 @@
 import React from 'react';
 import { useCanManageCompetencies } from '../../hooks/useCanManageCompetencies';
+import { useDismissCompetencyAdminModal } from './withCompetencyAdmin';
 import * as m from '../../paraglide/messages.js';
 
 import { useModal, useListMySkillFrameworks, ModalTypes } from 'learn-card-base';
@@ -100,9 +101,11 @@ const SelectFrameworkToManageModalContent: React.FC<SelectFrameworkToManageModal
 
 const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> = props => {
     const canManageCompetencies = useCanManageCompetencies();
+    const canSelectFramework = canManageCompetencies || Boolean(props.onFrameworkSelectOverride);
+    useDismissCompetencyAdminModal(canSelectFramework);
 
     // Badge authors can select existing competencies without managing the framework.
-    if (!canManageCompetencies && !props.onFrameworkSelectOverride) return null;
+    if (!canSelectFramework) return null;
 
     return (
         <SelectFrameworkToManageModalContent

@@ -10,6 +10,10 @@ import { AdminToolOptionsEnum, getAdminToolOptions } from './admin-tools.helpers
 
 const mocks = vi.hoisted(() => ({ canManage: false, renderFrameworks: vi.fn() }));
 
+vi.mock('learn-card-base', () => ({
+    useModal: () => ({ forceCloseModalByToken: vi.fn() }),
+}));
+
 vi.mock('../../../hooks/useCanManageCompetencies', () => ({
     useCanManageCompetencies: () => mocks.canManage,
 }));
