@@ -71,18 +71,6 @@ pub(crate) fn select_configured<T>(value: &Option<T>) -> Option<&T> {
     value.as_ref()
 }
 
-#[cfg(test)]
-mod default_feature_tests {
-    use super::select_configured;
-
-    #[test]
-    fn selects_only_when_configured() {
-        let configured = Some(42);
-        assert_eq!(select_configured(&configured), Some(&42));
-        assert_eq!(select_configured(&None::<i32>), None);
-    }
-}
-
 pub async fn run(transport: Transport) -> io::Result<()> {
     match transport {
         Transport::Emulate {
@@ -694,4 +682,19 @@ fn spawn_reader(
             _ => Completed::Done,
         }
     });
+}
+
+// Kept last in the file (not alongside `select_configured` above, which it
+// tests): clippy's `items_after_test_module` lint (new in 1.93.0) flags any
+// item defined after an inline `#[cfg(test)] mod` in the same file.
+#[cfg(test)]
+mod default_feature_tests {
+    use super::select_configured;
+
+    #[test]
+    fn selects_only_when_configured() {
+        let configured = Some(42);
+        assert_eq!(select_configured(&configured), Some(&42));
+        assert_eq!(select_configured(&None::<i32>), None);
+    }
 }
