@@ -3,6 +3,16 @@
 # DynamoDB and service discovery are not read by these roots or keycloak-drift.yml.
 data "aws_iam_policy_document" "plan_read" {
   statement {
+    sid       = "WritePrivateDiagnostics"
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.state.arn}/keycloak/${var.environment}/diagnostics/*"]
+    condition {
+      test     = "StringEquals"
+      variable = "s3:x-amz-server-side-encryption"
+      values   = ["AES256"]
+    }
+  }
+  statement {
     sid = "InfrastructureConfiguration"
     actions = [
       "sts:GetCallerIdentity",
@@ -12,6 +22,8 @@ data "aws_iam_policy_document" "plan_read" {
       "ec2:DescribeAddresses", "ec2:DescribeAddressesAttribute", "ec2:DescribeNetworkAcls",
       "ec2:DescribeSecurityGroups", "ec2:DescribeSecurityGroupRules", "ec2:DescribeNetworkInterfaces",
       "ec2:DescribeVpcEndpoints", "ec2:DescribeVpcEndpointServices", "ec2:DescribeFlowLogs",
+      # Gateway endpoint refresh resolves the S3 service prefix list.
+      "ec2:DescribePrefixLists",
       "ec2:DescribeAvailabilityZones", "ec2:DescribeRegions", "ec2:DescribeTags",
       # Hosted zones, DNS records and ACM validation; no certificate export.
       "route53:GetHostedZone", "route53:ListResourceRecordSets", "route53:ListTagsForResource",
@@ -73,6 +85,8 @@ data "aws_iam_policy_document" "plan_read" {
     # aws_s3_bucket refresh also reads legacy inline configuration attributes.
     # ListBucket authorizes HeadBucket; no object ARN or GetObject permission here.
     actions = [
+      # Provider 6.x reads bucket tags via S3 Control ListTagsForResource.
+      "s3:ListTagsForResource",
       "s3:ListBucket", "s3:GetBucketLocation", "s3:GetBucketTagging", "s3:GetBucketPolicy",
       "s3:GetBucketAcl", "s3:GetBucketCORS", "s3:GetBucketWebsite", "s3:GetBucketVersioning",
       "s3:GetAccelerateConfiguration", "s3:GetBucketRequestPayment", "s3:GetBucketLogging",

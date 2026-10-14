@@ -75,8 +75,10 @@ data "aws_iam_policy_document" "deploy_services" {
     ]
   }
   statement {
-    sid       = "ControlPlaneDiscovery"
-    actions   = ["logs:DescribeLogGroups", "cloudwatch:List*", "cloudwatch:Get*", "cloudwatch:Describe*", "sns:ListTopics", "events:ListRules", "codebuild:ListProjects", "backup:List*", "backup:Describe*", "backup:Get*", "backup:CreateBackupPlan", "backup:UpdateBackupPlan", "backup:DeleteBackupPlan", "backup:CreateBackupSelection", "backup:DeleteBackupSelection", "backup:TagResource", "backup:UntagResource"]
+    sid = "ControlPlaneDiscovery"
+    # ssm:DescribeParameters has no resource-level scoping; the AWS provider calls it
+    # when refreshing aws_ssm_parameter. Parameter values stay environment-scoped below.
+    actions   = ["ssm:DescribeParameters", "logs:DescribeLogGroups", "cloudwatch:List*", "cloudwatch:Get*", "cloudwatch:Describe*", "sns:ListTopics", "events:ListRules", "codebuild:ListProjects", "backup:List*", "backup:Describe*", "backup:Get*", "backup:CreateBackupPlan", "backup:UpdateBackupPlan", "backup:DeleteBackupPlan", "backup:CreateBackupSelection", "backup:DeleteBackupSelection", "backup:TagResource", "backup:UntagResource"]
     resources = ["*"]
   }
   statement {
@@ -138,6 +140,23 @@ data "aws_iam_policy_document" "deploy_services" {
       test     = "StringEquals"
       variable = "application-autoscaling:service-namespace"
       values   = ["ecs"]
+    }
+  }
+  statement {
+    # Tag/Untag don't carry application-autoscaling:service-namespace, so the
+    # statement above never allows them; KeycloakVersion retags on every bump.
+    sid       = "EcsAutoscalingTags"
+    actions   = ["application-autoscaling:TagResource", "application-autoscaling:UntagResource"]
+    resources = ["arn:${local.partition}:application-autoscaling:${local.regional_arn}:scalable-target/*"]
+    condition {
+      test     = "StringEquals"
+      variable = "aws:ResourceTag/Project"
+      values   = ["learncard-keycloak"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "aws:ResourceTag/Environment"
+      values   = [var.environment]
     }
   }
   statement {

@@ -1,0 +1,143 @@
+import { expect, test, type Locator, type Page } from '@playwright/test';
+import en from '../public/locales/en/translation.json';
+import ar from '../public/locales/ar/translation.json';
+
+const catalogs = { en, ar };
+
+const waitForClrRenderer = async (page: Page): Promise<void> => {
+    // Document load can precede this lazy route leaving its Suspense fallback on CI.
+    // Give navigation a bounded readiness wait; keep content/geometry assertions unchanged.
+    await expect(page.getByRole('heading', { name: 'CLR Renderer', exact: true })).toBeVisible({
+        timeout: 30_000,
+    });
+};
+
+// Assert the accessible name in the selected locale, including after a reload.
+const numericScaleName = (
+    locale: keyof typeof catalogs,
+    max: number,
+    value: number,
+    required: number
+): string =>
+    catalogs[locale].clrRenderer.numericScaleWithPassing
+        .replace('{{min}}', '0')
+        .replace('{{max}}', String(max))
+        .replace('{{value}}', String(value))
+        .replace('{{required}}', String(required));
+
+/** Check actual browser geometry: RTL must not reverse labels without reversing markers. */
+const expectNumericAxis = async (
+    scale: Locator,
+    min: number,
+    max: number,
+    value: number,
+    required: number
+): Promise<void> => {
+    await expect(scale).toBeVisible();
+    const geometry = await scale.evaluate(element => {
+        const track = element.firstElementChild!;
+        const labels = element.lastElementChild!;
+        const bounds = track.getBoundingClientRect();
+        const markers = track.querySelectorAll<HTMLElement>('[style]');
+        return {
+            minX: labels.firstElementChild!.getBoundingClientRect().x,
+            maxX: labels.lastElementChild!.getBoundingClientRect().x,
+            positions: Array.from(
+                markers,
+                marker => (marker.getBoundingClientRect().x - bounds.x) / bounds.width
+            ),
+        };
+    });
+    expect(geometry.minX).toBeLessThan(geometry.maxX);
+    expect(geometry.positions).toHaveLength(2);
+    expect(geometry.positions[0]).toBeCloseTo((value - min) / (max - min), 2);
+    expect(geometry.positions[1]).toBeCloseTo((required - min) / (max - min), 2);
+};
+
+test.describe('CLR numeric axes @mocked', () => {
+    for (const viewport of [
+        { width: 1280, height: 900 },
+        { width: 390, height: 844 },
+    ]) {
+        test.describe(`${viewport.width}px`, () => {
+            test.use({ viewport });
+
+            for (const locale of ['en', 'ar'] as const) {
+                test(`keeps score markers aligned in ${locale}`, async ({ page }) => {
+                    await page.goto('/dev/clr-transcript?insets=47,34');
+                    await waitForClrRenderer(page);
+                    await page.getByRole('combobox').selectOption(locale);
+                    await expect(page.locator('html')).toHaveAttribute(
+                        'dir',
+                        locale === 'ar' ? 'rtl' : 'ltr'
+                    );
+                    await page
+                        .getByRole('button', { name: 'Westbridge (Full)', exact: true })
+                        .click();
+                    await page.getByText('Military — Comprehensive', { exact: true }).click();
+                    await page
+                        .getByRole('button', {
+                            name: 'Coordination knowledge assessment',
+                            exact: true,
+                        })
+                        .click();
+                    const modal = page.getByRole('dialog', {
+                        name: 'Coordination knowledge assessment',
+                        exact: true,
+                    });
+                    await expectNumericAxis(
+                        modal.getByRole('img', {
+                            name: numericScaleName(locale, 100, 86, 70),
+                            exact: true,
+                        }),
+                        0,
+                        100,
+                        86,
+                        70
+                    );
+
+                    // Reload closes the detail surface; the locale persists in the app.
+                    await page.reload();
+                    await waitForClrRenderer(page);
+                    await expect(page.getByRole('combobox')).toHaveValue(locale);
+                    await expect(page.locator('html')).toHaveAttribute(
+                        'dir',
+                        locale === 'ar' ? 'rtl' : 'ltr'
+                    );
+                    await page
+                        .getByRole('button', { name: 'Westbridge (Full)', exact: true })
+                        .click();
+                    await page.getByText('General — Training Provider', { exact: true }).click();
+                    await expectNumericAxis(
+                        page.getByRole('img', {
+                            name: numericScaleName(locale, 40, 36, 32),
+                            exact: true,
+                        }),
+                        0,
+                        40,
+                        36,
+                        32
+                    );
+                    await expectNumericAxis(
+                        page.getByRole('img', {
+                            name: numericScaleName(locale, 100, 86, 75),
+                            exact: true,
+                        }),
+                        0,
+                        100,
+                        86,
+                        75
+                    );
+                });
+            }
+
+            test('recovers from a malformed stored locale', async ({ page }) => {
+                await page.addInitScript(() => localStorage.setItem('i18n.language', 'en--US'));
+                await page.goto('/dev/clr-transcript?insets=47,34');
+                await waitForClrRenderer(page);
+                await expect(page.getByRole('combobox')).toHaveValue('en');
+                await expect(page.getByText('Invalid language tag: en--US')).toHaveCount(0);
+            });
+        });
+    }
+});

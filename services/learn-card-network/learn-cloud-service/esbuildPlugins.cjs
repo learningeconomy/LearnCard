@@ -41,6 +41,7 @@ module.exports = [
     forceCjsSodiumWrapperPlugin,
     copyDidkitWasmPlugin,
     sentryEsbuildPlugin({
+        telemetry: process.env.SENTRY_BUILD_TELEMETRY !== 'false',
         authToken: process.env.SENTRY_AUTH_TOKEN,
         org: process.env.SENTRY_ORG,
         project: process.env.SENTRY_PROJECT,

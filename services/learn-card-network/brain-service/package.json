@@ -1,11 +1,11 @@
 {
     "name": "@learncard/network-brain-service",
-    "version": "3.19.1",
+    "version": "4.0.0",
     "description": "",
     "engines": {
         "node": ">=24.12 <25"
     },
-    "packageManager": "bun@1.3.14",
+    "packageManager": "bun@1.4.2",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
@@ -59,7 +59,7 @@
     },
     "dependencies": {
         "@aws-sdk/client-sqs": "^3.379.1",
-        "@digitalcredentials/issuer-registry-client": "^3.2.0-beta.5",
+        "@digitalcredentials/issuer-registry-client": "^4.1.0",
         "@fastify/cors": "^11.2.0",
         "@google/genai": "^1.27.0",
         "@learncard/credential-library": "workspace:*",
@@ -75,6 +75,8 @@
         "@learncard/email-templates": "workspace:*",
         "@learncard/helpers": "workspace:*",
         "@learncard/learn-card-plugin": "workspace:*",
+        "@learncard/partner-connect-core": "workspace:*",
+        "@learncard/service-config": "workspace:*",
         "@learncard/types": "workspace:*",
         "@learncard/vc-plugin": "workspace:*",
         "@learncard/vc-templates-plugin": "workspace:*",

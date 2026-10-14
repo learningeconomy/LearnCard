@@ -1,4 +1,62 @@
 {
+    "clrTranscript": {
+        "credits": {
+            "earnedNotSuppliedAria": "Crédits obtenus non renseignés",
+            "earnedNotSupplied": "Obtenus —",
+            "earnedQuantity": "{{value}} obtenus",
+            "availableQuantity": "{{value}} disponibles",
+            "inferredQuantity": "{{value}} d’après la description"
+        },
+        "relationships": {
+            "targetAmbiguous": "Cible ambiguë",
+            "targetUnresolved": "Cible non résolue",
+            "parent": "Fait partie de {{name}}",
+            "child": "Comprend {{name}}",
+            "prerequisite": "Nécessite {{name}}",
+            "unlock": "Débloque {{name}}",
+            "peer": "Suivi en parallèle de {{name}}",
+            "equivalent": "Équivalent à {{name}}",
+            "supersededBy": "Remplacé par {{name}}",
+            "replacement": "Remplace {{name}}",
+            "related": "Associé à {{name}}",
+            "openRecord": "Ouvrir {{name}} : {{label}}",
+            "relatedRecords": "Dossiers associés"
+        },
+        "details": {
+            "issuedBy": "Émis par",
+            "assessedBy": "Évalué par",
+            "createdBy": "Accomplissement créé par",
+            "activityStarted": "Début de l’activité",
+            "activityEnded": "Fin de l’activité",
+            "awarded": "Décerné",
+            "validFrom": "Valide à partir du",
+            "validUntil": "Valide jusqu’au",
+            "fieldOfStudy": "Domaine d’études",
+            "specialization": "Spécialisation",
+            "language": "Langue",
+            "version": "Version du dossier",
+            "role": "Rôle",
+            "narrative": "Récit de l’apprenant",
+            "licenseNumber": "Numéro de licence",
+            "criteria": "Critères",
+            "viewCriteria": "Voir les critères",
+            "criteriaReference": "Référence des critères",
+            "additionalDetails": "Détails supplémentaires",
+            "tags": "Étiquettes",
+            "achievementId": "Identifiant de l’accomplissement",
+            "learnerId": "Identifiant de l’apprenant",
+            "achievementIdentifiers": "Identifiants de l’accomplissement",
+            "learnerIdentifiers": "Identifiants de l’apprenant",
+            "identifier": "Identifiant",
+            "hashedIdentifier": "{{label}} (haché)",
+            "otherRecords": "Autres dossiers",
+            "itemCountOne": "{{count}} élément",
+            "itemCountOther": "{{count}} éléments",
+            "record": "Dossier",
+            "recordDetails": "Détails du dossier",
+            "closeRecordDetails": "Fermer les détails du dossier"
+        }
+    },
     "inboxClaimSetup": {
         "setup": "Terminez la configuration de votre compte pour récupérer votre attestation.",
         "continue": "Continuer la configuration du compte",
@@ -196,6 +254,7 @@
             "skills": "Compétences",
             "socialBadges": "Badges",
             "achievements": "Réalisations",
+            "qualifications": "Qualifications",
             "studies": "Études",
             "portfolio": "Portfolio",
             "assistance": "Assistance",
@@ -678,6 +737,7 @@
                 "all": "Tout",
                 "socialBadge": "Badge",
                 "achievement": "Réalisation",
+                "qualifications": "Qualification",
                 "learningHistory": "Cours",
                 "accomplishment": "Élément de portfolio",
                 "accommodation": "Assistance",
@@ -689,6 +749,7 @@
                 "all": "Tout",
                 "socialBadge": "Badges",
                 "achievement": "Réalisations",
+                "qualifications": "Qualifications",
                 "learningHistory": "Cours",
                 "accomplishment": "Portfolio",
                 "accommodation": "Assistance",
@@ -709,6 +770,7 @@
             "article": {
                 "socialBadge": "un",
                 "achievement": "une",
+                "qualifications": "une",
                 "learningHistory": "un",
                 "accomplishment": "un",
                 "accommodation": "une",
@@ -879,6 +941,7 @@
             "skills": "Compétences",
             "socialBadges": "Badges",
             "achievements": "Réalisations",
+            "qualifications": "Qualifications",
             "studies": "Études",
             "portfolio": "Portfolio",
             "assistance": "Assistance",
@@ -886,6 +949,7 @@
             "families": "Familles",
             "ids": "Identifiants"
         },
+        "newQualification": "Nouvelle qualification",
         "emptyState": "Aucun titre pour le moment",
         "credentialCount": "{{count}} titre(s)",
         "viewMode": "Vue",
@@ -896,6 +960,7 @@
         "noManaged": "Aucun titre géré",
         "search": "Rechercher des titres...",
         "expired": "Expiré",
+        "expires": "Expire",
         "invalid": "Identifiant invalide",
         "expiredId": "Identifiant expiré",
         "noTitle": "Sans titre",
@@ -926,6 +991,7 @@
             "skills": "Compétence",
             "socialBadges": "Badge",
             "achievements": "Réalisation",
+            "qualifications": "Qualification",
             "studies": "Étude",
             "portfolio": "Portfolio",
             "assistance": "Assistance",
@@ -945,6 +1011,10 @@
             "achievement": {
                 "lead": "Vos",
                 "link": "moments de fierté"
+            },
+            "qualifications": {
+                "lead": "Vos",
+                "link": "qualifications professionnelles"
             },
             "accomplishment": {
                 "lead": "Vos",
@@ -990,6 +1060,7 @@
                 "assistance": "Les aménagements sont des ajustements apportés à l'environnement ou aux processus afin de permettre aux étudiants, aux employés ou aux participants en situation de handicap de participer pleinement. Par exemple : accorder du temps supplémentaire lors des examens aux étudiants ayant des troubles de l'apprentissage, proposer des interprètes en langue des signes aux personnes sourdes, adapter les horaires de travail en fonction des besoins médicaux ou modifier un espace de travail pour le rendre accessible.",
                 "socialBadges": "Les badges sociaux sont des icônes ou des étiquettes numériques utilisés sur les plateformes en ligne pour signaler les réussites, les statuts, les rôles ou les étapes importantes des utilisateurs. Ils servent à reconnaître les accomplissements, à indiquer les rôles des membres, à encourager la participation et à favoriser l'engagement de la communauté. Ces badges peuvent représenter aussi bien l'achèvement de tâches et la participation à des événements que l'appartenance à des groupes spécifiques.",
                 "achievements": "Les réussites sont des étapes ou des accomplissements obtenus grâce à l'effort, au talent ou à la persévérance. Elles marquent l'atteinte d'objectifs, le dépassement de défis ou la reconnaissance de l'excellence dans divers aspects de la vie, qu'ils soient personnels, professionnels, éducatifs ou récréatifs. Les réussites peuvent aller des diplômes académiques, des avancées de carrière et des étapes personnelles aux projets créatifs ou aux victoires en compétition.",
+                "qualifications": "Les qualifications sont des justificatifs professionnels, comme les autorisations d'exercer, les certifications et les certificats d'apprentissage, de compagnon ou de maître artisan.",
                 "portfolio": "Un portfolio est une collection soigneusement sélectionnée des travaux, des projets ou des réalisations d'une personne, qui met en valeur ses compétences, son expérience et son évolution au fil du temps. Il constitue une preuve tangible de capacité et de créativité, couvrant souvent les domaines professionnel, académique ou personnel, et sert à démontrer sa valeur auprès de collaborateurs, d'employeurs ou de publics potentiels.",
                 "skills": "Les compétences sont des aptitudes développées par la formation, la pratique ou l'expérience qui permettent à une personne d'accomplir des tâches efficacement. Elles peuvent se classer en compétences techniques, qui sont des aptitudes précises, enseignables et souvent quantifiables liées à une tâche ou à un métier particulier, comme la programmation, la soudure ou la maîtrise d'une langue étrangère. Les compétences relationnelles, quant à elles, sont des aptitudes interpersonnelles et cognitives qui facilitent les interactions humaines, comme la communication, la résolution de problèmes et le travail en équipe.",
                 "experiences": "Les expériences sont les connaissances et les compétences acquises en participant à divers rôles et activités professionnels au fil du temps. Elles englobent l'ensemble des tâches, des projets et des responsabilités liés au travail qu'une personne a assumés au sein de différentes organisations ou en tant qu'indépendant. Les expériences professionnelles contribuent de manière significative à l'expertise, aux capacités et à la compréhension des normes et des pratiques du secteur.",
@@ -1878,6 +1949,7 @@
             "email": "e-mail",
             "profilePicture": "photo de profil"
         },
+        "reviewChanged": "Les modalités de partage ont changé. Vérifiez-les avant de vous reconnecter.",
         "retryPublication": "Vos choix de partage sont enregistrés. Réessayez pour terminer leur envoi."
     },
     "recovery": {
@@ -2144,6 +2216,36 @@
             "tooManyAttempts": "Trop de tentatives incorrectes. Réessayez plus tard.",
             "invalidCode": "Ce code est incorrect ou a expiré. Demandez un nouveau code et réessayez.",
             "invalidRecoveryMethod": "Cette méthode n’a pas permis de vérifier votre compte. Essayez-en une autre."
+        },
+        "cancel": {
+            "invalidLink": {
+                "title": "Ce lien n’est pas valide",
+                "body": "Ouvrez notre dernier e-mail ou connectez-vous pour vérifier votre compte.",
+                "signIn": "Se connecter"
+            },
+            "confirm": {
+                "title": "Annuler la récupération du compte ?",
+                "body": "Quelqu’un a demandé à récupérer votre compte. Si ce n’était pas vous, annulez cette demande maintenant.",
+                "cancelBtn": "Annuler la récupération",
+                "notNowBtn": "Pas maintenant",
+                "cancelling": "Annulation en cours..."
+            },
+            "success": {
+                "title": "Récupération annulée. Votre compte est en sécurité.",
+                "body": "Nous vous recommandons de vous connecter et de vérifier vos options de récupération.",
+                "doneBtn": "Ouvrir LearnCard"
+            },
+            "expired": {
+                "title": "Lien expiré",
+                "body": "Ce lien a expiré ou a déjà été utilisé. Si une récupération est encore en cours, connectez-vous pour l’annuler.",
+                "signInBtn": "Se connecter"
+            },
+            "error": {
+                "network": "Problème de connexion. Vérifiez votre connexion internet et réessayez.",
+                "tooMany": "Trop de tentatives. Patientez une minute et réessayez.",
+                "generic": "Une erreur s’est produite. Veuillez réessayer.",
+                "tryAgainBtn": "Réessayer"
+            }
         },
         "automatic": {
             "restoreWait": "Restaurer après un délai de 7 jours"
@@ -3541,12 +3643,6 @@
         "skillsHub": "Pôle de compétences"
     },
     "base": {
-        "consentAudience": {
-            "title": "Vérifiez qui reçoit vos données",
-            "description": "Les informations que vous choisissez seront accessibles à toutes les personnes ci-dessous.",
-            "confirm": "Confirmer le partage",
-            "cancel": "Annuler"
-        },
         "verification": {
             "selfIssued": "Auto-émis",
             "trustedIssuer": "Émetteur de confiance",
@@ -3567,6 +3663,7 @@
         },
         "credential": {
             "category": {
+                "qualifications": "Qualification",
                 "badge": "Badge",
                 "family": "Famille",
                 "achievement": "Réussite",
@@ -3579,9 +3676,17 @@
                 "assistance": "Assistance"
             },
             "lifecycle": {
+                "expired": "Expiré",
                 "revoked": "Révoqué",
                 "suspended": "Suspendu"
-            }
+            },
+            "expires": "Expire"
+        },
+        "consentAudience": {
+            "title": "Vérifiez qui reçoit vos données",
+            "description": "Les informations que vous choisissez seront accessibles à toutes les personnes ci-dessous.",
+            "confirm": "Confirmer le partage",
+            "cancel": "Annuler"
         }
     },
     "sdk": {
@@ -8042,9 +8147,9 @@
                     "description": "Mettez en place un flux de consentement pour envoyer et accéder aux données et credentials de l'utilisateur avec son autorisation."
                 },
                 "courseCatalog": {
-                    "title": "Connecter le catalogue de cours",
-                    "subtitle": "Intégration LMS d'entreprise",
-                    "description": "Configuration guidée complète pour les partenaires LMS. Configurez les webhooks, créez des modèles de credentials, mappez vos données et passez en production avec une émission automatique de credentials."
+                    "title": "Émettre depuis un catalogue de cours",
+                    "subtitle": "Transformez un tableur de cours en certifications",
+                    "description": "Importez votre liste de cours, obtenez un modèle de certification pour chacun, puis décernez-les aux apprenants lorsqu’ils terminent."
                 },
                 "verifyCredentials": {
                     "title": "Vérifier des credentials",
@@ -8206,7 +8311,8 @@
             "filterAll": "Toutes",
             "filterListed": "Publiées",
             "filterDraft": "Brouillon",
-            "filterArchived": "Archivées"
+            "filterArchived": "Archivées",
+            "filterUpdates": "Mises à jour"
         },
         "listing": {
             "submittedBy": "Soumis par :",
@@ -8273,6 +8379,23 @@
                 "standardDesc": "Visibilité normale dans la recherche et la navigation",
                 "demoted": "Rétrogradé",
                 "demotedDesc": "Visibilité réduite dans les annonces"
+            },
+            "update": {
+                "title": "Mise à jour en attente de vérification",
+                "description": "Ces modifications ne seront publiées que si vous les approuvez.",
+                "draftNote": "Le développeur modifie encore une mise à jour.",
+                "capabilities": "Modifie aussi ce que l'app peut faire (version {{version}}).",
+                "approve": "Approuver la mise à jour",
+                "reject": "Refuser la mise à jour",
+                "fieldName": "Nom",
+                "fieldTagline": "Slogan",
+                "fieldDescription": "Description",
+                "fieldIcon": "Icône",
+                "fieldScreenshots": "Captures d'écran",
+                "fieldHighlights": "Points forts",
+                "fieldLinks": "Liens et contact",
+                "fieldLaunch": "Où l'app s'exécute",
+                "fieldOther": "Autres détails"
             }
         }
     },
@@ -9332,6 +9455,78 @@
         "signInToSave": "Se connecter pour enregistrer",
         "saveHint": "Conservez cette collection signée dans vos éléments reçus."
     },
+    "resumePublishing": {
+        "linkReady": "Votre lien privé est prêt.",
+        "opening": "Ouverture de votre lien privé...",
+        "linkUnavailable": "Ce lien est indisponible. Vérifiez ses paramètres, puis republiez le CV.",
+        "legacy": "Republiez ce CV pour créer un lien géré.",
+        "pending": "La publication est en cours de confirmation. Réessayez pour vérifier la même tentative.",
+        "size": "Ce CV est trop volumineux pour être publié. Désactivez le code QR pour le télécharger.",
+        "inactive": "Ce lien a été désactivé ou a expiré. Vérifiez ses paramètres avant de republier.",
+        "failed": "Nous n’avons pas pu publier ce CV. Veuillez réessayer.",
+        "account": "Votre compte a changé. Veuillez réessayer.",
+        "changed": "Votre CV a changé pendant sa préparation. Veuillez réessayer.",
+        "cleanup": "Votre CV est publié, mais le nettoyage est incomplet. Réessayez plus tard.",
+        "limits": "Désactiver ce lien empêche tout accès futur. Les copies enregistrées et les anciens liens ne peuvent pas être retirés.",
+        "republishLimits": "Republier ne retire pas les anciens liens ni les copies enregistrées.",
+        "pdfHeading": "CV publié",
+        "previewError": "Nous n’avons pas pu ouvrir ce CV.",
+        "downloadExact": "Télécharger le PDF du CV",
+        "updated": "Ce CV a changé",
+        "updatedHint": "Ouvrez à nouveau le lien pour voir la dernière version.",
+        "recovered": "Votre publication précédente est confirmée. Le CV enregistré est maintenant chargé.",
+        "originalClaims": "Les attestations sélectionnées conservent leurs détails signés d’origine ; masquer des champs dans ce PDF ne les supprime pas.",
+        "downloadToView": "Télécharger pour consulter",
+        "pdfSize": "PDF · {{size}} Ko",
+        "pdfReady": "Téléchargez ce CV pour ouvrir le PDF sur votre appareil.",
+        "discard": "Effacer la préparation interrompue",
+        "discarding": "Effacement de la préparation interrompue...",
+        "discarded": "La préparation interrompue a été effacée. Vous pouvez republier.",
+        "interrupted": "La préparation de la publication a été interrompue. Réessayez ou effacez-la avant de commencer un nouveau CV.",
+        "discardFailed": "Nous n’avons pas pu effacer cette préparation. Veuillez réessayer.",
+        "manageContent": "Modifiez le contenu du CV dans Resume Builder.",
+        "publishInBuilder": "Utilisez Resume Builder pour publier ce CV."
+    },
+    "verifierSelection": {
+        "hint": "Choisissez les justificatifs à envoyer à cette application.",
+        "review": "Vérifier"
+    },
+    "verifierHistory": {
+        "viewCredentials": "Voir les attestations partagées avec {{verifier}}",
+        "credentialsCount": "Attestations ({{count}})",
+        "credentialsList": "Noms des attestations enregistrés",
+        "viewAll": "Voir les {{count}}",
+        "preview": "{{shown}} entrées affichées sur {{total}}",
+        "page": "Page {{page}} sur {{total}}",
+        "previous": "Précédent",
+        "next": "Suivant",
+        "saveFailed": "L’historique n’a pas pu être mis à jour. Vous n’avez pas besoin de renvoyer vos informations.",
+        "title": "Partagé avec des vérificateurs",
+        "description": "Un historique privé des informations que vous avez choisi d’envoyer à d’autres applications.",
+        "managedUnavailable": "L’historique est indisponible pour les comptes gérés.",
+        "loading": "Mise à jour de l’historique…",
+        "open": "Ouvrir l’historique privé",
+        "record": "Conserver un historique privé",
+        "retention": "Conservez jusqu’à 500 entrées des 90 derniers jours. Les anciennes entrées sont supprimées à la connexion.",
+        "limits": "Les titres ne décrivent pas toutes les données envoyées. Supprimer l’historique ne retire pas les informations envoyées. Désactiver l’enregistrement conserve l’historique existant.",
+        "cleanupPending": "Certains enregistrements n’ont pas pu être lus ou supprimés. Effacez l’historique pour les supprimer.",
+        "refresh": "Actualiser",
+        "clear": "Effacer l’historique",
+        "empty": "Aucun envoi enregistré.",
+        "unknownVerifier": "Application demandeuse",
+        "sent": "Envoyé ; acceptation inconnue",
+        "handedOff": "Transmis à l’application ; réception non confirmée",
+        "credential": "Attestation",
+        "delete": "Supprimer l’entrée",
+        "deleteLabel": "Supprimer l’entrée pour {{verifier}}",
+        "loadFailed": "L’historique n’a pas pu être chargé ou mis à jour. Vérifiez votre connexion et réessayez.",
+        "retry": "Réessayer le chargement",
+        "clearTitle": "Effacer l’historique privé ?",
+        "clearBody": "Toutes les entrées de l’historique privé seront supprimées définitivement. Vos justificatifs et les informations déjà envoyées restent inchangés.",
+        "clearConsent": "L’enregistrement conserve son réglage si les paramètres sont lisibles ; sinon, il est désactivé.",
+        "clearRecovery": "Une partie de l’historique n’a pas pu être chargée. L’effacement supprime aussi les entrées illisibles.",
+        "accountChanged": "L’envoi est terminé, mais vous avez changé de compte. Retournez dans l’application à l’origine de la demande pour continuer."
+    },
     "contractRequests": {
         "label": "Connexion",
         "referred": "{{referrer}} vous a recommandé à {{owner}}.",
@@ -9356,5 +9551,72 @@
         "reviewFirst": "Vérifiez et choisissez vos données avant de vous connecter.",
         "pending": "Invitations en attente",
         "empty": "Aucune invitation en attente."
+    },
+    "clrRenderer": {
+        "military": "Dossier militaire",
+        "general": "Dossier d’apprentissage",
+        "training": "Formation",
+        "courses": "Cours",
+        "programs": "Programmes",
+        "activities": "Activités",
+        "fieldwork": "Rôles et activités de terrain",
+        "assessments": "Évaluations",
+        "competencies": "Compétences",
+        "qualifications": "Qualifications",
+        "awards": "Distinctions",
+        "other": "Autres éléments",
+        "publishedBy": "Publié par",
+        "partial": "Dossier partiel : seuls certains acquis sont inclus.",
+        "empty": "Aucun élément individuel n’a été fourni.",
+        "viewDetails": "Voir les détails",
+        "recordDetails": "Détails du dossier",
+        "closeDetails": "Fermer les détails du dossier",
+        "issuedBy": "Délivré par",
+        "assessedBy": "Évalué par",
+        "createdBy": "Acquis créé par",
+        "activityStart": "Début de l’activité",
+        "activityEnd": "Fin de l’activité",
+        "awarded": "Attribué le",
+        "validFrom": "Valide à partir du",
+        "validUntil": "Valide jusqu’au",
+        "issued": "Délivré le",
+        "role": "Rôle",
+        "narrative": "Récit de l’apprenant",
+        "license": "Numéro de licence",
+        "field": "Domaine d’études",
+        "specialization": "Spécialisation",
+        "language": "Langue",
+        "version": "Version",
+        "identifier": "Identifiant",
+        "hashedIdentifier": "{{label}} (haché)",
+        "criteria": "Critères",
+        "viewCriteria": "Voir les critères",
+        "criteriaReference": "Référence des critères",
+        "additional": "Détails supplémentaires",
+        "tags": "Étiquettes",
+        "achievementId": "Identifiant de l’acquis",
+        "learnerId": "Identifiant de l’apprenant",
+        "achievementIdentifiers": "Identifiants de l’acquis",
+        "learnerIdentifiers": "Identifiants de l’apprenant",
+        "requiredValue": "Valeur requise : {{value}}",
+        "requiredLevel": "Niveau requis : {{value}}",
+        "verified": "Contenu signé vérifié",
+        "signedUnverified": "Signé, non vérifié",
+        "verifying": "Vérification…",
+        "valid": "Valide",
+        "invalid": "Invalide",
+        "proof": "Preuve",
+        "expiration": "Expiration",
+        "expired": "Expiré le {{date}}",
+        "expires": "Expire le {{date}}",
+        "doesNotExpire": "Sans expiration",
+        "numericScale": "Échelle numérique de {{min}} à {{max}} ; résultat {{value}}",
+        "numericScaleWithPassing": "Échelle numérique de {{min}} à {{max}} ; résultat {{value}} ; seuil de réussite {{required}}",
+        "unsigned": "Attestation non signée",
+        "evidenceAttached": "Preuves jointes",
+        "status": "Statut : {{status}}",
+        "revocationCheck": "Vérification de révocation disponible",
+        "evidenceCount": "Éléments de preuve : {{count}}",
+        "evidence": "Pièces justificatives"
     }
 }

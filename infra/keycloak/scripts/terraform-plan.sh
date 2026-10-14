@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 # Run from repo root. Never print raw plans/diagnostics or publish plan artifacts.
+# shellcheck source=infra/keycloak/scripts/private-diagnostics.sh
+source "$(dirname "${BASH_SOURCE[0]}")/private-diagnostics.sh"
 root=${1:?Root required}
 environment=${DEPLOY_ENVIRONMENT:?Environment required}
 : "${TF_STATE_BUCKET:?State bucket required}"
@@ -17,9 +19,13 @@ terraform -chdir="$directory" init -input=false \
 terraform -chdir="$directory" plan -input=false -lock-timeout=5m \
     -var-file="environments/$environment.tfvars" -out=keycloak.tfplan \
     >"$directory/plan.log" 2>&1 || {
-    printf 'Terraform plan failed; inspect privately, no raw values published.\n' >&2; exit 1;
+    upload_private_diagnostics plan "$directory/plan.log"
+    printf 'Terraform plan failed; no raw values published.\n' >&2; exit 1;
 }
-terraform -chdir="$directory" show -json keycloak.tfplan >"$directory/plan.json"
+terraform -chdir="$directory" show -json keycloak.tfplan >"$directory/plan.json" 2>>"$directory/plan.log" || {
+    upload_private_diagnostics plan "$directory/plan.log"
+    printf 'Terraform plan inspection failed; no raw values published.\n' >&2; exit 1;
+}
 python3 - "$directory/plan.json" "$root" <<'PY'
 import html, json, os, sys
 with open(sys.argv[1]) as source:

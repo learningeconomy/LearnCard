@@ -83,18 +83,23 @@ describe('credential refresh configuration', () => {
         }
     );
 
-    it.each(['serverless.yml', 'serverless-local.yml'])(
-        'passes all refresh settings into functions in %s',
-        manifestName => {
-            const manifestPath = fileURLToPath(new URL(`../../${manifestName}`, import.meta.url));
-            const manifest = parse(readFileSync(manifestPath, 'utf8'));
+    it('resolves the deployed function environment through the shared provider file', () => {
+        const manifestPath = fileURLToPath(new URL('../../serverless.yml', import.meta.url));
+        const manifest = parse(readFileSync(manifestPath, 'utf8'));
 
-            expect(manifest.provider.environment).toMatchObject({
-                CREDENTIAL_REFRESH_ENABLED: '${env:CREDENTIAL_REFRESH_ENABLED, "false"}',
-                CREDENTIAL_REFRESH_DIGEST_SECRET: '${env:CREDENTIAL_REFRESH_DIGEST_SECRET, ""}',
-                CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS:
-                    '${env:CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS, "24"}',
-            });
+        expect(manifest.provider.environment).toBe(
+            '${file(./serverless.function-env.cjs):provider}'
+        );
+    });
+
+    it.each(['config.dev.json', 'config.production.json'])(
+        'delivers non-secret refresh settings through checked-in stage config in %s',
+        stageFile => {
+            const configPath = fileURLToPath(new URL(`../../config/${stageFile}`, import.meta.url));
+            const config = JSON.parse(readFileSync(configPath, 'utf8'));
+
+            expect(config.CREDENTIAL_REFRESH_ENABLED).toBeDefined();
+            expect(config.CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS).toBeDefined();
         }
     );
 });

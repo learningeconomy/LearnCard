@@ -1,0 +1,8 @@
+{
+    "SENTRY_ENV": "learn-cloud-staging",
+    "SERVER_URL": "https://staging.cloud.learncard.com",
+    "SHARE_CONTENT_AUDIENCE": "did:web:staging.cloud.learncard.com",
+    "SHARE_CONTENT_NAMESPACE_BINDINGS": "{\"did:web:staging.network.learncard.com\":[\"learncard\"]}",
+    "SHARE_CONTENT_SERVICE_DIDS": "did:web:staging.network.learncard.com",
+    "SHARE_CONTENT_VERIFICATION_METHODS": "did:web:staging.network.learncard.com#owner"
+}

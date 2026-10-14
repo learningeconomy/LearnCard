@@ -4,6 +4,64 @@ The LearnCard Application API (`lca-api`) is the tRPC service backing client-sid
 
 ## Build & Development Commands
 
+### Backend configuration model
+
+Configuration resolves in layers, lowest to highest precedence:
+
+1. Schema defaults (`src/config/environment.ts` Zod `.default()`s).
+2. Checked-in **non-secret** base config `config/config.json`.
+3. Checked-in **non-secret** per-stage config `config/config.<stage>.json`.
+4. Runtime AWS secrets bundle (Lambda only).
+5. Real environment variables (always win). Empty strings are unset.
+
+The stage is `LAMBDA_STAGE` on Lambda, else `CONFIG_STAGE`; an unknown stage uses
+the base `config/config.json` only (no per-stage file). The config stage files are
+**public by design** — put only non-secret config in them. Credentials,
+authorization allowlists (`AUTHORIZED_DIDS`), and internal service endpoints are
+**secrets** and belong in the runtime bundle or local env, never the stage files.
+
+For Lambda `trpc`/`api`, set the deploy environment variable `RUNTIME_SECRETS_ID` to
+`lca-api/<stage>/runtime-secrets` (or its ARN in the Lambda account/region). Provision
+the secret before enabling the variable. Its SecretString is a flat JSON object of
+UPPER_SNAKE_CASE environment names to string values, including **all** required
+runtime credentials. For example, Firebase is encoded as a string:
+
+```json
+{ "GOOGLE_APPLICATION_CREDENTIAL": "{\"type\":\"service_account\",\"...\":\"...\"}" }
+```
+
+The Firebase JSON is a **string inside the bundle**, not a nested object. No secret
+values belong in checked-in files. `lambda.ts` loads and validates the bundle once
+before importing `lambdaApp.ts` and the environment schema. Non-empty explicit env
+values win; empty strings are unset. Failed secret loads stop startup with a
+sanitized error and can retry; failed application imports remain memoized until
+the process is recycled. Redeploy/recycle functions after rotating the bundle.
+
+When the id is absent, no AWS lookup occurs. Deploys retain the GitHub
+runtime secrets as environment fallbacks; keep those inputs
+until every stage has a bundle. Self-hosters, Docker, local development and CI keep
+using plain environment variables — copy `config/config.example.json` to a stage
+file (register its static import in `src/config/stageConfig.ts` and rebuild) or
+just supply a `.env`. `trpc`, `api`, and `seedMigration` use
+`SigningAuthorityExecutionRole`. `didWeb` and `swagger` use the generated default
+role, with only a scoped runtime-bundle read grant in addition to Serverless's
+execution permissions, not signing-authority KMS access. All five receive the
+bundle id and run in the service VPC. Explicit function roles do not inherit the
+default role's grants. OIDC has an isolated
+`oidcLambda.ts` → `oidcLambdaApp.ts` import path and focused OIDC/cache schemas,
+so it never imports the API schema requiring seed and Mongo credentials. Keep that path free of Mongo, models and DIDKit:
+a Mongo connect left pending when an idle sandbox freezes crashes the next request after thaw. OIDC gets
+its broker settings and keeps its separate signing-key secret and IAM role.
+`OIDC_CLIENT_SECRET` stays a GitHub-environment secret on the OIDC function and is
+**never** placed in the runtime bundle; that function makes no AWS Secrets Manager
+calls for it. Preserve the existing issuer/audience validation.
+
+The Infisical → AWS sync and per-stage cutover are documented in the repo-root
+[environment-variables.md](../../../environment-variables.md#infisical--aws-secrets-sync).
+The shared `@learncard/service-config` package owns parsing, merging, runtime
+loading, stage application and Lambda bootstrap. Brain-service and LearnCloud
+adoption remains a separate task.
+
 - Build: `bun run build`
 - Dev: `bun run dev` — watches and rebuilds
 - Start: `bun run start` — local server (default port from env, typically 5100)
@@ -57,16 +115,17 @@ The `keysRouter` implements the server side of Shamir Secret Sharing key managem
 
 The `escrow` tRPC router is disabled unless `ESCROW_ENCLAVE_MODE` is configured.
 
-| Route                          | Procedure                 | Purpose                                                            |
-| ------------------------------ | ------------------------- | ------------------------------------------------------------------ |
-| `GET /keys/escrow/attestation` | `escrow.getAttestation`   | Enclave public key and hold duration                               |
-| `POST /keys/escrow`            | `escrow.enroll`           | Verify and store automatic recovery material                       |
-| `DELETE /keys/escrow`          | `escrow.remove`           | Remove material and optionally opt out                             |
-| `POST /keys/escrow/opt-in`     | `escrow.optIn`            | Allow enrollment again                                             |
-| `POST /keys/escrow/recover`    | `escrow.startRecovery`    | Start a waiting period without resetting an existing hold          |
-| `GET /keys/escrow/status`      | `escrow.getStatus`        | Check status; active devices send provider auth via `X-Auth-Token` |
-| `POST /keys/escrow/cancel`     | `escrow.cancelRecovery`   | DID owner cancels a pending hold                                   |
-| `POST /keys/escrow/complete`   | `escrow.completeRecovery` | Claim an elapsed hold and release sealed recovery material once    |
+| Route                           | Procedure                     | Purpose                                                                   |
+| ------------------------------- | ----------------------------- | ------------------------------------------------------------------------- |
+| `GET /keys/escrow/attestation`  | `escrow.getAttestation`       | Enclave public key and hold duration                                      |
+| `POST /keys/escrow`             | `escrow.enroll`               | Verify and store automatic recovery material                              |
+| `DELETE /keys/escrow`           | `escrow.remove`               | Remove material and optionally opt out                                    |
+| `POST /keys/escrow/opt-in`      | `escrow.optIn`                | Allow enrollment again                                                    |
+| `POST /keys/escrow/recover`     | `escrow.startRecovery`        | Start a waiting period without resetting an existing hold                 |
+| `GET /keys/escrow/status`       | `escrow.getStatus`            | Check status; active devices send provider auth via `X-Auth-Token`        |
+| `POST /keys/escrow/cancel`      | `escrow.cancelRecovery`       | DID owner cancels a pending hold                                          |
+| `POST /keys/escrow/cancel-link` | `escrow.cancelRecoveryByLink` | Cancels a pending hold via the single-use email cancel link (no DID auth) |
+| `POST /keys/escrow/complete`    | `escrow.completeRecovery`     | Claim an elapsed hold and release sealed recovery material once           |
 
 ### Important Invariants
 
@@ -86,7 +145,7 @@ adopts the existing `email:<address>` identity's `subject` via `getOrCreateAuthS
 (`$setOnInsert`), so a user doesn't hit "Account already exists" switching from email-code to native
 social sign-in. It never runs the other direction, and an already-existing `<provider>:<sub>` record
 keeps its own `subject` — only a first-time native sign-in can be linked this way.
-Require `OIDC_ISSUER`, an exact redirect allowlist, and a token client secret; any deployed stage (`NODE_ENV=production` or `LAMBDA_STAGE` set) additionally requires an RSA private `OIDC_SIGNING_KEY_JWK`.
+Require `OIDC_ISSUER`, an exact redirect allowlist, and a token client secret. Deployed Lambdas use `OIDC_SIGNING_KEY_SECRET_ID` (name or ARN of `lca-api/<stage>/oidc-signing-jwk`) pointing to a plain-string Secrets Manager SecretString containing the RSA private JWK JSON (`kty=RSA`, `d`, `kid`, `alg=RS256`). The key is fetched and cached per process; failures return 503 and retry on the next request. Redeploy after rotation. `OIDC_SIGNING_KEY_JWK` remains supported for local/Docker/CI and takes precedence. Any deployed stage (`NODE_ENV=production` or `LAMBDA_STAGE` set) fails closed without a configured key.
 Login codes, tickets and authorization codes are consumed with `getDel` (`src/cache/getDel.ts`, Redis `GETDEL`, requires Redis >= 6.2).
 Rate limiting is two layers, both keyed on `request.ip` (API Gateway `sourceIp` under `serverless-http`; `x-forwarded-for` is attacker-controlled and never trusted). Both fail open if Redis is unreachable. **Layer 1 — failures only** (`src/helpers/rate-limit.helpers.ts`, Redis counters, 10-minute window): the ticket routes use 5 per email plus a 50-per-IP backstop; `/oidc/authorize` (bad client/redirect, invalid ticket) and `/oidc/token` (`invalid_client` only) each use 50 per IP and answer `429 temporarily_unavailable` + `Retry-After` (or an OAuth error redirect once the `redirect_uri` is validated). `invalid_grant` at the token endpoint is deliberately not counted: only the broker (one NAT IP) can reach that branch, and counting the codes it relays would let anyone lock every user out. **Layer 2 — all requests** (`@fastify/rate-limit`, registered in `oidcFastifyPlugin`, Redis-backed when available): 300/min per IP globally so Keycloak's discovery/JWKS polling is never blocked; 60/min per IP on the browser-facing `/oidc/authorize`; a 3000/min sanity ceiling on the server-to-server `/oidc/token` and `/oidc/userinfo` (every legitimate call shares the broker's egress IP, so a tight cap there is a global login ceiling). Layer 2 exists mainly so CodeQL's `js/missing-rate-limiting` recognises the routes; do not remove either layer.
 Unit coverage is in `test/oidc.spec.ts` and `test/auth-tickets.spec.ts`; broker import coverage is gated by `KEYCLOAK_INTEGRATION`.

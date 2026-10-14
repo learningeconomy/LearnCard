@@ -5,10 +5,11 @@ import { StatusBadge } from '../../appStoreDeveloper/components/StatusBadge';
 import type { AppListingStatus, ExtendedAppStoreListing } from '../../appStoreDeveloper/types';
 import * as m from '../../../paraglide/messages.js';
 
-type FilterStatus = AppListingStatus | 'ALL';
+type FilterStatus = AppListingStatus | 'ALL' | 'UPDATES';
 
 const FILTER_OPTIONS: { value: FilterStatus; label: () => string }[] = [
     { value: 'PENDING_REVIEW', label: () => m['appStoreAdmin.sidebar.filterPending']() },
+    { value: 'UPDATES', label: () => m['appStoreAdmin.sidebar.filterUpdates']() },
     { value: 'ALL', label: () => m['appStoreAdmin.sidebar.filterAll']() },
     { value: 'LISTED', label: () => m['appStoreAdmin.sidebar.filterListed']() },
     { value: 'DRAFT', label: () => m['appStoreAdmin.sidebar.filterDraft']() },

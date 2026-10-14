@@ -1,5 +1,11 @@
 # @learncard/email-templates
 
+## 1.2.1
+
+### Patch Changes
+
+- [#1621](https://github.com/learningeconomy/LearnCard/pull/1621) [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5) Thanks [@Custard7](https://github.com/Custard7)! - Add escrow hold email templates.
+
 ## 1.2.0
 
 ### Minor Changes

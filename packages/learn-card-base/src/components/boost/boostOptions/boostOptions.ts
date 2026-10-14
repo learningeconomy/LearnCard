@@ -1,6 +1,10 @@
 import React from 'react';
 
-import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
+import {
+    AchievementTypes,
+    CATEGORY_TO_TEMPLATE_LIST,
+    ACHIEVEMENT_CATEGORIES,
+} from 'learn-card-base/components/IssueVC/constants';
 import { BoostCategoryOptionsEnum } from 'learn-card-base/types/boostAndCredentialMetadata';
 
 export enum BoostUserTypeEnum {
@@ -46,6 +50,8 @@ export const CATEGORY_TO_SUBCATEGORY_LIST: {
         { title: 'Language', type: AchievementTypes.Language },
         { title: 'Upskilling', type: AchievementTypes.Upskilling },
     ],
+    [BoostCategoryOptionsEnum.qualifications]:
+        CATEGORY_TO_TEMPLATE_LIST[ACHIEVEMENT_CATEGORIES.Qualifications],
     [BoostCategoryOptionsEnum.id]: [
         { title: 'License', type: AchievementTypes.License },
         // extended ( ID ) category types
@@ -656,6 +662,7 @@ export const BOOST_CATEGORY_TO_WALLET_ROUTE = {
     ['ID']: 'ids',
     ['Learning History']: 'learninghistory',
     ['Achievement']: 'achievements',
+    ['Qualifications']: 'qualifications',
     ['Work History']: 'workhistory',
     ['Skill']: 'skills',
     ['Social Badge']: 'socialBadges',

@@ -1,17 +1,18 @@
 {
     "name": "@learncard/lca-api-service",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "description": "",
     "engines": {
         "node": ">=24.12 <25"
     },
-    "packageManager": "bun@1.3.14",
+    "packageManager": "bun@1.4.2",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
         "migrate:sa-seeds:local": "bash scripts/migrate-signing-authority-seeds-local.sh",
         "migrate:sa-seeds": "node scripts/migrate-signing-authority-seeds.mjs",
         "check:sa-infra": "node scripts/check-seed-encryption-infrastructure.mjs",
+        "sa-seed:flags": "bun --conditions=development scripts/print-seed-rollout-flags.ts",
         "check:sa-redis": "node scripts/check-signing-authority-redis.mjs",
         "provision:keycloak": "bun --conditions=development scripts/provision-keycloak-users.ts",
         "test": "vitest run --config vitest.config.ts",
@@ -57,6 +58,7 @@
     },
     "dependencies": {
         "@aws-sdk/client-kms": "^3.1139.0",
+        "@aws-sdk/client-secrets-manager": "^3.1139.0",
         "@fastify/cors": "^11.2.0",
         "@fastify/formbody": "^8.0.2",
         "@fastify/rate-limit": "^10.2.0",
@@ -68,6 +70,7 @@
         "@learncard/email-templates": "workspace:*",
         "@learncard/helpers": "workspace:*",
         "@learncard/init": "workspace:*",
+        "@learncard/service-config": "workspace:*",
         "@learncard/types": "workspace:*",
         "@learncard/sss-key-manager": "workspace:*",
         "@sentry/serverless": "^7.61.0",

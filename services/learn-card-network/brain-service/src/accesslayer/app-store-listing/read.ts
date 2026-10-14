@@ -244,15 +244,21 @@ export const getListedAppsWithSubmitter = async ({
     status,
     includeAllStatuses = false,
     excludeDemoted = true,
+    pendingUpdatesOnly = false,
 }: {
     limit: number;
     cursor?: string;
     status?: string;
     includeAllStatuses?: boolean;
     excludeDemoted?: boolean;
+    pendingUpdatesOnly?: boolean;
 }): Promise<ListingWithSubmitter[]> => {
     const whereClauses: string[] = [];
     const params: Record<string, any> = { limit: int(limit) };
+
+    if (pendingUpdatesOnly) {
+        whereClauses.push("listing.pending_update_status = 'PENDING_REVIEW'");
+    }
 
     if (status) {
         whereClauses.push('listing.app_listing_status = $status');

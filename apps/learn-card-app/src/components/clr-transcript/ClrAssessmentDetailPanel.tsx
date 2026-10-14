@@ -1,6 +1,7 @@
 import React from 'react';
 
 import X from '../svgs/X';
+import { ClrRecordDetails } from './ClrRecordDetails';
 import { ClipboardCheck } from 'lucide-react';
 import { FlatIcon } from 'learn-card-base/components/FlatIcon';
 import ClrAlignmentList from './ClrAlignmentList';
@@ -13,13 +14,13 @@ import ClrCourseCredentialCollapsible from './ClrCourseCredentialCollapsible';
 
 import { useModal } from 'learn-card-base';
 
-import { formatClrDate, getRelationshipsForRecord } from '../../helpers/clrRenderer.helpers';
-import { summarizeAssessment } from './clr.helpers';
+import { getRelationshipsForRecord } from 'learn-card-base/helpers/credentials/clr/renderer';
+import { summarizeAssessment } from 'learn-card-base/helpers/credentials/clr/helpers';
 
 import type {
     AssessmentDisplayModel,
     ClrTranscriptDisplayModel,
-} from '../../helpers/clrRenderer.helpers';
+} from 'learn-card-base/helpers/credentials/clr/renderer';
 import type { VC } from '@learncard/types';
 
 const ClrAssessmentDetailPanel: React.FC<{
@@ -41,6 +42,7 @@ const ClrAssessmentDetailPanel: React.FC<{
     issuerLogo,
     showCloseButton = true,
 }) => {
+    const record = model.records.find(candidate => candidate.id === assessment.sourceCredentialId);
     const { closeModal } = useModal();
     const summary = summarizeAssessment(assessment);
     const relationships = getRelationshipsForRecord(
@@ -52,9 +54,6 @@ const ClrAssessmentDetailPanel: React.FC<{
         [assessment.sourceCredentialId]: {
             kind: 'assessment',
             title: assessment.name?.value ?? 'Assessment',
-            dateLabel: assessment.earnedAt?.value
-                ? `Added ${formatClrDate(assessment.earnedAt.value)}`
-                : undefined,
         },
     };
 
@@ -75,14 +74,6 @@ const ClrAssessmentDetailPanel: React.FC<{
                             <p className="text-sm text-grayscale-600">
                                 {assessment.achievementType.value}
                             </p>
-                            {assessment.earnedAt?.value && (
-                                <>
-                                    <span className="text-xs text-grayscale-300">•</span>
-                                    <p className="text-xs text-grayscale-500">
-                                        {formatClrDate(assessment.earnedAt.value)}
-                                    </p>
-                                </>
-                            )}
                         </div>
                     </div>
                     {showCloseButton && (
@@ -128,24 +119,6 @@ const ClrAssessmentDetailPanel: React.FC<{
                             </p>
                         </div>
                     )}
-
-                    {assessment.earnedAt?.value && (
-                        <p className="text-base text-grayscale-600">
-                            Completed on{' '}
-                            <span className="font-semibold text-grayscale-600">
-                                {formatClrDate(assessment.earnedAt.value)}
-                            </span>
-                            {issuerName && (
-                                <>
-                                    {' '}
-                                    at{' '}
-                                    <span className="font-semibold text-grayscale-600">
-                                        {issuerName}
-                                    </span>
-                                </>
-                            )}
-                        </p>
-                    )}
                 </div>
 
                 {relationships.length > 0 && (
@@ -158,6 +131,8 @@ const ClrAssessmentDetailPanel: React.FC<{
                 )}
 
                 <ClrResultWithScaleList results={assessment.results} showResultType={adminMode} />
+
+                <ClrRecordDetails record={record} />
 
                 {assessment.alignments.length > 0 && (
                     <ClrAlignmentList alignments={assessment.alignments} />
@@ -178,6 +153,7 @@ const ClrAssessmentDetailPanel: React.FC<{
                     issuerLogo={issuerLogo}
                     skillCount={assessment.alignments.length}
                     credential={boost}
+                    record={record}
                 />
             </div>
         </div>

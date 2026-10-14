@@ -17,6 +17,7 @@ import {
     MembershipCategoryTypes,
     SkillCategroyTypes,
     SocialBadgesCategoryTypes,
+    QualificationsCategoryTypes,
     WorkHistoryCategoryTypes,
 } from 'learn-card-base/components/IssueVC/constants';
 import { BoostUserTypeEnum } from '../../../boost-options/boostOptions';
@@ -112,6 +113,11 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
         if (
             categoryType === BoostCategoryOptionsEnum.workHistory &&
             !WorkHistoryCategoryTypes.includes(achievementType)
+        )
+            return true;
+        if (
+            categoryType === BoostCategoryOptionsEnum.qualifications &&
+            !QualificationsCategoryTypes.includes(achievementType)
         )
             return true;
         if (

@@ -28,7 +28,7 @@ fi
 [[ "$count" == 1 ]] || { printf 'Unexpected deployment journal listing.\n' >&2; exit 1; }
 aws s3api get-object --bucket "$TF_STATE_BUCKET" --key "$key" "$work/deployment.json" >/dev/null
 jq -e '.status == "complete"' "$work/deployment.json" >/dev/null || {
-    printf 'Prior deployment incomplete; operator reconciliation required.\n' >&2; exit 1;
+    printf 'Prior deployment pending, rolled_back, or invalid; verify the running image and source SHA, reconcile Terraform and compatibility metadata, then write deployment.json as complete with that image/SHA before retrying.\n' >&2; exit 1;
 }
 previous=$(jq -er '.sha | select(type == "string") | select(test("^[0-9a-f]{40}$"))' "$work/deployment.json") || {
     printf 'Invalid prior release SHA in deployment journal; refusing deployment.\n' >&2; exit 1;

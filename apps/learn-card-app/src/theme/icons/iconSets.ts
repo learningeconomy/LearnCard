@@ -171,6 +171,16 @@ import type {
     NavbarIcons,
     PlaceholdersIcons,
 } from './index';
+import {
+    QualificationsIcon,
+    QualificationsIconWallet,
+    QualificationsIconEmptyState,
+    QualificationsIconSolidColor,
+    QualificationsIconSolidGrayscale,
+    QualificationsIconGrayscale1,
+    QualificationsIconFormalSolidColor,
+    QualificationsIconFormalWallet,
+} from 'learn-card-base/svgs/wallet/QualificationsIcon';
 
 // ─── Color Wrapper Helpers ───────────────────────────────────────────────
 
@@ -208,11 +218,8 @@ const withWhite = (
  */
 export const ICON_SETS: Record<string, ThemeIconTable> = {
     colorful: {
-        // `IconSolid` intentionally reuses the *Formal glyphs: they are the
-        // flat, single-colour version of each category mark that design
-        // specced for the activity feed (LC-1969), and they are identical
-        // across themes by design. The `formal` set needs no `IconSolid`
-        // because its `Icon` already *is* that glyph.
+        // Small activity icons use flat glyphs. Most categories reuse the Formal glyph;
+        // Qualifications keeps the independently supplied Colorful and Formal assets.
         [CredentialCategoryEnum.aiTopic]: {
             Icon: AiSessionsIcon,
             IconWithShape: AiSessionsIconWithShape,
@@ -250,6 +257,13 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             IconSolid: AchievementsIconFormal,
             IconDark: withDark(AchievementsIconFormal),
             IconWhite: withWhite(AchievementsIconFormal),
+        },
+        [CredentialCategoryEnum.qualifications]: {
+            Icon: QualificationsIcon,
+            IconWithShape: QualificationsIconWallet,
+            IconWithLightShape: QualificationsIconEmptyState,
+            IconSolid: QualificationsIconSolidColor,
+            IconDark: QualificationsIconSolidGrayscale,
         },
         [CredentialCategoryEnum.learningHistory]: {
             Icon: StudiesIcon,
@@ -317,6 +331,7 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             [CredentialCategoryEnum.skill]: SkillsTwoTonedIcon,
             [CredentialCategoryEnum.socialBadge]: BoostsTwoTonedIcon,
             [CredentialCategoryEnum.achievement]: AchievementsTwoTonedIcon,
+            [CredentialCategoryEnum.qualifications]: QualificationsIconGrayscale1,
             [CredentialCategoryEnum.learningHistory]: StudiesTwoTonedIcon,
             [CredentialCategoryEnum.accomplishment]: PortfolioTwoTonedIcon,
             [CredentialCategoryEnum.accommodation]: AssistanceTwoTonedIcon,
@@ -361,6 +376,10 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             Icon: AchievementsIconFormal,
             IconDark: withDark(AchievementsIconFormal),
             IconWhite: withWhite(AchievementsIconFormal),
+        },
+        [CredentialCategoryEnum.qualifications]: {
+            Icon: QualificationsIconFormalSolidColor,
+            IconWithShape: QualificationsIconFormalWallet,
         },
         [CredentialCategoryEnum.learningHistory]: {
             Icon: StudiesIconFormal,
@@ -408,6 +427,7 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             [CredentialCategoryEnum.skill]: SkillsFormalIcon,
             [CredentialCategoryEnum.socialBadge]: BoostsFormalIcon,
             [CredentialCategoryEnum.achievement]: AchievementsFormalIcon,
+            [CredentialCategoryEnum.qualifications]: QualificationsIconFormalSolidColor,
             [CredentialCategoryEnum.learningHistory]: StudiesFormalIcon,
             [CredentialCategoryEnum.accomplishment]: PortfolioFormalIcon,
             [CredentialCategoryEnum.accommodation]: AssistanceFormalIcon,

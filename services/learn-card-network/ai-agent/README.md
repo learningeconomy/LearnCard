@@ -88,7 +88,24 @@ workspace packages first.
 - `GET /api/health` retains detailed feature/configuration status, including the Sentry deployment-delivery check.
 - Every response includes `X-Request-ID`; agent runs also return a `runId`.
 - Concise logfmt application lines correlate HTTP, model, tool, run, and post-run stages without recording DIDs, prompts, responses, memory, tool payloads, or exception messages. ECS sends metrics directly to CloudWatch instead of mixing EMF JSON records into the log stream.
-- Ordinary application logs go to CloudWatch only. Sentry receives the verified deployment event, sanitized operational exceptions, and sampled performance transactions—not the log stream.
+- With Sentry configured, every existing safe per-run `writeLog` record reaches **both CloudWatch and Sentry**, in addition to the existing unsampled lifecycle/error events and separately sampled performance transactions. This includes model/tool/main/post-run records, contextual service errors, and autonomy occurrences with a run ID. Forwarding never captures global console/stdout or adds HTTP run-log records. `SENTRY_TRACES_SAMPLE_RATE=0` does not suppress log or lifecycle/error events.
+- Sentry exceptions retain privacy-safe built-in types, diagnostic messages, and bounded cause chains. Custom error types and every stack frame's file/function identifiers are hashed independently of content-redaction capacity; line/column numbers remain available for correlation. Run events include `runId`, hashed correlation/provider/owner identifiers, trigger type, main/post-run phase, timing, budgets, observed token usage, completed model calls, and tool success/failure counts. Caller-supplied UUID correlation IDs are hashed too.
+- Raw prompts, model output, tool arguments/results, credentials, arbitrary error properties, request/user contexts, and breadcrumbs are not event payloads. Per-run sensitive-content registration includes own string keys and values before provider parsing and budget checks, without invoking getters or serializers. Keys and values share the 4,096-entry traversal budget and 512-own-key object limit; unavailable content fails closed. Character limits remain 16,384 per value and 65,536 cumulatively across newly registered exact values, not a 256-word cutoff. Already-covered exact strings are not charged again. Malformed model tool arguments and retrospective JSON throw fixed `SyntaxError`s without native parser previews or causes. Wallet backend failures intentionally use a fixed operational message as a privacy tradeoff; local argument validation retains specific errors. Wallet-call wrappers never expose backend prose, serialized backend properties, or raw stack previews; the original cause remains available only through approved sanitized diagnostics. Approved payloads stay private from SDK processors, and unapproved SDK events are dropped.
+- Common prompt/output/tool words are deliberately masked even when they overlap an otherwise useful external error diagnostic: echoed private fragments and provider prose have no trusted provenance distinction. Non-overlapping text and known-safe internal diagnostics remain available; no stopword exemption weakens privacy. Diagnostics longer than 8,192 characters are withheld before fragment replacement or regex scrubbing, preventing unbounded email-pattern cost and truncated private previews.
+- SDK 7.61.0 has no native structured Logs API. Each application record is one bounded event (`recordKind=application-log`, `extra.logRecord={event,level,timestamp,sequence,fields}`) through the same private snapshot gate. Fields retain the existing 256-character string cap; no whole-run buffer or tail truncation is used. `sequence` is process-local, not cross-worker/restart ordering. Query these in Sentry events, not the native Logs product.
+- Run-log event tags index only bounded `component`, `recordKind`, `runId`, hashed `correlationId`/`ownerId`, `triggerType`, `phase`, and `status` when present. All sanitized fields remain in `extra.logRecord.fields`; counters, tool/model/runtime values, budgets, provider IDs, and schedule details are not copied into run-log tags. Existing lifecycle/error metadata is unchanged.
+- Non-run ordinary records—startup/delivery checks, all HTTP completion records, autonomy cycle summaries, and occurrences without a run ID—remain CloudWatch-only. Uncorrelated service errors can still produce the existing separate Sentry operational exception.
+- Configured credentials are explicitly registered for redaction, including LaunchDarkly SDK keys and Mongo URIs plus raw/decoded URI username/password, rather than relying only on secret-named environment entries. Raw request IDs remain in response headers, but HTTP telemetry hashes them.
+- Failed scheduled runs and post-run processing retain their existing run telemetry without a duplicate scheduler exception or `service.error` log. Scheduler-only setup, feed, persistence, and lease/heartbeat failures still emit operational diagnostics.
+- Volume: one additional unsampled Sentry event per safe run log record: `3 + M + T` for a basic completed run, where `M` is completed model calls and `T` is completed tool calls (post-run failures and other run-associated records can add more). A basic completed run with one model call and no tools produces about 9 events (5 lifecycle + 4 log records), versus 5 previously, whether invoked through HTTP or directly. The additional 80% event volume increases ingestion/quota/storage cost; reducing trace sampling does not reduce log volume. SDK delivery and server quota/rate limits still apply.
+
+Offline verification uses the actual WASM artifact and the actual Sentry SDK with an in-memory transport, synthetic keys/content, and no production or telemetry network access:
+
+```bash
+cd services/learn-card-network/ai-agent
+bun run smoke:feed-wasm
+bun run smoke:sentry
+```
 
 The production ARM64 container, reusable-infrastructure ECS/Fargate CloudFormation stack, deployment workflow, alarms, dashboard, staging smoke test, rollout procedure, key rotation, troubleshooting, and rollback steps are documented in [RUNBOOK.md](./RUNBOOK.md).
 
@@ -163,6 +180,15 @@ index; no card data is deleted.
 
 Assistant card types are `message`, `job-suggestion`, `pathway-update`, and `action-item`.
 Priorities are `normal` and `high`.
+
+Feedback timestamps are serialized as explicit ISO strings before DAG-JWE encryption and
+validated/rehydrated on read. The API returns `feedback.createdAt: string | null`: `null`
+means the original feedback time is unavailable, including older WASM-encrypted Dates that
+became `{}`. The thumbs-down remains recorded; the feed does not invent a timestamp or
+fail the entire batch because that feedback time is unknown. No backfill is performed.
+
+Run `bun run smoke:feed-wasm` from this service directory to exercise actual DIDKit WASM,
+repository/service readback, and the registered feed handler with isolated synthetic storage.
 
 The assistant profile is stored in `learnCardAssistantProfiles` and can customize the assistant
 name and personality used in the system prompt. Missing profiles fall back to `My Assistant`.
@@ -250,11 +276,26 @@ temporary database.
 Production retains its environment approval; no separate action dispatch is required.
 See [RUNBOOK.md](./RUNBOOK.md) for CI, release metadata, environment setup, and controlled rollout.
 
-The Trigger task runtime is Node even though repository commands use Bun. A live Bun task run
-failed in `@learncard/init` while loading DidKit, so the native
-`@learncard/didkit-plugin-node` package is externalized from the Trigger bundle. The full-agent
-execution task uses `medium-1x`: Trigger.dev's default 0.5 GB worker exhausted its V8 heap while
-initializing the LearnCard runtime.
+Local and CI AI Agent commands pin **Node.js 24.18.0**. Trigger tasks select the stable
+**Node.js 24** major (`runtime: 'node-24'`); the hosted platform selects its minor version.
+The ECS HTTP service and repository dependency installation use **Bun 1.4.2**. ECS builds the
+service's own Dockerfile and uses Fargate `awsvpc` networking, without an
+`extra_hosts`/`host-gateway` override. Local Compose instead uses
+`Dockerfile.monorepo`: dependencies install on 1.4.2, but its final `source`
+runtime deliberately stays on 1.3.14 for local and hosted E2E did:web host-gateway
+resolution, an exception to the production `1.4.2-alpine` runtime. The local AI
+Agent startup runs `dev`, not `bun install`.
+Trigger SDK/build/CLI are pinned to 4.5.7, the first release with stable Node 24 support; see the
+[release notes](https://trigger.dev/changelog/v4-5-7) and
+[platform runtime versions](https://trigger.dev/docs/config/config-file#nodejs-versions).
+The service-local `.nvmrc`, package engines, and AI Agent PR/validation/deployment jobs
+use the service's Node pin; unrelated monorepo Node pins are unchanged. Use the
+service pin for local Trigger commands and native-package readiness checks.
+
+A live Bun task run failed in `@learncard/init` while loading DidKit, so the native
+`@learncard/didkit-plugin-node` package remains externalized from the Trigger bundle.
+The full-agent execution task uses `medium-1x`: Trigger.dev's default 0.5 GB worker exhausted
+its V8 heap while initializing the LearnCard runtime.
 Workspace `development` exports are enabled only inside esbuild, not in the worker's Node
 conditions: the published native package must resolve to compiled JavaScript at runtime.
 

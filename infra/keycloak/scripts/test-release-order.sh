@@ -58,6 +58,9 @@ for environment in staging production; do
     check pass # Deliberate manual rollback.
     printf '{"status":"pending","sha":"%s"}\n' "$new" >"$JOURNAL"
     check fail # Override cannot bypass incomplete deployment recovery.
+    printf '{"status":"rolled_back","sha":"%s"}\n' "$new" >"$JOURNAL"
+    check fail # A restored image does not reconcile Terraform or the candidate SHA.
+    grep -q 'verify the running image and source SHA' "$work/log"
     export ALLOW_ROLLBACK=false GITHUB_EVENT_NAME=push
     unset RELEASE_SHA
     journal "$unknown"; check fail # Missing history fails closed.

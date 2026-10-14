@@ -1,18 +1,18 @@
-import type { Context } from 'aws-lambda';
-import {
-    dispatchContractEvents,
-    type ContractEventDispatchSummary,
-} from './src/helpers/contract-events.helpers';
+import { bootstrapLambda } from '@learncard/service-config';
 
-/** Recover committed event intents after process failure; scheduler input cannot alter scope. */
+import { base, stages } from './src/config/stageConfig';
+
+type ContractEventsApp = typeof import('./contractEventsLambdaApp');
+
+const getApplication = bootstrapLambda<ContractEventsApp>({
+    base,
+    stages,
+    stage: process.env.AWS_LAMBDA_FUNCTION_NAME
+        ? process.env.LAMBDA_STAGE
+        : process.env.CONFIG_STAGE,
+    importApp: () => import('./contractEventsLambdaApp'),
+});
+
 export const contractEventsHandler = async (
-    _event: unknown,
-    context?: Pick<Context, 'getRemainingTimeInMillis'>
-): Promise<ContractEventDispatchSummary> =>
-    dispatchContractEvents({
-        limit: 100,
-        budgetMs: Math.max(
-            0,
-            Math.min(45_000, (context?.getRemainingTimeInMillis() ?? 50_000) - 8_000)
-        ),
-    });
+    ...args: Parameters<ContractEventsApp['contractEventsHandler']>
+) => (await getApplication()).contractEventsHandler(...args);
