@@ -66,6 +66,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
         [VC_TYPE.ACHIEVEMENT]: 'Achievement',
         [VC_TYPE.SKILL]: 'Skill',
         [VC_TYPE.WORK]: 'Work History',
+        [VC_TYPE.QUALIFICATIONS]: 'Qualification',
         [VC_TYPE.SOCIAL_BADGE]: 'Social Badge',
     };
 

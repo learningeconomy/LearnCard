@@ -6,12 +6,12 @@ The LearnCard Partner Connect SDK transforms complex `postMessage` communication
 
 ## Features
 
--   🔒 **Secure**: Origin validation for all messages
--   🎯 **Type-safe**: Full TypeScript support with comprehensive types
--   ⚡ **Promise-based**: Modern async/await API
--   🧹 **Clean**: Abstracts away all postMessage complexity
--   📦 **Lightweight**: Zero runtime dependencies
--   🛡️ **Robust**: Built-in timeout handling and error management
+- 🔒 **Secure**: Origin validation for all messages
+- 🎯 **Type-safe**: Full TypeScript support with comprehensive types
+- ⚡ **Promise-based**: Modern async/await API
+- 🧹 **Clean**: Abstracts away all postMessage complexity
+- 📦 **Lightweight**: Zero runtime dependencies
+- 🛡️ **Robust**: Built-in timeout handling and error management
 
 ## Installation
 
@@ -81,7 +81,8 @@ interface PartnerConnectOptions {
     /**
      * Controls automatic standalone mock mode.
      * 'auto' (default) mocks only when no LearnCard host is present AND the
-     * page runs on a local dev host; 'standalone' mocks whenever no host is
+     * page runs in local dev or an AI app builder's editor preview
+     * (Lovable, Bolt, v0, Replit); 'standalone' mocks whenever no host is
      * present, on any origin; true always mocks; false never mocks.
      */
     mock?: boolean | 'auto' | 'standalone';
@@ -98,6 +99,180 @@ interface PartnerConnectOptions {
     hostProbeTimeout?: number;
 }
 ```
+
+### From mock to App Store
+
+While mock mode is active, the SDK silently captures an app manifest in local storage
+(`{namespace}:manifests`) with the LearnCard surface your app actually uses:
+
+- inline credential templates
+- consent scopes
+- permissions inferred from SDK calls
+- launched feature paths, counter keys, learner-context usage, notifications
+
+Practice captures include a stable `appKey`, saved per app title in this browser (or set exactly by `mockOptions.appId`). Give apps distinct titles or explicit IDs when they share an address. **Start over** in the expanded panel asks for confirmation; `learnCard.resetPracticeMode()` does the same reset directly, clearing only this app's captures, practice credentials, counters, and generated identity. The next capture gets a new key unless you supplied `appId`. Outside mock mode the method is a no-op. Icon capture prefers Apple touch icons, then large favicons, then same-origin web app manifest icons, with `/favicon.ico` as fallback; it also tries to include a small rasterized image for publishing. Oversized publish links omit that image.
+
+When `mockOptions.ui !== false`, mock mode also shows a **Practice mode** panel in the
+bottom-left corner. It starts collapsed as a pill (`Practice mode` plus a feature count) and
+expands into a frosted-glass card with the app name and address, a plain-language list of the
+LearnCard features the app uses (templates, consent, screens, counters as details), a
+**Publish app** button, and a copy-link button. It follows the system light/dark setting and
+respects reduced motion.
+
+Once the manifest becomes publishable (at least **1 inline template** or **2 distinct permissions**), mock mode shows a persistent, dismissible **Publish to LearnCard** card. The link opens:
+
+```text
+https://learncard.app/app-store/developer/submit?manifest=<base64url(JSON)>
+```
+
+You can also read the same data yourself:
+
+```typescript
+const manifest = learnCard.getCapturedManifest();
+const publishUrl = learnCard.getPublishUrl();
+```
+
+`getPublishUrl()` is **always available once any manifest has been captured**. The publishability
+threshold above is now used only for the automatic prompt/nudge.
+
+Configure the nudge with `mockOptions`:
+
+```typescript
+createPartnerConnect({
+    mock: 'auto',
+    mockOptions: {
+        publishPrompt: true, // default
+        publishOrigin: 'https://learncard.app', // default
+    },
+});
+```
+
+If the card is dismissed, that dismissal is persisted for 24 hours under
+`{namespace}:publish-dismissed-at:{fingerprint}`.
+
+#### Multiple apps on one origin
+
+If you run multiple apps on the same origin (for example, two local projects on
+`http://localhost:4321`), mock mode keeps a separate manifest for each app.
+By default it fingerprints the app from the **initial** `document.title`, so a
+single SPA stays in one slot even if route changes later update the title.
+
+If you want an explicit identity, pass `mockOptions.appId`:
+
+```typescript
+createPartnerConnect({
+    mock: 'auto',
+    mockOptions: {
+        appId: 'student-quest-dev',
+    },
+});
+```
+
+That fingerprint scopes both the captured manifest and the publish-nudge dismissal.
+
+If mock mode warns that two apps may be sharing state, set `mockOptions.appId` immediately.
+The warning fires when the same fingerprint already has stored manifest data from a different
+captured `appUrl`.
+
+You can also override the LearnCard origin used for generated publish links:
+
+```typescript
+createPartnerConnect({
+    mock: true,
+    mockOptions: {
+        appId: 'student-quest-dev',
+        publishOrigin: 'https://staging.learncard.app',
+    },
+});
+```
+
+### Testing against a local or staging LearnCard
+
+By default, publish links point at production LearnCard (`https://learncard.app`).
+If you're running LearnCard yourself — a local checkout on `http://localhost:3000`,
+or a staging tenant — you want those links to open _your_ instance instead.
+
+There are three ways to do that, from most convenient to most explicit.
+
+#### 1. `?lc_publish_override=` (no code changes)
+
+Add the parameter to your app's URL:
+
+```text
+http://localhost:4321/?lc_publish_override=http://localhost:3000
+```
+
+`getPublishUrl()`, `getPublishOrigin()`, and the practice panel's **Publish app** and copy-link buttons
+all immediately target `http://localhost:3000`.
+
+The value is validated as a parseable `http:` / `https:` URL and reduced to its
+origin, so `http://localhost:3000/anything?x=1` is stored as `http://localhost:3000`.
+Anything that isn't a valid http(s) origin is **ignored with a console warning**,
+and the SDK falls through to the next source — a typo can't silently break your
+publish links.
+
+A valid value is saved to `sessionStorage` under `lc_publish_override`, so you only
+type it once per tab. Later navigations in that tab keep the override; opening a
+fresh tab drops it.
+
+> Unlike `lc_host_override`, this is **not** a security boundary — it only decides
+> which LearnCard origin publish links point at, and never affects which origins the
+> SDK will accept `postMessage` traffic from. That's why it isn't whitelist-checked.
+
+#### 2. `PUBLIC_LEARNCARD_ORIGIN` (per-developer, via `.env`)
+
+For a setting that should persist across tabs, drive it from your app's environment
+and pass it to both options at once:
+
+```typescript
+const learnCardOrigin = import.meta.env.PUBLIC_LEARNCARD_ORIGIN;
+
+const learnCard = createPartnerConnect({
+    ...(learnCardOrigin
+        ? { hostOrigin: learnCardOrigin, mockOptions: { publishOrigin: learnCardOrigin } }
+        : {}),
+});
+```
+
+```bash
+# .env
+PUBLIC_LEARNCARD_ORIGIN=http://localhost:3000
+```
+
+#### 3. `mockOptions.publishOrigin` (hard-coded)
+
+```typescript
+createPartnerConnect({ mockOptions: { publishOrigin: 'https://staging.learncard.app' } });
+```
+
+#### Resolution order
+
+The publish origin is resolved from the first source that yields a usable origin:
+
+| #   | Source                                                                |
+| --- | --------------------------------------------------------------------- |
+| 1   | `mockOptions.publishOrigin`                                           |
+| 2   | `?lc_publish_override=` query param, then its `sessionStorage` value  |
+| 3   | `?lc_host_override=` (param, then stored) if it's one concrete origin |
+| 4   | The first non-wildcard, non-native-app `hostOrigin` you configured    |
+| 5   | `https://learncard.app`                                               |
+
+Step 3 means that if you're already testing against a local host with
+`?lc_host_override=http://localhost:3000`, publish links follow it automatically —
+you don't need both parameters. Wildcard patterns like `https://*.learncard.app`
+are skipped here, since they name a family of hosts rather than one publishable origin.
+
+Inspect the result at any time:
+
+```typescript
+learnCard.getPublishOrigin(); // 'http://localhost:3000'
+learnCard.getPublishUrl(); // 'http://localhost:3000/app-store/developer/submit?manifest=…'
+```
+
+When mock mode is running on `localhost` and publish links would still go to
+production, the expanded practice panel shows a one-line reminder:
+`Local LearnCard? Add ?lc_publish_override=http://localhost:3000`. It disappears as
+soon as an override or an explicit `publishOrigin` is in effect.
 
 ### Dynamic Origin Configuration
 
@@ -124,9 +299,9 @@ const learnCard = createPartnerConnect({
 
 **How the LearnCard Host Uses This:**
 
--   Production: Iframe URL has no `lc_host_override` parameter
--   Staging: Iframe URL includes `?lc_host_override=https://staging.learncard.app`
--   This allows testing against non-production environments without recompiling partner code
+- Production: Iframe URL has no `lc_host_override` parameter
+- Staging: Iframe URL includes `?lc_host_override=https://staging.learncard.app`
+- This allows testing against non-production environments without recompiling partner code
 
 #### 3. **Configured Origin** (Fallback)
 
@@ -173,9 +348,9 @@ Incoming Message Origin ≡ Configured Host Origin
 
 The SDK enforces an exact match between incoming message origins and the active host origin:
 
--   ✅ **Secure**: Even if a malicious actor adds `?lc_host_override=https://evil.com`, messages from `evil.com` will be rejected
--   ✅ **Cannot be spoofed**: Browser security prevents malicious sites from faking their `event.origin`
--   ✅ **No wildcards**: Only exact matches are accepted
+- ✅ **Secure**: Even if a malicious actor adds `?lc_host_override=https://evil.com`, messages from `evil.com` will be rejected
+- ✅ **Cannot be spoofed**: Browser security prevents malicious sites from faking their `event.origin`
+- ✅ **No wildcards**: Only exact matches are accepted
 
 ```typescript
 // Active origin: https://staging.learncard.app
@@ -193,16 +368,16 @@ Storybook, a preview deploy, CI), there is no host. Standalone calls that aren't
 mocked reject immediately with `LC_NOT_EMBEDDED` (rather than hanging until the
 request timeout), and the SDK logs a one-time hint pointing you to mock mode.
 
-**Mock mode fixes this automatically in local development.** Whenever no
-LearnCard host is present and your app runs on a local dev host (`localhost`,
-`127.0.0.1`, `[::1]`, `*.localhost`, `*.local`) — plain local dev or a local
-Storybook — the SDK simulates the host locally:
+**Mock mode fixes this automatically in local development and AI app
+builders.** Whenever no LearnCard host is present and your app runs on a local
+dev host (`localhost`, `127.0.0.1`, `[::1]`, `*.localhost`, `*.local`) or in
+the editor preview of Lovable, Bolt, v0, or Replit, the SDK simulates the host:
 
--   **Every method shows a branded toast** describing what would happen once embedded — e.g. `sendCredential` → _"✅ In LearnCard, the user would receive **[name]** here."_, `incrementCounter` → _"Counter **coins** → **10**."_, `launchFeature` → _"Would open **/wallet**."_ So you get strong, visible feedback for every call, not just console logs.
--   `requestConsent(...)` auto-grants and shows a "mock consent" toast; `incrementCounter` / `getCounter` / `getCounters` persist to `localStorage` so values survive reloads.
--   Identical or polled calls **coalesce** into a single toast with a ×N counter, so nothing spams the screen.
--   `requestIdentity`, notifications, learner context, sync status, etc. all resolve with sensible fake data.
--   Every simulated interaction is also logged to the console with a `[LearnCard SDK · MOCK]` prefix.
+- **Every method shows a short notice** describing what would happen once embedded — e.g. `sendCredential` → _"In LearnCard, the learner would receive **[name]**."_, `incrementCounter` → _"Counter **coins** → **10**."_, `launchFeature` → _"In LearnCard, this would open **/wallet**."_ So you get strong, visible feedback for every call, not just console logs. At most three notices show at once (one on phones); hovering a notice keeps it on screen.
+- `requestConsent(...)` auto-grants and shows a notice describing what the learner would be asked to share; `incrementCounter` / `getCounter` / `getCounters` persist to `localStorage` so values survive reloads.
+- Identical or polled calls **coalesce** into a single notice with a ×N counter, so nothing spams the screen.
+- `requestIdentity`, notifications, learner context, sync status, etc. all resolve with sensible fake data.
+- Every simulated interaction is also logged to the console with a `[LearnCard SDK · MOCK]` prefix.
 
 **No code changes, no environment flags in local dev.** Your app is fully
 buildable and demo-able locally, and behaves identically against the real host
@@ -217,26 +392,29 @@ const res = await learnCard.sendCredential({ templateAlias: 'course-completion' 
 // Embedded:              goes to the real LearnCard host.
 ```
 
-**`'auto'` is deliberately scoped to local dev hosts.** A standalone page on a
-production or remote preview origin never auto-mocks — otherwise a real user
-opening your app's URL directly would receive a fabricated identity and
-auto-granted consent. For remote deploy previews (Netlify, Lovable, Vercel, …)
+**`'auto'` is deliberately scoped to local dev and app-builder previews.** A
+builder preview is recognized by the editor framing the app (e.g. `lovable.dev`)
+or by a preview-only host (`*.lovableproject.com`, `id-preview--*.lovable.app`,
+`*.webcontainer-api.io`, `*.replit.dev`, `*.vusercontent.net`). A published app
+(`*.lovable.app`, `*.vercel.app`, `*.replit.app`, your own domain) never
+auto-mocks — otherwise a real user opening your app's URL directly would receive
+a fabricated identity and auto-granted consent. For other deploy previews (Netlify, Vercel, …)
 that should demo standalone anywhere but go real once embedded, opt in with
 `mock: 'standalone'`; for CI and tests that should always mock, use
 `mock: true`. Every mocked call shows a labeled toast and a
 `[LearnCard SDK · MOCK]` console log, so it's clear the SDK is simulating
 rather than talking to a real host.
 
-| `mock`             | Standalone, local dev | Standalone, remote origin     | Embedded in LearnCard |
-| ------------------ | --------------------- | ----------------------------- | --------------------- |
-| `'auto'` (default) | mock                  | fail fast (`LC_NOT_EMBEDDED`) | real host             |
-| `'standalone'`     | mock                  | mock                          | real host             |
-| `true`             | mock                  | mock                          | mock                  |
-| `false`            | fail fast             | fail fast                     | real host             |
+| `mock`             | Local dev or app-builder preview | Standalone, other origin      | Embedded in LearnCard |
+| ------------------ | -------------------------------- | ----------------------------- | --------------------- |
+| `'auto'` (default) | mock                             | fail fast (`LC_NOT_EMBEDDED`) | real host             |
+| `'standalone'`     | mock                             | mock                          | real host             |
+| `true`             | mock                             | mock                          | mock                  |
+| `false`            | fail fast                        | fail fast                     | real host             |
 
 **Unrelated iframes don't fool it.** If your app is embedded in something that
 isn't LearnCard (a cross-origin Storybook canvas, a preview shell), calls no
-longer hang: the SDK mocks on local dev hosts and otherwise rejects fast with
+longer hang: the SDK mocks in local dev and app-builder previews and otherwise rejects fast with
 `LC_NOT_EMBEDDED`. When the parent can't be identified (Firefox, or a
 same-origin localhost wrapper), the SDK sends a one-time, side-effect-free
 presence probe and only mocks if no host answers within `hostProbeTimeout`
@@ -277,6 +455,13 @@ Check whether an instance is currently mocking:
 if (learnCard.isMocked()) {
     console.log('Running against the local mock host.');
 }
+```
+
+Inspect the resolved origins directly:
+
+```typescript
+learnCard.getActiveHostOrigin(); // real host origin, or null while mocking
+learnCard.getPublishOrigin(); // LearnCard origin used for publish URLs
 ```
 
 ### Coherent state: reads reflect writes
@@ -361,9 +546,38 @@ const identity = await learnCard.requestIdentity();
 
 **Error Codes:**
 
--   `LC_UNAUTHENTICATED`: User is not logged in to LearnCard
--   `LC_TIMEOUT`: Request timed out
--   `LC_NOT_EMBEDDED`: The app is not embedded in a LearnCard host (standalone, not mocking)
+- `LC_UNAUTHENTICATED`: User is not logged in to LearnCard
+- `LC_TIMEOUT`: Request timed out
+- `LC_NOT_EMBEDDED`: The app is not embedded in a LearnCard host (standalone, not mocking)
+
+---
+
+### `getActiveHostOrigin()` / `getPublishOrigin()`
+
+Inspect which LearnCard origin the SDK is using.
+
+```typescript
+const hostOrigin = learnCard.getActiveHostOrigin();
+const publishOrigin = learnCard.getPublishOrigin();
+```
+
+- `getActiveHostOrigin()` returns the active real-host origin, or `null` while mock mode is active.
+- `getPublishOrigin()` returns the LearnCard origin used to build App Store publish URLs.
+
+---
+
+### `getCapturedManifest()` / `getPublishUrl()`
+
+Read the manifest captured by mock mode and generate an App Store publish URL.
+
+```typescript
+const manifest = learnCard.getCapturedManifest();
+const publishUrl = learnCard.getPublishUrl();
+```
+
+- `getCapturedManifest()` returns `undefined` when you're not in mock mode or nothing has been captured yet.
+- `getPublishUrl()` returns `undefined` until the first manifest exists, then always returns a URL.
+- The auto-shown publish prompt still waits for at least 1 inline template or 2 distinct permissions.
 
 ---
 
@@ -402,6 +616,92 @@ if (response.alreadyClaimed) {
     console.log('User already has this credential:', response.credentialUri);
 }
 ```
+
+#### Inline credential templates (zero-config)
+
+You can also issue a credential from an inline template with no pre-configured host boost. The SDK validates the template and `templateData` locally before it posts anything to LearnCard, so invalid inputs fail fast with `TEMPLATE_INVALID` or `TEMPLATE_DATA_INVALID`.
+
+```typescript
+const response = await learnCard.sendCredential({
+    alias: 'course-complete',
+    template: {
+        name: 'Completed {{courseName}}',
+        description: 'Awarded for finishing {{courseName}}.',
+        achievementType: 'Course',
+        criteria: { narrative: 'Finished all modules' },
+    },
+    templateData: { courseName: 'Intro to Baking' },
+});
+
+console.log(response.credentialUri, response.templateVersion);
+```
+
+Inline templates are versioned by `alias`. Re-sending the same alias with the same canonical template keeps the same `templateVersion`; changing the template body under that alias bumps the version (`1`, `2`, `3`, ...).
+
+If you want to validate offline before issuing, use `validateCredentialTemplate`:
+
+```typescript
+const validation = learnCard.validateCredentialTemplate(
+    {
+        name: 'Completed {{courseName}}',
+        description: 'Awarded for finishing {{courseName}}.',
+        achievementType: 'Course',
+        criteria: { narrative: 'Finished all modules' },
+    },
+    { courseName: 'Intro to Baking' }
+);
+
+if (!validation.valid) {
+    console.error(validation.errors);
+}
+```
+
+If you want a full offline preview of the compiled OBv3 object, use `previewCompiledTemplate`:
+
+```typescript
+const preview = learnCard.previewCompiledTemplate(
+    {
+        name: 'Completed {{courseName}}',
+        description: 'Awarded for finishing {{courseName}}.',
+        credits: { earned: '{{earnedCredits}}' },
+    },
+    { courseName: 'Intro to Baking', earnedCredits: 3 }
+);
+
+console.log(preview.compiled); // OBv3 object with {{variables}} intact
+console.log(preview.rendered); // same object with templateData substituted
+```
+
+You can also import it directly, along with `decodeManifestFromUrl`, from the SDK package:
+
+```typescript
+import { previewCompiledTemplate, decodeManifestFromUrl } from '@learncard/partner-connect';
+```
+
+---
+
+### `previewCompiledTemplate(template, templateData?)`
+
+Compile and optionally render an inline credential template entirely offline.
+
+```typescript
+import { previewCompiledTemplate } from '@learncard/partner-connect';
+
+const preview = previewCompiledTemplate(
+    {
+        name: 'Completed {{courseName}}',
+        description: 'Awarded for finishing {{courseName}}.',
+    },
+    { courseName: 'Intro to Baking' }
+);
+
+if (preview.valid) {
+    console.log(preview.compiled);
+    console.log(preview.rendered);
+}
+```
+
+Returns `{ valid, errors, compiled?, rendered? }`.
 
 ---
 
@@ -503,11 +803,11 @@ await learnCard.sendNotification({
 
 **Parameters:**
 
--   `title` _(optional)_: Notification title
--   `body` _(optional)_: Notification body text
--   `actionPath` _(optional)_: Deep link path within the app (e.g. `'/prizes'`). Must be an absolute pathname starting with `/`. This path is appended to the app's configured embed URL when the user taps the notification. For example, if your embed URL is `https://myapp.com` and `actionPath` is `'/challenges/42'`, the app will open at `https://myapp.com/challenges/42`. Hash routes (e.g. `'/#/page'`) are **not** supported — use pathname-based routing.
--   `category` _(optional)_: Grouping category (e.g. `'reward'`, `'announcement'`, `'status'`)
--   `priority` _(optional)_: `'normal'` (default) or `'high'`. Affects visual styling of the notification card and toast. Does not change delivery priority or ordering.
+- `title` _(optional)_: Notification title
+- `body` _(optional)_: Notification body text
+- `actionPath` _(optional)_: Deep link path within the app (e.g. `'/prizes'`). Must be an absolute pathname starting with `/`. This path is appended to the app's configured embed URL when the user taps the notification. For example, if your embed URL is `https://myapp.com` and `actionPath` is `'/challenges/42'`, the app will open at `https://myapp.com/challenges/42`. Hash routes (e.g. `'/#/page'`) are **not** supported — use pathname-based routing.
+- `category` _(optional)_: Grouping category (e.g. `'reward'`, `'announcement'`, `'status'`)
+- `priority` _(optional)_: `'normal'` (default) or `'high'`. Affects visual styling of the notification card and toast. Does not change delivery priority or ordering.
 
 At least one of `title` or `body` is required.
 
@@ -533,16 +833,16 @@ console.log(spent.newValue); // 5
 
 **Parameters:**
 
--   `key` _(required)_: Counter name. Must match `[a-zA-Z0-9_-]+`, max 64 characters.
--   `amount` _(required)_: Integer value to add. Use a negative integer to decrement.
+- `key` _(required)_: Counter name. Must match `[a-zA-Z0-9_-]+`, max 64 characters.
+- `amount` _(required)_: Integer value to add. Use a negative integer to decrement.
 
 **Returns:** `{ key: string, previousValue: number, newValue: number }`
 
 **Limits:**
 
--   Max 50 distinct counter keys per user per app
--   Max 100 writes per user per app per minute
--   Amount must be a finite integer
+- Max 50 distinct counter keys per user per app
+- Max 100 writes per user per app per minute
+- Amount must be a finite integer
 
 ---
 
@@ -557,7 +857,7 @@ console.log('Balance:', value);
 
 **Parameters:**
 
--   `key` _(required)_: Counter name (same format as `incrementCounter`)
+- `key` _(required)_: Counter name (same format as `incrementCounter`)
 
 **Returns:** `{ key: string, value: number, updatedAt: string | null }`
 
@@ -578,7 +878,7 @@ const all = await learnCard.getCounters();
 
 **Parameters:**
 
--   `keys` _(optional)_: Array of counter names to fetch (max 50). Omit to return all.
+- `keys` _(optional)_: Array of counter names to fetch (max 50). Omit to return all.
 
 **Returns:** `{ counters: Array<{ key: string, value: number, updatedAt: string | null }> }`
 
@@ -597,8 +897,8 @@ await learnCard.launchFeature(
 
 **Parameters:**
 
--   `featurePath`: Path to the feature
--   `initialPrompt`: Optional initial data or prompt
+- `featurePath`: Path to the feature
+- `initialPrompt`: Optional initial data or prompt
 
 ---
 
@@ -645,12 +945,12 @@ if (response.credential) {
 
 **Error Codes:**
 
--   `CREDENTIAL_NOT_FOUND`: Credential doesn't exist
--   `USER_REJECTED`: User declined to share
+- `CREDENTIAL_NOT_FOUND`: Credential doesn't exist
+- `USER_REJECTED`: User declined to share
 
 ---
 
-### `requestConsent(contractUri)`
+### `requestConsent(contractUri)` / `requestConsent(scopes)`
 
 Request user consent for permissions.
 
@@ -665,6 +965,18 @@ if (response.granted) {
     console.log('User denied consent');
 }
 ```
+
+Declarative scopes can be requested without a pre-created contract URI:
+
+```typescript
+const { granted } = await learnCard.requestConsent({
+    read: { credentialCategories: ['Achievement', 'Skill'], personalFields: ['name'] },
+    write: { credentialCategories: ['Achievement'] },
+    reason: 'Personalize your training plan',
+});
+```
+
+In standalone mock mode, calling `requestConsent()` without scopes or a contract URI will auto-grant but show a toast nudge suggesting you pass scopes for zero-setup production use.
 
 **Returns:** `{ granted: boolean }`
 
@@ -687,8 +999,8 @@ if (response.issued) {
 
 **Error Codes:**
 
--   `UNAUTHORIZED`: Not an admin of this template
--   `TEMPLATE_NOT_FOUND`: Template doesn't exist
+- `UNAUTHORIZED`: Not an admin of this template
+- `TEMPLATE_NOT_FOUND`: Template doesn't exist
 
 ---
 
@@ -783,15 +1095,15 @@ interface LearnCardError {
 
 **Common Error Codes:**
 
--   `LC_TIMEOUT`: Request timed out
--   `LC_NOT_EMBEDDED`: Not embedded in a LearnCard host (standalone, not mocking)
--   `LC_UNAUTHENTICATED`: User not logged in
--   `USER_REJECTED`: User declined the request
--   `CREDENTIAL_NOT_FOUND`: Credential doesn't exist
--   `UNAUTHORIZED`: User lacks permission
--   `TEMPLATE_NOT_FOUND`: Template doesn't exist
--   `SDK_NOT_INITIALIZED`: SDK initialization failed
--   `SDK_DESTROYED`: SDK was destroyed before completion
+- `LC_TIMEOUT`: Request timed out
+- `LC_NOT_EMBEDDED`: Not embedded in a LearnCard host (standalone, not mocking)
+- `LC_UNAUTHENTICATED`: User not logged in
+- `USER_REJECTED`: User declined the request
+- `CREDENTIAL_NOT_FOUND`: Credential doesn't exist
+- `UNAUTHORIZED`: User lacks permission
+- `TEMPLATE_NOT_FOUND`: Template doesn't exist
+- `SDK_NOT_INITIALIZED`: SDK initialization failed
+- `SDK_DESTROYED`: SDK was destroyed before completion
 
 **Example:**
 
@@ -846,9 +1158,9 @@ const config = {
 
 ## Browser Support
 
--   Chrome/Edge 90+
--   Firefox 88+
--   Safari 14+
+- Chrome/Edge 90+
+- Firefox 88+
+- Safari 14+
 
 Requires `postMessage` API and `Promise` support.
 
@@ -858,31 +1170,31 @@ The SDK implements multiple security layers:
 
 ### 1. **Strict Origin Validation**
 
--   Messages must come from the **exact** active host origin
--   No wildcards, no pattern matching, no exceptions
--   Mathematical equivalence: `event.origin === activeHostOrigin`
+- Messages must come from the **exact** active host origin
+- No wildcards, no pattern matching, no exceptions
+- Mathematical equivalence: `event.origin === activeHostOrigin`
 
 ### 2. **Query Parameter Whitelist**
 
--   `lc_host_override` values are validated against configured `hostOrigin` array
--   Invalid overrides are rejected and logged
--   Falls back to first configured origin on validation failure
+- `lc_host_override` values are validated against configured `hostOrigin` array
+- Invalid overrides are rejected and logged
+- Falls back to first configured origin on validation failure
 
 ### 3. **Anti-Spoofing Protection**
 
 Even if a malicious actor injects `?lc_host_override=https://evil.com`:
 
--   The SDK may adopt `evil.com` as the active origin (if not whitelisted)
--   **BUT** messages from `evil.com` will only be accepted if `event.origin === 'evil.com'`
--   Browser security prevents `evil.com` from spoofing another domain's origin
--   Malicious messages are silently rejected
+- The SDK may adopt `evil.com` as the active origin (if not whitelisted)
+- **BUT** messages from `evil.com` will only be accepted if `event.origin === 'evil.com'`
+- Browser security prevents `evil.com` from spoofing another domain's origin
+- Malicious messages are silently rejected
 
 ### 4. **Additional Security Layers**
 
--   **Protocol Validation**: Messages must match the expected protocol identifier
--   **Request ID Tracking**: Only tracked requests with valid IDs are processed
--   **Timeout Protection**: Requests automatically timeout to prevent hanging
--   **Explicit targetOrigin**: Never uses `'*'` in postMessage calls
+- **Protocol Validation**: Messages must match the expected protocol identifier
+- **Request ID Tracking**: Only tracked requests with valid IDs are processed
+- **Timeout Protection**: Requests automatically timeout to prevent hanging
+- **Explicit targetOrigin**: Never uses `'*'` in postMessage calls
 
 ### Example Attack Scenario (Prevented)
 
@@ -964,5 +1276,5 @@ Contributions are welcome! Please see the [main LearnCard repository](https://gi
 
 For issues and questions:
 
--   GitHub Issues: https://github.com/learningeconomy/LearnCard/issues
--   Documentation: https://docs.learncard.com
+- GitHub Issues: https://github.com/learningeconomy/LearnCard/issues
+- Documentation: https://docs.learncard.com

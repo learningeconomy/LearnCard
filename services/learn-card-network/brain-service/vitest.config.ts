@@ -9,11 +9,19 @@ const brainServicePreset = {
 
 export default createVitestConfig(brainServicePreset, {
     test: {
+        env: {
+            IS_E2E_TEST: 'false',
+            // The unit router tests import the complete model registry. Keep
+            // its eager index setup off; database tests have a separate config.
+            NEO4J_SKIP_INDICES: 'true',
+        },
         include: [
             'src/helpers/service-account-auth.helpers.test.ts',
             'src/helpers/ecosystem-access.helpers.test.ts',
             'src/helpers/service-account-health.helpers.test.ts',
             'src/helpers/service-account-probe-transport.test.ts',
+            'test/share-link-*.unit.spec.ts',
+            'test/share-content-client.*.spec.ts',
             'test/uri-helpers.spec.ts',
             'test/oidc-jwt.spec.ts',
             'test/notificationMessages.spec.ts',
@@ -32,6 +40,10 @@ export default createVitestConfig(brainServicePreset, {
             'src/helpers/credential-refresh-materiality.helpers.test.ts',
             'src/helpers/credential-refresh-notification-policy.helpers.test.ts',
             'src/config/environment.test.ts',
+            'src/config/stageConfig.test.ts',
+            'src/config/serverlessFunctionEnv.test.ts',
+            'bootstrapLambda.test.ts',
+            'workerLambda.test.ts',
             'src/credential-refresh.test.ts',
             'src/accesslayer/credential-refresh/read.test.ts',
             'src/models/credential-refresh-constraints.test.ts',

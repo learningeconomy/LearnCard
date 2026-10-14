@@ -22,6 +22,16 @@ export type AgeRatingEnum = z.infer<typeof AgeRating>;
 export const AppStoreListingKindEnum = z.enum(['APP', 'INTEGRATION', 'WALLET', 'BUNDLE']);
 export type AppStoreListingKind = z.infer<typeof AppStoreListingKindEnum>;
 
+export const PendingListingUpdateStatus = z.enum(['DRAFT', 'PENDING_REVIEW']);
+export type PendingListingUpdateStatusEnum = z.infer<typeof PendingListingUpdateStatus>;
+
+/** Changes to a LISTED app held back until review, stored as listing storage fields. */
+export const StoredPendingListingUpdateValidator = z.object({
+    changes: z.record(z.string(), z.unknown()).default({}),
+    manifestVersion: z.number().int().min(1).optional(),
+});
+export type StoredPendingListingUpdate = z.infer<typeof StoredPendingListingUpdateValidator>;
+
 export const AppStoreListingValidator = z.object({
     listing_id: z.string(),
     slug: z.string().optional(),
@@ -47,6 +57,9 @@ export const AppStoreListingValidator = z.object({
     age_rating: AgeRating.optional(),
     submitted_at: z.string().optional(),
     contact_email: z.string().email().optional(),
+    pending_update_json: z.string().optional(),
+    pending_update_status: PendingListingUpdateStatus.optional(),
+    pending_update_submitted_at: z.string().optional(),
 });
 export type AppStoreListingType = z.infer<typeof AppStoreListingValidator>;
 

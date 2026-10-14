@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { capitalize } from 'lodash-es';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
@@ -31,6 +31,8 @@ import {
     BoostCategoryOptionsEnum,
     getBoostMetadata,
     useGetCredentialWithEdits,
+    useGetBoost,
+    contractCategoryNameToCategoryMetadata,
 } from 'learn-card-base';
 
 import { ErrorBoundary } from 'react-error-boundary';
@@ -74,7 +76,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     const [claimModalOpen, setClaimModalOpen] = useState<boolean>(false);
 
     // Ref for the element that we want to detect whether on screen
-    const ref: any = useRef<HTMLDivElement>();
+    const ref = useRef<HTMLDivElement>(null);
     // Call the hook passing in ref and root margin
     // In this case it would only be considered onScreen if more ...
     // ... than 300px of element is visible.
@@ -107,7 +109,15 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     const { credentialWithEdits } = useGetCredentialWithEdits(unwrappedCred);
     unwrappedCred = credentialWithEdits ?? unwrappedCred;
 
-    const credCategory = boostVc && getDefaultCategoryForCredential(unwrappedCred);
+    const boostUri = boostVc?.boostId ?? unwrappedCred?.boostId;
+    const { data: boost } = useGetBoost(boostUri ?? '');
+    const credCategory =
+        boostVc &&
+        ((boost?.category
+            ? ((contractCategoryNameToCategoryMetadata(boost.category)?.credentialType ??
+                  boost.category) as CredentialCategoryEnum)
+            : undefined) ??
+            getDefaultCategoryForCredential(unwrappedCred));
     const isEndorsementCredentialType = isEndorsementCredential(unwrappedCred);
 
     const credImgUrl = boostVc && getImageUrlFromCredential(unwrappedCred, credCategory);
@@ -150,8 +160,8 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     const badgeScaleClass = isCertDisplayType
         ? 'w-[120px] min-w-[120px] scale-[0.7]'
         : isMeritStyleBadge
-        ? 'w-[138px] min-w-[138px] scale-[0.8]'
-        : 'w-full';
+          ? 'w-[138px] min-w-[138px] scale-[0.8]'
+          : 'w-full';
 
     // Compact circular fallback (matching the ID treatment) for display types
     // whose full art can't fit the notification slot, e.g. media/portfolio.

@@ -1,5 +1,6 @@
 {
     "_comment": "Local dev overrides for LearnCard. Merged on top of config.json via deepMerge.",
+    "stage": "local",
     "devDomain": "localhost:3000",
     "apis": {
         "brainService": "http://localhost:4000/trpc",

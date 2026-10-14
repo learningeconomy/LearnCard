@@ -61,7 +61,7 @@ describe('session-scoped enrollment writes', () => {
         vi.stubGlobal(
             'fetch',
             vi.fn(async (url: string) => {
-                if (url.endsWith('/attestation')) {
+                if (url.includes('/attestation?nonce=')) {
                     started.resolve();
                     return attestation.promise;
                 }
@@ -91,7 +91,7 @@ describe('session-scoped enrollment writes', () => {
                         return authWrite.promise;
                     }
                     if (url.endsWith('/challenge')) return response({ challenge: 'nonce' });
-                    if (url.endsWith('/attestation')) return response({ attestation: {} });
+                    if (url.includes('/attestation?nonce=')) return response({ attestation: {} });
                     return response(keyStatus);
                 })
             );

@@ -166,9 +166,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
             </div>
 
             <div
-                className={`flex flex-col gap-[15px] items-center px-[20px] pt-[55px] ${
-                    isSelfVerified ? 'pb-[20px]' : 'pb-[77px]'
-                } border-solid border-[4px] ${borderColor} rounded-[30px]`}
+                className={`flex flex-col gap-[15px] items-center px-[20px] pt-[55px] pb-[20px] border-solid border-[4px] ${borderColor} rounded-[30px]`}
             >
                 <div className="flex flex-col gap-[5px] items-center">
                     <h1 className="text-grayscale-900 text-center text-[20px] font-jacques">
@@ -247,6 +245,20 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                 </div>
 
                 <div className="flex flex-col gap-[5px] items-center w-full">
+                    {!isSelfVerified && (
+                        <CertificateProfileImageDisplay
+                            imageUrl={issuerImage || credential?.issuer?.image}
+                            imageComponent={issuerImageComponent}
+                            className={`flex justify-center items-center ${textDarkColor}`}
+                            isIssuer
+                            userName={issuerDisplay.isMissing ? '' : issuerName}
+                            avatarColor={issuerDisplay.avatarColor}
+                            avatarFingerprintColor={issuerDisplay.avatarFingerprintColor}
+                            avatarFallbackVariant={
+                                issuerDisplay.isDidValue ? 'fingerprint' : 'initial'
+                            }
+                        />
+                    )}
                     <span className="font-jacques text-[12px] text-grayscale-800">
                         Certified by
                     </span>
@@ -282,19 +294,6 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     <CertificateCornerIcon categoryType={categoryType} position="bottom-left" />
                     <CertificateCornerIcon categoryType={categoryType} position="bottom-right" />
                 </>
-            )}
-
-            {!isSelfVerified && (
-                <CertificateProfileImageDisplay
-                    imageUrl={issuerImage || credential?.issuer?.image}
-                    imageComponent={issuerImageComponent}
-                    className={`w-[calc(100%-26px)] absolute bottom-0 flex justify-center items-center ${textDarkColor}`}
-                    isIssuer
-                    userName={issuerDisplay.isMissing ? '' : issuerName}
-                    avatarColor={issuerDisplay.avatarColor}
-                    avatarFingerprintColor={issuerDisplay.avatarFingerprintColor}
-                    avatarFallbackVariant={issuerDisplay.isDidValue ? 'fingerprint' : 'initial'}
-                />
             )}
 
             {/* so that tailwind will put these colors in the css */}

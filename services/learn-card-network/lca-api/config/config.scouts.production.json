@@ -1,0 +1,11 @@
+{
+    "DOMAIN_NAME": "api.scoutnetwork.org",
+    "POSTMARK_BRAND_NAME": "ScoutPass",
+    "POSTMARK_FROM_EMAIL": "scoutnetwork.org",
+    "POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS": "sp-login-verification",
+    "POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS": "sp-recovery-email-verification",
+    "POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS": "recovery-key-backup",
+    "SA_SEED_ALLOW_LEGACY_READ": "true",
+    "SA_SEED_ENCRYPT_WRITES": "false",
+    "SENTRY_ENV": "lca-api-production"
+}

@@ -77,8 +77,15 @@ export {
 
 export type { EscrowEnvelope, EscrowBlobPlaintext, EscrowReleasePlaintext } from './escrow-crypto';
 export { verifyEnclaveAttestation } from './escrow-attestation';
+export { verifyNitroAttestationDocument, NitroAttestationError } from './escrow-nitro-attestation';
+export type { NitroAttestationReason } from './escrow-nitro-attestation';
 export type { EscrowAttestationPolicy, EscrowHoldStatus, EscrowRecoveryStart } from './types';
-export type { EscrowEnrollmentOptions, EscrowEnrollmentState, EscrowPinStatus } from './types';
+export type {
+    EscrowEnrollmentOptions,
+    EscrowEnrollmentState,
+    EscrowBlobStaleReason,
+    EscrowPinStatus,
+} from './types';
 export {
     EscrowPinMismatchError,
     EscrowPinLockedError,

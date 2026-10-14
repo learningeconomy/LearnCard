@@ -1,0 +1,19 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "name": "service-config",
+    "sourceRoot": "packages/service-config/src",
+    "projectType": "library",
+    "tags": [],
+    "namedInputs": {
+        "source": ["{projectRoot}/src/**/*", "{projectRoot}/function-env.cjs"]
+    },
+    "targets": {
+        "test": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "options": {
+                "script": "test"
+            }
+        }
+    }
+}

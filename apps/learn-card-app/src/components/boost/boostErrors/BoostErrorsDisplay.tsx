@@ -8,11 +8,12 @@ import { useErrorBoundary } from 'react-error-boundary';
 import { m } from '../../../paraglide/messages.js';
 
 import { CredentialCategoryEnum } from 'learn-card-base';
+import type { CredentialCategory } from 'learn-card-base/types/credentials';
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../../theme/colors/index';
 
-type CategoryType = keyof typeof CredentialCategoryEnum | 'Hidden' | 'Course';
+type CategoryType = CredentialCategory | 'Hidden';
 
 const BoostErrorsDisplay: React.FC<{
     errorMessage?: string;

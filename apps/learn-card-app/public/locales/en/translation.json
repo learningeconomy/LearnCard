@@ -1,4 +1,62 @@
 {
+    "clrTranscript": {
+        "credits": {
+            "earnedNotSuppliedAria": "Earned credits not supplied",
+            "earnedNotSupplied": "Earned —",
+            "earnedQuantity": "{{value}} earned",
+            "availableQuantity": "{{value}} available",
+            "inferredQuantity": "{{value}} from description"
+        },
+        "relationships": {
+            "targetAmbiguous": "Target ambiguous",
+            "targetUnresolved": "Target unresolved",
+            "parent": "Part of {{name}}",
+            "child": "Includes {{name}}",
+            "prerequisite": "Requires {{name}}",
+            "unlock": "Unlocks {{name}}",
+            "peer": "Taken alongside {{name}}",
+            "equivalent": "Equivalent to {{name}}",
+            "supersededBy": "Superseded by {{name}}",
+            "replacement": "Replaces {{name}}",
+            "related": "Related {{name}}",
+            "openRecord": "Open {{name}}: {{label}}",
+            "relatedRecords": "Related records"
+        },
+        "details": {
+            "issuedBy": "Issued by",
+            "assessedBy": "Assessed by",
+            "createdBy": "Achievement created by",
+            "activityStarted": "Activity started",
+            "activityEnded": "Activity ended",
+            "awarded": "Awarded",
+            "validFrom": "Valid from",
+            "validUntil": "Valid until",
+            "fieldOfStudy": "Field of study",
+            "specialization": "Specialization",
+            "language": "Language",
+            "version": "Version",
+            "role": "Role",
+            "narrative": "Learner narrative",
+            "licenseNumber": "License number",
+            "criteria": "Criteria",
+            "viewCriteria": "View criteria",
+            "criteriaReference": "Criteria reference",
+            "additionalDetails": "Additional details",
+            "tags": "Tags",
+            "achievementId": "Achievement ID",
+            "learnerId": "Learner ID",
+            "achievementIdentifiers": "Achievement identifiers",
+            "learnerIdentifiers": "Learner identifiers",
+            "identifier": "Identifier",
+            "hashedIdentifier": "{{label}} (hashed)",
+            "otherRecords": "Other Records",
+            "itemCountOne": "{{count}} item",
+            "itemCountOther": "{{count}} items",
+            "record": "Record",
+            "recordDetails": "Record Details",
+            "closeRecordDetails": "Close record details"
+        }
+    },
     "inboxClaimSetup": {
         "setup": "Finish setting up your account to claim your credential.",
         "continue": "Continue Account Setup",
@@ -195,6 +253,7 @@
             "skills": "Skills",
             "socialBadges": "Badges",
             "achievements": "Achievements",
+            "qualifications": "Qualifications",
             "studies": "Studies",
             "portfolio": "Portfolio",
             "assistance": "Assistance",
@@ -678,6 +737,7 @@
                 "all": "All",
                 "socialBadge": "Badge",
                 "achievement": "Achievement",
+                "qualifications": "Qualification",
                 "learningHistory": "Course",
                 "accomplishment": "Portfolio item",
                 "accommodation": "Assistance",
@@ -689,6 +749,7 @@
                 "all": "All",
                 "socialBadge": "Badges",
                 "achievement": "Achievements",
+                "qualifications": "Qualifications",
                 "learningHistory": "Courses",
                 "accomplishment": "Portfolio",
                 "accommodation": "Assistance",
@@ -709,6 +770,7 @@
             "article": {
                 "socialBadge": "a",
                 "achievement": "an",
+                "qualifications": "a",
                 "learningHistory": "a",
                 "accomplishment": "a",
                 "accommodation": "an",
@@ -880,6 +942,7 @@
             "aiInsights": "Insights",
             "skills": "Skills",
             "socialBadges": "Badges",
+            "qualifications": "Qualifications",
             "achievements": "Achievements",
             "studies": "Studies",
             "portfolio": "Portfolio",
@@ -888,6 +951,7 @@
             "families": "Families",
             "ids": "IDs"
         },
+        "newQualification": "New Qualification",
         "certificate": "Certificate",
         "confirmDelete": "Are you sure you want to delete this credential?",
         "courseSyllabus": "Course Syllabus",
@@ -899,6 +963,7 @@
         "evidenceFile": "Evidence File",
         "expirationDate": "Expiration Date",
         "expired": "Expired",
+        "expires": "Expires",
         "expiredId": "Expired ID",
         "filter": "Filter",
         "gridView": "Grid",
@@ -926,6 +991,7 @@
             "skills": "Skill",
             "socialBadges": "Badge",
             "achievements": "Achievement",
+            "qualifications": "Qualification",
             "studies": "Study",
             "portfolio": "Portfolio",
             "assistance": "Assistance",
@@ -945,6 +1011,10 @@
             "achievement": {
                 "lead": "Your",
                 "link": "proudest moments"
+            },
+            "qualifications": {
+                "lead": "Your",
+                "link": "professional qualifications"
             },
             "accomplishment": {
                 "lead": "Your",
@@ -990,6 +1060,7 @@
                 "assistance": "Accommodations are adjustments made to the environment or processes to enable students, employees, or participants with disabilities to participate fully. Examples include providing extra time on tests for students with learning disabilities, offering sign language interpreters for individuals who are deaf, adjusting work schedules for those with medical needs, or modifying a workspace for accessibility.",
                 "socialBadges": "Social Badges are digital icons or labels used on online platforms to signify achievements, statuses, roles, or milestones of users. They serve to recognize accomplishments, indicate member roles, encourage participation, and foster community engagement. These badges can denote anything from completing tasks, participating in events, to being part of specific groups.",
                 "achievements": "Achievements are milestones or accomplishments that are earned through effort, skill, or perseverance. They signify the completion of goals, the overcoming of challenges, or the recognition of excellence in various aspects of life, including personal, professional, educational, or recreational areas. Achievements can range from academic degrees, career advancements, personal milestones, creative endeavors, to competitive victories.",
+                "qualifications": "Qualifications are professional credentials, such as licenses, certifications, and apprenticeship, journeyman, or master certificates.",
                 "portfolio": "A portfolio is a curated collection of an individual's work, projects, or achievements that showcase their skills, experience, and growth over time. It serves as tangible proof of capability and creativity, often spanning professional, academic, or personal domains, and is used to demonstrate value to potential collaborators, employers, or audiences.",
                 "skills": "Skills are abilities or competencies developed through training, practice, or experience that enable an individual to perform tasks effectively. They can be classified into hard skills, which are specific, teachable, and often quantifiable abilities related to a particular task or job, such as coding, welding, or foreign language proficiency. Soft skills, on the other hand, are interpersonal and cognitive abilities that facilitate human interactions, such as communication, problem-solving, and teamwork.",
                 "experiences": "Experiences are the knowledge and skills gained from involvement in various professional roles and activities over time. They encompass the breadth of work-related tasks, projects, and responsibilities an individual has undertaken within different organizations or as a freelancer. Professional experiences contribute significantly to an individual's expertise, capabilities, and understanding of industry standards and practices.",
@@ -1756,7 +1827,6 @@
         "previewCredentials": "Preview {{count}} Credentials"
     },
     "consentFlow": {
-        "reviewChanged": "The sharing details changed. Review them before connecting again.",
         "guardianApprovalRequired": "Ask a current account manager to approve this connection, then try again.",
         "acceptAndSync": "Accept & Sync",
         "accepted": "Accepted",
@@ -1877,9 +1947,40 @@
             "email": "email",
             "profilePicture": "profile picture"
         },
+        "reviewChanged": "The sharing details changed. Review them before connecting again.",
         "retryPublication": "Your sharing choices are saved. Try again to finish sending them."
     },
     "recovery": {
+        "cancel": {
+            "invalidLink": {
+                "title": "This link isn't valid",
+                "body": "Open the most recent email we sent, or sign in to check on your account.",
+                "signIn": "Sign In"
+            },
+            "confirm": {
+                "title": "Cancel account recovery?",
+                "body": "Someone asked to recover your account. If this wasn't you, cancel it now.",
+                "cancelBtn": "Cancel Recovery",
+                "notNowBtn": "Not now",
+                "cancelling": "Cancelling..."
+            },
+            "success": {
+                "title": "Recovery cancelled. Your account is safe.",
+                "body": "We recommend signing in and reviewing your recovery options.",
+                "doneBtn": "Open LearnCard"
+            },
+            "expired": {
+                "title": "Link expired",
+                "body": "This link has expired or was already used. If you still see a recovery in progress, sign in to cancel it.",
+                "signInBtn": "Sign In"
+            },
+            "error": {
+                "network": "Connection issue. Please check your internet and try again.",
+                "tooMany": "Too many attempts. Please wait a minute and try again.",
+                "generic": "Something went wrong. Please try again.",
+                "tryAgainBtn": "Try Again"
+            }
+        },
         "automatic": {
             "title": "Automatic recovery",
             "on": "On — your account can be restored after a 7-day waiting period.",
@@ -3591,12 +3692,6 @@
         "skillsHub": "Skills Hub"
     },
     "base": {
-        "consentAudience": {
-            "title": "Review who receives your data",
-            "description": "Your selected information will be available to everyone listed below.",
-            "confirm": "Confirm Sharing",
-            "cancel": "Cancel"
-        },
         "verification": {
             "selfIssued": "Self Issued",
             "trustedIssuer": "Trusted Issuer",
@@ -3620,6 +3715,7 @@
                 "badge": "Badge",
                 "family": "Family",
                 "achievement": "Achievement",
+                "qualifications": "Qualification",
                 "course": "Course",
                 "membership": "Membership",
                 "skill": "Skill",
@@ -3629,9 +3725,17 @@
                 "assistance": "Assistance"
             },
             "lifecycle": {
+                "expired": "Expired",
                 "revoked": "Revoked",
                 "suspended": "Suspended"
-            }
+            },
+            "expires": "Expires"
+        },
+        "consentAudience": {
+            "title": "Review who receives your data",
+            "description": "Your selected information will be available to everyone listed below.",
+            "confirm": "Confirm Sharing",
+            "cancel": "Cancel"
         }
     },
     "sdk": {
@@ -8092,9 +8196,9 @@
                     "description": "Set up a consent flow to send and access user data and credentials with their permission."
                 },
                 "courseCatalog": {
-                    "title": "Connect Course Catalog",
-                    "subtitle": "Enterprise LMS integration",
-                    "description": "Full guided setup for LMS partners. Configure webhooks, build credential templates, map your data, and go live with automatic credential issuance."
+                    "title": "Issue from a Course Catalog",
+                    "subtitle": "Turn a spreadsheet of courses into credentials",
+                    "description": "Upload your list of courses, get a credential design for each one, then award them to learners as they finish."
                 },
                 "verifyCredentials": {
                     "title": "Verify Credentials",
@@ -8256,7 +8360,8 @@
             "filterAll": "All",
             "filterListed": "Listed",
             "filterDraft": "Draft",
-            "filterArchived": "Archived"
+            "filterArchived": "Archived",
+            "filterUpdates": "Updates"
         },
         "listing": {
             "submittedBy": "Submitted by:",
@@ -8323,6 +8428,23 @@
                 "standardDesc": "Normal visibility in search and browse",
                 "demoted": "Demoted",
                 "demotedDesc": "Reduced visibility in listings"
+            },
+            "update": {
+                "title": "Update waiting for review",
+                "description": "These changes go live only if you approve them.",
+                "draftNote": "The developer is still editing an update.",
+                "capabilities": "Also changes what the app can do (version {{version}}).",
+                "approve": "Approve Update",
+                "reject": "Reject Update",
+                "fieldName": "Name",
+                "fieldTagline": "Tagline",
+                "fieldDescription": "Description",
+                "fieldIcon": "Icon",
+                "fieldScreenshots": "Screenshots",
+                "fieldHighlights": "Highlights",
+                "fieldLinks": "Links and contact",
+                "fieldLaunch": "Where the app runs",
+                "fieldOther": "Other details"
             }
         }
     },
@@ -9382,6 +9504,78 @@
         "signInToSave": "Sign in to save",
         "saveHint": "Keep this signed collection with your received items."
     },
+    "resumePublishing": {
+        "linkReady": "Your private link is ready.",
+        "opening": "Opening your private link...",
+        "linkUnavailable": "This link is unavailable. Publish the resume again after checking its settings.",
+        "legacy": "Publish this resume again to create a managed link.",
+        "pending": "Publication is still being confirmed. Try again to check the same attempt.",
+        "size": "This resume is too large to publish. Turn off the QR code to download it.",
+        "inactive": "This link has stopped or expired. Check its settings before publishing again.",
+        "failed": "We could not publish this resume. Please try again.",
+        "account": "Your account changed. Please try again.",
+        "changed": "Your resume changed while preparing it. Please try again.",
+        "cleanup": "Your resume is published, but cleanup is incomplete. Please try again later.",
+        "limits": "Stopping this link prevents future access. Previously saved copies and older links cannot be taken back.",
+        "republishLimits": "Republishing does not retract older links or saved copies.",
+        "pdfHeading": "Published resume",
+        "previewError": "We could not open this resume.",
+        "downloadExact": "Download resume PDF",
+        "updated": "This resume has changed",
+        "updatedHint": "Open the link again to view the latest version.",
+        "recovered": "Your earlier publication is confirmed. Its saved resume is now loaded.",
+        "originalClaims": "Selected credentials keep their original signed details; hiding fields in this PDF does not remove them.",
+        "downloadToView": "Download to view",
+        "pdfSize": "PDF · {{size}} KB",
+        "pdfReady": "Download this resume to open the PDF on your device.",
+        "discard": "Clear interrupted setup",
+        "discarding": "Clearing interrupted setup...",
+        "discarded": "Interrupted setup cleared. You can publish again.",
+        "interrupted": "Publication setup was interrupted. Retry or clear this setup before starting a new resume.",
+        "discardFailed": "We could not clear this setup. Please try again.",
+        "manageContent": "Edit resume content in Resume Builder.",
+        "publishInBuilder": "Use Resume Builder to publish this resume."
+    },
+    "verifierSelection": {
+        "hint": "Choose the credentials you want to send to this application.",
+        "review": "Review"
+    },
+    "verifierHistory": {
+        "viewCredentials": "View credentials shared with {{verifier}}",
+        "credentialsCount": "Credentials ({{count}})",
+        "credentialsList": "Recorded credential names",
+        "viewAll": "View all {{count}}",
+        "preview": "Showing {{shown}} of {{total}} entries",
+        "page": "Page {{page}} of {{total}}",
+        "previous": "Previous",
+        "next": "Next",
+        "saveFailed": "History could not be updated. You don’t need to send your information again.",
+        "title": "Shared with verifiers",
+        "description": "Private history of information you chose to send to other applications.",
+        "managedUnavailable": "History is unavailable for managed accounts.",
+        "loading": "Updating history…",
+        "open": "Open private history",
+        "record": "Keep private history",
+        "retention": "Keep up to 500 entries from the last 90 days. Older entries are removed when you connect.",
+        "limits": "Titles do not describe every claim sent. Deleting history cannot retract information already sent. Turning recording off keeps earlier history.",
+        "cleanupPending": "Some records could not be read or removed. Clear history to remove them.",
+        "refresh": "Refresh",
+        "clear": "Clear history",
+        "empty": "No recorded disclosures.",
+        "unknownVerifier": "Requesting application",
+        "sent": "Sent; acceptance unknown",
+        "handedOff": "Handed to the application; delivery unconfirmed",
+        "credential": "Credential",
+        "delete": "Delete entry",
+        "deleteLabel": "Delete entry for {{verifier}}",
+        "loadFailed": "History could not be loaded or updated. Check your connection and try again.",
+        "retry": "Retry history",
+        "clearTitle": "Clear private history?",
+        "clearBody": "This permanently deletes all private history entries. Your credentials and information already sent stay unchanged.",
+        "clearConsent": "Recording stays as set when settings can be read; otherwise it turns off.",
+        "clearRecovery": "Some history could not be loaded. Clearing also removes unreadable entries.",
+        "accountChanged": "Sending completed, but your account changed. Return to the requesting application to continue."
+    },
     "contractRequests": {
         "label": "Connect",
         "referred": "{{referrer}} has referred you to {{owner}}.",
@@ -9406,5 +9600,72 @@
         "reviewFirst": "Review and choose your data before connecting.",
         "pending": "Pending invitations",
         "empty": "No pending invitations."
+    },
+    "clrRenderer": {
+        "military": "Military record",
+        "general": "Learning record",
+        "training": "Training",
+        "courses": "Courses",
+        "programs": "Programs",
+        "activities": "Activities",
+        "fieldwork": "Roles and fieldwork",
+        "assessments": "Assessments",
+        "competencies": "Competencies",
+        "qualifications": "Qualifications",
+        "awards": "Awards",
+        "other": "Other records",
+        "publishedBy": "Published by",
+        "partial": "Partial record — the publisher has included only some achievements.",
+        "empty": "No individual records were provided.",
+        "viewDetails": "View details",
+        "recordDetails": "Record Details",
+        "closeDetails": "Close record details",
+        "issuedBy": "Issued by",
+        "assessedBy": "Assessed by",
+        "createdBy": "Achievement created by",
+        "activityStart": "Activity started",
+        "activityEnd": "Activity ended",
+        "awarded": "Awarded",
+        "validFrom": "Valid from",
+        "validUntil": "Valid until",
+        "issued": "Issued",
+        "role": "Role",
+        "narrative": "Learner narrative",
+        "license": "License number",
+        "field": "Field of study",
+        "specialization": "Specialization",
+        "language": "Language",
+        "version": "Version",
+        "identifier": "Identifier",
+        "hashedIdentifier": "{{label}} (hashed)",
+        "criteria": "Criteria",
+        "viewCriteria": "View criteria",
+        "criteriaReference": "Criteria reference",
+        "additional": "Additional details",
+        "tags": "Tags",
+        "achievementId": "Achievement ID",
+        "learnerId": "Learner ID",
+        "achievementIdentifiers": "Achievement identifiers",
+        "learnerIdentifiers": "Learner identifiers",
+        "requiredValue": "Required value: {{value}}",
+        "requiredLevel": "Required level: {{value}}",
+        "verified": "Verified signed payload",
+        "signedUnverified": "Signed, not verified",
+        "verifying": "Verifying…",
+        "valid": "Valid",
+        "invalid": "Invalid",
+        "proof": "Proof",
+        "expiration": "Expiration",
+        "expired": "Expired {{date}}",
+        "expires": "Expires {{date}}",
+        "doesNotExpire": "Does not expire",
+        "numericScale": "Numeric scale from {{min}} to {{max}}; achieved {{value}}",
+        "numericScaleWithPassing": "Numeric scale from {{min}} to {{max}}; achieved {{value}}; passing {{required}}",
+        "unsigned": "Unsigned credential",
+        "evidenceAttached": "Evidence attached",
+        "status": "Status: {{status}}",
+        "revocationCheck": "Revocation check available",
+        "evidenceCount": "Evidence items: {{count}}",
+        "evidence": "Supporting evidence"
     }
 }

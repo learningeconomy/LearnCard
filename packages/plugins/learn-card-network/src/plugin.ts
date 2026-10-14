@@ -30,6 +30,7 @@ import {
     getCredentialStatusArray,
     injectManagedRefreshService as injectSharedManagedRefreshService,
     isVC2Format,
+    isEncrypted,
     resolveStorageReadResult,
 } from '@learncard/helpers';
 import Mustache from 'mustache';
@@ -544,6 +545,8 @@ const isActAsDenial = (error: unknown): boolean => {
     }
     return false;
 };
+const getInboxFailureReason = (reason: unknown): string =>
+    reason instanceof Error ? `${reason.name}: ${reason.message}` : String(reason);
 
 /**
  * @group Plugins
@@ -1152,6 +1155,16 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.shareLinks.create.mutate(input);
             },
+            putShareLinkAttachmentChunk: async (_learnCard, input) => {
+                await ensureUser();
+                return client.shareLinks.putAttachmentChunk.mutate(input);
+            },
+            deleteShareLinkAttachmentChunks: async (_learnCard, input) => {
+                await ensureUser();
+                return client.shareLinks.deleteAttachmentChunks.mutate(input);
+            },
+            getShareLinkAttachmentChunk: async (_learnCard, input) =>
+                client.publicShareLinks.attachmentChunk.mutate(input),
             updateShareLink: async (_learnCard, input) => {
                 await ensureUser();
 
@@ -2779,10 +2792,34 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.inbox.getInboxCredential.query({ credentialId: id });
             },
-            finalizeInboxCredentials: async _learnCard => {
+            finalizeInboxCredentials: async learnCard => {
                 await ensureUser();
-
-                return client.inbox.finalize.mutate();
+                const result = await client.inbox.finalize.mutate();
+                const results = await Promise.allSettled(
+                    result.deliveries.map(async delivery => ({
+                        ...delivery,
+                        credential: VCValidator.parse(
+                            isEncrypted(delivery.credential)
+                                ? await learnCard.invoke.decryptDagJwe(delivery.credential, [
+                                      learnCard.id.keypair(),
+                                  ])
+                                : delivery.credential
+                        ),
+                    }))
+                );
+                const deliveries = results.flatMap((delivery, index) => {
+                    if (delivery.status === 'fulfilled') return [delivery.value];
+                    console.warn(
+                        `Failed to finalize inbox delivery ${result.deliveries[index].id}: ${getInboxFailureReason(delivery.reason)}`
+                    );
+                    return [];
+                });
+                return {
+                    ...result,
+                    deliveries,
+                    verifiableCredentials: deliveries.map(delivery => delivery.credential),
+                    errors: result.errors + results.length - deliveries.length,
+                };
             },
             recoverInboxCredentials: async (learnCard, options = {}) => {
                 const result = await client.inbox.getMyInboxDeliveries.query(options);
@@ -2796,9 +2833,13 @@ export async function getLearnCardNetworkPlugin(
                         ),
                     }))
                 );
-                const records = results.flatMap(record =>
-                    record.status === 'fulfilled' ? [record.value] : []
-                );
+                const records = results.flatMap((record, index) => {
+                    if (record.status === 'fulfilled') return [record.value];
+                    console.warn(
+                        `Failed to recover inbox delivery ${result.records[index].id}: ${getInboxFailureReason(record.reason)}`
+                    );
+                    return [];
+                });
                 return { ...result, records, failed: results.length - records.length };
             },
             sendGuardianApprovalEmail: async (_learnCard, options) => {
@@ -3113,6 +3154,24 @@ export async function getLearnCardNetworkPlugin(
                 return client.appStore.unsubmitForReview.mutate({ listingId });
             },
 
+            submitAppStoreListingUpdate: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.submitListingUpdate.mutate({ listingId });
+            },
+
+            withdrawAppStoreListingUpdate: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.withdrawListingUpdate.mutate({ listingId });
+            },
+
+            discardAppStoreListingUpdate: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.discardListingUpdate.mutate({ listingId });
+            },
+
             getListingsForIntegration: async (_learnCard, integrationId, options = {}) => {
                 await ensureUser();
 
@@ -3126,6 +3185,39 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.appStore.countListingsForIntegration.query({ integrationId });
+            },
+
+            submitAppManifest: async (_learnCard, integrationId, manifest) => {
+                await ensureUser();
+                return client.appStore.submitAppManifest.mutate({ integrationId, manifest });
+            },
+
+            getManifestVersions: async (_learnCard, integrationId, options) => {
+                await ensureUser();
+                return client.appStore.getManifestVersions.query({ integrationId, ...options });
+            },
+
+            getManifestVersion: async (_learnCard, integrationId, version) => {
+                await ensureUser();
+                return client.appStore.getManifestVersion.query({ integrationId, version });
+            },
+
+            getManifestDiff: async (_learnCard, integrationId, toVersion, fromVersion) => {
+                await ensureUser();
+                return client.appStore.getManifestDiff.query({
+                    integrationId,
+                    toVersion,
+                    fromVersion,
+                });
+            },
+
+            applyManifestVersion: async (_learnCard, integrationId, version, listingId) => {
+                await ensureUser();
+                return client.appStore.applyManifestVersion.mutate({
+                    integrationId,
+                    version,
+                    listingId,
+                });
             },
 
             browseAppStore: async (_learnCard, options) => {
@@ -3205,6 +3297,12 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.appStore.adminGetAllListings.query(options);
+            },
+
+            adminReviewListingUpdate: async (_learnCard, listingId, approve) => {
+                await ensureUser();
+
+                return client.appStore.adminReviewListingUpdate.mutate({ listingId, approve });
             },
 
             // App Store Boost Management

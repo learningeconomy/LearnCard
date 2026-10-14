@@ -1,3 +1,4 @@
+import type { DisclosureAttempt } from '../../helpers/verifier-history/history';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { formatCredentialDate } from 'learn-card-base/helpers/credentialHelpers';
@@ -627,7 +628,8 @@ const ClaimFromRequest: React.FC = () => {
 
     const handleRequest = async (
         body: Record<string, unknown> = {},
-        credentialClaimCount?: number
+        credentialClaimCount?: number,
+        disclosureHistory?: DisclosureAttempt
     ) => {
         // Hard stop: never contact the exchange endpoint (or locally complete an
         // inbox batch) until a Universal Inbox recipient has a confirmed LCN
@@ -664,13 +666,23 @@ const ClaimFromRequest: React.FC = () => {
 
             if (!response.ok) throw new Error(`${response.status}`);
 
+            // The disclosure step succeeded even if the next exchange response cannot be parsed.
+            // Never resend it because an optional history write failed.
+            if (disclosureHistory)
+                void disclosureHistory.finish('sent').then(result => {
+                    if (result === 'unavailable' && disclosureHistory.isCurrent())
+                        presentToast(m['verifierHistory.saveFailed'](), {
+                            type: ToastTypeEnum.Error,
+                        });
+                });
+
             const responseText = await response.text();
             let responseData: VCAPIResponse = {};
             if (responseText) {
                 try {
                     responseData = JSON.parse(responseText);
                 } catch (parseError) {
-                    log.warn('Non-JSON exchange response, treating as empty', parseError);
+                    log.warn('Non-JSON exchange response, treating as empty');
                     responseData = {};
                 }
             }
@@ -741,7 +753,7 @@ const ClaimFromRequest: React.FC = () => {
                 });
             }
         } catch (error) {
-            log.error('Error in VC-API exchange flow:', error);
+            log.error('Error in VC-API exchange flow');
             setExchangeState({ state: ExchangeState.Error, data: error });
         }
     };

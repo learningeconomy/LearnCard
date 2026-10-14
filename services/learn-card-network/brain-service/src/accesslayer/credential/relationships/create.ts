@@ -1,5 +1,6 @@
 import { termsReferralSnapshotCypher } from '@helpers/consent-referral.helpers';
 import { QueryBuilder, BindParam } from 'neogma';
+import type { Transaction } from 'neo4j-driver';
 import { v4 as uuid } from 'uuid';
 
 import {
@@ -25,7 +26,8 @@ export const createSentCredentialRelationship = async (
     credential: CredentialInstance,
     metadata?: Record<string, unknown>,
     activityId?: string,
-    integrationId?: string
+    integrationId?: string,
+    transaction?: Transaction
 ): Promise<void> => {
     const properties = flattenObject({
         to: to.profileId,
@@ -61,7 +63,7 @@ export const createSentCredentialRelationship = async (
             `(profile)-[r:${Profile.getRelationshipByAlias('credentialSent').name}]->(credential)`
         )
         .set('r = $params')
-        .run();
+        .run(transaction);
 
     // If the issuer is an AppStoreListing, additionally write the
     // AppStoreListing -> CREDENTIAL_SENT -> Credential edge so that
@@ -90,7 +92,7 @@ export const createSentCredentialRelationship = async (
                 }]->(credential)`
             )
             .set('r = $params')
-            .run();
+            .run(transaction);
     }
 };
 
@@ -138,7 +140,8 @@ export const createReceivedCredentialRelationship = async (
     to: ProfileType,
     from: ProfileType | { listing_id: string },
     credential: CredentialInstance,
-    metadata?: Record<string, unknown>
+    metadata?: Record<string, unknown>,
+    transaction?: Transaction
 ): Promise<void> => {
     const fromId = 'profileId' in from ? from.profileId : from.listing_id;
     const properties = flattenObject({
@@ -164,12 +167,13 @@ export const createReceivedCredentialRelationship = async (
             }]->(profile)`
         )
         .set('r = $params')
-        .run();
+        .run(transaction);
 };
 
 export const setDefaultClaimedRole = async (
     profile: ProfileType,
-    credential: CredentialInstance
+    credential: CredentialInstance,
+    transaction?: Transaction
 ): Promise<void> => {
     await new QueryBuilder()
         .match({
@@ -199,7 +203,10 @@ export const setDefaultClaimedRole = async (
                 { identifier: 'boost' },
             ],
         })
-        .run();
+        .run(transaction);
+
+    // An enclosing transaction invalidates caches only after its writes commit.
+    if (transaction) return;
 
     try {
         const boostId = await getBoostIdForCredentialInstance(credential);

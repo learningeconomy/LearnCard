@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { initLearnCard } from '@learncard/init';
 import { getBundle, getFixture, prepareFixture } from '@learncard/credential-library';
 
@@ -97,14 +98,22 @@ test.beforeAll(async () => {
 });
 
 test.describe('Sample persona @mocked', () => {
-    test('adds sample credentials, shows the persistent sample state, and removes it', async ({
-        page,
-    }) => {
+    test.beforeEach(async ({ page }) => {
         await mockLaunchDarkly(page, {
             enableNewDemoFlow: { value: true },
         });
         const trpc = await installNetwork(page);
         let hasSample = false;
+
+        // Challenge refill sizes are randomized by the SDK. Exact HAR replay can
+        // miss these requests and leave a wallet without its network profile.
+        trpc.on(
+            'utilities.getChallenges',
+            () =>
+                Array.from({ length: 100 }, () =>
+                    randomUUID()
+                ) satisfies BrainOutputs['utilities']['getChallenges']
+        );
 
         const userProfile = {
             profileId: TEST_USER_PROFILE_ID,
@@ -231,7 +240,11 @@ test.describe('Sample persona @mocked', () => {
             contractsUpdated: 0,
             removedSharedUris: 0,
         }));
+    });
 
+    test('adds sample credentials, shows the persistent sample state, and removes it', async ({
+        page,
+    }) => {
         await waitForAuthenticatedState(page, {
             path: '/wallet',
             profileId: TEST_USER_PROFILE_ID,
@@ -266,17 +279,22 @@ test.describe('Sample persona @mocked', () => {
         await expect(page.getByRole('button', { name: 'Sync My School' })).toBeVisible({
             timeout: 30_000,
         });
+    });
 
+    test('keeps the legacy school flow when the new demo flag is disabled', async ({ page }) => {
         await page.unroute(/.*\.launchdarkly\..*/);
         await mockLaunchDarkly(page, {
             enableNewDemoFlow: { value: false },
         });
-        await page.reload();
+        await waitForAuthenticatedState(page, {
+            path: '/wallet',
+            profileId: TEST_USER_PROFILE_ID,
+        });
         await page.getByRole('button', { name: /Build My LearnCard/ }).click();
 
         await expect(page.getByRole('heading', { name: 'Demo School' })).toBeVisible({
             timeout: 30_000,
         });
-        await expect(sampleCard).toHaveCount(0);
+        await expect(page.getByRole('region', { name: 'See an example LearnCard' })).toHaveCount(0);
     });
 });
