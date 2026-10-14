@@ -4,7 +4,12 @@ import { getDidWeb } from '@learncard/helpers';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { boostSupportsDynamicEvidence, getDefaultCategoryForCredential } from 'learn-card-base';
 import { getAppBaseUrl, getResolvedTenantConfig } from '../../config/bootstrapTenantConfig';
-import { RecipientMode, Recipient, LinkOptions } from '../../pages/issue/components/recipientTypes';
+import {
+    RecipientMode,
+    Recipient,
+    LinkOptions,
+    recipientKey,
+} from '../../pages/issue/components/recipientTypes';
 
 import {
     OBv3CredentialTemplate,
@@ -198,8 +203,7 @@ const deliverBoost = async (
         // templateData (e.g. evidence) is still resolved individually below.
         await Promise.all(
             options.recipients.map(recipient => {
-                const recipientIdentifier =
-                    recipient.kind === 'profile' ? recipient.profileId : recipient.email;
+                const recipientIdentifier = recipientKey(recipient);
                 const recipientData =
                     options.variableValuesByRecipient?.[recipientIdentifier] ?? templateData;
                 return wallet.invoke.send({
@@ -314,10 +318,17 @@ export const issueViaBoost = async (
     // evidence) must be applied. Either way it must NOT be pre-signed: substitution
     // has to happen before signing, which the network does from an unsigned template.
     const reusableTemplate = buildReusableBoostTemplate(template, issuerDid);
+    const reusableTemplateForMode =
+        options.mode === 'self'
+            ? buildReusableBoostTemplate(template, issuerDid, selfRecipientDid)
+            : reusableTemplate;
+
+    // Shared variableValues contain strings; evidence is carried only in the
+    // per-recipient payloads. Revisit this check if shared values gain evidence.
     const hasRecipientEvidence =
         options.mode === 'people' &&
         options.recipients.some(recipient => {
-            const key = recipient.kind === 'profile' ? recipient.profileId : recipient.email;
+            const key = recipientKey(recipient);
             const evidence = options.variableValuesByRecipient?.[key]?.evidence;
             return Array.isArray(evidence) ? evidence.length > 0 : Boolean(evidence);
         });
@@ -325,18 +336,14 @@ export const issueViaBoost = async (
     // The network appends per-recipient EvidenceFile entries after the editor's
     // validation. Define their fileName/fileType terms on the reusable template
     // before send-time signing, preserving any existing compatible context.
-    if (hasRecipientEvidence && !boostSupportsDynamicEvidence(reusableTemplate)) {
-        const contexts = reusableTemplate['@context'];
-        reusableTemplate['@context'] = [
+    if (hasRecipientEvidence && !boostSupportsDynamicEvidence(reusableTemplateForMode)) {
+        const contexts = reusableTemplateForMode['@context'];
+        reusableTemplateForMode['@context'] = [
             ...(Array.isArray(contexts) ? contexts : contexts != null ? [contexts] : []),
             EVIDENCE_CONTEXT,
         ];
     }
 
-    const reusableTemplateForMode =
-        options.mode === 'self'
-            ? buildReusableBoostTemplate(template, issuerDid, selfRecipientDid)
-            : reusableTemplate;
     const hasDynamicPlaceholders = /\{\{.*?\}\}/.test(JSON.stringify(reusableTemplateForMode));
     const hasTemplateData =
         (options.variableValues && Object.keys(options.variableValues).length > 0) ||
