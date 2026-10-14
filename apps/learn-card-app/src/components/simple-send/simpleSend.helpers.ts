@@ -201,10 +201,11 @@ const deliverBoost = async (
         // templateData (e.g. evidence) is still resolved individually below.
         await Promise.all(
             options.recipients.map(recipient => {
+                const key = recipientKey(recipient);
+                // Row keys identify template data; delivery requires the actual address.
                 const recipientIdentifier =
                     recipient.kind === 'profile' ? recipient.profileId : recipient.email;
-                const recipientData =
-                    options.variableValuesByRecipient?.[recipientKey(recipient)] ?? templateData;
+                const recipientData = options.variableValuesByRecipient?.[key] ?? templateData;
                 return wallet.invoke.send({
                     type: 'boost',
                     recipient: recipientIdentifier,
