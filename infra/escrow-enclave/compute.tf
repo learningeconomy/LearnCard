@@ -71,6 +71,13 @@ resource "aws_launch_template" "enclave_host" {
     host_bearer_token_parameter_name    = var.host_bearer_token_parameter_name
     host_tls_certificate_parameter_name = var.host_tls_certificate_parameter_name
     host_tls_private_key_parameter_name = var.host_tls_private_key_parameter_name
+    authority_setup = var.enable_enrollment_authority ? templatefile("${path.module}/templates/authority-user-data.sh.tftpl", {
+      aws_region = var.aws_region
+      generation = var.authority_generation
+      email      = local.email_enabled
+      deliver    = var.enable_credential_delivery
+      proxies    = merge({ authority = { port = 8001, service = "dynamodb" } }, local.email_enabled ? { email = { port = 8002, service = "email" } } : {})
+    }) : ""
   }))
 
   tag_specifications {
