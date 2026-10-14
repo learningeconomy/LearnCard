@@ -2,7 +2,7 @@ import base64url from 'base64url';
 import type { UnsignedVC, VC } from '@learncard/types';
 import { getDidWeb } from '@learncard/helpers';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
-import { getDefaultCategoryForCredential } from 'learn-card-base';
+import { boostSupportsDynamicEvidence, getDefaultCategoryForCredential } from 'learn-card-base';
 import { getAppBaseUrl, getResolvedTenantConfig } from '../../config/bootstrapTenantConfig';
 import { RecipientMode, Recipient, LinkOptions } from '../../pages/issue/components/recipientTypes';
 
@@ -19,21 +19,17 @@ import {
 } from '../../pages/appStoreDeveloper/partner-onboarding/components/CredentialBuilder/utils';
 
 /**
- * SimpleSend builds standards-pure OBv3 credentials and deliberately bypasses
- * the boost pipeline (`newCredential({ type: 'boost' })` / `createBoost`),
- * which injects the custom `https://ctx.learncard.com/boosts/*` context. Only
- * the client-constructed credential is guaranteed pure — `send()` may still
- * create a boost server-side for delivery, which is accepted for this prototype.
+ * SimpleSend builds OBv3 credentials without the boost template generator
+ * (`newCredential({ type: 'boost' })`), which injects LearnCard-specific fields.
+ * Per-recipient file evidence opts into the LearnCard evidence context so its
+ * metadata can be signed. Credentials without that evidence keep their standard
+ * contexts. `send()` may still create a boost server-side for delivery.
  */
 
+const EVIDENCE_CONTEXT = 'https://ctx.learncard.com/boosts/1.0.3.json';
+
 export type SimpleCredentialType =
-    | 'badge'
-    | 'certificate'
-    | 'course'
-    | 'skill'
-    | 'license'
-    | 'membership'
-    | 'micro-credential';
+    'badge' | 'certificate' | 'course' | 'skill' | 'license' | 'membership' | 'micro-credential';
 
 const ACHIEVEMENT_TYPE_BY_SIMPLE_TYPE: Record<SimpleCredentialType, string> = {
     badge: 'Badge',
@@ -318,6 +314,25 @@ export const issueViaBoost = async (
     // evidence) must be applied. Either way it must NOT be pre-signed: substitution
     // has to happen before signing, which the network does from an unsigned template.
     const reusableTemplate = buildReusableBoostTemplate(template, issuerDid);
+    const hasRecipientEvidence =
+        options.mode === 'people' &&
+        options.recipients.some(recipient => {
+            const key = recipient.kind === 'profile' ? recipient.profileId : recipient.email;
+            const evidence = options.variableValuesByRecipient?.[key]?.evidence;
+            return Array.isArray(evidence) ? evidence.length > 0 : Boolean(evidence);
+        });
+
+    // The network appends per-recipient EvidenceFile entries after the editor's
+    // validation. Define their fileName/fileType terms on the reusable template
+    // before send-time signing, preserving any existing compatible context.
+    if (hasRecipientEvidence && !boostSupportsDynamicEvidence(reusableTemplate)) {
+        const contexts = reusableTemplate['@context'];
+        reusableTemplate['@context'] = [
+            ...(Array.isArray(contexts) ? contexts : [contexts]),
+            EVIDENCE_CONTEXT,
+        ];
+    }
+
     const reusableTemplateForMode =
         options.mode === 'self'
             ? buildReusableBoostTemplate(template, issuerDid, selfRecipientDid)
