@@ -50,6 +50,9 @@ const inlineLerRsContext = {
     '@version': 1.1,
     hrrec: 'http://schema.hropenstandards.org/recruiting/',
     '@vocab': 'http://schema.hropenstandards.org/recruiting/',
+    // Bind complete source credentials as JSON without inheriting the wrapper's
+    // protected VC v2 terms into older VC v1 contexts or altering issuer proofs.
+    verifications: { '@id': 'hrrec:verifications', '@type': '@json' },
 };
 
 /**
@@ -122,7 +125,8 @@ const buildEmploymentHistories = (
             container.positionHistories = [ph];
         }
         if (narrative) container.narrative = narrative;
-        if (descriptions?.length && !container.positionHistories) container.descriptions = descriptions;
+        if (descriptions?.length && !container.positionHistories)
+            container.descriptions = descriptions;
 
         const containerVerifications = getItemVerifications({
             verifiableCredential,
@@ -289,7 +293,12 @@ export const getLerRsPlugin = (initLearnCard: LERRSDependentLearnCard): LERRSPlu
                                   ? { phone: [{ formattedNumber: params.person.phone }] }
                                   : {}),
                               ...(webEntries.length
-                                  ? { web: webEntries.map(entry => ({ url: entry.url, name: entry.name })) }
+                                  ? {
+                                        web: webEntries.map(entry => ({
+                                            url: entry.url,
+                                            name: entry.name,
+                                        })),
+                                    }
                                   : {}),
                               ...(socialEntries.length
                                   ? {
@@ -306,7 +315,8 @@ export const getLerRsPlugin = (initLearnCard: LERRSDependentLearnCard): LERRSPlu
                                                 ...(params.person.address?.formattedAddress
                                                     ? {
                                                           formattedAddress:
-                                                              params.person.address.formattedAddress,
+                                                              params.person.address
+                                                                  .formattedAddress,
                                                       }
                                                     : {}),
                                                 ...(params.person.address?.line
@@ -316,7 +326,10 @@ export const getLerRsPlugin = (initLearnCard: LERRSDependentLearnCard): LERRSPlu
                                                     ? { city: params.person.address.city }
                                                     : {}),
                                                 ...(params.person.address?.postalCode
-                                                    ? { postalCode: params.person.address.postalCode }
+                                                    ? {
+                                                          postalCode:
+                                                              params.person.address.postalCode,
+                                                      }
                                                     : {}),
                                                 ...(params.person.address?.countryCode
                                                     ? {
@@ -434,9 +447,8 @@ export const getLerRsPlugin = (initLearnCard: LERRSDependentLearnCard): LERRSPlu
 
                     for (const credential of vcs) {
                         try {
-                            const credCheck = await initLearnCard.invoke.verifyCredential(
-                                credential
-                            );
+                            const credCheck =
+                                await initLearnCard.invoke.verifyCredential(credential);
                             const issuerDid =
                                 typeof credential.issuer === 'string'
                                     ? credential.issuer

@@ -28,6 +28,7 @@ import type {
     ShareContentEnvelope,
 } from '../share-content-client/types';
 import { verifyShareContentActiveStat as verifyActiveStat } from './stat';
+import { verifyShareAttachmentStats } from './attachment-stat';
 import {
     ShareLinkCoordinatorError,
     type PendingShareContentOperation,
@@ -174,7 +175,14 @@ export const createShareLinkCoordinator = (
         objectRef: string | null
     ): Promise<ShareLinkCommitResult> => {
         try {
+            if (!(await verifyShareAttachmentStats(client, reservation))) {
+                return { status: 'pending', reservation, reason: 'stat_missing' };
+            }
             const finalized = await repository.finalizeReservation({
+                verifiedAttachmentId:
+                    reservation.contentVersion !== null
+                        ? (reservation.attachmentId ?? undefined)
+                        : undefined,
                 namespace: reservation.namespace,
                 ownerProfileId: reservation.ownerProfileId,
                 shareId: reservation.shareId,
@@ -339,6 +347,7 @@ export const createShareLinkCoordinator = (
                     // policy that disables view counting for minors/unknown age.
                     notifyOnView: value.notifyOnView && policy.viewCountingEnabled,
                     content,
+                    attachment: value.attachment,
                     requestHash,
                     policy,
                     leaseOwner: dependencies.leaseOwner,
@@ -400,6 +409,7 @@ export const createShareLinkCoordinator = (
                                   ),
                                   contentVersion: value.contentVersion!,
                                   selectedCount: value.selectedCount!,
+                                  attachment: value.attachment,
                               },
                           }
                         : {}),

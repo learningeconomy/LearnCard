@@ -23,6 +23,10 @@ import {
     ShareLinkOwnerRecoveryOutput,
     ShareLinkPublicState,
     ShareLinkPublicContentView,
+    PutShareLinkAttachmentChunkInput,
+    DeleteShareLinkAttachmentChunksInput,
+    GetShareLinkAttachmentChunkInput,
+    ShareLinkAttachmentChunkOutput,
     AcknowledgeViewOutput,
     Boost,
     BoostQuery,
@@ -114,6 +118,9 @@ import {
     AppStoreListing,
     AppStoreListingCreateType,
     AppStoreListingUpdateType,
+    AppManifest,
+    AppManifestVersion,
+    AppManifestDiff,
     AppListingStatus,
     PromotionLevel,
     PaginatedAppStoreListings,
@@ -310,6 +317,13 @@ export type LearnCardNetworkPluginMethods = {
      * no caller-supplied owner/namespace/object authority is accepted.
      */
     createShareLink: (input: CreateShareLinkInput) => Promise<ShareLinkOwnerCommitOutput>;
+    putShareLinkAttachmentChunk: (input: PutShareLinkAttachmentChunkInput) => Promise<{ ok: true }>;
+    deleteShareLinkAttachmentChunks: (
+        input: DeleteShareLinkAttachmentChunksInput
+    ) => Promise<{ ok: boolean }>;
+    getShareLinkAttachmentChunk: (
+        input: GetShareLinkAttachmentChunkInput
+    ) => Promise<ShareLinkAttachmentChunkOutput>;
     updateShareLink: (input: UpdateShareLinkInput) => Promise<ShareLinkOwnerCommitOutput>;
     revokeShareLink: (input: {
         id: string;
@@ -1001,11 +1015,62 @@ export type LearnCardNetworkPluginMethods = {
     deleteAppStoreListing: (listingId: string) => Promise<boolean>;
     submitAppStoreListingForReview: (listingId: string) => Promise<boolean>;
     unsubmitAppStoreListing: (listingId: string) => Promise<boolean>;
+    /** Sends held changes to a live app for review; the live listing is unchanged until approval. */
+    submitAppStoreListingUpdate: (listingId: string) => Promise<boolean>;
+    withdrawAppStoreListingUpdate: (listingId: string) => Promise<boolean>;
+    discardAppStoreListingUpdate: (listingId: string) => Promise<boolean>;
     getListingsForIntegration: (
         integrationId: string,
         options?: Partial<PaginationOptionsType>
     ) => Promise<PaginatedAppStoreListings>;
     countListingsForIntegration: (integrationId: string) => Promise<number>;
+
+    submitAppManifest: (
+        integrationId: string,
+        manifest: AppManifest
+    ) => Promise<{
+        version: number;
+        manifestHash: string;
+        diff: AppManifestDiff | null;
+        noop: boolean;
+    }>;
+    getManifestVersions: (
+        integrationId: string,
+        options?: { limit?: number; cursor?: string }
+    ) => Promise<{
+        hasMore: boolean;
+        cursor?: string;
+        records: Pick<
+            AppManifestVersion,
+            'id' | 'version' | 'manifestHash' | 'status' | 'createdAt' | 'activatedAt'
+        >[];
+    }>;
+    getManifestVersion: (
+        integrationId: string,
+        version: number
+    ) => Promise<AppManifestVersion | undefined>;
+    getManifestDiff: (
+        integrationId: string,
+        toVersion: number,
+        fromVersion?: number
+    ) => Promise<AppManifestDiff>;
+    applyManifestVersion: (
+        integrationId: string,
+        version: number,
+        listingId?: string
+    ) => Promise<{
+        applied: boolean;
+        /** True when the listing is live and the new version is waiting for review. */
+        pendingReview?: boolean;
+        version: number;
+        reconciled: {
+            templatesUpserted: number;
+            templatesSkipped: number;
+            contractsUpserted: number;
+            contractsSkipped: number;
+            signingAuthorityEnsured: boolean;
+        };
+    }>;
 
     browseAppStore: (options?: {
         limit?: number;
@@ -1050,7 +1115,9 @@ export type LearnCardNetworkPluginMethods = {
         limit?: number;
         cursor?: string;
         status?: AppListingStatus;
+        pendingUpdatesOnly?: boolean;
     }) => Promise<PaginatedAppStoreListings>;
+    adminReviewListingUpdate: (listingId: string, approve: boolean) => Promise<boolean>;
 
     // App Store Boost Management
     addBoostToApp: (listingId: string, boostUri: string, templateAlias: string) => Promise<boolean>;

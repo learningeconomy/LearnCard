@@ -1,4 +1,4 @@
-# Bedrock text generation (LC-2205)
+# Bedrock text generation (LC-2271)
 
 The three LCA text generation routes use the OpenAI SDK Responses API at
 `https://bedrock-runtime.us-east-1.amazonaws.com/openai/v1`. This follows the merged
@@ -69,15 +69,14 @@ networking, security settings or infrastructure and does not port AI Passport's
 application-specific privacy gateway into LCA. US profiles can route across US regions;
 the endpoint is not a single-region processing guarantee.
 
-[LearnCard PR1670](https://github.com/learningeconomy/LearnCard/pull/1670) was still open
-at `5e8ef2065fba33d1a793fc890702f902f3fc82a6` during implementation. This branch starts
-from main `77e5b0681`, retaining its current runtime-secrets bootstrap. If PR1670 lands
-first, reconcile the optional endpoint into its service-config/function-env conventions
-and regenerate the lockfile on the resulting base; retain `CONFIG_TENANT`, tenant/stage
-selection and bundle precedence. There is no new bearer-token secret to provision.
-The earlier request-changes review at `098e98c` flagged tenant-blind credential-refresh
-preflight and stale `CONFIG_TENANT` deployment-contract expectations. Those issues are
-owned by PR1670; this migration does not repair or revert them.
+[LearnCard PR1670](https://github.com/learningeconomy/LearnCard/pull/1670) merged on
+2026-10-09 at `7656a57d30c6d80b8a25a8bb14bcd3b08b3648c2`. This branch is synced with
+main and preserves its `@learncard/service-config` bootstrap, `CONFIG_TENANT`,
+tenant/stage selection and runtime-bundle precedence. The optional endpoint is
+forwarded by the current API function-environment helper in both bundle and fallback
+modes; OIDC and provider environments do not receive it. There is no new bearer-token
+secret to provision. Configuration tests use the current deployment contract rather
+than restoring the superseded function-environment test.
 
 Rollback uses the prior application revision with its prior OpenAI credential, after
 explicit deployment approval. There is no runtime silent fallback to the old models.

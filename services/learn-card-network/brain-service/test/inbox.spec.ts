@@ -8,6 +8,7 @@ import {
     VC,
     VP,
     JWE,
+    JWEValidator,
 } from '@learncard/types';
 import { sendSpy, addNotificationToQueueSpy } from './helpers/spies';
 import * as notifications from '@helpers/notifications.helpers';
@@ -16,6 +17,9 @@ import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { areProfilesConnected } from '@helpers/connection.helpers';
 import { updateInboxCredential } from '@accesslayer/inbox-credential/update';
 import { neogma } from '@instance';
+import { Credential } from '@models';
+import { getInboxCredentialById } from '@accesslayer/inbox-credential/read';
+import * as credentialRelationships from '@accesslayer/credential/relationships/create';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -1832,6 +1836,174 @@ describe('Universal Inbox', () => {
             await SigningAuthority.delete({ detach: true, where: {} });
         });
 
+        const preparePendingBoost = async (email: string) => {
+            await Profile.relateTo({
+                alias: 'usesSigningAuthority',
+                where: {
+                    source: { profileId: 'usera' },
+                    target: { endpoint: 'https://example.com' },
+                },
+                properties: { name: 'example', did: userA.learnCard.id.did() },
+            });
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                claimPermissions: { canRevoke: true },
+            });
+            const issued = await userA.clients.fullAuth.inbox.issue({
+                templateUri: boostUri,
+                recipient: { type: 'email', value: email },
+                configuration: {
+                    signingAuthority: { endpoint: 'https://example.com', name: 'example' },
+                    webhookUrl: 'https://example.com/finalized',
+                },
+            });
+            await updateInboxCredential(issued.issuanceId, { isAccepted: true });
+            await userB.clients.fullAuth.contactMethods.addContactMethod({
+                type: 'email',
+                value: email,
+            });
+            await userB.clients.fullAuth.contactMethods.verifyContactMethod({
+                token: sendSpy.mock.calls.at(-1)?.[0].templateModel.verificationToken,
+            });
+            addNotificationToQueueSpy.mockClear();
+            return { boostUri, inboxId: issued.issuanceId };
+        };
+
+        it('rolls back a failed received write and completes all delivery tracking on retry', async () => {
+            const { boostUri, inboxId } = await preparePendingBoost('atomic-receipt@test.com');
+            const escrow = (await getInboxCredentialById(inboxId))!.credential;
+            const originalCredentialIds = (await Credential.findMany()).map(record => record.id);
+            const failedWrite = vi
+                .spyOn(credentialRelationships, 'createReceivedCredentialRelationship')
+                .mockRejectedValueOnce(new Error('injected received write failure'));
+            try {
+                await expect(userB.clients.fullAuth.inbox.finalize({})).resolves.toMatchObject({
+                    claimed: 0,
+                    errors: 1,
+                    deliveries: [],
+                });
+            } finally {
+                failedWrite.mockRestore();
+            }
+            expect(await getInboxCredentialById(inboxId)).toMatchObject({
+                currentStatus: 'PENDING',
+                credential: escrow,
+            });
+            expect((await Credential.findMany()).map(record => record.id).sort()).toEqual(
+                originalCredentialIds.sort()
+            );
+            expect(await userB.clients.fullAuth.credential.receivedCredentials({})).toEqual([]);
+            const auditBeforeRetry = await neogma.queryRunner.run(
+                'MATCH ()-[r:CLAIMED_INBOX_CREDENTIAL]->(ic:InboxCredential {id: $id}) RETURN count(r) AS count',
+                { id: inboxId }
+            );
+            expect(auditBeforeRetry.records[0].get('count').toNumber()).toBe(0);
+            expect(
+                addNotificationToQueueSpy.mock.calls.some(
+                    ([notification]) =>
+                        notification.type ===
+                            LCNNotificationTypeEnumValidator.enum.ISSUANCE_ERROR &&
+                        notification.data?.inbox?.status === 'PENDING'
+                )
+            ).toBe(true);
+            addNotificationToQueueSpy.mockClear();
+
+            const retry = await userB.clients.fullAuth.inbox.finalize({});
+            expect(retry).toMatchObject({ claimed: 1, errors: 0, deliveries: [{ id: inboxId }] });
+            const finalized = await getInboxCredentialById(inboxId);
+            expect(finalized?.currentStatus).toBe('ISSUED');
+            expect(finalized?.credential).toBeUndefined();
+            expect(
+                await userA.clients.fullAuth.boost.getBoostRecipients({
+                    uri: boostUri,
+                    includeUnacceptedBoosts: false,
+                })
+            ).toHaveLength(1);
+            expect(await userB.clients.fullAuth.credential.receivedCredentials({})).toHaveLength(1);
+            const auditAfterRetry = await neogma.queryRunner.run(
+                'MATCH ()-[r:CLAIMED_INBOX_CREDENTIAL]->(ic:InboxCredential {id: $id}) RETURN count(r) AS count',
+                { id: inboxId }
+            );
+            expect(auditAfterRetry.records[0].get('count').toNumber()).toBe(1);
+            expect(
+                addNotificationToQueueSpy.mock.calls.some(
+                    ([notification]) =>
+                        notification.type === LCNNotificationTypeEnumValidator.enum.ISSUANCE_ERROR
+                )
+            ).toBe(false);
+        });
+
+        it('rolls back partial claim permissions and grants hooks and the default role on retry', async () => {
+            const { boostUri, inboxId } = await preparePendingBoost('atomic-permissions@test.com');
+            const targetUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+            await userA.clients.fullAuth.claimHook.createClaimHook({
+                hook: {
+                    type: 'GRANT_PERMISSIONS',
+                    data: { claimUri: boostUri, targetUri, permissions: { canIssue: true } },
+                },
+            });
+            const failedRole = vi
+                .spyOn(credentialRelationships, 'setDefaultClaimedRole')
+                .mockRejectedValueOnce(new Error('injected claimed-role failure'));
+            try {
+                await expect(userB.clients.fullAuth.inbox.finalize({})).resolves.toMatchObject({
+                    claimed: 0,
+                    errors: 1,
+                });
+            } finally {
+                failedRole.mockRestore();
+            }
+            expect(await getInboxCredentialById(inboxId)).toMatchObject({
+                currentStatus: 'PENDING',
+            });
+            expect(
+                (await userB.clients.fullAuth.boost.getBoostPermissions({ uri: targetUri }))
+                    .canIssue
+            ).toBe(false);
+            expect(await userB.clients.fullAuth.credential.receivedCredentials({})).toEqual([]);
+
+            await expect(userB.clients.fullAuth.inbox.finalize({})).resolves.toMatchObject({
+                claimed: 1,
+                errors: 0,
+            });
+            expect(
+                (await userB.clients.fullAuth.boost.getBoostPermissions({ uri: targetUri }))
+                    .canIssue
+            ).toBe(true);
+            expect(
+                (await userB.clients.fullAuth.boost.getBoostPermissions({ uri: boostUri }))
+                    .canRevoke
+            ).toBe(true);
+            const [received] = await userB.clients.fullAuth.credential.receivedCredentials({});
+            expect(
+                await userB.clients.fullAuth.credential.acceptCredential({ uri: received.uri })
+            ).toBe(true);
+            const roleCounts = await neogma.queryRunner.run(
+                'MATCH (:Profile {profileId: "userb"})-[r:HAS_ROLE]->(b:Boost) WHERE b.id IN $ids RETURN b.id AS id, count(r) AS count',
+                { ids: [boostUri, targetUri].map(uri => uri.split(':').at(-1)) }
+            );
+            expect(roleCounts.records.map(record => record.get('count').toNumber())).toEqual([
+                1, 1,
+            ]);
+        });
+
+        it('commits only one accepted delivery and claim audit under concurrent finalization', async () => {
+            const { inboxId } = await preparePendingBoost('atomic-concurrent@test.com');
+            const results = await Promise.all(
+                Array.from({ length: 3 }, () => userB.clients.fullAuth.inbox.finalize({}))
+            );
+            expect(results.reduce((count, result) => count + result.claimed, 0)).toBe(1);
+            expect(results.reduce((count, result) => count + result.errors, 0)).toBe(0);
+            expect(await userB.clients.fullAuth.credential.receivedCredentials({})).toHaveLength(1);
+            const audit = await neogma.queryRunner.run(
+                'MATCH ()-[r:CLAIMED_INBOX_CREDENTIAL]->(ic:InboxCredential {id: $id}) RETURN count(r) AS count',
+                { id: inboxId }
+            );
+            expect(audit.records[0].get('count').toNumber()).toBe(1);
+        });
+
         it('should not allow finalize without full auth', async () => {
             await expect(noAuthClient.inbox.finalize({})).rejects.toMatchObject({
                 code: 'UNAUTHORIZED',
@@ -1912,8 +2084,11 @@ describe('Universal Inbox', () => {
             expect(res.claimed).toBe(2);
             expect(res.errors).toBe(0);
             expect(res.verifiableCredentials).toHaveLength(2);
-            // Ensure returned VCs are signed
-            for (const vc of res.verifiableCredentials) {
+            // The HTTP contract is encrypted; only the holder decrypts the signed VCs.
+            for (const encrypted of res.verifiableCredentials) {
+                const vc = await userB.learnCard.invoke.decryptDagJwe<VC>(
+                    JWEValidator.parse(encrypted)
+                );
                 expect(vc.proof).toBeDefined();
             }
 
@@ -2089,12 +2264,13 @@ describe('Universal Inbox', () => {
             const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
             try {
-                await expect(userB.clients.fullAuth.inbox.finalize({})).resolves.toMatchObject({
-                    processed: 1,
-                    claimed: 1,
-                    errors: 0,
-                    verifiableCredentials: [expect.objectContaining({ proof: expect.anything() })],
-                });
+                const result = await userB.clients.fullAuth.inbox.finalize({});
+                expect(result).toMatchObject({ processed: 1, claimed: 1, errors: 0 });
+                expect(
+                    await userB.learnCard.invoke.decryptDagJwe<VC>(
+                        JWEValidator.parse(result.verifiableCredentials[0])
+                    )
+                ).toMatchObject({ proof: expect.anything() });
             } finally {
                 queryRunnerSpy.mockRestore();
                 consoleErrorSpy.mockRestore();

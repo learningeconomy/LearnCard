@@ -40,9 +40,11 @@ provider:
     timeout: 20
     stage: ${opt:stage, "dev"}
     region: ${opt:region, "us-east-1"}
+    # serverless-offline sets AWS_LAMBDA_FUNCTION_NAME; stage config stays opt-in locally.
     environment:
         PORT: ${env:PORT, 3000}
-        LAMBDA_STAGE: ${opt:stage, "dev"}
+        LAMBDA_STAGE: ${env:CONFIG_STAGE, ''}
+        CONFIG_STAGE: ${env:CONFIG_STAGE, ''}
         LEARN_CLOUD_SEED: ${env:LEARN_CLOUD_SEED}
         LEARN_CLOUD_MONGO_URI: ${env:LEARN_CLOUD_MONGO_URI}
         LEARN_CLOUD_MONGO_DB_NAME: ${env:LEARN_CLOUD_MONGO_DB_NAME}
