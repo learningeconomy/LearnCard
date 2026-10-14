@@ -131,6 +131,8 @@ export const verifyNitroAttestationDocument = async (
     pcrs: Record<number, string>;
     timestamp: number;
     moduleId: string;
+    ledgerPublicKey?: string;
+    measurementHash?: string;
 }> => {
     let document: Uint8Array;
     try {
@@ -275,6 +277,28 @@ export const verifyNitroAttestationDocument = async (
     } catch {
         return fail('user-data');
     }
+    const rawLedgerKey = payload.get('public_key');
+    let ledgerPublicKey: string | undefined;
+    let measurementHash: string | undefined;
+    if (rawLedgerKey !== undefined && rawLedgerKey !== null) {
+        const ledger = new Uint8Array(bytes(rawLedgerKey, 'user-data'));
+        if (ledger.length !== 65 || ledger[0] !== 4) fail('user-data');
+        try {
+            await crypto.subtle.importKey(
+                'raw',
+                ledger,
+                { name: 'ECDSA', namedCurve: 'P-256' },
+                false,
+                ['verify']
+            );
+        } catch {
+            return fail('user-data');
+        }
+        const tuple = new Uint8Array(144);
+        for (let i = 0; i < 3; i++) tuple.set(bytes(rawPcrs.get(i), 'pcr'), i * 48);
+        measurementHash = hex(new Uint8Array(await crypto.subtle.digest('SHA-256', tuple)));
+        ledgerPublicKey = bufferToBase64(ledger.buffer);
+    }
     return {
         escrowPublicKeySpkiB64: bufferToBase64(new Uint8Array(spki).buffer),
         keyId: newFormat?.keyId,
@@ -282,5 +306,6 @@ export const verifyNitroAttestationDocument = async (
         pcrs,
         timestamp,
         moduleId,
+        ...(ledgerPublicKey ? { ledgerPublicKey, measurementHash } : {}),
     };
 };
