@@ -16,7 +16,7 @@ export type CredentialReceiveScreenProps = {
     savedCount?: number;
     complete?: boolean;
     dismissed?: boolean;
-    error?: 'invalid' | 'request' | 'save' | 'response' | 'account';
+    error?: 'invalid' | 'request' | 'save' | 'response' | 'account' | 'cancel';
     onAccept?: () => void;
     onReject?: () => void;
 };
@@ -98,6 +98,11 @@ export const CredentialReceiveScreen = ({
                                     {m['chapi.receive.cancelled']()}
                                 </p>
                             )}
+                            {savedCount > 0 && (dismissed || error === 'cancel') && (
+                                <p role="status" className="text-sm text-grayscale-600">
+                                    {m['chapi.receive.savedBeforeCancel']({ saved: savedCount })}
+                                </p>
+                            )}
                             {complete && (
                                 <div
                                     role="status"
@@ -171,6 +176,7 @@ export const CredentialReceiveScreen = ({
                         {!complete &&
                             !dismissed &&
                             error !== 'response' &&
+                            error !== 'cancel' &&
                             (onReject || credentials.length > 0) && (
                                 <footer className="sticky bottom-0 p-6 bg-white border-t border-grayscale-200 flex flex-wrap gap-3">
                                     <button

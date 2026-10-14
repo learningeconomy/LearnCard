@@ -1,4 +1,5 @@
 import React, { StrictMode } from 'react';
+import { webcrypto } from 'node:crypto';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
@@ -39,6 +40,9 @@ vi.mock('../../paraglide/messages.js', () => ({
     'chapi.receive.loading': () => 'Getting credentials...',
     'chapi.receive.saved': () => 'Saved to your Passport.',
     'chapi.receive.cancelled': () => 'Request cancelled.',
+    'chapi.receive.savedBeforeCancel': ({ saved }: { saved: number }) => `Already saved: ${saved}`,
+    'chapi.receive.error.cancel': () =>
+        'Cancellation could not notify issuer. Return to the website.',
     'chapi.receive.credential': () => 'Credential',
     'chapi.receive.issuerUnavailable': () => 'Issuer name unavailable',
     'chapi.receive.details': () => 'Details',
@@ -54,6 +58,7 @@ vi.mock('../../paraglide/messages.js', () => ({
     'chapi.receive.error.response': () => 'Saved, but could not notify issuer',
     'chapi.receive.error.account': () => 'Account changed. Start a new request.',
 }));
+import { getCredentialPayloadRecordId } from 'learn-card-base/helpers/credentialStorageIdentity';
 import { CredentialReceivePage } from './CredentialReceivePage';
 const credential = (name: string) => ({
     '@context': ['https://www.w3.org/ns/credentials/v2'],
@@ -74,6 +79,7 @@ const presentation = {
 };
 beforeEach(() => {
     vi.resetAllMocks();
+    vi.stubGlobal('crypto', webcrypto);
     mocks.currentUser = { privateKey: 'test' };
     mocks.did = undefined;
     mocks.init.mockResolvedValue({
@@ -310,7 +316,7 @@ describe('credential receive interaction', () => {
         expect(mocks.respond).toHaveBeenCalledOnce();
         expect(mocks.save).toHaveBeenCalledTimes(2);
     });
-    it('uses issuer credential IDs to deduplicate reopened offers', async () => {
+    it('uses the full signed payload to deduplicate reopened offers', async () => {
         mocks.receive.mockResolvedValue({
             credential: {
                 data: {
@@ -329,9 +335,68 @@ describe('credential receive interaction', () => {
         render(<CredentialReceivePage />);
         fireEvent.click(await ready());
         await screen.findByText('Saved to your Passport.');
-        expect(mocks.save.mock.calls.map(call => call[1].id)).toEqual([
-            'urn:uuid:stable-credential',
-            'urn:uuid:stable-credential',
-        ]);
+        const id = await getCredentialPayloadRecordId(
+            { ...credential('First'), id: 'urn:uuid:stable-credential' },
+            'did:key:test'
+        );
+        expect(mocks.save.mock.calls.map(call => call[1].id)).toEqual([id, id]);
     });
+    it('saves both distinct signed payloads when an offer reuses a credential ID', async () => {
+        const first = { ...credential('First'), id: 'urn:uuid:same-id' };
+        const second = {
+            ...credential('Second'),
+            id: first.id,
+            credentialSubject: { changed: true },
+        };
+        mocks.receive.mockResolvedValue({
+            credential: { data: { ...presentation, verifiableCredential: [first, second] } },
+            respondWith: mocks.respond,
+        });
+        render(<CredentialReceivePage />);
+        fireEvent.click(await ready());
+        await screen.findByText('Saved to your Passport.');
+        expect(mocks.save.mock.calls.map(call => call[0])).toEqual([first, second]);
+        expect(mocks.save.mock.calls[0][1].id).not.toBe(mocks.save.mock.calls[1][1].id);
+        expect(await mocks.respond.mock.calls[0][0]).toEqual({
+            dataType: 'VerifiablePresentation',
+            data: { ...presentation, verifiableCredential: [first, second] },
+        });
+    });
+    it('makes a failed cancellation terminal without claiming credentials were saved', async () => {
+        mocks.respond.mockImplementationOnce(() => {
+            throw new Error('consumed');
+        });
+        render(<CredentialReceivePage />);
+        await ready();
+        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+        await screen.findByText('Cancellation could not notify issuer. Return to the website.');
+        expect(screen.queryByRole('button', { name: 'Try Again' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Save to Passport' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();
+        expect(screen.queryByText('Saved, but could not notify issuer')).toBeNull();
+        expect(screen.queryByText('Saved to your Passport.')).toBeNull();
+        expect(mocks.respond).toHaveBeenCalledOnce();
+        expect(mocks.save).not.toHaveBeenCalled();
+    });
+    it.each([false, true])(
+        'explains retained partial saves when cancelling (notificationFails=%s)',
+        async notificationFails => {
+            mocks.save
+                .mockResolvedValueOnce({ result: true, credentialUri: 'first-uri' })
+                .mockRejectedValueOnce(new Error('failed second save'));
+            render(<CredentialReceivePage />);
+            fireEvent.click(await ready());
+            await screen.findByText('Could not finish saving');
+            if (notificationFails)
+                mocks.respond.mockImplementationOnce(() => {
+                    throw new Error('consumed');
+                });
+            fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+            await screen.findByText('Already saved: 1');
+            expect(await mocks.respond.mock.calls[0][0]).toBeNull();
+            expect(mocks.respond).toHaveBeenCalledOnce();
+            expect(mocks.save).toHaveBeenCalledTimes(2);
+            expect(screen.queryByRole('button', { name: 'Try Again' })).toBeNull();
+        }
+    );
 });

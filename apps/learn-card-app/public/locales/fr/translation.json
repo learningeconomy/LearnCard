@@ -3015,12 +3015,14 @@
                 "request": "Impossible de récupérer les justificatifs. Retournez sur le site émetteur et réessayez.",
                 "save": "L’enregistrement n’a pas pu se terminer. Réessayez pour reprendre là où vous en étiez.",
                 "response": "Vos justificatifs ont été enregistrés, mais le site émetteur n’a pas pu être informé.",
-                "account": "Votre compte a changé. Retournez au site émetteur et lancez une nouvelle demande."
+                "account": "Votre compte a changé. Retournez au site émetteur et lancez une nouvelle demande.",
+                "cancel": "Nous n’avons pas pu informer le site émetteur de votre annulation. Retournez sur ce site et lancez une nouvelle demande."
             },
             "cancelled": "Demande annulée. Retournez sur le site émetteur.",
             "connectTitle": "Connexion de votre compte",
             "connectDescription": "Préparation de la demande de ce site.",
-            "connecting": "Connexion..."
+            "connecting": "Connexion...",
+            "savedBeforeCancel": "Les justificatifs déjà enregistrés restent dans votre Passeport ({{saved}})."
         }
     },
     "legal": {

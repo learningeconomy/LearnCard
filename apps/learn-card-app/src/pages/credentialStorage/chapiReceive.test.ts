@@ -210,3 +210,30 @@ it('prefers explicit VC-API protocol metadata when legacy interact is also prese
     expect(fetch.mock.calls[0][0]).toBe('https://vcapi.example/exchange');
     expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({});
 });
+
+it('clears the exchange timeout and abort listener for an already-aborted signal', async () => {
+    vi.useFakeTimers();
+    try {
+        const controller = new AbortController();
+        controller.abort();
+        const remove = vi.spyOn(controller.signal, 'removeEventListener');
+        vi.stubGlobal(
+            'fetch',
+            vi.fn((_url: string, options: { signal: AbortSignal }) => {
+                expect(options.signal.aborted).toBe(true);
+                return Promise.reject(new DOMException('Aborted', 'AbortError'));
+            })
+        );
+        await expect(
+            loadChapiPresentation(
+                {} as BespokeLearnCard,
+                event(presentation, { protocols: { vcapi: 'https://issuer.example/exchange' } }),
+                controller.signal
+            )
+        ).rejects.toThrow('Aborted');
+        expect(vi.getTimerCount()).toBe(0);
+        expect(remove).toHaveBeenCalledWith('abort', expect.any(Function));
+    } finally {
+        vi.useRealTimers();
+    }
+});

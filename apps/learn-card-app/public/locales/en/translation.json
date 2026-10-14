@@ -2752,12 +2752,14 @@
                 "request": "We could not get the credentials. Return to the issuing website and try again.",
                 "save": "We could not finish saving. Try again to continue from where you left off.",
                 "response": "Your credentials were saved, but we could not notify the issuing website.",
-                "account": "Your account changed. Return to the issuing website and start a new request."
+                "account": "Your account changed. Return to the issuing website and start a new request.",
+                "cancel": "We could not notify the issuing website that you cancelled. Return to that website and start a new request."
             },
             "cancelled": "Request cancelled. Return to the issuing website.",
             "connectTitle": "Connecting your account",
             "connectDescription": "Preparing this website’s request.",
-            "connecting": "Connecting..."
+            "connecting": "Connecting...",
+            "savedBeforeCancel": "Credentials already saved remain in your Passport ({{saved}})."
         }
     },
     "legal": {

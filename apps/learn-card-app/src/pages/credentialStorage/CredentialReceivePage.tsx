@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import type { CredentialStoreEvent } from '@learncard/chapi-plugin';
 import type { VC, VP } from '@learncard/types';
 import { chapiStore, redirectStore, useCurrentUser, useWallet } from 'learn-card-base';
+import { getCredentialPayloadRecordId } from 'learn-card-base/helpers/credentialStorageIdentity';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import {
     getCredentialName,
@@ -27,6 +28,7 @@ type Request = {
     event: CredentialStoreEvent;
     presentation: VP;
     credentials: VC[];
+    recordIds: string[];
     did: string;
 };
 
@@ -110,13 +112,12 @@ export const CredentialReceivePage = () => {
                         event,
                         controller.signal
                     );
-                    return {
-                        key,
-                        event,
-                        presentation,
-                        credentials: getReceivedCredentials(presentation),
-                        did: wallet.id.did(),
-                    };
+                    const credentials = getReceivedCredentials(presentation);
+                    const did = wallet.id.did();
+                    const recordIds = await Promise.all(
+                        credentials.map(credential => getCredentialPayloadRecordId(credential, did))
+                    );
+                    return { key, event, presentation, credentials, recordIds, did };
                 })(),
             };
         }
@@ -131,8 +132,8 @@ export const CredentialReceivePage = () => {
                     dismissedRef.current
                 )
                     return;
-                records.current = result.credentials.map(credential => ({
-                    id: credential.id || crypto.randomUUID(),
+                records.current = result.recordIds.map(id => ({
+                    id,
                     saved: false,
                 }));
                 setRequest(result);
@@ -215,7 +216,8 @@ export const CredentialReceivePage = () => {
             setError(undefined);
             setDismissed(true);
         } catch {
-            setError('request');
+            resetInteraction();
+            setError('cancel');
         }
     };
 
@@ -239,7 +241,7 @@ export const CredentialReceivePage = () => {
             dismissed={dismissed}
             error={error}
             key={key}
-            onAccept={error === 'response' ? undefined : accept}
+            onAccept={!responded.current ? accept : undefined}
             onReject={eventAvailable && !responded.current ? reject : undefined}
         />
     );

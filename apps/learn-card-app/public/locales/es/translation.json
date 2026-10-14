@@ -3015,12 +3015,14 @@
                 "request": "No pudimos obtener las credenciales. Vuelve al sitio emisor e inténtalo de nuevo.",
                 "save": "No pudimos terminar de guardar. Inténtalo de nuevo para continuar desde donde quedaste.",
                 "response": "Tus credenciales se guardaron, pero no pudimos notificar al sitio emisor.",
-                "account": "Tu cuenta ha cambiado. Vuelve al sitio emisor e inicia una nueva solicitud."
+                "account": "Tu cuenta ha cambiado. Vuelve al sitio emisor e inicia una nueva solicitud.",
+                "cancel": "No pudimos notificar al sitio emisor que cancelaste. Vuelve a ese sitio e inicia una nueva solicitud."
             },
             "cancelled": "Solicitud cancelada. Vuelve al sitio emisor.",
             "connectTitle": "Conectando tu cuenta",
             "connectDescription": "Preparando la solicitud de este sitio.",
-            "connecting": "Conectando..."
+            "connecting": "Conectando...",
+            "savedBeforeCancel": "Las credenciales ya guardadas permanecen en tu Pasaporte ({{saved}})."
         }
     },
     "legal": {

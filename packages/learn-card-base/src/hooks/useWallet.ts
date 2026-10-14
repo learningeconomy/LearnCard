@@ -420,8 +420,9 @@ export const useWallet = () => {
 
             stage = 'category';
             const category = await getCategoryForCredential(vc, wallet);
-            // Callers processing a retryable batch can keep one index ID per item,
-            // including credentials without an issuer-provided ID.
+            // Explicit IDs identify the caller's save operation, not necessarily
+            // the credential's issuer ID. CHAPI uses full-payload fingerprints
+            // so exact retries dedupe without dropping same-ID revisions.
             if (inboxDeliveryId || recordId) {
                 stage = 'lookup';
                 const existing = await wallet.index[location].get(
