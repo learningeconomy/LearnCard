@@ -221,6 +221,38 @@ struct Proposal {
 }
 
 impl Ledger {
+    #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+    pub(crate) fn sign_authority_record(
+        &self,
+        kind: crate::authority::record::RecordKind,
+        payload: &[u8],
+    ) -> Result<crate::authority::record::SignedAuthorityRecord, LedgerError> {
+        let mut record = crate::authority::record::SignedAuthorityRecord {
+            version: 1,
+            kind,
+            key_id: self.key_id.clone(),
+            measurement: self.measurement,
+            payload: STANDARD.encode(payload),
+            signature: String::new(),
+        };
+        let signature: Signature = self
+            .signing_key
+            .sign_prehash(&record.signing_hash()?)
+            .map_err(|_| LedgerError::Signature)?;
+        record.signature = STANDARD.encode(signature.normalize_s().unwrap_or(signature).to_bytes());
+        Ok(record)
+    }
+    #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+    pub(crate) fn verify_authority_record(
+        &self,
+        record: &crate::authority::record::SignedAuthorityRecord,
+    ) -> Result<(), LedgerError> {
+        record.verify(
+            self.verifiers
+                .get(&record.key_id)
+                .ok_or(LedgerError::Signature)?,
+        )
+    }
     /// Derive separate ledger and PIN commitment keys from the escrow scalar.
     /// Attestation/monitor enrollment must bind public_key() to the allowed image.
     pub fn new(

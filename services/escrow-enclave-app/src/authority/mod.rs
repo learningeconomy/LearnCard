@@ -1,4 +1,4 @@
-//! Direct AWS foundations. No Policy or boot path constructs these clients yet.
+//! Measured-scope authority, owner intent, conditional persistence and audit artifacts.
 #[cfg(feature = "kms")]
 pub mod aws;
 #[cfg(feature = "kms")]
@@ -6,6 +6,7 @@ pub mod config;
 #[cfg(feature = "kms")]
 pub mod credentials;
 pub mod intent;
+pub mod record;
 pub mod state;
 #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
 pub mod store;

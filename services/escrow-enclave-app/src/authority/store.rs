@@ -33,6 +33,12 @@ pub trait AuthorityStore: Send + Sync {
     /// fresh comparison permit. Call reconcile, not commit, after uncertainty.
     fn commit(&self, transition: Transition) -> StoreFuture<'_, CommitOutcome>;
     fn reconcile<'a>(&'a self, ticket: &'a ReconcileTicket) -> StoreFuture<'a, CommitOutcome>;
+    /// Historical commit evidence only; never grants a new execution permit.
+    fn receipt<'a>(
+        &'a self,
+        binding: &'a Binding,
+        execution_id: [u8; 16],
+    ) -> StoreFuture<'a, Option<CommitReceipt>>;
 }
 
 #[derive(Clone)]
@@ -78,6 +84,15 @@ pub struct CommitReceipt {
     pub transaction_digest: Hash,
 }
 
+/// Immutable audit evidence for every phase, including a reservation whose
+/// mutable request row later advances to a result. No event is lost on overwrite.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ExecutionRecord {
+    pub receipt: CommitReceipt,
+    pub proposed_event: Vec<u8>,
+}
+
 pub enum CommitOutcome {
     /// Returned only for this consumed execution's successful write + readback.
     Applied(CommitReceipt),
@@ -93,6 +108,7 @@ pub enum CommitOutcome {
 #[derive(Clone)]
 pub struct ReconcileTicket {
     receipt: CommitReceipt,
+    proposed_event: Vec<u8>,
     expected_revision: Option<Counter>,
 }
 
@@ -200,6 +216,7 @@ impl Transition {
             .try_fill_bytes(&mut execution_id)
             .map_err(|_| Error::Unavailable)?;
         operation.execution_id = execution_id;
+        let proposed_event = operation.proposed_event.clone();
         let mut writes = vec![
             typed_write(
                 &binding,
@@ -228,12 +245,13 @@ impl Transition {
         };
         let ticket = ReconcileTicket {
             receipt,
+            proposed_event,
             expected_revision,
         };
         writes.push(Write {
             key: receipt_key(&ticket.receipt)?,
             expected: None,
-            value: receipt_bytes(&ticket.receipt)?,
+            value: receipt_bytes(&ticket)?,
         });
         Ok(Self { writes, ticket })
     }
@@ -293,7 +311,7 @@ impl<B: Backend> Store<B> {
             Err(_) => return Ok(CommitOutcome::Unknown),
         };
         if let Some(bytes) = &values[0] {
-            if bytes != &receipt_bytes(&ticket.receipt)? {
+            if bytes != &receipt_bytes(ticket)? {
                 return Ok(CommitOutcome::Unknown);
             }
             return Ok(if acknowledged {
@@ -320,6 +338,41 @@ impl<B: Backend> Store<B> {
 }
 
 impl<B: Backend> AuthorityStore for Store<B> {
+    fn receipt<'a>(
+        &'a self,
+        binding: &'a Binding,
+        execution_id: [u8; 16],
+    ) -> StoreFuture<'a, Option<CommitReceipt>> {
+        Box::pin(async move {
+            self.scope.check(binding)?;
+            let keys = [key(
+                binding,
+                format!("EXECUTION#{}", hex::encode(execution_id)),
+            )?];
+            let rows = self.read(&keys).await?;
+            rows[0]
+                .as_ref()
+                .map(|bytes| {
+                    let execution: ExecutionRecord =
+                        serde_json::from_slice(bytes).map_err(|_| Error::Unavailable)?;
+                    require(
+                        !execution.proposed_event.is_empty()
+                            && execution.proposed_event.len() <= MAX_EVENT_BYTES,
+                    )?;
+                    let receipt = execution.receipt;
+                    require(
+                        receipt.schema_version == SCHEMA_VERSION
+                            && &receipt.binding == binding
+                            && receipt.execution_id == execution_id
+                            && receipt.revisions.enrollment.get() > 0
+                            && receipt.revisions.operation.get()
+                                >= receipt.revisions.enrollment.get(),
+                    )?;
+                    Ok(receipt)
+                })
+                .transpose()
+        })
+    }
     fn load<'a>(
         &'a self,
         binding: &'a Binding,
@@ -415,8 +468,12 @@ fn receipt_key(receipt: &CommitReceipt) -> Result<Key, Error> {
         format!("EXECUTION#{}", hex::encode(receipt.execution_id)),
     )
 }
-fn receipt_bytes(receipt: &CommitReceipt) -> Result<Vec<u8>, Error> {
-    serde_json::to_vec(receipt).map_err(|_| Error::InvalidRequest)
+fn receipt_bytes(ticket: &ReconcileTicket) -> Result<Vec<u8>, Error> {
+    serde_json::to_vec(&ExecutionRecord {
+        receipt: ticket.receipt.clone(),
+        proposed_event: ticket.proposed_event.clone(),
+    })
+    .map_err(|_| Error::InvalidRequest)
 }
 fn digest(writes: &[Write]) -> Hash {
     let mut hash = Sha256::new();

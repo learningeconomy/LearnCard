@@ -1,6 +1,6 @@
 //! Escrow enclave primitives and decision core. Production driver/transport integration is pending.
 
-/// Authority schema and direct AWS foundations; not yet wired into Policy.
+/// Authority schema, owner intent and direct AWS persistence for configured Policy.
 pub mod authority;
 #[cfg(feature = "kms")]
 mod aws_transport;
