@@ -93,7 +93,11 @@ vi.mock('learn-card-base/hooks/useAiInsightCredential', () => ({
 }));
 
 vi.mock('learn-card-base/helpers/fileExtraction', async () => {
-    class FileExtractionError extends Error {}
+    class FileExtractionError extends Error {
+        constructor(readonly code: string) {
+            super(code);
+        }
+    }
     return {
         createFileExtractionAttempt: vi.fn(() => ({
             operationId: 'operation-1',
@@ -115,6 +119,7 @@ vi.mock('./useUploadVcFromText', () => ({
 import { createRawArtifactVC, getFileInfo, useUploadFile } from './useUploadFile';
 import { addCertificateAttachment } from './certificateAttachment';
 import { UploadTypesEnum } from 'learn-card-base';
+import { FileExtractionError } from 'learn-card-base/helpers/fileExtraction';
 import type {
     RawArtifactCredential,
     ParsedFileCredential,
@@ -427,6 +432,9 @@ describe('useUploadFile persistence outcomes', () => {
             status: 'empty',
             extractedCount: 0,
         });
+        expect(records.size).toBe(0);
+        expect(documents.size).toBe(0);
+        expect(savedCredentials.size).toBe(0);
         uploadMutationMock.mockResolvedValueOnce({
             vcs: [parsedDraft(unsignedDraft('unselected'))],
             processing: { outcome: 'success', credentialCount: 1 },
@@ -447,6 +455,34 @@ describe('useUploadFile persistence outcomes', () => {
             result.current.fileUploadOutcomes.find(item => item.artifact.id === 'none')
         ).toMatchObject({ status: 'stored', extractedCount: 1, selectedCount: 0, storedCount: 0 });
         expect(savedCredentials.size).toBe(0);
+    });
+
+    it('does not replace the saved resume with a blank document or persist it on retry', async () => {
+        records.set('resume-index', {
+            id: 'resume-index',
+            uri: 'existing-resume',
+            category: 'resume',
+        });
+        documents.set('existing-resume', rawArtifact('existing-resume'));
+        uploadMutationMock.mockRejectedValue(new FileExtractionError('NO_READABLE_TEXT'));
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Resume));
+        const artifact = rawArtifact('blank-resume');
+        await act(async () => {
+            await result.current.retryFileExtraction(artifact, UploadTypesEnum.Resume);
+        });
+        await act(async () => {
+            await result.current.retryFileExtraction(artifact, UploadTypesEnum.Resume);
+        });
+        expect(result.current.fileUploadOutcomes).toMatchObject([
+            { status: 'empty', extractedCount: 0 },
+        ]);
+        expect([...records.values()]).toEqual([
+            { id: 'resume-index', uri: 'existing-resume', category: 'resume' },
+        ]);
+        expect(documents.has('original:blank-resume')).toBe(false);
+        expect(savedCredentials.size).toBe(0);
+        expect(wallet.invoke.issueCredential).not.toHaveBeenCalled();
+        expect(wallet.store.LearnCloud.uploadEncrypted).not.toHaveBeenCalled();
     });
 
     it('does not count a false selected-storage result even if it includes a URI', async () => {

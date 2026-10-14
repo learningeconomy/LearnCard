@@ -287,3 +287,12 @@ the client still attempts to preserve the original.
 The original reported PDF remains unavailable. Local checks do not reproduce its OCR/model
 result or establish deployed parity. Browser verification uses synthetic extraction and storage;
 native filesystem/viewer calls are emulated at the Capacitor bridge, not exercised on a physical phone.
+
+### Blank-document correction — 2026-10-14
+
+User testing found that the save-original fallback created a valueless “Raw Artifact”
+wallet card for a blank PDF. Empty successful extraction and `NO_READABLE_TEXT` now
+remain local, with clear feedback and an extraction retry but no signing, upload, or
+index write. They do not replace an existing résumé. This supersedes the empty-result
+preservation behavior above; processing failures still preserve originals, and selecting
+none after a nonempty review still deliberately saves the original.

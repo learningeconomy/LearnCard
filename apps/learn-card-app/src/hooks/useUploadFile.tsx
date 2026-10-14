@@ -783,7 +783,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         }
     };
 
-    /** Empty and rejected extraction preserve originals; nonempty output waits for review. */
+    /** Empty results stay local; processing failures preserve originals, and candidates need review. */
     const processArtifact = (
         artifact: RawArtifactCredential,
         fileType: UploadTypesEnum
@@ -830,12 +830,27 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                     };
                 }
             } catch (error) {
-                extractionStatus = 'extraction_failed';
+                extractionStatus =
+                    error instanceof FileExtractionError && error.code === 'NO_READABLE_TEXT'
+                        ? 'empty'
+                        : 'extraction_failed';
                 extractedCounts.current.set(artifact.id, 0);
                 message =
                     error instanceof FileExtractionError
                         ? error.message
                         : m['passport.buildMyLearnCard.managers.toastGenericError']();
+            }
+            if (extractionStatus === 'empty') {
+                return {
+                    credentials: [],
+                    outcome: {
+                        artifact,
+                        status: 'empty',
+                        extractionStatus,
+                        extractedCount: 0,
+                        message,
+                    },
+                };
             }
             try {
                 await saveFile(artifact, fileType);
@@ -881,13 +896,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             const credentials = results.flatMap(result => result.credentials);
             setParsedCredentials(credentials);
             setFileUploadOutcomes(results.map(result => result.outcome));
-            if (
-                results.some(
-                    result =>
-                        result.outcome.status === 'empty' ||
-                        result.outcome.status === 'extraction_failed'
-                )
-            ) {
+            if (results.some(result => result.outcome.status === 'extraction_failed')) {
                 void refetchCheckListStatus().catch(() =>
                     log.error('file.checklist_refresh.failed')
                 );

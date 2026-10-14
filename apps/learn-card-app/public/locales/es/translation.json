@@ -401,7 +401,7 @@
                 "retryExtraction": "Intentar de nuevo",
                 "retrySave": "Reintentar guardado",
                 "retrying": "Intentando de nuevo...",
-                "documentNoCredentials": "No se extrajeron credenciales. El documento original está guardado.",
+                "documentNoCredentials": "No se extrajeron credenciales. Prueba con otro archivo.",
                 "documentNoSelection": "Tu archivo está guardado. No se seleccionaron credenciales.",
                 "credentialsReady": "Credenciales listas para revisar: {{count}}.",
                 "extractionFailedOriginalSaved": "No se pudieron extraer credenciales. El documento original está guardado.",

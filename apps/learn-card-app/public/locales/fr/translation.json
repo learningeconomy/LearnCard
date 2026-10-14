@@ -401,7 +401,7 @@
                 "retryExtraction": "Réessayer",
                 "retrySave": "Réessayer l’enregistrement",
                 "retrying": "Nouvelle tentative...",
-                "documentNoCredentials": "Aucun justificatif n’a été extrait. Le document original est enregistré.",
+                "documentNoCredentials": "Aucun justificatif n’a été extrait. Essayez un autre fichier.",
                 "documentNoSelection": "Votre fichier est enregistré. Aucun justificatif n’a été sélectionné.",
                 "credentialsReady": "Justificatifs prêts à vérifier : {{count}}.",
                 "extractionFailedOriginalSaved": "Impossible d’extraire les justificatifs. Le document original est enregistré.",

@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- LC-2202: Keep uploaded originals accessible when extraction is empty or unsuccessful. Add per-file outcomes, reviewed extraction retry, and confirmed save counts for résumés, certificates, transcripts and diplomas. Retry failed persistence without duplicating confirmed writes or replacing a newer saved résumé.
+- LC-2202: Add per-file extraction feedback, reviewed retry, and confirmed save counts for résumés, certificates, transcripts and diplomas. Empty results and files with no readable text no longer create placeholder “Raw Artifact” credentials. Processing failures still preserve accessible originals. Retry failed persistence without duplicating confirmed writes or replacing a newer saved résumé.
 
 ## 1.100.0
 

@@ -401,7 +401,7 @@
                 "retryExtraction": "إعادة المحاولة",
                 "retrySave": "إعادة الحفظ",
                 "retrying": "جارٍ إعادة المحاولة...",
-                "documentNoCredentials": "لم يتم استخراج بيانات اعتماد. تم حفظ المستند الأصلي.",
+                "documentNoCredentials": "لم يتم استخراج بيانات اعتماد. جرّب ملفًا آخر.",
                 "documentNoSelection": "تم حفظ ملفك. لم يتم اختيار أي بيانات اعتماد.",
                 "credentialsReady": "بيانات الاعتماد الجاهزة للمراجعة: {{count}}.",
                 "extractionFailedOriginalSaved": "تعذّر استخراج بيانات الاعتماد. تم حفظ المستند الأصلي.",

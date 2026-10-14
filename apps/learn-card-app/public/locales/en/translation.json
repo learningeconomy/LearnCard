@@ -401,7 +401,7 @@
                 "retryExtraction": "Try Again",
                 "retrySave": "Retry Save",
                 "retrying": "Trying again...",
-                "documentNoCredentials": "No credentials were extracted. The original document is saved.",
+                "documentNoCredentials": "No credentials were extracted. Try another file.",
                 "documentNoSelection": "Your file is saved. No credentials were selected.",
                 "credentialsReady": "Credentials ready for review: {{count}}.",
                 "extractionFailedOriginalSaved": "We could not extract credentials. The original document is saved.",

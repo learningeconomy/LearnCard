@@ -102,7 +102,8 @@ flowchart LR
     A[Choose document] --> B{Extraction result}
     B -->|Credentials found| C[Review and select]
     C --> D[Save original and selection]
-    B -->|Empty or unsuccessful| E[Save original only]
+    B -->|Empty or no readable text| J[Show feedback without creating a credential]
+    B -->|Processing failed| E[Save original only]
     D --> F{Save confirmed?}
     E --> F
     F -->|Yes| G[Open or download original]
@@ -115,8 +116,9 @@ The original is labeled **Provided by you · Not verified by an issuer**. It is 
 verified achievement. **Open File** previews supported documents; **Download** saves the
 original bytes. On iOS, saved files are in LearnCard's Documents folder.
 
-An empty result and an unsuccessful extraction have different messages. Both keep the
-original when its save succeeds and offer another extraction attempt. A failed save does
+An empty result or a file with no readable text does not create a credential or save a new
+original. Choose another file or retry extraction while the upload step remains open.
+Processing failures still keep the original when its save succeeds. A failed save does
 not claim that the file is saved; retry saving without running extraction again.
 
 Review can be closed and reopened within the same app session. Selecting none still saves
