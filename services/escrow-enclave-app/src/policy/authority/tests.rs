@@ -772,3 +772,113 @@ async fn empty_authority_never_uses_valid_old_envelopes_as_enrollment() {
         .is_err());
     assert_eq!(f.store.calls.load(Ordering::SeqCst), 0);
 }
+
+#[tokio::test]
+async fn snapshot_is_nonce_bound_and_pending_old_holds_cancel_after_disable() {
+    let f = Fixture::new();
+    let mut p = f.policy(false);
+    let nonce = "00".repeat(32);
+    let (state, proof) = p.authority_state(&f.did, &nonce).await.unwrap();
+    assert_eq!(state.status, "empty");
+    assert_eq!(state.enrollment_version, 0);
+    proof.verify(&p.ledger_public_key()).unwrap();
+    assert!(proof.kind == RecordKind::Snapshot);
+    let payload: serde_json::Value =
+        serde_json::from_slice(&STANDARD.decode(&proof.payload).unwrap()).unwrap();
+    assert_eq!(payload[0], nonce);
+    let mut altered = proof.clone();
+    altered.kind = RecordKind::Commit;
+    assert!(altered.verify(&p.ledger_public_key()).is_err());
+    let env = f.enroll(&mut p, true).await;
+    let hold = f.hold(&mut p, &env, ReleasePolicy::Hold).await;
+    let disable = f
+        .intent(
+            "disable",
+            EnrollmentAction::Disable,
+            PinAction::Keep,
+            Some(&env),
+            None,
+            1,
+            false,
+        )
+        .await;
+    p.apply_enrollment_intent(&disable, Some(&env), None)
+        .await
+        .unwrap();
+    p.cancel_hold(f.release(&env, &hold, "cancel", None))
+        .await
+        .unwrap();
+    f.policy(false)
+        .cancel_hold(f.release(&env, &hold, "retry", None))
+        .await
+        .unwrap();
+}
+
+#[cfg(feature = "enclave-runtime")]
+mod wire_tests {
+    use super::*;
+    #[tokio::test]
+    async fn signed_enrollment_and_snapshot_dispatch_through_wire() {
+        use crate::{
+            nsm::FakeNsm,
+            server::Service,
+            wire::{
+                v1::{Request, Response},
+                AttestationMode,
+            },
+        };
+        let f = Fixture::new();
+        let nsm = FakeNsm::new(1000, [[1; 48], [2; 48], [3; 48]]).unwrap();
+        let mut service = Service {
+            policy: f.policy(false),
+            nsm: &nsm,
+            key_id: "current".into(),
+            public_key: f.keys.public_key.clone(),
+            mode: AttestationMode::Software,
+        };
+        let target = f.blob(1, None);
+        let signed = f
+            .intent(
+                "enroll",
+                EnrollmentAction::Enroll,
+                PinAction::Keep,
+                None,
+                Some(&target),
+                1,
+                true,
+            )
+            .await;
+        let request = Request::ApplyEnrollment {
+            signed_intent: Box::new(signed),
+            source_envelope: None,
+            target_envelope: Some(target.clone()),
+        };
+        let request = serde_json::from_slice(&serde_json::to_vec(&request).unwrap()).unwrap();
+        let Response::ApplyEnrollment { result } = service.dispatch(request).await else {
+            panic!("enrollment response")
+        };
+        assert!(result.envelope.as_ref().unwrap() != &target);
+        result
+            .receipt
+            .verify(&service.policy.ledger_public_key())
+            .unwrap();
+        let committed: AuthorityCommitPayload =
+            serde_json::from_slice(&STANDARD.decode(&result.receipt.payload).unwrap()).unwrap();
+        assert!(
+            committed.result_blob_identity
+                == Some(blob_hash(result.envelope.as_ref().unwrap()).unwrap())
+        );
+        let Response::EnrollmentState { state, proof } = service
+            .dispatch(Request::EnrollmentState {
+                expected_did: f.did.clone(),
+                nonce: "11".repeat(32),
+            })
+            .await
+        else {
+            panic!("state response")
+        };
+        assert!(state.envelope == result.envelope);
+        assert_eq!(state.enrollment_version, 1);
+        proof.verify(&service.policy.ledger_public_key()).unwrap();
+    }
+}

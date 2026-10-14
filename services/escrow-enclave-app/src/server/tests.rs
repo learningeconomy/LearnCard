@@ -276,7 +276,7 @@ async fn policy_suite_through_loopback_and_http() {
     clock.0.fetch_add(HOLD_DURATION_MS, Ordering::SeqCst);
     let response = call(address, fixture.release(hold.clone(), "ready", None)).await;
     match response {
-        Response::Release { sealed } => {
+        Response::Release { sealed, .. } => {
             let opened = crypto::open_escrow_release(&sealed, &fixture.client.private_key).unwrap();
             assert_eq!(opened.blob.recovery_share, "ab".repeat(33));
             assert!(opened.blob.pin_verifier.is_none());
@@ -323,7 +323,10 @@ async fn policy_suite_through_loopback_and_http() {
             }
         )
         .await,
-        Response::Cancel { cancelled: true }
+        Response::Cancel {
+            cancelled: true,
+            ..
+        }
     ));
     clock.0.fetch_add(HOLD_DURATION_MS, Ordering::SeqCst);
     assert!(matches!(
@@ -597,7 +600,7 @@ async fn boot_with_two_previous_keys_advertises_them_and_releases_a_previous_key
     )
     .await
     {
-        Response::Release { sealed } => sealed,
+        Response::Release { sealed, .. } => sealed,
         other => panic!("{other:?}"),
     };
     let release = crypto::open_escrow_release(&sealed, &client.private_key).unwrap();

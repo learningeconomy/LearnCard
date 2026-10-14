@@ -119,6 +119,76 @@ impl Service<'_> {
     }
     async fn handle(&mut self, request: Request) -> Result<Response, ErrorCode> {
         match request {
+            Request::EnrollmentState {
+                expected_did,
+                nonce,
+            } => {
+                #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+                {
+                    let (state, proof) = self.policy.authority_state(&expected_did, &nonce).await?;
+                    Ok(Response::EnrollmentState { state, proof })
+                }
+                #[cfg(not(any(test, feature = "kms", feature = "fake-authority")))]
+                {
+                    let _ = (expected_did, nonce);
+                    Err(ErrorCode::Unavailable)
+                }
+            }
+            Request::ApplyEnrollment {
+                signed_intent,
+                source_envelope,
+                target_envelope,
+            } => {
+                #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+                {
+                    Ok(Response::ApplyEnrollment {
+                        result: self
+                            .policy
+                            .apply_enrollment_intent(
+                                &signed_intent,
+                                source_envelope.as_ref(),
+                                target_envelope.as_ref(),
+                            )
+                            .await?,
+                    })
+                }
+                #[cfg(not(any(test, feature = "kms", feature = "fake-authority")))]
+                {
+                    let _ = (signed_intent, source_envelope, target_envelope);
+                    Err(ErrorCode::Unavailable)
+                }
+            }
+            Request::AuthorityRewrap {
+                envelope,
+                expected_did,
+                expected_share_version,
+                source_enrollment_epoch,
+            } => {
+                #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+                {
+                    Ok(Response::AuthorityRewrap {
+                        result: self
+                            .policy
+                            .authority_rewrap(
+                                &envelope,
+                                &expected_did,
+                                expected_share_version,
+                                source_enrollment_epoch,
+                            )
+                            .await?,
+                    })
+                }
+                #[cfg(not(any(test, feature = "kms", feature = "fake-authority")))]
+                {
+                    let _ = (
+                        envelope,
+                        expected_did,
+                        expected_share_version,
+                        source_enrollment_epoch,
+                    );
+                    Err(ErrorCode::Unavailable)
+                }
+            }
             Request::Health => Ok(Response::Health { ok: true }),
             Request::Attest { nonce } => {
                 let spki = STANDARD
@@ -258,18 +328,30 @@ impl Service<'_> {
                 pin_proof,
             } => {
                 let proof = pin_proof.map(Zeroizing::new);
-                let sealed = self
-                    .policy
-                    .release(ReleaseRequest {
-                        envelope: &envelope,
-                        hold: &hold,
-                        request_id: &request_id,
-                        client_ephemeral_public_key: &client_ephemeral_public_key,
-                        expected_did: &expected_did,
-                        pin_proof: proof.as_ref().map(|p| p.as_str()),
-                    })
-                    .await?;
-                Ok(Response::Release { sealed })
+                let req = ReleaseRequest {
+                    envelope: &envelope,
+                    hold: &hold,
+                    request_id: &request_id,
+                    client_ephemeral_public_key: &client_ephemeral_public_key,
+                    expected_did: &expected_did,
+                    pin_proof: proof.as_ref().map(|p| p.as_str()),
+                };
+                #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+                if self.policy.authority_enabled() {
+                    let (sealed, receipt) = self
+                        .policy
+                        .authority_release_with_receipt(req, hold.hold.release_policy)
+                        .await?;
+                    return Ok(Response::Release {
+                        sealed,
+                        receipt: Some(receipt),
+                    });
+                }
+                let sealed = self.policy.release(req).await?;
+                Ok(Response::Release {
+                    sealed,
+                    receipt: None,
+                })
             }
             Request::Cancel {
                 envelope,
@@ -278,17 +360,27 @@ impl Service<'_> {
                 client_ephemeral_public_key,
                 expected_did,
             } => {
-                self.policy
-                    .cancel_hold(ReleaseRequest {
-                        envelope: &envelope,
-                        hold: &hold,
-                        request_id: &request_id,
-                        client_ephemeral_public_key: &client_ephemeral_public_key,
-                        expected_did: &expected_did,
-                        pin_proof: None,
-                    })
-                    .await?;
-                Ok(Response::Cancel { cancelled: true })
+                let req = ReleaseRequest {
+                    envelope: &envelope,
+                    hold: &hold,
+                    request_id: &request_id,
+                    client_ephemeral_public_key: &client_ephemeral_public_key,
+                    expected_did: &expected_did,
+                    pin_proof: None,
+                };
+                #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+                if self.policy.authority_enabled() {
+                    let receipt = self.policy.authority_cancel(req).await?;
+                    return Ok(Response::Cancel {
+                        cancelled: true,
+                        receipt: Some(receipt),
+                    });
+                }
+                self.policy.cancel_hold(req).await?;
+                Ok(Response::Cancel {
+                    cancelled: true,
+                    receipt: None,
+                })
             }
         }
     }

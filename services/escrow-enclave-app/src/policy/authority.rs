@@ -69,10 +69,7 @@ impl EnrollmentSource for AuthorityEnrollment {
 
 /// Returned only after authenticated commit readback. The encrypted output is
 /// already durable in the account row; loss of this response cannot lose it.
-pub struct AuthorityMutation {
-    pub envelope: Option<EscrowEnvelope>,
-    pub receipt: SignedAuthorityRecord,
-}
+pub type AuthorityMutation = crate::wire::v1::AuthorityMutationResponse;
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -99,9 +96,67 @@ pub struct AuthorityCommitPayload {
     pub commit: CommitReceipt,
     pub event_hash: Hash,
     pub request_digest: Hash,
+    pub result_blob_identity: Option<Hash>,
+    pub enrollment_epoch: u64,
 }
 
 impl<'a> Policy<'a> {
+    pub fn authority_enabled(&self) -> bool {
+        self.authority.is_some()
+    }
+
+    /// Nonce-bound fresh state for constructing owner intent. Never infers an
+    /// enrollment from an envelope or Mongo metadata when the authority is empty.
+    pub async fn authority_state(
+        &self,
+        did: &str,
+        nonce: &str,
+    ) -> Result<(crate::wire::v1::AuthorityState, SignedAuthorityRecord), ErrorCode> {
+        if did.len() > 8192
+            || nonce.len() != 64
+            || !nonce
+                .bytes()
+                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        {
+            return Err(ErrorCode::Policy);
+        }
+        let authority = self.authority()?;
+        let snapshot = authority
+            .store
+            .load(&authority.binding(did), "snapshot", None)
+            .await
+            .map_err(|_| ErrorCode::Unavailable)?;
+        let current = snapshot.enrollment.as_ref();
+        let blob = current.and_then(|s| active(s).ok());
+        let state = crate::wire::v1::AuthorityState {
+            tenant: self.tenant.clone(),
+            authority_generation: authority.generation.clone(),
+            did: did.into(),
+            enrollment_version: current.map(|s| s.revisions.enrollment.get()).unwrap_or(0),
+            enrollment_epoch: current.map(|s| s.epoch.get()).unwrap_or(0),
+            status: if blob.is_some() {
+                "active"
+            } else if current.is_some() {
+                "disabled"
+            } else {
+                "empty"
+            }
+            .into(),
+            envelope: blob.map(|b| b.envelope.clone()),
+            share_version: blob.map(|b| b.share_version),
+            has_pin: current.is_some_and(|s| s.pin.configured),
+            pin_generation: current.map(|s| s.pin.generation.get()).unwrap_or(0),
+            attempts_used: current.map(|s| s.pin.attempts_used).unwrap_or(0),
+        };
+        let proof = self
+            .ledger
+            .sign_authority_record(
+                RecordKind::Snapshot,
+                &serde_json::to_vec(&(nonce, &state)).map_err(|_| ErrorCode::Policy)?,
+            )
+            .map_err(ledger_error)?;
+        Ok((state, proof))
+    }
     /// This mode is compiled alongside (and unconditionally uses) the owner
     /// verifier. No boolean, RPC flag or missing verifier can select unsigned mode.
     pub fn with_authority(mut self, authority: &'a AuthorityEnrollment) -> Result<Self, ErrorCode> {
@@ -269,7 +324,13 @@ impl<'a> Policy<'a> {
                 None,
             )
             .await?;
-        Ok(AuthorityMutation { envelope, receipt })
+        Ok(AuthorityMutation {
+            envelope,
+            receipt,
+            authority_generation: authority.generation.clone(),
+            enrollment_version: revisions.enrollment.get(),
+            enrollment_epoch: intent.enrollment_epoch,
+        })
     }
 
     /// Delegated background rewrap changes only the ciphertext/key identity and
@@ -313,6 +374,7 @@ impl<'a> Policy<'a> {
             .revisions
             .advance(true)
             .map_err(|_| ErrorCode::Policy)?;
+        let enrollment_version = after.revisions.enrollment.get();
         let EnrollmentStatus::Active { blob } = &mut after.enrollment else {
             return Err(ErrorCode::Policy);
         };
@@ -333,6 +395,9 @@ impl<'a> Policy<'a> {
         Ok(AuthorityMutation {
             envelope: Some(output),
             receipt,
+            authority_generation: authority.generation.clone(),
+            enrollment_version,
+            enrollment_epoch: epoch,
         })
     }
 
@@ -417,7 +482,8 @@ impl<'a> Policy<'a> {
     async fn authority_verified_hold(
         &self,
         req: &ReleaseRequest<'_>,
-    ) -> Result<(Binding, Snapshot, EscrowBlobPlaintext), ErrorCode> {
+        require_active: bool,
+    ) -> Result<(Binding, Snapshot), ErrorCode> {
         identifier(req.request_id)?;
         identifier(&req.hold.hold.hold_id)?;
         let hold = &req.hold.hold;
@@ -441,20 +507,30 @@ impl<'a> Policy<'a> {
             .await
             .map_err(|_| ErrorCode::Unavailable)?;
         let state = before.enrollment.as_ref().ok_or(ErrorCode::Unavailable)?;
-        let current = active(state)?;
         let item = before.hold.as_ref().ok_or(ErrorCode::Policy)?;
         if item.status != HoldStatus::Pending
-            || item.enrollment_version != state.revisions.enrollment
-            || item.epoch != state.epoch
-            || item.blob_identity != current.identity
-            || current.identity != blob_hash(req.envelope)?
-            || hold.blob_hash != hex::encode(current.identity)
-            || hold.enrollment_epoch != state.epoch.get()
-            || hold.share_version != current.share_version
+            || hold.blob_hash != hex::encode(item.blob_identity)
+            || hold.enrollment_epoch != item.epoch.get()
             || req.hold.ledger_seq != item.created_revision.get()
             || item.signed_hold_digest != hold_hash(&self.tenant, req.hold)?
         {
             return Err(ErrorCode::Policy);
+        }
+        if require_active {
+            let current = active(state)?;
+            if item.enrollment_version != state.revisions.enrollment
+                || item.epoch != state.epoch
+                || item.blob_identity != current.identity
+                || current.identity != blob_hash(req.envelope)?
+                || hold.share_version != current.share_version
+            {
+                return Err(ErrorCode::Policy);
+            }
+        }
+        // Cancellation grants no disclosure. The authenticated authority item's
+        // exact hold commitment is sufficient even after its signing key retires.
+        if !require_active {
+            return Ok((binding, before));
         }
         let record: SignedAuthorityRecord = serde_json::from_slice(
             &STANDARD
@@ -481,9 +557,7 @@ impl<'a> Policy<'a> {
         {
             return Err(ErrorCode::Policy);
         }
-        let blob = self.decrypt(req.envelope)?;
-        check_blob(&blob, &hold.did, state)?;
-        Ok((binding, before, blob))
+        Ok((binding, before))
     }
 
     pub(crate) async fn authority_release(
@@ -491,10 +565,26 @@ impl<'a> Policy<'a> {
         req: ReleaseRequest<'_>,
         policy: ReleasePolicy,
     ) -> Result<EscrowEnvelope, ErrorCode> {
+        self.authority_release_with_receipt(req, policy)
+            .await
+            .map(|(sealed, _)| sealed)
+    }
+
+    pub(crate) async fn authority_release_with_receipt(
+        &mut self,
+        req: ReleaseRequest<'_>,
+        policy: ReleasePolicy,
+    ) -> Result<(EscrowEnvelope, SignedAuthorityRecord), ErrorCode> {
         if req.hold.hold.release_policy != policy {
             return Err(ErrorCode::Policy);
         }
-        let (binding, mut before, mut blob) = self.authority_verified_hold(&req).await?;
+        let (binding, mut before) = self.authority_verified_hold(&req, true).await?;
+        let mut blob = self.decrypt(req.envelope)?;
+        check_blob(
+            &blob,
+            req.expected_did,
+            before.enrollment.as_ref().ok_or(ErrorCode::Unavailable)?,
+        )?;
         // Never compare a proof or proof-derived commitment on duplicate requests.
         if before.operation.is_some() {
             return Err(ErrorCode::Policy);
@@ -502,7 +592,7 @@ impl<'a> Policy<'a> {
         let time = self.authority_time().await?;
         let mut after = before.enrollment.clone().ok_or(ErrorCode::Unavailable)?;
         let mut hold = before.hold.clone().ok_or(ErrorCode::Policy)?;
-        if policy == ReleasePolicy::Hold {
+        let receipt = if policy == ReleasePolicy::Hold {
             if time.interval.lo_ms < deadline(req.hold.hold.created_hi, HOLD_DURATION_MS)? {
                 return Err(ErrorCode::Time);
             }
@@ -513,7 +603,7 @@ impl<'a> Policy<'a> {
             hold.status = HoldStatus::Released;
             hold.updated_revision = after.revisions.operation;
             let digest = self.operation(&req, time, "release", None)?.payload_hash;
-            let (_, fresh) = self
+            let (receipt, fresh) = self
                 .authority_commit(
                     binding,
                     before,
@@ -528,6 +618,7 @@ impl<'a> Policy<'a> {
             if !fresh {
                 return Err(ErrorCode::Unavailable);
             }
+            receipt
         } else {
             let proof = req.pin_proof.ok_or(ErrorCode::Policy)?;
             if proof.len() > 128 || !after.pin.configured || after.pin.attempts_used >= PIN_BUDGET {
@@ -596,7 +687,7 @@ impl<'a> Policy<'a> {
             if matched {
                 hold.status = HoldStatus::Released;
             }
-            let (_, fresh) = self
+            let (receipt, fresh) = self
                 .authority_commit(
                     binding,
                     before,
@@ -614,20 +705,22 @@ impl<'a> Policy<'a> {
             if !matched {
                 return Err(ErrorCode::PinMismatch);
             }
-        }
+            receipt
+        };
         if let Some(pin) = blob.pin_verifier.as_mut() {
             pin.zeroize();
         }
         blob.pin_verifier = None;
         blob.pin_attempts_floor = None;
-        crypto::seal_escrow_release(
+        let sealed = crypto::seal_escrow_release(
             &EscrowReleasePlaintext {
                 blob,
                 hold_id: req.hold.hold.hold_id.clone(),
             },
             req.client_ephemeral_public_key,
         )
-        .map_err(|_| ErrorCode::Unavailable)
+        .map_err(|_| ErrorCode::Unavailable)?;
+        Ok((sealed, receipt))
     }
 
     pub async fn authority_cancel(
@@ -674,6 +767,20 @@ impl<'a> Policy<'a> {
                 return Err(ErrorCode::Policy);
             }
             let event_hash = Sha256::digest(&op.proposed_event).into();
+            let proposal: SignedAuthorityRecord =
+                serde_json::from_slice(&op.proposed_event).map_err(|_| ErrorCode::Unavailable)?;
+            self.ledger
+                .verify_authority_record(&proposal)
+                .map_err(ledger_error)?;
+            if proposal.kind != RecordKind::Proposal {
+                return Err(ErrorCode::Policy);
+            }
+            let event: AuthorityEvent = serde_json::from_slice(
+                &STANDARD
+                    .decode(&proposal.payload)
+                    .map_err(|_| ErrorCode::Unavailable)?,
+            )
+            .map_err(|_| ErrorCode::Unavailable)?;
             let receipt = self
                 .ledger
                 .sign_authority_record(
@@ -682,13 +789,15 @@ impl<'a> Policy<'a> {
                         commit,
                         event_hash,
                         request_digest: op.request_digest,
+                        result_blob_identity: event.target_identity,
+                        enrollment_epoch: event.epoch.get(),
                     })
                     .map_err(|_| ErrorCode::Policy)?,
                 )
                 .map_err(ledger_error)?;
             return Ok(receipt);
         }
-        let (binding, before, _) = self.authority_verified_hold(&req).await?;
+        let (binding, before) = self.authority_verified_hold(&req, false).await?;
         if before.operation.is_some() {
             return Err(ErrorCode::Policy);
         }
@@ -765,6 +874,8 @@ impl<'a> Policy<'a> {
             )
             .map_err(ledger_error)?;
         let proposed_event = serde_json::to_vec(&proposal).map_err(|_| ErrorCode::Policy)?;
+        let result_blob_identity = event.target_identity;
+        let enrollment_epoch = after.epoch.get();
         let event_hash = Sha256::digest(&proposed_event).into();
         let operation = OperationItem {
             request_id: request.into(),
@@ -797,6 +908,8 @@ impl<'a> Policy<'a> {
                     commit,
                     event_hash,
                     request_digest,
+                    result_blob_identity,
+                    enrollment_epoch,
                 })
                 .map_err(|_| ErrorCode::Policy)?,
             )

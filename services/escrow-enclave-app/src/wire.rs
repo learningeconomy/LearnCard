@@ -7,7 +7,34 @@ use serde::{Deserialize, Serialize};
 /// compatibility; the server accepts exclusively this v1 protocol.
 pub mod v1 {
     use super::*;
+    use crate::authority::{intent::SignedEnrollmentIntent, record::SignedAuthorityRecord};
     use crate::policy::SignedHoldRecord;
+
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase", deny_unknown_fields)]
+    pub struct AuthorityState {
+        pub tenant: String,
+        pub authority_generation: String,
+        pub did: String,
+        pub enrollment_version: u64,
+        pub enrollment_epoch: u64,
+        pub status: String,
+        pub envelope: Option<EscrowEnvelope>,
+        pub share_version: Option<u32>,
+        pub has_pin: bool,
+        pub pin_generation: u64,
+        pub attempts_used: u8,
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase", deny_unknown_fields)]
+    pub struct AuthorityMutationResponse {
+        pub envelope: Option<EscrowEnvelope>,
+        pub receipt: SignedAuthorityRecord,
+        pub authority_generation: String,
+        pub enrollment_version: u64,
+        pub enrollment_epoch: u64,
+    }
 
     #[derive(Clone, Serialize, Deserialize)]
     #[serde(
@@ -17,6 +44,21 @@ pub mod v1 {
         deny_unknown_fields
     )]
     pub enum Request {
+        EnrollmentState {
+            expected_did: String,
+            nonce: String,
+        },
+        ApplyEnrollment {
+            signed_intent: Box<SignedEnrollmentIntent>,
+            source_envelope: Option<EscrowEnvelope>,
+            target_envelope: Option<EscrowEnvelope>,
+        },
+        AuthorityRewrap {
+            envelope: EscrowEnvelope,
+            expected_did: String,
+            expected_share_version: u32,
+            source_enrollment_epoch: u64,
+        },
         Attest {
             #[serde(with = "serde_bytes")]
             nonce: Vec<u8>,
@@ -78,6 +120,16 @@ pub mod v1 {
         deny_unknown_fields
     )]
     pub enum Response {
+        EnrollmentState {
+            state: AuthorityState,
+            proof: SignedAuthorityRecord,
+        },
+        ApplyEnrollment {
+            result: AuthorityMutationResponse,
+        },
+        AuthorityRewrap {
+            result: AuthorityMutationResponse,
+        },
         Attest {
             mode: AttestationMode,
             key_id: String,
@@ -108,9 +160,13 @@ pub mod v1 {
         },
         Release {
             sealed: EscrowEnvelope,
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            receipt: Option<SignedAuthorityRecord>,
         },
         Cancel {
             cancelled: bool,
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            receipt: Option<SignedAuthorityRecord>,
         },
         Health {
             ok: bool,

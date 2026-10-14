@@ -10,6 +10,7 @@ use sha2::{Digest, Sha256};
 pub enum RecordKind {
     Proposal,
     Commit,
+    Snapshot,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -32,7 +33,12 @@ impl SignedAuthorityRecord {
                 .key_id
                 .bytes()
                 .all(|b| b.is_ascii_alphanumeric() || b"._-".contains(&b))
-            || self.payload.len() > 8192
+            || self.payload.len()
+                > if self.kind == RecordKind::Snapshot {
+                    49_152
+                } else {
+                    8192
+                }
         {
             return Err(LedgerError::Encoding);
         }
@@ -47,6 +53,7 @@ impl SignedAuthorityRecord {
         hash.update([match self.kind {
             RecordKind::Proposal => 0,
             RecordKind::Commit => 1,
+            RecordKind::Snapshot => 2,
         }]);
         hash.update((self.key_id.len() as u32).to_be_bytes());
         hash.update(self.key_id.as_bytes());
@@ -73,5 +80,11 @@ impl SignedAuthorityRecord {
         }
         key.verify_prehash(&self.signing_hash()?, &signature)
             .map_err(|_| LedgerError::Signature)
+    }
+}
+
+impl std::fmt::Debug for SignedAuthorityRecord {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("SignedAuthorityRecord")
     }
 }
