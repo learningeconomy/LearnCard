@@ -17,11 +17,14 @@ import {
     EscrowPolicyError,
     EscrowUnavailableError,
     type CarryPinVerifierInput,
+    type ConfirmHoldRequest,
     type EnclaveAttestation,
     type EscrowEnclave,
     type ReleaseRequest,
     type ReleaseResult,
+    type ResendCodeRequest,
     type RewrapEscrowBlobInput,
+    type SendReleaseWarningRequest,
     type VerifyEscrowBlobInput,
     type VerifyEscrowBlobResult,
 } from './types';
@@ -289,6 +292,47 @@ export const createRemoteEnclave = (config: RemoteEnclaveConfig): EscrowEnclave 
                 throw new EscrowUnavailableError();
             if (result.receipt) return { receipt: result.receipt };
             return undefined;
+        },
+        confirmHold: async (input: ConfirmHoldRequest) => {
+            const result = await call(
+                '/v1/confirm-hold',
+                {
+                    envelope: input.envelope,
+                    hold: validatedHold(input.hold),
+                    clientEphemeralPublicKey: input.clientEphemeralPublicKey,
+                    expectedDid: input.expectedDid,
+                    code: input.code,
+                    ...(input.requestId ? { requestId: input.requestId } : {}),
+                },
+                z.object({ confirmed: z.literal(true), receipt: AuthorityCommitValidator })
+            );
+            return { receipt: result.receipt };
+        },
+        resendCode: async (input: ResendCodeRequest) => {
+            const result = await call(
+                '/v1/resend-code',
+                {
+                    envelope: input.envelope,
+                    hold: validatedHold(input.hold),
+                    clientEphemeralPublicKey: input.clientEphemeralPublicKey,
+                    expectedDid: input.expectedDid,
+                    ...(input.requestId ? { requestId: input.requestId } : {}),
+                },
+                z.object({ sent: z.literal(true), receipt: AuthorityCommitValidator })
+            );
+            return { receipt: result.receipt };
+        },
+        sendReleaseWarning: async (input: SendReleaseWarningRequest) => {
+            const result = await call(
+                '/v1/send-release-warning',
+                {
+                    holdId: input.holdId,
+                    expectedDid: input.expectedDid,
+                    ...(input.requestId ? { requestId: input.requestId } : {}),
+                },
+                z.object({ sent: z.literal(true), receipt: AuthorityCommitValidator })
+            );
+            return { receipt: result.receipt };
         },
         releaseEscrow: async (input: ReleaseRequest): Promise<ReleaseResult> => {
             validatedHold(input.hold);

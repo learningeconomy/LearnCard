@@ -57,6 +57,19 @@ export interface CancelHoldRequest {
     clientEphemeralPublicKey: string;
     expectedDid: string;
 }
+/** P9.1 (attack C): `code` is the one-time code itself (compared against a
+ * stored hash enclave-side), never a proof — unlike `ReleaseRequest.pinProof`. */
+export interface ConfirmHoldRequest extends CancelHoldRequest {
+    code: string;
+}
+export type ResendCodeRequest = CancelHoldRequest;
+/** P9.1 (attack C): system-initiated (lca-api's hourly job) — no envelope or
+ * signed hold, since there is no user action to authenticate. */
+export interface SendReleaseWarningRequest {
+    requestId?: string;
+    holdId: string;
+    expectedDid: string;
+}
 export interface VerifyEscrowBlobInput {
     envelope: EscrowEnvelope;
     expectedDid: string;
@@ -115,6 +128,11 @@ export interface EscrowEnclave {
     releaseEscrow(input: ReleaseRequest): Promise<ReleaseResult>;
     createHold(input: EnclaveCreateHoldInput): Promise<{ holdRecord: EscrowHoldRecord }>;
     cancelHold(input: CancelHoldRequest): Promise<void | { receipt: AuthorityRecord }>;
+    /** P9.1 (attack C): authority (nitro) mode only — software mode never
+     * produces an awaiting-confirmation hold, so it has nothing to confirm. */
+    confirmHold?(input: ConfirmHoldRequest): Promise<{ receipt: AuthorityRecord }>;
+    resendCode?(input: ResendCodeRequest): Promise<{ receipt: AuthorityRecord }>;
+    sendReleaseWarning?(input: SendReleaseWarningRequest): Promise<{ receipt: AuthorityRecord }>;
 }
 export class EscrowPolicyError extends Error {
     constructor() {

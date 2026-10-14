@@ -1,7 +1,10 @@
 //! Single-owner policy actor: concurrent socket IO, serialized policy operations.
 use crate::{
     nsm::{parse_attestation_document, AttestationRequest, NsmDriver},
-    policy::{CreateHoldRequest, Policy, ReleaseRequest},
+    policy::{
+        ConfirmHoldRequest, CreateHoldRequest, Policy, ReleaseRequest, ResendCodeRequest,
+        SendReleaseWarningRequest,
+    },
     wire::{
         v1::{Request, Response},
         AttestationMode, ErrorCode, Measurements,
@@ -380,6 +383,70 @@ impl Service<'_> {
                 Ok(Response::Cancel {
                     cancelled: true,
                     receipt: None,
+                })
+            }
+            Request::ConfirmHold {
+                envelope,
+                hold,
+                request_id,
+                client_ephemeral_public_key,
+                expected_did,
+                code,
+            } => {
+                let receipt = self
+                    .policy
+                    .confirm_hold(ConfirmHoldRequest {
+                        envelope: &envelope,
+                        hold: &hold,
+                        request_id: &request_id,
+                        expected_did: &expected_did,
+                        client_ephemeral_public_key: &client_ephemeral_public_key,
+                        code: &code,
+                    })
+                    .await?;
+                Ok(Response::ConfirmHold {
+                    confirmed: true,
+                    receipt,
+                })
+            }
+            Request::ResendCode {
+                envelope,
+                hold,
+                request_id,
+                client_ephemeral_public_key,
+                expected_did,
+            } => {
+                let receipt = self
+                    .policy
+                    .resend_code(ResendCodeRequest {
+                        envelope: &envelope,
+                        hold: &hold,
+                        request_id: &request_id,
+                        expected_did: &expected_did,
+                        client_ephemeral_public_key: &client_ephemeral_public_key,
+                    })
+                    .await?;
+                Ok(Response::ResendCode {
+                    sent: true,
+                    receipt,
+                })
+            }
+            Request::SendReleaseWarning {
+                hold_id,
+                request_id,
+                expected_did,
+            } => {
+                let receipt = self
+                    .policy
+                    .send_release_warning(SendReleaseWarningRequest {
+                        hold_id: &hold_id,
+                        request_id: &request_id,
+                        expected_did: &expected_did,
+                    })
+                    .await?;
+                Ok(Response::SendReleaseWarning {
+                    sent: true,
+                    receipt,
                 })
             }
         }

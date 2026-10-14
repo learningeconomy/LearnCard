@@ -104,6 +104,16 @@ pub struct SendReleaseWarningRequest<'a> {
     pub expected_did: &'a str,
 }
 
+/// P9.1 (attack C): same shape as `ConfirmHoldRequest` minus the code — resend
+/// generates and sends a fresh one, it never verifies a guess.
+pub struct ResendCodeRequest<'a> {
+    pub envelope: &'a EscrowEnvelope,
+    pub hold: &'a SignedHoldRecord,
+    pub request_id: &'a str,
+    pub expected_did: &'a str,
+    pub client_ephemeral_public_key: &'a str,
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct BlobVerification {
     pub ok: bool,
@@ -871,6 +881,18 @@ impl<'a> Policy<'a> {
         #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
         if self.authority.is_some() {
             return self.authority_send_release_warning(req).await;
+        }
+        Err(ErrorCode::Policy)
+    }
+
+    /// P9.1 (attack C): authority-only, same reasoning as `confirm_hold`.
+    pub async fn resend_code(
+        &mut self,
+        #[allow(unused_variables)] req: ResendCodeRequest<'_>,
+    ) -> Result<SignedAuthorityRecord, ErrorCode> {
+        #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+        if self.authority.is_some() {
+            return self.authority_resend_code(req).await;
         }
         Err(ErrorCode::Policy)
     }

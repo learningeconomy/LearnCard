@@ -109,6 +109,30 @@ pub mod v1 {
             client_ephemeral_public_key: String,
             expected_did: String,
         },
+        /// P9.1 (attack C): no `pinProof`-style secret field — `code` is the
+        /// one-time code itself, compared against a stored hash, never a proof.
+        ConfirmHold {
+            envelope: EscrowEnvelope,
+            hold: SignedHoldRecord,
+            request_id: String,
+            client_ephemeral_public_key: String,
+            expected_did: String,
+            code: String,
+        },
+        ResendCode {
+            envelope: EscrowEnvelope,
+            hold: SignedHoldRecord,
+            request_id: String,
+            client_ephemeral_public_key: String,
+            expected_did: String,
+        },
+        /// P9.1 (attack C): system-initiated (lca-api's hourly job) — no
+        /// signed hold/envelope, since there is no user action to authenticate.
+        SendReleaseWarning {
+            hold_id: String,
+            request_id: String,
+            expected_did: String,
+        },
         Health,
     }
 
@@ -167,6 +191,18 @@ pub mod v1 {
             cancelled: bool,
             #[serde(default, skip_serializing_if = "Option::is_none")]
             receipt: Option<SignedAuthorityRecord>,
+        },
+        ConfirmHold {
+            confirmed: bool,
+            receipt: SignedAuthorityRecord,
+        },
+        ResendCode {
+            sent: bool,
+            receipt: SignedAuthorityRecord,
+        },
+        SendReleaseWarning {
+            sent: bool,
+            receipt: SignedAuthorityRecord,
         },
         Health {
             ok: bool,

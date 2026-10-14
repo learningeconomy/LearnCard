@@ -112,6 +112,26 @@ pub enum Request {
         client_ephemeral_public_key: String,
         expected_did: String,
     },
+    ConfirmHold {
+        envelope: Envelope,
+        hold: SignedHoldRecord,
+        request_id: String,
+        client_ephemeral_public_key: String,
+        expected_did: String,
+        code: String,
+    },
+    ResendCode {
+        envelope: Envelope,
+        hold: SignedHoldRecord,
+        request_id: String,
+        client_ephemeral_public_key: String,
+        expected_did: String,
+    },
+    SendReleaseWarning {
+        hold_id: String,
+        request_id: String,
+        expected_did: String,
+    },
     Health,
 }
 #[derive(Serialize, Deserialize)]
@@ -193,6 +213,18 @@ pub enum Response {
         cancelled: bool,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         receipt: Option<serde_json::Value>,
+    },
+    ConfirmHold {
+        confirmed: bool,
+        receipt: serde_json::Value,
+    },
+    ResendCode {
+        sent: bool,
+        receipt: serde_json::Value,
+    },
+    SendReleaseWarning {
+        sent: bool,
+        receipt: serde_json::Value,
     },
     Health {
         ok: bool,

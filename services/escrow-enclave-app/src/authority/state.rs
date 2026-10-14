@@ -285,6 +285,9 @@ pub enum OperationKind {
     /// P9.1 (attack C): system-initiated (lca-api's hourly job), records
     /// `HoldItem::release_warning_sent_hi_ms` only on a confirmed SES send.
     SendReleaseWarning,
+    /// P9.1 (attack C): a fresh code replacing the prior one; resets
+    /// `HoldItem::code_guesses_used` since the old code can no longer match.
+    ResendCode,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

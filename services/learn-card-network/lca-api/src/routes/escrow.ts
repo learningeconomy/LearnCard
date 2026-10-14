@@ -844,6 +844,13 @@ export const escrowRouter = t.router({
             }
             const resumeToken = generateEscrowResumeToken();
             const cancelToken = generateEscrowCancelToken();
+            // P9.1 (attack C): `confirmHold` is defined only by the remote
+            // (nitro/authority) backend. A Hold-policy hold there always goes
+            // through the enclave's own code-then-confirmation email flow, so
+            // lca-api's own Mongo-recipient-sourced 'started' notification is
+            // suppressed entirely rather than racing/duplicating it.
+            const isAuthorityManagedHold =
+                input.releasePolicy === 'hold' && Boolean(getEscrowEnclave().confirmHold);
             const { holdRecord } = await enclaveOperation(() =>
                 getEscrowEnclave().createHold({
                     envelope: userKey.escrowBlob!.envelope,
@@ -880,7 +887,7 @@ export const escrowRouter = t.router({
                     clientEphemeralPublicKey: input.clientEphemeralPublicKey,
                     resumeTokenHash: hashEscrowResumeToken(resumeToken),
                     cancelTokenHash: hashEscrowCancelToken(cancelToken),
-                    startedNotificationPending: true,
+                    startedNotificationPending: !isAuthorityManagedHold,
                     requestIp: ctx.clientIp,
                     tenantId: ctx.tenant?.id,
                 });
@@ -917,19 +924,100 @@ export const escrowRouter = t.router({
                     message: 'Recovery could not be started.',
                 });
             }
-            await notifyEscrowHoldEvent({
-                kind: 'started',
-                hold,
-                userKey,
-                cancelToken,
-                tenant: ctx.tenant,
-            });
+            if (!isAuthorityManagedHold) {
+                await notifyEscrowHoldEvent({
+                    kind: 'started',
+                    hold,
+                    userKey,
+                    cancelToken,
+                    tenant: ctx.tenant,
+                });
+            }
             return {
                 ...serializeHold(hold),
                 status: 'pending' as const,
                 resumeToken,
                 ...(input.releasePolicy === 'pin' ? { pinSalt: userKey.escrowPin!.salt } : {}),
             };
+        }),
+
+    // P9.1 (attack C): no DID session exists yet at this point in the flow
+    // (same stage as completeRecovery) — resumeToken is the only credential.
+    // The enclave is the sole source of truth for the code; this route never
+    // reads or stores it, only relays the guess and its enclave-returned result.
+    confirmRecovery: openRoute
+        .meta({ openapi: { method: 'POST', path: '/keys/escrow/confirm', tags: ['Keys'] } })
+        .input(resumeInput.extend({ code: z.string().regex(/^[0-9]{8}$/) }))
+        .output(successValidator)
+        .mutation(async ({ input }) => {
+            if (isEscrowReleaseKillSwitchEnabled()) {
+                throw new TRPCError({ code: 'PRECONDITION_FAILED', message: killSwitchMessage });
+            }
+            const hold = await findEscrowHoldById(input.holdId);
+            if (
+                !hold ||
+                !resumeTokenMatches(hold, input.resumeToken) ||
+                hold.status !== 'pending'
+            ) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
+            }
+            const userKey = await findUserKeyByAuthProvider(
+                hold.authProvider.type,
+                hold.authProvider.id
+            );
+            const envelope = hold.enclaveEnvelope ?? userKey?.escrowBlob?.envelope;
+            if (!hold.holdRecord || !envelope) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
+            }
+            const confirmHold = getEscrowEnclave().confirmHold;
+            if (!confirmHold) throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
+            await enclaveOperation(() =>
+                confirmHold({
+                    envelope,
+                    hold: hold.holdRecord!,
+                    clientEphemeralPublicKey: hold.clientEphemeralPublicKey,
+                    expectedDid: hold.primaryDid,
+                    code: input.code,
+                })
+            );
+            return { success: true as const };
+        }),
+
+    resendRecoveryCode: openRoute
+        .meta({ openapi: { method: 'POST', path: '/keys/escrow/resend', tags: ['Keys'] } })
+        .input(resumeInput)
+        .output(successValidator)
+        .mutation(async ({ input }) => {
+            if (isEscrowReleaseKillSwitchEnabled()) {
+                throw new TRPCError({ code: 'PRECONDITION_FAILED', message: killSwitchMessage });
+            }
+            const hold = await findEscrowHoldById(input.holdId);
+            if (
+                !hold ||
+                !resumeTokenMatches(hold, input.resumeToken) ||
+                hold.status !== 'pending'
+            ) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
+            }
+            const userKey = await findUserKeyByAuthProvider(
+                hold.authProvider.type,
+                hold.authProvider.id
+            );
+            const envelope = hold.enclaveEnvelope ?? userKey?.escrowBlob?.envelope;
+            if (!hold.holdRecord || !envelope) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
+            }
+            const resendCode = getEscrowEnclave().resendCode;
+            if (!resendCode) throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
+            await enclaveOperation(() =>
+                resendCode({
+                    envelope,
+                    hold: hold.holdRecord!,
+                    clientEphemeralPublicKey: hold.clientEphemeralPublicKey,
+                    expectedDid: hold.primaryDid,
+                })
+            );
+            return { success: true as const };
         }),
 
     getStatus: openRoute

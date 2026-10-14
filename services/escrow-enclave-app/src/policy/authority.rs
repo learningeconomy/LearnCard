@@ -1083,6 +1083,101 @@ impl<'a> Policy<'a> {
         .map(|(receipt, _)| receipt)
     }
 
+    /// P9.1 (attack C): generates and sends a brand-new code for a hold still
+    /// `AwaitingConfirmation`, replacing (not supplementing) the prior one —
+    /// the old code's hash is overwritten, so it stops matching immediately,
+    /// and the guess counter resets since it is now a fresh secret. Subject to
+    /// the same per-DID `EmailThrottle` as the initial send.
+    pub async fn authority_resend_code(
+        &mut self,
+        req: ResendCodeRequest<'_>,
+    ) -> Result<SignedAuthorityRecord, ErrorCode> {
+        identifier(req.request_id)?;
+        identifier(&req.hold.hold.hold_id)?;
+        validate_client_key(req.client_ephemeral_public_key)?;
+        let hold = &req.hold.hold;
+        if hold.policy_version != 2
+            || hold.signature.len() > 8192
+            || req.hold.hold_duration_ms != HOLD_DURATION_MS
+            || hold.created_lo > hold.created_hi
+            || hold.created_hi > JS_MAX_INTEGER
+            || hold.did != req.expected_did
+            || hold.client_ephemeral_public_key != req.client_ephemeral_public_key
+        {
+            return Err(ErrorCode::Policy);
+        }
+        let authority = self.authority()?;
+        let email = self.email.ok_or(ErrorCode::Unavailable)?;
+        let binding = authority.binding(req.expected_did);
+        let before = authority
+            .store
+            .load(&binding, req.request_id, Some(&hold.hold_id))
+            .await
+            .map_err(|_| ErrorCode::Unavailable)?;
+        if before.operation.is_some() {
+            return Err(ErrorCode::Policy);
+        }
+        let mut after = before.enrollment.clone().ok_or(ErrorCode::Unavailable)?;
+        let mut item = before.hold.clone().ok_or(ErrorCode::Policy)?;
+        if item.status != HoldStatus::AwaitingConfirmation
+            || hold.blob_hash != hex::encode(item.blob_identity)
+            || hold.enrollment_epoch != item.epoch.get()
+            || req.hold.ledger_seq != item.created_revision.get()
+            || item.signed_hold_digest != hold_hash(&self.tenant, req.hold)?
+        {
+            return Err(ErrorCode::Policy);
+        }
+        let blob = self.decrypt(req.envelope)?;
+        if blob_hash(req.envelope)? != item.blob_identity {
+            return Err(ErrorCode::Policy);
+        }
+        let recipient = blob.recovery_email.as_deref().ok_or(ErrorCode::Policy)?;
+        let language = blob.recovery_language.as_deref().ok_or(ErrorCode::Policy)?;
+        let time = self.authority_time().await?;
+        after.revisions = after
+            .revisions
+            .advance(false)
+            .map_err(|_| ErrorCode::Policy)?;
+        after.email_throttle = Some(bump_throttle(after.email_throttle, time.interval.lo_ms)?);
+        let code = generate_code()?;
+        item.code_hash = Some(hold_code_hash(
+            &hold.hold_id,
+            &hold.client_ephemeral_public_key,
+            &code,
+        )?);
+        item.code_expires_lo_ms = Some(time.interval.lo_ms.saturating_add(CODE_TTL_MS));
+        item.code_guesses_used = 0;
+        item.updated_revision = after.revisions.operation;
+        let digest = self
+            .operation_for(req.hold, req.request_id, time, "resend", None)?
+            .payload_hash;
+        let (receipt, fresh) = self
+            .authority_commit(
+                binding,
+                before,
+                after,
+                req.request_id,
+                OperationKind::ResendCode,
+                OperationOutcome::Committed,
+                digest,
+                Some(item),
+            )
+            .await?;
+        if !fresh {
+            return Err(ErrorCode::Unavailable);
+        }
+        // P9.1 (attack C): the new code is already durably committed before
+        // this send is attempted, for the same reason as create-hold's initial
+        // send — a failed/ambiguous send here still leaves a valid, confirmable
+        // code path open only via a further resend, never a silent desync
+        // between what is stored and what could possibly be confirmed.
+        email
+            .send(recipient, language, EmailMessage::OneTimeCode { code })
+            .await
+            .map_err(|_| ErrorCode::Unavailable)?;
+        Ok(receipt)
+    }
+
     async fn authority_time(&self) -> Result<TimeEvidence, ErrorCode> {
         let time = self.time.now(None).await.map_err(|_| ErrorCode::Time)?;
         if time.interval.lo_ms > time.interval.hi_ms || time.interval.hi_ms > JS_MAX_INTEGER {

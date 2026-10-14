@@ -15,7 +15,11 @@ import {
     cancelHoldInEnclave,
     logEscrowCancellationPending,
 } from '../services/escrow-enclave/cancellation';
-import { isEscrowEnabled, notifyEscrowHoldEvent } from '../services/escrow-enclave';
+import {
+    getEscrowEnclave,
+    isEscrowEnabled,
+    notifyEscrowHoldEvent,
+} from '../services/escrow-enclave';
 
 // Two queues of ten 3-second deliveries leave half the 120-second Lambda
 // budget for database work. Least-recently-attempted ordering prevents starvation.
@@ -148,12 +152,32 @@ export const runEscrowHoldReminders = async (
         }
     }
 
+    // P9.1 (attack C): `sendReleaseWarning` is defined only by the remote
+    // (nitro/authority) backend — software mode never produces a hold the
+    // enclave itself must warn about, since it has no confirmation step to
+    // have gated release behind in the first place.
+    const sendReleaseWarning = getEscrowEnclave().sendReleaseWarning;
     for (const candidate of candidates) {
         let claimed: Awaited<ReturnType<typeof claimEscrowHoldForReminder>> = null;
         try {
             // Lease before send; only successful delivery writes the sent marker.
             claimed = await claimEscrowHoldForReminder(candidate._id, now);
             if (!claimed) continue;
+
+            // P9.1 (attack C): an authority-mode Hold-policy hold's security
+            // channel is the enclave's own sealed-blob-sourced email, not this
+            // Mongo-recipient-sourced one, which an attacker who controls the
+            // suppressed-notification side of the threat model could silence
+            // or redirect. send-release-warning both notifies the real owner
+            // and records the timestamp release is independently gated on.
+            if (sendReleaseWarning && claimed.releasePolicy !== 'pin' && claimed.holdRecord) {
+                await sendReleaseWarning({
+                    holdId: claimed.holdRecord.hold.holdId,
+                    expectedDid: claimed.primaryDid,
+                });
+                reminded += 1;
+                continue;
+            }
 
             const userKey = await findUserKeyByAuthProvider(
                 claimed.authProvider.type,

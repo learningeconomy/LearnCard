@@ -62,6 +62,9 @@ pub fn router(api: Arc<Api>) -> Router {
         .route("/v1/release", post(handle))
         .route("/v1/create-hold", post(handle))
         .route("/v1/cancel-hold", post(handle))
+        .route("/v1/confirm-hold", post(handle))
+        .route("/v1/resend-code", post(handle))
+        .route("/v1/send-release-warning", post(handle))
         .with_state(api)
 }
 fn error(status: StatusCode, code: wire::ErrorCode) -> Response {
@@ -101,6 +104,9 @@ async fn forward(api: &Api, request: Request) -> Response {
         "/v1/release" => "release",
         "/v1/create-hold" => "createHold",
         "/v1/cancel-hold" => "cancel",
+        "/v1/confirm-hold" => "confirmHold",
+        "/v1/resend-code" => "resendCode",
+        "/v1/send-release-warning" => "sendReleaseWarning",
         _ => return error(StatusCode::NOT_FOUND, wire::ErrorCode::Policy),
     };
     let body = match to_bytes(request.into_body(), MAX_FRAME).await {
@@ -116,7 +122,11 @@ async fn forward(api: &Api, request: Request) -> Response {
     value.insert("method".into(), json!(method));
     // P4.2 HTTP omits IDs. A fresh random operation ID spends a fresh attempt;
     // never hash a PIN proof into a public ID or retry a mutation automatically.
-    if matches!(method, "createHold" | "release" | "cancel") && !value.contains_key("requestId") {
+    if matches!(
+        method,
+        "createHold" | "release" | "cancel" | "confirmHold" | "resendCode" | "sendReleaseWarning"
+    ) && !value.contains_key("requestId")
+    {
         value.insert("requestId".into(), json!(uuid::Uuid::new_v4().to_string()));
     }
     let Ok(dto) = serde_json::from_value::<wire::Request>(Value::Object(value)) else {
