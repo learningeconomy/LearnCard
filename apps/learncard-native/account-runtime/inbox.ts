@@ -74,6 +74,18 @@ const person = (value: { profileId?: string; displayName?: string; image?: strin
     name: value.displayName || value.profileId || '',
     imageURL: httpsURL(value.image)?.href,
 });
+// Match the staging identity, not merely an arbitrary DID's trailing username.
+// A same-named profile on another network cannot authorize a local request action.
+const senderProfileID = (did: string): string | undefined => {
+    const prefix = 'did:web:staging.network.learncard.com:users:';
+    if (!did.startsWith(prefix)) return;
+    try {
+        const id = decodeURIComponent(did.slice(prefix.length));
+        return id && !id.includes(':') ? id : undefined;
+    } catch {
+        return;
+    }
+};
 const pageInput = z.object({ cursor: z.string().min(1).max(2048).optional() }).strict();
 const actionInput = z
     .object({
@@ -141,7 +153,9 @@ export const createInboxCommands = (
         wallet: ConsumerWallet,
         relations: Awaited<ReturnType<typeof relationships>>
     ) => {
-        const from = typeof notice.from === 'object' ? notice.from : {};
+        const id = typeof notice.from === 'string' ? senderProfileID(notice.from) : undefined;
+        const supplied = typeof notice.from === 'object' ? notice.from : { profileId: id };
+        const from = relations.requests.find(x => x.profileId === supplied.profileId) ?? supplied;
         const item: InboxItem = {
             id: `notification:${notice._id}`,
             kind: 'notice',

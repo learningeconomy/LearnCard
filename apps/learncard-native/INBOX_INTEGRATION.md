@@ -24,7 +24,7 @@ The server owns whether and when to suggest a connection. The native app never d
 
 Each action rechecks `getConnectionPromptStatus`; resolved or stale prompts cannot send another connection. Successful terminal receipts suppress stale cached pending values. Notification metadata updates are best-effort after a relationship/prompt commits: failure does not undo a connection or cause repeat writes. The Inbox can report delayed notification synchronization.
 
-Legacy/malformed prompt metadata degrades to an ordinary update. It never becomes an actionable connection suggestion. Loaded notification IDs scope actions; unowned/unloaded identifiers are refused. The LCA endpoint additionally checks notification ownership.
+Legacy/malformed prompt metadata keeps its ordinary notification type. It never becomes an actionable connection suggestion; ordinary requests still require fresh pending membership. Staging did:web sender strings resolve to the current request profile. Other-network identities cannot authorize a local action. Loaded notification IDs scope actions; unowned/unloaded identifiers are refused. The LCA endpoint additionally checks notification ownership.
 
 ## Account lifecycle and validation
 

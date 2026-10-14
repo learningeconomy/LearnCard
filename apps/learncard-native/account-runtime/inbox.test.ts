@@ -132,6 +132,34 @@ test('read lists requests, accepted updates and legacy notices without any mutat
     expect(f.state.accepts + f.state.connects + f.state.skips).toBe(0);
     expect(f.state.updates).toHaveLength(0);
 });
+test('legacy staging DID sender resolves through real pending membership, while foreign identities cannot act', async () => {
+    const f = fixture();
+    f.state.notifications = [
+        {
+            _id: 'legacy',
+            type: 'CONNECTION_REQUEST',
+            from: 'did:web:staging.network.learncard.com:users:%61lex',
+            read: false,
+        },
+        {
+            _id: 'foreign',
+            type: 'CONNECTION_REQUEST',
+            from: 'did:web:other.example:users:alex',
+            read: false,
+        },
+    ];
+    const page = await f.commands.inboxList({});
+    expect(page.items[0]?.name).toBe('Alex');
+    expect(page.items[0]?.status).toBe('PENDING');
+    expect(page.items[1]?.status).toBe('STALE');
+    await expect(
+        f.commands.inboxAction({ id: 'notification:foreign', action: 'accept' })
+    ).rejects.toBeInstanceOf(InboxFailure);
+    expect(
+        (await f.commands.inboxAction({ id: 'notification:legacy', action: 'accept' })).status
+    ).toBe('CONNECTED');
+    expect(f.state.accepts).toBe(1);
+});
 test('accept reconciles a committed relationship after transport failure and updates only loaded notification', async () => {
     const f = fixture();
     f.state.failAcceptAfterCommit = true;
