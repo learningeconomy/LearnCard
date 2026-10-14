@@ -1,7 +1,11 @@
 //! Direct AWS foundations. No Policy or boot path constructs these clients yet.
+#[cfg(feature = "kms")]
 pub mod aws;
+#[cfg(feature = "kms")]
 pub mod config;
+#[cfg(feature = "kms")]
 pub mod credentials;
+pub mod state;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum AuthorityError {
