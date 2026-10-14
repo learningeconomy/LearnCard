@@ -623,7 +623,7 @@
         "@capacitor/core": "8.3.1",
         "@capacitor/keyboard": "^8.0.3",
         "@capacitor/push-notifications": "^8.0.3",
-        "@digitalcredentials/issuer-registry-client": "^3.2.0-beta.5",
+        "@digitalcredentials/issuer-registry-client": "^4.1.0",
         "@koale/useworker": "^4.0.2",
         "@learncard/helpers": "workspace:*",
         "@learncard/lca-api-plugin": "workspace:*",
@@ -1600,7 +1600,7 @@
       "version": "3.19.1",
       "dependencies": {
         "@aws-sdk/client-sqs": "^3.379.1",
-        "@digitalcredentials/issuer-registry-client": "^3.2.0-beta.5",
+        "@digitalcredentials/issuer-registry-client": "^4.1.0",
         "@fastify/cors": "^11.2.0",
         "@google/genai": "^1.27.0",
         "@learncard/core": "workspace:*",
@@ -2676,7 +2676,7 @@
 
     "@digitalcredentials/http-client": ["@digitalcredentials/http-client@5.0.4", "", { "dependencies": { "ky": "^1.0.1", "undici": "^6.6.2" } }, "sha512-TbbfFauhd5fUAcZ/6TDenTuYqkzqdEhxYk1Rqicxcz33B9rzvJcmT+/81KF9DrUXmu6gpoqCranT2UkZftsxZA=="],
 
-    "@digitalcredentials/issuer-registry-client": ["@digitalcredentials/issuer-registry-client@3.2.0-beta.5", "", { "dependencies": { "@digitalcredentials/http-client": "^5.0.2", "core-js": "^3.42.0", "jwt-decode": "^4.0.0" } }, "sha512-uwL7xkRpeANAtJ5Cgn6FDcVCjjEA959+HPokHB4IzV/gabnBBN1y8r3uCFwMTF6qCq30pA6+RZAhKsqMCI1SDw=="],
+    "@digitalcredentials/issuer-registry-client": ["@digitalcredentials/issuer-registry-client@4.1.0", "", { "dependencies": { "core-js": "^3.42.0", "jwt-decode": "^4.0.0" } }, "sha512-+0/v6bcWH/z7P4dgKyDR0cUqv/BFEpyJySVWaelLmhF6caa80SSfmNicwXrWjginfAt6omAojVy4SG2N5IASaA=="],
 
     "@digitalcredentials/jsonld": ["@digitalcredentials/jsonld@9.0.0", "", { "dependencies": { "@digitalcredentials/http-client": "^5.0.1", "canonicalize": "^1.0.1", "lru-cache": "^6.0.0", "rdf-canonize": "^3.4.0" } }, "sha512-lWVpg65xQbi4lvXWs3BezCwPrGDAllFjHwTBUWJCoKsfGzxtxTwbRNXpfhii5psQ2vvpjPXSI+y0uyRNOzr4cw=="],
 
@@ -10096,6 +10096,8 @@
 
     "@digitalcredentials/vc-bitstring-status-list/@digitalcredentials/vc": ["@digitalcredentials/vc@8.0.1", "", { "dependencies": { "@digitalcredentials/credentials-v2-context": "~0.0.1-beta.0", "@digitalcredentials/jsonld": "^9.0.0", "@digitalcredentials/jsonld-signatures": "^11.0.0", "@digitalcredentials/open-badges-context": "^2.1.0", "credentials-context": "^2.0.0", "ed25519-signature-2018-context": "^1.1.0" } }, "sha512-QbfdAo4czT4gqCyS9c+YMMw8Vy5h1/pVmjpRrsTPGfBjWudHoT8OAa5VCfxdsiCFFdXZnGSqruPslt1W8RC/hw=="],
 
+    "@digitalcredentials/verifier-core/@digitalcredentials/issuer-registry-client": ["@digitalcredentials/issuer-registry-client@3.2.0-beta.5", "", { "dependencies": { "@digitalcredentials/http-client": "^5.0.2", "core-js": "^3.42.0", "jwt-decode": "^4.0.0" } }, "sha512-uwL7xkRpeANAtJ5Cgn6FDcVCjjEA959+HPokHB4IzV/gabnBBN1y8r3uCFwMTF6qCq30pA6+RZAhKsqMCI1SDw=="],
+
     "@digitalcredentials/verifier-core/ajv": ["ajv@8.20.0", "", { "dependencies": { "fast-deep-equal": "^3.1.3", "fast-uri": "^3.0.1", "json-schema-traverse": "^1.0.0", "require-from-string": "^2.0.2" } }, "sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA=="],
 
     "@digitalcredentials/verifier-core/ajv-formats": ["ajv-formats@3.0.1", "", { "dependencies": { "ajv": "^8.0.0" } }, "sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ=="],
@@ -13017,6 +13019,8 @@
     "@digitalcredentials/vc-bitstring-status-list/@digitalcredentials/vc/@digitalcredentials/jsonld-signatures": ["@digitalcredentials/jsonld-signatures@11.0.0", "", { "dependencies": { "@digitalbazaar/security-context": "^1.0.0", "@digitalcredentials/jsonld": "^9.0.0", "@sphereon/isomorphic-webcrypto": "^2.5.0-unstable.0", "fast-text-encoding": "^1.0.3", "serialize-error": "^8.0.1" } }, "sha512-M44z5H66kr0p5CftQH3BlHkj2s9jCzEntIjauSZw/vUo/AALbRr50sICallaHi/KiuJ3qVyVJDRo/UxrsUN5jQ=="],
 
     "@digitalcredentials/vc-bitstring-status-list/@digitalcredentials/vc/@digitalcredentials/open-badges-context": ["@digitalcredentials/open-badges-context@2.1.0", "", {}, "sha512-VK7X5u6OoBFxkyIFplNqUPVbo+8vFSAEoam8tSozpj05KPfcGw41Tp5p9fqMnY38oPfwtZR2yDNSctj/slrE0A=="],
+
+    "@digitalcredentials/verifier-core/@digitalcredentials/issuer-registry-client/jwt-decode": ["jwt-decode@4.0.0", "", {}, "sha512-+KJGIyHgkGuIq3IEBNftfhW/LfWhXUIY6OmyVWjliu5KH1y0fw7VQ8YndE2O4qZdMSd9SqbnC8GOcZEy0Om7sA=="],
 
     "@digitalcredentials/verifier-core/ajv/json-schema-traverse": ["json-schema-traverse@1.0.0", "", {}, "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug=="],
 

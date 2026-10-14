@@ -24,6 +24,8 @@ custom:
         packager: pnpm
         plugins: esbuildPlugins.cjs
         bundle: true
+        # Deployment builds run once; avoid leaking rebuild contexts when plugins fail.
+        skipRebuild: true
         minify: true
         # @learncard/init's default (node.import) entry uses createRequire('./index.cjs'),
         # which esbuild cannot bundle — the emitted Lambda bundle is left with a runtime
