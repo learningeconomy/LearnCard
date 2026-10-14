@@ -1371,6 +1371,8 @@ jobs:
             !contains(needs.deploy-learn-cloud.result, 'failure') &&
             !contains(needs.deploy-lca-api.result, 'failure')
         runs-on: ubuntu-latest
+        outputs:
+            package-versions: ${{ steps.smoke-versions.outputs.package-versions }}
         permissions:
             id-token: write
             contents: read
@@ -1394,6 +1396,15 @@ jobs:
                   PROJECTS=$(node scripts/select-registry-build-projects.mjs)
                   bunx nx run-many --target=build --projects="$PROJECTS"
 
+            - name: Read exact smoketest package versions
+              id: smoke-versions
+              run: node scripts/smoketest-npm-packages.mjs versions --workspace >> "$GITHUB_OUTPUT"
+
+            # Validate private dependency leaks before the separately published
+            # native addon is temporarily marked private for Changesets.
+            - name: Prepare publish dependency versions
+              run: node scripts/prepare-publish-workspace-deps.mjs
+
             # The native DIDKit package is published by didkit-plugin-node-prebuilds.yml
             # with platform artifacts. Keep it out of the generic changeset publish pass.
             - name: Keep DIDKit native addon out of changeset publish
@@ -1408,15 +1419,12 @@ jobs:
                   fs.writeFileSync(path, `${JSON.stringify(pkg, null, 4)}\n`);
                   '
 
-            - name: Prepare publish dependency versions
-              run: node scripts/prepare-publish-workspace-deps.mjs
-
             - name: Publish Registry Packages
               run: bunx changeset publish
     # ============================================================================
     # SMOKETEST PUBLISHED PACKAGES (verify external installability)
-    # Calls the reusable smoketest-npm-packages workflow against the freshly
-    # published `latest` dist-tags from a clean directory with no monorepo
+    # Calls the reusable smoketest-npm-packages workflow against the publishing
+    # checkout's exact versions from a clean directory with no monorepo
     # context. Catches regressions like the didkit-plugin-node@0.2.14
     # workspace:* leak that broke external `@learncard/cli` execution.
     # NOTE: `continue-on-error` is not valid on reusable-workflow caller jobs,
@@ -1432,6 +1440,8 @@ jobs:
             always() &&
             needs.publish-npm.result == 'success'
         uses: ./.github/workflows/smoketest-npm-packages.yml
+        with:
+            package-versions: ${{ needs.publish-npm.outputs.package-versions }}
 
     # ============================================================================
     # SMOKETEST (after deploys — one job per target environment)
