@@ -45,7 +45,7 @@ describe('roster review layout', () => {
     it('keeps attempted failed rows editable but prevents removing their recovery history', () => {
         const data = props(1);
         render(<RosterDetails {...data} canRemove={() => false} />);
-        expect(screen.getByRole('button', { name: 'Skip', exact: true })).toBeDisabled();
+        expect(screen.getByRole('button', { name: /^Skip$/ })).toBeDisabled();
         const email = screen.getByRole('textbox', { name: /Email for/ });
         expect(email).toBeEnabled();
         fireEvent.change(email, { target: { value: 'corrected@test.com' } });
