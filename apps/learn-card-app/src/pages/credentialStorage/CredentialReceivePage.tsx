@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { CredentialStoreEvent } from '@learncard/chapi-plugin';
 import type { VC, VP } from '@learncard/types';
 import { chapiStore, redirectStore, useCurrentUser, useWallet } from 'learn-card-base';
@@ -38,15 +38,30 @@ export const CredentialReceivePage = () => {
     const switchedDid = switchedProfileStore.use.switchedDid();
     // Opaque generation: returning to the same profile must not revive work
     // started before a switch, or copy private key material into request state.
-    const generation = useMemo(
-        () => (switchedDid || currentUser?.privateKey ? crypto.randomUUID() : undefined),
-        [currentUser?.privateKey, switchedDid]
-    );
-    const key = currentUser?.privateKey ? generation : undefined;
+    const account = useRef({
+        privateKey: currentUser?.privateKey,
+        switchedDid,
+        generation: currentUser?.privateKey ? crypto.randomUUID() : undefined,
+    });
+    if (
+        account.current.privateKey !== currentUser?.privateKey ||
+        account.current.switchedDid !== switchedDid
+    ) {
+        account.current = {
+            privateKey: currentUser?.privateKey,
+            switchedDid,
+            generation: currentUser?.privateKey ? crypto.randomUUID() : undefined,
+        };
+    }
+    const key = account.current.generation;
     const currentKey = useRef(key);
     currentKey.current = key;
     const requestPromise = useRef<{ key: string; promise: Promise<Request> }>();
-    const eventRef = useRef<{ key: string; event: CredentialStoreEvent }>();
+    const eventRef = useRef<CredentialStoreEvent>();
+    const [eventAvailable, setEventAvailable] = useState(false);
+    const invalidated = useRef(false);
+    const dismissedRef = useRef(false);
+    const exchangeController = useRef<AbortController>();
     const mounted = useRef(true);
     const responded = useRef(false);
     const savingRef = useRef(false);
@@ -60,26 +75,41 @@ export const CredentialReceivePage = () => {
 
     useEffect(() => {
         mounted.current = true;
-        if (!key) return;
+        return () => {
+            mounted.current = false;
+        };
+    }, []);
+
+    useEffect(() => {
         let cancelled = false;
-        if (requestPromise.current?.key !== key) {
+        // The mediator event and exchange are one-shot. A profile change must
+        // never consume another event or repeat an already-used exchange.
+        if (requestPromise.current && requestPromise.current.key !== key) {
+            invalidated.current = true;
+            exchangeController.current?.abort();
             setRequest(undefined);
-            setError(undefined);
-            setComplete(false);
-            setDismissed(false);
             setSavedCount(0);
-            responded.current = false;
-            records.current = [];
-            eventRef.current = undefined;
+            setError('account');
+        }
+        if (!key || invalidated.current) return;
+        if (!requestPromise.current) {
+            const controller = new AbortController();
+            exchangeController.current = controller;
             requestPromise.current = {
                 key,
                 promise: (async () => {
                     const wallet = await initWalletRef.current();
                     const event = await wallet.invoke.receiveChapiEvent();
-                    if (currentKey.current !== key) throw new ChapiReceiveError('request');
                     if (!event || !('credential' in event)) throw new ChapiReceiveError('invalid');
-                    eventRef.current = { key, event };
-                    const presentation = await loadChapiPresentation(wallet, event);
+                    eventRef.current = event;
+                    if (mounted.current) setEventAvailable(true);
+                    if (currentKey.current !== key || invalidated.current)
+                        throw new ChapiReceiveError('account');
+                    const presentation = await loadChapiPresentation(
+                        wallet,
+                        event,
+                        controller.signal
+                    );
                     return {
                         key,
                         event,
@@ -94,25 +124,42 @@ export const CredentialReceivePage = () => {
         // mediator event or starting a one-use exchange twice can time it out.
         requestPromise.current.promise
             .then(result => {
-                if (cancelled || currentKey.current !== key) return;
-                records.current = result.credentials.map(() => ({
-                    id: crypto.randomUUID(),
+                if (
+                    cancelled ||
+                    currentKey.current !== key ||
+                    invalidated.current ||
+                    dismissedRef.current
+                )
+                    return;
+                records.current = result.credentials.map(credential => ({
+                    id: credential.id || crypto.randomUUID(),
                     saved: false,
                 }));
                 setRequest(result);
             })
             .catch(cause => {
-                if (!cancelled && currentKey.current === key)
+                if (
+                    !cancelled &&
+                    currentKey.current === key &&
+                    !invalidated.current &&
+                    !dismissedRef.current
+                )
                     setError(cause instanceof ChapiReceiveError ? cause.code : 'request');
             });
         return () => {
-            mounted.current = false;
             cancelled = true;
         };
     }, [key]);
 
     const accept = async () => {
-        if (!request || request.key !== key || savingRef.current || responded.current) return;
+        if (
+            !request ||
+            request.key !== key ||
+            invalidated.current ||
+            savingRef.current ||
+            responded.current
+        )
+            return;
         savingRef.current = true;
         setSaving(true);
         setError(undefined);
@@ -134,6 +181,9 @@ export const CredentialReceivePage = () => {
                 setSavedCount(records.current.filter(item => item.saved).length);
             }
             try {
+                // Even a throwing respondWith may have consumed the event.
+                // All credentials are saved; never offer a second response attempt.
+                responded.current = true;
                 request.event.respondWith(
                     Promise.resolve({
                         dataType: 'VerifiablePresentation',
@@ -143,7 +193,6 @@ export const CredentialReceivePage = () => {
             } catch {
                 throw new ChapiReceiveError('response');
             }
-            responded.current = true;
             resetInteraction();
             setComplete(true);
         } catch (cause) {
@@ -156,20 +205,17 @@ export const CredentialReceivePage = () => {
     };
 
     const reject = () => {
-        if (
-            savingRef.current ||
-            !eventRef.current ||
-            eventRef.current.key !== key ||
-            responded.current
-        )
-            return;
+        if (savingRef.current || !eventRef.current || responded.current) return;
+        dismissedRef.current = true;
+        exchangeController.current?.abort();
+        responded.current = true;
         try {
-            eventRef.current.event.respondWith(Promise.resolve(null));
-            responded.current = true;
+            eventRef.current.respondWith(Promise.resolve(null));
             resetInteraction();
+            setError(undefined);
             setDismissed(true);
         } catch {
-            setError('response');
+            setError('request');
         }
     };
 
@@ -186,14 +232,15 @@ export const CredentialReceivePage = () => {
             credentials={visibleRequest?.credentials ?? []}
             walletDid={visibleRequest?.did}
             origin={origin}
-            loading={!visibleRequest && !error}
+            loading={!visibleRequest && !error && !dismissed}
             saving={saving}
             savedCount={savedCount}
             complete={Boolean(complete && visibleRequest)}
             dismissed={dismissed}
             error={error}
-            onAccept={accept}
-            onReject={eventRef.current && eventRef.current.key === key ? reject : undefined}
+            key={key}
+            onAccept={error === 'response' ? undefined : accept}
+            onReject={eventAvailable && !responded.current ? reject : undefined}
         />
     );
 };

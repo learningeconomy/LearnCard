@@ -8,7 +8,7 @@ import {
 } from '../../helpers/chapi.helpers';
 
 export class ChapiReceiveError extends Error {
-    constructor(public readonly code: 'invalid' | 'request' | 'save' | 'response') {
+    constructor(public readonly code: 'invalid' | 'request' | 'save' | 'response' | 'account') {
         super(`chapi.receive.${code}`);
     }
 }
@@ -24,9 +24,16 @@ export const getReceivedCredentials = (presentation: unknown): VC[] => {
     return credentials;
 };
 
-const postExchange = async (url: string, body: unknown): Promise<Record<string, unknown>> => {
+const postExchange = async (
+    url: string,
+    body: unknown,
+    signal?: AbortSignal
+): Promise<Record<string, unknown>> => {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 30_000);
+    const abort = () => controller.abort();
+    if (signal?.aborted) abort();
+    signal?.addEventListener('abort', abort, { once: true });
+    const timer = setTimeout(abort, 30_000);
     try {
         const response = await fetch(url, {
             method: 'POST',
@@ -40,13 +47,15 @@ const postExchange = async (url: string, body: unknown): Promise<Record<string, 
         return result as Record<string, unknown>;
     } finally {
         clearTimeout(timer);
+        signal?.removeEventListener('abort', abort);
     }
 };
 
 /** Resolve incoming issuance only; never answer credential disclosure queries automatically. */
 export const loadChapiPresentation = async (
     wallet: BespokeLearnCard,
-    event: CredentialStoreEvent
+    event: CredentialStoreEvent,
+    signal?: AbortSignal
 ): Promise<VP> => {
     if (!isInteractExchangeRequest(event) && !isVcApiProtocolExchangeRequest(event)) {
         getReceivedCredentials(event.credential.data);
@@ -57,7 +66,7 @@ export const loadChapiPresentation = async (
     const isVcApi = isVcApiProtocolExchangeRequest(event);
     let result: Record<string, unknown>;
     if (isVcApi) {
-        result = await postExchange(url, {});
+        result = await postExchange(url, {}, signal);
         if (result.verifiablePresentationRequest) {
             const request = result.verifiablePresentationRequest as {
                 query?: { type?: string } | { type?: string }[];
@@ -80,7 +89,7 @@ export const loadChapiPresentation = async (
                     wallet.id.did('key')
                 ),
             });
-            result = await postExchange(url, { verifiablePresentation: vp });
+            result = await postExchange(url, { verifiablePresentation: vp }, signal);
         }
     } else {
         const request = event.credential.data;
@@ -102,7 +111,7 @@ export const loadChapiPresentation = async (
                 ),
             }
         );
-        result = await postExchange(url, vp);
+        result = await postExchange(url, vp, signal);
     }
     const presentation =
         result.verifiablePresentation ??

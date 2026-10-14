@@ -146,3 +146,67 @@ describe('CHAPI incoming credential boundaries', () => {
         expect(fetch).toHaveBeenCalledTimes(1);
     });
 });
+
+it.each(['eddsa-rdfc-2022', 'eddsa-jcs-2022', 'bbs-2023'])(
+    'accepts %s proofs without created and preserves the signed object',
+    cryptosuite => {
+        const offered = { ...credential, proof: { ...credential.proof, cryptosuite } };
+        expect(
+            getReceivedCredentials({ ...presentation, verifiableCredential: [offered] })[0]
+        ).toBe(offered);
+    }
+);
+
+it('rejects JWT strings and mixed unsupported batches before any item can be saved', () => {
+    expect(() =>
+        getReceivedCredentials({ verifiableCredential: ['eyJhbGciOiJFZERTQSJ9.payload.signature'] })
+    ).toThrow('chapi.receive.invalid');
+    expect(() =>
+        getReceivedCredentials({ verifiableCredential: [credential, 'unsupported'] })
+    ).toThrow('chapi.receive.invalid');
+});
+
+it('retains OBv3 and CLR extension fields without normalizing them', () => {
+    const badge = {
+        ...credential,
+        type: ['VerifiableCredential', 'OpenBadgeCredential'],
+        credentialSubject: {
+            type: ['AchievementSubject'],
+            achievement: { type: ['Achievement'], name: 'Demo' },
+        },
+    };
+    const clr = {
+        ...credential,
+        type: ['VerifiableCredential', 'ClrCredential'],
+        credentialSubject: {
+            type: ['ClrSubject'],
+            verifiableCredential: [badge],
+            customExtension: { labels: ['kept'] },
+        },
+    };
+    const result = getReceivedCredentials({ verifiableCredential: [badge, clr] });
+    expect(result[0]).toBe(badge);
+    expect(result[1]).toBe(clr);
+    expect(clr.credentialSubject.verifiableCredential[0]).toBe(badge);
+});
+
+it('prefers explicit VC-API protocol metadata when legacy interact is also present', async () => {
+    const fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ verifiablePresentation: presentation }),
+    });
+    vi.stubGlobal('fetch', fetch);
+    await loadChapiPresentation(
+        {} as BespokeLearnCard,
+        event(
+            {
+                ...presentation,
+                interact: { service: [{ serviceEndpoint: 'https://legacy.example/exchange' }] },
+            } as typeof presentation,
+            { protocols: { vcapi: 'https://vcapi.example/exchange' } }
+        )
+    );
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(fetch.mock.calls[0][0]).toBe('https://vcapi.example/exchange');
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({});
+});

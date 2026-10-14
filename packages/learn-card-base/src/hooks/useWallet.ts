@@ -413,24 +413,32 @@ export const useWallet = () => {
                   ? uuidv4()
                   : vc.id || uuidv4());
         let returnUri: string | undefined;
+        let stage = 'initialize';
 
         try {
             const wallet = await getWallet();
 
+            stage = 'category';
             const category = await getCategoryForCredential(vc, wallet);
             // Callers processing a retryable batch can keep one index ID per item,
             // including credentials without an issuer-provided ID.
             if (inboxDeliveryId || recordId) {
+                stage = 'lookup';
                 const existing = await wallet.index[location].get(
                     inboxDeliveryId ? { inboxDeliveryId } : { id: _id }
                 );
-                const saved = existing[0] ?? (await wallet.index[location].get({ id: _id }))[0];
+                const saved =
+                    existing[0] ??
+                    (inboxDeliveryId
+                        ? (await wallet.index[location].get({ id: _id }))[0]
+                        : undefined);
                 if (saved) return { result: true, credentialUri: saved.uri, category };
             }
             const boostUri = sourceBoostUri ?? vc.boostId ?? unwrapBoostCredential(vc)?.boostId;
             let result: boolean | undefined;
 
             if (skipLCNUser) {
+                stage = 'upload';
                 const uri2 = (await wallet.store.LearnCloud.uploadEncrypted?.(vc)) ?? '';
                 if (!uri2) throw new Error('credential.upload.failed');
                 const record = {
@@ -443,11 +451,13 @@ export const useWallet = () => {
                     ...(imgUrl ? { imgUrl } : {}),
                 };
 
+                stage = 'index';
                 result = await wallet.index[location].add(record);
                 returnUri = uri2;
             }
 
             if (!skipLCNUser) {
+                stage = 'upload';
                 const uri = (await wallet.store.LearnCloud.uploadEncrypted?.(vc)) ?? '';
                 if (!uri) throw new Error('credential.upload.failed');
 
@@ -461,9 +471,11 @@ export const useWallet = () => {
                     ...(imgUrl ? { imgUrl } : {}),
                 };
 
+                stage = 'index';
                 result = await wallet.index[location].add(record);
                 returnUri = uri;
 
+                stage = 'cache';
                 const didWeb = switchedProfileStore.get.switchedDid();
 
                 if (result) {
@@ -514,6 +526,7 @@ export const useWallet = () => {
                 });
 
                 if (!skipLCNUser) {
+                    stage = 'sync';
                     await syncCredentialToContracts({ record, category });
                 }
             }
@@ -526,7 +539,12 @@ export const useWallet = () => {
         } catch (e) {
             // Incoming credentials and counterparty errors can contain private
             // claims or capability URLs. Keep diagnostics to an operational code.
-            log.error('credential.save.failed');
+            const errorType =
+                e instanceof Error &&
+                ['Error', 'TypeError', 'AbortError', 'TimeoutError'].includes(e.name)
+                    ? e.name
+                    : 'UnknownError';
+            log.error('credential.save.failed', { stage, errorType });
             throw e instanceof Error ? e : new Error(String(e));
         }
     };

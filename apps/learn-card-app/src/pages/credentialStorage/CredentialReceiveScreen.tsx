@@ -16,7 +16,7 @@ export type CredentialReceiveScreenProps = {
     savedCount?: number;
     complete?: boolean;
     dismissed?: boolean;
-    error?: 'invalid' | 'request' | 'save' | 'response';
+    error?: 'invalid' | 'request' | 'save' | 'response' | 'account';
     onAccept?: () => void;
     onReject?: () => void;
 };
@@ -168,37 +168,40 @@ export const CredentialReceiveScreen = ({
                                 </p>
                             )}
                         </div>
-                        {!complete && !dismissed && (onReject || credentials.length > 0) && (
-                            <footer className="sticky bottom-0 p-6 bg-white border-t border-grayscale-200 flex flex-wrap gap-3">
-                                <button
-                                    type="button"
-                                    onClick={onReject}
-                                    disabled={saving || !onReject}
-                                    className="flex-1 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                >
-                                    {m['chapi.receive.cancel']()}
-                                </button>
-                                {credentials.length > 0 && (
+                        {!complete &&
+                            !dismissed &&
+                            error !== 'response' &&
+                            (onReject || credentials.length > 0) && (
+                                <footer className="sticky bottom-0 p-6 bg-white border-t border-grayscale-200 flex flex-wrap gap-3">
                                     <button
                                         type="button"
-                                        onClick={onAccept}
-                                        disabled={loading || saving || !onAccept}
-                                        className="flex-1 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                                        onClick={onReject}
+                                        disabled={saving || !onReject}
+                                        className="flex-1 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                     >
-                                        {saving ? (
-                                            <span className="flex items-center justify-center gap-2">
-                                                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                {m['chapi.receive.saving']()}
-                                            </span>
-                                        ) : error ? (
-                                            m['chapi.receive.retry']()
-                                        ) : (
-                                            m['chapi.receive.accept']()
-                                        )}
+                                        {m['chapi.receive.cancel']()}
                                     </button>
-                                )}
-                            </footer>
-                        )}
+                                    {credentials.length > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={onAccept}
+                                            disabled={loading || saving || !onAccept}
+                                            className="flex-1 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >
+                                            {saving ? (
+                                                <span className="flex items-center justify-center gap-2">
+                                                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                    {m['chapi.receive.saving']()}
+                                                </span>
+                                            ) : error ? (
+                                                m['chapi.receive.retry']()
+                                            ) : (
+                                                m['chapi.receive.accept']()
+                                            )}
+                                        </button>
+                                    )}
+                                </footer>
+                            )}
                     </div>
                 </main>
             </IonContent>

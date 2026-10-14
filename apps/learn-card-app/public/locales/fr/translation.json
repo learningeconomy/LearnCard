@@ -3014,7 +3014,8 @@
                 "invalid": "Cette offre n’est pas prise en charge ou contient un justificatif invalide. Retournez sur le site émetteur et lancez une nouvelle demande.",
                 "request": "Impossible de récupérer les justificatifs. Retournez sur le site émetteur et réessayez.",
                 "save": "L’enregistrement n’a pas pu se terminer. Réessayez pour reprendre là où vous en étiez.",
-                "response": "Vos justificatifs ont été enregistrés, mais le site émetteur n’a pas pu être informé."
+                "response": "Vos justificatifs ont été enregistrés, mais le site émetteur n’a pas pu être informé.",
+                "account": "Votre compte a changé. Retournez au site émetteur et lancez une nouvelle demande."
             },
             "cancelled": "Demande annulée. Retournez sur le site émetteur.",
             "connectTitle": "Connexion de votre compte",

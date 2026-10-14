@@ -3014,7 +3014,8 @@
                 "invalid": "Esta oferta no es compatible o contiene una credencial inválida. Vuelve al sitio emisor e inicia una nueva solicitud.",
                 "request": "No pudimos obtener las credenciales. Vuelve al sitio emisor e inténtalo de nuevo.",
                 "save": "No pudimos terminar de guardar. Inténtalo de nuevo para continuar desde donde quedaste.",
-                "response": "Tus credenciales se guardaron, pero no pudimos notificar al sitio emisor."
+                "response": "Tus credenciales se guardaron, pero no pudimos notificar al sitio emisor.",
+                "account": "Tu cuenta ha cambiado. Vuelve al sitio emisor e inicia una nueva solicitud."
             },
             "cancelled": "Solicitud cancelada. Vuelve al sitio emisor.",
             "connectTitle": "Conectando tu cuenta",

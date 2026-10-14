@@ -1,6 +1,6 @@
 import React, { StrictMode } from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
     init: vi.fn(),
     receive: vi.fn(),
@@ -52,6 +52,7 @@ vi.mock('../../paraglide/messages.js', () => ({
     'chapi.receive.error.request': () => 'Could not get credentials',
     'chapi.receive.error.save': () => 'Could not finish saving',
     'chapi.receive.error.response': () => 'Saved, but could not notify issuer',
+    'chapi.receive.error.account': () => 'Account changed. Start a new request.',
 }));
 import { CredentialReceivePage } from './CredentialReceivePage';
 const credential = (name: string) => ({
@@ -72,7 +73,7 @@ const presentation = {
     verifiableCredential: [credential('First'), credential('Second')],
 };
 beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     mocks.currentUser = { privateKey: 'test' };
     mocks.did = undefined;
     mocks.init.mockResolvedValue({
@@ -86,6 +87,7 @@ beforeEach(() => {
     });
     mocks.save.mockResolvedValue({ result: true, credentialUri: 'test-uri' });
 });
+afterEach(() => vi.unstubAllGlobals());
 const ready = () => screen.findByRole('button', { name: 'Save to Passport' });
 
 describe('credential receive interaction', () => {
@@ -220,5 +222,116 @@ describe('credential receive interaction', () => {
         fireEvent.click(await ready());
         await screen.findByRole('alert');
         expect(mocks.respond).not.toHaveBeenCalled();
+    });
+    it('never consumes a second mediator event after a profile switch', async () => {
+        mocks.receive
+            .mockImplementationOnce(async () => ({
+                credential: { data: presentation },
+                respondWith: mocks.respond,
+            }))
+            .mockImplementationOnce(() => new Promise(() => {}));
+        const { rerender } = render(<CredentialReceivePage />);
+        await ready();
+        mocks.did = 'did:web:other';
+        rerender(<CredentialReceivePage />);
+        await screen.findByText('Account changed. Start a new request.');
+        expect(screen.queryByText('Getting credentials...')).toBeNull();
+        expect(screen.queryByText('First')).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Save to Passport' })).toBeNull();
+        mocks.did = undefined;
+        rerender(<CredentialReceivePage />);
+        expect(screen.getByText('Account changed. Start a new request.')).toBeVisible();
+        expect(mocks.receive).toHaveBeenCalledOnce();
+        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+        expect(await mocks.respond.mock.calls[0][0]).toBeNull();
+        expect(mocks.save).not.toHaveBeenCalled();
+    });
+    it('enables cancellation as soon as the event arrives, aborting a pending exchange', async () => {
+        const fetch = vi.fn(
+            (_url: string, options: { signal: AbortSignal }) =>
+                new Promise((_resolve, reject) => {
+                    options.signal.addEventListener('abort', () =>
+                        reject(new DOMException('aborted', 'AbortError'))
+                    );
+                })
+        );
+        vi.stubGlobal('fetch', fetch);
+        mocks.receive.mockResolvedValue({
+            credential: {
+                data: {},
+                options: { protocols: { vcapi: 'https://issuer.example/exchange' } },
+            },
+            respondWith: mocks.respond,
+        });
+        render(<CredentialReceivePage />);
+        const cancel = await screen.findByRole('button', { name: 'Cancel' });
+        expect(cancel).toBeEnabled();
+        expect(screen.getByText('Getting credentials...')).toBeVisible();
+        fireEvent.click(cancel);
+        await screen.findByText('Request cancelled.');
+        expect(fetch.mock.calls[0][1].signal.aborted).toBe(true);
+        expect(await mocks.respond.mock.calls[0][0]).toBeNull();
+        expect(mocks.receive).toHaveBeenCalledOnce();
+        expect(mocks.save).not.toHaveBeenCalled();
+        expect(screen.queryByRole('alert')).toBeNull();
+        vi.unstubAllGlobals();
+    });
+    it('invalidates a pending one-shot receive even if the account switches back', async () => {
+        let resolve!: (event: object) => void;
+        mocks.receive.mockImplementationOnce(
+            () =>
+                new Promise(r => {
+                    resolve = r;
+                })
+        );
+        const { rerender } = render(<CredentialReceivePage />);
+        await act(async () => {});
+        mocks.did = 'did:web:other';
+        rerender(<CredentialReceivePage />);
+        mocks.did = undefined;
+        rerender(<CredentialReceivePage />);
+        await act(async () =>
+            resolve({ credential: { data: presentation }, respondWith: mocks.respond })
+        );
+        expect(screen.getByText('Account changed. Start a new request.')).toBeVisible();
+        expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled();
+        expect(mocks.receive).toHaveBeenCalledOnce();
+        expect(mocks.save).not.toHaveBeenCalled();
+    });
+    it('does not retry a consumed response when notification fails after saving', async () => {
+        mocks.respond.mockImplementationOnce(() => {
+            throw new Error('already consumed');
+        });
+        render(<CredentialReceivePage />);
+        fireEvent.click(await ready());
+        await screen.findByText('Saved, but could not notify issuer');
+        expect(screen.queryByRole('button', { name: 'Try Again' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();
+        expect(mocks.respond).toHaveBeenCalledOnce();
+        expect(mocks.save).toHaveBeenCalledTimes(2);
+    });
+    it('uses issuer credential IDs to deduplicate reopened offers', async () => {
+        mocks.receive.mockResolvedValue({
+            credential: {
+                data: {
+                    ...presentation,
+                    verifiableCredential: [
+                        { ...credential('First'), id: 'urn:uuid:stable-credential' },
+                    ],
+                },
+            },
+            respondWith: mocks.respond,
+        });
+        const { unmount } = render(<CredentialReceivePage />);
+        fireEvent.click(await ready());
+        await screen.findByText('Saved to your Passport.');
+        unmount();
+        render(<CredentialReceivePage />);
+        fireEvent.click(await ready());
+        await screen.findByText('Saved to your Passport.');
+        expect(mocks.save.mock.calls.map(call => call[1].id)).toEqual([
+            'urn:uuid:stable-credential',
+            'urn:uuid:stable-credential',
+        ]);
     });
 });

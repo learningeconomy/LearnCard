@@ -5,7 +5,9 @@ const mocks = vi.hoisted(() => ({
     get: vi.fn(),
     add: vi.fn(),
     upload: vi.fn(),
+    logError: vi.fn(),
 }));
+vi.mock('../logging/logger', () => ({ getLogger: () => ({ error: mocks.logError }) }));
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => false } }));
 vi.mock('@learncard/init', () => ({ initLearnCard: vi.fn() }));
 vi.mock('learn-card-base', () => ({
@@ -125,4 +127,20 @@ it('does not index or report success when an upload returns no URI', async () =>
         useWallet().storeAndAddVCToWallet(credential, { id: 'chapi-item' })
     ).rejects.toThrow('credential.upload.failed');
     expect(mocks.add).not.toHaveBeenCalled();
+});
+
+it('queries the caller record ID only once before uploading', async () => {
+    await useWallet().storeAndAddVCToWallet(credential, { id: 'chapi-item' });
+    expect(mocks.get).toHaveBeenCalledExactlyOnceWith({ id: 'chapi-item' });
+});
+
+it('logs the failed operation and safe error type without private error text', async () => {
+    const cause = new TypeError('PRIVATE_CLAIM https://example.test/capability?secret=canary');
+    mocks.upload.mockRejectedValue(cause);
+    await expect(useWallet().storeAndAddVCToWallet(credential)).rejects.toBe(cause);
+    expect(mocks.logError).toHaveBeenCalledExactlyOnceWith('credential.save.failed', {
+        stage: 'upload',
+        errorType: 'TypeError',
+    });
+    expect(JSON.stringify(mocks.logError.mock.calls)).not.toContain('canary');
 });

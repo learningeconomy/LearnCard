@@ -2751,7 +2751,8 @@
                 "invalid": "This offer is not supported or contains an invalid credential. Return to the issuing website and start a new request.",
                 "request": "We could not get the credentials. Return to the issuing website and try again.",
                 "save": "We could not finish saving. Try again to continue from where you left off.",
-                "response": "Your credentials were saved, but we could not notify the issuing website."
+                "response": "Your credentials were saved, but we could not notify the issuing website.",
+                "account": "Your account changed. Return to the issuing website and start a new request."
             },
             "cancelled": "Request cancelled. Return to the issuing website.",
             "connectTitle": "Connecting your account",

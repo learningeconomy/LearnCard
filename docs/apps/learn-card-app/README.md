@@ -45,7 +45,7 @@ flowchart LR
 
 ### Receiving Credentials from a Website
 
-For a browser credential offer, choose LearnCard in the website’s account chooser. The **Add to Passport** page lists every offered credential; expand **Details** to inspect one before choosing **Save to Passport** or **Cancel**. Saving disables the action buttons until it finishes. If part of a batch fails, **Try Again** continues without adding completed items again. An unsupported offer or a failed exchange shows a visible error instead of leaving **Accepting…** on screen. Start a new offer on the issuing website if the request has expired.
+For a browser credential offer, choose LearnCard in the website’s account chooser. The **Add to Passport** page lists every offered credential; expand **Details** to inspect one before choosing **Save to Passport** or **Cancel**. Saving disables the action buttons until it finishes. If part of a batch fails, **Try Again** continues without adding completed items again. An unsupported offer or a failed exchange shows a visible error instead of leaving **Accepting…** on screen. Cancel remains available while the website’s request is loading. If you switch accounts, return to the issuing website and start a new request. If the credentials are saved but the website cannot be notified, the page tells you; retrying that notification is not offered. Start a new offer on the issuing website if the request has expired.
 
 ### Sharing a Credential
 
