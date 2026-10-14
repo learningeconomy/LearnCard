@@ -5,11 +5,15 @@ verifying it end-to-end. It complements `README.md` (threat model, wire contract
 development) and `../../infra/escrow-enclave/README.md` (Terraform reference) — it does not repeat
 either in full.
 
-> **PR 2 is implemented offline, not deployed or approved for production release.**
-> Configured enrollment authority resolves the old enrollment blocker under its
-> stated IAM/SCP trust assumptions. Attack C/email confirmation remains PR 3;
-> Roughtime operations and privileged-administrator risks still require review.
-> For this cutover, use the ordered section below before the older bring-up notes.
+> **PR 2 and PR 3 are both implemented offline, not deployed or approved for
+> production release.** Configured enrollment authority resolves the old
+> enrollment blocker under its stated IAM/SCP trust assumptions. PR 3's
+> enclave-sent recovery email confirmation resolves attack C under its own
+> stated SES/credential-delivery assumptions — see the dedicated cutover
+> section below, which runs **after** the PR 2 cutover completes (email
+> confirmation is layered on an already-configured authority). Roughtime
+> operations and privileged-administrator risks still require review.
+> For this cutover, use the ordered sections below before the older bring-up notes.
 
 ## PR 2 authority cutover — operator only
 
@@ -142,6 +146,116 @@ rows or deploying an unsigned client/API path. Committed releases cannot be revo
 retroactively. The API kill switch is operational defense, not protection from a
 host that bypasses that API; credential revocation/approved-image removal require
 the security incident process.
+
+## PR 3 attack-C email cutover — operator only
+
+None of these AWS commands/applies, credential provisioning, DNS delegation or
+deployments were run by the implementation task. Run this **after** the PR 2
+authority cutover above has completed through at least step 5 (backend/EIF/
+observer deployed with authority configured) — email confirmation only applies
+to Hold-policy holds under an already-configured authority. Use the same
+staging-only maintenance window, two-person security review and reviewed
+operator credentials. Keep `ESCROW_RELEASE_KILL_SWITCH=true` until the final gate.
+
+Execute in this order:
+
+1. **Choose and register the sending domain.** Pick a dedicated subdomain —
+   staging convention is `staging.notify.learncard.com` — never reuse a
+   production-facing domain for test sends. Set `sending_domain` in the pending
+   Terraform inputs. If the parent zone is owned by a different account/root
+   module, set `create_sending_zone=true` and delegate the returned
+   `sending_zone_name_servers` NS records from the parent zone's owning account;
+   otherwise set it `false` and publish the `sending_dns_records` output
+   (identity verification TXT, three DKIM CNAMEs, `bounce.<domain>` MX/SPF)
+   yourself. Verify the SES domain identity and all three DKIM tokens show
+   **Verified** in the SES console before proceeding — an unverified identity
+   fails every send closed, which is correct behavior, not a bug to route around.
+
+2. **Request SES production access.** New SES accounts/identities start in the
+   sandbox (send only to verified addresses, low rate). File the AWS production-access
+   request (describe the use case: transactional account-recovery codes, low
+   volume, existing bounce/complaint handling via the configuration set this
+   stack creates) well before the staging cohort needs to receive real codes —
+   approval can take hours to days. Confirm the sandbox has actually been lifted
+   (send a test message to an address you do **not** control pre-verify) before
+   relying on it for the e2e gate in step 6.
+
+3. **Provision the email-sender credential.** From the MFA admin session, same
+   provisioner as PR 2's authority-writer credential, with the distinct purpose:
+
+    ```sh
+    set +x
+    eval "$(aws configure export-credentials --profile escrow-kms-admin-session --format env)"
+    bash infra/escrow-enclave-bootstrap/provision-enclave-credentials.sh \
+      --purpose email-sender --environment staging --tenant '<tenant>' \
+      --generation '<same-generation-as-authority>' --bucket '<artifacts-bucket>' \
+      --kms-key-arn '<credential-cmk-arn>' --escrow-kms-key-arn '<escrow-cmk-arn>'
+    ```
+
+    Verify create-only ciphertext at `credentials/email-sender/<generation>`,
+    distinct from `credentials/authority-writer/<generation>`. The IAM user this
+    mints can only `ses:SendEmail` from the exact `recovery@<sending_domain>`
+    identity/configuration-set pair — confirm this scoping in the IAM console,
+    not just by reading the Terraform source, before trusting it with real mail.
+
+4. **Enable the resource and delivery flags together.** Unlike PR 2's authority
+   flag (which can be staged resource-first with delivery held back), email has
+   no equivalent two-step: set `enable_enclave_email=true` in the pending,
+   reviewed deployment inputs alongside `enable_credential_delivery=true` (if
+   not already `true` from the PR 2 cutover) and the new EIF/host binary pair
+   that include the email vsock-proxy relay (port 8002,
+   `email.<region>.amazonaws.com`) and the `ESCROW_EMAIL_CREDENTIAL_OBJECT`
+   environment wiring. Build/compare/deploy exactly as PR 2 step 5 describes.
+   After boot, verify in the enclave-host's own logs (fixed labels only, never
+   secrets) that `install_service_hosts` and the email vsock-proxy unit both
+   started — a missing `/etc/hosts` entry or proxy unit means every send will
+   fail closed with no indication beyond that fixed label.
+
+5. **Verify fail-closed behavior before trusting any send.** With a disposable
+   test identity, enroll with recovery email/language bound into the blob (the
+   client UI step from sub-item (e)), confirm the SES domain is verified and
+   production access is live, then deliberately break one precondition at a
+   time (e.g., temporarily revoke the email-sender IAM policy) and confirm
+   `start-recovery` for a Hold-policy hold fails closed rather than silently
+   falling back to the old unconfirmed path. Restore the precondition before
+   continuing.
+
+6. **Run the real end-to-end flow.** Using a disposable staging test identity
+   with a real, access-controlled inbox:
+    - Start a Hold-policy recovery; confirm the app shows the code-entry step
+      (`requiresConfirmation: true` in the `startRecovery` response) and an
+      email with the 8-digit code arrives within a few seconds, in the
+      account's selected language, with the "only enter this code if you
+      started this recovery" line and no links.
+    - Enter the code in the app; confirm the "recovery started" email arrives
+      and the app's countdown begins.
+    - Deliberately enter a wrong code once first — confirm it's rejected with
+      a friendly error and the correct code still works afterward (the guess
+      budget is per-code-lifetime, not per-attempt).
+    - Exercise resend: confirm the old code stops working and the new one in
+      the resend email works.
+    - Let (or force, via the reminders job's own `now` override if testing
+      off a short `ESCROW_HOLD_DURATION_MS`) the hourly reminder job run past
+      the warning window; confirm the "release in ~24 hours" email arrives
+      and lca-api's own reminder notification does **not** also fire for this
+      hold (see `AUDIT-COVERAGE.md`'s attack-C row for the offline test this
+      mirrors — this step is the live confirmation that the same suppression
+      holds against real SES/Postmark, not just the offline fakes).
+    - After the full wait, confirm release succeeds and the share is returned.
+    - Cancel a separate hold from each of `AwaitingConfirmation` and `Pending`
+      and confirm both succeed.
+
+7. **Confirm bounce/complaint handling.** Send to a known SES bounce simulator
+   address (`bounce@simulator.amazonses.com`) and confirm the configuration
+   set's SNS event destination delivers to the existing monitor topic. Do not
+   skip this — a sending domain with silently accumulating bounces/complaints
+   risks SES throttling or suspending the identity during real incidents.
+
+Rollback means setting `enable_enclave_email=false` (holds revert to failing
+closed on creation rather than silently losing confirmation — `create_hold`
+fails the whole request when a Hold-policy blob has no bound email, it never
+falls back to the old unconfirmed path) and investigating, not reusing a
+burned sending domain or re-provisioning over an existing credential slot.
 
 ## 1. Terraform apply order
 

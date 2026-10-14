@@ -33,11 +33,11 @@ but off by default. The management-account SCP is a prerequisite to enabling the
 see `infra/escrow-enclave/README.md`. Public authority/email settings are recorded in local measurements and the
 CI-signed manifest; no plaintext access keys belong in either artifact.
 Without authority configuration, `UnavailableEnrollment` remains wired. Partial
-configuration, missing ciphertext or unsealing failure fails boot closed. No email
-client is active. **PR 2 implementation is complete offline, not deployed or a
-production launch approval.** Authority, wire/API, clients and independent audit
-integration are implemented. The ordered staging gates and PR 3 attack-C/email
-confirmation blocker remain; see `STAGING.md` and `SECURITY.md`.
+configuration, missing ciphertext or unsealing failure fails boot closed. **PR 2 and
+PR 3 implementation are both complete offline, not deployed or a production launch
+approval.** Authority, wire/API, clients, independent audit integration, and the
+attack-C email confirmation flow (§9) are all implemented and offline-tested.
+The ordered staging gates remain; see `STAGING.md` and `SECURITY.md`.
 
 Operation budget: with one time server down, a round now ends at the second
 consistent authenticated response, not the missing server's shared 2s cap.
@@ -734,6 +734,30 @@ lca-api routes, SES infrastructure.
 **Residual risks.** Phishing for the code; users who lose both their device and
 their email account use another recovery method; the host can block email (denial
 of service, fails closed).
+
+**Implementation notes (closed).** The design above left several numbers
+unspecified ("codes expire, guesses are bounded, resends are rate-limited");
+the shipped values, chosen to balance a comfortable confirmation window against
+a bounded guessing/flooding surface, are: 8-digit CSPRNG code, 30-minute expiry,
+5 guesses per code (independent of the existing 10-lifetime PIN-comparison
+budget), resend limited to 3 per rolling 24h window with a 60-second minimum
+gap between sends — all per DID, not per hold, so restarting a hold cannot
+reset the budget. The hold state machine gained an explicit `AwaitingConfirmation`
+status (entry state for Hold-policy only; Pin-policy still enters `Pending`
+directly, unchanged). Release requires **both** a matched confirmation and a
+`send-release-warning` recorded at least 24 hours earlier — the independent
+ledger monitor (`escrow-ledger-monitor`) re-derives and enforces this gate from
+signed events, not from the stored `HoldItem` row's own timestamps, so a parent
+that tampered with those fields without a genuine signed `ConfirmHold`/
+`SendReleaseWarning` sequence is still caught. `cancel` is valid from either
+non-terminal status and idempotent on retry (it derives its own request ID from
+the hold's digest, not the caller's). lca-api suppresses its own "started" and
+hourly reminder notifications for an authority-mode Hold-policy hold in favor of
+the enclave's own email, via the same `confirmHold`-is-defined check used to
+decide `requiresConfirmation` at creation. Full implementation/test inventory:
+`SECURITY.md`'s `BLOCKER-ATTACK-C` entry and `AUDIT-COVERAGE.md`'s "Recovery
+boundary / attack C" row. Operator rollout steps (SES domain, production access,
+`enable_enclave_email`, credential provisioning): `STAGING.md`.
 
 ## 10. Open questions for security/product
 
