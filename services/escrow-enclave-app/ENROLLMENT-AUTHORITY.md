@@ -34,6 +34,24 @@ see `infra/escrow-enclave/README.md`. Public authority/email settings are record
 CI-signed manifest; no plaintext access keys belong in either artifact.
 `UnavailableEnrollment` remains wired; no authority or email client is active.
 
+PR 2 item-a checkpoint adds the dormant persistence schema in
+`src/authority/state.rs`. It is available without AWS features for offline tests
+and future independent verification. Account rows bind tenant, generation and DID
+hash; operation revision is separate from enrollment version and epoch. Active
+state includes the encrypted envelope and its canonical blob identity. Disabled
+tombstones retain versions and PIN accounting. Holds and operation metadata occupy
+separate bounded rows, with no TTL or default state for missing records.
+
+Storage payloads use strict, versioned JSON, capped at 64 KiB, with 24 KiB encrypted
+envelopes and 8 KiB proposed events. Partition keys are domain-separated hashes of
+length-framed tenant/generation and DID hash; sort keys distinguish `ENROLLMENT`,
+`HOLD#<holdId>` and `OPERATION#<requestId>`. This encoding is **not** the future
+signed-intent canonicalization. Stored proposal bytes are **not** signed proof of
+commit. Schema validation does not authenticate a snapshot or enforce transitions.
+The next checkpoint is item b: conditional DynamoDB/fake `AuthorityStore`, durable
+execution identity and ambiguous-outcome reconciliation. Policy/wire/client/monitor
+integration and all authority security guarantees remain unimplemented.
+
 The client layer is not authorization: enclave policy must build its typed requests
 from validated intent and bind generation/tenant/expected revision in item keys and
 conditions. It is not exposed as a host RPC. `GetItem` sets `ConsistentRead: true`;
