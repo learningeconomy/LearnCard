@@ -1401,6 +1401,122 @@ describe('A6 escrow recovery', () => {
     });
 });
 
+describe('P2-c confirmRecovery reconciliation', () => {
+    // A hold the route can confirm, bypassing startRecovery (software mode
+    // never sets requiresConfirmation) so these tests can drive confirmHold
+    // directly against a mocked authority-mode enclave.
+    const createConfirmableHold = async () => {
+        const resumeToken = randomUUID().replace(/-/g, '').padEnd(64, 'a');
+        const hold = await models.createEscrowHold({
+            holdRecord: {
+                hold: {
+                    holdId: randomUUID(),
+                    did,
+                    shareVersion: 1,
+                    blobHash: 'ab'.repeat(32),
+                    enrollmentEpoch: 1,
+                    releasePolicy: 'hold',
+                    clientEphemeralPublicKey: recipient.publicKey,
+                    createdLo: 0,
+                    createdHi: 0,
+                    policyVersion: 2,
+                    signature: 'test-signature',
+                },
+                holdDurationMs: 60_000,
+                ledgerSeq: 0,
+            },
+            authProvider,
+            enclaveEnvelope: envelope,
+            primaryDid: did,
+            shareVersion: 1,
+            identityProofType: 'auth-token',
+            requestedAt: new Date(),
+            releaseAfter: new Date(Date.now() + 60_000),
+            releasePolicy: 'hold',
+            clientEphemeralPublicKey: recipient.publicKey,
+            resumeTokenHash: models.hashEscrowResumeToken(resumeToken),
+            requiresConfirmation: true,
+        });
+        return { hold, resumeToken };
+    };
+    // Mirrors the Rust fix: a repeat confirmHold call against an
+    // already-confirmed hold succeeds without re-checking the code.
+    const idempotentConfirmHold = vi.fn(async () => ({
+        receipt: {
+            version: 1 as const,
+            kind: 'commit' as const,
+            keyId,
+            measurement: Array.from({ length: 32 }, () => 0),
+            payload: 'AQ==',
+            signature: Buffer.alloc(64).toString('base64'),
+        },
+    }));
+    beforeEach(() => idempotentConfirmHold.mockClear());
+
+    it('a lost response is safe to retry: the hold is confirmed exactly once, with the first confirmation time kept', async () => {
+        const { hold, resumeToken } = await createConfirmableHold();
+        const software = getEscrowEnclave() as unknown as Record<string, unknown>;
+        software.confirmHold = idempotentConfirmHold;
+        try {
+            const request = { holdId: hold._id, resumeToken, code: '12345678' };
+            await expect(getClient().escrow.confirmRecovery(request)).resolves.toEqual({
+                success: true,
+            });
+            const first = await findEscrowHoldById(hold._id);
+            expect(first?.confirmedAt).toBeInstanceOf(Date);
+            const firstConfirmedAt = first!.confirmedAt!.getTime();
+            const firstReleaseAfter = first!.releaseAfter.getTime();
+            // The client never received the first response and retries with a
+            // fresh request (a new guess, exactly as a real enclave allows).
+            await expect(
+                getClient().escrow.confirmRecovery({ ...request, code: '87654321' })
+            ).resolves.toEqual({ success: true });
+            expect(idempotentConfirmHold).toHaveBeenCalledTimes(2);
+            const second = await findEscrowHoldById(hold._id);
+            expect(second?.confirmedAt?.getTime()).toBe(firstConfirmedAt);
+            expect(second?.releaseAfter.getTime()).toBe(firstReleaseAfter);
+            // A third call, well after confirmation (process-restart-equivalent:
+            // no in-memory state from the earlier calls is relied upon), still
+            // succeeds rather than getting the hold permanently stuck.
+            await expect(getClient().escrow.confirmRecovery(request)).resolves.toEqual({
+                success: true,
+            });
+            const third = await findEscrowHoldById(hold._id);
+            expect(third?.confirmedAt?.getTime()).toBe(firstConfirmedAt);
+        } finally {
+            delete software.confirmHold;
+        }
+    });
+
+    it('a Mongo failure after enclave success surfaces an error, but the retry reconciles instead of double-confirming', async () => {
+        const { hold, resumeToken } = await createConfirmableHold();
+        const software = getEscrowEnclave() as unknown as Record<string, unknown>;
+        software.confirmHold = idempotentConfirmHold;
+        const recordSpy = vi
+            .spyOn(models, 'recordEscrowHoldConfirmation')
+            .mockRejectedValueOnce(new Error('Mongo unavailable'));
+        try {
+            const request = { holdId: hold._id, resumeToken, code: '12345678' };
+            // Enclave confirms (idempotent, so this is never wasted), but the
+            // Mongo acknowledgment write fails: the caller must see a failure,
+            // not a false success, and Mongo must record nothing yet.
+            await expect(getClient().escrow.confirmRecovery(request)).rejects.toThrow();
+            expect(idempotentConfirmHold).toHaveBeenCalledTimes(1);
+            expect((await findEscrowHoldById(hold._id))?.confirmedAt).toBeUndefined();
+            // Retry: the enclave call is idempotent (no resend/guess consumed —
+            // covered by the Rust-side test), and this time Mongo succeeds.
+            await expect(getClient().escrow.confirmRecovery(request)).resolves.toEqual({
+                success: true,
+            });
+            expect(idempotentConfirmHold).toHaveBeenCalledTimes(2);
+            expect((await findEscrowHoldById(hold._id))?.confirmedAt).toBeInstanceOf(Date);
+        } finally {
+            recordSpy.mockRestore();
+            delete software.confirmHold;
+        }
+    });
+});
+
 describe('escrow PIN release', () => {
     const pinProof = 'ab'.repeat(32);
     const wrongProof = 'cd'.repeat(32);
