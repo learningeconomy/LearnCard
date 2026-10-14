@@ -26,9 +26,9 @@ import {
 /**
  * SimpleSend builds OBv3 credentials without the boost template generator
  * (`newCredential({ type: 'boost' })`), which injects LearnCard-specific fields.
- * Per-recipient file evidence opts into the LearnCard evidence context so its
- * metadata can be signed. Credentials without that evidence keep their standard
- * contexts. `send()` may still create a boost server-side for delivery.
+ * Legacy file evidence opts into the LearnCard evidence context so its metadata
+ * can be signed. Standard OBv3 Evidence keeps standard contexts. `send()` may
+ * still create a boost server-side for delivery.
  */
 
 const EVIDENCE_CONTEXT = 'https://ctx.learncard.com/boosts/1.0.3.json';
@@ -203,9 +203,11 @@ const deliverBoost = async (
         // templateData (e.g. evidence) is still resolved individually below.
         await Promise.all(
             options.recipients.map(recipient => {
-                const recipientIdentifier = recipientKey(recipient);
-                const recipientData =
-                    options.variableValuesByRecipient?.[recipientIdentifier] ?? templateData;
+                const key = recipientKey(recipient);
+                // Row keys identify template data; delivery requires the actual address.
+                const recipientIdentifier =
+                    recipient.kind === 'profile' ? recipient.profileId : recipient.email;
+                const recipientData = options.variableValuesByRecipient?.[key] ?? templateData;
                 return wallet.invoke.send({
                     type: 'boost',
                     recipient: recipientIdentifier,
@@ -325,18 +327,27 @@ export const issueViaBoost = async (
 
     // Shared variableValues contain strings; evidence is carried only in the
     // per-recipient payloads. Revisit this check if shared values gain evidence.
-    const hasRecipientEvidence =
+    const hasLegacyRecipientEvidence =
         options.mode === 'people' &&
         options.recipients.some(recipient => {
             const key = recipientKey(recipient);
             const evidence = options.variableValuesByRecipient?.[key]?.evidence;
-            return Array.isArray(evidence) ? evidence.length > 0 : Boolean(evidence);
+            const entries = Array.isArray(evidence) ? evidence : [evidence];
+            return entries.some(entry => {
+                if (!entry || typeof entry !== 'object') return false;
+                const item = entry as Record<string, unknown>;
+                const types = Array.isArray(item.type) ? item.type : [item.type];
+                return (
+                    types.includes('EvidenceFile') ||
+                    ['fileName', 'fileType', 'fileSize'].some(field => field in item)
+                );
+            });
         });
 
-    // The network appends per-recipient EvidenceFile entries after the editor's
-    // validation. Define their fileName/fileType terms on the reusable template
-    // before send-time signing, preserving any existing compatible context.
-    if (hasRecipientEvidence && !boostSupportsDynamicEvidence(reusableTemplateForMode)) {
+    // The network appends per-recipient evidence after the editor's validation.
+    // Legacy file terms need the extension before send-time signing; standard
+    // Evidence needs no extra context. Preserve existing compatible contexts.
+    if (hasLegacyRecipientEvidence && !boostSupportsDynamicEvidence(reusableTemplateForMode)) {
         const contexts = reusableTemplateForMode['@context'];
         reusableTemplateForMode['@context'] = [
             ...(Array.isArray(contexts) ? contexts : contexts != null ? [contexts] : []),
