@@ -53,6 +53,8 @@ import {
     expireStaleEscrowHolds,
     hashEscrowResumeToken,
     generateEscrowResumeToken,
+    computeEffectiveReleaseAfter,
+    ESCROW_RELEASE_TIME_MARGIN_MS,
     type EscrowHold,
     type MongoUserKeyType,
     type AuthProviderMapping,
@@ -85,9 +87,6 @@ const unavailableMessage = 'Automatic recovery is not available for this account
 const killSwitchMessage = 'Automatic recovery is temporarily unavailable. Please try again later.';
 const invalidMessage = 'This recovery request is no longer valid.';
 const staleEscrowMessage = 'Automatic recovery needs to be set up again on a signed-in device.';
-// Roughtime's release lower bound can lag its creation upper bound. Advertise
-// an additional minute, and still allow retries when trusted time is unavailable.
-const ESCROW_RELEASE_TIME_MARGIN_MS = 60_000;
 // Keep throttling distinct: clients reserve the locked message for lifetime PIN exhaustion.
 const pinThrottledMessage = 'Please wait before trying again.';
 
@@ -986,7 +985,7 @@ export const escrowRouter = t.router({
             }
             const confirmHold = getEscrowEnclave().confirmHold;
             if (!confirmHold) throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
-            await enclaveOperation(() =>
+            const { confirmedAtMs } = await enclaveOperation(() =>
                 confirmHold({
                     envelope,
                     hold: hold.holdRecord!,
@@ -997,15 +996,18 @@ export const escrowRouter = t.router({
             );
             // enclaveOperation re-throws on a code mismatch (the enclave
             // itself returns an error there); reaching this line means the
-            // code matched. releaseAfter is recomputed from now, not the
-            // original creation time — see recordEscrowHoldConfirmation.
-            const now = new Date();
+            // code matched. releaseAfter is recomputed from the enclave's
+            // own authoritative confirmation time (`confirmedAtMs`), never a
+            // locally observed `now` — a retried confirm (lost response,
+            // idempotent snapshot) must not add another day on top of a
+            // confirmation that already happened [A2].
             await recordEscrowHoldConfirmation(
                 hold._id,
-                now,
-                new Date(
-                    now.getTime() + hold.holdRecord.holdDurationMs + ESCROW_RELEASE_TIME_MARGIN_MS
-                )
+                new Date(confirmedAtMs),
+                computeEffectiveReleaseAfter({
+                    confirmedAtMs,
+                    holdDurationMs: hold.holdRecord.holdDurationMs,
+                })
             );
             return { success: true as const };
         }),

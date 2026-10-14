@@ -1439,6 +1439,12 @@ describe('P2-c confirmRecovery reconciliation', () => {
         });
         return { hold, resumeToken };
     };
+    // [A2] fixed, in-the-past value standing in for the enclave's
+    // authoritative `confirmed_hi_ms` — every call (fresh or idempotent
+    // retry) returns the SAME value, exactly like the real enclave's
+    // confirmed-once hold state, regardless of when the call actually reaches
+    // Mongo.
+    const FIXED_CONFIRMED_AT_MS = Date.now() - 7 * 86_400_000;
     // Mirrors the Rust fix: a repeat confirmHold call against an
     // already-confirmed hold succeeds without re-checking the code.
     const idempotentConfirmHold = vi.fn(async () => ({
@@ -1450,6 +1456,7 @@ describe('P2-c confirmRecovery reconciliation', () => {
             payload: 'AQ==',
             signature: Buffer.alloc(64).toString('base64'),
         },
+        confirmedAtMs: FIXED_CONFIRMED_AT_MS,
     }));
     beforeEach(() => idempotentConfirmHold.mockClear());
 
@@ -1510,6 +1517,43 @@ describe('P2-c confirmRecovery reconciliation', () => {
             });
             expect(idempotentConfirmHold).toHaveBeenCalledTimes(2);
             expect((await findEscrowHoldById(hold._id))?.confirmedAt).toBeInstanceOf(Date);
+        } finally {
+            recordSpy.mockRestore();
+            delete software.confirmHold;
+        }
+    });
+
+    // [A2] Previously this computed releaseAfter from `new Date()` at the
+    // time of whichever call actually reached Mongo — a retry long after the
+    // enclave's real confirmation (lost response, queued retry) pushed the
+    // release deadline into the future by roughly the retry delay. It must
+    // instead come from the enclave's own confirmed_hi_ms, which the fixture
+    // above holds fixed across every call.
+    it('[A2] releaseAfter is computed from the enclave confirmation time, not a later retry wall clock', async () => {
+        const { hold, resumeToken } = await createConfirmableHold();
+        const software = getEscrowEnclave() as unknown as Record<string, unknown>;
+        software.confirmHold = idempotentConfirmHold;
+        const recordSpy = vi
+            .spyOn(models, 'recordEscrowHoldConfirmation')
+            .mockRejectedValueOnce(new Error('Mongo unavailable'));
+        try {
+            const request = { holdId: hold._id, resumeToken, code: '12345678' };
+            await expect(getClient().escrow.confirmRecovery(request)).rejects.toThrow();
+            // The retry reaches Mongo "now" (days after FIXED_CONFIRMED_AT_MS),
+            // mirroring a slow client retry or a requeued Lambda invocation.
+            await expect(getClient().escrow.confirmRecovery(request)).resolves.toEqual({
+                success: true,
+            });
+            const confirmed = await findEscrowHoldById(hold._id);
+            expect(confirmed?.confirmedAt?.getTime()).toBe(FIXED_CONFIRMED_AT_MS);
+            expect(confirmed?.releaseAfter.getTime()).toBe(
+                FIXED_CONFIRMED_AT_MS +
+                    hold.holdRecord.holdDurationMs +
+                    models.ESCROW_RELEASE_TIME_MARGIN_MS
+            );
+            // The bug this guards: a buggy `new Date()`-based computation
+            // would land in the future (retry time + holdDuration + margin).
+            expect(confirmed!.releaseAfter.getTime()).toBeLessThan(Date.now());
         } finally {
             recordSpy.mockRestore();
             delete software.confirmHold;
