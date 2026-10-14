@@ -387,6 +387,7 @@ export const useWallet = () => {
     const storeAndAddVCToWallet = async (
         vc: VC,
         metadata: Partial<{
+            id: string;
             title: string;
             imgUrl: string;
             allowDuplicate: boolean;
@@ -397,25 +398,32 @@ export const useWallet = () => {
         skipLCNUser?: boolean // skip steps requiring a LCN account eg didweb
     ): Promise<{ result: boolean; credentialUri: string; category: string }> => {
         const {
+            id: recordId,
             title,
             imgUrl,
             allowDuplicate,
             inboxDeliveryId,
             boostUri: sourceBoostUri,
         } = metadata;
-        const _id = inboxDeliveryId
-            ? vc.id || `inbox:${inboxDeliveryId}`
-            : allowDuplicate
-              ? uuidv4()
-              : vc.id || uuidv4();
+        const _id =
+            recordId ??
+            (inboxDeliveryId
+                ? vc.id || `inbox:${inboxDeliveryId}`
+                : allowDuplicate
+                  ? uuidv4()
+                  : vc.id || uuidv4());
         let returnUri: string | undefined;
 
         try {
             const wallet = await getWallet();
 
             const category = await getCategoryForCredential(vc, wallet);
-            if (inboxDeliveryId) {
-                const existing = await wallet.index[location].get({ inboxDeliveryId });
+            // Callers processing a retryable batch can keep one index ID per item,
+            // including credentials without an issuer-provided ID.
+            if (inboxDeliveryId || recordId) {
+                const existing = await wallet.index[location].get(
+                    inboxDeliveryId ? { inboxDeliveryId } : { id: _id }
+                );
                 const saved = existing[0] ?? (await wallet.index[location].get({ id: _id }))[0];
                 if (saved) return { result: true, credentialUri: saved.uri, category };
             }
@@ -424,6 +432,7 @@ export const useWallet = () => {
 
             if (skipLCNUser) {
                 const uri2 = (await wallet.store.LearnCloud.uploadEncrypted?.(vc)) ?? '';
+                if (!uri2) throw new Error('credential.upload.failed');
                 const record = {
                     id: _id,
                     uri: uri2,
@@ -440,6 +449,7 @@ export const useWallet = () => {
 
             if (!skipLCNUser) {
                 const uri = (await wallet.store.LearnCloud.uploadEncrypted?.(vc)) ?? '';
+                if (!uri) throw new Error('credential.upload.failed');
 
                 const record = {
                     id: _id,
@@ -514,7 +524,9 @@ export const useWallet = () => {
                 category,
             };
         } catch (e) {
-            log.error(vc, e);
+            // Incoming credentials and counterparty errors can contain private
+            // claims or capability URLs. Keep diagnostics to an operational code.
+            log.error('credential.save.failed');
             throw e instanceof Error ? e : new Error(String(e));
         }
     };

@@ -43,6 +43,10 @@ flowchart LR
 4. User reviews the credential details
 5. User accepts and saves to their wallet
 
+### Receiving Credentials from a Website
+
+For a browser credential offer, choose LearnCard in the website’s account chooser. The **Add to Passport** page lists every offered credential; expand **Details** to inspect one before choosing **Save to Passport** or **Cancel**. Saving disables the action buttons until it finishes. If part of a batch fails, **Try Again** continues without adding completed items again. An unsupported offer or a failed exchange shows a visible error instead of leaving **Accepting…** on screen. Start a new offer on the issuing website if the request has expired.
+
 ### Sharing a Credential
 
 ```mermaid

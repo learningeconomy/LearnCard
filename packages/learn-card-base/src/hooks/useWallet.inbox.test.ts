@@ -108,3 +108,21 @@ it('reuses an id-less credential already saved by the recovery sweep', async () 
     expect(mocks.upload).not.toHaveBeenCalled();
     expect(mocks.add).not.toHaveBeenCalled();
 });
+
+it('retries a CHAPI credential without an issuer ID using a stable caller index ID', async () => {
+    const { storeAndAddVCToWallet } = useWallet();
+    await storeAndAddVCToWallet(credential, { id: 'chapi-event-item-1' });
+    const result = await storeAndAddVCToWallet(credential, { id: 'chapi-event-item-1' });
+    expect(result).toMatchObject({ result: true, credentialUri: 'encrypted-uri' });
+    expect(mocks.upload).toHaveBeenCalledOnce();
+    expect(mocks.add).toHaveBeenCalledOnce();
+    expect(records[0].id).toBe('chapi-event-item-1');
+});
+
+it('does not index or report success when an upload returns no URI', async () => {
+    mocks.upload.mockResolvedValue(undefined);
+    await expect(
+        useWallet().storeAndAddVCToWallet(credential, { id: 'chapi-item' })
+    ).rejects.toThrow('credential.upload.failed');
+    expect(mocks.add).not.toHaveBeenCalled();
+});
