@@ -129,7 +129,10 @@ be `credentials/email-sender/<generation>`, with a bounded alphanumeric/undersco
 hyphen generation. Both use the artifacts bucket. Missing/empty/oversized objects
 fail the boot response, with no first-boot exception or fallback credentials.
 `persistKey` cannot write either path. The enclave's credential unsealer and data
-clients remain unwired; provisioning, read IAM grants and activation are pending.
+clients remain unwired. Gated Terraform supplies the proxy units and optional
+ciphertext settings; the existing artifacts read grant covers ciphertext. The
+management-account guardrail and operator provisioning must precede enabling
+`enable_credential_delivery`. Activation and live AWS/Nitro verification are pending.
 Never put dedicated plaintext access keys in host environment variables or files.
 
 ## Persistence / audit ordering

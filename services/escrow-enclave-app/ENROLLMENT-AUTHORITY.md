@@ -27,8 +27,10 @@ automatic retries. They are not constructed by boot or Policy. Local TLS tests
 cover response conversion, body limits, stalled bodies and cross-operation
 connection isolation. Dormant attested credential unsealing and optional opaque
 host ciphertext delivery are implemented. The unsealer is not called by boot or
-Policy. Host proxy allowlists, infrastructure and provisioning are not implemented
-yet. Public authority/email settings are recorded in local measurements and the
+Policy. Gated authority/credential/email infrastructure, optional delegated DNS,
+host proxy allowlists, governance alarms and operator provisioning are implemented
+but off by default. The management-account SCP is a prerequisite to enabling them;
+see `infra/escrow-enclave/README.md`. Public authority/email settings are recorded in local measurements and the
 CI-signed manifest; no plaintext access keys belong in either artifact.
 `UnavailableEnrollment` remains wired; no authority or email client is active.
 

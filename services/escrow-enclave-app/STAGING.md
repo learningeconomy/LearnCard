@@ -150,16 +150,23 @@ Operational notes:
   partial groups are rejected by the config loader. These settings contain names,
   never access keys. No boot path consumes them yet. Dormant enclave relays reserve
   ports 8001 (regional DynamoDB) and 8002 (regional SES); the gated host proxy
-  services/allowlists remain an infrastructure prerequisite, not active egress.
+  services/allowlists are provisioned only by the explicit authority/email flags,
+  not active in current staging.
 - **Dormant credential delivery:** additionally measure
   `ESCROW_AUTHORITY_CREDENTIAL_KMS_KEY_ARN` for a separate credential CMK (never
-  the escrow CMK). Once the pending provisioning/IAM work is available, the host
+  the escrow CMK). After installing the Organizations guardrail and provisioning,
+  the host
   can read `ESCROW_AUTHORITY_CREDENTIAL_OBJECT=credentials/authority-writer/<generation>`
   and `ESCROW_EMAIL_CREDENTIAL_OBJECT=credentials/email-sender/<generation>` from
   the artifacts bucket. Unset paths add no reads or boot-response fields; configured
   missing/oversized objects fail closed, even with first-boot generation enabled.
-  Objects must contain only KMS ciphertext. No provisioning tool or activation
-  path is shipped yet; do not supply dedicated plaintext access keys to the host.
+  Objects must contain only KMS ciphertext. The operator-only
+  `infra/escrow-enclave-bootstrap/provision-enclave-credentials.sh` performs the
+  create/encrypt/create-only-upload flow; do not supply dedicated plaintext keys
+  to the host. See the infrastructure README for the MFA session and failure
+  cleanup procedure. `enable_credential_delivery` is a separate, default-false
+  second phase, enabled only after ciphertext upload. No enclave activation path
+  is shipped yet.
   Rotation must use an approved new generation/path with continuity review, not
   overwrite an existing object or roll back authority state.
 - **Measurement provenance:** `build-eif.sh` records all fourteen public authority/
@@ -169,6 +176,18 @@ Operational notes:
   `manifest.json` alongside the artifact hashes. Empty values remain empty; these
   fields are not runtime activation flags or proof that the new configuration
   has passed the dormant runtime loader's validation.
+
+    **Infrastructure gate:** keep `enable_enrollment_authority=false` and
+    `enable_enclave_email=false` in current staging. Enabling requires the separate
+    management-account SCP and reviewed generation/tenant. For email, explicitly
+    set `sending_domain=staging.notify.learncard.com`; optional `create_sending_zone`
+    creates only that child zone and outputs NS for delegation from the separately
+    owned `notify.learncard.com` parent. Otherwise publish the record outputs in the
+    external DNS account. No parent zone/DMARC is managed. Verify SES production-send
+    access, bounce/complaint SNS, denied org-admin key/table operations, credential-CMK
+    attestation enforcement, and relay TLS before any later activation. No staging
+    Terraform plan/apply or AWS adversarial checks were run for this checkpoint.
+
 - **Diagnosing boot without a console.** CloudTrail on the escrow CMK (`GenerateDataKey` /
   `Decrypt` from the host role, with `recipient` in `additionalEventData`) shows whether the
   enclave reached KMS; `strace` on the host process shows whether it connected to vsock 5001/5002.

@@ -156,8 +156,12 @@ and are used only to authorize attested KMS access, not DynamoDB/SES requests.
 Claimed principal metadata is checked against
 measured configuration, but is not independently an AWS identity proof: the
 credential-CMK/provisioning binding and resource IAM policy must enforce that
-contract before activation. Their infrastructure and provisioning script are still
-pending. No unsealer, authority client, email client or extra relay is called from
+contract before activation. Gated Terraform and the operator provisioning script
+now implement that contract; they have not been deployed or adversarially tested
+against AWS. Install the management-account SCP before enabling resources: IAM
+users cannot protect their access keys from other IAM administrators through
+user-attached policies. The SCP receipt variable requires independent verification,
+and organization/key administrators remain trusted (D10). No unsealer, authority client, email client or extra relay is called from
 production boot or Policy in this checkpoint.
 
 ### Escrow CMK policy
