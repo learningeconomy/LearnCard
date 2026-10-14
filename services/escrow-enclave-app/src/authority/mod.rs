@@ -6,6 +6,8 @@ pub mod aws;
 pub mod config;
 #[cfg(feature = "kms")]
 pub mod credentials;
+#[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+pub mod email;
 pub mod intent;
 pub mod record;
 pub mod state;

@@ -140,6 +140,14 @@ impl<'a> Policy<'a> {
         Ok(self)
     }
 
+    /// P9.1 (attack C): wires PR1's dormant SES client in. Boot must call this
+    /// only when `ESCROW_EMAIL_*` is fully configured and its sealed sender
+    /// credential unsealed; `authority_create_hold` fails closed without it.
+    pub fn with_email(mut self, email: &'a dyn crate::authority::email::EmailSender) -> Self {
+        self.email = Some(email);
+        self
+    }
+
     fn authority(&self) -> Result<&'a AuthorityEnrollment, ErrorCode> {
         self.authority.ok_or(ErrorCode::Unavailable)
     }
@@ -416,6 +424,10 @@ impl<'a> Policy<'a> {
             // without ever completing an Enroll/Replace, has no recovery contact.
             // Fail closed rather than start a hold nobody confirmed receiving mail for.
             || blob.recovery_email.is_none()
+            // P9.1: no sender wired (ESCROW_EMAIL_* unconfigured, or its sealed
+            // credential failed to unseal at boot) ⇒ no hold can start at all,
+            // even for an enrollment that does carry a recovery email.
+            || self.email.is_none()
         {
             return Err(ErrorCode::Policy);
         }

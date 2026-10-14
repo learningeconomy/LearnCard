@@ -139,6 +139,7 @@ struct Fixture {
     authority: AuthorityEnrollment,
     time: Clock,
     ledger: FakeHeadStore,
+    email: crate::authority::email::fake::FakeEmailSender,
 }
 fn copy(keys: &EscrowKeyPair) -> EscrowKeyPair {
     EscrowKeyPair {
@@ -171,6 +172,7 @@ impl Fixture {
             store,
             time: Clock(Mutex::new(1000)),
             ledger: FakeHeadStore::default(),
+            email: crate::authority::email::fake::FakeEmailSender::default(),
         }
     }
     fn policy(&self, old: bool) -> Policy<'_> {
@@ -191,6 +193,7 @@ impl Fixture {
         .unwrap()
         .with_authority(&self.authority)
         .unwrap()
+        .with_email(&self.email)
     }
     fn blob(&self, version: u32, pin: Option<&str>) -> EscrowEnvelope {
         self.blob_with_contact(version, pin, None)

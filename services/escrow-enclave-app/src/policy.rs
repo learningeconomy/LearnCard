@@ -108,6 +108,12 @@ pub struct Policy<'a> {
     enrollments: &'a dyn EnrollmentSource,
     #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
     authority: Option<&'a authority::AuthorityEnrollment>,
+    /// P9.1 (attack C): `None` unless `ESCROW_EMAIL_*` is fully configured and
+    /// its sealed sender credential unsealed at boot. `authority_create_hold`
+    /// fails closed when this is `None` — a nitro deployment without email
+    /// configured can never start a hold.
+    #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+    email: Option<&'a dyn crate::authority::email::EmailSender>,
     #[cfg(test)]
     comparisons: usize,
 }
@@ -164,6 +170,8 @@ impl<'a> Policy<'a> {
             enrollments,
             #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
             authority: None,
+            #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+            email: None,
             #[cfg(test)]
             comparisons: 0,
         })

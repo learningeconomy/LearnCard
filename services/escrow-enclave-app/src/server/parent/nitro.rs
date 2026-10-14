@@ -5,8 +5,9 @@ use super::{append, boot, boot_failed, get_chain, persist_key};
 use crate::{
     authority::{
         aws::{CredentialPurpose, DynamoAuthorityClient},
-        config::AuthorityConfig,
+        config::{AuthorityConfig, EmailConfig},
         credentials::CredentialUnsealer,
+        email::SesEmailSender,
     },
     kms::{unseal_or_generate_escrow_key, AwsKmsClient, Credentials, RecipientKey},
     ledger::{AppendError, HeadStore, LedgerRecord, StoreFuture},
@@ -60,6 +61,7 @@ fn configured(name: &str) -> io::Result<String> {
 }
 pub(crate) async fn run(port: u32) -> io::Result<()> {
     let authority = step("policy_init", AuthorityConfig::from_measured_env())?;
+    let email = step("policy_init", EmailConfig::from_measured_env())?;
     // Supervision: any forwarder exit also terminates serving.
     let result = tokio::select! {
         result = crate::kms::vsock_forward::run() => step("kms_forwarder", result),
@@ -67,9 +69,9 @@ pub(crate) async fn run(port: u32) -> io::Result<()> {
             if let Some(config) = &authority {
                 tokio::select! {
                     result = crate::kms::vsock_forward::run_data_plane(config, None) => step("policy_init", result),
-                    result = boot_and_serve(port, authority.as_ref()) => result,
+                    result = boot_and_serve(port, authority.as_ref(), email.as_ref()) => result,
                 }
-            } else { boot_and_serve(port, None).await }
+            } else { boot_and_serve(port, None, None).await }
         } => result,
     };
     if let Some(name) = FAILED_STEP.get() {
@@ -95,7 +97,11 @@ fn step<T, E>(name: &'static str, result: Result<T, E>) -> io::Result<T> {
     })
 }
 
-async fn boot_and_serve(port: u32, authority_config: Option<&AuthorityConfig>) -> io::Result<()> {
+async fn boot_and_serve(
+    port: u32,
+    authority_config: Option<&AuthorityConfig>,
+    email_config: Option<&EmailConfig>,
+) -> io::Result<()> {
     let nsm = step("nsm_open", RealNsm::new())?;
     let measurement = step("nsm_measurement", measurement(&nsm))?;
     let time = Arc::new(step(
@@ -207,7 +213,7 @@ async fn boot_and_serve(port: u32, authority_config: Option<&AuthorityConfig>) -
             }
             previous_keys.push((previous_id.clone(), previous));
         }
-        let authority = match (authority_config, unsealer) {
+        let (authority, email_sender) = match (authority_config, unsealer) {
             (Some(config), Some(unsealer)) => {
                 let ciphertext = step(
                     "policy_init",
@@ -228,22 +234,53 @@ async fn boot_and_serve(port: u32, authority_config: Option<&AuthorityConfig>) -
                     DynamoAuthorityClient::new(config.clone(), credentials, time.clone()),
                 )?;
                 let store = step("policy_init", client.into_store())?;
-                Some(step(
+                let authority = step(
                     "policy_init",
                     AuthorityEnrollment::new(
                         tenant.clone(),
                         config.generation().into(),
                         Arc::new(store),
                     ),
-                )?)
+                )?;
+                // P9.1 (attack C): email stays optional at the Rust type level
+                // even in authority mode, but `authority_create_hold` fails
+                // closed without it — an authority deployment that never
+                // configures ESCROW_EMAIL_*/provisions its sealed sender
+                // simply cannot start holds, not a silent unconfirmed downgrade.
+                let email_sender = match email_config {
+                    Some(email_config) => {
+                        let ciphertext = step(
+                            "policy_init",
+                            boot_material.email_credential_ciphertext.as_ref().ok_or(()),
+                        )?;
+                        let ciphertext = step("policy_init", STANDARD.decode(ciphertext))?;
+                        let credentials = step(
+                            "policy_init",
+                            unsealer
+                                .unseal(CredentialPurpose::EmailSender, &ciphertext, &nsm)
+                                .await,
+                        )?;
+                        Some(step(
+                            "policy_init",
+                            SesEmailSender::new(
+                                email_config.clone(),
+                                credentials,
+                                time.clone(),
+                                tenant.clone(),
+                            ),
+                        )?)
+                    }
+                    None => None,
+                };
+                (Some(authority), email_sender)
             }
-            (None, None) => None,
+            (None, None) => (None, None),
             _ => return step("policy_init", Err(())),
         };
-        Ok::<_, io::Error>((keys, previous_keys, authority))
+        Ok::<_, io::Error>((keys, previous_keys, authority, email_sender))
     })
     .await;
-    let (keys, previous_keys, authority) = step("boot_timeout", keys)??;
+    let (keys, previous_keys, authority, email_sender) = step("boot_timeout", keys)??;
     let public_key = keys.public_key.clone();
     let store = ParentStore;
     let unavailable_enrollment = UnavailableEnrollment;
@@ -260,6 +297,10 @@ async fn boot_and_serve(port: u32, authority_config: Option<&AuthorityConfig>) -
             &unavailable_enrollment,
         ),
     )?;
+    let policy = match &email_sender {
+        Some(email_sender) => policy.with_email(email_sender),
+        None => policy,
+    };
     let policy = match &authority {
         Some(authority) => step("policy_init", policy.with_authority(authority))?,
         None => policy,
