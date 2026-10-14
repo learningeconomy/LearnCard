@@ -48,9 +48,31 @@ length-framed tenant/generation and DID hash; sort keys distinguish `ENROLLMENT`
 `HOLD#<holdId>` and `OPERATION#<requestId>`. This encoding is **not** the future
 signed-intent canonicalization. Stored proposal bytes are **not** signed proof of
 commit. Schema validation does not authenticate a snapshot or enforce transitions.
-The next checkpoint is item b: conditional DynamoDB/fake `AuthorityStore`, durable
-execution identity and ambiguous-outcome reconciliation. Policy/wire/client/monitor
-integration and all authority security guarantees remain unimplemented.
+PR 2 item b adds a dormant `AuthorityStore` with the direct DynamoDB adapter and an
+explicit `fake-authority` feature. Each transition atomically puts the account,
+request-operation, optional hold, and immutable `EXECUTION#<randomId>` receipt.
+Rows contain `pk`, `sk`, and a binary `payload`; existing rows require exact prior
+payload equality, new rows require absence. Reads use `TransactGetItems`. The fake
+uses the same conditions under one lock, including delayed/ambiguous-write tests.
+
+The durable execution ID is generated inside the enclave and stored with the
+operation and receipt. It is independent of the AWS client's short-lived transport
+idempotency token. The immutable receipt binds the transaction digest and resulting
+revision; it survives updates to a PIN operation's reservation/result row. Receipts
+are storage evidence, not yet signed portable post-commit artifacts. An acknowledged
+write requires receipt readback for `Applied`; reconciliation returns only
+`Reconciled`, never a fresh PIN comparison permit. Missing receipts with unchanged
+or missing account state remain `Unknown`. Only an atomic read showing an advanced
+account revision without that receipt establishes a losing transaction. There is
+no automatic retry, deletion, expiry, or refund path. A missing account is never
+initialized from an existing blob; only an explicitly prepared initial enrollment
+can create it, and its owner authorization remains a policy-layer obligation.
+
+The next checkpoint is item c: policy transitions and configured authority wiring,
+with signed intent verification required before enabling enrollment mutations.
+Policy/wire/client/monitor integration and end-to-end authority security guarantees
+remain unimplemented. `UnavailableEnrollment` is still wired even when the measured
+authority settings are present.
 
 The client layer is not authorization: enclave policy must build its typed requests
 from validated intent and bind generation/tenant/expected revision in item keys and
