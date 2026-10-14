@@ -76,6 +76,16 @@ export {
 } from './escrow-crypto';
 
 export type { EscrowEnvelope, EscrowBlobPlaintext, EscrowReleasePlaintext } from './escrow-crypto';
+export {
+    encodeEscrowEnrollmentIntent,
+    signEscrowEnrollmentIntent,
+    getEscrowBlobIdentity,
+    ESCROW_ENROLLMENT_INTENT_DOMAIN,
+} from './escrow-enrollment-intent';
+export type {
+    EscrowEnrollmentIntent,
+    SignedEscrowEnrollmentIntent,
+} from './escrow-enrollment-intent.types';
 export { verifyEnclaveAttestation } from './escrow-attestation';
 export { verifyNitroAttestationDocument, NitroAttestationError } from './escrow-nitro-attestation';
 export type { NitroAttestationReason } from './escrow-nitro-attestation';
