@@ -116,9 +116,9 @@ export const VprShareModal: React.FC<VprShareModalProps> = ({
         return suggestedVcIds.includes(uniqueId);
     });
 
-    const renderCredentialCard = (credential: any, key: string) => {
+    const renderCredentialCard = (credential: (typeof allCredentials)[number], key: string) => {
         const categoryImgUrl =
-            categoryMetadata[credential.category as CredentialCategoryEnum].defaultImageSrc;
+            categoryMetadata[credential.category as CredentialCategoryEnum]?.defaultImageSrc;
         const uniqueId = credential.vc ? getUniqueId(credential.vc) : credential.record.uri;
 
         return (
