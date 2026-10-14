@@ -24,6 +24,7 @@ import { VerifierHistoryLoading } from './VerifierHistoryLoading';
 
 type Loaded = Awaited<ReturnType<typeof loadVerifierHistory>>;
 type State = { revision: number; context: HistoryContext; data: Loaded };
+const MAX_AUTOMATIC_LOADS = 2;
 const VerifierHistorySection: React.FC<{ eligible: boolean; isEligible?: () => boolean }> = ({
     eligible,
     isEligible,
@@ -34,12 +35,13 @@ const VerifierHistorySection: React.FC<{ eligible: boolean; isEligible?: () => b
         mobile: ModalTypes.FullScreen,
     });
     const modal = useRef<{ token: ModalInstanceToken; revision: number } | null>(null);
-    const attemptedLoad = useRef<number | null>(null);
+    const loadAttempts = useRef<{ revision: number; count: number } | null>(null);
     const inFlight = useRef<{ isSelectedAccount: () => boolean } | null>(null);
     const revision = useHistoryAccountRevision();
     const allowed = isHistoryAccountEligible(eligible && (isEligible?.() ?? true));
     const [state, setState] = useState<State | null>(null);
     const [busy, setBusy] = useState<number | null>(null);
+    const [completedOperations, setCompletedOperations] = useState(0);
     const [error, setError] = useState<{ revision: number; message: string } | null>(null);
     // Hide previous-account state synchronously; an effect would expose it for one render.
     const visible =
@@ -97,11 +99,12 @@ const VerifierHistorySection: React.FC<{ eligible: boolean; isEligible?: () => b
         setBusy(previous => (previous === revision ? previous : null));
     }, [revision]);
     const run = useCallback(
-        async (action?: (context: HistoryContext) => Promise<unknown>) => {
-            if (inFlight.current?.isSelectedAccount() || !allowed) return;
+        async (action?: (context: HistoryContext) => Promise<unknown>, automatic = false) => {
+            const isSelectedAccount = captureHistoryAccount();
+            if (inFlight.current?.isSelectedAccount() || !allowed || !isSelectedAccount()) return;
+            if (!automatic) loadAttempts.current = { revision, count: 1 };
             // Synchronous and sticky: recorders stop before any history decryption or render.
             enterSharePrivacy();
-            const isSelectedAccount = captureHistoryAccount();
             const operation = { isSelectedAccount };
             inFlight.current = operation;
             setBusy(revision);
@@ -130,24 +133,33 @@ const VerifierHistorySection: React.FC<{ eligible: boolean; isEligible?: () => b
                 if (inFlight.current === operation) {
                     inFlight.current = null;
                     setBusy(null);
+                    // A wallet-only revision may already have cleared busy. Ref changes alone
+                    // do not wake the load effect when that obsolete operation finishes.
+                    setCompletedOperations(previous => previous + 1);
                 }
             }
         },
         [allowed, revision, visible, initWallet, isEligible, eligible]
     );
     useEffect(() => {
-        // Load once per account revision; failures require an explicit retry.
-        // Privacy exclusions activate in run() before any decryption starts.
+        // Discarded reads get one fresh attempt; current-account failures require explicit Retry.
+        // Recovery only reads history and never replays the preceding action.
         if (
             !allowed ||
             visible ||
-            attemptedLoad.current === revision ||
-            inFlight.current?.isSelectedAccount()
+            error?.revision === revision ||
+            inFlight.current?.isSelectedAccount() ||
+            !captureHistoryAccount()()
         )
             return;
-        attemptedLoad.current = revision;
-        void run();
-    }, [allowed, revision, visible, busy, run]);
+        const count = loadAttempts.current?.revision === revision ? loadAttempts.current.count : 0;
+        if (count >= MAX_AUTOMATIC_LOADS) {
+            setError({ revision, message: m['verifierHistory.loadFailed']() });
+            return;
+        }
+        loadAttempts.current = { revision, count: count + 1 };
+        void run(undefined, true);
+    }, [allowed, revision, visible, error, busy, completedOperations, run]);
     const requestClear = () =>
         confirmClear(
             () => void run(context => clearVerifierHistory(context)),
