@@ -2,6 +2,7 @@ import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedroc
 import { TRPCError } from '@trpc/server';
 import type OpenAI from 'openai';
 import { PNG } from 'pngjs';
+import { inflateSync } from 'node:zlib';
 
 export interface ImageGenerationConfig {
     IMAGE_PROVIDER: 'openai' | 'bedrock';
@@ -58,6 +59,25 @@ export const decodeBedrockImage = (body: Uint8Array): Buffer => {
         throw failure();
     const width = bytes.readUInt32BE(16);
     if (width !== bytes.readUInt32BE(20) || width < 640 || width > 1536) throw failure();
+    // Reject duplicate headers and bound decompression, including interlaced PNGs.
+    const compressed: Buffer[] = [];
+    let ended = false;
+    for (let offset = 8; offset < bytes.length;) {
+        if (offset + 12 > bytes.length || ended) throw failure();
+        const length = bytes.readUInt32BE(offset);
+        const end = offset + 12 + length;
+        if (end > bytes.length) throw failure();
+        const type = bytes.toString('ascii', offset + 4, offset + 8);
+        if (type === 'IHDR' && offset !== 8) throw failure();
+        if (type === 'IDAT') compressed.push(bytes.subarray(offset + 8, end - 4));
+        if (type === 'IEND') {
+            if (length !== 0) throw failure();
+            ended = true;
+        }
+        offset = end;
+    }
+    if (!ended || !compressed.length) throw failure();
+    inflateSync(Buffer.concat(compressed), { maxOutputLength: 20 * 1024 * 1024 });
     // Dimensions are bounded before decode, preventing oversized pixel allocations.
     const image = PNG.sync.read(bytes, { checkCRC: true });
     if (image.width !== width || image.height !== width) throw failure();

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type OpenAI from 'openai';
 import { PNG } from 'pngjs';
+import { deflateSync } from 'node:zlib';
 const { send, destroy, constructor } = vi.hoisted(() => ({
     send: vi.fn(),
     destroy: vi.fn(),
@@ -38,6 +39,19 @@ beforeEach(() => {
     storage.upload.mockResolvedValue({ url: 'https://stored/image' });
 });
 describe('image adapter', () => {
+    it('rejects duplicate headers and decompression bombs before PNG decoding', () => {
+        const duplicate = Buffer.concat([png.subarray(0, 33), png.subarray(8)]);
+        expect(() =>
+            decodeBedrockImage(payload({ images: [duplicate.toString('base64')] }))
+        ).toThrow();
+        const compressed = deflateSync(Buffer.alloc(20 * 1024 * 1024 + 1));
+        const chunk = Buffer.alloc(compressed.length + 12);
+        chunk.writeUInt32BE(compressed.length, 0);
+        chunk.write('IDAT', 4);
+        compressed.copy(chunk, 8);
+        const bomb = Buffer.concat([png.subarray(0, 33), chunk, png.subarray(png.length - 12)]);
+        expect(() => decodeBedrockImage(payload({ images: [bomb.toString('base64')] }))).toThrow();
+    });
     it('rejects truncated and corrupt PNG data', () => {
         for (const bytes of [png.subarray(0, 33), png.subarray(0, png.length - 12)]) {
             expect(() =>

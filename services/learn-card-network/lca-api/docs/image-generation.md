@@ -46,7 +46,7 @@ and existing Filestack storage access must also be verified by the operator.
 The Bedrock adapter sends one InvokeModel request with `aspect_ratio: "1:1"`
 and `output_format: "png"`. It accepts exactly one successful image, validates
 base64, PNG header and square dimensions (640–1536), bounds decoded bytes to
-10 MiB and response bytes to 14 MiB, then uploads bytes through existing Filestack.
+10 MiB, response bytes to 14 MiB and PNG decompression to 20 MiB, then uploads bytes through existing Filestack.
 Filtering returns a sanitized BAD_REQUEST; provider, payload, timeout, and storage
 failures return a generic INTERNAL_SERVER_ERROR. Prompts and provider error bodies
 are not logged or returned. A deadline bounds the request and aborts model work;
