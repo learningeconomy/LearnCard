@@ -1221,10 +1221,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         // locale, bound into both the blob plaintext and the signed intent for
         // nitro/authority mode. Kept last (after the long-established
         // `assertCurrent` position) so existing positional callers that pass
-        // `assertCurrent` explicitly are never silently shifted. Omitting them
-        // here only fails closed once the enclave resolves the action to
-        // enroll/replace (see the `recoveryEmail && authority` guard below) —
-        // carry/disable/software-mode are unaffected.
+        // `assertCurrent` explicitly are never silently shifted. Only
+        // included in the blob plaintext when this call will resolve to
+        // enroll/replace (see `willCarryPin` below) — Rust rejects a Carry
+        // target blob whose plaintext already carries either field, since
+        // the enclave always fills them in from the source blob instead.
         recoveryEmail = '',
         recoveryLanguage = ''
     ): Promise<void> => {
@@ -1245,13 +1246,25 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                       assertCurrent
                   )
                 : undefined;
+        // P9.1 (attack C) / P2-d: mirrors `createEscrowEnrollmentIntent`'s own
+        // action resolution (escrow-authority.ts) for the one case that
+        // matters here — whether this call keeps an existing PIN unchanged
+        // (carry) rather than setting/changing/clearing it. Carry must never
+        // see a non-null `recoveryEmail`/`recoveryLanguage` in the blob
+        // PLAINTEXT it builds (separately from the signed intent, which
+        // already nulls these out for carry): the enclave fills them in from
+        // the source blob, and rejects a target whose plaintext claims them.
+        const willCarryPin =
+            authority?.status === 'active' && authority.hasPin && !pinMaterial && !clearPin;
         const envelope = await encryptEscrowBlob(
             {
                 recoveryShare: shares.recoveryShare,
                 did: primaryDid,
                 shareVersion,
                 ...(pinMaterial ? { pinVerifier: pinMaterial.pinVerifier } : {}),
-                ...(authority && recoveryEmail ? { recoveryEmail, recoveryLanguage } : {}),
+                ...(authority && recoveryEmail && !willCarryPin
+                    ? { recoveryEmail, recoveryLanguage }
+                    : {}),
             },
             publicKey,
             keyId
