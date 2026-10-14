@@ -288,6 +288,160 @@ export const verifyEscrowEnrollmentCommit = async (
     return { envelope: output, receipt: record };
 };
 
+/** Opaque wire shape of `SignedHoldRecord` (wire.rs `HoldRecord` / policy.rs
+ * `SignedHoldRecord`) — exactly the fields `hold_hash` commits to, plus the
+ * embedded enclave signature over the hold's own creation. */
+export interface EscrowHoldRecordLike {
+    hold: {
+        holdId: string;
+        did: string;
+        shareVersion: number;
+        blobHash: string;
+        enrollmentEpoch: number;
+        releasePolicy: 'hold' | 'pin';
+        clientEphemeralPublicKey: string;
+        createdLo: number;
+        createdHi: number;
+        policyVersion: number;
+        signature: string;
+    };
+    holdDurationMs: number;
+    ledgerSeq: number;
+}
+
+export interface VerifiedEscrowHold {
+    receipt: EscrowAuthorityRecord;
+    authorityGeneration: string;
+}
+
+/** Mirrors `hold_hash` in escrow-enclave-app's policy.rs exactly: SHA-256 of
+ * compact JSON of this fixed-order array. Every later operation on a hold
+ * (confirm, release, cancel, and the idempotent-retry snapshot) commits to
+ * this same value, so recomputing and comparing it is what actually binds a
+ * later receipt to the SAME hold a client started, not merely the same
+ * `holdId` string. */
+const holdDigest = async (tenant: string, record: EscrowHoldRecordLike): Promise<string> => {
+    const h = record.hold;
+    const didHash = await hash(utf8(h.did));
+    return hash(
+        utf8(
+            JSON.stringify([
+                'learncard-hold-v1',
+                tenant,
+                h.holdId,
+                didHash,
+                h.shareVersion,
+                h.blobHash,
+                h.enrollmentEpoch,
+                h.releasePolicy,
+                h.clientEphemeralPublicKey,
+                h.createdLo,
+                h.createdHi,
+                record.holdDurationMs,
+                h.policyVersion,
+                record.ledgerSeq,
+            ])
+        )
+    );
+};
+
+/** Verify the enclave committed to creating THIS exact hold before trusting
+ * a `SignedHoldRecord` returned by lca-api: recipient key, DID, blob
+ * identity and hold id all come from the caller's own expectations (never
+ * from the record alone), and the embedded signature is checked against the
+ * attested ledger key exactly like `verifyEscrowEnrollmentCommit`. Returns
+ * the record's own `authorityGeneration` so a later confirmation/warning
+ * receipt for the SAME hold can be pinned to it. */
+export const verifyEscrowHoldRecord = async (
+    record: EscrowHoldRecordLike,
+    expected: {
+        tenant: string;
+        did: string;
+        clientEphemeralPublicKey: string;
+        blobHash: string;
+    },
+    identity: VerifiedEnclaveIdentity
+): Promise<VerifiedEscrowHold> => {
+    requireEvidence(
+        record.hold.did === expected.did &&
+            record.hold.clientEphemeralPublicKey === expected.clientEphemeralPublicKey &&
+            record.hold.blobHash === expected.blobHash
+    );
+    let signed: unknown;
+    try {
+        signed = JSON.parse(
+            new TextDecoder('utf-8', { fatal: true }).decode(base64(record.hold.signature, 8192))
+        );
+    } catch {
+        return fail();
+    }
+    const { record: receipt, payload } = await verifyRecord(signed, 'commit', identity);
+    const data = object(payload);
+    keys(data, ['commit', 'eventHash', 'requestDigest', 'resultBlobIdentity', 'enrollmentEpoch']);
+    const commit = object(data.commit);
+    keys(commit, ['schemaVersion', 'binding', 'executionId', 'revisions', 'transactionDigest']);
+    const binding = object(commit.binding);
+    keys(binding, ['tenant', 'generation', 'didHash']);
+    requireEvidence(commit.schemaVersion === 1 && binding.tenant === expected.tenant);
+    const authorityGeneration = text(binding.generation, 128);
+    requireEvidence(bytesToHex(bytes(binding.didHash, 32)) === (await hash(utf8(expected.did))));
+    requireEvidence(integer(data.enrollmentEpoch, 1) === record.hold.enrollmentEpoch);
+    requireEvidence(bytesToHex(bytes(data.resultBlobIdentity, 32)) === record.hold.blobHash);
+    requireEvidence(
+        bytesToHex(bytes(data.requestDigest, 32)) === (await holdDigest(expected.tenant, record))
+    );
+    return { receipt, authorityGeneration };
+};
+
+/** Verify a confirm-hold / send-release-warning result commits to THIS exact
+ * hold (the one `verifyEscrowHoldRecord` already verified). A fresh
+ * `commit`'s `requestDigest` is a secret-keyed, PIN-style hash the client
+ * cannot recompute by design (publishing an unkeyed digest here would be an
+ * offline oracle — see escrow-enclave-app's ledger "Operation commitments"),
+ * so a fresh commit is checked on tenant/generation/DID binding, epoch and
+ * blob identity only. The idempotent retry **snapshot** instead embeds
+ * `signedHoldDigest` directly in its (unkeyed) payload, so a snapshot
+ * additionally recomputes and compares the hold digest — exactly binding a
+ * retry to the hold the client itself started, not a different one. */
+export const verifyEscrowHoldConfirmation = async (
+    receipt: unknown,
+    record: EscrowHoldRecordLike,
+    expected: { tenant: string; did: string; authorityGeneration: string },
+    identity: VerifiedEnclaveIdentity
+): Promise<EscrowAuthorityRecord> => {
+    const raw = object(receipt);
+    const kind = raw.kind;
+    if (kind !== 'commit' && kind !== 'snapshot') return fail();
+    const { record: verified, payload } = await verifyRecord(raw, kind, identity);
+    if (kind === 'snapshot') {
+        if (!Array.isArray(payload) || payload.length !== 6) return fail();
+        const [tag, holdId, digestBytes] = payload;
+        requireEvidence(
+            tag === 'learncard-authority-hold-snapshot-v1' && holdId === record.hold.holdId
+        );
+        requireEvidence(
+            bytesToHex(bytes(digestBytes, 32)) === (await holdDigest(expected.tenant, record))
+        );
+        return verified;
+    }
+    const data = object(payload);
+    keys(data, ['commit', 'eventHash', 'requestDigest', 'resultBlobIdentity', 'enrollmentEpoch']);
+    const commit = object(data.commit);
+    keys(commit, ['schemaVersion', 'binding', 'executionId', 'revisions', 'transactionDigest']);
+    const binding = object(commit.binding);
+    keys(binding, ['tenant', 'generation', 'didHash']);
+    requireEvidence(
+        commit.schemaVersion === 1 &&
+            binding.tenant === expected.tenant &&
+            binding.generation === expected.authorityGeneration
+    );
+    requireEvidence(bytesToHex(bytes(binding.didHash, 32)) === (await hash(utf8(expected.did))));
+    requireEvidence(integer(data.enrollmentEpoch, 1) === record.hold.enrollmentEpoch);
+    requireEvidence(bytesToHex(bytes(data.resultBlobIdentity, 32)) === record.hold.blobHash);
+    bytes(data.requestDigest, 32);
+    return verified;
+};
+
 export type EscrowEnrollmentActionInput = 'automatic' | 'set' | 'clear' | 'disable';
 
 /** Pure action resolution, shared between intent-building (here) and blob

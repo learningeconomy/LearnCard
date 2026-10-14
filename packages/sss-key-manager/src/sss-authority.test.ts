@@ -24,6 +24,48 @@ vi.mock('./escrow-attestation', () => ({ verifyEnclaveAttestation: vi.fn() }));
 const order = BigInt('0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551');
 const digest = async (input: Uint8Array): Promise<number[]> =>
     Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new Uint8Array(input))));
+// [D] Mirrors `hold_hash` in escrow-enclave-app's policy.rs: SHA-256 of
+// compact JSON of this fixed-order array, which the client independently
+// recomputes to bind a SignedHoldRecord to its own request.
+const holdTupleDigest = async (holdRecord: {
+    hold: {
+        holdId: string;
+        did: string;
+        shareVersion: number;
+        blobHash: string;
+        enrollmentEpoch: number;
+        releasePolicy: string;
+        clientEphemeralPublicKey: string;
+        createdLo: number;
+        createdHi: number;
+        policyVersion: number;
+    };
+    holdDurationMs: number;
+    ledgerSeq: number;
+}): Promise<number[]> => {
+    const h = holdRecord.hold;
+    const didHashHex = Buffer.from(await digest(Buffer.from(h.did))).toString('hex');
+    return digest(
+        Buffer.from(
+            JSON.stringify([
+                'learncard-hold-v1',
+                'learncard',
+                h.holdId,
+                didHashHex,
+                h.shareVersion,
+                h.blobHash,
+                h.enrollmentEpoch,
+                h.releasePolicy,
+                h.clientEphemeralPublicKey,
+                h.createdLo,
+                h.createdHi,
+                holdRecord.holdDurationMs,
+                h.policyVersion,
+                holdRecord.ledgerSeq,
+            ])
+        )
+    );
+};
 const frame = (value: Buffer): Buffer => {
     const size = Buffer.alloc(4);
     size.writeUInt32BE(value.length);
@@ -231,14 +273,56 @@ const setup = async (legacyEnrolled = false) => {
                     receipt,
                 });
             }
-            if (path === '/keys/escrow/recover')
+            if (path === '/keys/escrow/recover') {
+                // [D] A real nitro-mode hold is always an enclave-signed
+                // SignedHoldRecord bound to the caller's own recipient key —
+                // construct one with the same ledger key `sign()` uses above
+                // so startEscrowRecovery's client-side verification passes.
+                const holdRecord = {
+                    hold: {
+                        holdId: 'hold',
+                        did: owner.intent.did,
+                        shareVersion: version,
+                        blobHash: 'ab'.repeat(32),
+                        enrollmentEpoch: 1,
+                        releasePolicy: (body.releasePolicy as 'hold' | 'pin' | undefined) ?? 'hold',
+                        clientEphemeralPublicKey: String(body.clientEphemeralPublicKey),
+                        createdLo: Date.now(),
+                        createdHi: Date.now(),
+                        policyVersion: 2,
+                        signature: '',
+                    },
+                    holdDurationMs: 604800000,
+                    ledgerSeq: 0,
+                };
+                const h = holdRecord.hold;
+                const receipt = await sign('commit', {
+                    commit: {
+                        schemaVersion: 1,
+                        binding: {
+                            tenant: 'learncard',
+                            generation: state.authorityGeneration,
+                            didHash: await digest(Buffer.from(h.did)),
+                        },
+                        executionId: Array.from({ length: 16 }, () => 1),
+                        revisions: { operation: 1, enrollment: 1 },
+                        transactionDigest: Array.from({ length: 32 }, () => 2),
+                    },
+                    eventHash: Array.from({ length: 32 }, () => 3),
+                    requestDigest: await holdTupleDigest(holdRecord),
+                    resultBlobIdentity: Array.from(Buffer.from(h.blobHash, 'hex')),
+                    enrollmentEpoch: h.enrollmentEpoch,
+                });
+                holdRecord.hold.signature = Buffer.from(JSON.stringify(receipt)).toString('base64');
                 return response({
-                    holdId: 'hold',
+                    holdId: h.holdId,
                     resumeToken: 'resume',
                     status: 'pending',
                     requestedAt: new Date().toISOString(),
                     releaseAfter: new Date(Date.now() + 604800000).toISOString(),
+                    holdRecord,
                 });
+            }
             if (path === '/keys/escrow/opt-in') return response({ success: true });
             throw new Error('Unexpected test request');
         })

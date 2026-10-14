@@ -1,6 +1,7 @@
 import { timingSafeEqual, randomUUID, randomBytes } from 'crypto';
 import {
     AuthorityCommitValidator,
+    AuthorityHoldReceiptValidator,
     AuthorityStateResponseValidator,
     SignedEnrollmentIntentValidator,
 } from '../services/escrow-enclave/authorityContract';
@@ -55,6 +56,7 @@ import {
     generateEscrowResumeToken,
     computeEffectiveReleaseAfter,
     ESCROW_RELEASE_TIME_MARGIN_MS,
+    EscrowHoldRecordValidator,
     type EscrowHold,
     type MongoUserKeyType,
     type AuthProviderMapping,
@@ -202,6 +204,10 @@ const holdStatusValidator = z.object({
     // code-entry step; `confirmed` only ever appears once `requiresConfirmation` does.
     requiresConfirmation: z.boolean().optional(),
     confirmed: z.boolean().optional(),
+    // [D] Opaque enclave-signed SignedHoldRecord (authority/nitro mode only).
+    // The client independently verifies this (verifyEscrowHoldRecord) before
+    // trusting any field inside it — see escrow-authority.ts.
+    holdRecord: EscrowHoldRecordValidator.optional(),
 });
 
 const serializeHold = (hold: EscrowHold): z.infer<typeof holdStatusValidator> => ({
@@ -215,6 +221,7 @@ const serializeHold = (hold: EscrowHold): z.infer<typeof holdStatusValidator> =>
     ...(hold.requiresConfirmation
         ? { requiresConfirmation: true, confirmed: Boolean(hold.confirmedAt) }
         : {}),
+    ...(hold.holdRecord ? { holdRecord: hold.holdRecord } : {}),
 });
 
 const resumeTokenMatches = (hold: EscrowHold, token: string): boolean => {
@@ -747,6 +754,7 @@ export const escrowRouter = t.router({
                     releaseAfter: true,
                     releasePolicy: true,
                     requiresConfirmation: true,
+                    holdRecord: true,
                 })
                 .extend({
                     status: z.literal('pending'),
@@ -962,7 +970,7 @@ export const escrowRouter = t.router({
     confirmRecovery: openRoute
         .meta({ openapi: { method: 'POST', path: '/keys/escrow/confirm', tags: ['Keys'] } })
         .input(resumeInput.extend({ code: z.string().regex(/^[0-9]{8}$/) }))
-        .output(successValidator)
+        .output(successValidator.extend({ receipt: AuthorityHoldReceiptValidator.optional() }))
         .mutation(async ({ input }) => {
             if (isEscrowReleaseKillSwitchEnabled()) {
                 throw new TRPCError({ code: 'PRECONDITION_FAILED', message: killSwitchMessage });
@@ -985,7 +993,7 @@ export const escrowRouter = t.router({
             }
             const confirmHold = getEscrowEnclave().confirmHold;
             if (!confirmHold) throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
-            const { confirmedAtMs } = await enclaveOperation(() =>
+            const { receipt, confirmedAtMs } = await enclaveOperation(() =>
                 confirmHold({
                     envelope,
                     hold: hold.holdRecord!,
@@ -1009,7 +1017,9 @@ export const escrowRouter = t.router({
                     holdDurationMs: hold.holdRecord.holdDurationMs,
                 })
             );
-            return { success: true as const };
+            // [D] Returned so the client can verify this confirmation
+            // commits to the SAME hold it started (verifyEscrowHoldConfirmation).
+            return { success: true as const, receipt };
         }),
 
     resendRecoveryCode: openRoute

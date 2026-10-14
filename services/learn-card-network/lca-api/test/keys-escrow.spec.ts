@@ -1025,6 +1025,9 @@ describe('A6 escrow recovery', () => {
             requestedAt: started.requestedAt,
             releaseAfter: started.releaseAfter,
             releasePolicy: 'hold',
+            // [D] Opaque signed hold record the client independently verifies;
+            // software mode's placeholder is still returned, just unsigned.
+            holdRecord: started.holdRecord,
         });
         await expect(getClient().escrow.getStatus(resume(started))).resolves.toEqual(status);
         const viaHeader = appRouter.createCaller({
@@ -1445,17 +1448,18 @@ describe('P2-c confirmRecovery reconciliation', () => {
     // confirmed-once hold state, regardless of when the call actually reaches
     // Mongo.
     const FIXED_CONFIRMED_AT_MS = Date.now() - 7 * 86_400_000;
+    const fixedReceipt = {
+        version: 1 as const,
+        kind: 'commit' as const,
+        keyId,
+        measurement: Array.from({ length: 32 }, () => 0),
+        payload: 'AQ==',
+        signature: Buffer.alloc(64).toString('base64'),
+    };
     // Mirrors the Rust fix: a repeat confirmHold call against an
     // already-confirmed hold succeeds without re-checking the code.
     const idempotentConfirmHold = vi.fn(async () => ({
-        receipt: {
-            version: 1 as const,
-            kind: 'commit' as const,
-            keyId,
-            measurement: Array.from({ length: 32 }, () => 0),
-            payload: 'AQ==',
-            signature: Buffer.alloc(64).toString('base64'),
-        },
+        receipt: fixedReceipt,
         confirmedAtMs: FIXED_CONFIRMED_AT_MS,
     }));
     beforeEach(() => idempotentConfirmHold.mockClear());
@@ -1468,6 +1472,7 @@ describe('P2-c confirmRecovery reconciliation', () => {
             const request = { holdId: hold._id, resumeToken, code: '12345678' };
             await expect(getClient().escrow.confirmRecovery(request)).resolves.toEqual({
                 success: true,
+                receipt: fixedReceipt,
             });
             const first = await findEscrowHoldById(hold._id);
             expect(first?.confirmedAt).toBeInstanceOf(Date);
@@ -1477,7 +1482,7 @@ describe('P2-c confirmRecovery reconciliation', () => {
             // fresh request (a new guess, exactly as a real enclave allows).
             await expect(
                 getClient().escrow.confirmRecovery({ ...request, code: '87654321' })
-            ).resolves.toEqual({ success: true });
+            ).resolves.toEqual({ success: true, receipt: fixedReceipt });
             expect(idempotentConfirmHold).toHaveBeenCalledTimes(2);
             const second = await findEscrowHoldById(hold._id);
             expect(second?.confirmedAt?.getTime()).toBe(firstConfirmedAt);
@@ -1487,6 +1492,7 @@ describe('P2-c confirmRecovery reconciliation', () => {
             // succeeds rather than getting the hold permanently stuck.
             await expect(getClient().escrow.confirmRecovery(request)).resolves.toEqual({
                 success: true,
+                receipt: fixedReceipt,
             });
             const third = await findEscrowHoldById(hold._id);
             expect(third?.confirmedAt?.getTime()).toBe(firstConfirmedAt);
@@ -1514,6 +1520,7 @@ describe('P2-c confirmRecovery reconciliation', () => {
             // covered by the Rust-side test), and this time Mongo succeeds.
             await expect(getClient().escrow.confirmRecovery(request)).resolves.toEqual({
                 success: true,
+                receipt: fixedReceipt,
             });
             expect(idempotentConfirmHold).toHaveBeenCalledTimes(2);
             expect((await findEscrowHoldById(hold._id))?.confirmedAt).toBeInstanceOf(Date);
@@ -1543,6 +1550,7 @@ describe('P2-c confirmRecovery reconciliation', () => {
             // mirroring a slow client retry or a requeued Lambda invocation.
             await expect(getClient().escrow.confirmRecovery(request)).resolves.toEqual({
                 success: true,
+                receipt: fixedReceipt,
             });
             const confirmed = await findEscrowHoldById(hold._id);
             expect(confirmed?.confirmedAt?.getTime()).toBe(FIXED_CONFIRMED_AT_MS);

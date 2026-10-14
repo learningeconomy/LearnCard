@@ -57,6 +57,9 @@ import {
     resolveEscrowEnrollmentAction,
     verifyEscrowAuthorityState,
     verifyEscrowEnrollmentCommit,
+    verifyEscrowHoldRecord,
+    verifyEscrowHoldConfirmation,
+    type EscrowHoldRecordLike,
 } from './escrow-authority';
 import type { VerifiedEnclaveIdentity, EscrowAuthorityState } from './escrow-authority.types';
 import type { EscrowEnvelope } from './escrow-crypto';
@@ -1173,6 +1176,30 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         return verifyEnclaveAttestation(attestation, config.escrow.attestation, nonce);
     };
 
+    /** Shared by the public `getEscrowRecoveryStatus` and [D]'s internal
+     * confirm-time verification, so both read the enclave-signed
+     * `holdRecord` field via this package's own `EscrowHoldStatus` type
+     * rather than the narrower cross-package `KeyDerivationStrategy`
+     * interface (which never exposes it to generic callers). */
+    const fetchEscrowHoldStatus = async (
+        params:
+            | { holdId: string; resumeToken: string }
+            | { token: string; providerType: AuthProviderType }
+    ): Promise<EscrowHoldStatus | null> => {
+        const query = new URLSearchParams(
+            'holdId' in params ? { holdId: params.holdId } : { providerType: params.providerType }
+        );
+        const secret = 'holdId' in params ? params.resumeToken : params.token;
+        const result = await escrowRequest<{ hold: EscrowHoldStatus | null }>(`/status?${query}`, {
+            method: 'GET',
+            headers: {
+                ...buildHeaders('', undefined, tenantId),
+                'X-Auth-Token': secret,
+            },
+        });
+        return result.hold;
+    };
+
     const fetchAuthorityState = async (
         token: string,
         providerType: AuthProviderType,
@@ -2210,33 +2237,83 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 },
                 params.options?.releasePolicy === 'pin'
             );
+            // [D] Verify the enclave itself committed to creating THIS exact
+            // hold — recipient key, DID and blob identity — before trusting
+            // the response. Skipped for a reported existing hold
+            // (`resumeToken: null`): that response isn't bound to this call's
+            // freshly generated key pair in the first place (see
+            // EscrowRecoveryPanel's `existingHold` display), so there is
+            // nothing of ours to verify it against.
+            if (config.escrow?.attestation.mode === 'nitro' && result.resumeToken !== null) {
+                const identity = await fetchVerifiedEnclaveKey();
+                if (identity.mode === 'nitro' && identity.authority) {
+                    if (!result.holdRecord) {
+                        throw new Error('Automatic recovery evidence could not be verified.');
+                    }
+                    await verifyEscrowHoldRecord(
+                        result.holdRecord,
+                        {
+                            tenant: tenantId ?? 'learncard',
+                            did: result.holdRecord.hold.did,
+                            clientEphemeralPublicKey: pair.publicKey,
+                            blobHash: result.holdRecord.hold.blobHash,
+                        },
+                        identity
+                    );
+                }
+            }
             return { ...result, clientEphemeralPrivateKey: pair.privateKey };
         },
 
         /** Read hold status; secrets (auth or resume token) never travel in a URL. */
         async getEscrowRecoveryStatus(params): Promise<EscrowHoldStatus | null> {
-            const query = new URLSearchParams(
-                'holdId' in params
-                    ? { holdId: params.holdId }
-                    : { providerType: params.providerType }
-            );
-            const secret = 'holdId' in params ? params.resumeToken : params.token;
-            const result = await escrowRequest<{ hold: EscrowHoldStatus | null }>(
-                `/status?${query}`,
-                {
-                    method: 'GET',
-                    headers: {
-                        ...buildHeaders('', undefined, tenantId),
-                        'X-Auth-Token': secret,
-                    },
-                }
-            );
-            return result.hold;
+            return fetchEscrowHoldStatus(params);
         },
 
         /** Submit the confirmation code emailed by the enclave for an authority-mode hold. */
         async confirmEscrowRecovery(params): Promise<{ success: true }> {
-            return escrowRequest<{ success: true }>('/confirm', {
+            // [D] Fetch and verify the hold record this code is being
+            // confirmed against (the same hold `startEscrowRecovery` already
+            // verified at creation) BEFORE submitting the code, then verify
+            // the confirmation result commits to that SAME hold — a wrong
+            // recipient key, hold id/digest, DID, unsigned/forged record, or
+            // a retry snapshot for a different hold all fail closed here.
+            let pending:
+                | {
+                      identity: VerifiedEnclaveIdentity;
+                      holdRecord: EscrowHoldRecordLike;
+                      authorityGeneration: string;
+                  }
+                | undefined;
+            if (config.escrow?.attestation.mode === 'nitro') {
+                const identity = await fetchVerifiedEnclaveKey();
+                if (identity.mode === 'nitro' && identity.authority) {
+                    const status = await fetchEscrowHoldStatus({
+                        holdId: params.holdId,
+                        resumeToken: params.resumeToken,
+                    });
+                    if (!status?.holdRecord) {
+                        throw new Error('Automatic recovery evidence could not be verified.');
+                    }
+                    const verified = await verifyEscrowHoldRecord(
+                        status.holdRecord,
+                        {
+                            tenant: tenantId ?? 'learncard',
+                            did: status.holdRecord.hold.did,
+                            clientEphemeralPublicKey:
+                                status.holdRecord.hold.clientEphemeralPublicKey,
+                            blobHash: status.holdRecord.hold.blobHash,
+                        },
+                        identity
+                    );
+                    pending = {
+                        identity,
+                        holdRecord: status.holdRecord,
+                        authorityGeneration: verified.authorityGeneration,
+                    };
+                }
+            }
+            const result = await escrowRequest<{ success: true; receipt?: unknown }>('/confirm', {
                 method: 'POST',
                 headers: buildHeaders('', undefined, params.tenantId ?? tenantId),
                 body: JSON.stringify({
@@ -2245,6 +2322,22 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     code: params.code,
                 }),
             });
+            if (pending) {
+                if (!result.receipt) {
+                    throw new Error('Automatic recovery evidence could not be verified.');
+                }
+                await verifyEscrowHoldConfirmation(
+                    result.receipt,
+                    pending.holdRecord,
+                    {
+                        tenant: tenantId ?? 'learncard',
+                        did: pending.holdRecord.hold.did,
+                        authorityGeneration: pending.authorityGeneration,
+                    },
+                    pending.identity
+                );
+            }
+            return { success: true };
         },
 
         /** Request a fresh confirmation code for a hold awaiting confirmation. */

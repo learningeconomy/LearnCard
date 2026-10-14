@@ -121,5 +121,6 @@ export const AuthorityMutationValidator = z
     })
     .strict();
 export type AuthorityRecord = z.infer<typeof AuthorityRecordValidator>;
+export type AuthorityHoldReceipt = z.infer<typeof AuthorityHoldReceiptValidator>;
 export type AuthorityMutationResult = z.infer<typeof AuthorityMutationValidator>;
 export type AuthorityStateResponse = z.infer<typeof AuthorityStateResponseValidator>;

@@ -1,6 +1,7 @@
 import type { EscrowEnvelope, SignedEscrowEnrollmentIntent } from '@learncard/sss-key-manager';
 import type {
     AuthorityRecord,
+    AuthorityHoldReceipt,
     AuthorityMutationResult,
     AuthorityStateResponse,
 } from './authorityContract';
@@ -135,13 +136,13 @@ export interface EscrowEnclave {
      * must use it instead of a locally-observed clock to compute deadlines. */
     confirmHold?(
         input: ConfirmHoldRequest
-    ): Promise<{ receipt: AuthorityRecord; confirmedAtMs: number }>;
+    ): Promise<{ receipt: AuthorityHoldReceipt; confirmedAtMs: number }>;
     resendCode?(input: ResendCodeRequest): Promise<{ receipt: AuthorityRecord }>;
     /** `releaseWarningSentAtMs` is the enclave's authoritative warning-sent
      * time, present on both a fresh send and an idempotent retry. */
     sendReleaseWarning?(
         input: SendReleaseWarningRequest
-    ): Promise<{ receipt: AuthorityRecord; releaseWarningSentAtMs: number }>;
+    ): Promise<{ receipt: AuthorityHoldReceipt; releaseWarningSentAtMs: number }>;
 }
 export class EscrowPolicyError extends Error {
     constructor() {

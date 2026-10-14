@@ -96,6 +96,10 @@ export interface EscrowHoldStatus {
     /** Only present for an authority-mode hold-policy hold; `confirmed` only appears alongside it. */
     requiresConfirmation?: boolean;
     confirmed?: boolean;
+    /** Opaque enclave-signed `SignedHoldRecord`; present only in authority
+     * (nitro) mode. Callers must verify it with `verifyEscrowHoldRecord`
+     * before trusting any field inside it — see escrow-authority.ts. */
+    holdRecord?: import('./escrow-authority').EscrowHoldRecordLike;
 }
 
 /** Persist these secrets securely until completion; a null token means an existing hold. */
