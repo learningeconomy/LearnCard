@@ -251,11 +251,53 @@ Execute in this order:
    skip this — a sending domain with silently accumulating bounces/complaints
    risks SES throttling or suspending the identity during real incidents.
 
-Rollback means setting `enable_enclave_email=false` (holds revert to failing
-closed on creation rather than silently losing confirmation — `create_hold`
-fails the whole request when a Hold-policy blob has no bound email, it never
-falls back to the old unconfirmed path) and investigating, not reusing a
-burned sending domain or re-provisioning over an existing credential slot.
+Rollback is two separate levers, not one Terraform flag flip — **verify both in
+staging before relying on either in an incident.**
+
+**Pause first (reversible in minutes, no enclave change).** `enable_enclave_email`
+is measured boot configuration baked into the EIF (`EmailConfig::from_measured_env`,
+read by `nitro.rs` ~263-275), not a runtime toggle the already-running host polls.
+Flipping it to `false` in Terraform alone tears down the sender/SES/
+credential-delivery resources and proxy wiring out from under a still-deployed,
+email-measured EIF; that EIF's own boot config still expects
+`email_credential_ciphertext`, so its **next boot fails closed** instead of
+quietly falling back to the old unconfirmed path. To pause attack-C email
+confirmation without touching the enclave at all, unset lca-api's
+`ESCROW_ENCLAVE_MODE` (or otherwise take its rollout out of service) — this stops
+`startRecovery`/`confirmRecovery`/the reminders job from calling the enclave at
+all, with no Terraform apply or new artifact.
+
+**Full rollback (requires a new, coordinated build).** Reverting the enclave
+itself means deploying a previous, compatible **EIF, its own measurements, and
+the matching `enable_enclave_email`/`enable_credential_delivery` Terraform flags,
+all together** — build the prior commit, diff/verify its PCRs, and roll host +
+EIF + `enclave_measurements` as one change, exactly like any other measurement
+rotation (see "2. Measurements" above). Never flip `enable_enclave_email` in
+Terraform and leave the previously-deployed, email-measured EIF running — see
+the boot-time failure above. This must preserve the authority ledger/DynamoDB
+history untouched; do not truncate or reset it (same rule as the PR 2 rollback
+note earlier in this document). Never reuse a burned sending domain or
+re-provision over an existing credential slot as part of a rollback — treat it
+as its own reviewed generation/path, same as any other credential rotation.
+
+**Existing holds during either step:**
+
+- `awaitingConfirmation` holds can still be **confirmed** with a code the user
+  already received (`confirm-hold` never requires email — only `resend-code`
+  does) and can always be **cancelled** (cancellation requires no email
+  either). They cannot have a **new** code resent while paused or rolled back.
+- `pending` (confirmed, awaiting release) holds that have not yet had their
+  24-hour release-warning sent **cannot be warned, and therefore cannot ever
+  release**, until email capability (both the resources and a matching
+  measured image) is restored — `send-release-warning` fails closed
+  (`unavailable`) with no sender wired, and release itself requires a recorded
+  warning in addition to the 7-day wait. This stalls the hold rather than
+  losing it or its history; it resumes once email is restored on the same
+  generation.
+- No new Hold-policy hold can be **created** while email is unconfigured —
+  unchanged from today: `create-hold` already fails the whole request for a
+  Hold-policy blob with no sender wired, never falling back to an unconfirmed
+  path.
 
 ## 1. Terraform apply order
 
