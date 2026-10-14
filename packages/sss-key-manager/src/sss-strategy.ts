@@ -52,6 +52,13 @@ import {
 } from './escrow-pin';
 import { encryptEscrowBlob, generateEscrowKeyPair, openEscrowRelease } from './escrow-crypto';
 import { verifyEnclaveAttestation } from './escrow-attestation';
+import {
+    createEscrowEnrollmentIntent,
+    verifyEscrowAuthorityState,
+    verifyEscrowEnrollmentCommit,
+} from './escrow-authority';
+import type { VerifiedEnclaveIdentity, EscrowAuthorityState } from './escrow-authority.types';
+import type { EscrowEnvelope } from './escrow-crypto';
 import type { EmailRelayBranding } from './email-relay-crypto';
 
 import {
@@ -973,8 +980,12 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
     // Capture before any await (including the rotation lock). A forgotten device
     // must not be restored by a late write or by atomic-update rollback.
-    const guardedStorage = (): SSSStorageFunctions => {
+    const guardedStorage = (): SSSStorageFunctions & { assertCurrent: () => void } => {
         const generation = storageGeneration;
+        const assertCurrent = (): void => {
+            if (generation !== storageGeneration)
+                throw new Error('This recovery request was cancelled.');
+        };
         const write = (operation: () => Promise<void>): Promise<void> => {
             if (generation !== storageGeneration) {
                 return Promise.reject(new Error('This recovery request was cancelled.'));
@@ -983,8 +994,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             localWrites.add(pending);
             return pending.finally(() => localWrites.delete(pending));
         };
-        const guarded: SSSStorageFunctions = {
+        const guarded: SSSStorageFunctions & { assertCurrent: () => void } = {
             ...storage,
+            assertCurrent,
             storeDeviceShare: (share, id) => write(() => storage.storeDeviceShare(share, id)),
             storeShareVersion: (version, id) => write(() => storage.storeShareVersion(version, id)),
             clearAllShares: id => write(() => storage.clearAllShares(id)),
@@ -1058,6 +1070,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
     // (i.e. once per app session); a failed attempt is logged and left for
     // the next session rather than retried on every subsequent call.
     let staleEscrowReenrollAttempted = false;
+    let verifiedEscrowEnvelope: EscrowEnvelope | undefined;
 
     // Material from a rotation whose escrow POST failed. Retained in memory so a
     // retry within this session re-posts instead of burning another share version.
@@ -1145,7 +1158,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         }
     };
 
-    const fetchVerifiedEnclaveKey = async (): Promise<{ publicKey: string; keyId: string }> => {
+    const fetchVerifiedEnclaveKey = async (): Promise<VerifiedEnclaveIdentity> => {
         if (!config.escrow?.enabled) throw new Error('Escrow enrollment is disabled');
         const nonce = crypto.getRandomValues(new Uint8Array(32));
         const nonceHex = Array.from(nonce, byte => byte.toString(16).padStart(2, '0')).join('');
@@ -1159,6 +1172,39 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         return verifyEnclaveAttestation(attestation, config.escrow.attestation, nonce);
     };
 
+    const fetchAuthorityState = async (
+        token: string,
+        providerType: AuthProviderType,
+        privateKey: string,
+        did: string,
+        signer: DidAuthVpSigner,
+        identity: VerifiedEnclaveIdentity,
+        assertCurrent: () => void
+    ): Promise<EscrowAuthorityState> => {
+        assertCurrent();
+        if (identity.mode !== 'nitro' || !identity.authority)
+            throw new Error('The enclave does not support verified enrollment.');
+        const nonce = Array.from(crypto.getRandomValues(new Uint8Array(32)), byte =>
+            byte.toString(16).padStart(2, '0')
+        ).join('');
+        const vp = await requestFreshDidAuthVp(serverUrl, privateKey, did, signer, tenantId);
+        assertCurrent();
+        const response = await escrowRequest<unknown>('/authority-state', {
+            method: 'POST',
+            headers: buildHeaders(token, vp, tenantId),
+            body: JSON.stringify({ authToken: token, providerType, nonce }),
+        });
+        const result = await verifyEscrowAuthorityState(
+            response,
+            nonce,
+            tenantId ?? 'learncard',
+            did,
+            identity
+        );
+        assertCurrent();
+        return result;
+    };
+
     const enrollEscrow = async (
         token: string,
         providerType: AuthProviderType,
@@ -1167,13 +1213,28 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         shares: SSSShares,
         shareVersion: number,
         signDidAuthVp?: DidAuthVpSigner,
-        verifiedKey?: { publicKey: string; keyId: string },
+        verifiedKey?: VerifiedEnclaveIdentity,
         pinMaterial?: { pinSalt: string; pinVerifier: string },
-        clearPin = false
+        clearPin = false,
+        assertCurrent = guardedStorage().assertCurrent
     ): Promise<void> => {
         if (!config.escrow?.enabled) throw new Error('Escrow enrollment is disabled');
         if (!signDidAuthVp) throw new Error('DID proof signing is required for escrow enrollment');
-        const { publicKey, keyId } = verifiedKey ?? (await fetchVerifiedEnclaveKey());
+        const identity = verifiedKey ?? (await fetchVerifiedEnclaveKey());
+        assertCurrent();
+        const { publicKey, keyId } = identity;
+        const authority =
+            config.escrow.attestation.mode === 'nitro'
+                ? await fetchAuthorityState(
+                      token,
+                      providerType,
+                      privateKey,
+                      primaryDid,
+                      signDidAuthVp,
+                      identity,
+                      assertCurrent
+                  )
+                : undefined;
         const envelope = await encryptEscrowBlob(
             {
                 recoveryShare: shares.recoveryShare,
@@ -1191,7 +1252,18 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             signDidAuthVp,
             tenantId
         );
-        await escrowRequest('', {
+        const signedIntent = authority
+            ? await createEscrowEnrollmentIntent({
+                  state: authority,
+                  target: envelope,
+                  shareVersion,
+                  privateKey,
+                  pinAction: pinMaterial ? 'set' : clearPin ? 'clear' : 'automatic',
+              })
+            : undefined;
+        assertCurrent();
+        verifiedEscrowEnvelope = undefined;
+        const response = await escrowRequest<unknown>('', {
             method: 'POST',
             headers: buildHeaders(token, vp, tenantId),
             body: JSON.stringify({
@@ -1201,9 +1273,23 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 shareVersion,
                 enclaveKeyId: keyId,
                 ...(pinMaterial ? { pinSalt: pinMaterial.pinSalt } : {}),
-                ...(clearPin ? { clearPin: true } : {}),
+                ...((signedIntent ? signedIntent.intent.pinAction === 'clear' : clearPin)
+                    ? { clearPin: true }
+                    : {}),
+                ...(signedIntent
+                    ? { signedIntent, sourceEnvelope: authority?.envelope ?? null }
+                    : {}),
             }),
         });
+        if (signedIntent) {
+            const committed = await verifyEscrowEnrollmentCommit(
+                response,
+                signedIntent.intent,
+                identity
+            );
+            assertCurrent();
+            verifiedEscrowEnvelope = committed.envelope ?? undefined;
+        }
     };
 
     const tryEnrollEscrow = async (...args: Parameters<typeof enrollEscrow>): Promise<void> => {
@@ -1224,9 +1310,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
     const ensureEscrowEnrollmentUnguarded = async (
         self: SSSKeyDerivationStrategy,
         params: Parameters<NonNullable<SSSKeyDerivationStrategy['ensureEscrowEnrollment']>>[0],
-        storage: SSSStorageFunctions,
-        forceRotate = false
+        storage: SSSStorageFunctions & { assertCurrent: () => void },
+        forceRotate = false,
+        allowDisabledEnrollment = false
     ): Promise<EscrowEnrollmentResult> => {
+        let clearPinForEnrollment = forceRotate;
         if (!config.escrow?.enabled) return { enrolled: false, reason: 'disabled' };
         const pin = params.options?.pin;
         if (pin !== undefined) {
@@ -1239,8 +1327,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 );
         }
         const status = await self.fetchServerKeyStatus(params.token, params.providerType);
+        storage.assertCurrent();
         if (status.escrowOptedOut) return { enrolled: false, reason: 'opted-out' };
-        const currentlyEnrolled =
+        let currentlyEnrolled =
             status.shareVersion !== null &&
             status.recoveryMethods.some(
                 method =>
@@ -1250,6 +1339,33 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         ('confirmationStatus' in method &&
                             method.confirmationStatus === 'confirmed'))
             );
+        let verifiedKey: VerifiedEnclaveIdentity | undefined;
+        if (config.escrow.attestation.mode === 'nitro') {
+            if (!status.primaryDid || !params.signDidAuthVp)
+                throw new Error('Owner proof signing is required for escrow enrollment.');
+            verifiedKey = await fetchVerifiedEnclaveKey();
+            const current = await fetchAuthorityState(
+                params.token,
+                params.providerType,
+                params.privateKey,
+                status.primaryDid,
+                params.signDidAuthVp,
+                verifiedKey,
+                storage.assertCurrent
+            );
+            if (current.status === 'disabled') {
+                verifiedEscrowEnvelope = undefined;
+                if (!allowDisabledEnrollment) return { enrolled: false, reason: 'opted-out' };
+                // Explicit enable without a new PIN clears the retired verifier.
+                clearPinForEnrollment ||= current.hasPin && pin === undefined;
+            }
+            currentlyEnrolled =
+                currentlyEnrolled &&
+                current.status === 'active' &&
+                current.shareVersion === status.shareVersion &&
+                current.envelope?.keyId === verifiedKey.keyId;
+            if (currentlyEnrolled) verifiedEscrowEnvelope = current.envelope ?? undefined;
+        }
         // A confirmed enrollment whose sealed blob no longer matches the active
         // enclave (P6 mode migration/rollback, or a rotated enclave key) still
         // needs the same rotation a missing enrollment would get — but only one
@@ -1257,11 +1373,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         // retry on every ensureEscrowEnrollment call within the same session.
         const repairingStaleBlob =
             pin === undefined &&
-            !forceRotate &&
+            !clearPinForEnrollment &&
             currentlyEnrolled &&
             !!status.escrowStale &&
             !staleEscrowReenrollAttempted;
-        if (!forceRotate && pin === undefined && currentlyEnrolled && !repairingStaleBlob)
+        if (!clearPinForEnrollment && pin === undefined && currentlyEnrolled && !repairingStaleBlob)
             // Automatic repair preserves current enrollment regardless of PIN status.
             // The enclave can carry an existing verifier when shares rotate.
             return { enrolled: true, changed: false };
@@ -1272,7 +1388,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         }
         try {
             if (
-                !forceRotate &&
+                !clearPinForEnrollment &&
                 pin === undefined &&
                 unenrolledRotation &&
                 unenrolledRotation.shareVersion === status.shareVersion &&
@@ -1289,14 +1405,16 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     params.signDidAuthVp,
                     undefined,
                     undefined,
-                    retry.clearPin
+                    retry.clearPin,
+                    storage.assertCurrent
                 );
                 unenrolledRotation = undefined;
                 return { enrolled: true, changed: true, shareVersion: retry.shareVersion };
             }
             // Verify the enclave before rotating: a bad attestation must not burn
             // a share version (and, repeated, the retained auth-share history).
-            const verifiedKey = await fetchVerifiedEnclaveKey();
+            verifiedKey ??= await fetchVerifiedEnclaveKey();
+            storage.assertCurrent();
             const pinSalt = pin !== undefined ? generatePinSalt() : undefined;
             const pinMaterial =
                 pin !== undefined && pinSalt !== undefined
@@ -1328,7 +1446,12 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             };
             unenrolledRotation = pinMaterial
                 ? undefined
-                : { shares, shareVersion, primaryDid: status.primaryDid, clearPin: forceRotate };
+                : {
+                      shares,
+                      shareVersion,
+                      primaryDid: status.primaryDid,
+                      clearPin: clearPinForEnrollment,
+                  };
             await enrollEscrow(
                 params.token,
                 params.providerType,
@@ -1339,7 +1462,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 params.signDidAuthVp,
                 verifiedKey,
                 pinMaterial,
-                forceRotate
+                clearPinForEnrollment,
+                storage.assertCurrent
             );
             unenrolledRotation = undefined;
             return { enrolled: true, changed: true, shareVersion };
@@ -1347,7 +1471,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             // A background repair the caller never asked for must not surface as
             // a hard failure (mirrors tryEnrollEscrow's existing swallow-and-report
             // shape); an explicit not-yet-enrolled/PIN/forced rotation still throws.
-            if (!repairingStaleBlob) throw err;
+            if (!repairingStaleBlob || config.escrow.attestation.mode === 'nitro') throw err;
             try {
                 if (config.onEscrowError) config.onEscrowError(err);
                 else console.warn('SSS: escrow enrollment failed');
@@ -1397,6 +1521,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         // --- User scoping ---
 
         setActiveUser(userId: string): void {
+            verifiedEscrowEnvelope = undefined;
             if (activeStorageId !== `sss-device-share:${userId}`) storageGeneration++;
             activeStorageId = `sss-device-share:${userId}`;
             lastServerSnapshot = null;
@@ -1458,6 +1583,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             }
 
             storageGeneration++;
+            verifiedEscrowEnvelope = undefined;
             await Promise.allSettled(localWrites);
             await clearPendingShareCandidates(storage, storageId);
             return storage.clearAllShares(storageId);
@@ -1866,8 +1992,55 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         },
 
         async disableEscrowRecovery(params): Promise<void> {
+            const assertCurrent = guardedStorage().assertCurrent;
             const status = await this.fetchServerKeyStatus(params.token, params.providerType);
             if (!status.primaryDid) throw new Error('Cannot disable escrow without a primary DID');
+            if (config.escrow?.attestation.mode === 'nitro') {
+                const identity = await fetchVerifiedEnclaveKey();
+                const current = await fetchAuthorityState(
+                    params.token,
+                    params.providerType,
+                    params.privateKey,
+                    status.primaryDid,
+                    params.signDidAuthVp,
+                    identity,
+                    assertCurrent
+                );
+                if (current.status === 'disabled') {
+                    verifiedEscrowEnvelope = undefined;
+                    return;
+                }
+                const signedIntent = await createEscrowEnrollmentIntent({
+                    state: current,
+                    target: null,
+                    shareVersion: current.shareVersion ?? 0,
+                    privateKey: params.privateKey,
+                    pinAction: 'disable',
+                });
+                const vp = await requestFreshDidAuthVp(
+                    serverUrl,
+                    params.privateKey,
+                    status.primaryDid,
+                    params.signDidAuthVp,
+                    tenantId
+                );
+                assertCurrent();
+                const response = await escrowRequest<unknown>('/disable', {
+                    method: 'POST',
+                    headers: buildHeaders(params.token, vp, tenantId),
+                    body: JSON.stringify({
+                        authToken: params.token,
+                        providerType: params.providerType,
+                        optOut: true,
+                        signedIntent,
+                        sourceEnvelope: current.envelope,
+                    }),
+                });
+                await verifyEscrowEnrollmentCommit(response, signedIntent.intent, identity);
+                assertCurrent();
+                verifiedEscrowEnvelope = undefined;
+                return;
+            }
             const vp = await requestFreshDidAuthVp(
                 serverUrl,
                 params.privateKey,
@@ -1909,7 +2082,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         providerType: params.providerType,
                     }),
                 });
-                return ensureEscrowEnrollmentUnguarded(this, params, storage);
+                return ensureEscrowEnrollmentUnguarded(this, params, storage, false, true);
             });
         },
 
@@ -1949,6 +2122,10 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             } finally {
                 escrowEnrollmentInFlight = undefined;
             }
+        },
+
+        getVerifiedEscrowEnvelope(): EscrowEnvelope | null {
+            return verifiedEscrowEnvelope ? { ...verifiedEscrowEnvelope } : null;
         },
 
         /** Start or explicitly restart a hold with fresh client-bound resume secrets. */
@@ -3113,6 +3290,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
         async cleanup(): Promise<void> {
             storageGeneration++;
+            verifiedEscrowEnvelope = undefined;
             await Promise.allSettled(localWrites);
         },
     };
