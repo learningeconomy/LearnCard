@@ -1,5 +1,146 @@
 # infra/escrow-enclave
 
+## Enrollment authority foundations (PR 1 — disabled)
+
+`enable_enrollment_authority=false`, `enable_enclave_email=false`,
+`create_sending_zone=false`, and `enable_credential_delivery=false` by default.
+No new resources, grants, proxy settings or ciphertext reads are enabled in current
+staging. Offline tests compare the disabled user-data template with its original
+SHA-256 and check unchanged bucket/SNS/DLQ policy shapes. No live staging plan was
+run: this is a structural no-op check, not a claim about external state drift.
+`kms.tf` and its escrow-key policy are unchanged. The enclave still wires
+`UnavailableEnrollment`; provisioning these foundations does not activate recovery.
+
+### Resources and enforcement
+
+- The generation-named authority table uses `pk`/`sk`, on-demand billing, the
+  existing data/S3 CMK, deletion protection and PITR, **without TTL**. PITR is for
+  disaster recovery/forensics, never restoring older authority state in place.
+  A restore requires break-glass approval and a **new measured authority generation**.
+- Only the dedicated writer IAM user can access item data. Writes require
+  `dynamodb:EnclosingOperation=TransactWriteItems`; IAM authorizes the underlying
+  item actions, not invented transaction action names. PartiQL, batch APIs,
+  scans/queries/exports, Kinesis streaming destinations and TTL are denied. A
+  wildcard backstop denies all table APIs to untrusted principals, including new
+  APIs that could otherwise escape an enumerated list. Host, root and org-admin data access is
+  denied; lifecycle/resource-policy changes are restricted to `escrow-kms-admin`.
+- The separate credential CMK permits only admin provisioning Encrypt and
+  host Recipient-attested Decrypt, bound to purpose, tenant, environment,
+  `authorityGeneration` and `principalArn`. It uses complete PCR tuples from the
+  existing measurement set, not cross-combinable arrays. Grants, alternative crypto,
+  unattested/debug decrypt and missing context are denied. Root break-glass/MFA and
+  the MFA-at-AssumeRole pattern follow the existing escrow CMK.
+- IAM users have no Terraform-created access keys or console profiles. The email
+  user has only `ses:SendEmail` on the exact identity and configuration set, constrained to
+  `recovery@<sending_domain>`. Their keys never enter Terraform state.
+- Credential objects are create-only under `credentials/*`: only the provisioner
+  can write, `If-None-Match: *` is required, and object/version deletion and
+  replication writes/delete markers are denied.
+  The existing host artifacts-read grant already covers their ciphertexts.
+
+**An Organizations SCP is required.** IAM users have no resource policy capable of
+denying another principal's `CreateAccessKey`. An inline deny on the target user
+would NOT protect it from `OrganizationAccountAccessRole`. Install the separate
+[management-account guardrail stack](../escrow-enclave-bootstrap/authority-guardrail/README.md)
+first. It denies credential-user/key manipulation, protects the admin role and its
+bootstrap MFA users against takeover, and independently guards authority table
+data/lifecycle and artifact bucket policy changes. Member departure from the
+organization is denied without exception; removal requires the trusted management
+account. SES access/configuration/archiving in this dedicated escrow account is
+restricted to the sender and MFA admin, so an org-admin cannot redirect or archive
+recovery mail. This also covers control APIs
+that cannot be secured solely by a policy on an already-existing table. SCPs do
+not restrict an Organizations management account: the escrow account must be a
+member account. Organization administrators remain trusted guardrail owners.
+
+`authority_guardrail_policy_id` is a required deployment receipt when enabling the
+stack, **not proof that the correct SCP is attached**. A security reviewer must
+verify its content, attachment, bootstrap user list and MFA trust before activation.
+The SCP exception uses the existing same-account `escrow-kms-admin` role; it does
+not apply a broken per-request MFA condition to assumed-role sessions. As with D10,
+approved break-glass/key administrators can deliberately change policy or misuse a
+restore. New-generation continuity and two-person approval remain process gates.
+
+### Provisioning order (operator-only; not executed here)
+
+1. Install the SCP from management-account credentials in a separately secured
+   Terraform state. Provide the exact existing bootstrap human-user ARNs. Keep
+   these synchronized with the MFA role's trust; do not add an unprotected user.
+2. From the MFA `escrow-kms-admin` session, provision authority with an explicit
+   `authority_tenant`, `authority_generation`, and verified guardrail policy ID.
+   Keep `enable_credential_delivery=false` so absent ciphertexts cannot break boot.
+3. If email is wanted, set `enable_enclave_email=true` and an explicit
+   `sending_domain`, e.g. `staging.notify.learncard.com`. There is **no domain
+   default**: root input uses `null` solely to keep disabled deployments from
+   acquiring a new required variable. Do not change `staging.tfvars` until rollout.
+4. With `create_sending_zone=true`, delegate the returned NS from the parent zone
+   in its owning account. Only the sending child zone is created. With it false,
+   publish `sending_dns_records` yourself. Records include identity verification,
+   three DKIM CNAMEs, and `bounce.<domain>` MX/SPF. No parent zone or parent DMARC
+   record is managed. MAIL FROM failure rejects mail rather than falling back.
+   Verify SES identity/DKIM, feedback delivery and sandbox/production-send access.
+5. Export the existing MFA role profile into environment variables with tracing
+   disabled, then run the provisioner for each enabled purpose:
+
+    ```sh
+    set +x
+    eval "$(aws configure export-credentials --profile escrow-kms-admin-session --format env)"
+    bash ../escrow-enclave-bootstrap/provision-enclave-credentials.sh \
+      --purpose authority-writer --environment staging --tenant '<tenant>' \
+      --generation '<approved-generation>' --bucket '<artifacts-bucket>' \
+      --kms-key-arn '<credential-cmk-arn>' --escrow-kms-key-arn '<escrow-cmk-arn>'
+    ```
+
+    Repeat with `--purpose email-sender` only when email is enabled. The script
+    verifies caller/key metadata, creates one access key, immediately encrypts the
+    exact enclave JSON via stdin, and uploads **only ciphertext** with a conditional
+    write. It disables CLI config/history/plugins/retries and core dumps; only the
+    ciphertext URI is printed. Run on a trusted workstation without swap/tracing.
+    Dedicated plaintext necessarily exists in the provisioning process/CLI memory;
+    Python/SDK allocation erasure is not guaranteed. It never writes that plaintext
+    to disk. The only temporary file is encrypted ciphertext.
+
+6. Review/bake the public Terraform configuration outputs into the measured EIF,
+   then deliberately enable credential delivery. Host settings reference only the
+   two fixed purpose/generation paths; relays allow regional DynamoDB/SES :443 on
+   8001/8002. Enclave clients and the unsealer remain unwired until subsequent PRs.
+
+**Rotation/revocation:** never overwrite the existing generation's object or reset
+authority state just to rotate credentials. Prepare an approved new generation
+and continuity/cutover procedure before issuing replacements, verify the new
+attested path, then revoke the old IAM access key from the MFA role. Routine
+same-generation credential-slot rotation/live state migration is not automated by
+this script. On encryption/upload failure it tries to delete the newly created
+key; an ambiguous CreateAccessKey, interrupted cleanup or SIGKILL requires manual
+CloudTrail review and revocation before retrying. An ambiguous successful upload
+may leave ciphertext for a now-revoked key: use a new approved path, never overwrite.
+
+### Detection and verification boundaries
+
+Governance events (including denied attempts) publish static alerts to the existing
+monitor topic: account-wide key creation/update/deletion (including both users and
+self-service calls omitting userName), table resource-policy
+put/delete, lifecycle/TTL/restore/import changes, credential CMK policy/lifecycle,
+ConsoleLogin and root use. IAM/global sign-in events are forwarded from us-east-1
+when deploying elsewhere. Enable an independently owned CloudTrail trail; other
+regions and data-event coverage must be forwarded/configured by security operations.
+Alerting is not a guarantee against an organization/security administrator disabling
+the detector. The global forwarding hop has its own encrypted 14-day DLQ and
+independent us-east-1 SNS delivery-failure alarm; confirm its optional
+`monitor_alarm_email` subscription or wire the topic output to security monitoring.
+Regional SNS delivery failures use the existing DLQ. Admin trust/MFA changes,
+organization departure and bucket replication configuration additionally require
+monitoring through the independent trail; this is not a comprehensive account
+takeover detector. SES bounce/complaint
+notifications may include recipient metadata and need appropriately restricted
+topic/subscriber access.
+
+Offline tests use mock providers/overrides only. Verify real AWS policy acceptance,
+SCP enforcement (including org-admin adversarial attempts), SES feedback, DNS
+delegation, provisioning failure cleanup, and native relay TLS in staging before
+enabling recovery. No live AWS operation, real plan/apply or EIF deployment was
+performed as part of this implementation.
+
 ## P7.1 monitor addition
 
 `monitor.tf` now provisions the independent monitor Lambda, records-stream mapping,
