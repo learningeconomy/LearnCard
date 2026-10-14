@@ -759,6 +759,75 @@ decide `requiresConfirmation` at creation. Full implementation/test inventory:
 boundary / attack C" row. Operator rollout steps (SES domain, production access,
 `enable_enclave_email`, credential provisioning): `STAGING.md`.
 
+**Unconfirmed-hold lifecycle (added 2026-10-14, Custard7 PR 3 review).**
+Determination: an `awaiting_confirmation` hold does **not** block a new
+recovery attempt or the user indefinitely. Two independent paths already
+supersede it, and neither required new code:
+
+1. **Explicit cancel.** `cancel_hold`/`authority_cancel` accept both
+   `AwaitingConfirmation` and `Pending` as non-terminal, cancellable states
+   (`authority.rs`'s `authority_verified_hold(..., require_active: false)`),
+   and lca-api's `cancelRecovery` (DID-authenticated) and
+   `cancelRecoveryByLink` (single-use cancel-link token, no DID needed) both
+   call this path with no additional status check. The UI's code-entry step
+   can offer "cancel and try a different way" at any time, including before
+   a code is ever entered.
+2. **Automatic restart.** `startRecovery` (`api/src/routes/escrow.ts`)
+   already looks up any existing pending hold for the same identity/policy
+   via `findPendingEscrowHoldByAuthProvider`, regardless of whether it is
+   enclave-side `AwaitingConfirmation` or `Pending` (Mongo's own `status`
+   field does not distinguish the two — only `requiresConfirmation` +
+   `confirmedAt` do). Calling `startRecovery` again with `restart: true`
+   after `ESCROW_HOLD_RESTART_MIN_AGE_MS` has elapsed since the old hold's
+   `requestedAt` supersedes it: the old hold is cancelled (`cancelEscrowHold`
+   with `cancelReason: 'superseded'`) and a fresh hold — with a fresh code —
+   is created in its place. This is the same mechanism already used to
+   recover from a PIN mismatch/lock; it was not written newly for
+   unconfirmed holds, it simply already covers them because Mongo's model
+   never distinguished confirmed from unconfirmed in the first place.
+
+No fix was needed because no block exists. An unconfirmed Hold-policy hold
+also never blocks a PIN-policy recovery for the same identity (or vice
+versa): the partial unique index and `findPendingEscrowHoldByAuthProvider`
+are both scoped per `releasePolicy`.
+
+**Compromised email (added 2026-10-14, Custard7 PR 3 review).** If an
+attacker controls the recovery email's inbox but not the account's signing
+key or any device share, they can read the confirmation code and the
+release-warning email but cannot authorize anything on their own: starting
+a hold still requires the account's own auth session (`startRecovery`'s
+`authToken`/`recoverySessionToken`), and completing one still decrypts
+recovery material only to the ephemeral key the _original_ device generated
+(bound into the signed hold record at creation, `clientEphemeralPublicKey`
+in `authority.rs`), which never leaves that device. The owner's available
+mitigations, from a signed-in device or the cancel link, at any time
+including before confirmation (see above):
+
+- **Cancel any hold**, confirmed or not, immediately — `cancelRecovery` from
+  a signed-in device, or `cancelRecoveryByLink` from the email itself (the
+  same email the attacker may be reading, which is a known limitation: if
+  the attacker reads and discards the cancel-link email too, the owner
+  needs the signed-in-device path instead).
+- **Change the recovery address only by re-enrolling.** The address lives
+  only inside the active sealed blob's plaintext, bound by a signed
+  Enroll/Replace intent (`createEscrowEnrollmentIntent`'s `action`); Carry
+  (PIN-preserving re-seal, e.g. on ordinary sign-in) explicitly cannot touch
+  it (P2-d above), so there is no implicit path that silently updates or
+  clears a compromised address. The owner must sign a fresh Replace intent
+  from a device holding the account key.
+
+**Residual risk:** if the attacker also controls the account's signing key
+or a device share (not just the recovery inbox), owning the inbox adds
+nothing further — that threat is already out of scope for the enrollment
+authority (see "Threat model and required guarantee" above: client signing
+keys are assumed uncompromised). If the attacker controls _only_ the inbox,
+the owner's device-side paths above remain available, but a user who relies
+solely on email-based cues (and never checks their account from a
+signed-in device) will not notice an in-progress hold until the
+release-warning email arrives at the (compromised) inbox — at which point
+cancellation is still available but requires the owner to act before the
+hold's 7-day-plus-24h window elapses.
+
 ## 10. Open questions for security/product
 
 1. Which DID methods/signature algorithms and client signing interface are approved? Must account/DID changes require both old and new key authorization?
