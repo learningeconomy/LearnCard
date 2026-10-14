@@ -2,14 +2,32 @@ import type {
     InAppMessage,
     InAppMessagePlatform,
     InAppMessagePredicate,
+    InAppMessageTrigger,
     InAppMessageVersionOp,
     InAppMessageVersionSource,
 } from '@learncard/types';
+
+import {
+    countMatchingCredentials,
+    credentialMatches,
+    type CredentialSummary,
+} from './credentialFacts';
+
+export interface InAppMessageEvent {
+    event: 'credential.claimed' | 'app.opened';
+    occurredAt: number;
+    credential?: CredentialSummary;
+    accountDid?: string;
+}
 
 export interface InAppMessageRuntimeContext {
     platform: InAppMessagePlatform;
     role: string | null;
     versions: Partial<Record<InAppMessageVersionSource, string>>;
+    now: number;
+    credentials: CredentialSummary[] | null;
+    credentialsComplete: boolean;
+    recentEvents: InAppMessageEvent[];
 }
 
 const parseSemver = (raw: string): [number, number, number] | null => {
@@ -55,17 +73,54 @@ const satisfiesOp = (cmp: number, op: InAppMessageVersionOp): boolean => {
     }
 };
 
-export const evaluatePredicate = (
+const INCOMPLETE_NEGATED_CREDENTIAL = Symbol('incomplete-negated-credential');
+type PredicateResult = boolean | typeof INCOMPLETE_NEGATED_CREDENTIAL;
+
+const evaluatePredicateInternal = (
     predicate: InAppMessagePredicate,
-    ctx: InAppMessageRuntimeContext
-): boolean => {
-    if ('all' in predicate) return predicate.all.every(p => evaluatePredicate(p, ctx));
-    if ('any' in predicate) return predicate.any.some(p => evaluatePredicate(p, ctx));
-    if ('not' in predicate) return !evaluatePredicate(predicate.not, ctx);
+    ctx: InAppMessageRuntimeContext,
+    underNot: boolean
+): PredicateResult => {
+    if ('all' in predicate || 'any' in predicate) {
+        const children = ('all' in predicate ? predicate.all : predicate.any).map(child =>
+            evaluatePredicateInternal(child, ctx, underNot)
+        );
+
+        if ('all' in predicate) {
+            if (children.includes(false)) return false;
+            if (children.includes(INCOMPLETE_NEGATED_CREDENTIAL)) {
+                return INCOMPLETE_NEGATED_CREDENTIAL;
+            }
+
+            return true;
+        }
+
+        if (children.includes(true)) return true;
+        if (children.includes(INCOMPLETE_NEGATED_CREDENTIAL)) {
+            return INCOMPLETE_NEGATED_CREDENTIAL;
+        }
+
+        return false;
+    }
+
+    if ('not' in predicate) {
+        const result = evaluatePredicateInternal(predicate.not, ctx, true);
+
+        return result === INCOMPLETE_NEGATED_CREDENTIAL ? INCOMPLETE_NEGATED_CREDENTIAL : !result;
+    }
 
     if ('platform' in predicate) return predicate.platform.includes(ctx.platform);
 
     if ('role' in predicate) return ctx.role !== null && predicate.role.includes(ctx.role);
+
+    if ('credential' in predicate) {
+        if (underNot && !ctx.credentialsComplete) return INCOMPLETE_NEGATED_CREDENTIAL;
+        if (!ctx.credentials) return false;
+
+        const { minCount, ...match } = predicate.credential;
+
+        return countMatchingCredentials(ctx.credentials, match, ctx.now) >= minCount;
+    }
 
     if ('version' in predicate) {
         const current = ctx.versions[predicate.version.source];
@@ -82,11 +137,39 @@ export const evaluatePredicate = (
     return false;
 };
 
+export const evaluatePredicate = (
+    predicate: InAppMessagePredicate,
+    ctx: InAppMessageRuntimeContext
+): boolean => evaluatePredicateInternal(predicate, ctx, false) === true;
+
+export const triggerSatisfied = (
+    trigger: InAppMessageTrigger | undefined,
+    ctx: InAppMessageRuntimeContext
+): boolean => {
+    if (!trigger) return true;
+
+    const earliest = ctx.now - trigger.windowMinutes * 60 * 1000;
+
+    return ctx.recentEvents.some(event => {
+        if (
+            event.event !== trigger.event ||
+            event.occurredAt < earliest ||
+            event.occurredAt > ctx.now
+        )
+            return false;
+        if (!trigger.where) return true;
+
+        return Boolean(
+            event.credential && credentialMatches(event.credential, trigger.where, ctx.now)
+        );
+    });
+};
+
 export const messageMatches = (message: InAppMessage, ctx: InAppMessageRuntimeContext): boolean => {
     if (!message.enabled) return false;
-    if (!message.targeting) return true;
+    if (message.targeting && !evaluatePredicate(message.targeting, ctx)) return false;
 
-    return evaluatePredicate(message.targeting, ctx);
+    return triggerSatisfied(message.trigger, ctx);
 };
 
 export const pickHighestPriority = (messages: InAppMessage[]): InAppMessage | null => {
@@ -120,7 +203,7 @@ export const tracePredicate = (
     if ('not' in predicate) {
         const child = tracePredicate(predicate.not, ctx);
 
-        return { result: !child.result, label: 'not', children: [child] };
+        return { result: evaluatePredicate(predicate, ctx), label: 'not', children: [child] };
     }
 
     if ('platform' in predicate) {
@@ -141,6 +224,21 @@ export const tracePredicate = (
         };
     }
 
+    if ('credential' in predicate) {
+        const { minCount, ...match } = predicate.credential;
+        const matched = ctx.credentials
+            ? countMatchingCredentials(ctx.credentials, match, ctx.now)
+            : 0;
+        const state = ctx.credentialsComplete ? 'complete' : 'incomplete';
+
+        return {
+            result: evaluatePredicate(predicate, ctx),
+            label: `credential ${JSON.stringify(match)} ≥ ${minCount} — matched ${matched} of ${
+                ctx.credentials?.length ?? 0
+            } (${state})`,
+        };
+    }
+
     const { source, op, value } = predicate.version;
     const current = ctx.versions[source];
 
@@ -155,6 +253,7 @@ export interface MessageExplanation {
     enabled: boolean;
     matched: boolean;
     trace: PredicateTrace | null;
+    triggerSatisfied: boolean;
 }
 
 export const explainMessage = (
@@ -165,4 +264,5 @@ export const explainMessage = (
     enabled: message.enabled,
     matched: messageMatches(message, ctx),
     trace: message.targeting ? tracePredicate(message.targeting, ctx) : null,
+    triggerSatisfied: triggerSatisfied(message.trigger, ctx),
 });
