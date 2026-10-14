@@ -175,6 +175,28 @@ log.warn('debug identity', { seed: '...', allowPii: true });
 
 When `bugReportsEnabled` is `false` (user opted out), **no events reach Sentry**. Console output is unaffected. The gate is wired automatically — `useSentryIdentify` calls `configureLoggerContext({ bugReportsEnabled })` whenever user preferences change.
 
+### File extraction diagnostics (LC-2202)
+
+`helpers/fileExtraction.ts` validates `/credentials/parse-file` responses before treating a result
+as empty or successful. Processing failures use application-owned codes and friendly copy, never
+the server's arbitrary error text. Extraction and persistence are separate operational events.
+
+These events require both bug-report opt-in and the authenticated-adult diagnostic collection gate.
+They capture the active profile at operation start and suppress settlement events after a profile
+switch or opt-out. Requests explicitly send that eligibility signal to AI Passport; a retry keeps
+its random operation ID and receives a fresh attempt ID.
+
+The feedback buffer accepts only the dedicated `file.extraction.completed` and
+`file.persistence.completed` schemas: bounded stage/outcome/code, counts, duration, file-kind/size
+bucket, operational UUIDs and audited version/model identifiers. It never retains filenames, file
+bytes, credentials, extracted text, provider messages or arbitrary fields. Unrecognized model
+identifiers become `unknown` in diagnostics. Other event sanitization stays unchanged.
+
+Client info events remain breadcrumbs plus the memory-only feedback buffer, not a new analytics
+store. AI Passport emits gated terminal operational logs; configure access and retention in the
+deployment's existing logging service. Nothing attaches an uploaded source artifact to feedback
+or authorizes its collection for investigation.
+
 ---
 
 ## Sentry setup (apps)
