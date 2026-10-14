@@ -199,3 +199,43 @@ for (const specifier of ['@internal/config', '../../private']) {
         assert.equal(f.read('service').dependencies['@learncard/service-config'], 'workspace:*');
     });
 }
+
+for (const privateTypes of [true, false]) {
+    test(
+        'type-root reference ' +
+            (privateTypes ? 'rejects private declarations' : 'allows public declarations'),
+        t => {
+            const f = bundledFixture(t);
+            const typesDir = join(f.root, privateTypes ? 'private' : 'public', 'types');
+            mkdirSync(join(typesDir, 'config-globals'), { recursive: true });
+            writeFileSync(
+                join(typesDir, 'config-globals/index.d.ts'),
+                'export interface StageEnv {}'
+            );
+            writeFileSync(
+                join(f.root, 'service/tsconfig.build.json'),
+                JSON.stringify({
+                    compilerOptions: { typeRoots: [typesDir] },
+                })
+            );
+            writeFileSync(
+                join(f.dist, 'index.d.ts'),
+                '/// <reference types="config-globals" />\nexport {};'
+            );
+            const result = f.run();
+            assert.equal(result.status, privateTypes ? 1 : 0, result.stderr);
+            if (privateTypes) {
+                assert.match(result.stderr, /declarations still reference/);
+                assert.equal(
+                    f.read('service').dependencies['@learncard/service-config'],
+                    'workspace:*'
+                );
+            } else {
+                assert.equal(
+                    f.read('service').dependencies['@learncard/service-config'],
+                    undefined
+                );
+            }
+        }
+    );
+}

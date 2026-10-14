@@ -94,27 +94,70 @@ export const resolveVersions = async ({
     releaseVersions = {},
     overrides = {},
     fetchMetadata = fetch,
+    timeoutMs = 20 * 60 * 1000,
+    pollIntervalMs = 15_000,
+    now = Date.now,
+    wait = sleep,
 } = {}) => {
     // A release snapshot is authoritative. Filling a partial snapshot from
     // latest could validate the previous release while npm scans the new one.
     // Only manual/nightly runs with no snapshot resolve tags.
     if (Object.keys(releaseVersions).length > 0) return validateVersions(releaseVersions);
+    if (!Number.isFinite(timeoutMs) || timeoutMs <= 0)
+        throw new Error('Registry resolution timeout must be a positive number');
+    if (!Number.isFinite(pollIntervalMs) || pollIntervalMs <= 0)
+        throw new Error('Registry resolution poll interval must be a positive number');
+    const deadline = now() + timeoutMs;
+    const controller = new AbortController();
     const entries = await Promise.all(
         ALL_PACKAGES.map(async name => {
             const requested = overrides[name] || 'latest';
             if (EXACT_VERSION.test(requested)) return [name, requested];
-            const response = await fetchMetadata(
-                REGISTRY + encodeURIComponent(name) + '/' + encodeURIComponent(requested),
-                { signal: AbortSignal.timeout(30_000) }
-            );
-            if (!response.ok)
-                throw new Error(
-                    'Cannot resolve ' + name + '@' + requested + ': HTTP ' + response.status
+            while (true) {
+                if (controller.signal.aborted) throw controller.signal.reason;
+                const remaining = Math.floor(deadline - now());
+                if (remaining <= 0)
+                    throw new Error(
+                        'Timed out resolving published package ' + name + '@' + requested
+                    );
+                const response = await fetchMetadata(
+                    REGISTRY + encodeURIComponent(name) + '/' + encodeURIComponent(requested),
+                    {
+                        signal: AbortSignal.any([
+                            controller.signal,
+                            AbortSignal.timeout(Math.min(30_000, remaining)),
+                        ]),
+                    }
                 );
-            const manifest = await response.json();
-            return [name, manifest.version];
+                if (response.ok) {
+                    const manifest = await response.json();
+                    if (now() >= deadline)
+                        throw new Error(
+                            'Timed out resolving published package ' + name + '@' + requested
+                        );
+                    return [name, manifest.version];
+                }
+                if (response.status !== 404)
+                    throw new Error(
+                        'Cannot resolve ' + name + '@' + requested + ': HTTP ' + response.status
+                    );
+                const delay = Math.min(pollIntervalMs, Math.max(0, deadline - now()));
+                if (delay === 0)
+                    throw new Error(
+                        'Timed out resolving published package ' + name + '@' + requested
+                    );
+                // Keep stdout exclusively for the GITHUB_OUTPUT value.
+                console.error(
+                    'Registry tag is not ready: ' + name + '@' + requested + '; retrying'
+                );
+                await wait(delay, undefined, { signal: controller.signal });
+            }
         })
-    );
+    ).catch(error => {
+        // Do not leave sibling tag retries running after an auth/other hard failure.
+        controller.abort(error);
+        throw error;
+    });
     return validateVersions(Object.fromEntries(entries));
 };
 
@@ -303,6 +346,7 @@ const main = async () => {
                           '@learncard/init': process.env.INIT_VER,
                           '@learncard/partner-connect': process.env.PC_VER,
                       },
+                      timeoutMs: Number(process.env.REGISTRY_TIMEOUT_SECONDS || '1200') * 1000,
                   });
         console.log('package-versions=' + JSON.stringify(versions));
     } else if (command === 'install') {

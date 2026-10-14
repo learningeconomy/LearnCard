@@ -139,7 +139,19 @@ const declarationReferencesDependency = (file, dependencyName, dependencyDir, op
                 !path.isAbsolute(relative))
         );
     };
-    const references = [...source.typeReferenceDirectives.map(reference => reference.fileName)];
+    const isPrivateSpecifier = specifier =>
+        specifier === dependencyName || specifier.startsWith(dependencyName + '/');
+    for (const { fileName: specifier } of source.typeReferenceDirectives) {
+        if (isPrivateSpecifier(specifier)) return true;
+        const resolved = ts.resolveTypeReferenceDirective(
+            specifier,
+            file,
+            options,
+            ts.sys
+        ).resolvedTypeReferenceDirective;
+        if (resolved && isInsideDependency(resolved.resolvedFileName)) return true;
+    }
+    const references = [];
     for (const reference of source.referencedFiles) {
         if (isInsideDependency(path.resolve(path.dirname(file), reference.fileName))) return true;
     }
@@ -168,7 +180,7 @@ const declarationReferencesDependency = (file, dependencyName, dependencyDir, op
     };
     visit(source);
     return references.some(specifier => {
-        if (specifier === dependencyName || specifier.startsWith(dependencyName + '/')) return true;
+        if (isPrivateSpecifier(specifier)) return true;
         const resolvedModule = ts.resolveModuleName(
             specifier,
             file,

@@ -93,6 +93,115 @@ test('snapshots nightly tags once and preserves explicit manual versions', async
     );
 });
 
+test('retries a pending dist-tag without re-resolving tags that already succeeded', async () => {
+    const requests = new Map();
+    const delays = [];
+    let time = 0;
+    const result = await resolveVersions({
+        overrides: { '@learncard/cli': 'next' },
+        timeoutMs: 1000,
+        pollIntervalMs: 10,
+        now: () => time,
+        wait: async delay => {
+            delays.push(delay);
+            time += delay;
+        },
+        fetchMetadata: async url => {
+            const count = (requests.get(url) ?? 0) + 1;
+            requests.set(url, count);
+            if (url.endsWith('/next') && count === 1) return { ok: false, status: 404 };
+            return { ok: true, json: async () => ({ version: '9.8.7' }) };
+        },
+    });
+    assert.deepEqual(result, versions);
+    assert.deepEqual(delays, [10]);
+    for (const [url, count] of requests) assert.equal(count, url.endsWith('/next') ? 2 : 1);
+});
+
+test('bounds retries for a dist-tag that never becomes available', async () => {
+    let time = 0;
+    let requests = 0;
+    const delays = [];
+    await assert.rejects(
+        resolveVersions({
+            overrides: { ...versions, '@learncard/cli': 'next' },
+            timeoutMs: 25,
+            pollIntervalMs: 10,
+            now: () => time,
+            wait: async delay => {
+                delays.push(delay);
+                time += delay;
+            },
+            fetchMetadata: async () => {
+                requests++;
+                return { ok: false, status: 404 };
+            },
+        }),
+        /Timed out resolving published package @learncard\/cli@next/
+    );
+    assert.equal(requests, 3);
+    assert.deepEqual(delays, [10, 10, 5]);
+});
+
+test('tag resolution does not retry authentication or other non-404 responses', async () => {
+    for (const status of [401, 403, 500]) {
+        let requests = 0;
+        await assert.rejects(
+            resolveVersions({
+                overrides: { ...versions, '@learncard/cli': 'next' },
+                fetchMetadata: async () => {
+                    requests++;
+                    return { ok: false, status };
+                },
+                wait: async () => {
+                    throw new Error('Must not retry a hard failure');
+                },
+            }),
+            new RegExp('HTTP ' + status)
+        );
+        assert.equal(requests, 1);
+    }
+});
+
+test('a hard resolver failure cancels sibling dist-tag backoff', async () => {
+    let cancelled = false;
+    await assert.rejects(
+        resolveVersions({
+            overrides: { ...versions, '@learncard/cli': 'next', '@learncard/init': 'next' },
+            fetchMetadata: async url => ({ ok: false, status: url.includes('cli') ? 401 : 404 }),
+            wait: (_delay, _value, { signal }) =>
+                new Promise((_resolve, reject) => {
+                    signal.addEventListener(
+                        'abort',
+                        () => {
+                            cancelled = true;
+                            reject(signal.reason);
+                        },
+                        { once: true }
+                    );
+                }),
+        }),
+        /HTTP 401/
+    );
+    assert.equal(cancelled, true);
+});
+
+test('rejects tag resolution success that arrives after the shared deadline', async () => {
+    let time = 0;
+    await assert.rejects(
+        resolveVersions({
+            overrides: { ...versions, '@learncard/cli': 'next' },
+            timeoutMs: 100,
+            now: () => time,
+            fetchMetadata: async () => {
+                time = 101;
+                return { ok: true, json: async () => ({ version: '9.8.7' }) };
+            },
+        }),
+        /Timed out resolving published package/
+    );
+});
+
 test('reads all release versions from workspace manifests and rejects private smoke targets', t => {
     const root = fixture(t);
     for (const [index, name] of Object.keys(versions).entries()) {

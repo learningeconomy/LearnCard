@@ -85,7 +85,7 @@ jobs:
     resolve-versions:
         name: Resolve exact package versions
         runs-on: ubuntu-latest
-        timeout-minutes: 3
+        timeout-minutes: 30
         outputs:
             package-versions: ${{ steps.versions.outputs.package-versions }}
         steps:
@@ -95,6 +95,14 @@ jobs:
               uses: actions/setup-node@v6
               with:
                   node-version: '24.12.0'
+            - name: Wait for npm CDN propagation
+              env:
+                  WAIT: ${{ inputs.registry-wait-seconds || '0' }}
+              run: |
+                  if [ "${WAIT:-0}" -gt 0 ]; then
+                      echo "Waiting ${WAIT}s for npm registry CDN propagation..."
+                      sleep "${WAIT}"
+                  fi
             - name: Resolve versions once for every smoke job
               id: versions
               env:
@@ -102,6 +110,7 @@ jobs:
                   CLI_VER: ${{ inputs.cli-version || 'latest' }}
                   INIT_VER: ${{ inputs.init-version || 'latest' }}
                   PC_VER: ${{ inputs.partner-connect-version || 'latest' }}
+                  REGISTRY_TIMEOUT_SECONDS: ${{ inputs.registry-timeout-seconds || '1200' }}
               run: node scripts/smoketest-npm-packages.mjs versions >> "$GITHUB_OUTPUT"
 
     smoketest:
@@ -166,15 +175,6 @@ jobs:
               uses: oven-sh/setup-bun@v2
               with:
                   bun-version: 1.4.2
-
-            - name: Wait for npm CDN propagation
-              env:
-                  WAIT: ${{ inputs.registry-wait-seconds || '0' }}
-              run: |
-                  if [ "${WAIT:-0}" -gt 0 ]; then
-                      echo "Waiting ${WAIT}s for npm registry CDN propagation..."
-                      sleep "${WAIT}"
-                  fi
 
             - name: Create clean test workspace (outside the monorepo)
               run: |
@@ -374,15 +374,6 @@ jobs:
               uses: actions/setup-node@v6
               with:
                   node-version: '24.12.0'
-
-            - name: Wait for npm CDN propagation
-              env:
-                  WAIT: ${{ inputs.registry-wait-seconds || '0' }}
-              run: |
-                  if [ "${WAIT:-0}" -gt 0 ]; then
-                      echo "Waiting ${WAIT}s for npm registry CDN propagation..."
-                      sleep "${WAIT}"
-                  fi
 
             - name: Create clean test workspace
               run: |

@@ -42,10 +42,27 @@ const main = async () => {
         );
         assert(job.steps.some(step => step.run?.includes('smoketest-npm-packages.mjs" install')));
     }
+    const resolver = smoke['resolve-versions'];
+    const waitIndex = resolver.steps.findIndex(
+        step => step.name === 'Wait for npm CDN propagation'
+    );
+    const versionsIndex = resolver.steps.findIndex(step => step.id === 'versions');
     assert(
-        smoke['resolve-versions'].steps.some(step =>
-            step.run?.includes('smoketest-npm-packages.mjs versions')
-        )
+        waitIndex >= 0 && waitIndex < versionsIndex,
+        'initial registry wait must precede tag resolution'
+    );
+    assert.equal(resolver.steps[waitIndex].env.WAIT, "${{ inputs.registry-wait-seconds || '0' }}");
+    assert.equal(
+        resolver.steps[versionsIndex].env.REGISTRY_TIMEOUT_SECONDS,
+        "${{ inputs.registry-timeout-seconds || '1200' }}"
+    );
+    assert(resolver.steps[versionsIndex].run.includes('smoketest-npm-packages.mjs versions'));
+    assert(resolver['timeout-minutes'] >= 25, 'resolver job must allow registry scanning retries');
+    assert(
+        !['smoketest', 'bundler-smoketest'].some(name =>
+            smoke[name].steps.some(step => step.name === 'Wait for npm CDN propagation')
+        ),
+        'initial registry delay must be applied once in the shared resolver'
     );
 
     for (const service of ['brain-service', 'lca-api', 'learn-cloud-service']) {
