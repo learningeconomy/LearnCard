@@ -22,7 +22,7 @@ struct CredentialDetailView: View {
     private var content: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
-                CredentialCard(credential: credential, featured: true)
+                InteractiveCredentialCard(credential: credential)
                 VStack(alignment: .leading, spacing: 10) {
                     Text("About this credential").font(.headline).foregroundStyle(Palette.ink)
                     Text(credential.summary).foregroundStyle(Palette.secondary).lineSpacing(4)
@@ -58,6 +58,9 @@ struct CredentialDetailView: View {
             }.padding(24)
         }
         .background(SectionBackground(tint: Palette.paper))
+        #if DEBUG
+        .modifier(NativeReviewPreferences())
+        #endif
         .navigationTitle(isOffer ? "Review credential" : "Credential")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

@@ -187,6 +187,45 @@ final class ExperimentUITests: XCTestCase {
         add(screenshot)
     }
 
+    @MainActor
+    func testDetailCardTiltReleasesScrollingAndAllowsClaim() {
+        checkDetailCardScrollingAndClaim(reduceMotion: false)
+    }
+
+    @MainActor
+    func testReducedMotionDetailCardStaysStaticAndAllowsClaim() {
+        checkDetailCardScrollingAndClaim(reduceMotion: true)
+    }
+
+    @MainActor
+    private func checkDetailCardScrollingAndClaim(reduceMotion: Bool) {
+        let app = XCUIApplication()
+        app.launchArguments = ["--demo", "--locale", "en", "--large-type"]
+        if reduceMotion { app.launchArguments.append("--card-reduce-motion") }
+        app.launch()
+        XCTAssertTrue(app.buttons["nav-inbox"].waitForExistence(timeout: 10)); app.buttons["nav-inbox"].tap()
+        let offer = app.buttons["offer-first-aid"]
+        XCTAssertTrue(offer.waitForExistence(timeout: 5)); offer.tap()
+        let card = app.descendants(matching: .any).matching(identifier: "credential-interactive-card").firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["Hold and drag to tilt"].exists, !reduceMotion)
+        let start = card.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.35))
+        let end = card.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: 0.45))
+        start.press(forDuration: 0.5, thenDragTo: end)
+        // Exercise a quick swipe starting on the card after release, not only outside it.
+        let oldFrame = card.frame
+        card.swipeUp()
+        // Accessibility bounds clip to the viewport once the top passes the navigation bar.
+        XCTAssertTrue(card.frame.minY < oldFrame.minY - 3 || card.frame.height < oldFrame.height - 3 || !card.isHittable,
+                      "A quick swipe on the card did not scroll the detail page")
+        let claim = app.buttons["claim"]
+        for _ in 0..<4 where !claim.isHittable { app.swipeUp() }
+        XCTAssertTrue(claim.isHittable); claim.tap()
+        XCTAssertTrue(app.alerts["Done"].waitForExistence(timeout: 5))
+        app.alerts["Done"].buttons["Done"].tap()
+        XCTAssertFalse(app.buttons["offer-first-aid"].exists)
+    }
+
     func testJavaScriptCoreRuntimeCapabilities() throws {
         // Probe the simulator's iOS JSContext, without loading secrets or LearnCard SDK code.
         let context = try XCTUnwrap(JSContext())

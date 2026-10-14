@@ -6479,6 +6479,35 @@
         }
       },
       "extractionState": "manual"
+    },
+    "credential.tiltHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold and drag to tilt"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mantén pulsado y arrastra para inclinar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maintenez puis faites glisser pour incliner"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اضغط مطولاً واسحب لإمالة البطاقة"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

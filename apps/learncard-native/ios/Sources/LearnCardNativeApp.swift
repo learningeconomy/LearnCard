@@ -25,6 +25,9 @@ struct LearnCardNativeApp: App {
                 client
                 #endif
             }
+                #if DEBUG
+                .modifier(NativeReviewPreferences())
+                #endif
                 .tint(Palette.selection)
                 .environment(\.locale, (NativeLanguage(rawValue: language) ?? .system).locale)
                 .environment(\.layoutDirection, (NativeLanguage(rawValue: language) ?? .system).isRightToLeft ? .rightToLeft : .leftToRight)
@@ -44,3 +47,14 @@ struct LearnCardNativeApp: App {
                 #endif
     }
 }
+
+#if DEBUG
+struct NativeReviewPreferences: ViewModifier {
+    @Environment(\.dynamicTypeSize) private var systemTextSize
+    func body(content: Content) -> some View {
+        let arguments = ProcessInfo.processInfo.arguments
+        content
+            .environment(\.dynamicTypeSize, arguments.contains("--large-type") ? .accessibility3 : systemTextSize)
+    }
+}
+#endif

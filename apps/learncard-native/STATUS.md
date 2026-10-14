@@ -1,12 +1,14 @@
-# Native experiment handoff — 2026-10-13
+# Native experiment handoff — 2026-10-14
 
 **Resumed: native Families and visual refinement.** The user authorized autonomous progress while away. The first Families slice is implemented and locally verified; child-account creation/switching and guardian approval remain separate work.
 
 - Branch: `codex/vesper-73`.
 - Checkout: `/Users/donny/.codex/worktrees/vesper-73/LearnCard`.
 - Previous Apps implementation: `10141da123da851425e3571a3bae53b4964eabcf`, with [passing CI](https://github.com/learningeconomy/LearnCard/actions/runs/38412284027).
-- Current suite: 69 Bun cases, 43 Swift cases, 30 full simulator tests plus one opt-in live exchange intentionally skipped. Full account/lifecycle/interoperability and final Colorful screen checks are recorded in [TESTING.md](TESTING.md). Fresh branch CI runs on push; match its source commit before treating it as final evidence.
+- Families/Colorful baseline: `a0321e78c`, with [passing CI](https://github.com/learningeconomy/LearnCard/actions/runs/38496224004). The interactive detail-card follow-up below adds two UI cases and triggers a new run on push.
+- Current suite: 69 Bun cases, 43 Swift cases, 32 simulator tests plus one opt-in live exchange intentionally skipped. Full account/lifecycle/interoperability and focused Colorful/motion checks are recorded in [TESTING.md](TESTING.md). Fresh branch CI runs on push; match its source commit before treating it as final evidence.
 - Local full suite passed all 142 cases and verified 10 iOS outputs, followed by eight focused stronger-backdrop title/language/dark/Families checks and final Release compilation. Commit hooks passed after replacing untyped test fixtures with explicit fixture types; hooks/baselines were not bypassed.
+- The October 14 neutral-canvas/interactive-card follow-up passed five focused simulator checks, native source-contract validation and Release compilation. Light Collection and dark detail/share screenshots were inspected. This does not imply a new local full 144-case run.
 
 The earlier manual-review pause is superseded by the user's request to continue. Use this checkout and preserve unrelated primary-checkout work.
 
@@ -18,15 +20,15 @@ Consumer Apps now includes My apps/Discover, real catalog metadata and artwork, 
 
 Families is reachable from Home, Account and Apps. It includes roster/profile views, creation, name/motto/color editing and existing-account guardian invitations. It reuses web Family memberships, PINs, claim hooks and encrypted personal indexing. Generic creation/send screens exclude family templates so they cannot bypass invitation review. See [FAMILIES_INTEGRATION.md](FAMILIES_INTEGRATION.md).
 
-The default web **Colorful** theme is the design source, as clarified by the user. Solid blue Collection, violet Inbox, cyan Apps, green Families and pink Home canvases contrast with opaque white/dark panels. Original categories survive the account adapter: blue badges/IDs, pink achievements, green studies, yellow portfolio, violet assistance, cyan experiences and amber Families. Collection cards have colorful artwork sections and white/dark text bodies; featured cards have a surface border and distinct stacked layers. The neutral comparison and stronger backdrop references are saved with exact prompts in [the Colorful brief](design/COLORFUL_BRIEF.md).
+The default web **Colorful** theme is the design source, as clarified by the user. The October 14 review rejected strong page colors: Collection, Inbox, Apps, Home and Families now use neutral gray-white/charcoal canvases with opaque white/dark panels. Original categories survive the account adapter: blue badges/IDs, pink achievements, green studies, yellow portfolio, violet assistance, cyan experiences and amber Families. Collection cards have colorful artwork sections and white/dark text bodies; featured cards have a surface border and distinct stacked layers. The neutral study is current; the stronger backdrop study remains a historical reference in [the Colorful brief](design/COLORFUL_BRIEF.md).
 
-The tray indicator, press feedback and family entrances add restrained motion. The real mosaic logo and approved outlined icon shapes are preserved, with flat Colorful details replacing gradient icon fills. Families has four-locale copy; compact nav captions use explicit keys while page/VoiceOver labels retain canonical full translations.
+The tray indicator, press feedback and family entrances add restrained motion. Credential details now have a deliberate hold-and-drag 3D tilt with faint moving reflection and a spring return. Quick swipes still scroll; Reduce Motion and VoiceOver keep the card still. Detail cards replace idle drift and the redundant chevron with a localized gesture hint. The actual mosaic logo and approved outlined icon shapes remain, with flat Colorful details replacing gradient icon fills. Families has four-locale copy; compact nav captions use explicit keys while page/VoiceOver labels retain canonical full translations.
 
 The app browser is separate from the account SDK. Embedded partner apps support the existing handshake, approved identity requests, listed-contract consent and supported listing-scoped app events. Unsupported actions return an explicit error. Direct/web-only launches use the same in-app browser without the partner bridge. Browser sessions close on account background/lock. See [Apps integration](APPS_INTEGRATION.md) for exact boundaries.
 
 ## Installed simulator build
 
-The Families/Colorful build is installed on **LearnCard Native Lab**, with existing account access preserved. Tests use a separate simulator. Read-only account refresh showed the real collection and incoming count again. An initial cold-launch collection request showed the generic unavailable alert; retry succeeded. This transient staging/launch behavior is recorded rather than represented as resolved by the visual pass.
+The neutral-canvas/interactive-card build is installed on **LearnCard Native Lab**, with existing account access preserved. The installed executable, SDK and private configuration match the latest Debug build by hashes. Tests use a separate simulator. Earlier read-only account refresh showed the real collection and incoming count again. An initial cold-launch collection request showed the generic unavailable alert; retry succeeded. This transient staging/launch behavior is recorded rather than represented as resolved by the visual pass.
 
 Open Simulator, select **LearnCard Native Lab**, and open **LearnCard Lab**. This is the review simulator (`ACD3802A-67BC-4C5F-98A4-7FFCF598AE9E`); the automated UI checks use a separate simulator.
 
@@ -43,7 +45,7 @@ The existing ignored local configuration retains the approved test email. A fres
 
 ## Manual review focus
 
-1. Strong Colorful page backgrounds and Collection cards in light/dark mode; subtle motion and the edge-to-edge tray. The neutral comparison remains saved if these feel too intense.
+1. Neutral page backgrounds with Colorful cards and accents in light/dark mode; hold and drag the card in credential details to tilt it, then release to settle. Check normal scrolling and Reduce Motion too.
 2. Home/Account/Apps → Families: overview, compact roster, profile detail, creation/editing and guardian access review. Sample mode uses PIN `12345` and sends no actual invitations.
 3. Apps discovery/browser and native Data Sharing after the new navigation entry; app uninstall and agreement withdrawal remain distinct.
 4. Language selection, Arabic direction and full versus compact navigation labels; background/reopen and sign-out.

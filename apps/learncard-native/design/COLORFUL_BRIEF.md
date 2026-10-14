@@ -24,9 +24,15 @@ Three complete screens side by side, visible from status bar to home indicator, 
 
 Avoid pastel-on-pastel, tinting the entire app yellow/green, glass/blur panels, rainbow gradients, giant whitespace, decorative marketing language, simplified/wrong L logo, central aligned inbox thumbnails, and invented real account information. Minimal shadows, production-like native utility. This is a visual concept with fictional data, not an actual live screenshot.
 
-## Stronger backdrop variant
+## Stronger backdrop variant — rejected on 2026-10-14
 
-The user accepted the Colorful direction and asked to try more intense solid page backdrops; neutral gray remains an acceptable fallback. The subsequent `colorful-backdrops-concept-2026-10-13.png` guides the current implementation: Collection blue-300, Inbox violet-300, Apps cyan-401, Families emerald-401, Home pink-300. Dark mode uses deep related canvases with light text and opaque dark panels. Credential category colors remain the same in both modes, with navy text; featured cards have an opaque surface border so a blue badge still reads distinctly against a blue Collection page. All light-mode secondary page text uses grayscale-800 for contrast. The neutral variant remains saved for comparison.
+The user initially asked to try more intense solid page backdrops, then explicitly requested a return to the neutral style after review on October 14. The neutral `families-colorful-concept-2026-10-13.png` is the current reference. All page canvases use grayscale-100 `#EFF0F5` in light mode and charcoal `#11151C` in dark mode. Colorful category artwork, card fills, icons and accents remain, with navy text on bright fills and opaque white/dark panels. The stronger `colorful-backdrops-concept-2026-10-13.png` is preserved only as a historical experiment; its blue Collection, violet Inbox, cyan Apps, green Families and pink Home page fills should not be reapplied without new user direction.
+
+## Interactive detail card
+
+The user requested touch-controlled 3D in credential details. Hold for 0.35 seconds, then drag to tilt the card up to 7° horizontally and 5° vertically. A light selection haptic marks engagement. A faint reflected-light strip follows the touch; the original artwork/text stay opaque. Release returns the card with a short spring. This replaces passive drift in detail/review screens; Collection keeps its existing small idle drift.
+
+Quick swipes still scroll. A deliberate hold recognizes the card gesture before a drag; the page is never globally locked. A small UIKit input surface uses [native gesture failure requirements](https://developer.apple.com/documentation/uikit/uigesturerecognizerdelegate/gesturerecognizer%28_%3Ashouldberequiredtofailby%3A%29) so scroll/sheet pans can proceed when the hold fails, while a recognized hold controls the card. Drag coordinates are measured in the screen's coordinate space, so rotating the card cannot move its own input origin. Gesture state resets on release/cancellation, and background stops the pose. Reduce Motion and VoiceOver use a static card. A concise hold-and-drag hint has four-locale copy. The detail card no longer shows a navigation chevron inside an already-open credential. SwiftUI renders the tilt and spring; the highlight is surface reflection, not a gradient page backdrop.
 
 ### Exact stronger-backdrop prompt
 

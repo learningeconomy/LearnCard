@@ -8,13 +8,13 @@ enum Palette {
     static let canvas = Color(uiColor: .systemGroupedBackground)
     static let surface = Color(uiColor: .secondarySystemGroupedBackground)
     static let paper = Color(light: 0xEFF0F5, dark: 0x11151C)
-    // Colorful theme: solid section canvases, opaque panels, exact category colors.
+    // Neutral page canvases let the Colorful artwork and category panels stand out.
     // Source: learn-card-app/src/theme/schemas/colorful/theme.json + tailwind.config.js.
-    static let collectionCanvas = Color(light: 0x93C5FD, dark: 0x102C43)
-    static let appsCanvas = Color(light: 0x22D3EE, dark: 0x0D2C36)
-    static let familiesCanvas = Color(light: 0x34D399, dark: 0x103226)
+    static let collectionCanvas = paper
+    static let appsCanvas = paper
+    static let familiesCanvas = paper
     static let familyDetailCanvas = familiesCanvas
-    static let homeCanvas = Color(light: 0xF9A8D4, dark: 0x351F30)
+    static let homeCanvas = paper
     static let selection = ink
     static let selectionInk = Color(light: 0xFFFFFF, dark: 0x18224E)
     static let cyanCard = Color(hex: 0x22D3EE) // Experiences: cyan-401
@@ -29,7 +29,7 @@ enum Palette {
     static let topicCard = Color(hex: 0x67E8F9) // AI Topics: cyan-301
     static let cardInk = Color(red: 24 / 255, green: 34 / 255, blue: 78 / 255)
     static let cardSecondary = Color(red: 53 / 255, green: 62 / 255, blue: 100 / 255)
-    static let inboxCanvas = Color(light: 0xC4B5FD, dark: 0x29223E)
+    static let inboxCanvas = paper
     static let activityCanvas = homeCanvas
     static let mint = Color(light: 0xECFDF5, dark: 0x14352D)
     static let green = Color(light: 0x047857, dark: 0x6EE7B7)
@@ -144,6 +144,8 @@ struct CredentialCard: View {
     let credential: Credential
     var featured = false
     var onWhiteSurface = false
+    var showsDisclosure = true
+    var animatesPresence = true
     @Environment(\.dynamicTypeSize) private var textSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -183,7 +185,7 @@ struct CredentialCard: View {
         }
         .shadow(color: .black.opacity(featured ? 0.07 : 0), radius: 10, x: 0, y: 7)
         .padding(.bottom, featured ? 15 : 0)
-        .modifier(CardPresenceMotion(enabled: featured))
+        .modifier(CardPresenceMotion(enabled: featured && animatesPresence))
         .accessibilityElement(children: .combine)
     }
 
@@ -195,9 +197,11 @@ struct CredentialCard: View {
                 .padding(.horizontal, onWhiteSurface ? 9 : 0).padding(.vertical, onWhiteSurface ? 5 : 0)
                 .background(onWhiteSurface ? Palette.categoryTint(credential.displayCategory) : .clear, in: Capsule())
             Spacer(minLength: 0)
-            Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(cardText).frame(width: 32, height: 32)
-                .background(onWhiteSurface ? Palette.paper : .white.opacity(0.65), in: Circle()).accessibilityHidden(true)
+            if showsDisclosure {
+                Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(cardText).frame(width: 32, height: 32)
+                    .background(onWhiteSurface ? Palette.paper : .white.opacity(0.65), in: Circle()).accessibilityHidden(true)
+            }
         }
     }
 
