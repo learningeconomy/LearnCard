@@ -514,7 +514,8 @@ export const useWallet = () => {
                 category,
             };
         } catch (e) {
-            log.error(vc, e);
+            // Credentials can contain uploaded source files; never send them or SDK payloads to logs.
+            log.error('credential.store.failed');
             throw e instanceof Error ? e : new Error(String(e));
         }
     };

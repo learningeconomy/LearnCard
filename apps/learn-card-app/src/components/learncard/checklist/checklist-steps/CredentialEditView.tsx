@@ -3,7 +3,7 @@ import { getField, setField } from './credentialEditFields';
 import { ModalTypes, useModal, useDeviceTypeByWidth } from 'learn-card-base';
 import { useTheme } from '../../../../theme/hooks/useTheme';
 import DatePickerInput from '../../../date-picker/DatePickerInput';
-import { ParsedCredential } from './CheckListCredentialReviewStep';
+import type { ParsedFileCredential } from 'learn-card-base/types/file-extraction';
 import AchievementTypeSelectorModal, {
     formatAchievementType,
     getWalletCategory,
@@ -11,7 +11,7 @@ import AchievementTypeSelectorModal, {
 import * as m from '../../../../paraglide/messages.js';
 
 type Props = {
-    credential: ParsedCredential;
+    credential: ParsedFileCredential;
     onSave: (editedVc: Record<string, unknown>) => void;
     onBack: () => void;
 };

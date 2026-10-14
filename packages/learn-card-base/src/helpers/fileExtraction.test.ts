@@ -161,12 +161,8 @@ describe('file diagnostics consent and isolation', () => {
 
     it('suppresses settlement diagnostics after a profile switch during processing', async () => {
         const attempt = createFileExtractionAttempt();
-        let resolve!: (response: Response) => void;
-        fetchMock.mockReturnValue(
-            new Promise<Response>(done => {
-                resolve = done;
-            })
-        );
+        const { promise, resolve } = Promise.withResolvers<Response>();
+        fetchMock.mockReturnValue(promise);
         const pending = extractFileCredentials(input(attempt));
         configureLoggerContext({ diagnosticIdentity: 'another-profile' });
         resolve(new Response(JSON.stringify({ vcs: [], processing: metadata(attempt) })));
@@ -205,5 +201,34 @@ describe('file diagnostics consent and isolation', () => {
         });
         expect(getDiagnosticLogs()[0].data).toMatchObject({ model: 'unknown' });
         expect(JSON.stringify(getDiagnosticLogs())).not.toContain('PRIVATE_SENTINEL');
+    });
+
+    it('does not rebind an unknown prior operation to the current profile', async () => {
+        const attempt = createFileExtractionAttempt({
+            operationId: crypto.randomUUID(),
+            attemptId: crypto.randomUUID(),
+            attempt: 1,
+        });
+        respond({ vcs: [], processing: metadata(attempt) });
+        await extractFileCredentials(input(attempt));
+        expect(JSON.parse(fetchMock.mock.calls[0][1].body).diagnostics.enabled).toBe(false);
+        expect(getDiagnosticLogs()).toEqual([]);
+    });
+
+    it('retains audited backend model identifiers without admitting provider text', async () => {
+        const attempt = createFileExtractionAttempt();
+        respond({
+            vcs: [],
+            processing: {
+                ...metadata(attempt),
+                model: 'us.openai.gpt-6-luna',
+                ocrModel: 'tesseract-local',
+            },
+        });
+        await extractFileCredentials(input(attempt));
+        expect(getDiagnosticLogs()[0].data).toMatchObject({
+            model: 'us.openai.gpt-6-luna',
+            ocrModel: 'tesseract-local',
+        });
     });
 });

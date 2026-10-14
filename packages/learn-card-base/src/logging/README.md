@@ -197,6 +197,11 @@ store. AI Passport emits gated terminal operational logs; configure access and r
 deployment's existing logging service. Nothing attaches an uploaded source artifact to feedback
 or authorizes its collection for investigation.
 
+Document persistence and attachment-opening catches log fixed events, not credentials, raw
+SDK errors or filenames. A bounded, memory-only attempt cache keeps correlation through manager
+close/reopen; a new app session starts a new operation. If an earlier operation's diagnostic
+owner is unknown or evicted, its retry stays opted out rather than rebinding to another profile.
+
 ---
 
 ## Sentry setup (apps)

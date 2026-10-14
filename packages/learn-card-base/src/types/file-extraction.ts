@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { UnsignedVCValidator } from '@learncard/types';
+import { UnsignedVCValidator, type UnsignedVC } from '@learncard/types';
 
 export const FILE_EXTRACTION_STAGES = [
     'input',
@@ -111,6 +111,8 @@ export const FileExtractionDiagnosticValidator = FileExtractionAttemptValidator.
     // Only audited application model identifiers, never arbitrary server error text.
     model: z
         .enum([
+            'us.openai.gpt-6-luna',
+            'us.openai.gpt-6.1-sol',
             'gpt-6-luna-none',
             'gpt-6.1-sol',
             'gpt-5.6-luna-none',
@@ -121,6 +123,7 @@ export const FileExtractionDiagnosticValidator = FileExtractionAttemptValidator.
         .optional(),
     ocrModel: z
         .enum([
+            'tesseract-local',
             'gpt-6-luna-none',
             'gpt-6.1-sol',
             'gpt-5.6-luna-none',
@@ -131,3 +134,23 @@ export const FileExtractionDiagnosticValidator = FileExtractionAttemptValidator.
         .optional(),
 });
 export type FileExtractionDiagnostic = z.infer<typeof FileExtractionDiagnosticValidator>;
+
+export const RawArtifactCredentialValidator = UnsignedVCValidator.extend({
+    id: z.string().min(1),
+    rawArtifact: z.object({
+        type: z.string(),
+        fileName: z.string(),
+        fileSize: z.string(),
+        fileType: z.string(),
+        data: z.string().min(1),
+    }),
+});
+export type RawArtifactCredential = z.infer<typeof RawArtifactCredentialValidator>;
+
+/** Editable draft plus its source, retained in the memory-only review store. */
+export interface ParsedFileCredential {
+    vc: UnsignedVC;
+    metadata?: { name?: string; category?: string };
+    artifactId?: string;
+    attempt?: FileExtractionAttempt;
+}

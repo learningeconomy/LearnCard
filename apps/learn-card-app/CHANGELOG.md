@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- LC-2202: Keep uploaded originals accessible when extraction is empty or unsuccessful. Add per-file outcomes, reviewed extraction retry, and confirmed save counts for résumés, certificates, transcripts and diplomas. Retry failed persistence without duplicating confirmed writes or replacing a newer saved résumé.
+
 ## 1.100.0
 
 ### Minor Changes

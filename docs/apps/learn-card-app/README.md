@@ -92,6 +92,41 @@ If history cannot be loaded, **Clear history** remains available to reset record
 
 If your account changes after an OID4VP send completes, the success screen says so and hides the earlier account’s details. It does not redirect to the verifier under the new account; return to the requesting application to finish its session.
 
+### Uploading an Original Document
+
+Open **Build My LearnCard**, then choose Resume, Certificates, Transcripts or Diplomas.
+Select a supported file. Review any extracted credentials and choose which ones to save.
+
+```mermaid
+flowchart LR
+    A[Choose document] --> B{Extraction result}
+    B -->|Credentials found| C[Review and select]
+    C --> D[Save original and selection]
+    B -->|Empty or unsuccessful| E[Save original only]
+    D --> F{Save confirmed?}
+    E --> F
+    F -->|Yes| G[Open or download original]
+    F -->|No| H[Retry saving]
+    G --> I[Optional extraction retry]
+    I --> B
+```
+
+The original is labeled **Provided by you · Not verified by an issuer**. It is not a
+verified achievement. **Open File** previews supported documents; **Download** saves the
+original bytes. On iOS, saved files are in LearnCard's Documents folder.
+
+An empty result and an unsuccessful extraction have different messages. Both keep the
+original when its save succeeds and offer another extraction attempt. A failed save does
+not claim that the file is saved; retry saving without running extraction again.
+
+Review can be closed and reopened within the same app session. Selecting none still saves
+the original, but does not mean extraction found nothing. Saved counts include only confirmed
+selected credentials. Partial failures retain the review; retrying a save reuses confirmed writes.
+
+You can also retry from a saved document after reopening its checklist step. New results
+return to review and are not saved automatically. Retrying an older saved résumé does not
+replace the currently stored résumé.
+
 ### Publishing a Résumé
 
 Resume Builder publishes one managed link for each résumé. Republishing an active résumé updates that link. Find its entry in **Shared** to change the title, passcode or expiry, or stop access. Edit the résumé itself in Resume Builder.

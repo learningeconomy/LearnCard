@@ -1,6 +1,7 @@
 # LC-2202: Zero-result credential extraction discovery
 
-Date: 2026-10-08. Scope: discovery and implementation recommendations, not a product change.
+Discovery date: 2026-10-08. The discovery snapshot below is historical; implementation is recorded
+in the final section (2026-10-14).
 Ticket: [LC-2202](https://welibrary.atlassian.net/browse/LC-2202).
 
 ## Decision
@@ -258,3 +259,31 @@ The following are **proposed checks, not runs claimed by this discovery**.
 | Determine usable original artifact / fallback  | Existing self-issued encrypted raw artifact established; explicit document access/labeling proposed       |
 | Distinguish insufficient content from defects  | Not reliably possible with current responses; proposed signals narrow stages without asserting cause      |
 | Required scoped implementation recommendations | Three dependency-ordered changes and behavioral acceptance coverage above                                 |
+
+## Implemented behavior — 2026-10-14
+
+Implementation starts from LearnCard `3174f25a3` and AI Passport
+`300c0af3125a4f1b1785820a2d33866723a88f30`, preserving newer classification and CLR behavior.
+No model or prompt was changed.
+
+| Acceptance boundary                         | Implementation                                                                                                         | Regression evidence                                                                                                                        |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Empty is not malformed or failed            | Versioned processing stage/outcome/code on AI Passport; validated response and matching operation/attempt in LearnCard | Empty/nonempty, invalid bodies, stage failures, malformed input and safe provider errors                                                   |
+| Saved means indexed                         | Original signing/upload/index failures propagate; index writes must return `true`                                      | Signing/upload/index failures preserve the previous résumé; false selected-write results do not count                                      |
+| Extracted, selected and stored are distinct | Per-source draft envelopes and independent counters                                                                    | Select-none differs from empty; idless multi-file candidates retain their source; partial batches continue                                 |
+| Safe persistence retry                      | Stable artifact/credential IDs, confirmed-write receipts and fresh index reads                                         | No repeated original upload; successful selected writes survive retry/remount; saved-original review does not replace another résumé       |
+| Accessible original, explicit retry         | Open/download controls and self-provided label in all four checklist steps; new extraction returns to review           | Browser execution of the actual components against synthetic extraction/storage boundaries; SDK attachment signing and tamper verification |
+| Bounded diagnostics                         | Opt-in adult gate, original-profile ownership, allowlisted operational fields; no document/error payloads              | Opt-out, ineligible/switching profiles, unknown operation ownership, provider-field scrubbing and audited model identifiers                |
+
+Pending review and attempt correlation survive manager close/reopen within an app session.
+The state is memory-only; a new app session starts a new operation. An original's immutable
+save receipt is retained with pending review, so returning to a historical résumé does not
+update the current résumé index.
+
+Deploy AI Passport's typed response contract before the LearnCard client. Legacy responses
+without processing metadata are rejected as incomplete rather than interpreted as empty;
+the client still attempts to preserve the original.
+
+The original reported PDF remains unavailable. Local checks do not reproduce its OCR/model
+result or establish deployed parity. Browser verification uses synthetic extraction and storage;
+native filesystem/viewer calls are emulated at the Capacitor bridge, not exercised on a physical phone.

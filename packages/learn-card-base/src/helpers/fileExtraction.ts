@@ -64,7 +64,10 @@ export const createFileExtractionAttempt = (
         attempt: (previousAttempt?.attempt ?? 0) + 1,
     };
     if (!previousAttempt || !operationOwners.has(attempt.operationId)) {
-        operationOwners.set(attempt.operationId, getDiagnosticCollectionContext());
+        operationOwners.set(
+            attempt.operationId,
+            previousAttempt ? { enabled: false, identity: null } : getDiagnosticCollectionContext()
+        );
         if (operationOwners.size > 200) {
             const oldest = operationOwners.keys().next().value;
             if (oldest) operationOwners.delete(oldest);
@@ -79,8 +82,11 @@ const canRecordOperation = (attempt: FileExtractionAttempt): boolean => {
     return Boolean(owner?.enabled && current.enabled && owner.identity === current.identity);
 };
 
-const safeModel = (model: string): FileExtractionDiagnostic['model'] => {
-    const schema = FileExtractionDiagnosticValidator.shape.model;
+const safeModel = (
+    model: string,
+    field: 'model' | 'ocrModel'
+): FileExtractionDiagnostic['model' | 'ocrModel'] => {
+    const schema = FileExtractionDiagnosticValidator.shape[field];
     const parsed = schema.safeParse(model);
     return parsed.success ? parsed.data : 'unknown';
 };
@@ -106,8 +112,8 @@ const recordExtraction = (
                   sizeBucket: processing.sizeBucket,
                   credentialCount: processing.credentialCount,
                   pipelineVersion: processing.pipelineVersion,
-                  model: safeModel(processing.model),
-                  ocrModel: safeModel(processing.ocrModel),
+                  model: safeModel(processing.model, 'model'),
+                  ocrModel: safeModel(processing.ocrModel, 'ocrModel'),
               }
             : {}),
     });

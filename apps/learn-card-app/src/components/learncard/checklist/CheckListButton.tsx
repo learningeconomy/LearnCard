@@ -32,10 +32,11 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
         checklistStore.useTracked.isParsing();
     const isParsing = resume || certificate || transcript || diploma || rawVC;
 
-    const { resume: pendingResume, transcript: pendingTranscript } =
-        checklistStore.useTracked.pendingReview();
-    const pendingReviewCount =
-        (pendingResume?.credentials?.length ?? 0) + (pendingTranscript?.credentials?.length ?? 0);
+    const pendingReviews = checklistStore.useTracked.pendingReview();
+    const pendingReviewCount = Object.values(pendingReviews).reduce(
+        (count, pending) => count + (pending?.credentials.length ?? 0),
+        0
+    );
     const hasPendingReview = pendingReviewCount > 0;
 
     const handleCheckListButton = async () => {
@@ -82,10 +83,10 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                             {isParsing
                                 ? m['passport.buildMyLearnCard.processing']()
                                 : hasPendingReview
-                                ? m['passport.buildMyLearnCard.pendingReview']({
-                                      count: pendingReviewCount,
-                                  })
-                                : helperCopy}
+                                  ? m['passport.buildMyLearnCard.pendingReview']({
+                                        count: pendingReviewCount,
+                                    })
+                                  : helperCopy}
                         </span>
                     </div>
                 </div>
@@ -112,8 +113,8 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                             isParsing
                                 ? `bg-${primaryColor}`
                                 : featuredCardBgColor
-                                ? 'bg-transparent'
-                                : 'bg-white'
+                                  ? 'bg-transparent'
+                                  : 'bg-white'
                         }`}
                     >
                         {isParsing ? (
@@ -176,8 +177,8 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                         isParsing
                             ? `bg-${primaryColor}`
                             : featuredCardBgColor
-                            ? 'bg-transparent'
-                            : 'bg-white'
+                              ? 'bg-transparent'
+                              : 'bg-white'
                     }`}
                 >
                     {isParsing ? (
