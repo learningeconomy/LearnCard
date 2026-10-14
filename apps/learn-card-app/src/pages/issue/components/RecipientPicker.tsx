@@ -272,7 +272,8 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                                             onChange={onRecipientsChange}
                                             canRemove={row =>
                                                 !spreadsheet?.busy &&
-                                                !spreadsheet?.locked?.(recipientKey(row))
+                                                (spreadsheet?.canRemove?.(recipientKey(row)) ??
+                                                    !spreadsheet?.locked?.(recipientKey(row)))
                                             }
                                             onClose={closeModal}
                                         />,
@@ -311,7 +312,12 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                                             type="button"
                                             disabled={
                                                 spreadsheet?.busy ||
-                                                spreadsheet?.locked?.(recipientKey(recipient))
+                                                !(
+                                                    spreadsheet?.canRemove?.(
+                                                        recipientKey(recipient)
+                                                    ) ??
+                                                    !spreadsheet?.locked?.(recipientKey(recipient))
+                                                )
                                             }
                                             onClick={() => handleRemoveRecipient(index)}
                                             className="text-white/70 hover:text-white transition-colors shrink-0 ml-1"

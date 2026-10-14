@@ -902,6 +902,7 @@ const IssueCredentialPage: React.FC = () => {
 
     const spreadsheet: SpreadsheetView = {
         locked: roster.locked,
+        canRemove: roster.canRemove,
         controls: (
             <SpreadsheetUpload
                 onImport={roster.importSheet}
@@ -929,12 +930,9 @@ const IssueCredentialPage: React.FC = () => {
                 evidence={roster.evidence}
                 problems={roster.problems}
                 locked={roster.locked}
+                canRemove={roster.canRemove}
                 disabled={roster.busy}
-                onRecipientsChange={next =>
-                    setRecipients(
-                        next.map(row => ({ ...row, rowId: row.rowId ?? crypto.randomUUID() }))
-                    )
-                }
+                onRecipientsChange={roster.changeRecipients}
                 onScopeChange={roster.changeScope}
                 onSharedChange={handleVariableChange}
                 onChange={handleRecipientVariableChange}
@@ -1077,11 +1075,7 @@ const IssueCredentialPage: React.FC = () => {
             onChangeTemplate={setTemplate}
             onImport={handleImport}
             onRecipientModeChange={setRecipientMode}
-            onRecipientsChange={next =>
-                setRecipients(
-                    next.map(row => ({ ...row, rowId: row.rowId ?? crypto.randomUUID() }))
-                )
-            }
+            onRecipientsChange={roster.changeRecipients}
             onLinkOptionsChange={setLinkOptions}
             onSelectedSkillsChange={setSelectedSkills}
             onResolvedSkillsChange={handleResolvedSkillsChange}

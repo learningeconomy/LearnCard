@@ -4,7 +4,7 @@ import {
     type InboxBatchReceipt,
     type IssueInboxCredentialBatch,
 } from '@learncard/types';
-import { recipientKey } from '../components/recipientTypes';
+import { recipientKey, type Recipient } from '../components/recipientTypes';
 import { effectiveRowValues } from './roster';
 import { attachmentsToEvidence } from '../components/mediaEvidence';
 import { saveIssuanceRun, readIssuanceRun } from './issuanceStore';
@@ -30,6 +30,22 @@ export interface IssuanceTransport {
         values: Record<string, unknown>
     ) => Promise<unknown>;
 }
+
+/** Attempted rows remain part of the recovery ledger, even after a definite failure. */
+export const canRemoveIssuanceRow = (run: IssuanceRun | null, rowId: string): boolean =>
+    !run?.attempts.some(attempt => attempt.rowIds.includes(rowId)) &&
+    !['queued', 'sent', 'confirming'].includes(run?.outcomes[rowId]?.state ?? 'ready');
+
+/** Check against the current run so stale modal callbacks cannot discard history. */
+export const canReplaceIssuanceRecipients = (
+    run: IssuanceRun | null,
+    recipients: Recipient[]
+): boolean => {
+    const retained = new Set(recipients.map(recipientKey));
+    return !run?.draft.recipients.some(
+        row => !canRemoveIssuanceRow(run, recipientKey(row)) && !retained.has(recipientKey(row))
+    );
+};
 
 export const classifyInboxOutcome = (item: InboxBatchStatus['items'][number]): RowOutcome => {
     const result = item.result;
@@ -164,7 +180,10 @@ export const executeIssuance = async (
             await persist();
         }
         // Resume old attempts before admitting new work. Do not regenerate keys/body.
-        const observe = async (attempt: SubmissionAttempt): Promise<void> => {
+        const observe = async (
+            attempt: SubmissionAttempt,
+            firstSubmission = false
+        ): Promise<void> => {
             assertScope();
             if (!attempt.batchId) {
                 if (Date.now() - attempt.createdAt >= 24 * 3_600_000)
@@ -179,8 +198,10 @@ export const executeIssuance = async (
                         data?: { code?: string };
                     };
                     const code = failure.data?.code ?? failure.code;
-                    // These admission responses prove that no job was accepted.
+                    // Only a first call can prove rejection of this request. A replay
+                    // may lose authorization after an earlier accepted call lost its reply.
                     if (
+                        firstSubmission &&
                         code &&
                         ['BAD_REQUEST', 'UNAUTHORIZED', 'FORBIDDEN', 'TOO_MANY_REQUESTS'].includes(
                             code
@@ -217,9 +238,11 @@ export const executeIssuance = async (
             await persist();
         };
         for (const attempt of run.attempts) if (!attempt.done) await observe(attempt);
+        const previousAttempts = run.attempts.length;
         run = addSubmissionAttempts(run, options.retryFailed);
         await persist();
-        for (const attempt of run.attempts) if (!attempt.done) await observe(attempt);
+        for (const attempt of run.attempts.slice(previousAttempts))
+            if (!attempt.done) await observe(attempt, true);
         for (const recipient of run.draft.recipients) {
             if (recipient.kind !== 'profile') continue;
             const id = recipientKey(recipient);
