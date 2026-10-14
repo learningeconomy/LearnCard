@@ -19,6 +19,30 @@ const clrFixtures = ALL_FIXTURES.filter(
     (fixture): fixture is CredentialFixture => fixture.spec === 'clr-v2'
 );
 
+// Exact totals below describe this fixed regression corpus. New registered fixtures
+// still run through the per-fixture projection and source-preservation checks, but
+// must not change these totals when main and a feature branch are combined.
+const regressionFixtureIds = new Set([
+    'clr/minimal',
+    'clr/multi-achievement',
+    'clr/university-transcript',
+    'clr/student-official-academic-transcript',
+    'clr/employment-record',
+    'clr/training-provider-record',
+    'clr/military-training-record',
+    'clr/professional-organization-record',
+    'clr/licensing-regulatory-record',
+    'clr/mixed-career-record',
+    'clr/nd-student-transcript',
+    'clr/great-plains-full',
+    'clr/westbridge-full',
+    'clr/competency-aligned',
+    'clr/achievement-id-associations',
+    'clr/provisional-transcript',
+    'clr/demo-isd-diploma-assessments',
+]);
+const regressionFixtures = clrFixtures.filter(fixture => regressionFixtureIds.has(fixture.id));
+
 describe('CLR canonical normalization corpus', () => {
     it.each(clrFixtures)(
         'projects every record and result into display categories: $id',
@@ -61,7 +85,9 @@ describe('CLR canonical normalization corpus', () => {
         let resultCount = 0;
         let associationCount = 0;
 
-        expect(clrFixtures).toHaveLength(17);
+        expect(regressionFixtures.map(fixture => fixture.id).sort()).toEqual(
+            [...regressionFixtureIds].sort()
+        );
 
         for (const fixture of clrFixtures) {
             const credential = fixture.credential as unknown as Record<string, unknown>;
@@ -80,6 +106,8 @@ describe('CLR canonical normalization corpus', () => {
                 )
             ).toBe(true);
 
+            if (!regressionFixtureIds.has(fixture.id)) continue;
+
             embeddedCount += model.records.filter(record => record.sourceCredential).length;
             definitionOnlyCount += model.records.filter(record => !record.sourceCredential).length;
             resultCount += model.records.reduce((sum, record) => sum + record.results.length, 0);
@@ -92,8 +120,8 @@ describe('CLR canonical normalization corpus', () => {
         expect(associationCount).toBe(181);
     });
 
-    it('retains status-only, rubric-level-only, and unresolved result references', () => {
-        const models = clrFixtures.map(fixture =>
+    it('retains status-only, rubric-level-only, and unresolved references in the regression corpus', () => {
+        const models = regressionFixtures.map(fixture =>
             normalizeClrTranscriptDisplayModel(
                 fixture.credential as unknown as Record<string, unknown>
             )
