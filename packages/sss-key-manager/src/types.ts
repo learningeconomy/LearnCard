@@ -93,6 +93,9 @@ export interface EscrowHoldStatus {
     releaseAfter: string;
     cancelledAt?: string;
     completedAt?: string;
+    /** Only present for an authority-mode hold-policy hold; `confirmed` only appears alongside it. */
+    requiresConfirmation?: boolean;
+    confirmed?: boolean;
 }
 
 /** Persist these secrets securely until completion; a null token means an existing hold. */

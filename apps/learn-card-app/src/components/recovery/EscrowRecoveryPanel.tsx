@@ -5,6 +5,7 @@ import {
     timeOutline,
     checkmarkCircleOutline,
     shieldCheckmarkOutline,
+    mailOutline,
 } from 'ionicons/icons';
 import type { KeyDerivationStrategy } from '@learncard/types';
 import {
@@ -51,6 +52,13 @@ export interface EscrowRecoveryPanelProps {
             | (Omit<PendingEscrowRecovery, 'releaseAfter'> & { method: 'escrow' })
             | { method: 'escrow-pin'; pin: string }
     ) => Promise<void>;
+    /** Only meaningful when a hold's status reports `requiresConfirmation: true`. */
+    onConfirmCode: (params: {
+        holdId: string;
+        resumeToken: string;
+        code: string;
+    }) => Promise<{ success: true }>;
+    onResendCode: (params: { holdId: string; resumeToken: string }) => Promise<{ success: true }>;
 }
 
 export const EscrowRecoveryPanel = ({
@@ -60,6 +68,8 @@ export const EscrowRecoveryPanel = ({
     onStart,
     onStatus,
     onRecover,
+    onConfirmCode,
+    onResendCode,
     canResumeCompleted,
     view,
 }: EscrowRecoveryPanelProps) => {
@@ -84,6 +94,16 @@ export const EscrowRecoveryPanel = ({
     const [now, setNow] = useState(Date.now());
     const storageAvailable = isEscrowRecoveryStorageAvailable();
 
+    // P9.1 (attack C): tracks whether this hold's emailed code has been
+    // confirmed. Reset on a fresh hold; refreshed from the server (never
+    // trusted purely from local storage) on load and on every status check.
+    const [confirmed, setConfirmed] = useState(false);
+    const [codeInput, setCodeInput] = useState('');
+    const [codeError, setCodeError] = useState('');
+    const [confirming, setConfirming] = useState(false);
+    const [resending, setResending] = useState(false);
+    const [resendNotice, setResendNotice] = useState('');
+
     const handleStarted = async (result: EscrowRecoveryStart) => {
         if (!result.resumeToken) {
             if (!active.current) return;
@@ -100,9 +120,14 @@ export const EscrowRecoveryPanel = ({
             clientEphemeralPrivateKey: result.clientEphemeralPrivateKey,
             releaseAfter: result.releaseAfter,
             requestedAt: result.requestedAt,
+            requiresConfirmation: result.requiresConfirmation,
         };
         if (active.current) {
             setPending(record);
+            setConfirmed(false);
+            setCodeInput('');
+            setCodeError('');
+            setResendNotice('');
             setSaved(false);
             setExistingHold(null);
         }
@@ -147,6 +172,24 @@ export const EscrowRecoveryPanel = ({
             clearInterval(timer);
         };
     }, [scope, loadAttempt]);
+
+    // Confirmation state lives only on the server; a reload must re-derive it
+    // rather than trust whatever was last persisted locally. Must stay above
+    // every early return below so hook call order never varies between renders.
+    useEffect(() => {
+        if (!pending?.requiresConfirmation) return;
+        let cancelled = false;
+        onStatus({ holdId: pending.holdId, resumeToken: pending.resumeToken })
+            .then(hold => {
+                if (!cancelled && hold) setConfirmed(Boolean(hold.confirmed));
+            })
+            .catch(() => {});
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pending?.holdId]);
+
     if (!available && !pending && !error) return null;
     const run = async (action: () => Promise<void>) => {
         setLoading(true);
@@ -233,7 +276,39 @@ export const EscrowRecoveryPanel = ({
             );
             return false;
         }
+        setConfirmed(Boolean(hold.confirmed));
         return true;
+    };
+
+    const handleConfirmCode = async (code: string) => {
+        if (!pending) return;
+        setConfirming(true);
+        setCodeError('');
+        try {
+            await onConfirmCode({ holdId: pending.holdId, resumeToken: pending.resumeToken, code });
+            setConfirmed(true);
+            setCodeInput('');
+        } catch {
+            setCodeError(m['recovery.confirmCode.error']());
+            setCodeInput('');
+        } finally {
+            setConfirming(false);
+        }
+    };
+
+    const handleResendCode = async () => {
+        if (!pending) return;
+        setResending(true);
+        setResendNotice('');
+        setCodeError('');
+        try {
+            await onResendCode({ holdId: pending.holdId, resumeToken: pending.resumeToken });
+            setResendNotice(m['recovery.confirmCode.resent']());
+        } catch {
+            setCodeError(m['recovery.confirmCode.resendError']());
+        } finally {
+            setResending(false);
+        }
     };
     // Screen 1 only surfaces a recovery already underway; starting one lives on Screen 2.
     if (view === 'status' && !pending && !existingHold && !error && !notice) return null;
@@ -368,6 +443,67 @@ export const EscrowRecoveryPanel = ({
             )}
             {pending
                 ? (() => {
+                      if (pending.requiresConfirmation && !confirmed) {
+                          return (
+                              <div className="space-y-5 animate-fade-in-up">
+                                  <div className="rounded-2xl border border-grayscale-200 bg-white p-5 space-y-5">
+                                      <div className="flex items-center gap-3">
+                                          <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-amber-50 text-amber-600">
+                                              <IonIcon icon={mailOutline} className="text-xl" />
+                                          </div>
+                                          <div>
+                                              <h3 className="text-base font-semibold text-grayscale-900">
+                                                  {m['recovery.confirmCode.title']()}
+                                              </h3>
+                                              <p className="text-sm text-grayscale-600">
+                                                  {m['recovery.confirmCode.description']()}
+                                              </p>
+                                          </div>
+                                      </div>
+
+                                      <div className="flex justify-center py-2">
+                                          <RecoveryPinInput
+                                              length={8}
+                                              value={codeInput}
+                                              onChange={val => {
+                                                  setCodeInput(val);
+                                                  setCodeError('');
+                                              }}
+                                              onComplete={code => void handleConfirmCode(code)}
+                                              disabled={confirming}
+                                              error={!!codeError}
+                                          />
+                                      </div>
+
+                                      {codeError && (
+                                          <p className="text-sm text-red-600 text-center">
+                                              {codeError}
+                                          </p>
+                                      )}
+                                      {confirming && (
+                                          <div className="flex justify-center">
+                                              {spinner(m['recovery.confirmCode.confirming']())}
+                                          </div>
+                                      )}
+                                      {resendNotice && !codeError && (
+                                          <p className="text-sm text-emerald-600 text-center">
+                                              {resendNotice}
+                                          </p>
+                                      )}
+
+                                      <button
+                                          onClick={() => void handleResendCode()}
+                                          disabled={resending || confirming}
+                                          className="w-full py-2.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors disabled:opacity-40"
+                                      >
+                                          {resending
+                                              ? m['recovery.confirmCode.resending']()
+                                              : m['recovery.confirmCode.resend']()}
+                                      </button>
+                                  </div>
+                              </div>
+                          );
+                      }
                       const releaseTime = Date.parse(pending.releaseAfter);
                       const isReady = now >= releaseTime;
                       const timeRemaining = Math.max(0, releaseTime - now);

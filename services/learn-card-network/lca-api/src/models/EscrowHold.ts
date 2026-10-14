@@ -75,6 +75,14 @@ export const EscrowHoldValidator = z.object({
         .max(4)
         .optional(),
     startedNotificationPending: z.boolean().optional(),
+    // P9.1 (attack C): set at creation only for an authority-mode Hold-policy
+    // hold (the enclave gates its own release on a confirmed email code, not
+    // just this flag). `confirmedAt` is set once `confirmRecovery` succeeds,
+    // at which point `releaseAfter` is also recomputed from the confirmation
+    // time (not the original creation time) so Mongo's own stale-expiry and
+    // reminder-window queries stay consistent with the enclave's real gate.
+    requiresConfirmation: z.boolean().optional(),
+    confirmedAt: z.date().optional(),
     reminderClaimedUntil: z.date().optional(),
     startedNotificationAttemptedAt: z.date().optional(),
     reminderAttemptedAt: z.date().optional(),
@@ -355,6 +363,22 @@ export const cancelEscrowHoldByCancelToken = async (
         { returnDocument: 'after' }
     );
 };
+/**
+ * Records a successful confirmRecovery and corrects releaseAfter to the
+ * confirmation time (the enclave's own release gate is confirmation-based,
+ * not creation-based). Never overwrites an already-confirmed row.
+ */
+export const recordEscrowHoldConfirmation = async (
+    id: string,
+    confirmedAt: Date,
+    releaseAfter: Date
+): Promise<EscrowHold | null> =>
+    getEscrowHoldsCollection().findOneAndUpdate(
+        { _id: id, status: 'pending', confirmedAt: { $exists: false } },
+        { $set: { confirmedAt, releaseAfter, updatedAt: confirmedAt } },
+        { returnDocument: 'after' }
+    );
+
 export const completeEscrowHold = async (id: string): Promise<EscrowHold | null> => {
     const now = new Date();
     return getEscrowHoldsCollection().findOneAndUpdate(
@@ -462,7 +486,13 @@ export const recordEscrowStartNotificationAttempt = async (
  * excludes them in practice within a few ms of job execution; the explicit
  * releasePolicy filter documents that exclusion instead of relying on
  * timing alone. Legacy rows predating `releasePolicy` are treated as `hold`,
- * matching `findPendingEscrowHoldByAuthProvider`'s own `$or`.
+ * matching `findPendingEscrowHoldByAuthProvider`'s own `$or`. An
+ * authority-mode hold still awaiting its email confirmation is excluded
+ * outright: its stored `releaseAfter` is only a rough creation-time estimate
+ * until confirmation recomputes it, and the enclave's own
+ * `authority_send_release_warning` would reject a pre-confirmation hold
+ * anyway (see policy/authority.rs), so excluding it here avoids a
+ * predictable, recurring no-op failure every run.
  */
 export const findEscrowHoldsDueForReminder = async (
     now: Date,
@@ -471,7 +501,20 @@ export const findEscrowHoldsDueForReminder = async (
     getEscrowHoldsCollection()
         .find({
             status: 'pending',
-            $or: [{ releasePolicy: 'hold' as const }, { releasePolicy: { $exists: false } }],
+            $and: [
+                {
+                    $or: [
+                        { releasePolicy: 'hold' as const },
+                        { releasePolicy: { $exists: false } },
+                    ],
+                },
+                {
+                    $or: [
+                        { requiresConfirmation: { $ne: true } },
+                        { confirmedAt: { $exists: true } },
+                    ],
+                },
+            ],
             releaseAfter: {
                 $gt: now,
                 $lte: new Date(now.getTime() + ESCROW_HOLD_REMINDER_WINDOW_MS),

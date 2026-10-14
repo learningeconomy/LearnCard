@@ -20,6 +20,8 @@ describe('EscrowRecoveryPanel', () => {
                 onStart={vi.fn()}
                 onStatus={vi.fn()}
                 onRecover={vi.fn()}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
             />
         );
         expect(screen.queryByLabelText('PIN digit 1')).not.toBeInTheDocument();
@@ -38,6 +40,8 @@ describe('EscrowRecoveryPanel', () => {
                     onStart={vi.fn()}
                     onStatus={vi.fn()}
                     onRecover={vi.fn().mockRejectedValue(error)}
+                    onConfirmCode={vi.fn()}
+                    onResendCode={vi.fn()}
                 />
             );
             fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
@@ -69,6 +73,8 @@ describe('EscrowRecoveryPanel', () => {
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
                 onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
             />
         );
 
@@ -90,6 +96,8 @@ describe('EscrowRecoveryPanel', () => {
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
                 onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
             />
         );
 
@@ -114,6 +122,8 @@ describe('EscrowRecoveryPanel', () => {
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
                 onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
             />
         );
         fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
@@ -141,6 +151,8 @@ describe('EscrowRecoveryPanel', () => {
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
                 onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
             />
         );
 
@@ -173,6 +185,8 @@ describe('EscrowRecoveryPanel', () => {
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
                 onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
             />
         );
 
@@ -206,6 +220,8 @@ describe('EscrowRecoveryPanel', () => {
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
                 onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
             />
         );
 
@@ -249,6 +265,8 @@ describe('EscrowRecoveryPanel', () => {
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
                 onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
             />
         );
 
@@ -290,6 +308,8 @@ describe('EscrowRecoveryPanel', () => {
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
                 onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
             />
         );
 
@@ -319,6 +339,8 @@ describe('EscrowRecoveryPanel', () => {
                 onStart={mockOnStart}
                 onStatus={mockOnStatus}
                 onRecover={mockOnRecover}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
             />
         );
 

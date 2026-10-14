@@ -322,6 +322,7 @@ export class AuthCoordinator {
                                   ...credentials,
                                   privateKey: ready.privateKey,
                                   signDidAuthVp,
+                                  options: this.recoveryContactOptions(ready),
                               })
                             : undefined
                     ).catch(err => {
@@ -418,6 +419,26 @@ export class AuthCoordinator {
         );
     }
 
+    /** Submit the confirmation code emailed by the enclave for an authority-mode hold. */
+    async confirmEscrowRecovery(params: {
+        holdId: string;
+        resumeToken: string;
+        code: string;
+    }): Promise<{ success: true }> {
+        if (!this.keyDerivation.confirmEscrowRecovery) throw new Error('Recovery is not available');
+        return this.keyDerivation.confirmEscrowRecovery(params);
+    }
+
+    /** Request a fresh confirmation code for a hold awaiting confirmation. */
+    async resendEscrowRecoveryCode(params: {
+        holdId: string;
+        resumeToken: string;
+    }): Promise<{ success: true }> {
+        if (!this.keyDerivation.resendEscrowRecoveryCode)
+            throw new Error('Recovery is not available');
+        return this.keyDerivation.resendEscrowRecoveryCode(params);
+    }
+
     /** Cancel a pending request from an account-owning device. */
     async cancelEscrowRecovery(): Promise<UnifiedAuthState> {
         const ready = this.state;
@@ -496,6 +517,7 @@ export class AuthCoordinator {
                 ...(await this.getAuthCredentials()),
                 privateKey: ready.privateKey,
                 signDidAuthVp: this.config.signDidAuthVp!,
+                options: this.recoveryContactOptions(ready),
             })
         );
     }
@@ -519,6 +541,7 @@ export class AuthCoordinator {
                     privateKey: ready.privateKey,
                     signDidAuthVp: this.config.signDidAuthVp!,
                     pin,
+                    options: this.recoveryContactOptions(ready),
                 })
             );
         } finally {
@@ -544,6 +567,7 @@ export class AuthCoordinator {
                     ...(await this.getAuthCredentials()),
                     privateKey: ready.privateKey,
                     signDidAuthVp: this.config.signDidAuthVp!,
+                    options: this.recoveryContactOptions(ready),
                 })
             );
         } finally {
@@ -576,6 +600,24 @@ export class AuthCoordinator {
         } catch (err) {
             log.warn('escrow.pin.refresh.failed', err);
         }
+    }
+
+    /**
+     * P9.1 (attack C): the authenticated account's own email (never a
+     * host-supplied or user-typed value at this layer) plus the app's
+     * current locale, both bound into the sealed escrow blob on the device
+     * side by the key-derivation strategy — lca-api cannot read or change
+     * them afterward. Omitted when either is unavailable; the strategy/
+     * enclave fail closed for nitro/authority-mode enroll/replace rather
+     * than silently default a jargon-adjacent placeholder.
+     */
+    private recoveryContactOptions(
+        ready: Extract<UnifiedAuthState, { status: 'ready' }>
+    ): { recoveryEmail?: string; recoveryLanguage?: string } | undefined {
+        const recoveryEmail = ready.authUser?.email;
+        const recoveryLanguage = this.config.getRecoveryLanguage?.();
+        if (!recoveryEmail && !recoveryLanguage) return undefined;
+        return { recoveryEmail, recoveryLanguage };
     }
 
     /** Helper: get token + providerType from the auth provider.

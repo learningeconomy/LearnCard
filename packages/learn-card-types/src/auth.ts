@@ -563,12 +563,16 @@ export interface KeyDerivationStrategy<
         options?: EscrowEnrollmentOptions;
     }): Promise<void>;
 
-    /** Remove a PIN by rotating escrow material with an owner proof. */
+    /** Remove a PIN by rotating escrow material with an owner proof. In
+     * nitro/authority mode this is a `replace` enrollment action, which
+     * requires `options.recoveryEmail`/`recoveryLanguage`, same as
+     * `setEscrowPin`. */
     clearEscrowPin?(params: {
         token: string;
         providerType: AuthProviderType;
         privateKey: string;
         signDidAuthVp: DidAuthVpSigner;
+        options?: EscrowEnrollmentOptions;
     }): Promise<void>;
 
     /** Start an escrow hold. Securely persist the returned secrets; null means an existing hold. */
@@ -590,6 +594,8 @@ export interface KeyDerivationStrategy<
         pinSalt?: string;
         /** Absent on legacy hold-only strategies. */
         releasePolicy?: 'hold' | 'pin';
+        /** Present only for an authority-mode hold-policy hold; see confirmEscrowRecovery. */
+        requiresConfirmation?: boolean;
     }>;
 
     /** Read a hold using its resume proof or the active device's provider session. */
@@ -606,6 +612,9 @@ export interface KeyDerivationStrategy<
         releasePolicy?: 'hold' | 'pin';
         cancelledAt?: string;
         completedAt?: string;
+        /** Only present for an authority-mode hold-policy hold; `confirmed` only appears alongside it. */
+        requiresConfirmation?: boolean;
+        confirmed?: boolean;
     } | null>;
 
     /** Cancel a pending hold with a fresh, owner-signed DID challenge. */
@@ -615,6 +624,26 @@ export interface KeyDerivationStrategy<
         privateKey: string;
         signDidAuthVp: DidAuthVpSigner;
     }): Promise<{ cancelled: boolean }>;
+
+    /**
+     * Submit the confirmation code the enclave emailed to the account's
+     * recovery address. Only meaningful when startEscrowRecovery returned
+     * `requiresConfirmation: true`; the resume proof (no DID session exists
+     * yet at this point in the flow) is the only credential.
+     */
+    confirmEscrowRecovery?(params: {
+        holdId: string;
+        resumeToken: string;
+        code: string;
+        tenantId?: string;
+    }): Promise<{ success: true }>;
+
+    /** Request a fresh confirmation code for a hold awaiting confirmation. */
+    resendEscrowRecoveryCode?(params: {
+        holdId: string;
+        resumeToken: string;
+        tenantId?: string;
+    }): Promise<{ success: true }>;
 
     /** Execute a recovery flow and return the recovered private key + DID */
     executeRecovery(params: {

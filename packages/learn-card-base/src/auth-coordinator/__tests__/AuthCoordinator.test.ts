@@ -356,6 +356,7 @@ describe('AuthCoordinator', () => {
                     providerType: 'firebase',
                     privateKey: 'reconstructed-private-key',
                     signDidAuthVp,
+                    options: { recoveryEmail: 'test@example.com', recoveryLanguage: undefined },
                 })
             );
             expect(coordinator.getState().status).toBe('ready');
@@ -400,6 +401,7 @@ describe('AuthCoordinator', () => {
                 ...credentials,
                 privateKey: 'reconstructed-private-key',
                 signDidAuthVp,
+                options: { recoveryEmail: 'test@example.com', recoveryLanguage: undefined },
             });
             expect(getEscrowEnrollmentState).toHaveBeenCalledWith(credentials);
             disableEscrowRecovery.mockRejectedValueOnce(
@@ -534,6 +536,7 @@ describe('AuthCoordinator', () => {
                 privateKey: 'reconstructed-private-key',
                 signDidAuthVp,
                 pin: '135790',
+                options: { recoveryEmail: 'test@example.com', recoveryLanguage: undefined },
             });
 
             const loggingOut = coordinator.logout();

@@ -70,6 +70,8 @@ export interface AuthCoordinatorContextValue {
     recover: (input: unknown) => Promise<void>;
     startEscrowRecovery: AuthCoordinator['startEscrowRecovery'];
     getEscrowRecoveryStatus: AuthCoordinator['getEscrowRecoveryStatus'];
+    confirmEscrowRecovery: AuthCoordinator['confirmEscrowRecovery'];
+    resendEscrowRecoveryCode: AuthCoordinator['resendEscrowRecoveryCode'];
     cancelEscrowRecovery: AuthCoordinator['cancelEscrowRecovery'];
     disableEscrowRecovery: AuthCoordinator['disableEscrowRecovery'];
     enableEscrowRecovery: AuthCoordinator['enableEscrowRecovery'];
@@ -466,6 +468,20 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         },
         []
     );
+    const confirmEscrowRecovery = useCallback(
+        async (params: { holdId: string; resumeToken: string; code: string }) => {
+            if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+            return coordinatorRef.current.confirmEscrowRecovery(params);
+        },
+        []
+    );
+    const resendEscrowRecoveryCode = useCallback(
+        async (params: { holdId: string; resumeToken: string }) => {
+            if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+            return coordinatorRef.current.resendEscrowRecoveryCode(params);
+        },
+        []
+    );
     const cancelEscrowRecovery = useCallback(async () => {
         if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
         return coordinatorRef.current.cancelEscrowRecovery();
@@ -633,6 +649,8 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             recover,
             startEscrowRecovery,
             getEscrowRecoveryStatus,
+            confirmEscrowRecovery,
+            resendEscrowRecoveryCode,
             cancelEscrowRecovery,
             disableEscrowRecovery,
             enableEscrowRecovery,
@@ -677,6 +695,8 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             recover,
             startEscrowRecovery,
             getEscrowRecoveryStatus,
+            confirmEscrowRecovery,
+            resendEscrowRecoveryCode,
             cancelEscrowRecovery,
             disableEscrowRecovery,
             enableEscrowRecovery,

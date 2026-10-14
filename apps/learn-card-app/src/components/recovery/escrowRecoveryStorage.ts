@@ -8,6 +8,8 @@ export interface PendingEscrowRecovery {
     clientEphemeralPrivateKey: string;
     releaseAfter: string;
     requestedAt?: string;
+    /** Set only for an authority-mode hold-policy hold; see EscrowRecoveryPanel's code-entry step. */
+    requiresConfirmation?: boolean;
 }
 
 const KEY = 'escrow-recovery-pending';
@@ -28,6 +30,7 @@ const storedRequestSchema = z.object({
     clientEphemeralPrivateKey: z.string().min(1),
     releaseAfter: z.string().refine(value => Number.isFinite(Date.parse(value))),
     requestedAt: z.string().optional(),
+    requiresConfirmation: z.boolean().optional(),
 });
 
 const loadRequests = async () => {
@@ -50,6 +53,7 @@ export const loadPendingEscrowRecovery = async (
         clientEphemeralPrivateKey: value.clientEphemeralPrivateKey,
         releaseAfter: value.releaseAfter,
         requestedAt: value.requestedAt,
+        requiresConfirmation: value.requiresConfirmation,
     };
 };
 

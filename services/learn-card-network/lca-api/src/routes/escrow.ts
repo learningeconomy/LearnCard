@@ -47,6 +47,7 @@ import {
     hasUnconfirmedEscrowCancellation,
     cancelEscrowHoldByCancelToken,
     completeEscrowHold,
+    recordEscrowHoldConfirmation,
     recordEscrowReleaseReceipt,
     hasCompletedEscrowHoldForVersion,
     expireStaleEscrowHolds,
@@ -198,6 +199,10 @@ const holdStatusValidator = z.object({
     releasePolicy: z.enum(['hold', 'pin']),
     cancelledAt: z.string().optional(),
     completedAt: z.string().optional(),
+    // P9.1 (attack C): lets the client decide whether to show the
+    // code-entry step; `confirmed` only ever appears once `requiresConfirmation` does.
+    requiresConfirmation: z.boolean().optional(),
+    confirmed: z.boolean().optional(),
 });
 
 const serializeHold = (hold: EscrowHold): z.infer<typeof holdStatusValidator> => ({
@@ -208,6 +213,9 @@ const serializeHold = (hold: EscrowHold): z.infer<typeof holdStatusValidator> =>
     releasePolicy: hold.releasePolicy ?? 'hold',
     ...(hold.cancelledAt ? { cancelledAt: hold.cancelledAt.toISOString() } : {}),
     ...(hold.completedAt ? { completedAt: hold.completedAt.toISOString() } : {}),
+    ...(hold.requiresConfirmation
+        ? { requiresConfirmation: true, confirmed: Boolean(hold.confirmedAt) }
+        : {}),
 });
 
 const resumeTokenMatches = (hold: EscrowHold, token: string): boolean => {
@@ -734,7 +742,13 @@ export const escrowRouter = t.router({
         .input(startInput)
         .output(
             holdStatusValidator
-                .pick({ holdId: true, requestedAt: true, releaseAfter: true, releasePolicy: true })
+                .pick({
+                    holdId: true,
+                    requestedAt: true,
+                    releaseAfter: true,
+                    releasePolicy: true,
+                    requiresConfirmation: true,
+                })
                 .extend({
                     status: z.literal('pending'),
                     resumeToken: z.string().nullable(),
@@ -888,6 +902,7 @@ export const escrowRouter = t.router({
                     resumeTokenHash: hashEscrowResumeToken(resumeToken),
                     cancelTokenHash: hashEscrowCancelToken(cancelToken),
                     startedNotificationPending: !isAuthorityManagedHold,
+                    requiresConfirmation: isAuthorityManagedHold,
                     requestIp: ctx.clientIp,
                     tenantId: ctx.tenant?.id,
                 });
@@ -979,6 +994,18 @@ export const escrowRouter = t.router({
                     expectedDid: hold.primaryDid,
                     code: input.code,
                 })
+            );
+            // enclaveOperation re-throws on a code mismatch (the enclave
+            // itself returns an error there); reaching this line means the
+            // code matched. releaseAfter is recomputed from now, not the
+            // original creation time — see recordEscrowHoldConfirmation.
+            const now = new Date();
+            await recordEscrowHoldConfirmation(
+                hold._id,
+                now,
+                new Date(
+                    now.getTime() + hold.holdRecord.holdDurationMs + ESCROW_RELEASE_TIME_MARGIN_MS
+                )
             );
             return { success: true as const };
         }),

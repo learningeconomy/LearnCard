@@ -2219,6 +2219,28 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             return result.hold;
         },
 
+        /** Submit the confirmation code emailed by the enclave for an authority-mode hold. */
+        async confirmEscrowRecovery(params): Promise<{ success: true }> {
+            return escrowRequest<{ success: true }>('/confirm', {
+                method: 'POST',
+                headers: buildHeaders('', undefined, params.tenantId ?? tenantId),
+                body: JSON.stringify({
+                    holdId: params.holdId,
+                    resumeToken: params.resumeToken,
+                    code: params.code,
+                }),
+            });
+        },
+
+        /** Request a fresh confirmation code for a hold awaiting confirmation. */
+        async resendEscrowRecoveryCode(params): Promise<{ success: true }> {
+            return escrowRequest<{ success: true }>('/resend', {
+                method: 'POST',
+                headers: buildHeaders('', undefined, params.tenantId ?? tenantId),
+                body: JSON.stringify({ holdId: params.holdId, resumeToken: params.resumeToken }),
+            });
+        },
+
         /** Cancel a pending hold with a fresh DID-owner proof. */
         async cancelEscrowRecovery(params): Promise<{ cancelled: boolean }> {
             const status = await this.fetchServerKeyStatus(params.token, params.providerType);

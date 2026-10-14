@@ -2288,6 +2288,16 @@
             },
             "useInstead": "Use my recovery PIN instead"
         },
+        "confirmCode": {
+            "title": "Check your email",
+            "description": "Enter the code we sent to confirm this request.",
+            "confirming": "Confirming...",
+            "error": "That code didn't work. Try again or resend it.",
+            "resend": "Resend code",
+            "resending": "Resending...",
+            "resent": "We sent a new code.",
+            "resendError": "Something went wrong. Please try again."
+        },
         "addWayBackIn": "Add a way back in",
         "addAnotherMethod": "Add another method",
         "fullyProtected": "You're fully protected.",

@@ -203,4 +203,16 @@ export interface AuthCoordinatorConfig {
      * @default 4000
      */
     serverStatusTimeoutMs?: number;
+
+    /**
+     * P9.1 (attack C): optional, app-supplied current locale (one of the
+     * app's compiled recovery-email languages, e.g. 'en'/'es'/'fr'/'ar'),
+     * bound alongside the account email into the sealed escrow blob on every
+     * enroll/replace. The device is the source of truth for this binding —
+     * lca-api cannot read or change it afterward; changing the recovery
+     * address or language requires a fresh enrollment from the device, not
+     * an edit. Omitted/unrecognized values fail closed at the enclave for
+     * nitro/authority-mode enroll/replace, never silently defaulted.
+     */
+    getRecoveryLanguage?: () => string | undefined;
 }
