@@ -34,8 +34,8 @@ see `infra/escrow-enclave/README.md`. Public authority/email settings are record
 CI-signed manifest; no plaintext access keys belong in either artifact.
 Without authority configuration, `UnavailableEnrollment` remains wired. Partial
 configuration, missing ciphertext or unsealing failure fails boot closed. No email
-client is active. **Do not deploy the configured authority before items e–i:** the
-new policy APIs/hold format still need wire, app/client and independent monitor integration.
+client is active. **Do not deploy the configured authority before items f–i:** the
+wire/API path is implemented; app/client and independent monitor integration remain.
 
 PR 2 item-a checkpoint adds the persistence schema in
 `src/authority/state.rs`. It is available without AWS features for offline tests
@@ -105,9 +105,35 @@ The configured policy does not derive freshness or PIN budgets from the legacy
 parent ledger. Item g must consume these authority artifacts independently before
 deployment; the existing monitor alone does not observe this new audit path.
 
-The next checkpoint is item e: expose the signed policy APIs and new receipts/holds
-through the wire and lca-api. Client integration, monitor integration, remaining
-end-to-end tests and deployment documentation are still pending.
+Item e exposes `enrollmentState`, `applyEnrollment` and `authorityRewrap` through
+the enclave and independent host DTOs, at `/v1/enrollment-state`,
+`/v1/apply-enrollment` and `/v1/authority-rewrap`. Release/cancel responses preserve
+post-commit receipts. The API requires owner-signed intent in remote mode and
+never falls back to unsigned/PIN-less enrollment. It caches and returns the actual
+persisted output envelope, authoritative epoch/version/generation and commit
+evidence. Mongo persistence compares the old blob and PIN cache; a lost cache CAS
+does not undo or retry the authority transition. Signed disablement uses the POST
+body route `/keys/escrow/disable`; the legacy DELETE route remains software-only,
+so signed capabilities and encrypted sources never become URL query parameters.
+The rewrap job can reconcile a
+lost response from fresh authoritative state instead of trying to reseal an old copy.
+Pending obsolete holds can still be cancelled after rotation/disable, and confirmed
+cancellation receipts are stored before clearing the durable pending marker.
+
+`POST /keys/escrow/authority-state` requires account/provider authentication and
+forwards a client-generated 32-byte nonce (64 lowercase hex characters). The enclave
+signs `[nonce, state]` as a distinct Snapshot artifact (kind tag 2, versus Proposal=0
+and Commit=1). Snapshot payloads are bounded at 49,152 base64 characters to accommodate
+the encrypted active envelope; Proposal/Commit payloads retain the 8192-character
+bound. Commit payloads now explicitly bind resulting blob identity and epoch, so
+clients can check the returned ciphertext without reconstructing a DynamoDB transaction.
+API shape validation is not signature verification: clients must verify these artifacts
+against the nonce-bound attested ledger key before trusting them (item f).
+
+The next checkpoint is item f: client intent production and signed state/receipt
+verification. Monitor integration, remaining end-to-end tests and deployment
+documentation are still pending. Software mode remains legacy staging/dev only;
+it does not implement or impersonate the signed authority protocol.
 
 Item d was implemented before c to avoid an unsigned activation window. The Rust
 verifier is `src/authority/intent.rs`; the TypeScript encoder/signer is
@@ -119,7 +145,7 @@ The verifier requires an authenticated authority snapshot and exact request
 envelopes. A valid signature over a fabricated source still fails when that source
 is not the active authority blob (attack B). Signature replay fails after enrollment
 version changes; unrelated operation revisions do not invalidate intent. Policy now
-calls the verifier; routes and AuthCoordinator still need to carry/sign these intents.
+calls the verifier and routes carry signed intent; AuthCoordinator still needs to sign it.
 
 The client layer is not authorization: enclave policy must build its typed requests
 from validated intent and bind generation/tenant/expected revision in item keys and
