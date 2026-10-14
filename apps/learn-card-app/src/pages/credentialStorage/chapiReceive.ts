@@ -29,9 +29,12 @@ const postExchange = async (
     body: unknown,
     signal?: AbortSignal
 ): Promise<Record<string, unknown>> => {
+    // Exit before allocating a timeout/listener or invoking any fetch wrapper.
+    // This also stops a second VC-API round if cancellation occurred while the
+    // DID-auth presentation was being prepared.
+    if (signal?.aborted) throw new DOMException('The request was aborted.', 'AbortError');
     const controller = new AbortController();
     const abort = () => controller.abort();
-    if (signal?.aborted) abort();
     signal?.addEventListener('abort', abort, { once: true });
     const timer = setTimeout(abort, 30_000);
     try {

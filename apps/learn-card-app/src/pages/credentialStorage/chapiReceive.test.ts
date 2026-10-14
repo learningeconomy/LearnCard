@@ -211,29 +211,61 @@ it('prefers explicit VC-API protocol metadata when legacy interact is also prese
     expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({});
 });
 
-it('clears the exchange timeout and abort listener for an already-aborted signal', async () => {
+it('does not invoke fetch or allocate a timeout/listener for an already-aborted exchange', async () => {
     vi.useFakeTimers();
     try {
         const controller = new AbortController();
         controller.abort();
-        const remove = vi.spyOn(controller.signal, 'removeEventListener');
-        vi.stubGlobal(
-            'fetch',
-            vi.fn((_url: string, options: { signal: AbortSignal }) => {
-                expect(options.signal.aborted).toBe(true);
-                return Promise.reject(new DOMException('Aborted', 'AbortError'));
-            })
-        );
+        const add = vi.spyOn(controller.signal, 'addEventListener');
+        const fetch = vi.fn();
+        vi.stubGlobal('fetch', fetch);
         await expect(
             loadChapiPresentation(
                 {} as BespokeLearnCard,
                 event(presentation, { protocols: { vcapi: 'https://issuer.example/exchange' } }),
                 controller.signal
             )
-        ).rejects.toThrow('Aborted');
+        ).rejects.toMatchObject({ name: 'AbortError' });
+        expect(fetch).not.toHaveBeenCalled();
         expect(vi.getTimerCount()).toBe(0);
-        expect(remove).toHaveBeenCalledWith('abort', expect.any(Function));
+        expect(add).not.toHaveBeenCalled();
     } finally {
         vi.useRealTimers();
     }
+});
+
+it('does not post a second exchange round after cancellation during DID-auth preparation', async () => {
+    const controller = new AbortController();
+    const fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+            verifiablePresentationRequest: {
+                query: { type: 'DIDAuthentication' },
+                domain: 'issuer.example',
+                challenge: 'demo',
+            },
+        }),
+    });
+    vi.stubGlobal('fetch', fetch);
+    const getDidAuthVp = vi.fn(async () => {
+        controller.abort();
+        return { proof: 'signed' };
+    });
+    const wallet = {
+        id: { did: () => 'did:key:test' },
+        invoke: {
+            didToVerificationMethod: vi.fn().mockResolvedValue('did:key:test#key'),
+            getDidAuthVp,
+        },
+    };
+    await expect(
+        loadChapiPresentation(
+            wallet as unknown as BespokeLearnCard,
+            event(presentation, { protocols: { vcapi: 'https://issuer.example/exchange' } }),
+            controller.signal
+        )
+    ).rejects.toMatchObject({ name: 'AbortError' });
+    expect(getDidAuthVp).toHaveBeenCalledOnce();
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({});
 });

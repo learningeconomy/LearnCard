@@ -399,4 +399,37 @@ describe('credential receive interaction', () => {
             expect(screen.queryByRole('button', { name: 'Try Again' })).toBeNull();
         }
     );
+    it('does not carry a pending save into a fresh mount or acknowledge the unmounted request', async () => {
+        let finishOldSave!: (result: { result: boolean; credentialUri: string }) => void;
+        mocks.save.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    finishOldSave = resolve;
+                })
+        );
+        const oldResponse = vi.fn();
+        const newResponse = vi.fn();
+        mocks.receive
+            .mockResolvedValueOnce({ credential: { data: presentation }, respondWith: oldResponse })
+            .mockResolvedValueOnce({
+                credential: { data: presentation },
+                respondWith: newResponse,
+            });
+        const oldPage = render(<CredentialReceivePage />);
+        fireEvent.click(await ready());
+        expect(screen.getByRole('button', { name: 'Saving...' })).toBeDisabled();
+        oldPage.unmount();
+        render(<CredentialReceivePage />);
+        const newSave = await ready();
+        expect(newSave).toBeEnabled();
+        expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled();
+        await act(async () => finishOldSave({ result: true, credentialUri: 'old-uri' }));
+        expect(oldResponse).not.toHaveBeenCalled();
+        expect(newResponse).not.toHaveBeenCalled();
+        expect(newSave).toBeEnabled();
+        fireEvent.click(newSave);
+        await screen.findByText('Saved to your Passport.');
+        expect(newResponse).toHaveBeenCalledOnce();
+        expect(oldResponse).not.toHaveBeenCalled();
+    });
 });
