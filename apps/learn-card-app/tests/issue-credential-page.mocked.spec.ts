@@ -25,6 +25,19 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
     test.beforeEach(async ({ page }) => {
         // Install the mocked backend BEFORE any navigation so boot calls are served.
         network = await installNetwork(page);
+        // Recovery requires the issuer profile. Repeated or multiplexed reads do not
+        // match the HAR's single recorded request, so serve them deterministically.
+        network.on('profile.getProfile', () => ({
+            profileId: TEST_USER_PROFILE_ID,
+            displayName: 'User From Seed',
+            shortBio: '',
+            bio: '',
+            did: `did:web:localhost%3A4000:users:${TEST_USER_PROFILE_ID}`,
+            profileVisibility: 'public',
+            showEmail: false,
+            allowConnectionRequests: 'anyone',
+            isServiceProfile: false,
+        }));
         await waitForAuthenticatedState(page, {
             path: '/issue',
             profileId: TEST_USER_PROFILE_ID,
