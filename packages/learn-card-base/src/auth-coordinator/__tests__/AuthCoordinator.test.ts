@@ -338,9 +338,15 @@ describe('AuthCoordinator', () => {
         });
         it('repairs enrollment without allowing rejection to change ready state', async () => {
             const ensureEscrowEnrollment = vi.fn().mockRejectedValue(new Error('unavailable'));
+            const getEscrowEnrollmentState = vi.fn().mockResolvedValue('enrolled');
+            const getEscrowRecoveryStatus = vi.fn().mockResolvedValue(null);
             const signDidAuthVp = vi.fn().mockResolvedValue('proof');
             const { coordinator } = setup({
-                keyDerivation: { ensureEscrowEnrollment },
+                keyDerivation: {
+                    ensureEscrowEnrollment,
+                    getEscrowEnrollmentState,
+                    getEscrowRecoveryStatus,
+                },
                 config: { signDidAuthVp },
             });
             await coordinator.initialize();
@@ -353,6 +359,8 @@ describe('AuthCoordinator', () => {
                 })
             );
             expect(coordinator.getState().status).toBe('ready');
+            await vi.waitFor(() => expect(getEscrowRecoveryStatus).toHaveBeenCalled());
+            expect(getEscrowEnrollmentState).not.toHaveBeenCalled();
         });
         it('requires ready state and forwards automatic recovery controls with owner credentials', async () => {
             const disableEscrowRecovery = vi.fn().mockResolvedValue(undefined);

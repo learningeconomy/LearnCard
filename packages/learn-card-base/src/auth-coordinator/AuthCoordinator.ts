@@ -312,10 +312,11 @@ export class AuthCoordinator {
             if (!isCurrentAccount()) return;
             const signDidAuthVp = this.config.signDidAuthVp;
             let publishedEnrollment = false;
+            let enrollmentVerificationFailed = false;
             if (signDidAuthVp && this.keyDerivation.ensureEscrowEnrollment) {
                 const gate = await this.resolveEscrowEnrollmentGate(ready.did, credentials);
                 if (gate.allowed) {
-                    await this.runEscrowOperation(async () =>
+                    const enrollmentResult = await this.runEscrowOperation(async () =>
                         isCurrentAccount()
                             ? this.keyDerivation.ensureEscrowEnrollment?.({
                                   ...credentials,
@@ -323,7 +324,24 @@ export class AuthCoordinator {
                                   signDidAuthVp,
                               })
                             : undefined
-                    ).catch(err => log.warn('escrow.enrollment.failed', err));
+                    ).catch(err => {
+                        enrollmentVerificationFailed = true;
+                        log.warn('escrow.enrollment.failed', err);
+                    });
+                    if (
+                        enrollmentResult &&
+                        !enrollmentResult.enrolled &&
+                        enrollmentResult.reason === 'opted-out' &&
+                        isCurrentAccount() &&
+                        this.state.status === 'ready'
+                    ) {
+                        this.setState({
+                            ...this.state,
+                            escrowEnrollment: 'opted-out',
+                            escrowPin: undefined,
+                        });
+                        publishedEnrollment = true;
+                    }
                 } else if (gate.prefetched && isCurrentAccount() && this.state.status === 'ready') {
                     // The gate blocked the call precisely because the prefetch already proved
                     // this account is not-enrolled; nothing ran that could change that, so
@@ -337,7 +355,13 @@ export class AuthCoordinator {
                 }
             }
             if (!isCurrentAccount()) return;
-            if (!publishedEnrollment && this.keyDerivation.getEscrowEnrollmentState) {
+            // Do not overwrite a failed authority verification with Mongo's
+            // optimistic enrolled flag. Recovery polling remains independent.
+            if (
+                !publishedEnrollment &&
+                !enrollmentVerificationFailed &&
+                this.keyDerivation.getEscrowEnrollmentState
+            ) {
                 try {
                     const enrollment = normalizeEscrowEnrollmentState(
                         await this.keyDerivation.getEscrowEnrollmentState(credentials)
