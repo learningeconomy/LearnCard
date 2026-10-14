@@ -11,7 +11,7 @@ pub async fn run() -> io::Result<()> {
     run_port(8000).await
 }
 
-/// Dormant direct-client relay setup; not called by production boot yet. The
+/// Configured authority relay setup, supervised by production boot. The
 /// parent must separately enable fixed DynamoDB/SES :443 destinations on these
 /// ports. All TLS, hostname checks and signing remain inside the enclave.
 pub async fn run_data_plane(
