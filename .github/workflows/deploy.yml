@@ -379,6 +379,7 @@ jobs:
     # ============================================================================
     deploy-brain-service:
         name: Deploy Brain Service (${{ matrix.name }})
+        timeout-minutes: 20
         needs: [determine-affected, test-affected, build-native-plugin]
         if: |
             always() &&
@@ -534,6 +535,7 @@ jobs:
 
     deploy-learn-cloud:
         name: Deploy LearnCloud (${{ matrix.name }})
+        timeout-minutes: 20
         needs: [determine-affected, test-affected, build-native-plugin]
         if: |
             always() &&
@@ -643,6 +645,7 @@ jobs:
 
     deploy-lca-api:
         name: Deploy LCA API (${{ matrix.name }})
+        timeout-minutes: 20
         needs: [determine-affected, test-affected, build-native-plugin]
         if: |
             always() &&
