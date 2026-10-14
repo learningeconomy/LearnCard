@@ -11,12 +11,14 @@ import {
 import { generateOpenApiDocument } from 'trpc-to-openapi';
 import {
     encryptEscrowBlob,
+    decryptEscrowBlob,
     generateEscrowKeyPair,
     openEscrowRelease,
     splitPrivateKey,
     reconstructFromShares,
     signEscrowEnrollmentIntent,
     getEscrowBlobIdentity,
+    violatesCarryContactRule,
     type EscrowEnvelope,
 } from '@learncard/sss-key-manager';
 import { client } from '@mongo';
@@ -58,6 +60,7 @@ import type {
     AuthorityMutationResult,
     AuthorityStateResponse,
 } from '../src/services/escrow-enclave/authorityContract';
+import type { ApplyEnrollmentInput } from '../src/services/escrow-enclave/types';
 
 const makeMockToken = (email: string, uid: string): string =>
     `header.${Buffer.from(JSON.stringify({ sub: uid, email })).toString('base64url')}.signature`;
@@ -177,13 +180,26 @@ describe('authority enrollment persistence', () => {
             enclaveKeys.publicKey,
             keyId
         );
-        const apply = vi.fn(async (): Promise<AuthorityMutationResult> => ({
-            envelope: persisted,
-            receipt,
-            authorityGeneration: 'fresh-g1',
-            enrollmentVersion: 1,
-            enrollmentEpoch: 1,
-        }));
+        const apply = vi.fn(
+            async (input: ApplyEnrollmentInput): Promise<AuthorityMutationResult> => {
+                // P2-d (cross-language contract): reuses the same rule the
+                // enclave enforces (escrow-authority.ts) so this fake cannot
+                // silently accept a shape the real enclave refuses.
+                const target = input.targetEnvelope
+                    ? await decryptEscrowBlob(input.targetEnvelope, enclaveKeys.privateKey)
+                    : null;
+                if (violatesCarryContactRule(input.signedIntent.intent.action, target)) {
+                    throw new EscrowPolicyError();
+                }
+                return {
+                    envelope: persisted,
+                    receipt,
+                    authorityGeneration: 'fresh-g1',
+                    enrollmentVersion: 1,
+                    enrollmentEpoch: 1,
+                };
+            }
+        );
         const state = vi.fn(
             async (input: {
                 expectedDid: string;
@@ -245,6 +261,53 @@ describe('authority enrollment persistence', () => {
             input: { ...auth, envelope, shareVersion: 1, enclaveKeyId: keyId, signedIntent },
         };
     };
+    it('P2-d: the authority-mode fake rejects a Carry target whose plaintext carries contact fields, and accepts one that does not', async () => {
+        const { apply } = await setup();
+        const carryInput = async (target: EscrowEnvelope): Promise<ApplyEnrollmentInput> => ({
+            signedIntent: await signEscrowEnrollmentIntent(
+                {
+                    version: 2,
+                    tenant: 'learncard',
+                    did,
+                    authorityGeneration: 'fresh-g1',
+                    expectedEnrollmentVersion: 1,
+                    action: 'carry',
+                    sourceBlobIdentity: await getEscrowBlobIdentity(envelope),
+                    targetBlobIdentity: await getEscrowBlobIdentity(target),
+                    pinAction: 'keep',
+                    shareVersion: 2,
+                    enrollmentEpoch: 2,
+                    requestId: randomUUID(),
+                    allowRewrap: true,
+                    recoveryEmail: null,
+                    recoveryLanguage: null,
+                },
+                pk
+            ),
+            sourceEnvelope: envelope,
+            targetEnvelope: target,
+        });
+        const badTarget = await encryptEscrowBlob(
+            {
+                recoveryShare: shares.recoveryShare,
+                did,
+                shareVersion: 2,
+                recoveryEmail: 'attacker@example.com',
+                recoveryLanguage: 'en',
+            },
+            enclaveKeys.publicKey,
+            keyId
+        );
+        await expect(apply(await carryInput(badTarget))).rejects.toBeInstanceOf(EscrowPolicyError);
+        const goodTarget = await encryptEscrowBlob(
+            { recoveryShare: shares.recoveryShare, did, shareVersion: 2 },
+            enclaveKeys.publicKey,
+            keyId
+        );
+        await expect(apply(await carryInput(goodTarget))).resolves.toMatchObject({
+            authorityGeneration: 'fresh-g1',
+        });
+    });
     it('stores and returns the persisted ciphertext with authoritative epoch, never the submitted target or Mongo epoch', async () => {
         await enroll();
         await getUserKeysCollection().updateOne(

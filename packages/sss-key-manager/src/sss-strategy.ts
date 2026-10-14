@@ -54,6 +54,7 @@ import { encryptEscrowBlob, generateEscrowKeyPair, openEscrowRelease } from './e
 import { verifyEnclaveAttestation } from './escrow-attestation';
 import {
     createEscrowEnrollmentIntent,
+    resolveEscrowEnrollmentAction,
     verifyEscrowAuthorityState,
     verifyEscrowEnrollmentCommit,
 } from './escrow-authority';
@@ -1246,23 +1247,24 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                       assertCurrent
                   )
                 : undefined;
-        // P9.1 (attack C) / P2-d: mirrors `createEscrowEnrollmentIntent`'s own
-        // action resolution (escrow-authority.ts) for the one case that
-        // matters here — whether this call keeps an existing PIN unchanged
-        // (carry) rather than setting/changing/clearing it. Carry must never
-        // see a non-null `recoveryEmail`/`recoveryLanguage` in the blob
-        // PLAINTEXT it builds (separately from the signed intent, which
-        // already nulls these out for carry): the enclave fills them in from
-        // the source blob, and rejects a target whose plaintext claims them.
-        const willCarryPin =
-            authority?.status === 'active' && authority.hasPin && !pinMaterial && !clearPin;
+        // P9.1 (attack C): calls the SAME `resolveEscrowEnrollmentAction` used
+        // by `createEscrowEnrollmentIntent` below, so the blob PLAINTEXT built
+        // here and the signed intent built later always agree on whether this
+        // is a carry — the enclave rejects a Carry target blob whose
+        // plaintext carries a non-null recoveryEmail/recoveryLanguage.
+        const bindsRecoveryContact =
+            !authority ||
+            resolveEscrowEnrollmentAction(
+                authority,
+                pinMaterial ? 'set' : clearPin ? 'clear' : 'automatic'
+            ).bindsRecoveryContact;
         const envelope = await encryptEscrowBlob(
             {
                 recoveryShare: shares.recoveryShare,
                 did: primaryDid,
                 shareVersion,
                 ...(pinMaterial ? { pinVerifier: pinMaterial.pinVerifier } : {}),
-                ...(authority && recoveryEmail && !willCarryPin
+                ...(authority && recoveryEmail && bindsRecoveryContact
                     ? { recoveryEmail, recoveryLanguage }
                     : {}),
             },

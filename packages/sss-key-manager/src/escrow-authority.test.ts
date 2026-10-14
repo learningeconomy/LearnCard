@@ -6,12 +6,15 @@ import {
     verifyEscrowAuthorityState,
     verifyEscrowEnrollmentCommit,
     createEscrowEnrollmentIntent,
+    resolveEscrowEnrollmentAction,
+    violatesCarryContactRule,
 } from './escrow-authority';
 import type { EscrowEnrollmentIntent } from './escrow-enrollment-intent.types';
 import type { EscrowAttestationPolicy } from './types';
 import { parseEscrowEnvelope } from './escrow-crypto';
 import golden from './__fixtures__/escrow-authority-v1.json';
 import owner from './__fixtures__/escrow-enrollment-intent-v1.json';
+import carryContactContract from './__fixtures__/escrow-carry-contact-contract-v1.json';
 
 const intent = golden.intent as EscrowEnrollmentIntent;
 const policy: EscrowAttestationPolicy = {
@@ -232,5 +235,61 @@ describe('attested authority artifacts', () => {
                 shareVersion: null,
             })
         ).rejects.toThrow();
+    });
+});
+
+describe('resolveEscrowEnrollmentAction', () => {
+    it('resolves enroll/replace/carry/disable the same way createEscrowEnrollmentIntent does', () => {
+        expect(
+            resolveEscrowEnrollmentAction({ status: 'empty', hasPin: false }, 'automatic')
+        ).toEqual({ action: 'enroll', pinAction: 'keep', bindsRecoveryContact: true });
+        expect(
+            resolveEscrowEnrollmentAction({ status: 'active', hasPin: true }, 'automatic')
+        ).toEqual({ action: 'carry', pinAction: 'keep', bindsRecoveryContact: false });
+        expect(
+            resolveEscrowEnrollmentAction({ status: 'active', hasPin: false }, 'automatic')
+        ).toEqual({ action: 'replace', pinAction: 'keep', bindsRecoveryContact: true });
+        expect(resolveEscrowEnrollmentAction({ status: 'active', hasPin: true }, 'set')).toEqual({
+            action: 'replace',
+            pinAction: 'change',
+            bindsRecoveryContact: true,
+        });
+        expect(resolveEscrowEnrollmentAction({ status: 'active', hasPin: false }, 'set')).toEqual({
+            action: 'replace',
+            pinAction: 'set',
+            bindsRecoveryContact: true,
+        });
+        expect(resolveEscrowEnrollmentAction({ status: 'active', hasPin: true }, 'clear')).toEqual({
+            action: 'replace',
+            pinAction: 'clear',
+            bindsRecoveryContact: true,
+        });
+        expect(
+            resolveEscrowEnrollmentAction({ status: 'active', hasPin: true }, 'disable')
+        ).toEqual({
+            action: 'disable',
+            pinAction: 'keep',
+            bindsRecoveryContact: false,
+        });
+    });
+});
+
+describe('violatesCarryContactRule (P2-d cross-language contract)', () => {
+    it.each(
+        (
+            carryContactContract.cases as {
+                name: string;
+                action: 'enroll' | 'replace' | 'disable' | 'carry';
+                blobRecoveryEmail: string | null;
+                blobRecoveryLanguage: string | null;
+                expected: 'accept' | 'reject';
+            }[]
+        ).map(c => [c.name, c] as const)
+    )('%s', (_name, testCase) => {
+        const violates = violatesCarryContactRule(testCase.action, {
+            recoveryEmail: testCase.blobRecoveryEmail ?? undefined,
+            recoveryLanguage: testCase.blobRecoveryLanguage ?? undefined,
+        });
+        expect(violates).toBe(testCase.expected === 'reject');
     });
 });

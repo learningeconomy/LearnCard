@@ -1119,6 +1119,118 @@ async fn carry_persists_randomized_winner_preserves_budget_and_losing_signer_can
 // the TypeScript side (`enrollEscrow` must omit these fields from the blob
 // it encrypts whenever the operation resolves to carry), so a regression on
 // either side is caught independently.
+#[derive(serde::Deserialize)]
+struct ContactContractCase {
+    name: String,
+    action: String,
+    #[serde(rename = "blobRecoveryEmail")]
+    blob_recovery_email: Option<String>,
+    #[serde(rename = "blobRecoveryLanguage")]
+    blob_recovery_language: Option<String>,
+    expected: String,
+}
+#[derive(serde::Deserialize)]
+struct ContactContractFixture {
+    cases: Vec<ContactContractCase>,
+}
+
+// P2-d cross-language contract: this test and
+// packages/sss-key-manager/src/escrow-authority.test.ts load the identical
+// JSON fixture and must reach the identical accept/reject outcome for every
+// case, so a regression in either language's understanding of the enclave's
+// Carry contact-field rule is caught independent of the other.
+#[tokio::test]
+async fn carry_contact_contract_matches_the_shared_cross_language_fixture() {
+    let fixture: ContactContractFixture = serde_json::from_str(include_str!(
+        "../../../../../packages/sss-key-manager/src/__fixtures__/escrow-carry-contact-contract-v1.json"
+    ))
+    .unwrap();
+    for case in fixture.cases {
+        let f = Fixture::new();
+        let mut p = f.policy(false);
+        let contact_blob = |version: u32, pin: Option<&str>| {
+            encrypt_escrow_blob(
+                &EscrowBlobPlaintext {
+                    version: 1,
+                    recovery_share: "abcdef".into(),
+                    did: f.did.clone(),
+                    share_version: version.into(),
+                    pin_verifier: pin.map(str::to_owned),
+                    pin_attempts_floor: None,
+                    recovery_email: case.blob_recovery_email.clone(),
+                    recovery_language: case.blob_recovery_language.clone(),
+                },
+                &f.old.public_key,
+                "old",
+            )
+            .unwrap()
+        };
+        let accepted = match case.action.as_str() {
+            "enroll" => {
+                let target = contact_blob(1, Some(&"11".repeat(32)));
+                let signed = f
+                    .intent(
+                        "case",
+                        EnrollmentAction::Enroll,
+                        PinAction::Set,
+                        None,
+                        Some(&target),
+                        1,
+                        true,
+                    )
+                    .await;
+                p.apply_enrollment_intent(&signed, None, Some(&target))
+                    .await
+                    .is_ok()
+            }
+            "replace" => {
+                let env = f.enroll(&mut p, true).await;
+                let target = contact_blob(2, None);
+                let signed = f
+                    .intent(
+                        "case",
+                        EnrollmentAction::Replace,
+                        PinAction::Clear,
+                        Some(&env),
+                        Some(&target),
+                        2,
+                        true,
+                    )
+                    .await;
+                p.apply_enrollment_intent(&signed, Some(&env), Some(&target))
+                    .await
+                    .is_ok()
+            }
+            "carry" => {
+                let env = f.enroll(&mut p, true).await;
+                let target = contact_blob(2, None);
+                let signed = f
+                    .intent(
+                        "case",
+                        EnrollmentAction::Carry,
+                        PinAction::Keep,
+                        Some(&env),
+                        Some(&target),
+                        2,
+                        true,
+                    )
+                    .await;
+                p.apply_enrollment_intent(&signed, Some(&env), Some(&target))
+                    .await
+                    .is_ok()
+            }
+            other => panic!("unsupported fixture action {other}"),
+        };
+        assert_eq!(
+            accepted,
+            case.expected == "accept",
+            "case {:?}: expected {}, got accepted={accepted}",
+            case.name,
+            case.expected
+        );
+    }
+}
+
 #[tokio::test]
 async fn carry_rejects_a_target_blob_whose_plaintext_already_carries_contact_fields() {
     let f = Fixture::new();

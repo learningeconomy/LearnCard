@@ -91,7 +91,10 @@ export {
     verifyEscrowAuthorityState,
     verifyEscrowEnrollmentCommit,
     createEscrowEnrollmentIntent,
+    resolveEscrowEnrollmentAction,
+    violatesCarryContactRule,
 } from './escrow-authority';
+export type { EscrowEnrollmentActionInput } from './escrow-authority';
 export type {
     VerifiedEnclaveIdentity,
     EscrowAuthorityRecord,

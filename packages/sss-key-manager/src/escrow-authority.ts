@@ -5,7 +5,7 @@ import {
     getEscrowBlobIdentity,
     signEscrowEnrollmentIntent,
 } from './escrow-enrollment-intent';
-import type { EscrowEnvelope } from './escrow-crypto';
+import type { EscrowBlobPlaintext, EscrowEnvelope } from './escrow-crypto';
 import type {
     EscrowEnrollmentIntent,
     SignedEscrowEnrollmentIntent,
@@ -288,6 +288,62 @@ export const verifyEscrowEnrollmentCommit = async (
     return { envelope: output, receipt: record };
 };
 
+export type EscrowEnrollmentActionInput = 'automatic' | 'set' | 'clear' | 'disable';
+
+/** Pure action resolution, shared between intent-building (here) and blob
+ * plaintext construction (sss-strategy.ts's `enrollEscrow`), so both always
+ * agree on enroll/replace/carry/disable from the same inputs instead of
+ * maintaining two copies of this decision. P9.1 (attack C) / P2-d:
+ * `bindsRecoveryContact` is the single source of truth for whether
+ * `recoveryEmail`/`recoveryLanguage` may appear in EITHER the signed intent
+ * or the target blob plaintext — Rust rejects a Carry target blob whose
+ * plaintext already carries either field (the enclave fills them in from
+ * the source blob instead), so this must be computed identically in both
+ * places or a carry can be built with a blob the enclave will refuse. */
+export const resolveEscrowEnrollmentAction = (
+    current: Pick<EscrowAuthorityState, 'status' | 'hasPin'>,
+    input: EscrowEnrollmentActionInput
+): {
+    action: EscrowEnrollmentIntent['action'];
+    pinAction: EscrowEnrollmentIntent['pinAction'];
+    bindsRecoveryContact: boolean;
+} => {
+    const disabling = input === 'disable';
+    const pinAction = disabling
+        ? 'keep'
+        : input === 'set'
+          ? current.hasPin
+              ? 'change'
+              : 'set'
+          : input === 'clear'
+            ? current.hasPin
+                ? 'clear'
+                : 'keep'
+            : 'keep';
+    const action = disabling
+        ? 'disable'
+        : current.status !== 'active'
+          ? 'enroll'
+          : current.hasPin && pinAction === 'keep'
+            ? 'carry'
+            : 'replace';
+    return { action, pinAction, bindsRecoveryContact: action === 'enroll' || action === 'replace' };
+};
+
+/** P2-d cross-language contract: mirrors the enclave's Carry contact-field
+ * rejection rule (`apply_enrollment_intent` in authority.rs) — true means
+ * the enclave would refuse this target blob. The enclave always fills
+ * recoveryEmail/recoveryLanguage in from the source blob on carry, so a
+ * target that already claims either field is refused. Shared by
+ * `escrow-carry-contact-contract-v1.json`'s TS and Rust tests, and by any
+ * caller (e.g. a test fake) that wants to fail the same way the real
+ * enclave does instead of accepting a shape it would reject. */
+export const violatesCarryContactRule = (
+    action: EscrowEnrollmentIntent['action'],
+    target: Pick<EscrowBlobPlaintext, 'recoveryEmail' | 'recoveryLanguage'> | null
+): boolean =>
+    action === 'carry' && !!target && (!!target.recoveryEmail || !!target.recoveryLanguage);
+
 /** Owner-only mutation selection. Recovery itself never calls this helper.
  * P9.1 (attack C): `recoveryEmail`/`recoveryLanguage` are always supplied by the
  * caller (the device's authenticated account email + app locale) but are only
@@ -298,7 +354,7 @@ export const createEscrowEnrollmentIntent = async (input: {
     target: EscrowEnvelope | null;
     shareVersion: number;
     privateKey: string;
-    pinAction: 'automatic' | 'set' | 'clear' | 'disable';
+    pinAction: EscrowEnrollmentActionInput;
     recoveryEmail: string;
     recoveryLanguage: string;
 }): Promise<SignedEscrowEnrollmentIntent> => {
@@ -312,28 +368,13 @@ export const createEscrowEnrollmentIntent = async (input: {
     if (disabling && current.status !== 'active') return fail();
     if (current.status === 'disabled' && current.hasPin && input.pinAction === 'automatic')
         return fail();
-    const pinAction = disabling
-        ? 'keep'
-        : input.pinAction === 'set'
-          ? current.hasPin
-              ? 'change'
-              : 'set'
-          : input.pinAction === 'clear'
-            ? current.hasPin
-                ? 'clear'
-                : 'keep'
-            : 'keep';
-    const action = disabling
-        ? 'disable'
-        : current.status !== 'active'
-          ? 'enroll'
-          : current.hasPin && pinAction === 'keep'
-            ? 'carry'
-            : 'replace';
+    const { action, pinAction, bindsRecoveryContact } = resolveEscrowEnrollmentAction(
+        current,
+        input.pinAction
+    );
     requireEvidence(!disabling || input.target === null);
     requireEvidence(disabling || input.target !== null);
     if (action === 'carry') requireEvidence(input.shareVersion > (current.shareVersion ?? 0));
-    const bindsRecoveryContact = action === 'enroll' || action === 'replace';
     const intent: EscrowEnrollmentIntent = {
         version: 2,
         tenant: current.tenant,
