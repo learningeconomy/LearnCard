@@ -64,8 +64,8 @@ policy requires filtering, a separately approved pre-invocation path is a rollou
 The deployed Lambda role must have approved Bedrock/default-project access for both
 exact cross-region US profiles and access to the Runtime endpoint. Confirm rotating
 credential/token operation and the applicable retention, DPA, subprocessor, guardrail
-and invocation-logging posture before learner traffic. This PR does not change IAM,
-networking, security settings or infrastructure and does not port AI Passport's
+and invocation-logging posture before learner traffic. The reviewed dev policy is managed by Serverless/CloudFormation; it has not been
+applied. This PR does not port AI Passport's
 application-specific privacy gateway into LCA. US profiles can route across US regions;
 the endpoint is not a single-region processing guarantee.
 
@@ -80,3 +80,35 @@ than restoring the superseded function-environment test.
 
 Rollback uses the prior application revision with its prior OpenAI credential, after
 explicit deployment approval. There is no runtime silent fallback to the old models.
+
+## Node 24 and owner-triggered staging deployment
+
+All LCA Lambda functions and the native DIDKit layer declare `nodejs24.x`; esbuild
+targets Node 24. The native addon uses stable N-API v4, supported by Node 24.
+Both Node 20 and Node 24 Lambda use AL2023. Before deployment, the LCA-only
+`verify-node24-layer.cjs` preflight requires the Linux x64 GNU artifact, both
+packaged runtime dependencies, libc symbols no newer than glibc 2.34, and an actual
+Node 24 native key-to-DID smoke check. Missing/incompatible artifacts stop the action
+before Serverless deployment; WASM fallback is not evidence of native compatibility.
+
+LCA pins serverless-esbuild 1.57.2 for Node 24 target support. The service-local
+`node24-runtime.cjs` plugin adds Node 24 to Serverless 3.40's older runtime schema
+without disabling validation or changing other services. Deployment tools run on
+Node 24.12.0 in the LCA action. Local offline configuration uses Node 24 too.
+
+The `LcaDevBedrockGenerationPolicy` CloudFormation resource attaches the scoped
+policy to `SigningAuthorityExecutionRole` only for stage `dev` in `us-east-1`.
+It preserves existing grants and also covers seedMigration, which shares that role.
+Production receives no new Bedrock grant from this resource. ARNs use the deployment
+account and partition; source profiles/default project stay in us-east-1, and the
+verified backing models are scoped to us-east-1/us-east-2/us-west-2. Short-term bearer
+use, matching model/profile conditions and default-project authorization are explicit.
+
+Owner workflow: select this branch in Deploy, target environment `staging`, and
+enable only `deploy-lca-api`. The LearnCard staging leg selects GitHub environment
+`learn-card-app-api-staging`; SERVERLESS_STAGE and SERVERLESS_REGION come from its
+variables and must be `dev`/`us-east-1` for this policy. The action downloads/builds
+the native artifact, runs the preflight, and Serverless owns role-policy and runtime
+updates. Do not trigger it until the owner approves deployment. After the stack
+finishes, repeat role simulations and runtime checks before separately approved
+synthetic model calls. CI and native preflight do not prove live model acceptance.

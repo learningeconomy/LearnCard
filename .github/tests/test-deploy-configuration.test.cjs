@@ -901,3 +901,5 @@ assert(
 console.log(
     `${workflows.size} workflows parsed strictly; deploy env preservation, lca-api/brain/learn-cloud stage-config removal, and Keycloak preflight routing passed.`
 );
+
+require('./test-lca-node24.test.cjs');
