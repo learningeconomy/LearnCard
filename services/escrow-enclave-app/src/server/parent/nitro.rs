@@ -130,6 +130,10 @@ async fn boot_and_serve(
     let tenant = step("config_tenant", configured("ESCROW_TENANT"))?;
     let region = step("config_kms_region", configured("ESCROW_KMS_REGION"))?;
     step("install_kms_hosts", install_kms_hosts(&region))?;
+    step(
+        "install_service_hosts",
+        install_service_hosts(authority_config, email_config),
+    )?;
     let arn = step("config_kms_key_arn", configured("ESCROW_KMS_KEY_ARN"))?;
     let keys = timeout(Duration::from_secs(60), async {
         let mut boot_material = step(
@@ -345,5 +349,39 @@ fn install_kms_hosts(region: &str) -> io::Result<()> {
             hosts
                 .write_all(format!("\n127.0.0.1 localhost kms.{region}.amazonaws.com\n").as_bytes())
         })
+        .map_err(|_| unavailable())
+}
+
+/// P9.1 (attack C) / P2 (authority): the authority/email vsock-proxy relays
+/// (terraform's `proxies` map, ports 8001/8002) are exactly as unreachable
+/// without a loopback mapping as KMS is without its own — `AuthorityConfig`/
+/// `EmailConfig`'s HTTPS client performs ordinary OS hostname resolution, and
+/// the enclave has no real DNS. Written only when that config is present, so
+/// a measured image with neither feature enabled gains no extra hosts entries.
+/// Region is already validated by `AuthorityConfig`/`EmailConfig::load()`
+/// (`region_account()`), so no further validation is needed here.
+fn install_service_hosts(
+    authority: Option<&AuthorityConfig>,
+    email: Option<&EmailConfig>,
+) -> io::Result<()> {
+    let mut entries = String::new();
+    if let Some(authority) = authority {
+        entries.push_str(&format!(
+            "\n127.0.0.1 dynamodb.{}.amazonaws.com",
+            authority.region
+        ));
+    }
+    if let Some(email) = email {
+        entries.push_str(&format!("\n127.0.0.1 email.{}.amazonaws.com", email.region));
+    }
+    if entries.is_empty() {
+        return Ok(());
+    }
+    use std::io::Write;
+    entries.push('\n');
+    std::fs::OpenOptions::new()
+        .append(true)
+        .open("/etc/hosts")
+        .and_then(|mut hosts| hosts.write_all(entries.as_bytes()))
         .map_err(|_| unavailable())
 }
