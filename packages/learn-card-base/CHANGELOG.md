@@ -1,5 +1,92 @@
 # learn-card-base
 
+## 0.7.0
+
+### Minor Changes
+
+- [#1608](https://github.com/learningeconomy/LearnCard/pull/1608) [`c78c982f9f4911f1ca2973380f19d80db775e012`](https://github.com/learningeconomy/LearnCard/commit/c78c982f9f4911f1ca2973380f19d80db775e012) Thanks [@Custard7](https://github.com/Custard7)! - Add an injectable Keycloak auth provider and sign-in adapter using OIDC authorization-code PKCE, login-ticket brokering, native social hooks, and tenant configuration validation.
+
+- [#1637](https://github.com/learningeconomy/LearnCard/pull/1637) [`ec321885908bab179acac7fec910bf61c42deb5f`](https://github.com/learningeconomy/LearnCard/commit/ec321885908bab179acac7fec910bf61c42deb5f) Thanks [@goblincore](https://github.com/goblincore)! - Add gated referral invitations with attributed cards, audience and permission review, confirmed decline, and pending invitation recovery after alert dismissal. Require both tenant configuration and the enableContractRequests rollout flag; preserve existing AI and owner-only consent flows. Localize the experience in English, Spanish, French, and Arabic.
+
+    Show receiving organizations in consent and connected-app details and recheck current referral state before consent submission. Include a signed HTTP outcome acceptance lab and integration walkthrough.
+
+    Keep the receiving organizations visible in detailed privacy settings and connected-app access editing, while preserving the existing owner-only layout.
+
+    Bind referral acceptance to the reviewed request ID under the contract lock, reject expired contracts on consent/re-consent, and keep invitation conflicts in the review screen. Stop polling terminal invitations, localize permission summaries, retry failed dismissals, and support host-reachable webhook capture from Docker.
+
+    Document the complete referral, auto-boost, outcome, claim, synchronization and webhook lifecycle. Add tested integrator snippets for recipient contracts, signing authority setup, scoped runtime tokens and polling recovery, including the client activity required for live sharing.
+
+    Refine referral cards and review panels with compact typography, grouped audience and permission details, accessible actions, and lighter privacy settings. Keep invitation and consent behavior unchanged.
+
+### Patch Changes
+
+- [#1644](https://github.com/learningeconomy/LearnCard/pull/1644) [`37a3db8ff98a35c8e9e140569a693c9e0ed00165`](https://github.com/learningeconomy/LearnCard/commit/37a3db8ff98a35c8e9e140569a693c9e0ed00165) Thanks [@smurflo2](https://github.com/smurflo2)! - Preserve the parent's displayed profile image across account switches. Refresh the destination profile query without overwriting the source account's cache or delaying switch completion on a profile-read failure.
+
+    Keep explicitly typed children classified as children when switching accounts, even if a legacy record has the service-profile flag.
+
+- [#1644](https://github.com/learningeconomy/LearnCard/pull/1644) [`37a3db8ff98a35c8e9e140569a693c9e0ed00165`](https://github.com/learningeconomy/LearnCard/commit/37a3db8ff98a35c8e9e140569a693c9e0ed00165) Thanks [@smurflo2](https://github.com/smurflo2)! - Keep cached profile images visible when switching accounts. An image that finishes loading before the source-change effect must not be hidden behind the initial placeholder.
+
+- [#1661](https://github.com/learningeconomy/LearnCard/pull/1661) [`088a94e0b8937f38f2ad6d4af05c22d78f0010a1`](https://github.com/learningeconomy/LearnCard/commit/088a94e0b8937f38f2ad6d4af05c22d78f0010a1) Thanks [@gerardopar](https://github.com/gerardopar)! - Validate and canonicalize the active locale for all callers, including backend request URLs and payloads as well as CLR date and quantity formatting. Malformed values such as `en_US` or `en--US` now fall back to `en` instead of being stripped and passed through. Valid tags use canonical casing (`EN-us` becomes `en-US`). Validation rejects crafted values containing request delimiters, preserving request-parameter safety.
+
+- [#1632](https://github.com/learningeconomy/LearnCard/pull/1632) [`6209da80c52ac056a7644dab14669192740c9dad`](https://github.com/learningeconomy/LearnCard/commit/6209da80c52ac056a7644dab14669192740c9dad) Thanks [@goblincore](https://github.com/goblincore)! - Add explicit consent contract data recipients and audience version acknowledgements. Enforce current consent status, expiry, category sharing, and recipient membership on consented data reads. Recipient additions freeze after first consent; removals immediately revoke API access and invalidate stale consent/update/sync acknowledgements.
+
+    Update existing app consent paths to review the current data audience, encrypt for all recipients, and cache copies by the full audience. Background synchronization reloads recipients and acknowledges the current version.
+
+- [#1634](https://github.com/learningeconomy/LearnCard/pull/1634) [`5890451789b18afee45dc5ecbab3fa30aa90f085`](https://github.com/learningeconomy/LearnCard/commit/5890451789b18afee45dc5ecbab3fa30aa90f085) Thanks [@goblincore](https://github.com/goblincore)! - Add attributed generic contract requests, target-only denial, retained cancellation history, and optional referral identity on consent history and exports. Preserve legacy AI request payloads and owner-only consent behavior.
+
+    Persist correlated notification intents with consent mutations and retry via a leased Lambda/Docker worker. Fan out to the owner and current data recipients; give a requester outside that audience only a minimal decision. Recheck audience membership and current consent permissions before delivery, including queued notifications, and expose stable event and delivery IDs for downstream deduplication.
+
+    Keep app request hooks and legacy AI component props aligned with the shared request status type, including retained generic cancellations.
+
+- [#1638](https://github.com/learningeconomy/LearnCard/pull/1638) [`aaeca3dad4a899a4ce7e96009ba211b4c27af7a2`](https://github.com/learningeconomy/LearnCard/commit/aaeca3dad4a899a4ce7e96009ba211b4c27af7a2) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2111] Add Qualifications across LearnCard navigation, credential organization, issuance, sharing, and resumes. Reclassify eligible automatic categories while preserving explicit choices, default qualifications to certificate displays, and keep expired credentials visible and shareable. Add illustrated test credentials and viewer support for preserving their expiration dates.
+
+    Fix Boost notification render loops by reusing URI-keyed cached Boost details.
+
+    Preserve indexed categories in sharing and classify preselected credentials once, reusing cached Boost lookups when index metadata is unavailable.
+
+    Give Qualifications a distinct navigation identity so it does not reuse another menu item's React key.
+
+    Retry truncated category scans on the next session and refresh open sharing lists after reclassification.
+
+    Keep available credentials selectable when another indexed credential cannot be loaded.
+
+    Replace Qualifications trophy placeholders with the supplied Figma SVG artwork across wallet tiles, navigation, selectors, activity filters, credential corners, and image fallbacks. Keep Colorful and Formal variants independent and preserve the existing Formal empty-state fallback.
+
+    Use an orange Qualifications palette across Passport tiles, category pages, Boost previews, notifications, and certificate displays. Match the existing section shades with orange-300 tiles and tabs, orange-400 headers, orange-200 page backgrounds, and orange-500 count badges with dark text. Keep Neutral Mode surfaces neutral while using the supplied Colorful Solid Color Qualifications icon in both Passport layouts.
+
+    Fix About Qualifications to display Qualifications artwork and explain professional credentials instead of falling back to Skills. Select descriptor content by category rather than the translated title, add the description in every supported language, and present the modal through the shared inset-owning surface.
+
+    Use white Passport category-card backgrounds in Neutral Mode for both tile and list views. Preserve the existing Colorful category backgrounds and icons.
+
+    Recognize French Qualification and Qualifications labels as legitimate cognates in the untranslated-value guard, and normalize the changed-file formatting required by CI. Resolve existing Boost helper lint errors without changing credential updates, template ordering, recipient filtering, query parameters, or image selection.
+
+- [#1643](https://github.com/learningeconomy/LearnCard/pull/1643) [`c2c1d4617459f4b255ab27e4e1f4fa410782a317`](https://github.com/learningeconomy/LearnCard/commit/c2c1d4617459f4b255ab27e4e1f4fa410782a317) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-2208] Clean up prod console noise
+
+- [#1621](https://github.com/learningeconomy/LearnCard/pull/1621) [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5) Thanks [@Custard7](https://github.com/Custard7)! - Add PCR pinning, production guard, and staged rollout support for escrow recovery.
+
+- [#1609](https://github.com/learningeconomy/LearnCard/pull/1609) [`cc653de8bda6f7ceda98ed8910e46901877a6f20`](https://github.com/learningeconomy/LearnCard/commit/cc653de8bda6f7ceda98ed8910e46901877a6f20) Thanks [@Custard7](https://github.com/Custard7)! - Honor reauthentication intent for Keycloak login tickets and validate returning identities before publishing redirect results.
+
+- [#1608](https://github.com/learningeconomy/LearnCard/pull/1608) [`c78c982f9f4911f1ca2973380f19d80db775e012`](https://github.com/learningeconomy/LearnCard/commit/c78c982f9f4911f1ca2973380f19d80db775e012) Thanks [@Custard7](https://github.com/Custard7)! - Tighten types in the Keycloak auth provider and sign-in adapter: guard the nullable `ErrorResponse.error` code before comparing it, and give the pending sign-in attempt an explicit accessor so TypeScript doesn't narrow it to `never` across the redirect-completion closure.
+
+- [#1608](https://github.com/learningeconomy/LearnCard/pull/1608) [`c78c982f9f4911f1ca2973380f19d80db775e012`](https://github.com/learningeconomy/LearnCard/commit/c78c982f9f4911f1ca2973380f19d80db775e012) Thanks [@Custard7](https://github.com/Custard7)! - Replace the regex-based trailing-slash trim in the Keycloak auth provider's authority-URL construction with a linear-time character loop, resolving a CodeQL polynomial-ReDoS finding. Behavior is unchanged.
+
+- [#1609](https://github.com/learningeconomy/LearnCard/pull/1609) [`cc653de8bda6f7ceda98ed8910e46901877a6f20`](https://github.com/learningeconomy/LearnCard/commit/cc653de8bda6f7ceda98ed8910e46901877a6f20) Thanks [@Custard7](https://github.com/Custard7)! - Keycloak auth provider: add an optional `navigate` redirect-navigator seam so native hosts can complete sign-in through a system auth sheet instead of a page redirect, and best-effort revoke the refresh token on sign-out paths that never reach Keycloak's `end_session` endpoint (e.g. native).
+
+- [#1609](https://github.com/learningeconomy/LearnCard/pull/1609) [`cc653de8bda6f7ceda98ed8910e46901877a6f20`](https://github.com/learningeconomy/LearnCard/commit/cc653de8bda6f7ceda98ed8910e46901877a6f20) Thanks [@Custard7](https://github.com/Custard7)! - Add authBridgeUrl to tenantKeycloakConfigSchema for native branded sign-in transitions
+
+- [#1697](https://github.com/learningeconomy/LearnCard/pull/1697) [`11d788511a39ff1f9416e37c3626da2a7e02cdfe`](https://github.com/learningeconomy/LearnCard/commit/11d788511a39ff1f9416e37c3626da2a7e02cdfe) Thanks [@goblincore](https://github.com/goblincore)! - Keep membership ID storage URIs separate from signed credentials so direct Boost IDs verify without JSON-LD data-loss errors. Preserve legacy wrapped IDs and avoid restoring the old combined objects from the persisted query cache.
+
+- [#1608](https://github.com/learningeconomy/LearnCard/pull/1608) [`c78c982f9f4911f1ca2973380f19d80db775e012`](https://github.com/learningeconomy/LearnCard/commit/c78c982f9f4911f1ca2973380f19d80db775e012) Thanks [@Custard7](https://github.com/Custard7)! - Honor Shared Computer session persistence for Keycloak, migrate existing token records between browser stores, and retain the selected mode across redirects and reloads. Safely construct providers outside browsers and simplify callback error handling.
+
+- Updated dependencies [[`6209da80c52ac056a7644dab14669192740c9dad`](https://github.com/learningeconomy/LearnCard/commit/6209da80c52ac056a7644dab14669192740c9dad), [`5890451789b18afee45dc5ecbab3fa30aa90f085`](https://github.com/learningeconomy/LearnCard/commit/5890451789b18afee45dc5ecbab3fa30aa90f085), [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856), [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5), [`d7ca528898d988c65f0dc7084cfdcd41767648c5`](https://github.com/learningeconomy/LearnCard/commit/d7ca528898d988c65f0dc7084cfdcd41767648c5), [`8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba`](https://github.com/learningeconomy/LearnCard/commit/8f3bc66ab3d3e5e1edb3fbf5f362025875a914ba), [`1387cd0a08fa6b0a706c86a5a0376b6c7d706856`](https://github.com/learningeconomy/LearnCard/commit/1387cd0a08fa6b0a706c86a5a0376b6c7d706856), [`267cf40291b3a63caf178857be0e57feaf5e0948`](https://github.com/learningeconomy/LearnCard/commit/267cf40291b3a63caf178857be0e57feaf5e0948), [`c78c982f9f4911f1ca2973380f19d80db775e012`](https://github.com/learningeconomy/LearnCard/commit/c78c982f9f4911f1ca2973380f19d80db775e012)]:
+    - @learncard/types@5.23.0
+    - @learncard/sss-key-manager@0.2.1
+    - @learncard/ler-rs-plugin@0.1.29
+    - @learncard/helpers@1.6.2
+    - @learncard/lca-api-plugin@2.0.8
+    - @learncard/learn-card-plugin@1.2.38
+    - @learncard/render-method-plugin@10.0.0
+
 ## 0.6.0
 
 ### Minor Changes
