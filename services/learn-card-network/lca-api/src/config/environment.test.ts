@@ -1,5 +1,18 @@
-import { describe, expect, it } from 'vitest';
-import { parseLcaApiEnvironment } from './environment';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { isEscrowReleaseKillSwitchEnabled, parseLcaApiEnvironment } from './environment';
+
+afterEach(() => vi.unstubAllEnvs());
+
+describe('live escrow release kill switch', () => {
+    it.each(['1', 'true'])('blocks releases for %s', value => {
+        vi.stubEnv('ESCROW_RELEASE_KILL_SWITCH', value);
+        expect(isEscrowReleaseKillSwitchEnabled()).toBe(true);
+    });
+    it.each(['0', 'false', ''])('allows releases for %s', value => {
+        vi.stubEnv('ESCROW_RELEASE_KILL_SWITCH', value);
+        expect(isEscrowReleaseKillSwitchEnabled()).toBe(false);
+    });
+});
 
 const production = {
     NODE_ENV: 'production',

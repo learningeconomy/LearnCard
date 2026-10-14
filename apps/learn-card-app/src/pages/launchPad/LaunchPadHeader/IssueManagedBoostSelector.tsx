@@ -32,6 +32,7 @@ const ALLOWED_CATEGORIES = [
     BoostCategoryOptionsEnum.family,
     BoostCategoryOptionsEnum.accomplishment,
     BoostCategoryOptionsEnum.accommodation,
+    BoostCategoryOptionsEnum.qualifications,
 ];
 
 const CategorySelectorModal: React.FC<{

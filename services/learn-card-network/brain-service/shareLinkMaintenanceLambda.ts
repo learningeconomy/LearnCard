@@ -1,49 +1,18 @@
-import type { Context } from 'aws-lambda';
+import { bootstrapLambda } from '@learncard/service-config';
 
-import {
-    createShareLinkMaintenanceRuntime,
-    type ShareLinkMaintenanceRuntime,
-} from './src/helpers/share-link-maintenance';
+import { base, stages } from './src/config/stageConfig';
 
-/**
- * Dedicated LC-2187 share-link maintenance Lambda entrypoint.
- *
- * It deliberately does NOT import `lambda.ts`, so no unrelated embedding
- * backfill, tRPC router, Sentry input capture or inbox handler runs at import
- * time. The only side effect is resolving the service and maintenance
- * configuration; when it is absent or malformed the runtime is inert and the
- * handler performs no graph, remote or signing work.
- *
- * The scheduled event payload is ignored entirely: it can never override the
- * namespace, origin, audience or any other configuration, and it is never
- * logged.
- */
+type ShareLinkMaintenanceApp = typeof import('./shareLinkMaintenanceLambdaApp');
 
-let runtime: ShareLinkMaintenanceRuntime | null = null;
-
-const getRuntime = (): ShareLinkMaintenanceRuntime => {
-    if (runtime === null) {
-        runtime = createShareLinkMaintenanceRuntime({
-            rawEnvironment: process.env as Record<string, unknown>,
-        });
-    }
-
-    return runtime;
-};
+const getApplication = bootstrapLambda<ShareLinkMaintenanceApp>({
+    base,
+    stages,
+    stage: process.env.AWS_LAMBDA_FUNCTION_NAME
+        ? process.env.LAMBDA_STAGE
+        : process.env.CONFIG_STAGE,
+    importApp: () => import('./shareLinkMaintenanceLambdaApp'),
+});
 
 export const shareLinkMaintenanceHandler = async (
-    _event: unknown,
-    context?: Pick<Context, 'getRemainingTimeInMillis'>
-): Promise<{ status: string }> => {
-    const hasRemainingTime = typeof context?.getRemainingTimeInMillis === 'function';
-
-    const summary = await getRuntime().runOnce({
-        // Preserve the LIVE Lambda remaining-time source: the runtime samples it
-        // once, before dependency initialization, and anchors the invocation
-        // budget to that instant.
-        remainingTimeMs: hasRemainingTime ? () => context!.getRemainingTimeInMillis() : undefined,
-    });
-
-    // The runtime already emitted one aggregate-only allowlisted event.
-    return { status: summary.status };
-};
+    ...args: Parameters<ShareLinkMaintenanceApp['shareLinkMaintenanceHandler']>
+) => (await getApplication()).shareLinkMaintenanceHandler(...args);

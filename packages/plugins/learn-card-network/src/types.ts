@@ -23,6 +23,10 @@ import {
     ShareLinkOwnerRecoveryOutput,
     ShareLinkPublicState,
     ShareLinkPublicContentView,
+    PutShareLinkAttachmentChunkInput,
+    DeleteShareLinkAttachmentChunksInput,
+    GetShareLinkAttachmentChunkInput,
+    ShareLinkAttachmentChunkOutput,
     AcknowledgeViewOutput,
     Boost,
     BoostQuery,
@@ -310,6 +314,13 @@ export type LearnCardNetworkPluginMethods = {
      * no caller-supplied owner/namespace/object authority is accepted.
      */
     createShareLink: (input: CreateShareLinkInput) => Promise<ShareLinkOwnerCommitOutput>;
+    putShareLinkAttachmentChunk: (input: PutShareLinkAttachmentChunkInput) => Promise<{ ok: true }>;
+    deleteShareLinkAttachmentChunks: (
+        input: DeleteShareLinkAttachmentChunksInput
+    ) => Promise<{ ok: boolean }>;
+    getShareLinkAttachmentChunk: (
+        input: GetShareLinkAttachmentChunkInput
+    ) => Promise<ShareLinkAttachmentChunkOutput>;
     updateShareLink: (input: UpdateShareLinkInput) => Promise<ShareLinkOwnerCommitOutput>;
     revokeShareLink: (input: {
         id: string;

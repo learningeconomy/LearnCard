@@ -297,7 +297,7 @@ For HTTP-only clients, use `GET /consent-flow-contracts/sent-requests?contractUr
 
 ## Enable and verify the app experience
 
-Both `features.contractRequests` in tenant configuration and the boolean LaunchDarkly `enableContractRequests` flag must be `true`. Missing/off flags fail closed. The tenant setting defaults to `false`; VetPass enables it only in its local overlay. `branding.contractRequestLabel` optionally sets the invitation eyebrow. These controls affect presentation, not backend authorization.
+Both `features.contractRequests` in tenant configuration and the boolean LaunchDarkly `enableContractRequests` flag must be `true`. Missing/off flags fail closed. The tenant setting defaults to `false`; VetPass enables it in its base configuration, while LaunchDarkly controls which users see invitations. Enabling the tenant setting alone does not enable invitations for all VetPass users. `branding.contractRequestLabel` optionally sets the invitation eyebrow. These controls affect presentation, not backend authorization.
 
 Release the consent audience foundation, request/event API, and compatible clients in stack order before enabling a production tenant. Review audience disclosure, guardian behavior, all supported locales, mobile insets, and legacy AI requests. Account provisioning, the Military Service Badge template/authority, external CRM identity mapping, and outcome category conventions require integrator setup.
 

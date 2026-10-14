@@ -112,6 +112,44 @@ ConsentFlow is a consent management system where:
     3. The signing authority signs the credential and returns it
     4. The `issueCredentialWithSigningAuthority()` helper handles this flow
 - A common pattern is to get a signing authority with `getSigningAuthorityForUserByName(profile, endpoint, name)`
+- Known-recipient sends use the helper's `encrypt = true` default. Preserve its
+  `IssuedCredential` wrapper through storage so public status-list coordinates remain
+  available without decrypting the credential. Inbox finalization returns encrypted
+  deliveries; the network SDK decrypts them locally before returning VCs to the app.
+- Ordinary accepted inbox finalization signs and allocates status-list indices before
+  opening its bounded Neo4j transaction (30 seconds). Retries or a lost claim race may
+  leave indices unused; this is intentional to avoid signing while holding graph locks.
+  The transaction atomically commits escrow removal, encrypted recovery, credential/
+  boost/sent/received indexes, shared claim hooks, default claimed roles, and claim audit.
+  Notifications remain outside it; invalidate permission-related caches only after commit.
+  Failed graph writes leave the pending record retryable and concurrent claims cannot
+  duplicate acceptance.
+- CI runs `bunx nx run network-brain-service:test:inbox:e2e`, which includes
+  `test/credential-storage.neo4j.spec.ts` and `test/inbox.spec.ts`. Keep the storage
+  trust-boundary guard and finalization rollback/concurrency coverage in this CI-run
+  configuration, not only the locally invoked integration suite.
+- Unsigned inbox subjects are bound to the verified recipient before signing; supplied
+  subject IDs are replaced. Pre-signed subjects are not rewritten.
+- Ordinary unsigned finalization intentionally adds the issuer's profile DID as a reader
+  alongside the managed/app owner DID. This preserves the issuer's `did:key` access when
+  the signing authority uses an app `did:web` owner; it does not add the brain signer.
+- Three interoperable delivery paths intentionally request plaintext (`LC-2201`):
+    - `routes/workflows.ts`: boost claim-link exchanges return a VC inside a presentation
+      to wallets that may not support LearnCard JWE decryption.
+    - `routes/workflows.ts`: inbox claim-link exchanges have the same interoperability requirement.
+    - `routes/boosts.ts`: federated `/send` forwards to another network's inbox endpoint,
+      whose accepted encryption format is outside this server's control.
+- Managed refresh issuance is a separate existing boundary: refresh sends, inbox refresh
+  finalization, and refresh publication inspect the signed VC before encrypting it for
+  storage. LC-2201 does not change those refresh flows.
+  Its separate inbox finalization path does not use the ordinary-claim index transaction;
+  do not assume every refresh inbox finalization creates these network relationships.
+  Refresh inbox creation always persists `refreshId` alongside its `pending_holder`
+  aggregate; finalization dispatches those records to `finalizeInboxRefresh`, whose
+  accepted binding transitions the aggregate directly to `active`. Ordinary records
+  without `refreshId` do not own an `awaiting_claim` aggregate through this flow.
+  Normal `acceptCredential` also attempts activation after its already-received guard,
+  and the holder refresh endpoint can lazily reconcile acceptance.
 
 ### AutoBoosts
 

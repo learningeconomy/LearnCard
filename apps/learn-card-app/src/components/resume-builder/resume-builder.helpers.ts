@@ -17,6 +17,10 @@ export const RESUME_SECTIONS = [
         label: 'Achievements',
     },
     {
+        key: CredentialCategoryEnum.qualifications,
+        label: 'Qualifications',
+    },
+    {
         key: CredentialCategoryEnum.accomplishment,
         label: 'Accomplishments',
     },
@@ -83,9 +87,11 @@ export const getResumeCredentialRecordsForSection = (
     allRecords.forEach(record => {
         if (record.category && aliases.has(record.category)) recordsByUri.set(record.uri, record);
 
-        if (!fallbackAliases) return;
-
-        if (!record.vc) return;
+        const shouldInferCategory =
+            !!fallbackAliases ||
+            // Backfill category-less records only; explicit categories remain authoritative.
+            (sectionKey === CredentialCategoryEnum.qualifications && !record.category);
+        if (!shouldInferCategory || !record.vc) return;
 
         const category = getDefaultCategoryForCredential(record.vc, { skipValidation: true });
 

@@ -53,7 +53,7 @@ const Info: React.FC<InfoProps> = ({ path }) => {
                 {!bun && (
                     <Text>
                         <Text color="green">{'$ '}</Text>
-                        <SyntaxHighlight code="npm i -g bun@1.3.14" language="bash" />
+                        <SyntaxHighlight code="npm i -g bun@1.4.2" language="bash" />
                     </Text>
                 )}
                 <Text>

@@ -31,6 +31,13 @@ import {
 } from './obv3/student-sample-badges';
 import { obv3StudentAdditionalCredentials } from './obv3/student-additional-credentials';
 import { obv3RubricAlignedBadge } from './obv3/rubric-aligned-badge';
+import { obv3QualificationLicense } from './obv3/qualification-license';
+import { obv3QualificationCertification } from './obv3/qualification-certification';
+import { obv3QualificationApprenticeship } from './obv3/qualification-apprenticeship';
+import { obv3QualificationJourneyman } from './obv3/qualification-journeyman';
+import { obv3QualificationMaster } from './obv3/qualification-master';
+import { obv3QualificationExpired } from './obv3/qualification-expired';
+import { obv3QualificationBadgeOverride } from './obv3/qualification-badge-override';
 
 // CLR v2
 import { clrMinimal } from './clr/minimal';
@@ -79,6 +86,15 @@ import {
 } from './clr/provisional-transcript';
 import { clrDemoIsdDiplomaAssessments } from './clr/demo-isd-diploma-assessments';
 
+// Curated practice, role, language, and administrative examples
+import { obv3FoodAllergenPractice } from './obv3/food-allergen-practice';
+import { obv3FoodAllergenFacilitator } from './obv3/food-allergen-facilitator';
+import { obv3FoodAllergenPracticeFr } from './obv3/food-allergen-practice-fr';
+import { obv3PhishingTransfer } from './obv3/phishing-transfer';
+import { customCourseEnrollment } from './custom/course-enrollment';
+import { customExamAccommodation } from './custom/exam-accommodation';
+import { clrMixedRolePortfolio } from './clr/mixed-role-portfolio';
+
 // SD-JWT VC
 import { sdJwtVcCourseCompletion } from './sd-jwt-vc/course-completion';
 
@@ -105,6 +121,13 @@ export const ALL_FIXTURES: LibraryFixture[] = [
     obv3PlugfestJff2,
     obv3OneedtechFull,
     obv3ProfessionalCert,
+    obv3QualificationLicense,
+    obv3QualificationCertification,
+    obv3QualificationApprenticeship,
+    obv3QualificationJourneyman,
+    obv3QualificationMaster,
+    obv3QualificationExpired,
+    obv3QualificationBadgeOverride,
     obv3MicroCredential,
     obv3CourseCompletion,
     obv3StandaloneFullCourse,
@@ -158,6 +181,15 @@ export const ALL_FIXTURES: LibraryFixture[] = [
     clrProvisionalTranscript,
     clrDemoIsdDiplomaAssessments,
 
+    // Curated examples
+    obv3FoodAllergenPractice,
+    obv3FoodAllergenFacilitator,
+    obv3FoodAllergenPracticeFr,
+    obv3PhishingTransfer,
+    customCourseEnrollment,
+    customExamAccommodation,
+    clrMixedRolePortfolio,
+
     // SD-JWT VC
     sdJwtVcCourseCompletion,
 ];
@@ -186,6 +218,13 @@ export {
     clrNdStudentTranscript,
     obv3OneedtechFull,
     obv3ProfessionalCert,
+    obv3QualificationLicense,
+    obv3QualificationCertification,
+    obv3QualificationApprenticeship,
+    obv3QualificationJourneyman,
+    obv3QualificationMaster,
+    obv3QualificationExpired,
+    obv3QualificationBadgeOverride,
     obv3MicroCredential,
     obv3CourseCompletion,
     obv3StandaloneFullCourse,
@@ -221,5 +260,12 @@ export {
     buildFinalTranscriptVariant,
     REFRESH_SERVICE_INLINE_CONTEXT,
     clrDemoIsdDiplomaAssessments,
+    obv3FoodAllergenPractice,
+    obv3FoodAllergenFacilitator,
+    obv3FoodAllergenPracticeFr,
+    obv3PhishingTransfer,
+    customCourseEnrollment,
+    customExamAccommodation,
+    clrMixedRolePortfolio,
     sdJwtVcCourseCompletion,
 };

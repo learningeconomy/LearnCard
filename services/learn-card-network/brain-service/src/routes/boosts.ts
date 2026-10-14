@@ -1866,6 +1866,7 @@ export const boostsRouter = t.router({
                                 });
                             }
 
+                            // encrypt=false on purpose: the federated receiving server may not accept LearnCard JWEs. See LC-2201.
                             signedVc = await traceInternal(
                                 'issueCredentialWithSigningAuthority:remoteInbox',
                                 async () =>
@@ -1999,7 +2000,7 @@ export const boostsRouter = t.router({
                         contractUri,
                     });
 
-                    let signedVc: VC | JWE;
+                    let signedVc: VC | JWE | IssuedCredential;
 
                     if (input.signedCredential) {
                         signedVc = input.signedCredential;
@@ -2039,19 +2040,16 @@ export const boostsRouter = t.router({
                         signedVc = await traceInternal(
                             'issueCredentialWithSigningAuthority',
                             async () =>
-                                (
-                                    await issueCredentialWithSigningAuthority(
-                                        { type: 'profile', profile },
-                                        await appendBitstringStatusListEntries(
-                                            unsignedVc,
-                                            profile.profileId,
-                                            domain
-                                        ),
-                                        signingAuthority,
-                                        domain,
-                                        false
-                                    )
-                                ).credential
+                                issueCredentialWithSigningAuthority(
+                                    { type: 'profile', profile },
+                                    await appendBitstringStatusListEntries(
+                                        unsignedVc,
+                                        profile.profileId,
+                                        domain
+                                    ),
+                                    signingAuthority,
+                                    domain
+                                )
                         );
                     }
 

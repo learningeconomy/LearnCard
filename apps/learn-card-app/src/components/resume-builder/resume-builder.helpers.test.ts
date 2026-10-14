@@ -8,6 +8,7 @@ vi.mock('learn-card-base', () => ({
         accomplishment: 'Accomplishment',
         socialBadge: 'Social Badge',
         accommodation: 'Accommodation',
+        qualifications: 'Qualifications',
         experience: 'Experience',
         workExperience: 'Work Experience',
         course: 'Course',
@@ -28,7 +29,7 @@ import {
 } from './resume-builder.helpers';
 
 const vc = (category?: string, extra: Record<string, unknown> = {}): VC =>
-    ({ __category: category, ...extra } as unknown as VC);
+    ({ __category: category, ...extra }) as unknown as VC;
 
 describe('resume-builder helpers', () => {
     it('keeps LearnCloud list records and filters records without a URI', () => {
@@ -59,16 +60,31 @@ describe('resume-builder helpers', () => {
         expect(records.map(record => record.uri)).toEqual(['work', 'job', 'experience']);
     });
 
-    it('uses indexed category metadata from all records when exact achievements are empty', () => {
+    it('uses indexed category metadata when exact section records are empty', () => {
         const records = getResumeCredentialRecordsForSection(
-            CredentialCategoryEnum.achievement,
+            CredentialCategoryEnum.socialBadge,
             [],
             [
                 { uri: 'unknown', vc: vc(undefined) },
-                { uri: 'indexed-achievement', category: 'Achievement' },
+                { uri: 'indexed-badge', category: 'Social Badge' },
             ]
         );
 
-        expect(records.map(record => record.uri)).toEqual(['indexed-achievement']);
+        expect(records.map(record => record.uri)).toEqual(['indexed-badge']);
+    });
+
+    it('keeps qualifications in their own resume section', () => {
+        const records = getResumeCredentialRecordsForSection(
+            CredentialCategoryEnum.qualifications,
+            [],
+            [
+                { uri: 'license', vc: vc('Qualifications') },
+                { uri: 'certification', category: 'Qualifications' },
+                { uri: 'achievement', vc: vc('Achievement') },
+                { uri: 'manual-id', category: 'ID', vc: vc('Qualifications') },
+            ]
+        );
+
+        expect(records.map(record => record.uri)).toEqual(['license', 'certification']);
     });
 });

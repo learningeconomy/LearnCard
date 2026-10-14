@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 
 import type { ShareLinkOperationKind } from '@helpers/share-link-lifecycle';
+import type { ShareLinkPolicySnapshot } from '@helpers/share-link-policy/types';
 
 import type { ShareContentState, ShareLinkRecord, ShareLinkStatus } from '../../models/ShareLink';
 import type { Neo4jQueryResult, ShareLinkTransaction } from './transaction';
@@ -94,6 +95,8 @@ export const toShareLinkRecord = (props: Record<string, unknown>): ShareLinkReco
     ownerProfileId: asString(props.ownerProfileId),
     version: asNumber(props.version, 1),
     contentVersion: asNumber(props.contentVersion, 1),
+    attachmentId: asNullableString(props.attachmentId),
+    attachmentChunkCount: asNullableNumber(props.attachmentChunkCount),
     generation: asNumber(props.generation, 1),
     status: isOneOf(props.status, SHARE_LINK_STATUSES) ? props.status : 'pending',
     contentState: isOneOf(props.contentState, SHARE_CONTENT_STATES)
@@ -135,6 +138,8 @@ export const toShareLinkReservationRecord = (
     operationId: asString(props.operationId),
     objectRef: asNullableString(props.objectRef),
     contentVersion: asNullableNumber(props.contentVersion),
+    attachmentId: asNullableString(props.attachmentId),
+    attachmentChunkCount: asNullableNumber(props.attachmentChunkCount),
     baseVersion: asNumber(props.baseVersion, 1),
     baseContentVersion: asNumber(props.baseContentVersion, 1),
     contentHash: asNullableString(props.contentHash),
@@ -159,6 +164,20 @@ export const toShareLinkReservationRecord = (
     createdAt: asString(props.createdAt),
     updatedAt: asString(props.updatedAt),
 });
+
+/** Legacy operation records have no policy ceiling; callers fall back to their reservation. */
+export const toShareLinkOperationPolicy = (
+    props: Record<string, unknown>
+): ShareLinkPolicySnapshot | null => {
+    if (typeof props.policyViewCountingEnabled !== 'boolean') return null;
+
+    return {
+        isMinor: asNullableBoolean(props.policyIsMinor),
+        policyResolved: asBoolean(props.policyResolved, false),
+        defaultExpiryDays: asNumber(props.policyDefaultExpiryDays, 30) === 365 ? 365 : 30,
+        viewCountingEnabled: props.policyViewCountingEnabled,
+    };
+};
 
 export const toShareLinkOperationRecord = (
     props: Record<string, unknown>
@@ -296,6 +315,7 @@ export type WriteOperationInput = ShareLinkOperationKey & {
     requestHash: string;
     now: string;
     pruneAfter: string;
+    policy?: ShareLinkPolicySnapshot;
 };
 
 /**
@@ -322,8 +342,19 @@ export const writeOperationInProgress = async (
              o.status = 'in_progress',
              o.resultJson = null,
              o.resultVersion = null,
-             o.updatedAt = $now`,
-        input
+             o.updatedAt = $now
+         SET o += $policyProps`,
+        {
+            ...input,
+            policyProps: input.policy
+                ? {
+                      policyIsMinor: input.policy.isMinor,
+                      policyResolved: input.policy.policyResolved,
+                      policyDefaultExpiryDays: input.policy.defaultExpiryDays,
+                      policyViewCountingEnabled: input.policy.viewCountingEnabled,
+                  }
+                : {},
+        }
     );
 };
 

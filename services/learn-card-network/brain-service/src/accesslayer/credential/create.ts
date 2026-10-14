@@ -1,4 +1,5 @@
 import { BitstringStatusListEntryValidator, UnsignedVC, VC, JWE } from '@learncard/types';
+import type { Transaction } from 'neo4j-driver';
 import { v4 as uuid } from 'uuid';
 import { getBitstringStatusListEntries, isEncrypted } from '@learncard/helpers';
 import { isIssuedCredential } from '@helpers/issuedCredentialStatus.helpers';
@@ -7,7 +8,8 @@ import type { IssuedCredential } from 'types/credential';
 import { Credential, CredentialInstance } from '@models';
 
 export const storeCredential = async (
-    input: UnsignedVC | VC | JWE | IssuedCredential
+    input: UnsignedVC | VC | JWE | IssuedCredential,
+    transaction?: Transaction
 ): Promise<CredentialInstance> => {
     const id = uuid();
 
@@ -28,9 +30,12 @@ export const storeCredential = async (
             { credentialId: id }
         );
     }
-    return Credential.createOne({
-        id,
-        credential: JSON.stringify(credential),
-        ...(statusEntries?.length ? { statusEntries: JSON.stringify(statusEntries) } : {}),
-    });
+    return Credential.createOne(
+        {
+            id,
+            credential: JSON.stringify(credential),
+            ...(statusEntries?.length ? { statusEntries: JSON.stringify(statusEntries) } : {}),
+        },
+        transaction ? { session: transaction } : undefined
+    );
 };

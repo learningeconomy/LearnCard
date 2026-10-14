@@ -216,6 +216,21 @@ describe('Guardian-approved consent mutations', () => {
         expect(record?.terms.guardianApproval).toBeUndefined();
     });
 
+    it('preserves the manager-based gate for explicitly typed profiles without managers', async () => {
+        await Profile.update(
+            { type: 'child', isServiceProfile: true },
+            { where: { profileId: 'child-user' } }
+        );
+
+        const { termsUri } = await childCaller().contracts.consentToContract({
+            contractUri,
+            terms: minimalTerms,
+        });
+        const record = await getContractTermsByUri(termsUri);
+        expect(record?.terms.status).toBe('live');
+        expect(record?.terms.guardianApproval).toBeUndefined();
+    });
+
     it('does not create consent or an audit transaction without guardian approval', async () => {
         await manageChild();
         await expect(
@@ -236,6 +251,27 @@ describe('Guardian-approved consent mutations', () => {
         const record = await getContractTermsByUri(termsUri);
         expect(record?.terms.status).toBe('live');
         expect(record?.terms.guardianApproval).toBeUndefined();
+    });
+
+    it('requires guardian approval for legacy service-flagged children', async () => {
+        await Profile.update(
+            { type: 'child', isServiceProfile: true },
+            { where: { profileId: 'child-user' } }
+        );
+        await manageChild();
+
+        await expect(
+            childCaller().contracts.consentToContract({ contractUri, terms: minimalTerms })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+
+        const { termsUri } = await childCaller(await approve()).contracts.consentToContract({
+            contractUri,
+            terms: minimalTerms,
+        });
+        expect((await getContractTermsByUri(termsUri))?.terms.guardianApproval).toMatchObject({
+            guardianProfileId: 'guardian-user',
+            guardianDid: guardian.id.did(),
+        });
     });
 
     it('records the verified guardian and contract version on consent and permission updates', async () => {
