@@ -175,9 +175,9 @@ struct CredentialCard: View {
         .overlay(RoundedRectangle(cornerRadius: 24).stroke(Palette.surface, lineWidth: featured ? 3 : 0))
         .background {
             if featured {
-                RoundedRectangle(cornerRadius: 24).fill(credential.displayCategory == .badge || credential.displayCategory == .id ? Palette.pinkCard : Palette.blueCard)
+                RoundedRectangle(cornerRadius: 24).fill(credential.displayCategory == .achievement ? Palette.portfolioCard : Palette.pinkCard)
                     .rotationEffect(.degrees(reduceMotion ? 0 : -3)).offset(x: -3, y: 8)
-                RoundedRectangle(cornerRadius: 24).fill(credential.displayCategory == .experience || credential.displayCategory == .aiTopic ? Palette.portfolioCard : Palette.cyanCard)
+                RoundedRectangle(cornerRadius: 24).fill(credential.displayCategory == .experience || credential.displayCategory == .aiTopic ? Palette.studiesCard : Palette.cyanCard)
                     .rotationEffect(.degrees(reduceMotion ? 0 : 2.5)).offset(x: 2, y: 13)
             }
         }

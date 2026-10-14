@@ -344,7 +344,7 @@ private struct FamilyEmblem: View {
     let size: CGFloat
     var body: some View {
         ZStack {
-            Circle().fill(Palette.familyTint(color)).frame(width: size * 0.68).offset(x: -size * 0.12, y: -size * 0.06)
+            Circle().fill(Palette.familyTint(color)).frame(width: size * 0.68).overlay(Circle().stroke(Palette.surface, lineWidth: 2)).offset(x: -size * 0.12, y: -size * 0.06)
             Circle().fill(color == .blue ? Palette.pinkCard : Palette.blueCard).frame(width: size * 0.5).overlay(Circle().stroke(Palette.surface, lineWidth: 2)).offset(x: size * 0.23, y: -size * 0.1)
             Circle().fill(Palette.studiesCard).frame(width: size * 0.36).overlay(Circle().stroke(Palette.surface, lineWidth: 2)).offset(x: size * 0.08, y: size * 0.27)
             Text(name.first.map { String($0).uppercased() } ?? "L").font(.system(size: size * 0.28, weight: .medium)).foregroundStyle(Palette.cardInk).offset(x: -size * 0.12, y: -size * 0.06)

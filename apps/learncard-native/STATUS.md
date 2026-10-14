@@ -6,6 +6,7 @@
 - Checkout: `/Users/donny/.codex/worktrees/vesper-73/LearnCard`.
 - Previous Apps implementation: `10141da123da851425e3571a3bae53b4964eabcf`, with [passing CI](https://github.com/learningeconomy/LearnCard/actions/runs/38412284027).
 - Current suite: 69 Bun cases, 43 Swift cases, 30 full simulator tests plus one opt-in live exchange intentionally skipped. Full account/lifecycle/interoperability and final Colorful screen checks are recorded in [TESTING.md](TESTING.md). Fresh branch CI runs on push; match its source commit before treating it as final evidence.
+- Local full suite passed all 142 cases and verified 10 iOS outputs, followed by eight focused stronger-backdrop title/language/dark/Families checks and final Release compilation. Commit hooks passed after replacing untyped test fixtures with explicit fixture types; hooks/baselines were not bypassed.
 
 The earlier manual-review pause is superseded by the user's request to continue. Use this checkout and preserve unrelated primary-checkout work.
 
@@ -25,7 +26,7 @@ The app browser is separate from the account SDK. Embedded partner apps support 
 
 ## Installed simulator build
 
-The previous Apps build is installed on **LearnCard Native Lab**, with existing account access preserved. Replace it with the newly verified Families build using the run command below; tests use a separate simulator and do not change this account.
+The Families/Colorful build is installed on **LearnCard Native Lab**, with existing account access preserved. Tests use a separate simulator. Read-only account refresh showed the real collection and incoming count again. An initial cold-launch collection request showed the generic unavailable alert; retry succeeded. This transient staging/launch behavior is recorded rather than represented as resolved by the visual pass.
 
 Open Simulator, select **LearnCard Native Lab**, and open **LearnCard Lab**. This is the review simulator (`ACD3802A-67BC-4C5F-98A4-7FFCF598AE9E`); the automated UI checks use a separate simulator.
 
@@ -42,7 +43,7 @@ The existing ignored local configuration retains the approved test email. A fres
 
 ## Manual review focus
 
-1. Solid page colors and Collection cards in light/dark mode; subtle motion and the edge-to-edge tray.
+1. Strong Colorful page backgrounds and Collection cards in light/dark mode; subtle motion and the edge-to-edge tray. The neutral comparison remains saved if these feel too intense.
 2. Home/Account/Apps → Families: overview, compact roster, profile detail, creation/editing and guardian access review. Sample mode uses PIN `12345` and sends no actual invitations.
 3. Apps discovery/browser and native Data Sharing after the new navigation entry; app uninstall and agreement withdrawal remain distinct.
 4. Language selection, Arabic direction and full versus compact navigation labels; background/reopen and sign-out.
@@ -71,5 +72,7 @@ Anonymous/redacted consent, advanced contract flows and deferred partner actions
 - [Account integration evidence and outstanding cases](ACCOUNT_INTEGRATION.md)
 - [Regression coverage and commands](TESTING.md)
 - [Consumer design brief](design/CONSUMER_APPS_BRIEF.md)
+- [Current Colorful direction and exact image-generation prompts](design/COLORFUL_BRIEF.md)
 - Obsidian: `Codex Notes/LearnCard/2026-10-13-native-consumer-apps.md`
+- Obsidian: `Codex Notes/LearnCard/2026-10-13-native-families.md`
 - DualMem: project checkpoint `Native Families and visual refinement`
