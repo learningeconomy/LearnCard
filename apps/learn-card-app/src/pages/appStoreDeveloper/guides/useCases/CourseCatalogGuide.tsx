@@ -1,8 +1,5 @@
 /**
- * CourseCatalogGuide - Enterprise LMS integration guide
- *
- * Full guided setup for LMS partners. Configure webhooks, build credential
- * templates, map your data, and go live with automatic credential issuance.
+ * CourseCatalogGuide - issue credentials from a catalog (spreadsheet) of courses.
  */
 import React, { useEffect } from 'react';
 import type { LCNIntegration } from '@learncard/types';

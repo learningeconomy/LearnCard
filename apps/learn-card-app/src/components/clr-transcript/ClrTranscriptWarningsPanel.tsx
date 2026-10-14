@@ -1,5 +1,5 @@
 import React from 'react';
-import type { DisplayWarning } from '../../helpers/clrRenderer.helpers';
+import type { DisplayWarning } from 'learn-card-base/helpers/credentials/clr/renderer';
 
 const ClrTranscriptWarningsPanel: React.FC<{
     warnings: DisplayWarning[];

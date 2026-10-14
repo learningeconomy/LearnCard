@@ -1,0 +1,22 @@
+{
+    "APPLE_OAUTH_CLIENT_IDS": "com.example.app,app.example.www",
+    "DOMAIN_NAME": "api.example.com",
+    "ESCROW_ENCLAVE_ACTIVE_KEY_ID": "example-2026-01",
+    "ESCROW_HOLD_DURATION_MS": "604800000",
+    "ESCROW_HOLD_RESTART_MIN_AGE_MS": "86400000",
+    "GOOGLE_OAUTH_CLIENT_IDS": "000000000000-exampleexampleexampleexampleexam.apps.googleusercontent.com",
+    "KEYCLOAK_AUDIENCES": "example-app",
+    "KEYCLOAK_ISSUERS": "https://auth.example.com/realms/example",
+    "OIDC_CLIENT_ID": "keycloak-broker",
+    "OIDC_ISSUER": "https://api.example.com",
+    "OIDC_SIGNING_KEY_SECRET_ID": "lca-api/example/oidc-signing-jwk",
+    "POSTMARK_BRAND_NAME": "Example",
+    "POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS": "universal-inbox-claim-1",
+    "POSTMARK_FROM_EMAIL": "example.com",
+    "POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS": "contact-method-verification-1",
+    "POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS": "recovery-email-verification",
+    "POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS": "recovery-key-backup",
+    "SA_SEED_ALLOW_LEGACY_READ": "false",
+    "SA_SEED_ENCRYPT_WRITES": "true",
+    "SENTRY_ENV": "lca-api-example"
+}

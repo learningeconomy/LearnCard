@@ -34,6 +34,10 @@ import {
 import { VC, VerificationItem } from '@learncard/types';
 import { UnsignedVC } from '@learncard/types';
 import moment from 'moment';
+import {
+    getCredentialExpirationDate,
+    hasCredentialExpired,
+} from 'learn-card-base/helpers/credentialExpiration';
 import * as m from '../../../../paraglide/messages.js';
 
 type BoostDetailsSideBarProps = {
@@ -89,6 +93,9 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                   .filter(Boolean)
                   .join(' – ')
             : null;
+
+    const expirationDate = getCredentialExpirationDate(credential);
+    const isExpired = hasCredentialExpired(credential);
     const { isMobile } = useDeviceTypeByWidth();
 
     const {
@@ -149,6 +156,16 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                                 }`}
                             >
                                 Awarded on {createdAt}
+                            </span>
+                        )}
+                        {!isMediaDisplay && expirationDate && (
+                            <span
+                                className={`mt-2 block w-full font-poppins text-[12px] font-semibold ${
+                                    isExpired ? 'text-amber-700' : 'text-grayscale-600'
+                                }`}
+                            >
+                                {(isExpired ? m['wallet.expired'] : m['wallet.expires'])()}{' '}
+                                {moment(expirationDate).format('MMMM DD, YYYY')}
                             </span>
                         )}
                     </TruncateTextBox>

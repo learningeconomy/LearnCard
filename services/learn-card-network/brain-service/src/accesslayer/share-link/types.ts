@@ -55,6 +55,8 @@ export type ShareLinkOperationRecord = {
  * a bounded lease so a restart can either resume or supersede it.
  */
 export type ShareLinkReservationRecord = {
+    attachmentId?: string | null;
+    attachmentChunkCount?: number | null;
     shareId: string;
     namespace: string;
     ownerProfileId: string;
@@ -122,6 +124,7 @@ export type ShareContentBinding = {
 };
 
 export type ReserveCreateInput = {
+    attachment?: import('@learncard/types').ShareLinkAttachment;
     namespace: string;
     ownerProfileId: string;
     clientRequestId: string;
@@ -143,6 +146,7 @@ export type ReserveCreateInput = {
 };
 
 export type ReserveReplacementContent = ShareContentBinding & {
+    attachment?: import('@learncard/types').ShareLinkAttachment;
     /** Must equal the current visible content version + 1. */
     contentVersion: number;
     selectedCount: number;
@@ -194,6 +198,7 @@ export type ReserveShareLinkResult =
       };
 
 export type FinalizeReservationInput = {
+    verifiedAttachmentId?: string;
     namespace: string;
     ownerProfileId: string;
     shareId: string;

@@ -7,6 +7,7 @@ BAKE_FILE="$REPO_ROOT/scripts/e2e-hosted/docker-bake.hcl"
 : "${E2E_ARTIFACT_DIR:?E2E_ARTIFACT_DIR must be set}"
 
 source "$REPO_ROOT/scripts/e2e-hosted/metrics.sh"
+source "$REPO_ROOT/scripts/e2e-hosted/compose-pull.sh"
 e2e_metrics_init service
 
 collect_service_artifacts() {
@@ -28,6 +29,8 @@ trap collect_service_artifacts EXIT
 # ordering dependency and can be split across runners with separate stacks.
 run_service_suite() {
     cd "$REPO_ROOT"
+    # These host SDK prerequisites use the same Sentry plugins as the browser.
+    export SENTRY_BUILD_TELEMETRY=false
     local vitest_args=''
     if [[ -n "${E2E_SHARD:-}" && -n "${E2E_SHARD_TOTAL:-}" ]]; then
         vitest_args="--shard=${E2E_SHARD}/${E2E_SHARD_TOTAL}"
@@ -46,6 +49,7 @@ build_service_images() {
 
 start_service_stack() {
     cd "$SERVICE_DIR"
+    e2e_pull_compose_images || return 1
     docker compose up -d --no-build \
         2>&1 | tee "$E2E_ARTIFACT_DIR/docker-compose-start.log"
 }

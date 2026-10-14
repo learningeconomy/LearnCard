@@ -40,6 +40,7 @@ export type SideMenuIcons = {
     [CredentialCategoryEnum.skill]: React.FC<{ className?: string }>;
     [CredentialCategoryEnum.socialBadge]: React.FC<{ className?: string }>;
     [CredentialCategoryEnum.achievement]: React.FC<{ className?: string }>;
+    [CredentialCategoryEnum.qualifications]: React.FC<{ className?: string }>;
     [CredentialCategoryEnum.learningHistory]: React.FC<{ className?: string }>;
     [CredentialCategoryEnum.accomplishment]: React.FC<{ className?: string }>;
     [CredentialCategoryEnum.accommodation]: React.FC<{ className?: string }>;

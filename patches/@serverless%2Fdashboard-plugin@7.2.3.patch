@@ -1,0 +1,11 @@
+diff --git a/lib/deployment/parse.js b/lib/deployment/parse.js
+--- a/lib/deployment/parse.js
++++ b/lib/deployment/parse.js
+@@ -8,6 +8,6 @@
+ const path = require('path');
+ const fs = require('fs-extra');
+ const _ = require('lodash');
+-const simpleGit = require('simple-git');
++const { simpleGit } = require('simple-git');
+ const { version: packageJsonVersion } = require('../../package');
+ const Deployment = require('./deployment');

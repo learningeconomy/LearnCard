@@ -13,6 +13,11 @@ const mocks = vi.hoisted(() => ({
     validate: vi.fn(),
 }));
 
+vi.mock('./sharePrivacy', () => ({ enterSharePrivacy: vi.fn() }));
+vi.mock('../../helpers/resume-publishing/protectedPdf', () => ({
+    hasProtectedResumePdf: (vc: { protected?: boolean }) => vc?.protected === true,
+    getProtectedResumePdf: () => ({ byteLength: 3315 }),
+}));
 vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
 vi.mock('learn-card-base', () => ({
     useWallet: () => ({ initWallet: mocks.initWallet }),
@@ -26,9 +31,24 @@ vi.mock('./shareLinkFlow', () => ({
     readShareRecovery: (...args: unknown[]) => mocks.readRecovery(...args),
 }));
 vi.mock('./ShareLinkPreview', () => ({
-    ShareLinkPreview: ({ title, note }: { title: string; note?: string }) => (
+    ShareLinkPreview: ({
+        title,
+        note,
+        payload,
+        renderCredential,
+    }: {
+        title: string;
+        note?: string;
+        payload: SharePayload;
+        renderCredential: (credential: unknown) => React.ReactNode;
+    }) => (
         <div data-testid="owner-preview">
             {title} · {note}
+            {payload.presentation.verifiableCredential.map((credential, index) => (
+                <React.Fragment key={index}>
+                    {renderCredential(credential) ?? <p>Generic member</p>}
+                </React.Fragment>
+            ))}
         </div>
     ),
 }));
@@ -103,5 +123,19 @@ describe('ShareLinkOwnerPreview', () => {
             shareId: share.id,
             contentVersion: share.contentVersion,
         });
+    });
+    it('renders a local managed PDF card without a generic external thumbnail', async () => {
+        const resumePayload = {
+            ...payload,
+            presentation: { verifiableCredential: [{ protected: true }] },
+        };
+        mocks.validate.mockReturnValue({ ok: true, manifest: resumePayload });
+        render(<ShareLinkOwnerPreview share={share} onDismiss={() => undefined} />);
+        await screen.findByText('Published resume');
+        expect(screen.getByText('PDF · 4 KB')).toBeInTheDocument();
+        expect(screen.getByText('Edit resume content in Resume Builder.')).toBeInTheDocument();
+        expect(screen.queryByText('Generic member')).not.toBeInTheDocument();
+        expect(document.querySelector('iframe')).toBeNull();
+        expect(document.querySelector('img')).toBeNull();
     });
 });

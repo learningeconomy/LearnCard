@@ -220,6 +220,72 @@ beforeEach(() => {
     recoveryRunner.recoverShareLinkOperation.mockReset();
 });
 
+describe('owner attachment route authorization', () => {
+    const input = {
+        id: SHARE_ID,
+        contentVersion: 1,
+        attachmentId: OPERATION_ID,
+        chunkIndex: 0,
+        chunkCount: 1,
+        envelope,
+        ownerEncryptedRecovery: recovery,
+    };
+    const setup = () => ({
+        ...makeDependencies(),
+        attachments: {
+            put: vi.fn(async () => ({ ok: true as const })),
+            delete: vi.fn(async () => ({ ok: true })),
+        },
+    });
+    it('requires authenticated profile and write scope before any staging', async () => {
+        const dependencies = setup();
+        for (const user of [
+            undefined,
+            { ...authenticatedUser, isChallengeValid: false },
+            { ...authenticatedUser, scope: AUTH_GRANT_SHARE_LINKS_READ_SCOPE },
+        ]) {
+            await expect(
+                makeCaller(dependencies, { user }).putAttachmentChunk(input)
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        }
+        expect(dependencies.attachments.put).not.toHaveBeenCalled();
+        await expect(makeCaller(dependencies).putAttachmentChunk(input)).resolves.toEqual({
+            ok: true,
+        });
+        expect(dependencies.attachments.put).toHaveBeenCalledWith(input, {
+            namespace: NAME,
+            ownerProfileId: OWNER_PROFILE.profileId,
+        });
+    });
+    it('rejects arbitrary tuples and overlarge chunks before staging', async () => {
+        const dependencies = setup();
+        await expect(
+            makeCaller(dependencies).putAttachmentChunk({
+                ...input,
+                namespace: 'arbitrary',
+            } as never)
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        await expect(
+            makeCaller(dependencies).putAttachmentChunk({
+                ...input,
+                envelope: { ...envelope, ct: Buffer.alloc(256 * 1024 + 17).toString('base64url') },
+            })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        expect(dependencies.attachments.put).not.toHaveBeenCalled();
+    });
+    it('derives cleanup owner and passes only the validated exact stage key', async () => {
+        const dependencies = setup();
+        const key = { id: SHARE_ID, contentVersion: 1, attachmentId: OPERATION_ID, chunkCount: 1 };
+        await expect(makeCaller(dependencies).deleteAttachmentChunks(key)).resolves.toEqual({
+            ok: true,
+        });
+        expect(dependencies.attachments.delete).toHaveBeenCalledWith(key, {
+            namespace: NAME,
+            ownerProfileId: OWNER_PROFILE.profileId,
+        });
+    });
+});
+
 describe.each([
     ['standard', profileRoute],
     ['private input', profileRouteWithoutInputCapture],
@@ -678,7 +744,8 @@ describe('share-link owner route boundary', () => {
             );
 
             const result = await caller.list({ limit: 25 });
-            const record = result.records[0];
+            expect(result.records).toHaveLength(1);
+            const record = result.records[0]!;
 
             expect(resolveViewCountingEligibility).toHaveBeenCalledTimes(1);
             expect(record).not.toHaveProperty('activeObjectRef');
@@ -708,8 +775,9 @@ describe('share-link owner route boundary', () => {
 
             const result = await caller.list({ limit: 25 });
 
+            expect(result.records).toHaveLength(1);
             expect(result.records[0]).not.toHaveProperty('viewCount');
-            expect(result.records[0].lastViewedAt).toBeNull();
+            expect(result.records[0]!.lastViewedAt).toBeNull();
         });
 
         it('maps a repository failure to a fixed safe error without leaking the cause', async () => {
