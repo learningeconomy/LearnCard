@@ -34,9 +34,10 @@ see `infra/escrow-enclave/README.md`. Public authority/email settings are record
 CI-signed manifest; no plaintext access keys belong in either artifact.
 Without authority configuration, `UnavailableEnrollment` remains wired. Partial
 configuration, missing ciphertext or unsealing failure fails boot closed. No email
-client is active. **Do not deploy the configured authority before items g–i:** the
-wire/API and client paths are implemented; independent monitor integration and
-final rollout gates remain.
+client is active. **PR 2 implementation is complete offline, not deployed or a
+production launch approval.** Authority, wire/API, clients and independent audit
+integration are implemented. The ordered staging gates and PR 3 attack-C/email
+confirmation blocker remain; see `STAGING.md` and `SECURITY.md`.
 
 PR 2 item-a checkpoint adds the persistence schema in
 `src/authority/state.rs`. It is available without AWS features for offline tests
@@ -103,8 +104,8 @@ low-S P-256 signatures. Policy stores signed proposals with the transaction and
 signs commit artifacts only after authenticated receipt readback. Commit payloads
 bind the immutable execution receipt, proposed-event hash and request commitment.
 The configured policy does not derive freshness or PIN budgets from the legacy
-parent ledger. Item g must consume these authority artifacts independently before
-deployment; the existing monitor alone does not observe this new audit path.
+parent ledger. Item g now consumes these authority artifacts independently; the
+legacy ledger observer remains separate.
 
 Item e exposes `enrollmentState`, `applyEnrollment` and `authorityRewrap` through
 the enclave and independent host DTOs, at `/v1/enrollment-state`,
@@ -162,9 +163,26 @@ an intent; owner signatures begin only after key possession/reconstruction.
 fake-CA NSM document with the bound ledger key, verified by both Rust and TypeScript.
 Its documented fixture keys/root are public test material, never production trust.
 
-The next checkpoint is item g: independent authority monitoring. Remaining audit
-tests and deployment documentation are still pending. Software mode remains legacy
-staging/dev only; it does not implement or impersonate the signed authority protocol.
+Item g adds a gated read-only authority sweep, independent of host/Mongo/legacy
+ledger data. It verifies measurement/key-pinned proposals and authenticated
+execution receipts, reconstructs revisions/PIN generations/hold states, and checks
+every committed row against history. Signed proposals include public share version
+and rewrap delegation. An unchanged account fence brackets pagination; moving or
+unavailable reads never become a clean partial sweep. Integrity, coverage and
+missing-heartbeat alarms are separate from legacy telemetry. No authority writes,
+writer secrets or escrow/credential-CMK grants are added to the observer.
+
+The read exception is bounded by table IAM and two separately attached SCPs. The
+observer's role/PassRole, Lambda and public SSM trust path are protected from
+non-admin takeover. These are still structural offline tests, not live enforcement
+proof. A coherent privileged purge/rollback and detector suppression remain explicit
+risks; the sweep is not an external durable high-water mark.
+
+Item h's [coverage inventory](AUDIT-COVERAGE.md) maps every requested offline
+must-have to tests, including new comparison/cancellation pause points and mutation
+crash matrices. Item i updates security status and the ordered staging runbook.
+Software mode remains staging/dev only. Email confirmation remains PR 3; current
+lca-api notifications do not close attack C.
 
 Item d was implemented before c to avoid an unsigned activation window. The Rust
 verifier is `src/authority/intent.rs`; the TypeScript encoder/signer is
@@ -246,8 +264,8 @@ unchanged. Recovery requests never require a new owner signature. Intent verific
 does not authorize release and does not establish commit freshness: item c must
 condition the mutation against the verified enrollment version and source identity,
 consume durable request tombstones, and distinguish proposals from signed commit
-receipts. The item-c policy now enforces this boundary; rollout must still wait for
-the remaining wire/client/monitor integration and deployment gates.
+receipts. The policy, clients and monitor now enforce/check this boundary; rollout
+must still pass the documented operational gates and separately address attack C.
 
 ## 1. Problem and current boundary
 

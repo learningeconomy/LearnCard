@@ -5,8 +5,143 @@ verifying it end-to-end. It complements `README.md` (threat model, wire contract
 development) and `../../infra/escrow-enclave/README.md` (Terraform reference) — it does not repeat
 either in full.
 
-> **Three launch blockers below (Roughtime, Enrollment, D10) are OPEN as of this writing.** Steps 6 and 7 cannot
-> succeed until the Roughtime and Enrollment blockers are resolved. Read "Open launch blockers" before starting.
+> **PR 2 is implemented offline, not deployed or approved for production release.**
+> Configured enrollment authority resolves the old enrollment blocker under its
+> stated IAM/SCP trust assumptions. Attack C/email confirmation remains PR 3;
+> Roughtime operations and privileged-administrator risks still require review.
+> For this cutover, use the ordered section below before the older bring-up notes.
+
+## PR 2 authority cutover — operator only
+
+None of these AWS commands/applies, credential provisioning, resets or deployments
+were run by the implementation task. Use a scheduled **staging-only** maintenance
+window, two-person security review, the dedicated member account and reviewed
+operator credentials. Confirm account/region/tenant/database before each change.
+Keep `ESCROW_RELEASE_KILL_SWITCH=true`, automatic enrollment rollout disabled, and
+old clients out of the test cohort until the final gate. Do not edit a live
+authority generation in place or weaken the escrow CMK policy.
+
+Execute in this order:
+
+1. **SCP apply and independent verification.** From management-account credentials,
+   apply the separate `infra/escrow-enclave-bootstrap/authority-guardrail` root with
+   the exact member account and bootstrap MFA-user list. Both outputs are required:
+   `authority_guardrail_policy_id` and `authority_monitor_guardrail_policy_id`.
+   The monitor-protection attachment is installed before the reader exception is
+   added to the primary guardrail. Verify **both contents and both attachments**,
+   effective inherited SCPs, policy-count quotas, account membership (not management),
+   and MFA admin trust. Receipt strings alone prove nothing. The observer exception
+   must be the exact `escrow-enclave-<environment>-ledger-monitor-role`, with only
+   GetItem/Query/Scan; host/org-admin/root are not reader exceptions. Verify protection
+   of monitor PassRole/IAM, Lambda updates and its fixed SSM trust path. Retain evidence
+   from independent CloudTrail/security monitoring. IAM adversarial checks are a live
+   operator gate, not what Terraform's mocked tests prove.
+
+2. **Provision credential targets, then credentials.** Pick a new reviewed generation
+   for this first disposable-staging cutover. Resources must exist before keys can
+   be provisioned: enable the core stack's **resource** switch
+   `enable_enrollment_authority=true` with `authority_tenant`, `authority_generation`
+   and both verified SCP IDs, but keep `enable_credential_delivery=false`. This is
+   not runtime activation: do not install authority settings in the running EIF yet.
+   Keep `enable_enclave_email=false` and `create_sending_zone=false` (PR 3). The new
+   table must be empty, encrypted, deletion-protected, PITR-enabled, without TTL.
+   From the MFA admin session, use the existing provisioner:
+
+    ```sh
+    set +x
+    eval "$(aws configure export-credentials --profile escrow-kms-admin-session --format env)"
+    bash infra/escrow-enclave-bootstrap/provision-enclave-credentials.sh \
+      --purpose authority-writer --environment staging --tenant '<tenant>' \
+      --generation '<new-generation>' --bucket '<artifacts-bucket>' \
+      --kms-key-arn '<credential-cmk-arn>' --escrow-kms-key-arn '<escrow-cmk-arn>'
+    ```
+
+    Run from the repository root on a trusted workstation without tracing/core dumps.
+    The script prints only the ciphertext URI; never put plaintext keys into tfvars,
+    Terraform state, shell history or a ticket. Verify create-only ciphertext at
+    `credentials/authority-writer/<generation>`. Do not overwrite a slot. Investigate
+    ambiguous provisioning and revoke orphan access keys before retrying. Provision
+    no email-sender credentials for PR 2. Resource creation necessarily precedes this
+    command; the runtime enablement steps are still below.
+
+3. **Prepare enable flags and public measured configuration.** Use the Terraform
+   outputs to set the complete `ESCROW_AUTHORITY_*` group and
+   `ESCROW_AUTHORITY_CREDENTIAL_KMS_KEY_ARN` in the measured build environment. Match tenant,
+   generation, table ARN, writer ARN, region/account and the distinct credential
+   CMK. No defaults from Mongo, legacy ledger or host environment may select scope.
+   Verify that authority startup requires the owner verifier. Preserve steady-state
+   `ESCROW_ALLOW_FIRST_BOOT=false`; a new authority generation is **not** permission
+   to regenerate an escrow key. Keep email flags off and current lca-api notifications.
+
+4. **Stage the delivery flag.** Set `enable_credential_delivery=true` in the pending,
+   reviewed deployment inputs only after ciphertext existence/permissions are
+   verified. It enables the host's opaque ciphertext read and boot delivery, not
+   access to plaintext credentials. Do not roll an old host/EIF with this change
+   alone: apply the pending flag together with the compatible artifacts in step 5.
+
+5. **Build the new EIF, rotate measurements, deploy backend and observer.** Build
+   twice using the reproducible pipeline; compare PCRs and verify the signed manifest
+   includes all public authority settings. Approve complete PCR0/1/2 tuples for both
+   escrow and credential CMKs through the existing two-person procedure—never add
+   unattested Decrypt/Encrypt. Deploy the compatible host binary and EIF together,
+   with the staged delivery flag, then verify fresh nonce-bound real NSM evidence,
+   writer unsealing, DynamoDB TLS relay and fail-closed missing/partial configuration.
+   Independently verify the attested ledger public key and
+   `SHA-256(PCR0_bytes || PCR1_bytes || PCR2_bytes)`. Populate the security-owned SSM
+   **String** at `/escrow-enclave-staging/authority-monitor-trust`:
+
+    ```json
+    {
+        "<keyId>": {
+            "publicKey": "<130 lowercase hex SEC1 characters>",
+            "measurements": ["<64 lowercase hex measurement hash>"]
+        }
+    }
+    ```
+
+    Retain historical key/measurement pairs needed by immutable execution rows.
+    The parser permits up to 32 keys, eight measurements per key and 8192 bytes
+    (use an Advanced String if over the Standard limit). Never use fixture roots/keys.
+    Deploy/recycle the new monitor after provisioning/updating this parameter: trust
+    is loaded at cold start. Verify its fixed table/generation environment, read-only
+    grant and successful `AuthoritySweepCompleted`; the legacy heartbeat is insufficient.
+    A missing trust parameter during resource-only provisioning can legitimately
+    alarm—do not mistake maintenance suppression for a passed gate. Rehearse invalid
+    signature/missing receipt/coverage alarms on disposable test data and verify the
+    independent notification channel. Monitor must have no authority writes or
+    escrow/credential-CMK grants. Lca-api must run the new signed wire/API version.
+
+6. **Reset disposable staging data, not trusted history.** Archive the prior staging
+   evidence under security access controls. With traffic paused, use an explicit,
+   reviewed list of staging test identities: clear their Mongo `escrowBlob`,
+   `escrowPin` and escrow recovery-method entries, and remove/archive their old hold
+   rows (including unconfirmable legacy cancellation markers). Preserve account
+   auth shares, contact identities, other recovery methods and opt-out preferences
+   unless the test owner explicitly opts in. Do not import Mongo epochs, PIN counters
+   or parent-ledger history. The new authority starts empty. Do not truncate/restore
+   an existing authority table in its generation; later generation cutovers require
+   a separately reviewed retention/parallel-resource procedure, not a blind Terraform
+   replacement of a deletion-protected table. Users with the account key re-enroll
+   through signed intent; do not manufacture enrollment for a lost-key account.
+
+7. **Roll out clients last, then run the gates.** Publish matching tenant measurement
+   pins and the authority-aware SDK/AuthCoordinator build to the staging cohort.
+   Keep automatic enrollment off for old clients: the new API rejects unsigned
+   remote enrollment/disablement and old clients fail closed. Enable the new client
+   cohort only after backend/EIF/observer readiness; check fresh Snapshot nonces,
+   signed enroll/carry/PIN set/change/clear/disable, returned persisted ciphertext,
+   restart/cancellation races, disabled-state preservation and rewrap reconciliation.
+   Verify software mode cannot substitute for Nitro. Remove obsolete PCR allowance
+   only after the overlap and client rollout are complete; keep verification-only
+   monitor anchors for historical records. Release the API maintenance switch only
+   for the approved staging rehearsal and perform the real seven-day soak. This
+   does **not** authorize a production launch while attack C/PR 3 remains open.
+
+Rollback means disabling traffic and investigating, not restoring older authority
+rows or deploying an unsigned client/API path. Committed releases cannot be revoked
+retroactively. The API kill switch is operational defense, not protection from a
+host that bypasses that API; credential revocation/approved-image removal require
+the security incident process.
 
 ## 1. Terraform apply order
 
@@ -159,16 +294,16 @@ Operational notes:
        bypass a time outage: it needs the same quorum to boot. Only an image from
        before authority foundations boots without it, and that image must still be
        in the KMS measurement list.
-- **Dormant direct clients:** `build-eif.sh` forwards optional measured settings:
+- **Configured authority / deferred email clients:** `build-eif.sh` forwards optional measured settings:
   `ESCROW_AUTHORITY_{REGION,ACCOUNT_ID,TABLE,WRITER_USER,TENANT,ENVIRONMENT,GENERATION}`
   and `ESCROW_EMAIL_{REGION,ACCOUNT_ID,SENDER_USER,FROM,IDENTITY,CONFIGURATION_SET}`.
-  Leave each entire group unset until provisioning/activation is implemented;
+  Leave each entire group unset until the ordered cutover is approved;
   partial groups are rejected by the config loader. These settings contain names,
-  never access keys. No boot path consumes them yet. Dormant enclave relays reserve
+  never access keys. Configured boot consumes authority settings and reserves
   ports 8001 (regional DynamoDB) and 8002 (regional SES); the gated host proxy
   services/allowlists are provisioned only by the explicit authority/email flags,
   not active in current staging.
-- **Dormant credential delivery:** additionally measure
+- **Gated credential delivery:** additionally measure
   `ESCROW_AUTHORITY_CREDENTIAL_KMS_KEY_ARN` for a separate credential CMK (never
   the escrow CMK). After installing the Organizations guardrail and provisioning,
   the host
@@ -181,8 +316,7 @@ Operational notes:
   create/encrypt/create-only-upload flow; do not supply dedicated plaintext keys
   to the host. See the infrastructure README for the MFA session and failure
   cleanup procedure. `enable_credential_delivery` is a separate, default-false
-  second phase, enabled only after ciphertext upload. No enclave activation path
-  is shipped yet.
+  second phase, enabled only after ciphertext upload and paired host/EIF readiness.
   Rotation must use an approved new generation/path with continuity review, not
   overwrite an existing object or roll back authority state.
 - **Measurement provenance:** `build-eif.sh` records all fourteen public authority/
@@ -191,11 +325,11 @@ Operational notes:
   preserves that config in `escrow-measurements.json`, and includes it in signed
   `manifest.json` alongside the artifact hashes. Empty values remain empty; these
   fields are not runtime activation flags or proof that the new configuration
-  has passed the dormant runtime loader's validation.
+  has passed the runtime loader's validation.
 
     **Infrastructure gate:** keep `enable_enrollment_authority=false` and
     `enable_enclave_email=false` in current staging. Enabling requires the separate
-    management-account SCP and reviewed generation/tenant. For email, explicitly
+    two management-account SCPs and reviewed generation/tenant. Email remains PR 3; for its later cutover, explicitly
     set `sending_domain=staging.notify.learncard.com`; optional `create_sending_zone`
     creates only that child zone and outputs NS for delegation from the separately
     owned `notify.learncard.com` parent. Otherwise publish the record outputs in the
@@ -221,10 +355,10 @@ attestation and vsock both work under that UID on a real Nitro host (first boot 
 
 ## 6. Run the e2e spec against staging
 
-> **Blocked by the open Roughtime and Enrollment items below** — every release attempt will fail closed with
-> `InsufficientSources` (Roughtime) and every mutating operation (create/release/cancel) will fail closed with
-> `Unavailable` (Enrollment). Steps in this section can be rehearsed for attestation and enrollment verification,
-> but the hold-release path itself cannot succeed end-to-end yet.
+> Complete the PR 2 cutover gates first and use authority-aware clients. Unconfigured
+> enrollment and insufficient trusted-time evidence still fail closed. Passing an
+> older legacy smoke script is not proof of the new authority lifecycle; use the
+> coverage inventory and updated client flows, then perform the real elapsed soak.
 
 ```sh
 ESCROW_E2E=1 \
@@ -321,9 +455,13 @@ Before performing a key rotation in production, rehearse it on staging:
 These are launch-blocking, not "nice to have later" — call them out explicitly whenever staging
 verification is attempted, don't bury them in a footnote.
 
-### Authenticated EnrollmentSource (blocks steps 6 and 7)
+### Authenticated EnrollmentSource (implemented; operational gates remain)
 
-The production enclave currently wires in `UnavailableEnrollment`, so every mutating operation (create hold, release, cancel) fails closed with `Unavailable`. A protocol design and separate security review are required to independently authenticate the current enrollment. Nothing can be released in production without it.
+Configured boot now wires the DynamoDB authority and owner verifier. Unconfigured
+mode still uses `UnavailableEnrollment`. Both guardrails, provisioning, native
+relay/boot verification, client rollout and independent monitor checks above are
+required before staging release rehearsal. Attack C/email confirmation remains a
+separate PR 3 launch blocker; PR 2 does not mitigate suppressed lca-api notifications.
 
 ### Second production-grade Roughtime source (blocks steps 6 and 7)
 
