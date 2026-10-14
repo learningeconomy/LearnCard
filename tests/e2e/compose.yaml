@@ -97,6 +97,20 @@ services:
 
         command: ['sh', '-c', 'cd services/learn-card-network/learn-cloud-service && bun run dev']
 
+        # LRS performs OIDC discovery once at startup and exits if cloud is still booting.
+        healthcheck:
+            test:
+                - CMD
+                - bun
+                - -e
+                - >-
+                    const response = await fetch('http://localhost:' + process.env.PORT + '/.well-known/openid-configuration', { signal: AbortSignal.timeout(4000) });
+                    process.exit(response.ok ? 0 : 1);
+            interval: 2s
+            timeout: 5s
+            retries: 60
+            start_period: 10s
+
         depends_on:
             - mongodb
             - redis2
@@ -283,8 +297,10 @@ services:
         ports:
             - '8080:8080'
         depends_on:
-            - postgres
-            - cloud
+            postgres:
+                condition: service_started
+            cloud:
+                condition: service_healthy
         environment:
             LRSQL_API_KEY_DEFAULT: test-api-key
             LRSQL_API_SECRET_DEFAULT: test-api-secret
