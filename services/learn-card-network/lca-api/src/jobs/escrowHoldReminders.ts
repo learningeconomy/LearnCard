@@ -9,6 +9,7 @@ import {
     findEscrowHoldsPendingStartNotification,
     releaseEscrowReminderClaim,
     recordEscrowStartNotificationAttempt,
+    recordEscrowHoldNotification,
 } from '@models';
 import { environment } from '@environment';
 import {
@@ -175,6 +176,14 @@ export const runEscrowHoldReminders = async (
                     holdId: claimed.holdRecord.hold.holdId,
                     expectedDid: claimed.primaryDid,
                 });
+                // P2-a: the enclave call above is idempotent (a repeat never
+                // resends or moves its recorded timestamp), so persisting
+                // this acknowledgment AFTER it succeeds is safe to retry: if
+                // this write is lost (crash, Mongo failure), the hold stays
+                // selected next run, the enclave call is a no-op, and this
+                // write finally lands. Without it, every run re-called the
+                // enclave for every hold in the 24h window forever.
+                await recordEscrowHoldNotification(claimed._id, 'reminder');
                 reminded += 1;
                 continue;
             }

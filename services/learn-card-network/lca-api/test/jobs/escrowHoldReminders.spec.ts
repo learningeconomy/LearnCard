@@ -184,7 +184,77 @@ describe('runEscrowHoldReminders', () => {
             ]);
             expect(notified).toHaveLength(0);
             const stored = await findEscrowHoldById(hold._id);
-            expect(stored?.notifications.map(entry => entry.kind)).toEqual([]);
+            // P2-a: a successful enclave warning is now acknowledged in Mongo
+            // (previously left empty forever, causing a re-send every run).
+            expect(stored?.notifications.map(entry => entry.kind)).toEqual(['reminder']);
+        } finally {
+            delete software.sendReleaseWarning;
+        }
+    });
+
+    it('sends the release warning exactly once across consecutive hourly runs (P2-a)', async () => {
+        const now = new Date();
+        const hold = await seed(new Date(now.getTime() + HOUR));
+        await getEscrowHoldsCollection().updateOne(
+            { _id: hold._id },
+            { $set: { requiresConfirmation: true, confirmedAt: now } }
+        );
+        const calls: { holdId: string; expectedDid: string }[] = [];
+        const software = getEscrowEnclave() as unknown as Record<string, unknown>;
+        software.sendReleaseWarning = async (params: { holdId: string; expectedDid: string }) => {
+            calls.push(params);
+            return { success: true as const };
+        };
+        try {
+            const first = await runEscrowHoldReminders({ now });
+            const secondRun = await runEscrowHoldReminders({ now: new Date(now.getTime() + HOUR) });
+            expect(first.reminded).toBe(1);
+            expect(secondRun.reminded).toBe(0);
+            expect(calls).toHaveLength(1);
+            expect(
+                (await findEscrowHoldById(hold._id))?.notifications.map(entry => entry.kind)
+            ).toEqual(['reminder']);
+        } finally {
+            delete software.sendReleaseWarning;
+        }
+    });
+
+    it('a lost acknowledgment write is safe to retry and eventually stops re-calling the enclave (P2-a)', async () => {
+        const now = new Date();
+        const hold = await seed(new Date(now.getTime() + HOUR));
+        await getEscrowHoldsCollection().updateOne(
+            { _id: hold._id },
+            { $set: { requiresConfirmation: true, confirmedAt: now } }
+        );
+        const calls: { holdId: string; expectedDid: string }[] = [];
+        const software = getEscrowEnclave() as unknown as Record<string, unknown>;
+        software.sendReleaseWarning = async (params: { holdId: string; expectedDid: string }) => {
+            calls.push(params);
+            return { success: true as const };
+        };
+        try {
+            const first = await runEscrowHoldReminders({ now });
+            expect(first.reminded).toBe(1);
+            expect(calls).toHaveLength(1);
+            // Simulate the acknowledgment write being lost (e.g. a crash right
+            // after a successful enclave call) rather than mocking Mongo, so
+            // this exercises the job's own catch-up path: a real enclave would
+            // not re-send or move its timestamp on this retry (covered by the
+            // Rust-side idempotence test), but lca-api must not get stuck
+            // either, so it retries until its own acknowledgment lands.
+            await getEscrowHoldsCollection().updateOne(
+                { _id: hold._id },
+                { $set: { notifications: [] } }
+            );
+            const second = await runEscrowHoldReminders({ now });
+            expect(second.reminded).toBe(1);
+            expect(calls).toHaveLength(2);
+            expect(
+                (await findEscrowHoldById(hold._id))?.notifications.map(entry => entry.kind)
+            ).toEqual(['reminder']);
+            const third = await runEscrowHoldReminders({ now });
+            expect(third.reminded).toBe(0);
+            expect(calls).toHaveLength(2);
         } finally {
             delete software.sendReleaseWarning;
         }

@@ -493,6 +493,17 @@ export const recordEscrowStartNotificationAttempt = async (
  * `authority_send_release_warning` would reject a pre-confirmation hold
  * anyway (see policy/authority.rs), so excluding it here avoids a
  * predictable, recurring no-op failure every run.
+ *
+ * Deliberately has no `releaseAfter > now` lower bound (catch-up, P2-b): the
+ * mandatory warning gate means release can never complete without a
+ * successfully recorded warning, regardless of how stale Mongo's own
+ * `releaseAfter` estimate is. An outage (SES down, this job not running)
+ * spanning an entire 24h reminder window must not permanently strand the
+ * hold — it stays selected, however overdue, until a warning is finally
+ * recorded (`notifications.kind` gains `'reminder'`). Real availability is
+ * then governed by the enclave's own gate, `release_warning_sent_hi_ms +
+ * 24h` (see `authority_release_with_receipt` in policy/authority.rs), not
+ * by this stale estimate.
  */
 export const findEscrowHoldsDueForReminder = async (
     now: Date,
@@ -515,10 +526,7 @@ export const findEscrowHoldsDueForReminder = async (
                     ],
                 },
             ],
-            releaseAfter: {
-                $gt: now,
-                $lte: new Date(now.getTime() + ESCROW_HOLD_REMINDER_WINDOW_MS),
-            },
+            releaseAfter: { $lte: new Date(now.getTime() + ESCROW_HOLD_REMINDER_WINDOW_MS) },
             'notifications.kind': { $ne: 'reminder' },
         })
         .sort({ reminderAttemptedAt: 1, releaseAfter: 1 })
