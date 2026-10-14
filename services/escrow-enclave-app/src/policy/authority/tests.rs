@@ -4,7 +4,7 @@ use crate::{
         intent::EnrollmentIntent,
         store::{
             fake::{FakeDatabase, WriteFault},
-            ReconcileTicket, Scope, StoreFuture,
+            CommitReceipt, ReconcileTicket, Scope, StoreFuture,
         },
     },
     crypto::{decrypt_escrow_blob, encrypt_escrow_blob, generate_escrow_key_pair},
@@ -33,6 +33,7 @@ impl TimeSource for Clock {
         })
     }
 }
+#[derive(Clone, Copy)]
 enum Fault {
     Before,
     After,
@@ -40,6 +41,7 @@ enum Fault {
 }
 struct Gate {
     call: usize,
+    after_commit: bool,
     entered: Arc<Notify>,
     resume: Arc<Notify>,
 }
@@ -74,7 +76,7 @@ impl AuthorityStore for Hooks {
                     None
                 }
             };
-            if let Some(gate) = gate {
+            if let Some(gate) = gate.as_ref().filter(|g| !g.after_commit) {
                 gate.entered.notify_one();
                 gate.resume.notified().await;
             }
@@ -92,7 +94,12 @@ impl AuthorityStore for Hooks {
                 Some(Fault::Readback) => self.db.fail_next_read()?,
                 None => {}
             }
-            self.inner.commit(transition).await
+            let outcome = self.inner.commit(transition).await;
+            if let Some(gate) = gate.as_ref().filter(|g| g.after_commit) {
+                gate.entered.notify_one();
+                gate.resume.notified().await;
+            }
+            outcome
         })
     }
     fn reconcile<'a>(&'a self, t: &'a ReconcileTicket) -> StoreFuture<'a, CommitOutcome> {
@@ -191,6 +198,7 @@ impl Fixture {
             .enrollment
             .unwrap()
     }
+    #[allow(clippy::too_many_arguments)]
     async fn intent(
         &self,
         request: &str,
@@ -295,11 +303,224 @@ impl Fixture {
         let entered = Arc::new(Notify::new());
         let resume = Arc::new(Notify::new());
         *self.store.gate.lock().unwrap() = Some(Gate {
+            after_commit: false,
             call: self.store.calls.load(Ordering::SeqCst) + 1,
             entered: entered.clone(),
             resume: resume.clone(),
         });
         (entered, resume)
+    }
+}
+
+#[tokio::test]
+async fn cancellation_at_both_pin_pause_points_prevents_disclosure_without_refund_or_proof_oracle()
+{
+    for (call, after_commit) in [(3, true), (4, false)] {
+        for correct in [false, true] {
+            let f = Fixture::new();
+            let mut release = f.policy(false);
+            let mut cancel = f.policy(false);
+            let env = f.enroll(&mut release, true).await;
+            let hold = f.hold(&mut release, &env, ReleasePolicy::Pin).await;
+            let entered = Arc::new(Notify::new());
+            let resume = Arc::new(Notify::new());
+            *f.store.gate.lock().unwrap() = Some(Gate {
+                call,
+                after_commit,
+                entered: entered.clone(),
+                resume: resume.clone(),
+            });
+            let proof = if correct { "11" } else { "22" }.repeat(32);
+            let attempt = release.release(f.release(&env, &hold, "pin", Some(&proof)));
+            let cancellation = async {
+                entered.notified().await;
+                cancel
+                    .cancel_hold(f.release(&env, &hold, "cancel", None))
+                    .await
+                    .unwrap();
+                resume.notify_one();
+            };
+            let (result, ()) = tokio::join!(attempt, cancellation);
+            assert!(matches!(result, Err(ErrorCode::Policy)));
+            assert_eq!(release.comparisons, 1);
+            assert_eq!(f.state().await.pin.attempts_used, 1);
+            let mut restarted = f.policy(false);
+            assert!(restarted
+                .release(f.release(&env, &hold, "pin", Some(&proof)))
+                .await
+                .is_err());
+            assert_eq!(restarted.comparisons, 0);
+        }
+    }
+}
+
+#[tokio::test]
+async fn mutation_crash_matrix_keeps_each_committed_active_envelope_and_never_refunds() {
+    for fault in [Fault::Before, Fault::After, Fault::Readback] {
+        for kind in [
+            OperationKind::Carry,
+            OperationKind::Replace,
+            OperationKind::Disable,
+            OperationKind::Rewrap,
+        ] {
+            let f = Fixture::new();
+            let mut initial = f.policy(kind == OperationKind::Rewrap);
+            let source = f.enroll(&mut initial, true).await;
+            let hold = f.hold(&mut initial, &source, ReleasePolicy::Pin).await;
+            assert!(matches!(
+                initial
+                    .release(f.release(&source, &hold, "spent", Some(&"22".repeat(32))))
+                    .await,
+                Err(ErrorCode::PinMismatch)
+            ));
+            let mut p = f.policy(false);
+            let target = f.blob(
+                2,
+                if kind == OperationKind::Replace {
+                    Some("3333333333333333333333333333333333333333333333333333333333333333")
+                } else {
+                    None
+                },
+            );
+            let action = match kind {
+                OperationKind::Carry => EnrollmentAction::Carry,
+                OperationKind::Disable => EnrollmentAction::Disable,
+                _ => EnrollmentAction::Replace,
+            };
+            let pin = if kind == OperationKind::Replace {
+                PinAction::Change
+            } else {
+                PinAction::Keep
+            };
+            let signed = if kind == OperationKind::Rewrap {
+                None
+            } else {
+                Some(
+                    f.intent(
+                        "mutation",
+                        action,
+                        pin,
+                        Some(&source),
+                        if kind == OperationKind::Disable {
+                            None
+                        } else {
+                            Some(&target)
+                        },
+                        if kind == OperationKind::Disable { 1 } else { 2 },
+                        kind != OperationKind::Disable,
+                    )
+                    .await,
+                )
+            };
+            f.fault(5, fault);
+            let result = if let Some(signed) = signed {
+                p.apply_enrollment_intent(
+                    &signed,
+                    Some(&source),
+                    if kind == OperationKind::Disable {
+                        None
+                    } else {
+                        Some(&target)
+                    },
+                )
+                .await
+            } else {
+                p.authority_rewrap(&source, &f.did, 1, 1).await
+            };
+            let committed = !matches!(fault, Fault::Before);
+            let current = f.state().await;
+            assert_eq!(
+                current.revisions.operation.get(),
+                if committed { 5 } else { 4 }
+            );
+            assert_eq!(
+                current.pin.attempts_used,
+                u8::from(!(committed && kind == OperationKind::Replace))
+            );
+            if committed && kind == OperationKind::Disable {
+                assert!(matches!(current.enrollment, EnrollmentStatus::Disabled));
+            } else {
+                let persisted = active(&current).unwrap();
+                let key = if persisted.envelope.key_id == "old" {
+                    &f.old.private_key
+                } else {
+                    &f.keys.private_key
+                };
+                assert!(decrypt_escrow_blob(&persisted.envelope, key).is_ok());
+                if let Ok(output) = result {
+                    assert!(output.envelope.as_ref() == Some(&persisted.envelope));
+                }
+            }
+        }
+    }
+}
+
+#[tokio::test]
+async fn enrollment_and_delayed_release_crash_matrix_preserves_terminal_order() {
+    for fault in [Fault::Before, Fault::After, Fault::Readback] {
+        let f = Fixture::new();
+        let mut p = f.policy(false);
+        let target = f.blob(1, None);
+        let intent = f
+            .intent(
+                "initial",
+                EnrollmentAction::Enroll,
+                PinAction::Keep,
+                None,
+                Some(&target),
+                1,
+                true,
+            )
+            .await;
+        f.fault(1, fault);
+        let result = p
+            .apply_enrollment_intent(&intent, None, Some(&target))
+            .await;
+        let state = f
+            .store
+            .load(&f.authority.binding(&f.did), "initial", None)
+            .await
+            .unwrap();
+        assert_eq!(state.enrollment.is_some(), !matches!(fault, Fault::Before));
+        if let Some(state) = state.enrollment {
+            assert!(
+                decrypt_escrow_blob(&active(&state).unwrap().envelope, &f.keys.private_key).is_ok()
+            );
+        }
+        if matches!(fault, Fault::Before | Fault::Readback) {
+            assert!(result.is_err());
+        }
+
+        let f = Fixture::new();
+        let mut p = f.policy(false);
+        let env = f.enroll(&mut p, true).await;
+        let hold = f.hold(&mut p, &env, ReleasePolicy::Hold).await;
+        *f.time.0.lock().unwrap() = HOLD_DURATION_MS + 1000;
+        f.fault(3, fault);
+        assert!(p
+            .release(f.release(&env, &hold, "release", None))
+            .await
+            .is_err());
+        let state = f
+            .store
+            .load(&f.authority.binding(&f.did), "release", Some("hold"))
+            .await
+            .unwrap();
+        assert!(
+            state.hold.unwrap().status
+                == if matches!(fault, Fault::Before) {
+                    HoldStatus::Pending
+                } else {
+                    HoldStatus::Released
+                }
+        );
+        if !matches!(fault, Fault::Before) {
+            assert!(f
+                .policy(false)
+                .release(f.release(&env, &hold, "release", None))
+                .await
+                .is_err());
+        }
     }
 }
 
@@ -771,6 +992,117 @@ async fn empty_authority_never_uses_valid_old_envelopes_as_enrollment() {
         .await
         .is_err());
     assert_eq!(f.store.calls.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn disable_and_release_are_ordered_by_commit_not_reply_delivery() {
+    for release_first in [false, true] {
+        let f = Fixture::new();
+        let mut releasing = f.policy(false);
+        let mut disabling = f.policy(false);
+        let env = f.enroll(&mut releasing, true).await;
+        let hold = f.hold(&mut releasing, &env, ReleasePolicy::Hold).await;
+        *f.time.0.lock().unwrap() = HOLD_DURATION_MS + 1000;
+        let intent = f
+            .intent(
+                "disable",
+                EnrollmentAction::Disable,
+                PinAction::Keep,
+                Some(&env),
+                None,
+                1,
+                false,
+            )
+            .await;
+        let entered = Arc::new(Notify::new());
+        let resume = Arc::new(Notify::new());
+        *f.store.gate.lock().unwrap() = Some(Gate {
+            call: 3,
+            after_commit: release_first,
+            entered: entered.clone(),
+            resume: resume.clone(),
+        });
+        let release = releasing.release(f.release(&env, &hold, "release", None));
+        let disable = async {
+            entered.notified().await;
+            disabling
+                .apply_enrollment_intent(&intent, Some(&env), None)
+                .await
+                .unwrap();
+            resume.notify_one();
+        };
+        let (result, ()) = tokio::join!(release, disable);
+        assert_eq!(result.is_ok(), release_first);
+        assert!(matches!(
+            f.state().await.enrollment,
+            EnrollmentStatus::Disabled
+        ));
+        assert!(f
+            .policy(false)
+            .release(f.release(&env, &hold, "retry", None))
+            .await
+            .is_err());
+    }
+}
+
+#[tokio::test]
+async fn reservation_racing_carry_or_rewrap_never_loses_spent_budget() {
+    for rewrap in [false, true] {
+        for reservation_first in [false, true] {
+            let f = Fixture::new();
+            let mut guessing = f.policy(rewrap);
+            let mut rotating = f.policy(false);
+            let env = f.enroll(&mut guessing, true).await;
+            let hold = f.hold(&mut guessing, &env, ReleasePolicy::Pin).await;
+            let target = f.blob(2, None);
+            let intent = f
+                .intent(
+                    "carry",
+                    EnrollmentAction::Carry,
+                    PinAction::Keep,
+                    Some(&env),
+                    Some(&target),
+                    2,
+                    true,
+                )
+                .await;
+            let entered = Arc::new(Notify::new());
+            let resume = Arc::new(Notify::new());
+            *f.store.gate.lock().unwrap() = Some(Gate {
+                call: 3,
+                after_commit: reservation_first,
+                entered: entered.clone(),
+                resume: resume.clone(),
+            });
+            let proof = "11".repeat(32);
+            let guess = guessing.release(f.release(&env, &hold, "pin", Some(&proof)));
+            let rotation = async {
+                entered.notified().await;
+                let result = if rewrap {
+                    rotating.authority_rewrap(&env, &f.did, 1, 1).await
+                } else {
+                    rotating
+                        .apply_enrollment_intent(&intent, Some(&env), Some(&target))
+                        .await
+                }
+                .unwrap();
+                resume.notify_one();
+                result
+            };
+            let (guess, output) = tokio::join!(guess, rotation);
+            assert!(guess.is_err());
+            assert_eq!(guessing.comparisons, usize::from(reservation_first));
+            let state = f.state().await;
+            assert_eq!(state.pin.attempts_used, u8::from(reservation_first));
+            assert_eq!(state.pin.generation.get(), 1);
+            assert!(output.envelope.as_ref() == Some(&active(&state).unwrap().envelope));
+            assert!(f
+                .policy(false)
+                .release(f.release(&env, &hold, "old", Some(&proof)))
+                .await
+                .is_err());
+        }
+    }
 }
 
 #[tokio::test]
