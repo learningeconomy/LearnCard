@@ -217,9 +217,14 @@ fn rows(events: &[AuthorityEvent]) -> Vec<Row> {
     })));
     if let Some(last_hold) = events.iter().rev().find(|e| e.hold_id.is_some()) {
         let status = last_hold.hold_status.unwrap();
-        // P9.1 (attack C): these audit-reconstruction tests predate
-        // confirmation and only ever reach Pending/Released/Cancelled here;
-        // fill in whichever new fields that status's schema requires.
+        // P9.1 (attack C): mirrors StoredItem::validate()'s per-status schema
+        // exactly (code_hash/code_expires_lo_ms only in AwaitingConfirmation;
+        // confirmed_hi_ms only once Pending/Released); Cancelled is unconstrained.
+        let (code_hash, code_expires_lo_ms, confirmed_hi_ms) = match status {
+            HoldStatus::AwaitingConfirmation => (Some([6; 32]), Some(1), None),
+            HoldStatus::Pending | HoldStatus::Released => (None, None, Some(1)),
+            HoldStatus::Cancelled => (None, None, None),
+        };
         result.push(row(ItemValue::Hold(HoldItem {
             hold_id: "hold".into(),
             enrollment_version: count(1),
@@ -229,10 +234,10 @@ fn rows(events: &[AuthorityEvent]) -> Vec<Row> {
             created_revision: count(2),
             updated_revision: last_hold.revisions.operation,
             status,
-            code_hash: None,
-            code_expires_lo_ms: None,
+            code_hash,
+            code_expires_lo_ms,
             code_guesses_used: 0,
-            confirmed_hi_ms: (status != HoldStatus::AwaitingConfirmation).then_some(1),
+            confirmed_hi_ms,
             release_warning_sent_hi_ms: None,
         })));
     }
@@ -246,6 +251,210 @@ fn verify(rows: &[Row]) -> Result<()> {
         rows,
         &trust(),
     )
+}
+
+type ConfirmationStep = (
+    Kind,
+    Outcome,
+    u8,
+    Option<&'static str>,
+    Option<HoldStatus>,
+    u64,
+    u64,
+);
+/// Builds a hold_id="hold" chain reusing `rows()`'s hardcoded assumptions
+/// (CreateHold is always the second event / revision 2); every caller must
+/// include ENROLL_STEP first.
+fn confirmation_chain(steps: &[ConfirmationStep]) -> Vec<AuthorityEvent> {
+    let blob = escrow_blob_identity(&envelope()).unwrap();
+    let pin = PinState {
+        generation: count(0),
+        configured: false,
+        attempts_used: 0,
+    };
+    steps
+        .iter()
+        .enumerate()
+        .map(
+            |(index, &(kind, outcome, digest, hold_id, hold_status, lo_ms, hi_ms))| {
+                AuthorityEvent {
+                    binding: binding(),
+                    request_id: format!("confirmation-request-{digest}"),
+                    kind,
+                    outcome,
+                    previous_revisions: (index > 0).then(|| Revisions {
+                        operation: count(index as u64),
+                        enrollment: count(1),
+                    }),
+                    revisions: Revisions {
+                        operation: count(index as u64 + 1),
+                        enrollment: count(1),
+                    },
+                    previous_pin: (index > 0).then_some(pin),
+                    pin,
+                    epoch: count(1),
+                    source_identity: (index > 0).then_some(blob),
+                    target_identity: Some(blob),
+                    share_version: Some(1),
+                    rewrap_delegated: true,
+                    hold_id: hold_id.map(str::to_owned),
+                    hold_status,
+                    request_digest: [digest; 32],
+                    time: TimeEvidence {
+                        interval: TrustedInterval { lo_ms, hi_ms },
+                        sources: vec![],
+                    },
+                }
+            },
+        )
+        .collect()
+}
+const ENROLL_STEP: ConfirmationStep = (Kind::Enroll, Outcome::Committed, 2, None, None, 1000, 1001);
+const CREATE_AWAITING_STEP: ConfirmationStep = (
+    Kind::CreateHold,
+    Outcome::Committed,
+    3,
+    Some("hold"),
+    Some(HoldStatus::AwaitingConfirmation),
+    1000,
+    1001,
+);
+const CONFIRM_MISMATCH_STEP: ConfirmationStep = (
+    Kind::ConfirmHold,
+    Outcome::Committed,
+    4,
+    Some("hold"),
+    Some(HoldStatus::AwaitingConfirmation),
+    1500,
+    1501,
+);
+const CONFIRM_MATCH_STEP: ConfirmationStep = (
+    Kind::ConfirmHold,
+    Outcome::Committed,
+    5,
+    Some("hold"),
+    Some(HoldStatus::Pending),
+    2000,
+    2001,
+);
+/// The warning event's own trusted hi_ms (2001) is the baseline every release
+/// gap in these tests is measured from.
+const WARNING_STEP: ConfirmationStep = (
+    Kind::SendReleaseWarning,
+    Outcome::Committed,
+    6,
+    Some("hold"),
+    Some(HoldStatus::Pending),
+    3000,
+    3001,
+);
+fn release_step(lo_ms: u64) -> ConfirmationStep {
+    (
+        Kind::Release,
+        Outcome::Committed,
+        7,
+        Some("hold"),
+        Some(HoldStatus::Released),
+        lo_ms,
+        lo_ms + 1,
+    )
+}
+
+#[test]
+fn release_requires_a_matched_confirmation_and_a_warning_at_least_24h_earlier() {
+    let events = confirmation_chain(&[
+        ENROLL_STEP,
+        CREATE_AWAITING_STEP,
+        CONFIRM_MISMATCH_STEP,
+        CONFIRM_MATCH_STEP,
+        WARNING_STEP,
+        release_step(3001 + RELEASE_WARNING_MIN_GAP_MS),
+    ]);
+    assert!(verify(&rows(&events)).is_ok());
+}
+
+#[test]
+fn release_fails_when_the_warning_to_release_gap_is_one_millisecond_short() {
+    let events = confirmation_chain(&[
+        ENROLL_STEP,
+        CREATE_AWAITING_STEP,
+        CONFIRM_MATCH_STEP,
+        WARNING_STEP,
+        release_step(3001 + RELEASE_WARNING_MIN_GAP_MS - 1),
+    ]);
+    assert_eq!(verify(&rows(&events)), Err(Error::Integrity));
+}
+
+#[test]
+fn release_fails_without_any_recorded_release_warning() {
+    // No prior SendReleaseWarning event at all — allowed_prior for Release
+    // still only requires Pending, so this reaches the new gate and fails
+    // there specifically, not on the earlier status check.
+    let events = confirmation_chain(&[
+        ENROLL_STEP,
+        CREATE_AWAITING_STEP,
+        CONFIRM_MATCH_STEP,
+        release_step(10_000_000),
+    ]);
+    assert_eq!(verify(&rows(&events)), Err(Error::Integrity));
+}
+
+#[test]
+fn cancel_is_valid_directly_from_awaiting_confirmation_before_any_guess() {
+    let events = confirmation_chain(&[
+        ENROLL_STEP,
+        CREATE_AWAITING_STEP,
+        (
+            Kind::Cancel,
+            Outcome::Committed,
+            8,
+            Some("hold"),
+            Some(HoldStatus::Cancelled),
+            1500,
+            1501,
+        ),
+    ]);
+    assert!(verify(&rows(&events)).is_ok());
+}
+
+#[test]
+fn resend_code_is_valid_only_while_awaiting_confirmation() {
+    let events = confirmation_chain(&[
+        ENROLL_STEP,
+        CREATE_AWAITING_STEP,
+        (
+            Kind::ResendCode,
+            Outcome::Committed,
+            9,
+            Some("hold"),
+            Some(HoldStatus::AwaitingConfirmation),
+            1200,
+            1201,
+        ),
+        CONFIRM_MATCH_STEP,
+        WARNING_STEP,
+        release_step(3001 + RELEASE_WARNING_MIN_GAP_MS),
+    ]);
+    assert!(verify(&rows(&events)).is_ok());
+}
+
+#[test]
+fn resend_code_after_confirmation_is_rejected() {
+    let events = confirmation_chain(&[
+        ENROLL_STEP,
+        CREATE_AWAITING_STEP,
+        CONFIRM_MATCH_STEP,
+        (
+            Kind::ResendCode,
+            Outcome::Committed,
+            9,
+            Some("hold"),
+            Some(HoldStatus::AwaitingConfirmation),
+            2200,
+            2201,
+        ),
+    ]);
+    assert_eq!(verify(&rows(&events)), Err(Error::Integrity));
 }
 
 #[test]
