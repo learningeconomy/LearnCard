@@ -213,8 +213,13 @@ fn rows(events: &[AuthorityEvent]) -> Vec<Row> {
                 rewrap_delegated: true,
             }),
         },
+        email_throttle: None,
     })));
     if let Some(last_hold) = events.iter().rev().find(|e| e.hold_id.is_some()) {
+        let status = last_hold.hold_status.unwrap();
+        // P9.1 (attack C): these audit-reconstruction tests predate
+        // confirmation and only ever reach Pending/Released/Cancelled here;
+        // fill in whichever new fields that status's schema requires.
         result.push(row(ItemValue::Hold(HoldItem {
             hold_id: "hold".into(),
             enrollment_version: count(1),
@@ -223,7 +228,12 @@ fn rows(events: &[AuthorityEvent]) -> Vec<Row> {
             signed_hold_digest: [3; 32],
             created_revision: count(2),
             updated_revision: last_hold.revisions.operation,
-            status: last_hold.hold_status.unwrap(),
+            status,
+            code_hash: None,
+            code_expires_lo_ms: None,
+            code_guesses_used: 0,
+            confirmed_hi_ms: (status != HoldStatus::AwaitingConfirmation).then_some(1),
+            release_warning_sent_hi_ms: None,
         })));
     }
     result

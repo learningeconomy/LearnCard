@@ -187,6 +187,9 @@ pub mod fake {
         pub language: String,
         pub subject: &'static str,
         pub body: String,
+        /// Test-only introspection: the raw code, when this was `OneTimeCode`.
+        /// Production code never extracts this back out of a sent message.
+        pub code: Option<String>,
     }
 
     /// Records every call for assertions; never silently drops a send. Set
@@ -215,11 +218,16 @@ pub mod fake {
                 if self.reject.load(std::sync::atomic::Ordering::SeqCst) {
                     return Err(Error::Rejected);
                 }
+                let code = match &message {
+                    EmailMessage::OneTimeCode { code } => Some(code.clone()),
+                    EmailMessage::RecoveryStarted | EmailMessage::ReleaseWarning { .. } => None,
+                };
                 self.sent.lock().unwrap().push(Sent {
                     recipient: recipient.to_owned(),
                     language: language.to_owned(),
                     subject: subject(&message, index),
                     body: body(&message, index, "learncard"),
+                    code,
                 });
                 Ok(())
             })

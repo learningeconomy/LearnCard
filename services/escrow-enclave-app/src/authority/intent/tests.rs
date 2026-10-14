@@ -60,6 +60,7 @@ impl Fixture {
                     rewrap_delegated: true,
                 }),
             },
+            email_throttle: None,
         };
         let binding = Binding {
             tenant: vector.intent.tenant.clone(),

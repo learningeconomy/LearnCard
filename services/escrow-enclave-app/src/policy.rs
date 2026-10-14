@@ -11,6 +11,7 @@ use subtle::ConstantTimeEq;
 use zeroize::{Zeroize, Zeroizing};
 
 use crate::{
+    authority::record::SignedAuthorityRecord,
     crypto::{self, EscrowBlobPlaintext, EscrowKeyPair, EscrowReleasePlaintext},
     ledger::{
         ChainState, Enrollment, Event, Hash, HeadStore, Ledger, LedgerError, LedgerRecord,
@@ -80,6 +81,27 @@ pub struct ReleaseRequest<'a> {
     pub expected_did: &'a str,
     pub client_ephemeral_public_key: &'a str,
     pub pin_proof: Option<&'a str>,
+}
+
+/// P9.1 (attack C): the envelope is required (unlike release, nothing is
+/// re-sealed from it) solely so the enclave can read the recovery
+/// email/language back out to send the "recovery started" notification —
+/// confirming a code itself only needs the stored hash, never the blob.
+pub struct ConfirmHoldRequest<'a> {
+    pub envelope: &'a EscrowEnvelope,
+    pub hold: &'a SignedHoldRecord,
+    pub request_id: &'a str,
+    pub expected_did: &'a str,
+    pub client_ephemeral_public_key: &'a str,
+    pub code: &'a str,
+}
+
+/// P9.1 (attack C): system-initiated (lca-api's hourly job), not a user action;
+/// there is no client signature to verify, only the hold's own stored identity.
+pub struct SendReleaseWarningRequest<'a> {
+    pub hold_id: &'a str,
+    pub request_id: &'a str,
+    pub expected_did: &'a str,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -623,21 +645,36 @@ impl<'a> Policy<'a> {
         purpose: &str,
         pin: Option<&str>,
     ) -> Result<Operation, ErrorCode> {
+        self.operation_for(req.hold, req.request_id, time, purpose, pin)
+    }
+
+    /// P9.1 (attack C): the `ReleaseRequest`-free primitive `operation()`
+    /// delegates to, so `confirm-hold`/`send-release-warning` (which have no
+    /// envelope and so cannot build a `ReleaseRequest`) share the exact same
+    /// request-digest binding as release/cancel/PIN, not a parallel scheme.
+    fn operation_for(
+        &self,
+        hold: &SignedHoldRecord,
+        request_id: &str,
+        time: TimeEvidence,
+        purpose: &str,
+        pin: Option<&str>,
+    ) -> Result<Operation, ErrorCode> {
         // Hash all public bindings before including the proof; never publish an
         // unkeyed proof hash. The guarded JSON buffer is bounded by validated inputs.
         let bytes = Zeroizing::new(
             serde_json::to_vec(&(
                 "learncard-policy-operation-v1",
                 purpose,
-                hold_hash(&self.tenant, req.hold)?,
-                req.request_id,
+                hold_hash(&self.tenant, hold)?,
+                request_id,
                 pin,
             ))
             .map_err(|_| ErrorCode::Policy)?,
         );
         Ok(Operation {
-            hold_id: req.hold.hold.hold_id.clone(),
-            request_id: format!("{}-{}", purpose, req.request_id),
+            hold_id: hold.hold.hold_id.clone(),
+            request_id: format!("{purpose}-{request_id}"),
             time_evidence: time,
             payload_hash: self.ledger.pin_payload_hash(&bytes).map_err(ledger_error)?,
         })
@@ -809,6 +846,33 @@ impl<'a> Policy<'a> {
             .await
             .map_err(ledger_error)?;
         Ok(())
+    }
+
+    /// P9.1 (attack C): authority-only — legacy (non-authority) mode never
+    /// creates an `AwaitingConfirmation` hold in the first place, so there is
+    /// nothing for it to confirm.
+    pub async fn confirm_hold(
+        &mut self,
+        #[allow(unused_variables)] req: ConfirmHoldRequest<'_>,
+    ) -> Result<SignedAuthorityRecord, ErrorCode> {
+        #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+        if self.authority.is_some() {
+            return self.authority_confirm_hold(req).await;
+        }
+        Err(ErrorCode::Policy)
+    }
+
+    /// P9.1 (attack C): authority-only, called by lca-api's hourly job for
+    /// holds nearing their 7-day deadline.
+    pub async fn send_release_warning(
+        &mut self,
+        #[allow(unused_variables)] req: SendReleaseWarningRequest<'_>,
+    ) -> Result<SignedAuthorityRecord, ErrorCode> {
+        #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+        if self.authority.is_some() {
+            return self.authority_send_release_warning(req).await;
+        }
+        Err(ErrorCode::Policy)
     }
 }
 

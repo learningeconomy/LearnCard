@@ -307,6 +307,11 @@ impl Fixture {
             .envelope
             .unwrap()
     }
+    /// P9.1 (attack C): auto-confirms Hold-policy holds so every *existing*
+    /// release/cancel/crash-matrix test below (none of which exercise
+    /// confirmation itself) keeps seeing an immediately-releasable hold, same
+    /// as before this PR. Tests of confirmation itself call
+    /// `create_hold`/`confirm_hold` directly instead of this helper.
     async fn hold(
         &self,
         p: &mut Policy<'_>,
@@ -314,18 +319,66 @@ impl Fixture {
         policy: ReleasePolicy,
     ) -> SignedHoldRecord {
         let state = self.state().await;
-        p.create_hold(CreateHoldRequest {
-            envelope,
-            hold_id: "hold",
-            request_id: "create",
-            expected_did: &self.did,
-            expected_share_version: active(&state).unwrap().share_version,
-            enrollment_epoch: state.epoch.get(),
-            release_policy: policy,
-            client_ephemeral_public_key: &self.client.public_key,
-        })
-        .await
-        .unwrap()
+        let signed = p
+            .create_hold(CreateHoldRequest {
+                envelope,
+                hold_id: "hold",
+                request_id: "create",
+                expected_did: &self.did,
+                expected_share_version: active(&state).unwrap().share_version,
+                enrollment_epoch: state.epoch.get(),
+                release_policy: policy,
+                client_ephemeral_public_key: &self.client.public_key,
+            })
+            .await
+            .unwrap();
+        if policy == ReleasePolicy::Hold {
+            let code = self
+                .email
+                .sent
+                .lock()
+                .unwrap()
+                .last()
+                .and_then(|sent| sent.code.clone())
+                .expect("create_hold must have sent a one-time code");
+            // Every test below that calls this helper predates confirmation
+            // and counts absolute store-commit calls for fault
+            // injection/gating (`f.fault(N, ..)` / `Gate { call: N, .. }`).
+            // Confirming here is one more real commit; restore the counter
+            // afterward so those pre-existing call numbers still land on the
+            // same commits they always did. Tests of confirmation itself
+            // don't go through this helper, so they are unaffected.
+            let calls_before_confirm = self.store.calls.load(Ordering::SeqCst);
+            p.confirm_hold(ConfirmHoldRequest {
+                envelope,
+                hold: &signed,
+                request_id: "confirm",
+                expected_did: &self.did,
+                client_ephemeral_public_key: &self.client.public_key,
+                code: &code,
+            })
+            .await
+            .unwrap();
+            // Release is additionally gated on a recorded release-warning
+            // (independent of the 7-day-since-confirmation wait); send it
+            // now too so every pre-existing "release succeeds" test below
+            // keeps working without knowing about either new gate. The
+            // enclave itself enforces no minimum delay before a warning may
+            // be sent — only lca-api's hourly job schedule does that in
+            // production — so sending it immediately here is legitimate, not
+            // a bypass.
+            p.send_release_warning(SendReleaseWarningRequest {
+                hold_id: "hold",
+                request_id: "warning",
+                expected_did: &self.did,
+            })
+            .await
+            .unwrap();
+            self.store
+                .calls
+                .store(calls_before_confirm, Ordering::SeqCst);
+        }
+        signed
     }
     fn release<'a>(
         &'a self,
