@@ -1642,6 +1642,62 @@ async fn confirm_hold_rejects_a_key_that_does_not_match_the_signed_hold_record()
     assert!(f.hold_status("check-legit-key").await == HoldStatus::Pending);
 }
 
+// P9.1 (attack C): release must reject a recipient key that does not match
+// the signed hold record, alongside confirm's existing coverage above —
+// `authority_verified_hold` enforces this identically for both.
+#[tokio::test]
+async fn release_rejects_a_recipient_key_that_does_not_match_the_signed_hold_record() {
+    let f = Fixture::new();
+    let mut p = f.policy(false);
+    let env = f.enroll(&mut p, true).await;
+    let hold = f.hold(&mut p, &env, ReleasePolicy::Pin).await;
+    let attacker = generate_escrow_key_pair().unwrap();
+    assert!(p
+        .release(ReleaseRequest {
+            envelope: &env,
+            hold: &hold,
+            request_id: "attacker-key",
+            expected_did: &f.did,
+            client_ephemeral_public_key: &attacker.public_key,
+            pin_proof: Some(&"11".repeat(32)),
+        })
+        .await
+        .is_err());
+    assert!(f.hold_status("check-attacker-key").await == HoldStatus::Pending);
+    p.release(f.release(&env, &hold, "legit-key", Some(&"11".repeat(32))))
+        .await
+        .unwrap();
+    assert!(f.hold_status("check-legit-key").await == HoldStatus::Released);
+}
+
+// P9.1 (attack C): cancel must reject a recipient key that does not match
+// the signed hold record, exactly like confirm/release above — an attacker
+// who learns a hold's identifiers cannot use them bound to their own key.
+#[tokio::test]
+async fn cancel_hold_rejects_a_recipient_key_that_does_not_match_the_signed_hold_record() {
+    let f = Fixture::new();
+    let mut p = f.policy(false);
+    let env = f.enroll(&mut p, true).await;
+    let hold = f.awaiting_hold(&mut p, &env).await;
+    let attacker = generate_escrow_key_pair().unwrap();
+    assert!(p
+        .cancel_hold(ReleaseRequest {
+            envelope: &env,
+            hold: &hold,
+            request_id: "attacker-key",
+            expected_did: &f.did,
+            client_ephemeral_public_key: &attacker.public_key,
+            pin_proof: None,
+        })
+        .await
+        .is_err());
+    assert!(f.hold_status("check-attacker-key").await == HoldStatus::AwaitingConfirmation);
+    p.cancel_hold(f.release(&env, &hold, "legit-key", None))
+        .await
+        .unwrap();
+    assert!(f.hold_status("check-legit-key").await == HoldStatus::Cancelled);
+}
+
 #[tokio::test]
 async fn resend_code_issues_a_fresh_code_invalidates_the_old_one_and_resets_guesses() {
     let f = Fixture::new();
