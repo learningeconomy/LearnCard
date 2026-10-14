@@ -83,13 +83,15 @@ pub(crate) async fn run(port: u32) -> io::Result<()> {
     result
 }
 
-/// P1: decides what `EmailConfig` the data-plane forwarder receives. Pulled
-/// out as a pure function so this wiring is unit-testable without a vsock
-/// environment: port 8002 (the SES relay) must start whenever email is
-/// configured — previously hardcoded to `None` regardless of boot config,
-/// so it never started even when `ESCROW_EMAIL_*` was fully configured.
+/// P1: decides what `EmailConfig` the data-plane forwarder receives — port
+/// 8002 (the SES relay) must start whenever email is configured; previously
+/// hardcoded to `None` regardless of boot config, so it never started even
+/// when `ESCROW_EMAIL_*` was fully configured. The selection logic itself is
+/// `select_configured` (`server.rs`), which compiles and is unit-tested
+/// under default features since `EmailConfig` requires `kms` and this whole
+/// module requires Linux + nitro + kms; this is wiring only.
 fn data_plane_email(email: &Option<EmailConfig>) -> Option<&EmailConfig> {
-    email.as_ref()
+    select_configured(email)
 }
 
 static FAILED_STEP: OnceLock<&'static str> = OnceLock::new();

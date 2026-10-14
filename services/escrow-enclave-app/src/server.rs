@@ -56,6 +56,33 @@ fn refusal(code: ErrorCode) -> Response {
     }
 }
 
+/// Pure boot-wiring selection: generic (not tied to `EmailConfig`, which
+/// requires the `kms` feature, same as every other authority/email type) so
+/// this exact selection logic — the dispatch decision regressed in P1
+/// (`parent::nitro::data_plane_email`, which delegates to this) — compiles
+/// and is tested under default features, independent of the Linux + nitro +
+/// kms gating the real wiring call itself needs.
+// Its only call site (`parent::nitro::data_plane_email`) compiles solely
+// under Linux + nitro + kms, so other feature/platform combinations
+// correctly see this as dead code; suppressed rather than feature-gating the
+// function itself, which would defeat the point of testing it independently.
+#[allow(dead_code)]
+pub(crate) fn select_configured<T>(value: &Option<T>) -> Option<&T> {
+    value.as_ref()
+}
+
+#[cfg(test)]
+mod default_feature_tests {
+    use super::select_configured;
+
+    #[test]
+    fn selects_only_when_configured() {
+        let configured = Some(42);
+        assert_eq!(select_configured(&configured), Some(&42));
+        assert_eq!(select_configured(&None::<i32>), None);
+    }
+}
+
 pub async fn run(transport: Transport) -> io::Result<()> {
     match transport {
         Transport::Emulate {
