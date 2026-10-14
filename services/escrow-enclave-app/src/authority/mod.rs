@@ -6,6 +6,8 @@ pub mod config;
 #[cfg(feature = "kms")]
 pub mod credentials;
 pub mod state;
+#[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+pub mod store;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum AuthorityError {
