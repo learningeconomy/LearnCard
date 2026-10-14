@@ -1,4 +1,14 @@
-import type { EscrowEnvelope } from '@learncard/sss-key-manager';
+import type { EscrowEnvelope, SignedEscrowEnrollmentIntent } from '@learncard/sss-key-manager';
+import type {
+    AuthorityRecord,
+    AuthorityMutationResult,
+    AuthorityStateResponse,
+} from './authorityContract';
+export interface ApplyEnrollmentInput {
+    signedIntent: SignedEscrowEnrollmentIntent;
+    sourceEnvelope: EscrowEnvelope | null;
+    targetEnvelope: EscrowEnvelope | null;
+}
 // Hold records are independent of host Mongo status and deadlines.
 
 export interface EnclaveAttestation {
@@ -41,6 +51,7 @@ export interface EnclaveCreateHoldInput {
     clientEphemeralPublicKey: string;
 }
 export interface CancelHoldRequest {
+    requestId?: string;
     envelope: EscrowEnvelope;
     hold: EscrowHoldRecord;
     clientEphemeralPublicKey: string;
@@ -60,6 +71,7 @@ export interface ReleaseRequest extends CancelHoldRequest {
 }
 export interface ReleaseResult {
     sealed: EscrowEnvelope;
+    receipt?: AuthorityRecord;
 }
 export interface CarryPinVerifierInput {
     sourceEnvelope: EscrowEnvelope;
@@ -80,6 +92,12 @@ export interface RewrapEscrowBlobInput {
     sourceEnrollmentEpoch: number;
 }
 export interface EscrowEnclave {
+    /** Remote authority only; software mode must not impersonate signed authority. */
+    getEnrollmentState?(input: {
+        expectedDid: string;
+        nonce: string;
+    }): Promise<AuthorityStateResponse>;
+    applyEnrollmentIntent?(input: ApplyEnrollmentInput): Promise<AuthorityMutationResult>;
     /** `nonce` binds a nitro attestation to one client-generated challenge (64 hex chars,
      * decoded to bytes); the software backend has no freshness story and ignores it. */
     getAttestation(nonce?: Uint8Array): Promise<EnclaveAttestation>;
@@ -91,10 +109,12 @@ export interface EscrowEnclave {
      * `EscrowBlobError`) unless the envelope's own keyId is a recognised
      * previous key — never the current key (nothing to migrate) or an
      * unknown one. */
-    rewrapEscrowBlob(input: RewrapEscrowBlobInput): Promise<{ envelope: EscrowEnvelope }>;
+    rewrapEscrowBlob(
+        input: RewrapEscrowBlobInput
+    ): Promise<{ envelope: EscrowEnvelope; authority?: AuthorityMutationResult }>;
     releaseEscrow(input: ReleaseRequest): Promise<ReleaseResult>;
     createHold(input: EnclaveCreateHoldInput): Promise<{ holdRecord: EscrowHoldRecord }>;
-    cancelHold(input: CancelHoldRequest): Promise<void>;
+    cancelHold(input: CancelHoldRequest): Promise<void | { receipt: AuthorityRecord }>;
 }
 export class EscrowPolicyError extends Error {
     constructor() {
