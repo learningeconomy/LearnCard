@@ -88,3 +88,6 @@ impl std::fmt::Debug for SignedAuthorityRecord {
         f.write_str("SignedAuthorityRecord")
     }
 }
+
+#[cfg(test)]
+mod tests;
