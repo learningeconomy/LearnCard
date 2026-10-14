@@ -1,4 +1,7 @@
 import { RecipientPreviewControls } from './spreadsheet/RecipientPreviewControls';
+import { ColumnMappings } from './spreadsheet/ColumnMappings';
+import { materializePreview } from './spreadsheet/columnMapping';
+import type { IssueImportResult } from './import/issueImport';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { UnsignedVC } from '@learncard/types';
 import { useHistory, useLocation } from 'react-router-dom';
@@ -12,7 +15,7 @@ import {
 } from '../../components/simple-send/simpleSend.helpers';
 import { getTypeByObv3, type CredentialTypeEntry } from './components/credentialTypeCatalog';
 import { prepareImportedTemplate } from './import/prepareImport';
-import type { NormalizedImport, ImportProvenance } from './import/normalizeToObv3';
+import type { ImportProvenance } from './import/normalizeToObv3';
 import { RecipientMode, Recipient, LinkOptions, recipientKey } from './components/recipientTypes';
 import { getFriendlyIssueError, type IssueError } from './issueErrors';
 import { useIssueRoster } from './spreadsheet/useIssueRoster';
@@ -351,7 +354,10 @@ const IssueCredentialPage: React.FC = () => {
         [template]
     );
     const validationJson = useMemo<Record<string, unknown> | null>(
-        () => (issuableJson ? applyVariableValues(issuableJson, previewValues) : null),
+        () =>
+            issuableJson
+                ? materializePreview(applyVariableValues(issuableJson, previewValues))
+                : null,
         [issuableJson, previewValues]
     );
     const identity = useCredentialIdentity(validationJson, jsonError);
@@ -425,12 +431,15 @@ const IssueCredentialPage: React.FC = () => {
     }, []);
 
     const handleImport = useCallback(
-        (result: NormalizedImport) => {
+        async (imported: IssueImportResult) => {
+            if (imported.kind === 'spreadsheet') {
+                await roster.importSheet(imported.sheet);
+                return;
+            }
+            const result = imported.value;
             log.info('issue.imported', { source: result.provenance.source });
             const { template: next, note } = prepareImportedTemplate(result);
             setTemplate(next);
-            setVariableValues({});
-            setRecipientValues({});
             const achievementType = next.credentialSubject.achievement.achievementType?.value;
             setSelectedType(
                 (achievementType ? getTypeByObv3(achievementType) : undefined) ??
@@ -443,7 +452,7 @@ const IssueCredentialPage: React.FC = () => {
                 presentToast(note, { type: ToastTypeEnum.Success, hasDismissButton: true });
             }
         },
-        [presentToast]
+        [presentToast, roster.importSheet]
     );
 
     const handleResolvedSkillsChange = useCallback((resolved: ResolvedSkill[]) => {
@@ -495,7 +504,9 @@ const IssueCredentialPage: React.FC = () => {
 
     const previewCredential = useMemo<Record<string, unknown> | null>(() => {
         if (!template) return null;
-        const json = applyVariableValues(templateToJson(template), previewValues);
+        const json = materializePreview(
+            applyVariableValues(templateToJson(template), previewValues)
+        );
         const fill = (obj: unknown): unknown => {
             if (typeof obj === 'string') {
                 return obj.replace(/\{\{(\w+)\}\}/g, (_m, v) =>
@@ -904,6 +915,17 @@ const IssueCredentialPage: React.FC = () => {
     const spreadsheet: SpreadsheetView = {
         locked: roster.locked,
         canRemove: roster.canRemove,
+        mappings: roster.source ? (
+            <ColumnMappings
+                key={roster.source.source.name}
+                source={roster.source}
+                template={template}
+                mappings={roster.mappings}
+                disabled={roster.busy || Boolean(roster.run?.templateUri)}
+                onAdd={roster.addColumn}
+                onRemove={roster.removeColumn}
+            />
+        ) : null,
         controls: (
             <SpreadsheetUpload
                 onImport={roster.importSheet}
@@ -924,10 +946,13 @@ const IssueCredentialPage: React.FC = () => {
                 onAttachmentsChange={handleRecipientEvidenceChange}
                 recipients={recipients}
                 variables={dynamicVars}
-                dateVariables={[template?.validFrom, template?.validUntil].flatMap(field =>
+                dateVariables={[template?.validFrom, template?.validUntil, template?.awardedDate].flatMap(field =>
                     field?.isDynamic && !field.isSystem && field.variableName
                         ? [field.variableName]
                         : []
+                )}
+                labels={Object.fromEntries(
+                    roster.mappings.map(mapping => [mapping.variable, mapping.label])
                 )}
                 scopes={roster.scopes}
                 shared={variableValues}

@@ -1,3 +1,6 @@
+import { addSubmissionAttempts } from './issuance';
+import { mergeSpreadsheet } from './roster';
+import { parseSpreadsheet, readSpreadsheetText } from './parseSpreadsheet';
 import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
 import {
@@ -19,6 +22,32 @@ describe('IndexedDB issuance recovery', () => {
                 await readIssuanceRun(run.id, { ...run.scope, [field]: 'other' })
             ).toBeUndefined();
     });
+    it('recovers 250 source rows and exact frozen request bodies without validation defaults changing them', async () => {
+        const run = makeRun(0);
+        const text =
+            'Email,Name,Value\n' +
+            Array.from(
+                { length: 250 },
+                (_, index) =>
+                    `person${index}@test.com,Person ${index},${'value'.repeat(200)}${index}`
+            ).join('\n');
+        run.draft = mergeSpreadsheet(run.draft, parseSpreadsheet(readSpreadsheetText(text)), [
+            'Value',
+        ]).draft;
+        run.scopes = { Value: 'perRecipient' };
+        run.templateUri = 'lc:network:example.com:boost:template';
+        const queued = addSubmissionAttempts(run);
+        await saveIssuanceRun(queued);
+        const restored = await readIssuanceRun(run.id, run.scope);
+        expect(restored?.attempts.map(attempt => attempt.body)).toEqual(
+            queued.attempts.map(attempt => attempt.body)
+        );
+        expect(restored?.draft.source).toEqual(queued.draft.source);
+        const changed = structuredClone(queued);
+        changed.attempts[0].rowIds[0] = 'foreign-row';
+        await expect(saveIssuanceRun(changed)).rejects.toThrow('corrupt');
+    });
+
     it('rejects corrupt records instead of substituting a fresh run', async () => {
         const run = makeRun();
         await expect(

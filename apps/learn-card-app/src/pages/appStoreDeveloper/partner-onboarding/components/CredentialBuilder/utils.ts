@@ -483,9 +483,10 @@ export const parseAchievement = (achievementObj: Record<string, unknown>): Achie
         specialization: achievementObj.specialization
             ? jsonToField(achievementObj.specialization)
             : undefined,
-        creditsAvailable: achievementObj.creditsAvailable
-            ? jsonToField(achievementObj.creditsAvailable)
-            : undefined,
+        creditsAvailable:
+            achievementObj.creditsAvailable !== undefined
+                ? jsonToField(achievementObj.creditsAvailable)
+                : undefined,
         tag: Array.isArray(achievementObj.tag) ? (achievementObj.tag as string[]) : undefined,
         inLanguage: achievementObj.inLanguage ? jsonToField(achievementObj.inLanguage) : undefined,
         version: achievementObj.version ? jsonToField(achievementObj.version) : undefined,
@@ -623,6 +624,8 @@ export const clrTemplateToJson = (template: OBv3CredentialTemplate): Record<stri
 
     // Dates
     credential.validFrom = fieldToJson(template.validFrom) || '{{issue_date}}';
+    if (template.awardedDate?.value || template.awardedDate?.isDynamic)
+        credential.awardedDate = fieldToJson(template.awardedDate);
     if (template.validUntil?.value || template.validUntil?.isDynamic) {
         credential.validUntil = fieldToJson(template.validUntil);
     }
@@ -723,6 +726,8 @@ export const templateToJson = (template: OBv3CredentialTemplate): Record<string,
 
     // Dates (VC v2 syntax)
     credential.validFrom = fieldToJson(template.validFrom) || '{{issue_date}}';
+    if (template.awardedDate?.value || template.awardedDate?.isDynamic)
+        credential.awardedDate = fieldToJson(template.awardedDate);
 
     if (template.validUntil?.value || template.validUntil?.isDynamic) {
         credential.validUntil = fieldToJson(template.validUntil);
@@ -840,7 +845,8 @@ export const jsonToClrTemplate = (
             id: entryId,
             achievement: parseAchievement(achObj),
             result: resultArr.length > 0 ? parseResults(resultArr) : undefined,
-            creditsEarned: achObj.creditsEarned ? jsonToField(achObj.creditsEarned) : undefined,
+            creditsEarned:
+                achObj.creditsEarned !== undefined ? jsonToField(achObj.creditsEarned) : undefined,
             activityStartDate: achObj.activityStartDate
                 ? jsonToField(achObj.activityStartDate)
                 : undefined,
@@ -889,6 +895,7 @@ export const jsonToClrTemplate = (
             verifiableCredential:
                 verifiableCredentialArr.length > 0 ? verifiableCredentialArr : undefined,
         },
+        awardedDate: json.awardedDate !== undefined ? jsonToField(json.awardedDate) : undefined,
         validFrom: jsonToField(json.validFrom || json.issuanceDate || '{{issue_date}}'),
         validUntil:
             json.validUntil || json.expirationDate
@@ -962,7 +969,10 @@ export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTem
         achievement: parseAchievement(achievementObj),
         evidence: parseEvidence(evidenceArr),
         // Additional OBv3 AchievementSubject fields
-        creditsEarned: subjectObj.creditsEarned ? jsonToField(subjectObj.creditsEarned) : undefined,
+        creditsEarned:
+            subjectObj.creditsEarned !== undefined
+                ? jsonToField(subjectObj.creditsEarned)
+                : undefined,
         activityStartDate: subjectObj.activityStartDate
             ? jsonToField(subjectObj.activityStartDate)
             : undefined,
@@ -993,6 +1003,7 @@ export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTem
         image: json.image ? jsonToField(json.image) : undefined,
         issuer: parseIssuer(json.issuer),
         credentialSubject,
+        awardedDate: json.awardedDate !== undefined ? jsonToField(json.awardedDate) : undefined,
         validFrom: jsonToField(json.validFrom || json.issuanceDate || '{{issue_date}}'),
         validUntil:
             json.validUntil || json.expirationDate
@@ -1152,6 +1163,7 @@ export const extractVariablesByType = (template: OBv3CredentialTemplate): Extrac
 
     // Dates
     checkField(template.validFrom);
+    checkField(template.awardedDate);
     checkField(template.validUntil);
 
     // Credential Subject
@@ -1282,6 +1294,7 @@ export const extractDynamicVariables = (template: OBv3CredentialTemplate): strin
 
     // Dates
     checkField(template.validFrom);
+    checkField(template.awardedDate);
     checkField(template.validUntil);
 
     // Credential Subject

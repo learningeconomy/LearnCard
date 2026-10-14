@@ -80,6 +80,28 @@ describe('spreadsheet parsing and editable roster', () => {
         expect(cells[2].date).toBe('2023-03-15');
         expect(cells[3].problem).toBe('formula');
     });
+    it('bounds expanded cells across visible XLSX worksheets', () => {
+        const workbook = utils.book_new();
+        for (const name of ['One', 'Two'])
+            utils.book_append_sheet(
+                workbook,
+                utils.aoa_to_sheet([
+                    ['Email', 'Name'],
+                    ['a@test.com', 'Ada'],
+                ]),
+                name
+            );
+        const limit = SPREADSHEET_LIMITS.cells;
+        try {
+            SPREADSHEET_LIMITS.cells = 6;
+            expect(() =>
+                readXlsx(write(workbook, { type: 'array', bookType: 'xlsx' }), 'many.xlsx')
+            ).toThrow('limit');
+        } finally {
+            SPREADSHEET_LIMITS.cells = limit;
+        }
+    });
+
     it('normalizes placeholder headers, preserves duplicates and validates evidence', () => {
         const run = makeRun(0);
         const { draft, mapped } = mergeSpreadsheet(
