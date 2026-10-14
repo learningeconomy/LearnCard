@@ -1,5 +1,6 @@
 import { environment } from '@environment';
 import OpenAI from 'openai';
+import { generateStoredImage } from '@helpers/imageGeneration';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 
@@ -306,39 +307,7 @@ Rules:
             const {
                 user: { did },
             } = ctx;
-            if (!openai) {
-                throw new TRPCError({
-                    code: 'INTERNAL_SERVER_ERROR',
-                    message: 'No OpenAI Key Set',
-                });
-            }
-
-            const { prompt } = input;
-            const res = await openai.images.generate({
-                prompt,
-                model: 'dall-e-3',
-                size: '1024x1024',
-                user: did,
-            });
-
-            if (!res.data || !res.data[0]?.url) {
-                throw new TRPCError({
-                    code: 'INTERNAL_SERVER_ERROR',
-                    message: 'No image URL returned from OpenAI',
-                });
-            }
-
-            const filestackRes = (await client.storeURL(res?.data[0]?.url)) as any;
-            if (!filestackRes || !filestackRes.url) {
-                throw new TRPCError({
-                    code: 'INTERNAL_SERVER_ERROR',
-                    message: 'Failed to store image URL',
-                });
-            }
-
-            return {
-                url: filestackRes.url,
-            };
+            return generateStoredImage(input.prompt, did, environment, openai, client);
         }),
 });
 
