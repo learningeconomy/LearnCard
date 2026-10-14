@@ -35,3 +35,7 @@ The user explicitly approved experimenting with the concept's colored-square mar
 Keep the heading, row, icon and artwork scales deliberate at native point sizes, with Dynamic Type for reading. Do not uniformly shrink the composition to preserve mockup pixel density. Intro/loading logo animation remains a later exploration, as requested.
 
 The overall direction needs a touch of whimsy. Missing photos use a round winking face with rosy cheeks rather than a head-and-shoulders silhouette. Colored artwork windows, the envelope/search/two-person drawings and small card accents carry that personality through the shell. Keep photo/content identity accurate and actions readable.
+
+## Additional section references — 2026-10-14
+
+At the user's request, three further boards explore Account/Data Sharing, Apps discovery/listing/My apps, and Families roster/guardian selection/review. See [the expansion brief](WHIMSY_EXPANSION_BRIEF.md) for all images, exact built-in generation prompts and the mapping to existing native functionality. These layouts and new drawings remain concepts for manual review, not implemented page compositions.

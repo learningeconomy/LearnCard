@@ -52,6 +52,8 @@ The existing ignored local configuration retains the approved test email. A fres
 
 ## Manual review focus
 
+Three additional generated design boards explore Account/Data Sharing, consumer Apps and Families in the drawn, more whimsical style. They are concept references, with synthetic data, for a later native implementation pass; the installed build has not adopted these new page compositions. See [boards, exact prompts and implementation mapping](design/WHIMSY_EXPANSION_BRIEF.md).
+
 1. Larger type/artwork/nav, soft painted mark and collapsing left wordmark on all four tabs; readable plus and round winking avatar fallback. Review phone Collection rows, Inbox accents, search results/empty/reset behavior and partial-result pagination. Details have an automatic isolated-card tilt; check scrolling and Reduce Motion too.
 2. Home/Account/Apps → Families: overview, compact roster, profile detail, creation/editing and guardian access review. Sample mode uses PIN `12345` and sends no actual invitations.
 3. Apps discovery/browser and native Data Sharing after the new navigation entry; app uninstall and agreement withdrawal remain distinct.
@@ -86,6 +88,7 @@ Anonymous/redacted consent, advanced contract flows and deferred partner actions
 - [Consumer design brief](design/CONSUMER_APPS_BRIEF.md)
 - [Current Colorful direction and exact image-generation prompts](design/COLORFUL_BRIEF.md)
 - [Drawn shell, lists, search and SVG sources](design/DRAWN_SHELL_BRIEF.md)
+- [Additional Account, Apps and Families concept boards](design/WHIMSY_EXPANSION_BRIEF.md)
 - Obsidian: `Codex Notes/LearnCard/2026-10-13-native-consumer-apps.md`
 - Obsidian: `Codex Notes/LearnCard/2026-10-13-native-families.md`
 - DualMem: project checkpoint `Native Families and visual refinement`
