@@ -339,6 +339,85 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         expect(templateCount).toBe(1);
     });
 
+    test('maps imported columns to standard fields before choosing a credential type', async ({
+        page,
+    }) => {
+        test.setTimeout(180000);
+        await page
+            .getByRole('button', { name: 'Start from a link, file, or ID', exact: true })
+            .click();
+        const csv =
+            'Email,Name,Quiz Score,Final Grade,Hours,Completed Date,Proof URL,Student Code\nada@test.com,Ada,95%,A-,12,03/04/2024,https://proof.test/ada,0012\nbob@test.com,Bob,85%,B+,8,04/04/2024,https://proof.test/bob,0009\ncarol@test.com,Carol,75%,C,10,05/04/2024,https://proof.test/carol,0007\ndan@test.com,Dan,100%,A,5,06/04/2024,https://proof.test/dan,0005';
+        await page
+            .getByTestId('issue-import-file')
+            .setInputFiles({ name: 'grades.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+        await page.getByRole('button', { name: 'Add People', exact: true }).click();
+        await expect(page.getByRole('button', { name: 'Quiz Score', exact: true })).toBeDisabled();
+        await selectBadgeType(page);
+        await fillName(page, 'Spreadsheet Badge');
+        await page.getByRole('button', { name: 'Quiz Score', exact: true }).click();
+        await page.getByRole('button', { name: 'Final Grade', exact: true }).click();
+        await expect(
+            page.getByRole('textbox', { name: 'Ada Quiz Score', exact: true })
+        ).toHaveValue('95');
+        await expect(
+            page.getByRole('textbox', { name: 'Ada Final Grade', exact: true })
+        ).toHaveValue('A-');
+        await page
+            .getByRole('combobox', { name: 'Use Hours as', exact: true })
+            .selectOption('credits');
+        await expect(page.getByRole('button', { name: 'Hours', exact: true })).toBeDisabled();
+        await page.getByPlaceholder('For example, semester credit hours').fill('hours');
+        await page.getByRole('button', { name: 'Hours', exact: true }).click();
+        await page.getByRole('combobox', { name: /Spreadsheet date format/ }).selectOption('dmy');
+        await page.getByRole('button', { name: 'Completed Date', exact: true }).click();
+        await page.getByRole('button', { name: 'Proof URL', exact: true }).click();
+        await page.getByRole('button', { name: 'Student Code', exact: true }).click();
+        await expect(
+            page.getByRole('textbox', { name: 'Ada Student Code', exact: true })
+        ).toHaveValue('0012');
+        await expect(
+            page.getByRole('textbox', { name: 'Ada Completed Date', exact: true })
+        ).toHaveValue('2024-04-03T00:00:00.000Z');
+        await expect(issueButton(page)).toBeEnabled();
+        await page.getByRole('button', { name: 'Quiz Score', exact: true }).click();
+        await expect(
+            page.getByRole('textbox', { name: 'Ada Quiz Score', exact: true })
+        ).toHaveCount(0);
+        await expect(
+            page.getByRole('textbox', { name: 'Ada Final Grade', exact: true })
+        ).toHaveValue('A-');
+        await page.getByRole('button', { name: 'Quiz Score', exact: true }).click();
+        await page.getByRole('button', { name: 'Next person', exact: true }).click();
+        await expect(page.getByText('2 of 4 · Bob', { exact: true })).toBeVisible();
+        await page.getByRole('button', { name: 'JSON', exact: true }).click();
+        const json = JSON.parse(await page.locator('textarea.font-mono').inputValue());
+        expect(json.credentialSubject.result).toHaveLength(2);
+        expect(json.evidence[0].type).toEqual(['Evidence']);
+        expect(json.awardedDate).toMatch(/sheet_completed_date/);
+        expect(JSON.stringify(json['@context'])).not.toContain('ctx.learncard');
+        await page.screenshot({ path: '/tmp/lc2249-mapped-roster.png', fullPage: true });
+    });
+
+    test('imports URL-first pasted rows through the import modal without treating them as a link', async ({
+        page,
+    }) => {
+        await page
+            .getByRole('button', { name: 'Start from a link, file, or ID', exact: true })
+            .click();
+        await page
+            .locator('textarea')
+            .fill(
+                'https://proof.test/ada\tada@test.com\tAda\nhttps://proof.test/bob\tbob@test.com\tBob'
+            );
+        await page.getByRole('button', { name: /Bring it in/i }).click();
+        await expect(page.getByRole('heading', { name: 'Review spreadsheet' })).toBeVisible();
+        await page.getByRole('button', { name: 'Add People', exact: true }).click();
+        await expect(page.getByRole('textbox', { name: 'Email for Ada', exact: true })).toHaveValue(
+            'ada@test.com'
+        );
+    });
+
     // Completing an issuance (self / person / link) is a real signing +
     // multi-service backend flow — it lives in the real-backend @e2e spec, not
     // here. This tier covers the offline UI logic up to the issue action.

@@ -1,3 +1,4 @@
+import type { IssueImportResult } from './import/issueImport';
 import React from 'react';
 import { IonContent, IonPage } from '@ionic/react';
 import { ArrowLeft, Code, Database, RotateCcw, X, AlertCircle } from 'lucide-react';
@@ -16,7 +17,7 @@ import type { SpreadsheetView } from './spreadsheet/viewTypes';
 import type { CredentialTypeEntry } from './components/credentialTypeCatalog';
 import type { CredentialIdentity } from './components/useCredentialIdentity';
 import type { RecipientMode, Recipient, LinkOptions } from './components/recipientTypes';
-import type { ImportProvenance, NormalizedImport } from './import/normalizeToObv3';
+import type { ImportProvenance } from './import/normalizeToObv3';
 import type { IssueError } from './issueErrors';
 import type { ResolvedSkill } from './components/skillAlignment';
 import type { SelectedSkill } from '../skills/skillTypes';
@@ -60,7 +61,7 @@ export interface IssueCredentialViewProps {
     onDismissProvenance: () => void;
     onSelectType: (entry: CredentialTypeEntry) => void;
     onChangeTemplate: (template: OBv3CredentialTemplate) => void;
-    onImport: (result: NormalizedImport) => void;
+    onImport: (result: IssueImportResult) => void | Promise<void>;
     onRecipientModeChange: (mode: RecipientMode) => void;
     onRecipientsChange: (recipients: Recipient[]) => void;
     onLinkOptionsChange: (options: LinkOptions) => void;
@@ -295,6 +296,7 @@ export const IssueCredentialView: React.FC<IssueCredentialViewProps> = ({
                                                 onParseError={onParseError}
                                             />
                                         </fieldset>
+                                        {recipientMode === 'people' && spreadsheet?.mappings}
                                         {recipientMode === 'people' && spreadsheet ? (
                                             spreadsheet.details
                                         ) : (
@@ -341,6 +343,7 @@ export const IssueCredentialView: React.FC<IssueCredentialViewProps> = ({
                                             onResolvedSkillsChange={onResolvedSkillsChange}
                                             spreadsheet={spreadsheet}
                                         />
+                                        {recipientMode === 'people' && spreadsheet?.mappings}
                                         {recipientMode === 'people' && spreadsheet ? (
                                             spreadsheet.details
                                         ) : (

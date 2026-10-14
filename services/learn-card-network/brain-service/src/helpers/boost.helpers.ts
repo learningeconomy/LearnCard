@@ -1,5 +1,5 @@
 import cloneDeep from 'lodash/cloneDeep';
-import { isEncrypted, isVC2Format } from '@learncard/helpers';
+import { isEncrypted, isVC2Format, materializeCredentialFields } from '@learncard/helpers';
 import { TRPCError } from '@trpc/server';
 import {
     VC,
@@ -331,7 +331,9 @@ export const prepareCredentialFromBoost = async (
         boostJsonString = renderBoostTemplate(boostJsonString, mergedTemplateData);
     }
 
-    const credential = parseRenderedTemplate<UnsignedVC>(boostJsonString);
+    const credential = materializeCredentialFields(
+        parseRenderedTemplate<UnsignedVC>(boostJsonString)
+    ) as UnsignedVC;
 
     appendTemplateEvidenceToCredential(credential, mergedTemplateData, allowAutoAppendEvidence);
 

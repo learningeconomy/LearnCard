@@ -11,10 +11,15 @@ import {
     type SpreadsheetSource,
 } from './types';
 
-export const SPREADSHEET_LIMITS = { bytes: 10 * 1024 * 1024, rows: 10_000, columns: 200 };
+export const SPREADSHEET_LIMITS = {
+    bytes: 10 * 1024 * 1024,
+    rows: 10_000,
+    columns: 200,
+    cells: 2_000_000,
+};
 
 export type SpreadsheetErrorCode =
-    'file' | 'limit' | 'malformed' | 'emailColumn' | 'mapping' | 'run';
+    'file' | 'limit' | 'malformed' | 'emailColumn' | 'mapping' | 'run' | 'format';
 
 export class SpreadsheetError extends Error {
     constructor(readonly code: SpreadsheetErrorCode) {
@@ -62,11 +67,17 @@ export const readSpreadsheetFile = async (file: File): Promise<SpreadsheetSource
 
 /** Multi-line cells are a roster candidate, never a hosted-credential URL. */
 export const looksLikeSpreadsheet = (text: string): boolean => {
-    const lines = text.trim().split(/\r?\n/);
+    if (text.trim().split(/\r?\n/).length < 2) return false;
+    const rows = Papa.parse<string[]>(text.trim().slice(0, 64_000), {
+        delimiter: '',
+        delimitersToGuess: [',', '\t', ';'],
+    }).data;
     return (
-        lines.length > 1 &&
-        (lines.some(line => line.includes('\t') || line.includes(',')) ||
-            lines.some(line => isValidRosterEmail(line)))
+        rows.some(row => row.some(isValidRosterEmail)) ||
+        (rows.length > 1 &&
+            rows[0]?.some(cell =>
+                /^(email|emailaddress|studentemail|recipientemail)$/.test(normalizeColumn(cell))
+            ))
     );
 };
 

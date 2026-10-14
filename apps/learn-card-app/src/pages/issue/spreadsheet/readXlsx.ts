@@ -10,13 +10,16 @@ export const readXlsx = (bytes: ArrayBuffer, name: string): SpreadsheetSource =>
     } catch {
         throw new SpreadsheetError('malformed');
     }
-    const sheets: SpreadsheetSource['sheets'] = {};
+    const sheets: SpreadsheetSource['sheets'] = Object.create(null);
+    let expandedCells = 0;
     for (const [index, sheetName] of workbook.SheetNames.entries()) {
         if (workbook.Workbook?.Sheets?.[index]?.Hidden) continue;
         const sheet = workbook.Sheets[sheetName]!;
         const range = utils.decode_range(sheet['!ref'] ?? 'A1');
         if (range.e.r >= SPREADSHEET_LIMITS.rows + 100 || range.e.c >= SPREADSHEET_LIMITS.columns)
             throw new SpreadsheetError('limit');
+        expandedCells += (range.e.r + 1) * (range.e.c + 1);
+        if (expandedCells > SPREADSHEET_LIMITS.cells) throw new SpreadsheetError('limit');
         const matrix: SpreadsheetCell[][] = [];
         for (let row = 0; row <= range.e.r; row++) {
             const cells: SpreadsheetCell[] = [];
@@ -30,11 +33,14 @@ export const readXlsx = (bytes: ArrayBuffer, name: string): SpreadsheetSource =>
                     text: cell.w ?? String(cell.v ?? ''),
                     value:
                         typeof cell.v === 'string' ||
-                        typeof cell.v === 'number' ||
+                        (typeof cell.v === 'number' && Number.isFinite(cell.v)) ||
                         typeof cell.v === 'boolean'
                             ? cell.v
                             : undefined,
-                    ...(cell.f && (cell.v === undefined || cell.t === 'e')
+                    ...(cell.f &&
+                    (cell.v === undefined ||
+                        cell.t === 'e' ||
+                        (typeof cell.v === 'number' && !Number.isFinite(cell.v)))
                         ? { problem: 'formula' }
                         : {}),
                     ...(cell.z?.includes('%') ? { percent: true } : {}),
