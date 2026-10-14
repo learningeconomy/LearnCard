@@ -210,7 +210,6 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                     domain,
                                     returnTo,
                                     contractUri: contractDetails.uri,
-                                    contractRedirectUrl: contractDetails.redirectUrl?.trim(),
                                 });
                                 const { redirectUrl: contractRedirectUrl } =
                                     await consentToContract({

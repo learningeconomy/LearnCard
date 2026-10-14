@@ -21,7 +21,7 @@ const validateConsentFlowDidAuthParams = (challenge?: QueryParam, domain?: Query
 
 export class AiPassportReauthenticationRequired extends Error {
     constructor() {
-        super('AI Passport requires challenge-based authentication; refresh and sign in again');
+        super('Go back to AI Passport and sign in again.');
         this.name = 'AiPassportReauthenticationRequired';
     }
 }

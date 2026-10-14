@@ -171,7 +171,6 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                         domain,
                         returnTo,
                         contractUri: contractDetails?.uri,
-                        contractRedirectUrl: contractDetails?.redirectUrl?.trim(),
                     });
                 }
 
@@ -215,7 +214,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 if (isInlineInsightsRequest) {
                     setIsPostConsentLocal(true);
                     setStep(ConsentFlowStep.confirmation);
-                } else if (!successCallback || shouldDisableRedirect) {
+                } else if (!successCallback || insightsProfile || childInsightsProfile) {
                     closeAllModals();
                 }
                 if (!shouldDisableRedirect) {
@@ -256,7 +255,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 if (isInlineInsightsRequest) {
                     setIsPostConsentLocal(true);
                     setStep(ConsentFlowStep.confirmation);
-                } else if (!successCallback || shouldDisableRedirect) {
+                } else if (!successCallback || insightsProfile || childInsightsProfile) {
                     closeAllModals();
                 }
 

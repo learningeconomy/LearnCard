@@ -245,7 +245,7 @@ describe('guardian approval at the consent submission boundary', () => {
             fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
             await waitFor(() =>
                 expect(state.presentToast).toHaveBeenCalledWith(
-                    expect.stringMatching(/Refresh the page and sign in again/),
+                    expect.stringMatching(/Go back to AI Passport and sign in again/),
                     expect.objectContaining({ type: 'error' })
                 )
             );
@@ -267,7 +267,7 @@ describe('guardian approval at the consent submission boundary', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
         await waitFor(() =>
             expect(state.presentToast).toHaveBeenCalledWith(
-                expect.stringMatching(/Refresh the page/),
+                expect.stringMatching(/Go back to AI Passport/),
                 expect.objectContaining({ type: 'error' })
             )
         );
@@ -326,12 +326,22 @@ describe('guardian approval at the consent submission boundary', () => {
         });
         fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
         await waitFor(() => expect(success).toHaveBeenCalledOnce());
+        expect(state.closeAllModals).not.toHaveBeenCalled();
         expect(state.consent).toHaveBeenCalledOnce();
         expect(state.presentToast).not.toHaveBeenCalledWith(
             expect.any(String),
             expect.objectContaining({ type: 'error' })
         );
     });
+    it.each([{}, { insightsProfile: 'profile' }, { childInsightsProfile: 'child' }])(
+        'closes standalone or insights consent with %j',
+        async props => {
+            state.child = false;
+            showFlow({ disableRedirect: true, ...props });
+            fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+            await waitFor(() => expect(state.closeAllModals).toHaveBeenCalledOnce());
+        }
+    );
     it('navigates locally after successful AI Passport consent', async () => {
         state.child = false;
         state.search = '?returnTo=%2Fai%2Fsessions';
@@ -339,7 +349,11 @@ describe('guardian approval at the consent submission boundary', () => {
         showFlow({
             disableRedirect: false,
             successCallback: success,
-            contractDetails: { ...contract, uri: LEARNCARD_AI_PASSPORT_CONTRACT_URI },
+            contractDetails: {
+                ...contract,
+                uri: LEARNCARD_AI_PASSPORT_CONTRACT_URI,
+                redirectUrl: 'https://api.example.test/callback',
+            },
         });
         fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
         await waitFor(() => expect(state.push).toHaveBeenCalledWith('/ai/sessions'));

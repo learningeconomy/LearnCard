@@ -40,7 +40,8 @@ vi.mock('../../paraglide/messages.js', () => ({
     'consentFlow.allow': () => 'Allow',
     'consentFlow.allowing': () => 'Allowing',
     'consentFlow.editAccess': () => 'Edit',
-    'consentFlow.aiPassportReauthenticationRequired': () => 'Refresh the page and sign in again.',
+    'consentFlow.aiPassportReauthenticationRequired': () =>
+        'Go back to AI Passport and sign in again.',
 }));
 const contract = {
     uri: LEARNCARD_AI_PASSPORT_CONTRACT_URI,
@@ -55,33 +56,20 @@ beforeEach(() => {
     networkStore.set.aiServiceUrl('https://api.example.test');
 });
 afterEach(cleanup);
-it.each(['query', 'contract'])(
-    'rejects known %s callbacks before saving consent and keeps recovery visible',
-    async source => {
-        if (source === 'query')
-            state.search = '?returnTo=https%3A%2F%2Fapi.example.test%2Fcallback';
-        render(
-            <ConsentFlowSyncCard
-                contractDetails={{
-                    ...contract,
-                    ...(source === 'contract'
-                        ? { redirectUrl: 'https://api.example.test/callback' }
-                        : {}),
-                }}
-            />
-        );
-        fireEvent.click(screen.getByRole('button', { name: 'Allow' }));
-        await waitFor(() =>
-            expect(state.toast).toHaveBeenCalledWith(
-                expect.stringMatching(/Refresh.*sign in again/),
-                expect.objectContaining({ type: 'error' })
-            )
-        );
-        expect(state.consent).not.toHaveBeenCalled();
-        expect(state.close).not.toHaveBeenCalled();
-        expect(screen.getByRole('button', { name: 'Allow' })).toBeEnabled();
-    }
-);
+it('rejects a known query callback before saving consent and keeps recovery visible', async () => {
+    state.search = '?returnTo=https%3A%2F%2Fapi.example.test%2Fcallback';
+    render(<ConsentFlowSyncCard contractDetails={contract} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Allow' }));
+    await waitFor(() =>
+        expect(state.toast).toHaveBeenCalledWith(
+            expect.stringMatching(/Go back to AI Passport.*sign in again/),
+            expect.objectContaining({ type: 'error' })
+        )
+    );
+    expect(state.consent).not.toHaveBeenCalled();
+    expect(state.close).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Allow' })).toBeEnabled();
+});
 it('rejects an unexpected server callback without closing the review', async () => {
     state.consent.mockResolvedValue({ redirectUrl: 'https://api.example.test/callback' });
     render(<ConsentFlowSyncCard contractDetails={contract} />);
@@ -92,8 +80,26 @@ it('rejects an unexpected server callback without closing the review', async () 
 });
 it('allows local navigation for the AI Passport contract', async () => {
     state.search = '?returnTo=%2Fai%2Fsessions';
-    render(<ConsentFlowSyncCard contractDetails={contract} />);
+    render(
+        <ConsentFlowSyncCard
+            contractDetails={{ ...contract, redirectUrl: 'https://api.example.test/callback' }}
+        />
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Allow' }));
     await waitFor(() => expect(state.push).toHaveBeenCalledWith('/ai/sessions'));
+    expect(state.toast).not.toHaveBeenCalled();
+});
+
+it('ignores the stored callback when falling back to launchpad', async () => {
+    render(
+        <ConsentFlowSyncCard
+            contractDetails={{ ...contract, redirectUrl: 'https://api.example.test/callback' }}
+        />
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Allow' }));
+    await waitFor(() =>
+        expect(state.push).toHaveBeenCalledWith(expect.stringContaining('/launchpad?uri='))
+    );
+    expect(state.consent).toHaveBeenCalledOnce();
     expect(state.toast).not.toHaveBeenCalled();
 });

@@ -133,7 +133,7 @@ describe('getConsentFlowDidAuthRedirect', () => {
                 returnTo: 'https://api.example.test/auth/callback',
                 wallet,
             })
-        ).rejects.toThrow('AI Passport requires challenge-based authentication');
+        ).rejects.toThrow('Go back to AI Passport and sign in again.');
         await expect(
             getConsentFlowDidAuthRedirect({
                 contractUri: LEARNCARD_AI_PASSPORT_CONTRACT_URI,
@@ -141,7 +141,7 @@ describe('getConsentFlowDidAuthRedirect', () => {
                 returnTo: 'https://other.example.test/callback',
                 wallet,
             })
-        ).rejects.toThrow('AI Passport requires challenge-based authentication');
+        ).rejects.toThrow('Go back to AI Passport and sign in again.');
         expect(wallet.invoke.newCredential).not.toHaveBeenCalled();
         expect(wallet.invoke.issuePresentation).not.toHaveBeenCalled();
         expect(() =>
@@ -149,12 +149,12 @@ describe('getConsentFlowDidAuthRedirect', () => {
                 returnTo: 'https://api.example.test/auth/callback',
                 contractRedirectUrl: 'https://other.example.test/redirect',
             })
-        ).toThrow('AI Passport requires challenge-based authentication');
+        ).toThrow('Go back to AI Passport and sign in again.');
         expect(() =>
             getConsentFlowContractRedirect({
                 contractRedirectUrl: 'https://api.example.test/auth/callback',
             })
-        ).toThrow('AI Passport requires challenge-based authentication');
+        ).toThrow('Go back to AI Passport and sign in again.');
     });
 
     it('leaves inline AI Passport consent without a callback available', () => {
@@ -265,7 +265,7 @@ describe('getConsentFlowDidAuthRedirect', () => {
                 contractUri: LEARNCARD_AI_PASSPORT_CONTRACT_URI,
                 returnTo,
             })
-        ).toThrow('refresh and sign in again');
+        ).toThrow('Go back to AI Passport and sign in again.');
     });
     it.each(['TODO_AI_SERVICE', 'not a URL'])(
         'preserves unrelated delegation with configuration %s',
@@ -294,7 +294,7 @@ describe('getConsentFlowDidAuthRedirect', () => {
                     contractUri: LEARNCARD_AI_PASSPORT_CONTRACT_URI,
                     returnTo: 'https://other.example.test/callback',
                 })
-            ).toThrow('refresh and sign in again');
+            ).toThrow('Go back to AI Passport and sign in again.');
             expect(() =>
                 getConsentFlowContractRedirect({
                     challenge: 'challenge',
