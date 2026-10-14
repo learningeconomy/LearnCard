@@ -328,7 +328,7 @@ export const issueViaBoost = async (
     if (hasRecipientEvidence && !boostSupportsDynamicEvidence(reusableTemplate)) {
         const contexts = reusableTemplate['@context'];
         reusableTemplate['@context'] = [
-            ...(Array.isArray(contexts) ? contexts : [contexts]),
+            ...(Array.isArray(contexts) ? contexts : contexts != null ? [contexts] : []),
             EVIDENCE_CONTEXT,
         ];
     }
