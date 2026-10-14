@@ -68,7 +68,7 @@ pub(crate) async fn run(port: u32) -> io::Result<()> {
         result = async {
             if let Some(config) = &authority {
                 tokio::select! {
-                    result = crate::kms::vsock_forward::run_data_plane(config, None) => step("policy_init", result),
+                    result = crate::kms::vsock_forward::run_data_plane(config, data_plane_email(&email)) => step("policy_init", result),
                     result = boot_and_serve(port, authority.as_ref(), email.as_ref()) => result,
                 }
             } else { boot_and_serve(port, None, None).await }
@@ -81,6 +81,15 @@ pub(crate) async fn run(port: u32) -> io::Result<()> {
         .await;
     }
     result
+}
+
+/// P1: decides what `EmailConfig` the data-plane forwarder receives. Pulled
+/// out as a pure function so this wiring is unit-testable without a vsock
+/// environment: port 8002 (the SES relay) must start whenever email is
+/// configured — previously hardcoded to `None` regardless of boot config,
+/// so it never started even when `ESCROW_EMAIL_*` was fully configured.
+fn data_plane_email(email: &Option<EmailConfig>) -> Option<&EmailConfig> {
+    email.as_ref()
 }
 
 static FAILED_STEP: OnceLock<&'static str> = OnceLock::new();
@@ -384,4 +393,32 @@ fn install_service_hosts(
         .open("/etc/hosts")
         .and_then(|mut hosts| hosts.write_all(entries.as_bytes()))
         .map_err(|_| unavailable())
+}
+
+// P1: boot-wiring tests for `data_plane_email`. `run()`/`boot_and_serve`
+// themselves require a real vsock environment (Linux Nitro boot), so this
+// targets exactly the dispatch decision that regressed: whether the
+// supervised data-plane forwarder (port 8002, SES relay) receives the
+// measured `EmailConfig` it was booted with, proven independent of vsock.
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn email_config() -> EmailConfig {
+        EmailConfig {
+            region: "us-east-1".into(),
+            account: "123456789012".into(),
+            sender: "sender".into(),
+            from: "recovery@staging.notify.learncard.com".into(),
+            identity: "staging.notify.learncard.com".into(),
+            configuration_set: "recovery".into(),
+        }
+    }
+
+    #[test]
+    fn data_plane_forwards_email_config_only_when_boot_configured_it() {
+        let configured = Some(email_config());
+        assert!(data_plane_email(&configured).is_some());
+        assert!(data_plane_email(&None).is_none());
+    }
 }
