@@ -1078,15 +1078,22 @@ impl<'a> Policy<'a> {
             return Err(ErrorCode::Policy);
         }
         let blob = self.decrypt(&active_blob.envelope)?;
-        let time = self.authority_time().await?;
+        // Anchor only — never the value persisted below. See the fresh,
+        // post-send sample further down for why.
+        let presend_time = self.authority_time().await?;
         let (recipient, language) = blob
             .recovery_email
             .as_deref()
             .zip(blob.recovery_language.as_deref())
             .ok_or(ErrorCode::Policy)?;
         let email = self.email.ok_or(ErrorCode::Unavailable)?;
-        // P9.1 (attack C): fail closed — an unknown/failed send never records
-        // the timestamp release is gated on; only a confirmed send does.
+        // goblincore P1 / P9.1 (attack C): fail closed, and — the fix for the
+        // P1 finding — never derive `release_warning_sent_hi_ms` from time
+        // sampled before this await. A host pause during the SES round trip
+        // lets real elapsed time run ahead of a pre-send sample, which would
+        // backdate the 24h release gate below (and shorten the promised
+        // minimum gap even for ordinary send latency). Local host-clock
+        // deadlines are never trusted evidence in this design.
         email
             .send(
                 recipient,
@@ -1095,6 +1102,25 @@ impl<'a> Policy<'a> {
             )
             .await
             .map_err(|_| ErrorCode::Unavailable)?;
+        // Re-acquire trusted time only now that SES has durably accepted the
+        // message; `presend_time` above is never persisted, it exists only
+        // as a rollback floor so this authoritative post-accept sample can
+        // never be authenticated as earlier than a reading this same call
+        // already observed. A failure here (e.g. Roughtime unavailable right
+        // after a successful send) fails exactly like an unknown/failed
+        // send: it returns before any commit, so no timestamp — early or
+        // otherwise — is ever recorded for this attempt. The idempotency
+        // check at the top of this function
+        // (`release_warning_sent_hi_ms.is_some()`) then makes the next retry
+        // (same or fresh request id, exactly as the hourly job does) safely
+        // resend: from this hold's persisted state, "sent but couldn't get a
+        // trusted timestamp" and "never attempted" are indistinguishable,
+        // which is the same deliberately conservative choice already made
+        // above for a merely ambiguous SES outcome — a possible duplicate
+        // warning email, never a possible double-counted or backdated gate.
+        let time = self
+            .authority_time_floor(Some(presend_time.interval.hi_ms))
+            .await?;
         after.revisions = after
             .revisions
             .advance(false)
@@ -1249,7 +1275,15 @@ impl<'a> Policy<'a> {
     }
 
     async fn authority_time(&self) -> Result<TimeEvidence, ErrorCode> {
-        let time = self.time.now(None).await.map_err(|_| ErrorCode::Time)?;
+        self.authority_time_floor(None).await
+    }
+
+    /// Same bounds as `authority_time`, plus an optional rollback floor (e.g.
+    /// an already-observed `hi_ms`) so a later sample taken within the same
+    /// operation can never be authenticated as earlier than one already
+    /// relied upon. See `authority_send_release_warning`'s post-send sample.
+    async fn authority_time_floor(&self, floor_ms: Option<u64>) -> Result<TimeEvidence, ErrorCode> {
+        let time = self.time.now(floor_ms).await.map_err(|_| ErrorCode::Time)?;
         if time.interval.lo_ms > time.interval.hi_ms || time.interval.hi_ms > JS_MAX_INTEGER {
             return Err(ErrorCode::Time);
         }

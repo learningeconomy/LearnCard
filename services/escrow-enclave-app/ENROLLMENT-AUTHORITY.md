@@ -767,7 +767,9 @@ directly, unchanged). Release requires **both** a matched confirmation and a
 ledger monitor (`escrow-ledger-monitor`) re-derives and enforces this gate from
 signed events, not from the stored `HoldItem` row's own timestamps, so a parent
 that tampered with those fields without a genuine signed `ConfirmHold`/
-`SendReleaseWarning` sequence is still caught. `cancel` is valid from either
+`SendReleaseWarning` sequence is still caught. The recorded warning time is
+always the trusted upper bound sampled after the email provider accepts the
+send, never a value sampled beforehand. `cancel` is valid from either
 non-terminal status and idempotent on retry (it derives its own request ID from
 the hold's digest, not the caller's). lca-api suppresses its own "started" and
 hourly reminder notifications for an authority-mode Hold-policy hold in favor of

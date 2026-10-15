@@ -1,6 +1,7 @@
 use super::*;
 use crate::{
     authority::{
+        email::{EmailFuture, EmailSender},
         intent::EnrollmentIntent,
         store::{
             fake::{FakeDatabase, WriteFault},
@@ -9,7 +10,7 @@ use crate::{
     },
     crypto::{decrypt_escrow_blob, encrypt_escrow_blob, generate_escrow_key_pair},
     ledger::FakeHeadStore,
-    time::{TimeFuture, TrustedInterval},
+    time::{TimeError, TimeFuture, TrustedInterval},
 };
 use ed25519_dalek::{Signer, SigningKey};
 use std::sync::{
@@ -176,6 +177,20 @@ impl Fixture {
         }
     }
     fn policy(&self, old: bool) -> Policy<'_> {
+        self.policy_with(old, &self.email, &self.time)
+    }
+    /// Like `policy()`, but lets a test swap in a different `EmailSender`
+    /// and/or `TimeSource` for one call (e.g. a sender that advances the
+    /// shared clock mid-send, or a time source that fails on its second
+    /// call) while still sharing this fixture's one persisted store/ledger —
+    /// exactly like the existing pattern of building multiple `Policy`
+    /// instances from one `Fixture` (see e.g. the pin-pause-point test).
+    fn policy_with<'p>(
+        &'p self,
+        old: bool,
+        email: &'p dyn EmailSender,
+        time: &'p dyn TimeSource,
+    ) -> Policy<'p> {
         Policy::new(
             copy(if old { &self.old } else { &self.keys }),
             if old { "old" } else { "current" }.into(),
@@ -187,13 +202,13 @@ impl Fixture {
             "tenant".into(),
             [1; 32],
             &self.ledger,
-            &self.time,
+            time,
             &self.authority,
         )
         .unwrap()
         .with_authority(&self.authority)
         .unwrap()
-        .with_email(&self.email)
+        .with_email(email)
     }
     fn blob(&self, version: u32, pin: Option<&str>) -> EscrowEnvelope {
         self.blob_with_contact(version, pin, None)
@@ -444,13 +459,15 @@ impl Fixture {
             .expect("a one-time code must have been sent")
     }
     async fn hold_status(&self, request: &str) -> HoldStatus {
+        self.hold_item(request).await.status
+    }
+    async fn hold_item(&self, request: &str) -> HoldItem {
         self.store
             .load(&self.authority.binding(&self.did), request, Some("hold"))
             .await
             .unwrap()
             .hold
             .unwrap()
-            .status
     }
 }
 
@@ -1962,6 +1979,238 @@ async fn send_release_warning_is_idempotent_never_resends_and_never_moves_the_ti
             warned_at_first
         );
     }
+}
+
+const ONE_HOUR_MS: u64 = 60 * 60 * 1000;
+
+/// goblincore P1 (2026-10-15, `authority.rs` ~L1102): models a host pause
+/// during the SES round trip by advancing the shared trusted clock as part
+/// of the send itself, then recording a normal confirmed send — exactly the
+/// reviewer's repro. Advancing the clock *before calling*
+/// `send_release_warning` (the style used elsewhere in this file) cannot
+/// reproduce this bug: it would advance both a pre- and a post-send sample
+/// identically. Only advancing *during* the awaited send distinguishes them.
+struct ClockAdvancingEmailSender<'a> {
+    time: &'a Clock,
+    advance_ms: u64,
+    inner: &'a crate::authority::email::fake::FakeEmailSender,
+}
+impl<'a> EmailSender for ClockAdvancingEmailSender<'a> {
+    fn send<'b>(
+        &'b self,
+        recipient: &'b str,
+        language: &'b str,
+        message: EmailMessage,
+    ) -> EmailFuture<'b> {
+        Box::pin(async move {
+            *self.time.0.lock().unwrap() += self.advance_ms;
+            self.inner.send(recipient, language, message).await
+        })
+    }
+}
+
+/// A `TimeSource` that proxies a real `Clock` for its first `N` calls, then
+/// fails every call after — models trusted time becoming unavailable right
+/// after SES confirms acceptance (the fail-closed path this P1 fix adds).
+struct FailAfterNSuccesses<'a> {
+    inner: &'a Clock,
+    remaining_successes: AtomicUsize,
+}
+impl<'a> TimeSource for FailAfterNSuccesses<'a> {
+    fn now(&self, floor_ms: Option<u64>) -> TimeFuture<'_, TimeEvidence> {
+        Box::pin(async move {
+            let allowed = self
+                .remaining_successes
+                .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |v| v.checked_sub(1))
+                .is_ok();
+            if !allowed {
+                return Err(TimeError::Unavailable);
+            }
+            self.inner.now(floor_ms).await
+        })
+    }
+}
+
+/// The reviewer's exact offline repro: a confirmed hold whose 7-day wait has
+/// already elapsed, warned through a sender that advances trusted time by
+/// 24h+1s before accepting. Before this fix, `release_warning_sent_hi_ms`
+/// would have been the PRE-send sample, and release-right-after-warning
+/// would have incorrectly succeeded (pre-send + 24h+1s already satisfies a
+/// pre-send-anchored deadline). With the fix, the recorded/returned
+/// timestamp is the POST-accept sample, and release is correctly refused.
+#[tokio::test]
+async fn send_release_warning_records_time_after_acceptance_not_before_a_paused_send() {
+    let f = Fixture::new();
+    let mut p = f.policy(false);
+    let env = f.enroll(&mut p, true).await;
+    let hold = f.awaiting_hold(&mut p, &env).await;
+    let code = f.last_sent_code();
+    p.confirm_hold(ConfirmHoldRequest {
+        envelope: &env,
+        hold: &hold,
+        request_id: "confirm",
+        expected_did: &f.did,
+        client_ephemeral_public_key: &f.client.public_key,
+        code: &code,
+    })
+    .await
+    .unwrap();
+    *f.time.0.lock().unwrap() += HOLD_DURATION_MS;
+    let pre_send = *f.time.0.lock().unwrap();
+    let sender = ClockAdvancingEmailSender {
+        time: &f.time,
+        advance_ms: 24 * ONE_HOUR_MS + 1000,
+        inner: &f.email,
+    };
+    let mut warn = f.policy_with(false, &sender, &f.time);
+    let (_, warned_hi) = warn
+        .send_release_warning(SendReleaseWarningRequest {
+            hold_id: "hold",
+            request_id: "warn",
+            expected_did: &f.did,
+        })
+        .await
+        .unwrap();
+    assert_eq!(warned_hi, pre_send + 24 * ONE_HOUR_MS + 1000);
+    assert_eq!(
+        f.hold_item("inspect-post-pause")
+            .await
+            .release_warning_sent_hi_ms,
+        Some(warned_hi)
+    );
+    // No further time advance: the 24h gap from this authoritative warning
+    // time has not elapsed. A pre-send-sampled bug would pass this check.
+    assert!(p
+        .release(f.release(&env, &hold, "release-immediately-after-pause", None))
+        .await
+        .is_err());
+}
+
+/// `release`'s 24h-since-warning gate compares with `>=`
+/// (`policy::deadline`'s `checked_add`, never `>`): refused one millisecond
+/// before the boundary, allowed exactly on it.
+#[tokio::test]
+async fn send_release_warning_release_gate_boundary_is_exactly_24_hours_after_recording() {
+    let f = Fixture::new();
+    let mut p = f.policy(false);
+    let env = f.enroll(&mut p, true).await;
+    let hold = f.awaiting_hold(&mut p, &env).await;
+    let code = f.last_sent_code();
+    p.confirm_hold(ConfirmHoldRequest {
+        envelope: &env,
+        hold: &hold,
+        request_id: "confirm",
+        expected_did: &f.did,
+        client_ephemeral_public_key: &f.client.public_key,
+        code: &code,
+    })
+    .await
+    .unwrap();
+    *f.time.0.lock().unwrap() += HOLD_DURATION_MS;
+    let (_, warned_hi) = p
+        .send_release_warning(SendReleaseWarningRequest {
+            hold_id: "hold",
+            request_id: "warn",
+            expected_did: &f.did,
+        })
+        .await
+        .unwrap();
+    *f.time.0.lock().unwrap() =
+        warned_hi + crate::policy::authority::RELEASE_WARNING_MIN_GAP_MS - 1;
+    assert!(p
+        .release(f.release(&env, &hold, "release-one-ms-early", None))
+        .await
+        .is_err());
+    *f.time.0.lock().unwrap() = warned_hi + crate::policy::authority::RELEASE_WARNING_MIN_GAP_MS;
+    p.release(f.release(&env, &hold, "release-exactly-on-boundary", None))
+        .await
+        .unwrap();
+    assert!(f.hold_status("check-released-boundary").await == HoldStatus::Released);
+}
+
+/// goblincore P1: if trusted time cannot be re-acquired after SES confirms
+/// acceptance, the warning must fail closed exactly like an unknown/failed
+/// send — no timestamp (early or otherwise) is recorded, the hold is left
+/// `Pending` and untouched, and the existing idempotent-retry machinery
+/// (already relied on for an ambiguous SES outcome) is what makes the next
+/// attempt safe, not a fallback timestamp. The email may genuinely have been
+/// sent and may be sent again on retry; only the trusted gate may never move
+/// without a confirmed, timestamped acceptance.
+#[tokio::test]
+async fn send_release_warning_fails_closed_without_recording_when_post_send_time_fails() {
+    let f = Fixture::new();
+    let mut p = f.policy(false);
+    let env = f.enroll(&mut p, true).await;
+    let hold = f.awaiting_hold(&mut p, &env).await;
+    let code = f.last_sent_code();
+    p.confirm_hold(ConfirmHoldRequest {
+        envelope: &env,
+        hold: &hold,
+        request_id: "confirm",
+        expected_did: &f.did,
+        client_ephemeral_public_key: &f.client.public_key,
+        code: &code,
+    })
+    .await
+    .unwrap();
+    *f.time.0.lock().unwrap() += HOLD_DURATION_MS;
+    let emails_before = f.email.sent.lock().unwrap().len();
+    let flaky = FailAfterNSuccesses {
+        inner: &f.time,
+        remaining_successes: AtomicUsize::new(1),
+    };
+    let mut warn = f.policy_with(false, &f.email, &flaky);
+    let err = warn
+        .send_release_warning(SendReleaseWarningRequest {
+            hold_id: "hold",
+            request_id: "warn-time-fails",
+            expected_did: &f.did,
+        })
+        .await
+        .unwrap_err();
+    assert_eq!(err, ErrorCode::Time);
+    // The send genuinely happened (SES "accepted" it)...
+    assert_eq!(f.email.sent.lock().unwrap().len(), emails_before + 1);
+    // ...but nothing was ever persisted for this attempt: no operation
+    // record, and the hold's own row is untouched (not even the pre-send
+    // reading was recorded as the warning time).
+    assert!(f
+        .store
+        .load(
+            &f.authority.binding(&f.did),
+            "warn-time-fails",
+            Some("hold")
+        )
+        .await
+        .unwrap()
+        .operation
+        .is_none());
+    let after_failure = f.hold_item("inspect-after-time-failure").await;
+    assert!(after_failure.release_warning_sent_hi_ms.is_none());
+    assert!(after_failure.status == HoldStatus::Pending);
+    // The existing idempotent/catch-up retry path (same shape as a retry
+    // after an ambiguous SES outcome) must still work normally afterward —
+    // this failure must not have wedged the hold. A second, distinct email
+    // is sent (this function never promises at-most-once delivery of the
+    // warning itself, only that the trusted gate it sets can't be backdated
+    // or fabricated), and the gate now measures from this real acceptance.
+    let (_, warned_hi) = p
+        .send_release_warning(SendReleaseWarningRequest {
+            hold_id: "hold",
+            request_id: "warn-retry",
+            expected_did: &f.did,
+        })
+        .await
+        .unwrap();
+    assert_eq!(f.email.sent.lock().unwrap().len(), emails_before + 2);
+    assert!(p
+        .release(f.release(&env, &hold, "release-right-after-retry", None))
+        .await
+        .is_err());
+    *f.time.0.lock().unwrap() = warned_hi + crate::policy::authority::RELEASE_WARNING_MIN_GAP_MS;
+    p.release(f.release(&env, &hold, "release-after-retry-and-wait", None))
+        .await
+        .unwrap();
 }
 
 // P2-c: a lost response (or a retry under a fresh request id after a process
