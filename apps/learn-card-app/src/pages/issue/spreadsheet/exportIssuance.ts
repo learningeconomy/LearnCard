@@ -36,7 +36,9 @@ export const exportIssuanceCsv = (
                     return [
                         key,
                         Object.fromEntries(
-                            Object.entries(frozen).filter(([, value]) => typeof value === 'string')
+                            Object.entries(frozen).filter(
+                                (entry): entry is [string, string] => typeof entry[1] === 'string'
+                            )
                         ),
                     ];
             }
