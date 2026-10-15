@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.100.1
+
+### Patch Changes
+
+- [#1708](https://github.com/learningeconomy/LearnCard/pull/1708) [`a01708aa51aad9626dba85495f9089fa09d81638`](https://github.com/learningeconomy/LearnCard/commit/a01708aa51aad9626dba85495f9089fa09d81638) Thanks [@gerardopar](https://github.com/gerardopar)! - Add a shared CLR renderer with academic, military, and neutral fallback layouts, reusable record sections, and a comprehensive military fixture.
+
+    Collection layout selection is intentionally conservative: course counts, credits,
+    and terms alone no longer select academic. Without an academic title, explicit GPA
+    or degree evidence is required in a collection whose children all have compatible
+    academic types; untyped children, certificates, licenses, and memberships fall back
+    to the general view. Explicit academic titles retain the academic view. Military
+    record titles include Joint Services Transcript, AARTS, CCAF Transcript, and service
+    branch record titles. No classification is derived from issuer names or child text.
+
+- [#1713](https://github.com/learningeconomy/LearnCard/pull/1713) [`56fd105d15d4ee5e9e1bcae51344ce54cd80762a`](https://github.com/learningeconomy/LearnCard/commit/56fd105d15d4ee5e9e1bcae51344ce54cd80762a) Thanks [@goblincore](https://github.com/goblincore)! - Recover verifier history after account initialization invalidates an earlier read, and offer Retry if the account cannot settle instead of leaving history loading indefinitely.
+
+- Updated dependencies [[`a01708aa51aad9626dba85495f9089fa09d81638`](https://github.com/learningeconomy/LearnCard/commit/a01708aa51aad9626dba85495f9089fa09d81638)]:
+    - @learncard/credential-library@2.1.1
+    - @learncard/lca-api-plugin@2.0.9
+    - @learncard/react@2.12.10
+
 ## 1.100.0
 
 ### Minor Changes
