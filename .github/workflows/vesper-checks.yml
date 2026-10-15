@@ -1,10 +1,6 @@
 name: Vesper checks
 
 on:
-    push:
-        branches: [codex/vesper-73]
-    pull_request:
-        types: [opened, synchronize, reopened]
     workflow_dispatch:
 
 permissions:
@@ -17,7 +13,6 @@ concurrency:
 jobs:
     native-regressions:
         name: Native regression suite
-        if: github.event_name != 'pull_request' || github.head_ref == 'codex/vesper-73'
         runs-on: macos-15
         timeout-minutes: 45
         env:

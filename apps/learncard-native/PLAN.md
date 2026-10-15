@@ -1,8 +1,8 @@
 # LearnCard native client plan
 
-## Fork development — October 15
+## Development home and opt-in CI — October 15
 
-Publish the experiment to `goblincore/LearnCard2` on `codex/vesper-73`, keeping original LearnCard backend services and local configuration. Fork `main` follows upstream with non-destructive fast-forward sync. Keep the current native feature history; integrating newer upstream SDK/backend contracts is a separate reviewed and tested change. Reuse the current worktree and branch-specific fork push destination so unrelated upstream development is unaffected. See [fork operations and CI](FORK_WORKFLOW.md).
+Keep the experiment in the original `learningeconomy/LearnCard` repository on `codex/vesper-73`. The user reconsidered fork migration: the actual goal is to avoid running native CI on every push. `Vesper checks` now uses manual dispatch only, while the full local/hosted regression script remains available. The brief fork snapshot and synced fork `main` are retained, but native development and normal pushes stay upstream. Existing staging services, local environment and account setup remain. See [manual CI commands](TESTING.md).
 
 ## Mockup fidelity and richer optional details — October 15
 

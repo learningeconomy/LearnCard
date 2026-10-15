@@ -2,7 +2,18 @@
 
 Current configured suite: **285 cases** (114 Bun, 106 Swift, 65 simulator), plus one intentionally skipped live exchange. Credential-creator, account-motion, profile-photo, recent-stack and sharing-picker validation is recorded below; historical runs retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and the new source-specific CI run.
 
-The `Vesper checks` workflow runs on every push to `codex/vesper-73`, on pull requests from that branch, and on manual dispatch. Current native development publishes to [goblincore/LearnCard2](https://github.com/goblincore/LearnCard2/actions?query=branch%3Acodex%2Fvesper-73); use explicit `--repo goblincore/LearnCard2` for GitHub CLI checks. The last upstream creator run was cancelled, rather than passed. See [fork workflow](FORK_WORKFLOW.md). Its check is **Native regression suite**. It uses macOS 15 and Xcode 26.3, selects an available iOS runtime, and creates/reuses a dedicated **LearnCard Native UI Checks** simulator. It does not change repository branch protection.
+The `Vesper checks` workflow is **manual only** (`workflow_dispatch`). Ordinary pushes and pull requests do not start native CI. Its check is **Native regression suite**. It uses macOS 15 and Xcode 26.3, selects an available iOS runtime, and creates/reuses a dedicated **LearnCard Native UI Checks** simulator. It does not change repository branch protection.
+
+Development stays in `learningeconomy/LearnCard` on `codex/vesper-73`. Start a hosted run deliberately with:
+
+```bash
+gh workflow run vesper-checks.yml --repo learningeconomy/LearnCard --ref codex/vesper-73
+gh run list --repo learningeconomy/LearnCard --workflow vesper-checks.yml --branch codex/vesper-73
+```
+
+The workflow is already registered from earlier runs. Use the CLI command for the experiment branch; availability of GitHub's Run workflow button depends on the workflow being present on the default branch. See [GitHub's manual-run documentation](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow).
+
+The user reconsidered fork migration because its maintenance cost was unnecessary for reducing CI runs. A snapshot was copied to `goblincore/LearnCard2`, and that fork's `main` was synced; it is not the active development destination. Branch tracking and default push remain upstream. No backend credentials or local environment were transferred. The last upstream creator run was cancelled; the local creator results below remain the latest completed validation.
 
 The same suite can run locally:
 
