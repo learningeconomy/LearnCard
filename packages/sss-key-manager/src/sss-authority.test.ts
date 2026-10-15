@@ -1,13 +1,20 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getPublicKeyAsync, verifyAsync } from '@noble/ed25519';
-import { createSSSStrategy, type SSSStorageFunctions } from './sss-strategy';
+import {
+    createSSSStrategy,
+    type SSSStorageFunctions,
+    type SSSStrategyConfig,
+} from './sss-strategy';
+import { escrowAuthorityMeasurements, type EscrowHoldRecordLike } from './escrow-authority';
+import type { EscrowRecoveryStart } from './types';
 import { verifyEnclaveAttestation } from './escrow-attestation';
 import {
     encryptEscrowBlob,
     decryptEscrowBlob,
     generateEscrowKeyPair,
     parseEscrowEnvelope,
+    sealEscrowRelease,
 } from './escrow-crypto';
 import type { EscrowEnvelope } from './escrow-crypto';
 import { encodeEscrowEnrollmentIntent, getEscrowBlobIdentity } from './escrow-enrollment-intent';
@@ -74,6 +81,14 @@ const frame = (value: Buffer): Buffer => {
 const response = (value: unknown): Response => new Response(JSON.stringify(value), { status: 200 });
 
 const setup = async (legacyEnrolled = false) => {
+    const pins = [
+        { pcr0: '01'.repeat(48), pcr1: '02'.repeat(48), pcr2: '03'.repeat(48) },
+        { pcr0: '04'.repeat(48), pcr1: '02'.repeat(48), pcr2: '03'.repeat(48) },
+    ];
+    const measurements = await escrowAuthorityMeasurements({
+        mode: 'nitro',
+        pinnedMeasurements: pins,
+    });
     const keys = await generateEscrowKeyPair();
     const ledger = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, [
         'sign',
@@ -88,20 +103,21 @@ const setup = async (legacyEnrolled = false) => {
             ledgerPublicKey: Buffer.from(
                 await crypto.subtle.exportKey('raw', ledger.publicKey)
             ).toString('base64'),
-            measurement: '01'.repeat(32),
+            measurement: measurements[0]!,
         },
     };
     vi.mocked(verifyEnclaveAttestation).mockResolvedValue(identity);
     const sign = async (
         kind: 'snapshot' | 'commit',
-        value: unknown
+        value: unknown,
+        measurement = identity.authority!.measurement
     ): Promise<EscrowAuthorityRecord> => {
         const payload = Buffer.from(JSON.stringify(value));
         const message = Buffer.concat([
             Buffer.from('learncard-authority-signed-record-v1\0'),
             Buffer.from([kind === 'snapshot' ? 2 : 1]),
             frame(Buffer.from(identity.keyId)),
-            Buffer.alloc(32, 1),
+            Buffer.from(measurement, 'hex'),
             frame(payload),
         ]);
         const sig = Buffer.from(
@@ -114,7 +130,7 @@ const setup = async (legacyEnrolled = false) => {
             version: 1,
             kind,
             keyId: identity.keyId,
-            measurement: Array.from({ length: 32 }, () => 1),
+            measurement: Array.from(Buffer.from(measurement, 'hex')),
             payload: payload.toString('base64'),
             signature: sig.toString('base64'),
         };
@@ -133,7 +149,10 @@ const setup = async (legacyEnrolled = false) => {
         attemptsUsed: 0,
     };
     let version = 1;
-    let authShare = (await splitPrivateKey(owner.seedHex)).authShare;
+    const recoveryShares = await splitPrivateKey(owner.seedHex);
+    let authShare = recoveryShares.authShare;
+    let pendingHold: EscrowHoldRecordLike | undefined;
+    let confirmed = false;
     let enrolled = legacyEnrolled;
     let device: string | null = null;
     let localVersion: number | null = null;
@@ -163,7 +182,40 @@ const setup = async (legacyEnrolled = false) => {
         snapshotNonce?: boolean;
         returnedEnvelope?: boolean;
         beforeSnapshot?: () => Promise<void>;
+        startHold?: Partial<EscrowHoldRecordLike['hold']>;
+        statusHold?: Partial<EscrowHoldRecordLike['hold']>;
+        confirmationHold?: Partial<EscrowHoldRecordLike['hold']>;
+        freshMeasurement?: string;
+        generation?: string;
+        confirmationGeneration?: string;
+        snapshotOnly?: boolean;
+        legacySnapshot?: boolean;
+        releaseDid?: string;
     } = {};
+    const signHold = async (record: EscrowHoldRecordLike): Promise<EscrowHoldRecordLike> => {
+        const h = record.hold;
+        const receipt = await sign('commit', {
+            commit: {
+                schemaVersion: 1,
+                binding: {
+                    tenant: 'learncard',
+                    generation: faults.generation ?? state.authorityGeneration,
+                    didHash: await digest(Buffer.from(h.did)),
+                },
+                executionId: Array.from({ length: 16 }, () => 1),
+                revisions: { operation: 1, enrollment: 1 },
+                transactionDigest: Array.from({ length: 32 }, () => 2),
+            },
+            eventHash: Array.from({ length: 32 }, () => 3),
+            requestDigest: await holdTupleDigest(record),
+            resultBlobIdentity: Array.from(Buffer.from(h.blobHash, 'hex')),
+            enrollmentEpoch: h.enrollmentEpoch,
+        });
+        return {
+            ...record,
+            hold: { ...h, signature: Buffer.from(JSON.stringify(receipt)).toString('base64') },
+        };
+    };
     vi.stubGlobal(
         'fetch',
         vi.fn(async (url: string, init?: RequestInit) => {
@@ -278,7 +330,7 @@ const setup = async (legacyEnrolled = false) => {
                 // SignedHoldRecord bound to the caller's own recipient key —
                 // construct one with the same ledger key `sign()` uses above
                 // so startEscrowRecovery's client-side verification passes.
-                const holdRecord = {
+                const holdRecord: EscrowHoldRecordLike = {
                     hold: {
                         holdId: 'hold',
                         did: owner.intent.did,
@@ -291,6 +343,7 @@ const setup = async (legacyEnrolled = false) => {
                         createdHi: Date.now(),
                         policyVersion: 2,
                         signature: '',
+                        ...faults.startHold,
                     },
                     holdDurationMs: 604800000,
                     ledgerSeq: 0,
@@ -314,8 +367,9 @@ const setup = async (legacyEnrolled = false) => {
                     enrollmentEpoch: h.enrollmentEpoch,
                 });
                 holdRecord.hold.signature = Buffer.from(JSON.stringify(receipt)).toString('base64');
+                pendingHold = holdRecord;
                 return response({
-                    holdId: h.holdId,
+                    holdId: 'hold',
                     resumeToken: 'resume',
                     status: 'pending',
                     requestedAt: new Date().toISOString(),
@@ -323,11 +377,106 @@ const setup = async (legacyEnrolled = false) => {
                     holdRecord,
                 });
             }
+            if (path === '/keys/escrow/status') {
+                if (!pendingHold) throw new Error('No test hold');
+                const holdRecord =
+                    faults.statusHold || faults.generation
+                        ? await signHold({
+                              ...pendingHold,
+                              hold: { ...pendingHold.hold, ...faults.statusHold },
+                          })
+                        : pendingHold;
+                return response({
+                    hold: {
+                        holdId: 'hold',
+                        status: 'pending',
+                        releasePolicy: 'hold',
+                        requestedAt: new Date().toISOString(),
+                        releaseAfter: new Date().toISOString(),
+                        requiresConfirmation: true,
+                        confirmed,
+                        holdRecord,
+                    },
+                });
+            }
+            if (path === '/keys/escrow/confirm') {
+                if (!pendingHold) throw new Error('No test hold');
+                const record = {
+                    ...pendingHold,
+                    hold: { ...pendingHold.hold, ...faults.confirmationHold },
+                };
+                const h = record.hold;
+                if (confirmed || faults.snapshotOnly)
+                    return response({
+                        success: true,
+                        receipt: await sign(
+                            'snapshot',
+                            [
+                                faults.legacySnapshot
+                                    ? 'learncard-authority-hold-snapshot-v1'
+                                    : 'learncard-authority-hold-snapshot-v2',
+                                h.holdId,
+                                await holdTupleDigest(record),
+                                'pending',
+                                Date.now(),
+                                null,
+                                ...(faults.legacySnapshot
+                                    ? []
+                                    : [faults.confirmationGeneration ?? state.authorityGeneration]),
+                            ],
+                            faults.freshMeasurement
+                        ),
+                    });
+                confirmed = true;
+                return response({
+                    success: true,
+                    receipt: await sign(
+                        'commit',
+                        {
+                            commit: {
+                                schemaVersion: 1,
+                                binding: {
+                                    tenant: 'learncard',
+                                    generation:
+                                        faults.confirmationGeneration ?? state.authorityGeneration,
+                                    didHash: await digest(Buffer.from(h.did)),
+                                },
+                                executionId: Array.from({ length: 16 }, () => 1),
+                                revisions: { operation: 2, enrollment: 1 },
+                                transactionDigest: Array.from({ length: 32 }, () => 2),
+                            },
+                            eventHash: Array.from({ length: 32 }, () => 3),
+                            requestDigest: Array.from({ length: 32 }, () => 4),
+                            resultBlobIdentity: Array.from(Buffer.from(h.blobHash, 'hex')),
+                            enrollmentEpoch: h.enrollmentEpoch,
+                        },
+                        faults.freshMeasurement
+                    ),
+                });
+            }
+            if (path === '/keys/escrow/complete') {
+                if (!pendingHold) throw new Error('No test hold');
+                return response({
+                    sealedShare: await sealEscrowRelease(
+                        {
+                            did: faults.releaseDid ?? owner.intent.did,
+                            holdId: pendingHold.hold.holdId,
+                            shareVersion: version,
+                            recoveryShare: recoveryShares.recoveryShare,
+                        },
+                        pendingHold.hold.clientEphemeralPublicKey
+                    ),
+                    primaryDid: faults.releaseDid ?? owner.intent.did,
+                    shareVersion: version,
+                    authShare: { encryptedData: authShare, encryptedDek: '', iv: '' },
+                    rebindSessionToken: 'rebind',
+                });
+            }
             if (path === '/keys/escrow/opt-in') return response({ success: true });
             throw new Error('Unexpected test request');
         })
     );
-    const strategy = createSSSStrategy({
+    const config: SSSStrategyConfig = {
         serverUrl: 'https://example.test',
         storage,
         tenantId: 'learncard',
@@ -335,12 +484,11 @@ const setup = async (legacyEnrolled = false) => {
             enabled: true,
             attestation: {
                 mode: 'nitro',
-                pinnedMeasurements: [
-                    { pcr0: '01'.repeat(48), pcr1: '02'.repeat(48), pcr2: '03'.repeat(48) },
-                ],
+                pinnedMeasurements: pins,
             },
         },
-    });
+    };
+    const strategy = createSSSStrategy(config);
     const params = {
         token: 'token',
         providerType: 'firebase' as const,
@@ -356,6 +504,10 @@ const setup = async (legacyEnrolled = false) => {
         nonces,
         intents,
         faults,
+        config,
+        identity,
+        measurements,
+        reload: () => createSSSStrategy(config),
         state: () => state,
         advance: () => {
             version++;
@@ -370,6 +522,226 @@ const setup = async (legacyEnrolled = false) => {
 afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+});
+
+describe('Nitro recovery initiating-client bindings and measurement rollover', () => {
+    const start = (f: Awaited<ReturnType<typeof setup>>) =>
+        f.strategy.startEscrowRecovery!({
+            token: 'token',
+            providerType: 'firebase',
+            expectedDid: owner.intent.did,
+        });
+    const persisted = (value: Awaited<ReturnType<typeof start>>): EscrowRecoveryStart =>
+        JSON.parse(JSON.stringify(value));
+    const proof = (value: EscrowRecoveryStart) => ({
+        holdId: value.holdId,
+        resumeToken: value.resumeToken!,
+        expectations: value.expectations,
+    });
+    const confirm = (f: Awaited<ReturnType<typeof setup>>, value: EscrowRecoveryStart) =>
+        f.reload().confirmEscrowRecovery!({ ...proof(value), code: '123456' });
+    const restore = (f: Awaited<ReturnType<typeof setup>>, value: EscrowRecoveryStart) =>
+        f.reload().executeRecovery({
+            token: '',
+            providerType: 'firebase',
+            input: {
+                method: 'escrow',
+                ...proof(value),
+                clientEphemeralPrivateKey: value.clientEphemeralPrivateKey,
+            },
+            didFromPrivateKey: async () => owner.intent.did,
+        });
+
+    it('starts, confirms, persists/reloads, checks status and restores with retained bindings', async () => {
+        const f = await setup();
+        const saved = persisted(await start(f));
+        await expect(confirm(f, saved)).resolves.toEqual({ success: true });
+        expect(f.calls.filter(c => c === 'POST:/keys/escrow/confirm')).toHaveLength(2);
+        await expect(f.reload().getEscrowRecoveryStatus!(proof(saved))).resolves.toMatchObject({
+            holdId: saved.holdId,
+        });
+        await expect(restore(f, saved)).resolves.toEqual({
+            privateKey: owner.seedHex,
+            did: owner.intent.did,
+        });
+    });
+
+    it.each([
+        ['hold ID', { holdId: 'other' }],
+        ['recipient key', { clientEphemeralPublicKey: 'other' }],
+        ['DID', { did: 'did:key:other' }],
+    ] as const)('rejects a validly signed start for another %s', async (_, substitution) => {
+        const f = await setup();
+        f.faults.startHold = substitution;
+        await expect(start(f)).rejects.toMatchObject({ name: 'EscrowEvidenceError' });
+        expect(f.calls).not.toContain('POST:/keys/escrow/confirm');
+        expect(f.calls).not.toContain('POST:/keys/escrow/complete');
+    });
+
+    it.each([
+        ['hold ID', { holdId: 'other' }],
+        ['recipient key', { clientEphemeralPublicKey: 'other' }],
+        ['DID', { did: 'did:key:other' }],
+        ['blob identity', { blobHash: 'cd'.repeat(32) }],
+        ['hold revision', { createdHi: 42 }],
+    ] as const)(
+        'rejects substituted %s on confirm, status and restore after reload',
+        async (_, substitution) => {
+            const f = await setup();
+            const saved = persisted(await start(f));
+            f.faults.statusHold = substitution;
+            // Simulates persisted server-display data being replaced without changing
+            // the separate client expectations saved together with the private key.
+            if (saved.holdRecord) Object.assign(saved.holdRecord.hold, substitution);
+            await expect(confirm(f, saved)).rejects.toMatchObject({ name: 'EscrowEvidenceError' });
+            await expect(f.reload().getEscrowRecoveryStatus!(proof(saved))).rejects.toMatchObject({
+                name: 'EscrowEvidenceError',
+            });
+            await expect(restore(f, saved)).rejects.toMatchObject({ name: 'EscrowEvidenceError' });
+            expect(f.calls).not.toContain('POST:/keys/escrow/confirm');
+            expect(f.calls).not.toContain('POST:/keys/escrow/complete');
+        }
+    );
+
+    it.each([
+        ['hold ID', { holdId: 'other' }],
+        ['recipient key', { clientEphemeralPublicKey: 'other' }],
+    ] as const)('rejects confirmation readback bound to another %s', async (_, substitution) => {
+        const f = await setup();
+        const saved = persisted(await start(f));
+        f.faults.confirmationHold = substitution;
+        await expect(confirm(f, saved)).rejects.toMatchObject({ name: 'EscrowEvidenceError' });
+        expect(f.calls).not.toContain('POST:/keys/escrow/complete');
+    });
+
+    it('rejects missing initiating DID or missing persisted expectations without network calls', async () => {
+        const f = await setup();
+        await expect(
+            f.strategy.startEscrowRecovery!({ token: 'token', providerType: 'firebase' })
+        ).rejects.toMatchObject({ name: 'EscrowEvidenceError' });
+        expect(f.calls).toHaveLength(0);
+        const saved = persisted(await start(f));
+        saved.expectations = undefined;
+        f.calls.length = 0;
+        await expect(confirm(f, saved)).rejects.toMatchObject({ name: 'EscrowEvidenceError' });
+        await expect(restore(f, saved)).rejects.toMatchObject({ name: 'EscrowEvidenceError' });
+        expect(f.calls).toHaveLength(0);
+    });
+
+    it('rejects replacing the requested hold ID while retaining original expectations', async () => {
+        const f = await setup();
+        const saved = persisted(await start(f));
+        saved.holdId = 'other';
+        f.calls.length = 0;
+        await expect(confirm(f, saved)).rejects.toMatchObject({ name: 'EscrowEvidenceError' });
+        expect(f.calls).toHaveLength(0);
+    });
+
+    it('starts under M1 and confirms/restores after M2 upgrade with both measurements allowed', async () => {
+        const f = await setup();
+        const saved = persisted(await start(f));
+        f.identity.authority!.measurement = f.measurements[1]!;
+        await expect(confirm(f, saved)).resolves.toEqual({ success: true });
+        await expect(f.reload().getEscrowRecoveryStatus!(proof(saved))).resolves.toBeTruthy();
+        await expect(restore(f, saved)).resolves.toMatchObject({ did: owner.intent.did });
+    });
+
+    it('rejects historical M1 when the configured allowlist contains only M2', async () => {
+        const f = await setup();
+        const saved = persisted(await start(f));
+        f.identity.authority!.measurement = f.measurements[1]!;
+        if (f.config.escrow?.attestation.mode === 'nitro')
+            f.config.escrow.attestation.pinnedMeasurements.shift();
+        await expect(confirm(f, saved)).rejects.toMatchObject({ name: 'EscrowEvidenceError' });
+        expect(f.calls).not.toContain('POST:/keys/escrow/confirm');
+    });
+
+    it('rejects fresh M1 confirmation while current attestation is M2 even with both allowed', async () => {
+        const f = await setup();
+        const saved = persisted(await start(f));
+        f.identity.authority!.measurement = f.measurements[1]!;
+        f.faults.freshMeasurement = f.measurements[0]!;
+        await expect(confirm(f, saved)).rejects.toMatchObject({ name: 'EscrowEvidenceError' });
+        expect(f.calls.filter(c => c === 'POST:/keys/escrow/confirm')).toHaveLength(1);
+        expect(f.calls).not.toContain('POST:/keys/escrow/complete');
+    });
+
+    it('rejects a different current ledger signing key', async () => {
+        const f = await setup();
+        const saved = persisted(await start(f));
+        const other = await crypto.subtle.generateKey(
+            { name: 'ECDSA', namedCurve: 'P-256' },
+            true,
+            ['sign', 'verify']
+        );
+        f.identity.authority!.ledgerPublicKey = Buffer.from(
+            await crypto.subtle.exportKey('raw', other.publicKey)
+        ).toString('base64');
+        await expect(confirm(f, saved)).rejects.toMatchObject({ name: 'EscrowEvidenceError' });
+        expect(f.calls).not.toContain('POST:/keys/escrow/confirm');
+    });
+
+    it('accepts an attested previous key ID only while the ledger signing key is unchanged', async () => {
+        const f = await setup();
+        const saved = persisted(await start(f));
+        f.identity.previousKeyIds = [f.identity.keyId];
+        f.identity.keyId = 'renamed-key';
+        f.identity.authority!.measurement = f.measurements[1]!;
+        await expect(confirm(f, saved)).resolves.toEqual({ success: true });
+    });
+
+    it('rejects an original key ID absent from current and attested previous IDs', async () => {
+        const f = await setup();
+        const saved = persisted(await start(f));
+        f.identity.keyId = 'other-key';
+        await expect(confirm(f, saved)).rejects.toMatchObject({ name: 'EscrowEvidenceError' });
+        expect(f.calls).not.toContain('POST:/keys/escrow/confirm');
+    });
+
+    it('rejects a changed authority generation under the same key and permitted measurement', async () => {
+        const f = await setup();
+        const saved = persisted(await start(f));
+        f.faults.generation = 'other-generation';
+        await expect(confirm(f, saved)).rejects.toMatchObject({ name: 'EscrowEvidenceError' });
+        expect(f.calls).not.toContain('POST:/keys/escrow/confirm');
+    });
+
+    it('checks restored DID against retained expectations, not the release response', async () => {
+        const f = await setup();
+        const saved = persisted(await start(f));
+        f.faults.releaseDid = 'did:key:other';
+        await expect(restore(f, saved)).rejects.toMatchObject({ name: 'EscrowEvidenceError' });
+        expect(f.calls.some(c => c.includes('rebind'))).toBe(false);
+    });
+
+    it.each([false, true])(
+        'rejects a different fresh confirmation generation (snapshot-only: %s)',
+        async snapshotOnly => {
+            const f = await setup();
+            const saved = persisted(await start(f));
+            f.faults.snapshotOnly = snapshotOnly;
+            f.faults.confirmationGeneration = 'other-generation';
+            await expect(confirm(f, saved)).rejects.toMatchObject({ name: 'EscrowEvidenceError' });
+            expect(f.calls.filter(c => c === 'POST:/keys/escrow/confirm')).toHaveLength(1);
+            expect(f.calls).not.toContain('POST:/keys/escrow/complete');
+        }
+    );
+
+    it('rejects legacy snapshots without a signed authority generation', async () => {
+        const f = await setup();
+        const saved = persisted(await start(f));
+        f.faults.snapshotOnly = true;
+        f.faults.legacySnapshot = true;
+        await expect(confirm(f, saved)).rejects.toMatchObject({ name: 'EscrowEvidenceError' });
+    });
+
+    it('accepts generation-bound snapshot-only confirmation retries after reload', async () => {
+        const f = await setup();
+        const saved = persisted(await start(f));
+        await confirm(f, saved);
+        await expect(confirm(f, saved)).resolves.toEqual({ success: true });
+        expect(f.calls.filter(c => c === 'POST:/keys/escrow/confirm')).toHaveLength(3);
+    });
 });
 describe('Nitro owner enrollment flow', () => {
     it('reenrolls disposable staging state despite Mongo claiming enrollment, using fresh nonces and the persisted output', async () => {
@@ -464,6 +836,7 @@ describe('Nitro owner enrollment flow', () => {
     it('does not request the lost key or signed authority state to start recovery', async () => {
         const f = await setup();
         await f.strategy.startEscrowRecovery!({
+            expectedDid: owner.intent.did,
             token: f.params.token,
             providerType: f.params.providerType,
         });

@@ -239,7 +239,30 @@ describe('runEscrowHoldReminders', () => {
         const software = getEscrowEnclave() as unknown as Record<string, unknown>;
         software.sendReleaseWarning = async (params: { holdId: string; expectedDid: string }) => {
             calls.push(params);
-            return { success: true as const };
+            return {
+                receipt: {
+                    version: 1 as const,
+                    kind: calls.length === 1 ? ('commit' as const) : ('snapshot' as const),
+                    keyId: 'test-key',
+                    measurement: Array.from({ length: 32 }, () => 0),
+                    payload:
+                        calls.length === 1
+                            ? 'AQ=='
+                            : Buffer.from(
+                                  JSON.stringify([
+                                      'learncard-authority-hold-snapshot-v2',
+                                      params.holdId,
+                                      Array.from({ length: 32 }, () => 7),
+                                      'pending',
+                                      now.getTime(),
+                                      now.getTime(),
+                                      'g1',
+                                  ])
+                              ).toString('base64'),
+                    signature: Buffer.alloc(64).toString('base64'),
+                },
+                releaseWarningSentAtMs: now.getTime(),
+            };
         };
         try {
             const first = await runEscrowHoldReminders({ now });
@@ -253,7 +276,7 @@ describe('runEscrowHoldReminders', () => {
             // either, so it retries until its own acknowledgment lands.
             await getEscrowHoldsCollection().updateOne(
                 { _id: hold._id },
-                { $set: { notifications: [] } }
+                { $set: { notifications: [], releaseAfter: hold.releaseAfter } }
             );
             const second = await runEscrowHoldReminders({ now });
             expect(second.reminded).toBe(1);
@@ -288,7 +311,7 @@ describe('runEscrowHoldReminders', () => {
         );
         const releaseWarningSentAtMs = now.getTime();
         const software = getEscrowEnclave() as unknown as Record<string, unknown>;
-        software.sendReleaseWarning = async (params: { holdId: string; expectedDid: string }) => ({
+        software.sendReleaseWarning = async () => ({
             receipt: {
                 version: 1 as const,
                 kind: 'commit' as const,

@@ -467,6 +467,7 @@ describe('verifyEscrowHoldRecord / verifyEscrowHoldConfirmation (client-boundary
 
     const expectation = (record: EscrowHoldRecordLike) => ({
         tenant,
+        holdId: record.hold.holdId,
         did: record.hold.did,
         clientEphemeralPublicKey: record.hold.clientEphemeralPublicKey,
         blobHash: record.hold.blobHash,
@@ -571,12 +572,13 @@ describe('verifyEscrowHoldRecord / verifyEscrowHoldConfirmation (client-boundary
         const verified = await verifyEscrowHoldRecord(record, expectation(record), identity);
         const digest = await testHoldDigest(record);
         const receipt = await sign('snapshot', [
-            'learncard-authority-hold-snapshot-v1',
+            'learncard-authority-hold-snapshot-v2',
             record.hold.holdId,
             digest,
             'pending',
             1_700_000_100_000,
             null,
+            'g1',
         ]);
         await expect(
             verifyEscrowHoldConfirmation(
@@ -594,12 +596,13 @@ describe('verifyEscrowHoldRecord / verifyEscrowHoldConfirmation (client-boundary
         const verified = await verifyEscrowHoldRecord(record, expectation(record), identity);
         const digest = await testHoldDigest(record);
         const receipt = await sign('snapshot', [
-            'learncard-authority-hold-snapshot-v1',
+            'learncard-authority-hold-snapshot-v2',
             'a-completely-different-hold-id',
             digest,
             'pending',
             1_700_000_100_000,
             null,
+            'g1',
         ]);
         await expect(
             verifyEscrowHoldConfirmation(
@@ -620,12 +623,13 @@ describe('verifyEscrowHoldRecord / verifyEscrowHoldConfirmation (client-boundary
             hold: { ...record.hold, holdId: 'a-different-hold' },
         });
         const receipt = await sign('snapshot', [
-            'learncard-authority-hold-snapshot-v1',
+            'learncard-authority-hold-snapshot-v2',
             record.hold.holdId,
             otherHoldDigest,
             'pending',
             1_700_000_100_000,
             null,
+            'g1',
         ]);
         await expect(
             verifyEscrowHoldConfirmation(

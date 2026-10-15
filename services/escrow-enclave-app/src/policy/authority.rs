@@ -1235,12 +1235,13 @@ impl<'a> Policy<'a> {
             .sign_authority_record(
                 RecordKind::Snapshot,
                 &serde_json::to_vec(&(
-                    "learncard-authority-hold-snapshot-v1",
+                    "learncard-authority-hold-snapshot-v2",
                     hold_id,
                     item.signed_hold_digest,
                     item.status,
                     item.confirmed_hi_ms,
                     item.release_warning_sent_hi_ms,
+                    &self.authority()?.generation,
                 ))
                 .map_err(|_| ErrorCode::Policy)?,
             )

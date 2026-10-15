@@ -30,12 +30,13 @@ const snapshotReceipt = {
     measurement: Array(32).fill(0),
     payload: Buffer.from(
         JSON.stringify([
-            'learncard-authority-hold-snapshot-v1',
+            'learncard-authority-hold-snapshot-v2',
             'hold-1',
             Array(32).fill(7),
             'pending',
             1700000000000,
             1700086400000,
+            'g1',
         ])
     ).toString('base64'),
     signature: Buffer.alloc(64).toString('base64'),

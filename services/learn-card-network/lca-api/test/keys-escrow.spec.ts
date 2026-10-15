@@ -1464,6 +1464,57 @@ describe('P2-c confirmRecovery reconciliation', () => {
     }));
     beforeEach(() => idempotentConfirmHold.mockClear());
 
+    it('allows the SDK commit-to-v2-snapshot readback without a second persistence or deadline shift', async () => {
+        const { hold, resumeToken } = await createConfirmableHold();
+        const snapshotReceipt = {
+            ...fixedReceipt,
+            kind: 'snapshot' as const,
+            payload: Buffer.from(
+                JSON.stringify([
+                    'learncard-authority-hold-snapshot-v2',
+                    hold.holdRecord.hold.holdId,
+                    Array.from({ length: 32 }, () => 7),
+                    'pending',
+                    FIXED_CONFIRMED_AT_MS,
+                    null,
+                    'g1',
+                ])
+            ).toString('base64'),
+        };
+        const confirmHold = vi
+            .fn()
+            .mockResolvedValueOnce({ receipt: fixedReceipt, confirmedAtMs: FIXED_CONFIRMED_AT_MS })
+            .mockResolvedValueOnce({
+                receipt: snapshotReceipt,
+                confirmedAtMs: FIXED_CONFIRMED_AT_MS,
+            });
+        const software = getEscrowEnclave() as unknown as Record<string, unknown>;
+        software.confirmHold = confirmHold;
+        const recordSpy = vi.spyOn(models, 'recordEscrowHoldConfirmation');
+        try {
+            const request = { holdId: hold._id, resumeToken, code: '12345678' };
+            await expect(getClient().escrow.confirmRecovery(request)).resolves.toEqual({
+                success: true,
+                receipt: fixedReceipt,
+            });
+            const first = await findEscrowHoldById(hold._id);
+            await expect(getClient().escrow.confirmRecovery(request)).resolves.toEqual({
+                success: true,
+                receipt: snapshotReceipt,
+            });
+            expect(confirmHold).toHaveBeenCalledTimes(2);
+            expect(recordSpy).toHaveBeenCalledTimes(2);
+            expect(await recordSpy.mock.results[0]!.value).not.toBeNull();
+            // The conditional Mongo update is attempted but matches no row:
+            // confirmation, updatedAt and releaseAfter are all unchanged.
+            expect(await recordSpy.mock.results[1]!.value).toBeNull();
+            expect(await findEscrowHoldById(hold._id)).toEqual(first);
+        } finally {
+            recordSpy.mockRestore();
+            delete software.confirmHold;
+        }
+    });
+
     it('a lost response is safe to retry: the hold is confirmed exactly once, with the first confirmation time kept', async () => {
         const { hold, resumeToken } = await createConfirmableHold();
         const software = getEscrowEnclave() as unknown as Record<string, unknown>;

@@ -164,6 +164,24 @@ against its unsigned duplicate. It verifies each mutation's commit against the
 exact intent digest, expected enrollment version, DID/tenant/generation, epoch
 and actual returned blob identity before treating enrollment as successful.
 
+Recovery clients retain the initiating DID, generated recipient key and returned hold ID,
+plus the verified hold digest/blob/generation/ledger identity, alongside their pending
+recovery secrets; status responses must never replace those expectations. Historical
+hold-creation receipts use an explicit historical-verification option: their signed
+measurement must equal SHA-256 of a complete PCR0/1/2 tuple in the same configured
+`escrowEnclaveMeasurements` allowlist used for Nitro attestation, their key ID must be
+current or attested-previous, and their signature must verify under the unchanged
+attested ledger key with the retained generation. Fresh confirmation evidence still
+requires the current attested measurement exactly; a fresh commit must match the
+retained generation and is followed by an idempotent confirmation snapshot to check
+the exact hold digest. Snapshot v2 appends the enclave-configured authority generation
+to the existing six-field tuple; clients reject v1 snapshots rather than silently
+skipping generation verification. Deploy the v2 enclave before enabling these clients.
+NSM binds the key and measurement, while the signed commit/snapshot binds generation;
+neither historical evidence nor unsigned status metadata establishes current state
+or nonce-bound freshness. Removing M1 from the allowlist deliberately invalidates M1
+holds even when M2 retains the key; actual ledger-key replacement also fails closed.
+
 Automatic repair checks the authority even when Mongo claims enrollment. Empty
 staging generations re-enroll cleanly without importing Mongo epochs or PIN state.
 Active PINs carry only via signed keep intent; set/change/clear are selected from

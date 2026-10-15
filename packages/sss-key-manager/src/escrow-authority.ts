@@ -1,5 +1,8 @@
 import { base64ToBuffer, bufferToBase64, bytesToHex } from './crypto';
 import { parseEscrowEnvelope } from './escrow-crypto';
+import { EscrowEvidenceError } from './escrow-authority.types';
+import type { HistoricalEscrowEvidence } from './escrow-authority.types';
+import type { EscrowAttestationPolicy } from './types';
 import {
     encodeEscrowEnrollmentIntent,
     getEscrowBlobIdentity,
@@ -18,7 +21,7 @@ import type {
 } from './escrow-authority.types';
 
 const fail = (): never => {
-    throw new Error('Automatic recovery evidence could not be verified.');
+    throw new EscrowEvidenceError();
 };
 const requireEvidence = (condition: boolean): void => {
     if (!condition) fail();
@@ -86,25 +89,55 @@ const join = (...values: Uint8Array[]): Uint8Array<ArrayBuffer> => {
 const hash = async (value: Uint8Array): Promise<string> =>
     bytesToHex(new Uint8Array(await crypto.subtle.digest('SHA-256', new Uint8Array(value))));
 const utf8 = (value: string): Uint8Array<ArrayBuffer> => new TextEncoder().encode(value);
+
+/** Derive historical receipt pins from the same complete PCR tuples used for
+ * Nitro attestation. Legacy image-only pins and malformed tuples authorize nothing. */
+export const escrowAuthorityMeasurements = async (
+    policy: EscrowAttestationPolicy
+): Promise<string[]> => {
+    if (policy.mode !== 'nitro') return [];
+    const hashes: string[] = [];
+    for (const pin of policy.pinnedMeasurements) {
+        const tuple = [pin.pcr0, pin.pcr1, pin.pcr2];
+        if (!tuple.every(pcr => typeof pcr === 'string' && /^[0-9a-f]{96}$/i.test(pcr))) continue;
+        if (pin.pcr0 === '00'.repeat(48)) continue;
+        const encoded = tuple.join('');
+        const decoded = Uint8Array.from({ length: 144 }, (_, i) =>
+            parseInt(encoded.slice(i * 2, i * 2 + 2), 16)
+        );
+        hashes.push(await hash(decoded));
+    }
+    return hashes;
+};
 const P256_ORDER = BigInt('0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551');
 
 /** Verify the exact Rust record bytes and artifact kind before interpreting JSON. */
 const verifyRecord = async (
     input: unknown,
     kind: 'snapshot' | 'commit',
-    identity: VerifiedEnclaveIdentity
+    identity: VerifiedEnclaveIdentity,
+    historical?: HistoricalEscrowEvidence
 ): Promise<{ record: EscrowAuthorityRecord; payload: unknown }> => {
     requireEvidence(identity.mode === 'nitro' && !!identity.authority);
     const raw = object(input);
     keys(raw, ['version', 'kind', 'keyId', 'measurement', 'payload', 'signature']);
-    requireEvidence(raw.version === 1 && raw.kind === kind && raw.keyId === identity.keyId);
+    requireEvidence(raw.version === 1 && raw.kind === kind);
+    const keyId = text(raw.keyId, 128);
+    requireEvidence(
+        historical
+            ? [identity.keyId, ...identity.previousKeyIds].includes(keyId)
+            : keyId === identity.keyId
+    );
     const measurement = bytes(raw.measurement, 32);
-    requireEvidence(bytesToHex(measurement) === identity.authority?.measurement);
+    requireEvidence(
+        historical
+            ? historical.allowedMeasurements.includes(bytesToHex(measurement))
+            : bytesToHex(measurement) === identity.authority?.measurement
+    );
     const payloadB64 = text(raw.payload, kind === 'snapshot' ? 49_152 : 8192);
     const signatureB64 = text(raw.signature, 88);
     const payload = base64(payloadB64, kind === 'snapshot' ? 49_152 : 8192);
     const signature = base64(signatureB64, 88);
-    const keyId = identity.keyId;
     const ledgerKey = base64(identity.authority?.ledgerPublicKey, 88);
     requireEvidence(ledgerKey.length === 65 && ledgerKey[0] === 4);
     requireEvidence(signature.length === 64);
@@ -113,7 +146,7 @@ const verifyRecord = async (
     const message = join(
         utf8('learncard-authority-signed-record-v1\0'),
         Uint8Array.of(kind === 'snapshot' ? 2 : 1),
-        frame(utf8(identity.keyId)),
+        frame(utf8(keyId)),
         measurement,
         frame(payload)
     );
@@ -312,6 +345,7 @@ export interface EscrowHoldRecordLike {
 export interface VerifiedEscrowHold {
     receipt: EscrowAuthorityRecord;
     authorityGeneration: string;
+    holdDigest: string;
 }
 
 /** Mirrors `hold_hash` in escrow-enclave-app's policy.rs exactly: SHA-256 of
@@ -351,7 +385,11 @@ const holdDigest = async (tenant: string, record: EscrowHoldRecordLike): Promise
  * from the record alone), and the embedded signature is checked against the
  * attested ledger key exactly like `verifyEscrowEnrollmentCommit`. Returns
  * the record's own `authorityGeneration` so a later confirmation/warning
- * receipt for the SAME hold can be pinned to it. */
+ * receipt for the SAME hold can be pinned to it.
+ * `historical` explicitly permits an older signed measurement only if it is
+ * allowlisted, verifies with the current attested ledger key and an attested
+ * current/previous key ID, and matches the retained authority generation.
+ * Never use historical verification for newly produced confirmation evidence. */
 export const verifyEscrowHoldRecord = async (
     record: EscrowHoldRecordLike,
     expected: {
@@ -359,11 +397,14 @@ export const verifyEscrowHoldRecord = async (
         did: string;
         clientEphemeralPublicKey: string;
         blobHash: string;
+        holdId: string;
     },
-    identity: VerifiedEnclaveIdentity
+    identity: VerifiedEnclaveIdentity,
+    historical?: HistoricalEscrowEvidence
 ): Promise<VerifiedEscrowHold> => {
     requireEvidence(
-        record.hold.did === expected.did &&
+        record.hold.holdId === expected.holdId &&
+            record.hold.did === expected.did &&
             record.hold.clientEphemeralPublicKey === expected.clientEphemeralPublicKey &&
             record.hold.blobHash === expected.blobHash
     );
@@ -375,7 +416,7 @@ export const verifyEscrowHoldRecord = async (
     } catch {
         return fail();
     }
-    const { record: receipt, payload } = await verifyRecord(signed, 'commit', identity);
+    const { record: receipt, payload } = await verifyRecord(signed, 'commit', identity, historical);
     const data = object(payload);
     keys(data, ['commit', 'eventHash', 'requestDigest', 'resultBlobIdentity', 'enrollmentEpoch']);
     const commit = object(data.commit);
@@ -384,13 +425,13 @@ export const verifyEscrowHoldRecord = async (
     keys(binding, ['tenant', 'generation', 'didHash']);
     requireEvidence(commit.schemaVersion === 1 && binding.tenant === expected.tenant);
     const authorityGeneration = text(binding.generation, 128);
+    if (historical) requireEvidence(authorityGeneration === historical.authorityGeneration);
     requireEvidence(bytesToHex(bytes(binding.didHash, 32)) === (await hash(utf8(expected.did))));
     requireEvidence(integer(data.enrollmentEpoch, 1) === record.hold.enrollmentEpoch);
     requireEvidence(bytesToHex(bytes(data.resultBlobIdentity, 32)) === record.hold.blobHash);
-    requireEvidence(
-        bytesToHex(bytes(data.requestDigest, 32)) === (await holdDigest(expected.tenant, record))
-    );
-    return { receipt, authorityGeneration };
+    const digest = await holdDigest(expected.tenant, record);
+    requireEvidence(bytesToHex(bytes(data.requestDigest, 32)) === digest);
+    return { receipt, authorityGeneration, holdDigest: digest };
 };
 
 /** Verify a confirm-hold / send-release-warning result commits to THIS exact
@@ -402,7 +443,9 @@ export const verifyEscrowHoldRecord = async (
  * blob identity only. The idempotent retry **snapshot** instead embeds
  * `signedHoldDigest` directly in its (unkeyed) payload, so a snapshot
  * additionally recomputes and compares the hold digest — exactly binding a
- * retry to the hold the client itself started, not a different one. */
+ * retry to the hold the client itself started, not a different one. A caller
+ * receiving a commit MUST also obtain and verify this snapshot before claiming
+ * hold-specific confirmation (as createSSSStrategy does). */
 export const verifyEscrowHoldConfirmation = async (
     receipt: unknown,
     record: EscrowHoldRecordLike,
@@ -414,14 +457,18 @@ export const verifyEscrowHoldConfirmation = async (
     if (kind !== 'commit' && kind !== 'snapshot') return fail();
     const { record: verified, payload } = await verifyRecord(raw, kind, identity);
     if (kind === 'snapshot') {
-        if (!Array.isArray(payload) || payload.length !== 6) return fail();
+        if (!Array.isArray(payload) || payload.length !== 7) return fail();
         const [tag, holdId, digestBytes] = payload;
         requireEvidence(
-            tag === 'learncard-authority-hold-snapshot-v1' && holdId === record.hold.holdId
+            tag === 'learncard-authority-hold-snapshot-v2' &&
+                holdId === record.hold.holdId &&
+                payload[6] === expected.authorityGeneration
         );
         requireEvidence(
             bytesToHex(bytes(digestBytes, 32)) === (await holdDigest(expected.tenant, record))
         );
+        requireEvidence(payload[3] === 'pending');
+        integer(payload[4], 1);
         return verified;
     }
     const data = object(payload);

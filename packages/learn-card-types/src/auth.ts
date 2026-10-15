@@ -393,6 +393,20 @@ export interface KeyDerivationCapabilities {
 // Key Derivation Strategy (generic)
 // ---------------------------------------------------------------------------
 
+/** Initiating-client bindings. Persist with the recovery secrets and never replace
+ * these with fields from a status response. Missing bindings require a new start. */
+export interface EscrowRecoveryExpectations {
+    tenant: string;
+    did: string;
+    holdId: string;
+    clientEphemeralPublicKey: string;
+    blobHash: string;
+    authorityGeneration: string;
+    holdDigest: string;
+    ledgerPublicKey: string;
+    keyId: string;
+}
+
 /**
  * Key Derivation Strategy
  *
@@ -577,6 +591,8 @@ export interface KeyDerivationStrategy<
 
     /** Start an escrow hold. Securely persist the returned secrets; null means an existing hold. */
     startEscrowRecovery?(params: {
+        /** Account selected by the initiating client, required for Nitro recovery. */
+        expectedDid?: string;
         token?: string;
         providerType?: AuthProviderType;
         recoverySessionToken?: string;
@@ -591,6 +607,8 @@ export interface KeyDerivationStrategy<
         completedAt?: string;
         resumeToken: string | null;
         clientEphemeralPrivateKey: string;
+        /** Persist alongside the private key; pass unchanged on status, confirm and restore. */
+        expectations?: EscrowRecoveryExpectations;
         pinSalt?: string;
         /** Absent on legacy hold-only strategies. */
         releasePolicy?: 'hold' | 'pin';
@@ -601,7 +619,7 @@ export interface KeyDerivationStrategy<
     /** Read a hold using its resume proof or the active device's provider session. */
     getEscrowRecoveryStatus?(
         params:
-            | { holdId: string; resumeToken: string }
+            | { holdId: string; resumeToken: string; expectations?: EscrowRecoveryExpectations }
             | { token: string; providerType: AuthProviderType }
     ): Promise<{
         holdId: string;
@@ -632,6 +650,8 @@ export interface KeyDerivationStrategy<
      * yet at this point in the flow) is the only credential.
      */
     confirmEscrowRecovery?(params: {
+        /** Retained initiating-client bindings, required in Nitro mode, including after reload. */
+        expectations?: EscrowRecoveryExpectations;
         holdId: string;
         resumeToken: string;
         code: string;

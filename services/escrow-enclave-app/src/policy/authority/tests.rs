@@ -1932,15 +1932,25 @@ async fn send_release_warning_is_idempotent_never_resends_and_never_moves_the_ti
         assert_eq!(f.email.sent.lock().unwrap().len(), sent_after_first);
         assert_eq!(warned_hi, warned_at_first);
         assert!(receipt.kind == RecordKind::Snapshot);
-        let (tag, snapshot_hold_id, _digest, status, _confirmed_hi, release_warning_sent_hi): (
+        let (
+            tag,
+            snapshot_hold_id,
+            _digest,
+            status,
+            _confirmed_hi,
+            release_warning_sent_hi,
+            generation,
+        ): (
             String,
             String,
             Hash,
             HoldStatus,
             Option<u64>,
             Option<u64>,
+            String,
         ) = serde_json::from_slice(&STANDARD.decode(&receipt.payload).unwrap()).unwrap();
-        assert_eq!(tag, "learncard-authority-hold-snapshot-v1");
+        assert_eq!(tag, "learncard-authority-hold-snapshot-v2");
+        assert_eq!(generation, f.authority.generation);
         assert_eq!(snapshot_hold_id, "hold");
         assert!(status == HoldStatus::Pending);
         assert_eq!(release_warning_sent_hi, Some(warned_at_first));
@@ -1993,6 +2003,7 @@ async fn confirm_hold_is_idempotent_after_a_lost_response_and_never_regrants_a_g
     let guesses_after_first = confirm_item(&f, "inspect-confirm-2")
         .await
         .code_guesses_used;
+    let emails_after_first = f.email.sent.lock().unwrap().len();
     *f.time.0.lock().unwrap() += 1000;
     // A retry under a fresh request id (lost response / process restart),
     // presenting a DIFFERENT, wrong-shaped code (it is never checked once
@@ -2009,16 +2020,27 @@ async fn confirm_hold_is_idempotent_after_a_lost_response_and_never_regrants_a_g
         .await
         .unwrap();
     assert_eq!(retry_confirmed_hi, confirmed_at_first);
+    assert_eq!(f.email.sent.lock().unwrap().len(), emails_after_first);
     assert!(retry_receipt.kind == RecordKind::Snapshot);
-    let (tag, snapshot_hold_id, _digest, status, confirmed_hi, _release_warning_sent_hi): (
+    let (
+        tag,
+        snapshot_hold_id,
+        _digest,
+        status,
+        confirmed_hi,
+        _release_warning_sent_hi,
+        generation,
+    ): (
         String,
         String,
         Hash,
         HoldStatus,
         Option<u64>,
         Option<u64>,
+        String,
     ) = serde_json::from_slice(&STANDARD.decode(&retry_receipt.payload).unwrap()).unwrap();
-    assert_eq!(tag, "learncard-authority-hold-snapshot-v1");
+    assert_eq!(tag, "learncard-authority-hold-snapshot-v2");
+    assert_eq!(generation, f.authority.generation);
     assert_eq!(snapshot_hold_id, "hold");
     assert!(status == HoldStatus::Pending);
     assert_eq!(confirmed_hi, Some(confirmed_at_first));
