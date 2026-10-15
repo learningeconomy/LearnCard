@@ -10,6 +10,7 @@ import type { ShareLinkOperationKeyInput } from '@learncard/types';
 import { buildNativeTemplate, type NativeCredentialDraft } from './credential-draft';
 import { credentialCategoryForDisplay } from './credential-category';
 import { validateCollectionCursor } from './collection-pagination';
+import { nativeProfileUpdate } from './profile-update';
 import {
     createClaimCommands,
     claimErrorCode,
@@ -644,13 +645,9 @@ const commands = {
             ),
         };
     },
-    updateProfile: async (input: { name: string; bio: string }) => {
-        if (!wallet || !input.name.trim() || input.name.length > 100 || input.bio.length > 500)
-            throw new Error('Invalid profile');
-        await wallet.invoke.updateProfile({
-            displayName: input.name.trim(),
-            bio: input.bio.trim(),
-        });
+    updateProfile: async (input: { name: string; bio: string; image?: string }) => {
+        if (!wallet) throw new Error('Profile unavailable');
+        await wallet.invoke.updateProfile(nativeProfileUpdate(input));
         const profile = await wallet.invoke.getProfile();
         if (!profile) throw new Error('Profile unavailable');
         myProfileName = profile.displayName || user.email;

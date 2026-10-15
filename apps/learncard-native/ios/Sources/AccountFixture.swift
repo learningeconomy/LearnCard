@@ -12,9 +12,12 @@ import LearnCardNativeSDK
         let scenario = arguments[index + 1]
         let vault = KeychainVault(service: "org.learncard.native.account-ui-tests.\(id.uuidString)")
         let session = FixtureSession(vault: vault, scenario: scenario, reset: arguments.contains("--fixture-reset"))
-        return AccountController(session: session, makeHost: { _ in FixtureHost(vault: vault) },
+        return AccountController(session: session, makeHost: { _ in FixtureHost(vault: vault, failSaveOnce: arguments.contains("--profile-save-failure")) },
                                  forgetAccount: { _ in try await vault.remove("fixture-remembered") },
-                                 claims: NativeClaimStore(journal: KeychainClaimJournal(vault: vault)))
+                                 claims: NativeClaimStore(journal: KeychainClaimJournal(vault: vault)), uploadProfilePhoto: { data in
+                                     let url = FileManager.default.temporaryDirectory.appendingPathComponent("synthetic-profile-photo.jpg")
+                                     try data.write(to: url); return url
+                                 })
     }
 }
 
@@ -31,6 +34,7 @@ import LearnCardNativeSDK
         if reset {
             reset = false
             try await vault.remove("fixture-auth"); try await vault.remove("fixture-remembered")
+            for key in ["profile-name", "profile-bio", "profile-image"] { try await vault.remove(key) }
             if scenario != "sign-in" { try await vault.write(Data("synthetic".utf8), key: "fixture-auth") }
             if scenario == "ready" { try await vault.write(Data("synthetic".utf8), key: "fixture-remembered") }
         }
@@ -52,12 +56,15 @@ import LearnCardNativeSDK
     let consumerService: any ConsumerAppService = DemoConsumerAppService()
     let familyService: any FamilyService = DemoFamilyService()
     private var disposed = false
-    init(vault: KeychainVault) { self.vault = vault }
+    private var failSaveOnce: Bool
+    init(vault: KeychainVault, failSaveOnce: Bool) { self.vault = vault; self.failSaveOnce = failSaveOnce }
     func initialize() async throws -> AccountState {
         guard !disposed else { throw AccountError.cancelled }
-        return try await vault.read("fixture-remembered") == nil
-            ? AccountState(phase: "needs_recovery", methods: ["email"])
-            : AccountState(phase: "ready", profileName: "Fixture Person", profileId: "fixture")
+        guard try await vault.read("fixture-remembered") != nil else { return AccountState(phase: "needs_recovery", methods: ["email"]) }
+        let name = try await vault.read("profile-name").flatMap { String(data: $0, encoding: .utf8) } ?? "Fixture Person"
+        let bio = try await vault.read("profile-bio").flatMap { String(data: $0, encoding: .utf8) }
+        let image = try await vault.read("profile-image").flatMap { String(data: $0, encoding: .utf8) }.flatMap(URL.init(string:))
+        return AccountState(phase: "ready", profileName: name, profileId: "fixture", profileImage: image, profileBio: bio)
     }
     func recover(method: String, phrase: String, fileContents: String, password: String, emailShare: String) async throws -> AccountState {
         guard !disposed else { throw AccountError.cancelled }
@@ -65,8 +72,17 @@ import LearnCardNativeSDK
         try await vault.write(Data("synthetic".utf8), key: "fixture-remembered")
         return try await initialize()
     }
-    func updateProfile(name: String, bio: String) async throws -> AccountState {
-        AccountState(phase: "ready", profileName: name, profileId: "fixture", profileBio: bio)
+    func updateProfile(name: String, bio: String, image: ProfileImageUpdate) async throws -> AccountState {
+        guard !disposed else { throw AccountError.cancelled }
+        if failSaveOnce { failSaveOnce = false; throw AccountError.connection }
+        try await vault.write(Data(name.utf8), key: "profile-name")
+        try await vault.write(Data(bio.utf8), key: "profile-bio")
+        switch image {
+        case .unchanged: break
+        case .remove: try await vault.remove("profile-image")
+        case .replace(let url): try await vault.write(Data(url.absoluteString.utf8), key: "profile-image")
+        }
+        return try await initialize()
     }
     func dispose() { disposed = true }
 }

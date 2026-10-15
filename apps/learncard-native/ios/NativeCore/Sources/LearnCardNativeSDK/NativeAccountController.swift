@@ -22,7 +22,7 @@ extension FirebaseSession: AccountSession {}
     var claimService: (any ClaimService)? { get }
     func initialize() async throws -> AccountState
     func recover(method: String, phrase: String, fileContents: String, password: String, emailShare: String) async throws -> AccountState
-    func updateProfile(name: String, bio: String) async throws -> AccountState
+    func updateProfile(name: String, bio: String, image: ProfileImageUpdate) async throws -> AccountState
     func dispose()
 }
 
@@ -47,6 +47,8 @@ public final class NativeAccountController {
     private let session: (any AccountSession)?
     private let makeHost: @MainActor (FirebaseUser) throws -> any AccountHost
     private let forgetAccount: @MainActor (String) async throws -> Void
+    private let uploadProfilePhoto: @Sendable (Data) async throws -> URL
+    private var uploadedPhoto: (jpeg: Data, url: URL)?
     private var runtime: (any AccountHost)?
     private var generation = 0
     private var endingSession = false
@@ -58,6 +60,7 @@ public final class NativeAccountController {
     public private(set) var phase = "loading"
     public var email = ""
     public private(set) var busy = false
+    public private(set) var uploadingPhoto = false
     public var error: String?
     public var recipientName: String?
 
@@ -74,9 +77,11 @@ public final class NativeAccountController {
     public init(session: (any AccountSession)?,
                 makeHost: @escaping @MainActor (FirebaseUser) throws -> any AccountHost,
                 forgetAccount: @escaping @MainActor (String) async throws -> Void,
-                claims: NativeClaimStore? = nil) {
+                claims: NativeClaimStore? = nil,
+                uploadProfilePhoto: @escaping @Sendable (Data) async throws -> URL = { try await ArtworkUploader.upload(jpeg: $0, filename: "profile-photo.jpg") }) {
         self.claims = claims ?? NativeClaimStore()
         self.session = session; self.makeHost = makeHost; self.forgetAccount = forgetAccount
+        self.uploadProfilePhoto = uploadProfilePhoto
         email = session?.testEmail ?? ""
     }
 
@@ -148,14 +153,31 @@ public final class NativeAccountController {
         }
     }
 
-    public func updateProfile(name: String, bio: String) async -> Bool {
+    public func updateProfile(name: String, bio: String, photo: ProfilePhotoEdit = .unchanged) async -> Bool {
         var saved = false
         await perform {
             let expected = self.generation
-            guard let runtime = self.runtime else { throw AccountError.unavailable }
-            let updated = try await runtime.updateProfile(name: name, bio: bio)
+            guard self.phase == "ready", let runtime = self.runtime else { throw AccountError.unavailable }
+            let image: ProfileImageUpdate
+            switch photo {
+            case .unchanged: self.uploadedPhoto = nil; image = .unchanged
+            case .remove: self.uploadedPhoto = nil; image = .remove
+            case .jpeg(let jpeg):
+                guard !jpeg.isEmpty, jpeg.count <= 1_000_000 else { throw AccountError.unavailable }
+                if self.uploadedPhoto?.jpeg != jpeg {
+                    self.uploadingPhoto = true
+                    defer { if self.generation == expected { self.uploadingPhoto = false } }
+                    let url = try await self.uploadProfilePhoto(jpeg)
+                    try self.check(expected)
+                    self.uploadedPhoto = (jpeg, url)
+                }
+                guard let uploaded = self.uploadedPhoto else { throw AccountError.unavailable }
+                image = .replace(uploaded.url)
+            }
             try self.check(expected)
-            self.state = updated; saved = true
+            let updated = try await runtime.updateProfile(name: name, bio: bio, image: image)
+            try self.check(expected)
+            self.state = updated; self.uploadedPhoto = nil; saved = true
         }
         return saved
     }
@@ -196,6 +218,7 @@ public final class NativeAccountController {
         store?.families.lock()
         store?.inbox.lock()
         store = nil; state = nil; user = nil; recipientName = nil
+        uploadedPhoto = nil; uploadingPhoto = false
         busy = false; phase = "locked"; error = nil
     }
 

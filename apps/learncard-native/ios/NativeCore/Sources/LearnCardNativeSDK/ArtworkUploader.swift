@@ -7,13 +7,13 @@ private final class RejectArtworkRedirects: NSObject, URLSessionTaskDelegate, @u
 
 /// Uses the same Filestack tenant provider as the web builder. Never forwards account auth.
 public enum ArtworkUploader {
-    public static func upload(jpeg: Data) async throws -> URL {
+    public static func upload(jpeg: Data, filename: String = "credential-artwork.jpg") async throws -> URL {
         guard !jpeg.isEmpty, jpeg.count <= 1_000_000 else { throw AccountError.unavailable }
         let configData = try Data(contentsOf: Bundle.module.url(forResource: "account-config", withExtension: "json")!)
         let config = try JSONSerialization.jsonObject(with: configData) as? [String: String]
         guard let key = config?["imageUploadAPIKey"], !key.isEmpty else { throw AccountError.unavailable }
         var address = URLComponents(string: "https://www.filestackapi.com/api/store/S3")!
-        address.queryItems = [URLQueryItem(name: "key", value: key), URLQueryItem(name: "filename", value: "credential-artwork.jpg")]
+        address.queryItems = [URLQueryItem(name: "key", value: key), URLQueryItem(name: "filename", value: filename)]
         var request = URLRequest(url: address.url!)
         request.httpMethod = "POST"; request.httpBody = jpeg
         request.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")

@@ -1,5 +1,9 @@
 # LearnCard native client plan
 
+## Profile photo editing — October 15
+
+Account → Edit profile now includes native photo selection, local preview, replacement and removal. Saving uses the existing public image provider and LearnCard profile field; name/bio-only saves preserve the current picture. Retry and background/sign-out races are covered without mutating the real review account. See [draft, upload and lifecycle contracts](PROFILE_PHOTOS.md).
+
 ## Recent credential stack — October 15
 
 Latest issued is now a bounded, swipeable stack of five actual recent credentials in the selected category. A committed horizontal swipe tosses the current card aside; the next one settles forward. Newer/Older controls, a position indicator, category/search reset and active-card navigation make the interaction understandable. Vertical scrolling, VoiceOver actions, RTL and Reduce Motion are part of the interaction contract. This changes no credential data and preserves the separate automatic detail-card animation. See [stack behavior and lifecycle](RECENT_STACK.md).

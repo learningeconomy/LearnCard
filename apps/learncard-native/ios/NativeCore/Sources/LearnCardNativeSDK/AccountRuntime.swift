@@ -96,8 +96,8 @@ public final class AccountRuntime: NSObject, WKNavigationDelegate {
         if let passcode, !passcode.isEmpty { input["passcode"] = passcode }
         return try await command("share", input: input)
     }
-    public func updateProfile(name: String, bio: String) async throws -> AccountState {
-        try await command("updateProfile", input: ["name": name, "bio": bio])
+    public func updateProfile(name: String, bio: String, image: ProfileImageUpdate) async throws -> AccountState {
+        try await command("updateProfile", input: image.commandInput(name: name, bio: bio))
     }
     public func signOut(forget: Bool) async throws { let _: AccountState = try await command(forget ? "forget" : "signOut"); dispose() }
 

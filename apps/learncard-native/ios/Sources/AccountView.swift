@@ -62,7 +62,12 @@ struct AccountView: View {
                     Button("Sign Out & Forget Device", role: .destructive) { dismiss(); Task { await account?.signOut(forget: true) } }
                     Button(NativeText.literal("Cancel"), role: .cancel) {}
                 } message: { Text("You'll need your recovery method when signing in again on this iPhone.") }
-        }.presentationDetents([.large]).presentationDragIndicator(.visible).presentationBackground(Palette.paper)
+        }.environment(\.locale, NativeLanguage.selected.locale)
+            .environment(\.layoutDirection, NativeLanguage.selected.isRightToLeft ? .rightToLeft : .leftToRight)
+            #if DEBUG
+            .modifier(NativeReviewPreferences())
+            #endif
+            .presentationDetents([.large]).presentationDragIndicator(.visible).presentationBackground(Palette.paper)
     }
     private var divider: some View { Divider().padding(.leading, 74) }
 }
@@ -76,32 +81,6 @@ private struct NativeLanguageView: View {
                 HStack { Text(language.name).foregroundStyle(Palette.ink); Spacer(); if selected == language.rawValue { Image(systemName: "checkmark").foregroundStyle(Palette.selection) } }
             }.accessibilityIdentifier("language-\(language.rawValue)").accessibilityAddTraits(selected == language.rawValue ? .isSelected : [])
         }.navigationTitle(NativeText.text("language.title")).navigationBarTitleDisplayMode(.inline).scrollContentBackground(.hidden).background(Palette.paper)
-    }
-}
-
-private struct EditAccountProfileView: View {
-    @Environment(\.locale) private var nativeLocale
-    @Environment(\.dismiss) private var dismiss
-    let account: AccountController?
-    @State private var name = ""
-    @State private var bio = ""
-    @State private var error: String?
-    var body: some View {
-        Form {
-            Section("Profile") {
-                TextField("Display name", text: $name).accessibilityIdentifier("profile-name")
-                TextField("A little about you", text: $bio, axis: .vertical).lineLimit(3...6)
-            }
-            if let error { Text(error).foregroundStyle(Palette.secondary) }
-            Section {
-                PrimaryButton(title: account?.busy == true ? "Saving…" : "Save Profile", loading: account?.busy == true,
-                              disabled: account == nil || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || name.count > 100 || bio.count > 500) {
-                    Task { if await account?.updateProfile(name: name, bio: bio) == true { dismiss() } else { error = "Couldn't save. Try again." } }
-                }
-            } footer: { Text(account == nil ? "Profile editing is available after sign-in." : "Updates your public LearnCard name and bio.") }
-        }.scrollContentBackground(.hidden).background(Palette.paper).foregroundStyle(Palette.ink)
-            .navigationTitle(NativeText.literal("Edit profile")).navigationBarTitleDisplayMode(.inline)
-            .onAppear { name = account?.state?.profileName ?? "Native Lab"; bio = account?.state?.profileBio ?? "" }
     }
 }
 

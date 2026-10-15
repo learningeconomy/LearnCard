@@ -1,6 +1,6 @@
 # Native regression checks
 
-Current configured suite: **245 cases** (105 Bun, 85 Swift, 55 simulator), plus one intentionally skipped live exchange. Recent-stack and sharing-picker validation is recorded below; historical runs retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and the new source-specific CI run.
+Current configured suite: **263 cases** (110 Bun, 95 Swift, 58 simulator), plus one intentionally skipped live exchange. Recent-stack and sharing-picker validation is recorded below; historical runs retain their original counts. The preceding category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; it is not a green baseline. See [STATUS](STATUS.md) for installed-build evidence and the new source-specific CI run.
 
 The `Vesper checks` workflow runs on every push to `codex/vesper-73`, on pull requests from that branch, and on manual dispatch. Its check is **Native regression suite**. It uses macOS 15 and Xcode 26.3, selects an available iOS runtime, and creates/reuses a dedicated **LearnCard Native UI Checks** simulator. It does not change repository branch protection.
 
@@ -11,6 +11,16 @@ bash apps/learncard-native/scripts/test-ci.sh
 ```
 
 An explicit `LC_NATIVE_SIMULATOR_ID` overrides simulator selection; choose a test simulator, since UI checks install and relaunch the app. The suite forces the non-deliverable `native-test@example.invalid` build configuration. Reconfigure the test email before installing a later live-account build.
+
+## Profile photo editing — October 15
+
+All **110 Bun** cases passed (`artifacts/profile-photo-bun.log`) and source contracts passed (`profile-photo-types.log`, with the same 14 pre-existing dependency diagnostics). Five new cases cover image-field omission/removal/replacement, provider URL checks and input bounds.
+
+All **95 Swift** cases passed (`artifacts/profile-photo-core-final.log`: 70 XCTest and 25 Swift Testing). Ten new cases cover bounded square JPEG generation and metadata stripping, four-locale copy, unchanged/clear/replace payloads, existing-photo preservation, upload and profile-save failures, cached-upload retry, changed-photo retry, background lock and sign-out during upload or a pending profile reply.
+
+All **eight unique focused simulator** cases passed across two runs: the two English photo cases in `profile-photo-ui-final.xcresult` passed; its Arabic case initially used the English Account label and failed navigation. It was corrected to use the stable `account` identifier. `profile-photo-lifecycle-ui.xcresult` then passed the Arabic accessibility case and all five existing account lifecycle cases (repeated background/resume, failed recovery/retry/relaunch, recovery input clearing, sign-out and forget-device). The new editor was also visually reviewed in English on the checks simulator; the Arabic accessibility attachment verifies actual RTL/larger-type inheritance. This is targeted validation, not a new full 263-case local run.
+
+The first app build caught and corrected a Swift catch-variable shadowing error before tests executed (`profile-photo-ui.log`). Final source also snapshots the PhotosPicker label before its Sendable closure, removing the new actor-isolation warning. Synthetic tests neither upload images nor change the real staging profile. An actual photo upload/web parity check remains manual. See [photo behavior](PROFILE_PHOTOS.md).
 
 ## Recent-stack browsing — October 15
 

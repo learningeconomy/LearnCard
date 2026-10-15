@@ -26,6 +26,7 @@
         "families.ts",
         "inbox.ts",
         "personal-creations.ts",
-        "claims.ts"
+        "claims.ts",
+        "profile-update.ts"
     ]
 }

@@ -51,6 +51,9 @@ import LearnCardNativeCore
 @MainActor private final class AccessStub {
     var remembered = true
     var forgets: [String] = []
+    var name = "Fixture Person"
+    var bio = ""
+    var image: URL?
 }
 
 @MainActor private final class HostStub: AccountHost {
@@ -59,6 +62,9 @@ import LearnCardNativeCore
     let inboxService: any InboxService = DemoInboxService()
     var initializeGate: Gate?
     var recoveryGate: Gate?
+    var profileGate: Gate?
+    var profileError: AccountError?
+    var profileUpdates: [ProfileImageUpdate] = []
     var initialState: AccountState?
     var disposed = false
     var recoveries = 0
@@ -76,11 +82,24 @@ import LearnCardNativeCore
         if !disposed { access.remembered = true }
         return AccountState(phase: "ready", profileName: "Fixture Person", profileId: "fixture")
     }
-    func updateProfile(name: String, bio: String) async throws -> AccountState { currentState() }
+    func updateProfile(name: String, bio: String, image: ProfileImageUpdate) async throws -> AccountState {
+        profileUpdates.append(image)
+        if let profileGate { await profileGate.wait() }
+        if let profileError { throw profileError }
+        if !disposed {
+            access.name = name; access.bio = bio
+            switch image {
+            case .unchanged: break
+            case .remove: access.image = nil
+            case .replace(let url): access.image = url
+            }
+        }
+        return currentState()
+    }
     func dispose() { disposed = true }
     private func currentState() -> AccountState {
         AccountState(phase: access.remembered ? "ready" : "needs_recovery", methods: ["email"],
-                     profileName: access.remembered ? "Fixture Person" : nil, profileId: "fixture")
+                     profileName: access.remembered ? access.name : nil, profileId: "fixture", profileImage: access.image, profileBio: access.bio)
     }
 }
 
@@ -90,6 +109,16 @@ import LearnCardNativeCore
     var hosts: [HostStub] = []
     var nextInitializeGate: Gate?
     var nextState: AccountState?
+    var uploadGate: Gate?
+    var uploadError: AccountError?
+    var uploads: [Data] = []
+    let imageURL = URL(string: "https://cdn.filestackcontent.com/synthetic-profile-photo")!
+    func upload(_ data: Data) async throws -> URL {
+        uploads.append(data)
+        if let uploadGate { await uploadGate.wait() }
+        if let uploadError { throw uploadError }
+        return imageURL
+    }
     func controller() -> NativeAccountController {
         NativeAccountController(session: session, makeHost: { user in
             XCTAssertEqual(user.id, self.session.fixtureUser.id)
@@ -97,7 +126,7 @@ import LearnCardNativeCore
             host.initializeGate = self.nextInitializeGate; self.nextInitializeGate = nil
             host.initialState = self.nextState; self.nextState = nil
             self.hosts.append(host); return host
-        }, forgetAccount: { id in self.access.forgets.append(id); self.access.remembered = false })
+        }, forgetAccount: { id in self.access.forgets.append(id); self.access.remembered = false }, uploadProfilePhoto: { try await self.upload($0) })
     }
 }
 
@@ -286,6 +315,81 @@ import LearnCardNativeCore
             }
         } catch { for key in keys { try? await vault.remove(key) }; throw error }
         for key in keys { try await vault.remove(key) }
+    }
+
+    func testNameOnlySavePreservesPhotoAndRemovalUsesExplicitClear() async {
+        let harness = Harness(); harness.access.image = harness.imageURL
+        let account = harness.controller(); await account.resume()
+        let saved = await account.updateProfile(name: "Renamed", bio: "New bio")
+        XCTAssertTrue(saved); XCTAssertEqual(account.state?.profileName, "Renamed")
+        XCTAssertEqual(account.state?.profileImage, harness.imageURL)
+        XCTAssertEqual(harness.hosts[0].profileUpdates, [.unchanged]); XCTAssertTrue(harness.uploads.isEmpty)
+        let removed = await account.updateProfile(name: "Renamed", bio: "New bio", photo: .remove)
+        XCTAssertTrue(removed); XCTAssertNil(account.state?.profileImage)
+        XCTAssertEqual(harness.hosts[0].profileUpdates.last, .remove); XCTAssertTrue(harness.uploads.isEmpty)
+    }
+
+    func testPhotoUploadUpdatesAvatarAndFailedProfileRetryReusesUpload() async {
+        let harness = Harness(), account = harness.controller(); await account.resume()
+        let jpeg = Data("synthetic-prepared-pixels".utf8)
+        harness.hosts[0].profileError = .connection
+        let failed = await account.updateProfile(name: "Person", bio: "Draft", photo: .jpeg(jpeg))
+        XCTAssertFalse(failed); XCTAssertNil(account.state?.profileImage); XCTAssertNotNil(account.error)
+        XCTAssertEqual(harness.uploads, [jpeg]); XCTAssertFalse(account.uploadingPhoto); XCTAssertFalse(account.busy)
+        harness.hosts[0].profileError = nil
+        let saved = await account.updateProfile(name: "Person", bio: "Draft", photo: .jpeg(jpeg))
+        XCTAssertTrue(saved); XCTAssertNil(account.error); XCTAssertEqual(account.state?.profileImage, harness.imageURL)
+        XCTAssertEqual(harness.uploads, [jpeg]); XCTAssertEqual(harness.hosts[0].profileUpdates, [.replace(harness.imageURL), .replace(harness.imageURL)])
+        account.lock(); await account.resume()
+        XCTAssertEqual(account.state?.profileImage, harness.imageURL)
+    }
+
+    func testFailedUploadDoesNotWriteProfileAndCanRetryWithAnotherPhoto() async {
+        let harness = Harness(), account = harness.controller(); await account.resume()
+        harness.uploadError = .connection
+        let failed = await account.updateProfile(name: "Draft", bio: "", photo: .jpeg(Data([1])))
+        XCTAssertFalse(failed); XCTAssertTrue(harness.hosts[0].profileUpdates.isEmpty)
+        XCTAssertEqual(account.state?.profileName, "Fixture Person"); XCTAssertFalse(account.busy)
+        harness.uploadError = nil
+        let saved = await account.updateProfile(name: "Draft", bio: "", photo: .jpeg(Data([2])))
+        XCTAssertTrue(saved); XCTAssertEqual(harness.uploads, [Data([1]), Data([2])])
+    }
+
+    func testReplacingPhotoAfterFailedSaveUploadsNewPixels() async {
+        let harness = Harness(), account = harness.controller(); await account.resume()
+        harness.hosts[0].profileError = .connection
+        _ = await account.updateProfile(name: "Person", bio: "", photo: .jpeg(Data([1])))
+        harness.hosts[0].profileError = nil
+        let saved = await account.updateProfile(name: "Person", bio: "", photo: .jpeg(Data([2])))
+        XCTAssertTrue(saved); XCTAssertEqual(harness.uploads, [Data([1]), Data([2])])
+    }
+
+    func testBackgroundDuringPhotoUploadCannotWriteOrReopenAccount() async {
+        let harness = Harness(), account = harness.controller(), gate = Gate(); await account.resume()
+        harness.uploadGate = gate
+        let save = Task { await account.updateProfile(name: "Draft", bio: "", photo: .jpeg(Data([1]))) }
+        await gate.waitUntilEntered(); XCTAssertTrue(account.uploadingPhoto)
+        await account.activityChanged(.background)
+        gate.release(); let saved = await save.value
+        XCTAssertFalse(saved); XCTAssertTrue(harness.hosts[0].profileUpdates.isEmpty)
+        XCTAssertNil(account.state); XCTAssertFalse(account.uploadingPhoto); XCTAssertNil(account.error)
+        harness.uploadGate = nil
+        await account.activityChanged(.active)
+        XCTAssertEqual(account.state?.profileName, "Fixture Person"); XCTAssertNil(account.state?.profileImage)
+        _ = await account.updateProfile(name: "Person", bio: "", photo: .jpeg(Data([1])))
+        XCTAssertEqual(harness.uploads.count, 2) // Lock discards an upload cache from the previous account host.
+    }
+
+    func testSignOutDuringUploadAndLateProfileReplyCannotReopenAccount() async {
+        for suspendUpload in [true, false] {
+            let harness = Harness(), account = harness.controller(), gate = Gate(); await account.resume()
+            if suspendUpload { harness.uploadGate = gate } else { harness.hosts[0].profileGate = gate }
+            let save = Task { await account.updateProfile(name: "Draft", bio: "", photo: .jpeg(Data([1]))) }
+            await gate.waitUntilEntered(); await account.signOut(forget: false)
+            gate.release(); let saved = await save.value
+            XCTAssertFalse(saved); assertSignedOut(account); XCTAssertNil(account.error)
+            if suspendUpload { XCTAssertTrue(harness.hosts[0].profileUpdates.isEmpty) }
+        }
     }
 
     private func recover(_ account: NativeAccountController, key: String = "synthetic-recovery-key") async {

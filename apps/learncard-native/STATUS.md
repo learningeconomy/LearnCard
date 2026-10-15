@@ -1,5 +1,7 @@
 # Native experiment handoff — 2026-10-15
 
+Edit profile now supports native photo selection, preview, replacement and removal. A selected photo stays local until Save Profile; name/bio-only saves preserve the existing picture. Bounded image preparation strips EXIF/GPS, while upload retry and lifecycle guards protect account state. See [profile-photo contracts](PROFILE_PHOTOS.md).
+
 Latest issued is now an interactive stack of up to five actual recent credentials in the current category. Horizontal swipes toss the active card aside and lift the next; Newer/Older controls, position dots, tap-to-detail and bounded navigation make its purpose clear. Vertical scrolling, short-drag cancellation, category/search reset, RTL and Reduce Motion are covered. No credential is dismissed or deleted. See [recent-stack contracts](RECENT_STACK.md).
 
 Share credentials now supports larger collections with multi-category and inclusive issue-date filters, sorting, title/issuer/description search, progressive paging and a fixed selection/review footer. Selected audits every explicit choice, including those hidden by filters. See [picker contracts](SHARING_PICKER.md). Native QR scanning, account recovery, Portfolio/Qualifications parity, the approved Home/drawn design, neutral canvas and automatic credential detail motion remain; see [scanner and claim contracts](QR_CLAIM_FLOW.md).
@@ -7,7 +9,8 @@ Share credentials now supports larger collections with multi-category and inclus
 - Branch: `codex/vesper-73`.
 - Checkout: `/Users/donny/.codex/worktrees/vesper-73/LearnCard`; preserve unrelated primary-checkout work.
 - Home baseline `4dde77e13383394163bad3ddaa7131d0f6d0adc3` passed [hosted CI 38694796776](https://github.com/learningeconomy/LearnCard/actions/runs/38694796776). The subsequent category run [38700166174](https://github.com/learningeconomy/LearnCard/actions/runs/38700166174) passed 42 simulator cases and failed three; timing/gesture assertions are addressed in this follow-up and must pass new source-specific CI.
-- Current configured suite: **245 cases** — 105 Bun, 85 Swift and 55 simulator cases, plus one intentionally skipped live exchange.
+- Current configured suite: **263 cases** — 110 Bun, 95 Swift and 58 simulator cases, plus one intentionally skipped live exchange.
+- Profile-photo checks passed all 110 Bun and 95 Swift cases, source contracts and eight unique focused simulator cases. No real photo was uploaded; see [verification and manual gate](PROFILE_PHOTOS.md).
 - Recent-stack checks passed all 85 Swift cases, five initial focused simulator cases, a two-case traversal/detail-motion pass and the final cancellation/scroll refinement. This is targeted UI validation, not a new local full 245-case run. Bun/runtime code is unchanged from the preceding passing sharing checks.
 - Sharing-picker checks passed all 105 Bun and 80 Swift cases, source contracts and four focused simulator cases; actual accessibility/RTL modal inheritance received an additional visual/automated pass. This is targeted UI validation, not a new local full 237-case run. See [TESTING](TESTING.md).
 - QR/claim checks passed all 102 Bun and 68 Swift cases and source/type contracts. Eleven initial simulator checks, a five-case refinement pass and a final ten-case claim/category/CI follow-up passed; exact evidence is in [TESTING.md](TESTING.md). This is targeted validation, not a new local full 219-case run.
@@ -31,9 +34,9 @@ The app browser is separate from the account SDK. Embedded partner apps support 
 
 ## Installed simulator build
 
-The recent-stack build is installed and running on **LearnCard Native Lab**. Executable, Debug dylib, assets, account SDK and private review configuration match the final Debug build by five SHA-256 comparisons (`artifacts/recent-stack-install-proof.json`). The staging account resumed. Collection visibly shows its real active credential, **1 of 5**, Newer/Older controls and the honest loaded-collection caption. Automated swipe/navigation evidence uses unsigned fixtures; the live stack is left available for manual review. No credential mutation or link publication was performed.
+The profile-photo build is installed and running on **LearnCard Native Lab**. Executable, Debug dylib, assets, account SDK and private review configuration match the final Debug build by five SHA-256 comparisons (`artifacts/profile-photo-install-proof.json`). The review configuration was preserved/restored around automated tests. The recovered staging account resumed, and read-only review confirmed Edit profile recognizes its current photo and exposes Change/Remove. Edit profile is left open. The real profile picture has not been changed; photo upload and web parity are available for explicit manual review. The separate checks simulator is shut down.
 
-Final Release and Debug/install logs are `artifacts/recent-stack-release.log` and `artifacts/recent-stack-review-install.log`. All 85 Swift cases passed. Five focused UI cases passed, two traversal/detail-motion cases passed after refinement, then the final short/reverse-drag cancellation and vertical-scroll case passed. The automatic isolated detail-card animation remains verified. These are targeted checks, not a new local full 245-case run. The checks simulator is shut down; private configuration was preserved/restored. Confirm the newest commit in [branch CI](https://github.com/learningeconomy/LearnCard/actions?query=branch%3Acodex%2Fvesper-73) before claiming hosted success.
+Final Release and Debug/install logs are `artifacts/profile-photo-release.log` and `artifacts/profile-photo-review-install.log`. All 110 Bun and 95 Swift cases passed, source contracts passed, and eight unique focused UI cases passed (three photo cases plus all five account lifecycle regressions). English and Arabic accessibility layouts were visually reviewed with synthetic data. This is targeted validation, not a new local full 263-case run. Confirm the newest commit in [branch CI](https://github.com/learningeconomy/LearnCard/actions?query=branch%3Acodex%2Fvesper-73) before claiming hosted success.
 
 Open Simulator, select **LearnCard Native Lab**, and open **LearnCard Lab**. This is the review simulator (`ACD3802A-67BC-4C5F-98A4-7FFCF598AE9E`); the automated UI checks use a separate simulator.
 
@@ -49,6 +52,8 @@ For a DEBUG review starting directly at Families, append `--review-families`. It
 The existing ignored local configuration retains the approved test email. A fresh checkout requires its own test-login configuration; see [README](README.md). The CI build configuration uses a non-deliverable test address and should not replace the live review configuration.
 
 ## Manual review focus
+
+Start with **Account → Edit profile**. Choose a library photo and inspect the local preview; changing or removing it must remain a draft until Save Profile. Verify the saved photo in the header and web LearnCard. Name/bio-only saves should preserve it. No automatic live profile mutation was performed. See [profile photos](PROFILE_PHOTOS.md).
 
 Start with **Collection → Latest issued**. Swipe horizontally through the five recent credentials, reverse direction, tap the active card and return. Confirm the throw/settlement feels right, the ends stop, issue dates follow the card, and vertical swipes still scroll. A category with fewer records has a shorter stack; a single record has no fake layers or redundant controls. Data outside the loaded pages is explicitly qualified. See [recent stack behavior](RECENT_STACK.md).
 

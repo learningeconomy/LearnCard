@@ -95,3 +95,7 @@ Thirteen deterministic controller tests exercise background/inactive/active tran
 Sign-out previously went through the same busy gate as recovery and could be ignored. It now invalidates outstanding operations and closes the SDK immediately, then removes native session tokens. Forget also deletes scoped primary/pending share/version slots without requiring an active SDK host. Ordinary sign-out preserves remembered recovery access. Initialization recovery errors retain friendly feedback and recovery inputs are cleared on background.
 
 The additional bundled-command regression reproduced missing share/profile-update dispatch routes; their implementations had been nested under the Firebase auth adapter. Both were moved into the actual command dispatcher. This is a routing correction; it does not establish live publication or profile-update success. A confirmation test was corrected for iOS 26's outside-dismiss popover behavior; explicit Cancel remains supported where the system presents it.
+
+## Update 2026-10-15 — Profile photos
+
+Native Edit profile supports choosing, previewing, replacing and removing a photo. Upload occurs only on Save Profile. The existing public image uploader and network profile `image` field preserve web interoperability; unchanged photo edits omit the field, while removal sends an empty string. Generation guards span upload and profile update. See [profile-photo contracts and manual live gate](PROFILE_PHOTOS.md).
