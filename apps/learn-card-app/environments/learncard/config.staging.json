@@ -13,6 +13,7 @@
     },
     "features": {
         "analytics": false,
+        "escrowRolloutPercent": 100,
         "contractRequests": true,
         "useSeededSkillFrameworks": true,
         "samplePersonas": [
