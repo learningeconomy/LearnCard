@@ -2473,7 +2473,7 @@ describe('P6.1 escrow enclave-mode staleness', () => {
                 enclaveMode: 'software',
                 enclaveKeyId: 'whatever',
             });
-            // Comfortably under ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS's 10s default —
+            // Comfortably under ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS's 15s default —
             // proves the status path never awaits the hanging call directly.
             expect(Date.now() - startedAt).toBeLessThan(1000);
             expect(reason).toBeUndefined();

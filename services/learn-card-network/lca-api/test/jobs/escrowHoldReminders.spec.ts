@@ -114,10 +114,11 @@ describe('runEscrowHoldReminders', () => {
         );
         for (const hold of holds) await cancelEscrowHold(hold._id, 'did');
         // These legacy test records lack ciphertext: fail closed, but still rotate
-        // the bounded queue rather than retrying the same first three forever.
+        // the bounded queue rather than retrying the same first ones forever. The
+        // default 15s enclave timeout fits two calls in the job's 30s enclave budget.
         await runEscrowHoldReminders({ now, limit: 200 });
         const firstRun = await Promise.all(holds.map(hold => findEscrowHoldById(hold._id)));
-        expect(firstRun.map(hold => hold?.enclaveCancelAttempts).sort()).toEqual([0, 1, 1, 1]);
+        expect(firstRun.map(hold => hold?.enclaveCancelAttempts).sort()).toEqual([0, 0, 1, 1]);
         const unattempted = firstRun.find(hold => hold?.enclaveCancelAttempts === 0)!;
         await runEscrowHoldReminders({ now, limit: 1 });
         expect((await findEscrowHoldById(unattempted._id))?.enclaveCancelAttempts).toBe(1);

@@ -54,8 +54,9 @@ and AWS call for SES and a fresh post-acceptance evidence round for warning send
 acceptance. AWS samples stay fresh because they also validate TLS certificate
 intervals: a monotonic-age SigV4 cache cannot replace that evidence. Outer
 deadlines must exceed inner operation deadlines plus transport/response overhead:
-host forwarding and lca-api currently both use 10s, racing the enclave; change
-them to, for example, 12s and 15s respectively, below the SDK's 30s fetch budget.
+enclave 10s < host forwarding 12s < lca-api 15s (`ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS`
+default) < SDK fetch 30s. Deployments that set the lca-api value explicitly must
+keep it above 12s.
 The AWS 15s per-call cap is subordinate to the enclave operation deadline, not
 a promise that each call gets 15s. Slow quorum/AWS service or actor queueing can
 still exhaust the operation budget; ambiguous writes must not be retried as releases.
